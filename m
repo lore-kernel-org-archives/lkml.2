@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2JALwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:52:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59190 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab2JALwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:52:02 -0400
-Date: Mon, 1 Oct 2012 13:51:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 06/13] memcg: kmem controller infrastructure
-Message-ID: <20121001115157.GE8622@dhcp22.suse.cz>
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com>
- <1347977050-29476-7-git-send-email-glommer@parallels.com>
- <20120926155108.GE15801@dhcp22.suse.cz>
- <5064392D.5040707@parallels.com>
- <20120927134432.GE29104@dhcp22.suse.cz>
- <50658B3B.9020303@parallels.com>
- <20121001094846.GC8622@dhcp22.suse.cz>
- <50696BC5.8040808@parallels.com>
+	id S1752536Ab2JALxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:53:18 -0400
+Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:43941 "EHLO
+	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752311Ab2JALxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 07:53:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50696BC5.8040808@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121001114454.GA9170@sirena.org.uk>
+References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
+	<CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
+	<20121001114454.GA9170@sirena.org.uk>
+Date: Mon, 1 Oct 2012 17:23:15 +0530
+Message-ID: <CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
+Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
+        sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-10-12 14:09:09, Glauber Costa wrote:
-> On 10/01/2012 01:48 PM, Michal Hocko wrote:
-> > On Fri 28-09-12 15:34:19, Glauber Costa wrote:
-> >> On 09/27/2012 05:44 PM, Michal Hocko wrote:
-> >>>>> the reference count aquired by mem_cgroup_get will still prevent the
-> >>>>> memcg from going away, no?
-> >>> Yes but you are outside of the rcu now and we usually do css_get before
-> >>> we rcu_unlock. mem_cgroup_get just makes sure the group doesn't get
-> >>> deallocated but it could be gone before you call it. Or I am just
-> >>> confused - these 2 levels of ref counting is really not nice.
-> >>>
-> >>> Anyway, I have just noticed that __mem_cgroup_try_charge does
-> >>> VM_BUG_ON(css_is_removed(&memcg->css)) on a given memcg so you should
-> >>> keep css ref count up as well.
-> >>>
-> >>
-> >> IIRC, css_get will prevent the cgroup directory from being removed.
-> >> Because some allocations are expected to outlive the cgroup, we
-> >> specifically don't want that.
-> > 
-> > Yes, but how do you guarantee that the above VM_BUG_ON doesn't trigger?
-> > Task could have been moved to another group between mem_cgroup_from_task
-> > and mem_cgroup_get, no?
-> > 
-> 
-> Ok, after reading this again (and again), you seem to be right. It
-> concerns me, however, that simply getting the css would lead us to a
-> double get/put pair, since try_charge will have to do it anyway.
+Hi,
 
-That happens only for !*ptr case and you provide a memcg here, don't
-you.
+On Mon, Oct 1, 2012 at 5:14 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Oct 01, 2012 at 05:00:06PM +0530, ABRAHAM, KISHON VIJAY wrote:
+>> On Mon, Oct 1, 2012 at 4:31 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
+>
+> Delete irrelevant context from your replies, it makes it much easier to
+> find new text.
+>
+>> > +static int smsc_i2c_remove(struct i2c_client *i2c)
+>> > +{
+>> > +       struct smsc *smsc = i2c_get_clientdata(i2c);
+>> > +
+>> > +       mfd_remove_devices(smsc->dev);
+>
+>> IMO, this should have resulted in an abort (hint: see
+>> mfd_remove_devices_fn()). Trying to do mfd_remove_devices without
+>> mfd_add_devices(). Use device_for_each_child here to remove the
+>> device.
+>
+> No, this is not at all sensible - if there's an mfd_remove_devices()
+> function we really ought to be able to use it to remove the children.
+> If we can't do that we should fix the API usability, not open code the
+> same stuff in every user.
 
-> I considered just letting try_charge selecting the memcg, but that is
-> not really what we want, since if that memcg will fail kmem allocations,
-> we simply won't issue try charge, but return early.
-> 
-> Any immediate suggestions on how to handle this ?
+What makes more sense to me is extend mfd_add_devices to create child
+devices from dt data. Then for removing devices, one can use
+mfd_remove_devices().
 
-I would do the same thing __mem_cgroup_try_charge does.
-retry:
-	rcu_read_lock();
-	p = rcu_dereference(mm->owner);
-	if (!css_tryget(&memcg->css)) {
-		rcu_read_unlock();
-		goto retry;
-	}
-	rcu_read_unlock();
-
--- 
-Michal Hocko
-SUSE Labs
+Thanks
+Kishon
