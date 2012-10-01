@@ -1,61 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab2JALxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 07:53:18 -0400
-Received: from na3sys009aog136.obsmtp.com ([74.125.149.85]:43941 "EHLO
-	na3sys009aog136.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752311Ab2JALxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 07:53:16 -0400
+	id S1752462Ab2JALxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 07:53:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752450Ab2JALxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 07:53:21 -0400
+Date: Mon, 1 Oct 2012 13:53:09 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Petr Holasek <pholasek@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
+Message-ID: <20121001115309.GE20924@redhat.com>
+References: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
+ <20120928112645.GX19474@redhat.com>
+ <alpine.LSU.2.00.1209301639240.6304@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <20121001114454.GA9170@sirena.org.uk>
-References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
-	<CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
-	<20121001114454.GA9170@sirena.org.uk>
-Date: Mon, 1 Oct 2012 17:23:15 +0530
-Message-ID: <CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
-Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
-        sameo@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1209301639240.6304@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Hugh,
 
-On Mon, Oct 1, 2012 at 5:14 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Oct 01, 2012 at 05:00:06PM +0530, ABRAHAM, KISHON VIJAY wrote:
->> On Mon, Oct 1, 2012 at 4:31 PM, Sourav Poddar <sourav.poddar@ti.com> wrote:
->
-> Delete irrelevant context from your replies, it makes it much easier to
-> find new text.
->
->> > +static int smsc_i2c_remove(struct i2c_client *i2c)
->> > +{
->> > +       struct smsc *smsc = i2c_get_clientdata(i2c);
->> > +
->> > +       mfd_remove_devices(smsc->dev);
->
->> IMO, this should have resulted in an abort (hint: see
->> mfd_remove_devices_fn()). Trying to do mfd_remove_devices without
->> mfd_add_devices(). Use device_for_each_child here to remove the
->> device.
->
-> No, this is not at all sensible - if there's an mfd_remove_devices()
-> function we really ought to be able to use it to remove the children.
-> If we can't do that we should fix the API usability, not open code the
-> same stuff in every user.
+On Sun, Sep 30, 2012 at 05:36:33PM -0700, Hugh Dickins wrote:
+> I'm all for the simplest solution, but here in ksm_migrate_page()
+> is not a good place for COW breaking - we don't want to get into
+> an indefinite number of page allocations, and the risk of failure.
 
-What makes more sense to me is extend mfd_add_devices to create child
-devices from dt data. Then for removing devices, one can use
-mfd_remove_devices().
+Agreed, not a good place to break_cow.
 
-Thanks
-Kishon
+> I was toying with the idea of leaving the new page in the old NUMAnode's
+> stable tree temporarily, until ksmd comes around again, and let that
+> clean it up.  Which would imply less reliance on get_kpfn_nid(),
+> and not skipping PageKsm in ksm_do_scan(), and...
+
+There a break_cow could more easily run to cleanup the errors in the
+stable tree. It'd be one way to avoid altering migrate.
+
+> But it's not all that simple, and I think we can do better.
+
+Agreed.
+
+> It's only just fully dawned on me that ksm_migrate_page() is actually
+> a very convenient place: no pagetable mangling required, because we
+> know that neither old nor new page is at this instant mapped into
+> userspace at all - don't we?  Instead there are swap-like migration
+> entries plugging all ptes until we're ready to put in the new page.
+
+Yes.
+
+> So I think what we really want to do is change the ksm_migrate_page()
+> interface a little, and probably the precise position it's called from,
+> to allow it to update mm/migrate.c's newpage - in the collision case
+
+I agree your proposed modification to the ->migratepage protocol
+should be able to deal with that. We should notify the caller the
+"newpage" has been freed and we transferred all ownership to an
+"alternate_newpage". So then migrate will restore the ptes pointing to
+the alternate_newpage (not the allocated newpage). It should be also
+possible to get an hold on the alternate_newpage, before having to
+allocate newpage.
+
+> when the new NUMAnode already has a stable copy of this page.  But when
+> it doesn't, just move KSMnode from old NUMAnode's stable tree to new.
+
+Agreed, that is the easy case and doesn't require interface changes.
+
+> How well the existing ksm.c primitives are suited to this, I've not
+> checked.  Probably not too well, but shouldn't be hard to add what's
+> needed.
+> 
+> What do you think?  Does that sound reasonable, Petr?
+
+Sounds like a plan, I agree the modification to migrate is the best
+way to go here. Only cons: it's not the simplest solution.
+
+> By the way, this is probably a good occasion to remind ourselves,
+> that page migration is still usually disabled on PageKsm pages:
+> ksm_migrate_page() is only being called for memory hotremove.  I had
+> been about to complain that calling remove_node_from_stable_tree()
+> from ksm_migrate_page() is also unsafe from a locking point of view;
+> until I remembered that MEM_GOING_OFFLINE has previously acquired
+> ksm_thread_mutex.
+> 
+> But page migration is much more important now than three years ago,
+> with compaction relying upon it, CMA and THP relying upon compaction,
+> and lumpy reclaim gone.
+
+Agreed. AutoNUMA needs it too: AutoNUMA migrates all types of memory,
+not just anonymous memory, as long as the mapcount == 1.
+
+If all users break_cow except one, then the KSM page can move around
+if it has left just one user, we don't need to wait this last user to
+break_cow (which may never happen) before can move it.
+
+> Whilst it should not be mixed up in the NUMA patch itself, I think we
+> need now to relax that restriction.  I found re-reading my 62b61f611e
+> "ksm: memory hotremove migration only" was helpful.  Petr, is that
+> something you could take on also?  I _think_ it's just a matter of
+> protecting the stable tree(s) with an additional mutex (which ought
+> not to be contended, since ksm_thread_mutex is normally held above
+> it, except in migration); then removing a number of PageKsm refusals
+> (and the offlining arg to unmap_and_move() etc).  But perhaps there's
+> more to it, I haven't gone over it properly.
+
+Removing the restriction sounds good. In addition to
+compaction/AutoNUMA etc.. KSM pages are marked MOVABLE so it's likely
+not good for the anti frag pageblock types.
+
+So if I understand this correctly, there would be no way to trigger
+the stable tree corruption in current v4, without memory hotremove.
+
+> Yes, I agree; but a few more comments I'll make against the v4 post.
+
+Cool.
+
+Thanks for the help!
+Andrea
