@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab2JAXMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:12:25 -0400
-Received: from 1wt.eu ([62.212.114.60]:35542 "EHLO 1wt.eu"
+	id S933483Ab2JAXMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:12:37 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:55328 "EHLO tetsuo.zabbo.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933128Ab2JAXCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:02:23 -0400
-Message-Id: <20121001225159.013913784@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:52:30 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Willy Tarreau <w@1wt.eu>
-Subject: [ 033/180] sched: Fix signed unsigned comparison in check_preempt_tick()
-In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
+	id S932691Ab2JAXMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:12:23 -0400
+Date: Mon, 1 Oct 2012 16:12:22 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@google.com, tj@kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com,
+        Martin Petersen <martin.petersen@oracle.com>
+Subject: Re: [RFC, PATCH] Extensible AIO interface
+Message-ID: <20121001231222.GB14533@lenny.home.zabbo.net>
+References: <20121001222341.GF26488@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001222341.GF26488@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 01, 2012 at 03:23:41PM -0700, Kent Overstreet wrote:
+> So, I and other people keep running into things where we really need to
+> add an interface to pass some auxiliary... stuff along with a pread() or
+> pwrite().
 
-------------------
+Sure.  Martin (cc:ed) will sympathize.
 
-From: Mike Galbraith <efault@gmx.de>
+> A few examples:
+> 
+> * IO scheduler hints...
+> * Cache hints...
+> 
+> * Passing checksums out to userspace. We've got bio integrity, which is
+> a (somewhat) generic interface for passing data checksums between the
+> filesystem and the hardware.
 
-commit d7d8294415f0ce4254827d4a2a5ee88b00be52a8 upstream.
+Hmm, careful here.  I think that in DIF/DIX the checksums are
+per-sector, not per IO, right?  That'd mean that the PAGE_SIZE attr
+limit in this patch would be magically creating different max IO size
+limits on different architectures.  That doesn't seem great.
 
-Signed unsigned comparison may lead to superfluous resched if leftmost
-is right of the current task, wasting a few cycles, and inadvertently
-_lengthening_ the current task's slice.
+> Hence, AIO attributes.
 
-Reported-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1294202477.9384.5.camel@marge.simson.net>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- kernel/sched_fair.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+I have to be honest: I really don't like tying the interface to AIO, but
+I guess it's the only per-io facility we have today.  It'd be nice to
+include sync O_DIRECT when designing the interface to make sure that it
+is possible to use generic syscalls in the future without running up
+against unexpected problems. 
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index cd9a40b..fd6e5f2 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -862,6 +862,9 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
- 		struct sched_entity *se = __pick_next_entity(cfs_rq);
- 		s64 delta = curr->vruntime - se->vruntime;
- 
-+		if (delta < 0)
-+			return;
-+
- 		if (delta > ideal_runtime)
- 			resched_task(rq_of(cfs_rq)->curr);
- 	}
--- 
-1.7.2.1.45.g54fbc
+> An iocb_attr has an id field, and a size field - and some amount of data
+> specific to that attribute.
 
+I'd hope that we can come up with a less fragile interface.  The kernel
+would have to scan the attributes to make sure that there aren't
+malicious sizes.  I only quickly glanced at the loops, but it seemed
+like you could have a 0 size attribute in there and _next() would spin
+forever.
 
-
+- z
