@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab2JAXAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 19:00:34 -0400
-Received: from 1wt.eu ([62.212.114.60]:35169 "EHLO 1wt.eu"
+	id S933575Ab2JAXbz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 19:31:55 -0400
+Received: from 1wt.eu ([62.212.114.60]:35177 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650Ab2JAXAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:00:30 -0400
-Message-Id: <20121001225203.673011691@1wt.eu>
+	id S932654Ab2JAXAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 19:00:32 -0400
+Message-Id: <20121001225202.994935795@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:20 +0200
+Date: Tue, 02 Oct 2012 00:54:04 +0200
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Wang Xingchao <xingchao.wang@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: [ 143/180] xen: correctly check for pending events when restoring irq flags
+Subject: [ 127/180] ALSA: hda - fix Copyright debug message
 In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Wang Xingchao <xingchao.wang@intel.com>
 
-commit 7eb7ce4d2e8991aff4ecb71a81949a907ca755ac upstream.
+commit 088c820b732dbfd515fc66d459d5f5777f79b406 upstream.
 
-In xen_restore_fl_direct(), xen_force_evtchn_callback() was being
-called even if no events were pending.  This resulted in (depending on
-workload) about a 100 times as many xen_version hypercalls as
-necessary.
+As spec said, 1 indicates no copyright is asserted.
 
-Fix this by correcting the sense of the conditional jump.
-
-This seems to give a significant performance benefit for some
-workloads.
-
-There is some subtle tricksy "..since the check here is trying to
-check both pending and masked in a single cmpw, but I think this is
-correct. It will call check_events now only when the combined
-mask+pending word is 0x0001 (aka unmasked, pending)." (Ian)
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 ---
- arch/x86/xen/xen-asm.S |    2 +-
+ sound/pci/hda/hda_proc.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/xen/xen-asm.S b/arch/x86/xen/xen-asm.S
-index 79d7362..3e45aa0 100644
---- a/arch/x86/xen/xen-asm.S
-+++ b/arch/x86/xen/xen-asm.S
-@@ -96,7 +96,7 @@ ENTRY(xen_restore_fl_direct)
- 
- 	/* check for unmasked and pending */
- 	cmpw $0x0001, PER_CPU_VAR(xen_vcpu_info) + XEN_vcpu_info_pending
--	jz 1f
-+	jnz 1f
- 2:	call check_events
- 1:
- ENDPATCH(xen_restore_fl_direct)
+diff --git a/sound/pci/hda/hda_proc.c b/sound/pci/hda/hda_proc.c
+index 2b3d859..9294d40 100644
+--- a/sound/pci/hda/hda_proc.c
++++ b/sound/pci/hda/hda_proc.c
+@@ -340,7 +340,7 @@ static void print_digital_conv(struct snd_info_buffer *buffer,
+ 	if (digi1 & AC_DIG1_EMPHASIS)
+ 		snd_iprintf(buffer, " Preemphasis");
+ 	if (digi1 & AC_DIG1_COPYRIGHT)
+-		snd_iprintf(buffer, " Copyright");
++		snd_iprintf(buffer, " Non-Copyright");
+ 	if (digi1 & AC_DIG1_NONAUDIO)
+ 		snd_iprintf(buffer, " Non-Audio");
+ 	if (digi1 & AC_DIG1_PROFESSIONAL)
 -- 
 1.7.2.1.45.g54fbc
 
