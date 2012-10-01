@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab2JAM4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 08:56:07 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36876 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab2JAM4G (ORCPT
+	id S1753158Ab2JAM5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 08:57:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55197 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab2JAM5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 08:56:06 -0400
-Date: Mon, 1 Oct 2012 18:25:52 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] uprobes: register/unregister bugfixes
-Message-ID: <20121001125552.GA27781@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120930194119.GA11278@redhat.com>
- <20120930194438.GA11222@redhat.com>
+	Mon, 1 Oct 2012 08:57:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120930194438.GA11222@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100112-2876-0000-0000-000000A0F7D0
+In-Reply-To: <4347_1349050738_q910IviQ005340_20120930233012.GH30637@obsidianresearch.com>
+References: <4347_1349050738_q910IviQ005340_20120930233012.GH30637@obsidianresearch.com>
+Date: Mon, 1 Oct 2012 08:57:11 -0400
+Message-ID: <CAEwYmTLuxx8UKvkF7cE4LF++K77mDkiB3e6MD6Eao9KYJreO8w@mail.gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
+ the TPM has not been started
+From: Jonathan McCune <jonmccune@gmail.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is on top of "[PATCH 0/3] uprobes: mprotect fixes" series,
-> which is still waiting for review...
-> 
+Hi Jason,
 
-Did you mean [PATCH 0/4] uprobes: remove is_swbp_at_addr() from
-register/unregister?
+On Sun, Sep 30, 2012 at 7:30 PM, Jason Gunthorpe
+<jgunthorpe@obsidianresearch.com> wrote:
+> The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
+> TPM_STARTUP has not been issued. This will result in the TPM driver
+> failing to load and no way to recover. Detect this and automatically
+> issue TPM_STARTUP.
+>
+> This is for embedded applications where the kernel is the first thing
+> to touch the TPM.
 
-I have already reviewed and acked "[PATCH 0/3] uprobes: mprotect fixes"
-series".  
+I welcome such functionality.  Thanks for your efforts.
 
-Got distracted by the register/unregister bug that we were discussing
-offline.  Reviewing and testing both the pending series.
-
--- 
-Thanks and Regards
-Srikar
-
+Regards,
+-Jon
