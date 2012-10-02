@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab2JBN7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 09:59:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:35820 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab2JBN7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 09:59:10 -0400
-Date: Tue, 2 Oct 2012 15:59:05 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Roger Blofeld <blofeldus@yahoo.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 099/180] powerpc/ftrace: Fix assembly trampoline register usage
-Message-ID: <20121002135905.GA32113@1wt.eu>
-References: <20121001225201.807308843@1wt.eu> <506AEFEC.5010304@windriver.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753863Ab2JBODJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:03:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42141 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab2JBODI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:03:08 -0400
+Date: Tue, 2 Oct 2012 09:51:36 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] (frontswap) stable/for-linus-3.7-tag
+Message-ID: <20121002135136.GA15917@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
 Content-Disposition: inline
-In-Reply-To: <506AEFEC.5010304@windriver.com>
-User-Agent: Mutt/1.4.2.3i
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 09:45:16AM -0400, Paul Gortmaker wrote:
-> On 12-10-01 06:53 PM, Willy Tarreau wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: roger blofeld <blofeldus@yahoo.com>
-> > 
-> > commit fd5a42980e1cf327b7240adf5e7b51ea41c23437 upstream.
-> > 
-> > Just like the module loader, ftrace needs to be updated to use r12
-> > instead of r11 with newer gcc's.
-> > 
-> > Signed-off-by: Roger Blofeld <blofeldus@yahoo.com>
-> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > commit a8ed5765b5a8bf44a86284d80afd24f37a23e369 upstream.
-> 
-> Not sure what the above is -- cut and paste misstep?
-> The fd5a429 at the top is the correct parent though.
 
-Oops, you're right Paul, it's the commit ID from the 3.0 branch I picked
-it from. Just removed it now.
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Willy
+Hey Linus,
 
+Please git pull the following tag:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git stable/for-linus-3.7-tag
+
+which has one tiny feature used by one backend (ramster) and a couple
+of fixes.
+
+Please pull!
+
+Dan Magenheimer (1):
+      frontswap: support exclusive gets if tmem backend is capable
+
+Konrad Rzeszutek Wilk (1):
+      mm: frontswap: remove unneeded headers
+
+Seth Jennings (1):
+      mm/frontswap: fix uninit'ed variable warning
+
+Wanpeng Li (1):
+      mm/frontswap: cleanup doc and comment error
+
+Zhenzhong Duan (1):
+      mm: frontswap: fix a wrong if condition in frontswap_shrink
+
+ include/linux/frontswap.h |    2 ++
+ mm/frontswap.c            |   34 ++++++++++++++++++++++++++++++----
+ 2 files changed, 32 insertions(+), 4 deletions(-)
+
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQavFkAAoJEFjIrFwIi8fJNrQH/RWoMDesiNzLsmaaeCO5zLH0
+9X8u5Q5N7L99kUSdfUaU8FODbAR9+w62dbt0VfhkrdYIW2P34EJMvfno1c+SAPrB
+yVg1wkJtfAhppRUQvHajzoEl/SM1DdQruV/k7LD2aSx7Y8RvvDiz4VVqglS9Ex6T
+nghBtj9JVKMA7l+XR1fU4TeTmTvTmtQ90b24A1ByYN/lfT0zQrnk2OsmGz0lt9Ho
+lurkduoRVbP4KtMCReCU+V/6E+brGsJFOHqu6eVpp8kkAcQ6RWCTj4vgyzThApGY
+WGOim1DlnaIeH07zs4Ul4fWIjvIRPzmmVnkJghckxHBNIEkY1Cj8veHFDTkKLaE=
+=m/Fy
+-----END PGP SIGNATURE-----
+
+--0F1p//8PRICkK4MW--
