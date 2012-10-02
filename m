@@ -1,34 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab2JBJFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 05:05:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40445 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2JBJFl (ORCPT
+	id S1752125Ab2JBJHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 05:07:52 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43347 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461Ab2JBJHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 05:05:41 -0400
+	Tue, 2 Oct 2012 05:07:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349166910-15726-1-git-send-email-ming.lei@canonical.com>
-References: <1349166910-15726-1-git-send-email-ming.lei@canonical.com>
-Date: Tue, 2 Oct 2012 17:05:39 +0800
-Message-ID: <CACVXFVP8-34XwPLmF63cO2--k-iEFuLhQGVDAbB6U5vhTbpPCA@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: cancel uncache work before caching firmware
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+In-Reply-To: <1349165603-24401-3-git-send-email-lee.jones@linaro.org>
+References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
+	<1349165603-24401-3-git-send-email-lee.jones@linaro.org>
+Date: Tue, 2 Oct 2012 11:07:48 +0200
+Message-ID: <CACRpkdZDO7NRGr7ON6_EpsQzqcBbfO8Dx4M3yWphBgn6y3bnrA@mail.gmail.com>
+Subject: Re: [PATCH 02/10] ARM: ux500: Strip out duplicate touch screen
+ platform information
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 4:35 PM, Ming Lei <ming.lei@canonical.com> wrote:
-> ---
->  drivers/base/firmware_class.c |   30 ++++++++++++++++++++++++------
->  1 file changed, 24 insertions(+), 6 deletions(-)
+On Tue, Oct 2, 2012 at 10:13 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Please ignore the buggy patch, sorry for the noise.
+> We're currently carrying two 'struct bu21013_platform_device's which
+> are identical for no apparent reason. Here we remove the extra burden
+> and apply the same information to the two different instances of the
+> bu21012_tp driver registration.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+Makes perfect sense.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Thanks,
---
-Ming Lei
+Yours,
+Linus Walleij
