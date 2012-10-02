@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab2JBAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:19:28 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:36736 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab2JBASK (ORCPT
+	id S1752906Ab2JBARf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:17:35 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37115 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab2JBARH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:18:10 -0400
+	Mon, 1 Oct 2012 20:17:07 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: [PATCH v7 45/49] vfs: make lgetxattr retry once on ESTALE
-Date: Mon,  1 Oct 2012 20:16:54 -0400
-Message-Id: <1349137018-21948-46-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v7 01/49] audit: remove unnecessary NULL ptr checks from do_path_lookup
+Date: Mon,  1 Oct 2012 20:16:10 -0400
+Message-Id: <1349137018-21948-2-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
 References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
@@ -21,36 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As best I can tell, whenever retval == 0, nd->path.dentry and nd->inode
+are also non-NULL. Eliminate those checks and the superfluous
+audit_context check.
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/xattr.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/namei.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 1775213..fbb93d7 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -498,12 +498,17 @@ SYSCALL_DEFINE4(lgetxattr, const char __user *, pathname,
- {
- 	struct path path;
- 	ssize_t error;
-+	unsigned int try = 0;
-+	unsigned int lookup_flags = 0;
+diff --git a/fs/namei.c b/fs/namei.c
+index dd1ed1b..e3661762 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1976,12 +1976,8 @@ static int do_path_lookup(int dfd, const char *name,
+ 	if (unlikely(retval == -ESTALE))
+ 		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
  
--	error = user_lpath(pathname, &path);
--	if (error)
--		return error;
--	error = getxattr(path.dentry, name, value, size);
--	path_put(&path);
-+	do {
-+		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
-+		if (error)
-+			break;
-+		error = getxattr(path.dentry, name, value, size);
-+		path_put(&path);
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
- 	return error;
+-	if (likely(!retval)) {
+-		if (unlikely(!audit_dummy_context())) {
+-			if (nd->path.dentry && nd->inode)
+-				audit_inode(name, nd->path.dentry);
+-		}
+-	}
++	if (likely(!retval))
++		audit_inode(name, nd->path.dentry);
+ 	return retval;
  }
  
 -- 
