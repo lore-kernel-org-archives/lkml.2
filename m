@@ -1,111 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734Ab2JBOdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:33:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:46064 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750991Ab2JBOdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:33:39 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/oEQA21IjoQbxj4658N8On4ATMb7OLzbSD7794ip
-	ulQi1i85D5+gUd
-Message-ID: <1349188414.7086.127.camel@marge.simpson.net>
-Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
- ttwu_queue()
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 02 Oct 2012 16:33:34 +0200
-In-Reply-To: <20121002131421.GN29125@suse.de>
-References: <20121002065143.GK29125@suse.de>
-	 <1349164176.7086.43.camel@marge.simpson.net>
-	 <20121002084501.GL29125@suse.de>
-	 <1349170282.7086.56.camel@marge.simpson.net>
-	 <20121002131421.GN29125@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752113Ab2JBOmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:42:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60724 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab2JBOmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:42:01 -0400
+Date: Tue, 2 Oct 2012 15:41:35 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20121002144135.GO29125@suse.de>
+References: <50656459.70309@ti.com>
+ <20120928102728.GN3429@suse.de>
+ <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
+ <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
+ <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+ <20120928110712.GB29125@suse.de>
+ <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
+ <20120928124332.GC29125@suse.de>
+ <20121001142428.GA2798@avionic-0098.mockup.avionic-design.de>
+ <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 14:14 +0100, Mel Gorman wrote: 
-> On Tue, Oct 02, 2012 at 11:31:22AM +0200, Mike Galbraith wrote:
-> > On Tue, 2012-10-02 at 09:45 +0100, Mel Gorman wrote: 
-> > > On Tue, Oct 02, 2012 at 09:49:36AM +0200, Mike Galbraith wrote:
-> > 
-> > > > Hm, 518cd623 fixed up the troubles I saw.  How exactly are you running
-> > > > this?
-> > > > 
-> > > 
-> > > You saw problems with TCP_RR where as this is UDP_STREAM.
-> > 
-> > Yeah, but I wanted to stare at UDP_STREAM as you run it to see if it
-> > would tell me anything about why those numbers happen.
-> > 
-> > > I'm running this through MMTests with a version of the
-> > > configs/config-global-dhp__network-performance file that only runs
-> > > netperf-udp. Ultimately it runs netperf for a size something like
-> > > this
-> > > 
-> > > SIZE=64
-> > > taskset -c 0 netserver
-> > > taskset -c 1 netperf -t UDP_STREAM -i 50,6 -I 99,1 -l 20 -H 127.0.0.1 -- -P 15895 -s 32768 -S 32768 -m $SIZE -M $SIZE
-> > 
+On Tue, Oct 02, 2012 at 02:48:14PM +0200, Thierry Reding wrote:
+> > So this really isn't all that new, but I just wanted to confirm my
+> > results from last week. We'll see if bisection shows up something
+> > interesting.
 > 
-> lock_stat points at the runqueue lock which makes sense as without the
-> IPI the rq->lock has to be taken
-
-Well, it'll still be locked, but locally when the IPI queues the wakee.
-
-I can confirm your UDP_STREAM findings.. but do the same cross pin with
-tbench, and the story reverses.  A difference is that netperf/netserver
-utilization is 100%/63% NO_TTWU_QUEUE and 100%/57% TTWU_QUEUE, ie
-netserver is using more cycles with NO_TTWU_QUEUE.
-
-tbench/tbench_srv is around 73%/56%, both sleep vs 1, both take the same
-locks in ttwu().. and perform better with NO_TTWU_QUEUE.
-
-Ponder ponder speculate.. what won't happen with TTWU_QUEUE is you won't
-contend on the remote lock while a task is trying to schedule off.  We
-don't content with tbench or TCP_RR, NO_TTWU_QUEUE is the cheaper.. we
-do contend with UDP_STREAM, TTWU_QUEUE _becomes_ the cheaper.  Oh dear.
-
-> 3.3.0-vanilla
->                               class name    con-bounces    contentions   waittime-min   waittime-max waittime-total    acq-bounces   acquisitions   holdtime-min   holdtime-max holdtime-total
-> -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
->                                &rq->lock:         37062          37063           0.08          10.43       11037.66      410701252     1029063029           0.00          14.35   234556106.12
->                                ---------
->                                &rq->lock          14064          [<ffffffff81420a76>] __schedule+0xc6/0x710
->                                &rq->lock             33          [<ffffffff8107791d>] idle_balance+0x13d/0x190
->                                &rq->lock          11810          [<ffffffff8106cac7>] ttwu_queue+0x47/0xf0
->                                &rq->lock            283          [<ffffffff81067f86>] task_rq_lock+0x56/0xa0
->                                ---------
->                                &rq->lock          22305          [<ffffffff8106cac7>] ttwu_queue+0x47/0xf0
->                                &rq->lock          11260          [<ffffffff81420a76>] __schedule+0xc6/0x710
->                                &rq->lock            158          [<ffffffff8107791d>] idle_balance+0x13d/0x190
->                                &rq->lock              8          [<ffffffff810772a6>] load_balance+0x356/0x500
+> I just finished bisecting this and git reports:
 > 
-> 3.3.0-revert
->                                &rq->lock:         10831          10833           0.09          10.47        4448.19          87877      768253556           0.00          16.00   140103672.33
->                                ---------
->                                &rq->lock            685          [<ffffffff810771d8>] load_balance+0x348/0x500
->                                &rq->lock           8688          [<ffffffff8106d045>] try_to_wake_up+0x215/0x2e0
->                                &rq->lock           1010          [<ffffffff814209b6>] __schedule+0xc6/0x710
->                                &rq->lock            228          [<ffffffff81067f86>] task_rq_lock+0x56/0xa0
->                                ---------
->                                &rq->lock           3317          [<ffffffff814209b6>] __schedule+0xc6/0x710
->                                &rq->lock            789          [<ffffffff810771d8>] load_balance+0x348/0x500
->                                &rq->lock            363          [<ffffffff810770a4>] load_balance+0x214/0x500
->                                &rq->lock              2          [<ffffffff810771e6>] load_balance+0x356/0x500
+> 	3750280f8bd0ed01753a72542756a8c82ab27933 is the first bad commit
 > 
-> Note the difference in acq-bounces. I had to stop at this point and move
-> back to some CMA breakage I introduced.
+> I'm attaching the complete bisection log and a diff of all the changes
+> applied on top of the bad commit to make it compile and run on my board.
+> Most of the patch is probably not important, though. There are two hunks
+> which have the pageblock changes I already posted an two other hunks
+> with the patch you posted earlier.
+> 
+> I hope this helps. If you want me to run any other tests, please let me
+> know.
 > 
 
+Can you test with this on top please?
 
+---8<---
+diff --git a/mm/compaction.c b/mm/compaction.c
+index d6e260a..1f1d46d 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -374,20 +374,13 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+  * a free page).
+  */
+ unsigned long
+-isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
++isolate_freepages_range(struct compact_control *cc,
++			unsigned long start_pfn, unsigned long end_pfn)
+ {
+ 	unsigned long isolated, pfn, block_end_pfn;
+-	struct zone *zone = NULL;
++	struct zone *zone = cc->zone;
+ 	LIST_HEAD(freelist);
+ 
+-	/* cc needed for isolate_freepages_block to acquire zone->lock */
+-	struct compact_control cc = {
+-		.sync = true,
+-	};
+-
+-	if (pfn_valid(start_pfn))
+-		cc.zone = zone = page_zone(pfn_to_page(start_pfn));
+-
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
+ 		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
+ 			break;
+@@ -399,7 +392,7 @@ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
+ 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+ 		block_end_pfn = min(block_end_pfn, end_pfn);
+ 
+-		isolated = isolate_freepages_block(&cc, pfn, block_end_pfn,
++		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
+ 						   &freelist, true);
+ 
+ 		/*
+diff --git a/mm/internal.h b/mm/internal.h
+index 7052289..ffe0473 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -135,7 +135,8 @@ struct compact_control {
+ };
+ 
+ unsigned long
+-isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
++isolate_freepages_range(struct compact_control *cc,
++			unsigned long start_pfn, unsigned long end_pfn);
+ unsigned long
+ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			   unsigned long low_pfn, unsigned long end_pfn);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 0a1906b..076d08d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5650,23 +5650,14 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
+ }
+ 
+ /* [start, end) must belong to a single zone. */
+-static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
++static int __alloc_contig_migrate_range(struct compact_control *cc,
++					unsigned long start, unsigned long end)
+ {
+ 	/* This function is based on compact_zone() from compaction.c. */
+-
+ 	unsigned long pfn = start;
+ 	unsigned int tries = 0;
+ 	int ret = 0;
+ 
+-	struct compact_control cc = {
+-		.nr_migratepages = 0,
+-		.order = -1,
+-		.zone = page_zone(pfn_to_page(start)),
+-		.sync = true,
+-		.ignore_skip_hint = true,
+-	};
+-	INIT_LIST_HEAD(&cc.migratepages);
+-
+ 	migrate_prep_local();
+ 
+ 	while (pfn < end || !list_empty(&cc.migratepages)) {
+@@ -5775,6 +5766,15 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 	unsigned long outer_start, outer_end;
+ 	int ret = 0, order;
+ 
++	struct compact_control cc = {
++		.nr_migratepages = 0,
++		.order = -1,
++		.zone = page_zone(pfn_to_page(start)),
++		.sync = true,
++		.ignore_skip_hint = true,
++	};
++	INIT_LIST_HEAD(&cc.migratepages);
++
+ 	/*
+ 	 * What we do here is we mark all pageblocks in range as
+ 	 * MIGRATE_ISOLATE.  Because pageblock and max order pages may
+@@ -5804,7 +5804,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 	if (ret)
+ 		goto done;
+ 
+-	ret = __alloc_contig_migrate_range(start, end);
++	ret = __alloc_contig_migrate_range(cc, start, end);
+ 	if (ret)
+ 		goto done;
+ 
+@@ -5853,7 +5853,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 	__reclaim_pages(zone, GFP_HIGHUSER_MOVABLE, end-start);
+ 
+ 	/* Grab isolated pages from freelists. */
+-	outer_end = isolate_freepages_range(outer_start, end);
++	outer_end = isolate_freepages_range(cc, outer_start, end);
+ 	if (!outer_end) {
+ 		ret = -EBUSY;
+ 		goto done;
