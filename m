@@ -1,131 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab2JBRiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:38:16 -0400
-Received: from zmmta1.corp.phx1.mozilla.com ([63.245.216.72]:47723 "EHLO
-	zmmta1.mail.corp.phx1.mozilla.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755209Ab2JBRiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:38:15 -0400
-X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Oct 2012 13:38:15 EDT
-Message-ID: <506B24E1.2000300@mozilla.com>
-Date: Tue, 02 Oct 2012 10:31:13 -0700
-From: Taras Glek <tglek@mozilla.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1755301Ab2JBRlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:41:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755209Ab2JBRlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 13:41:35 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@google.com, tj@kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com
+Subject: Re: [RFC, PATCH] Extensible AIO interface
+References: <20121001222341.GF26488@google.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 02 Oct 2012 13:41:17 -0400
+In-Reply-To: <20121001222341.GF26488@google.com> (Kent Overstreet's message of
+	"Mon, 1 Oct 2012 15:23:41 -0700")
+Message-ID: <x49zk44ojpe.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
-References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/28/2012 8:16 PM, John Stultz wrote:
-> <snip>
-> There is two rough approaches that I have tried so far
->
-> 1) Managing volatile range objects, in a tree or list, which are then
-> purged using a shrinker
->
-> 2) Page based management, where pages marked volatile are moved to
-> a new LRU list and are purged from there.
->
->
->
-> 1) This patchset is of the the shrinker-based approach. In many ways it
-> is simpler, but it does have a few drawbacks.  Basically when marking a
-> range as volatile, we create a range object, and add it to an rbtree.
-> This allows us to be able to quickly find ranges, given an address in
-> the file.  We also add each range object to the tail of a  filesystem
-> global linked list, which acts as an LRU allowing us to quickly find
-> the least recently created volatile range. We then use a shrinker
-> callback to trigger purging, where we'll select the range on the head
-> of the LRU list, purge the data, mark the range object as purged,
-> and remove it from the lru list.
->
-> This allows fairly efficient behavior, as marking and unmarking
-> a range are both O(logn) operation with respect to the number of
-> ranges, to insert and remove from the tree.  Purging the range is
-> also O(1) to select the range, and we purge the entire range in
-> least-recently-marked-volatile order.
->
-> The drawbacks with this approach is that it uses a shrinker, thus it is
-> numa un-aware. We track the virtual address of the pages in the file,
-> so we don't have a sense of what physical pages we're using, nor on
-> which node those pages may be on. So its possible on a multi-node
-> system that when one node was under pressure, we'd purge volatile
-> ranges that are all on a different node, in effect throwing data away
-> without helping anything. This is clearly non-ideal for numa systems.
->
-> One idea I discussed with Michel Lespinasse is that this might be
-> something we could improve by providing the shrinker some node context,
-> then keep track in the range  what node their first page is on. That
-> way we would be sure to at least free up one page on the node under
-> pressure when purging that range.
->
->
-> 2) The second approach, which was more page based, was also tried. In
-> this case when we marked a range as volatile, the pages in that range
-> were moved to a new  lru list LRU _VOLATILE in vmscan.c.  This provided
-> a page lru list that could be used to free pages before looking at
-> the LRU_INACTIVE_FILE/ANONYMOUS lists.
->
-> This integrates the feature deeper in the mm code, which is nice,
-> especially as we have an LRU_VOLATILE list for each numa node. Thus
-> under pressure we won't purge ranges that are entirely on a different
-> node, as is possible with the other approach.
->
-> However, this approach is more costly.	When marking a range
-> as volatile, we have to migrate every page in that range to the
-> LRU_VOLATILE list, and similarly on unmarking we have to move each
-> page back. This ends up being O(n) with respect to the number of
-> pages in the range we're marking or unmarking. Similarly when purging,
-> we let the scanning code select a page off the lru, then we have to
-> map it back to the volatile range so we can purge the entire range,
-> making it a more expensive O(logn),  with respect to the number of
-> ranges, operation.
->
-> This is a particular concern as applications that want to mark and
-> unmark data as volatile with fine granularity will likely be calling
-> these operations frequently, adding quite a bit of overhead. This
-> makes it less likely that applications will choose to volunteer data
-> as volatile to the system.
->
-> However, with the new lazy SIGBUS notification, applications using
-> the SIGBUS method would avoid having to mark and unmark data when
-> accessing it, so this overhead may be less of a concern. However, for
-> cases where applications don't want to deal with the SIGBUS and would
-> rather have the more deterministic behavior of the unmark/access/mark
-> pattern, the performance is a concern.
-Unfortunately, approach 1 is not useful for our use-case. It'll mean 
-that we are continuously re-decompressing frequently used parts of 
-libxul.so under memory pressure(which is pretty often on limited ram 
-devices).
+Kent Overstreet <koverstreet@google.com> writes:
 
+> So, I and other people keep running into things where we really need to
+> add an interface to pass some auxiliary... stuff along with a pread() or
+> pwrite().
+>
+> A few examples:
+>
+> * IO scheduler hints. Some userspace program wants to, per IO, specify
+> either priorities or a cgroup - by specifying a cgroup you can have a
+> fileserver in userspace that makes use of cfq's per cgroup bandwidth
+> quotas.
 
-Taras
+You can do this today by splitting I/O between processes and placing
+those processes in different cgroups.  For io priority, there is
+ioprio_set, which incurs an extra system call, but can be used.  Not
+elegant, but possible.
 
-ps. John, I really appreciate movement on this. We really need this to 
-improve Firefox memory usage + startup speed on low memory devices. Will 
-be great to have Firefox start faster+ respond to memory pressure better 
-on desktop Linux too.
+> * Cache hints. For bcache and other things, userspace may want to specify
+> "this data should be cached", "this data should bypass the cache", etc.
 
+Please explain how you will differentiate this from posix_fadvise.
 
+> * Passing checksums out to userspace. We've got bio integrity, which is
+> a (somewhat) generic interface for passing data checksums between the
+> filesystem and the hardware. There are various circumstances under which
+> you may want to pass these checksums out to userspace, and if so we
+> ought to have a generic way of doing it.
+
+Yes, that needs a new interface.
+
+> Hence, AIO attributes.
+
+*No.*  Start with the non-AIO case first.
+
+> * FUTURE STUFF:
+>
+> Return values:
+>
+> Some attributes are probably going to want to return something to
+> userspace.
+>
+> If nothing else, we want this so that userspace can tell if anything
+> handled the attributes it specified - as dynamic as the io stack can be,
+> with something extensible like this there really isn't any generic way
+> of knowing ahead of time if something is going to interpret any
+> attribute - we want to return at least an error code.
+
+Seems odd to me.  Why not expose supported attributes via some other
+call?  fcntl?
+
+> One could imagine sticking the return in the attribute itself, but I
+> don't want to do this. For some things (checksums), the attribute will
+> contain a pointer to a buffer - that's fine. But I don't want the
+> attributes themselves to be writeable.
+
+One could imagine that attributes don't return anything, because, well,
+they're properties of something else, and properties don't return
+anything.
+
+Cheers,
+Jeff
