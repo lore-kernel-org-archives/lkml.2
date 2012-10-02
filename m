@@ -1,99 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2JBGbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 02:31:18 -0400
-Received: from ozlabs.org ([203.10.76.45]:56472 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab2JBGac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 02:30:32 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>
-Cc: herbert@gondor.hengli.com.au, pjones@redhat.com,
-        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
-Subject: Re: [GIT PULL] Asymmetric keys and module signing
-In-Reply-To: <20121001204150.GA20849@hansolo.jdub.homelinux.org>
-References: <87wqzdnwus.fsf@rustcorp.com.au> <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk> <27378.1348819793@warthog.procyon.org.uk> <29407.1348902805@warthog.procyon.org.uk> <20121001204150.GA20849@hansolo.jdub.homelinux.org>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 02 Oct 2012 12:58:03 +0930
-Message-ID: <87626t4kos.fsf@rustcorp.com.au>
+	id S1753915Ab2JBGcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 02:32:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62872 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab2JBGcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 02:32:08 -0400
+Date: Mon, 1 Oct 2012 23:32:04 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.7-rc0
+Message-ID: <20121002063204.GB3853@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer <jwboyer@redhat.com> writes:
 
-> On Sat, Sep 29, 2012 at 08:13:25AM +0100, David Howells wrote:
->> Rusty Russell <rusty@rustcorp.com.au> wrote:
->> 
->> > [    2.808075] Loading module verification certificates
->> > [    2.809331] X.509: Cert 6e03943da0f3b015ba6ed7f5e0cac4fe48680994 has expired
->> > [    2.810500] MODSIGN: Problem loading in-kernel X.509 certificate (-127)
->> 
->> Hmmm...  Other people have seen that.
->> 
->> Ahhhhh!
->> 
->> I wonder if the problem is that the certificate is valid for 100 years....
->> That might well cause an overflow on a 32-bit system.
->
-> That does seem quite plausible.  The comparisons are done with time_t,
-> which boils down to 'long' and 100 years in seconds would overflow
-> LONG_MAX.
->
->> Could you try changing the '36500' in kernel/Makefile to something shorter,
->> like 365?
->
-> I tried two values today.  One close to LONG_MAX (24800 or ~68 years),
-> and 10 years (3650).  The former still seemed to overflow, but
-> specifying a 10yr lifetime appears to have worked.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's because the timestamp is absolute, right?  Indeed, that seems to
-be the limit here.
+Hi Linus,
 
-Here's my solution (tested, and it breaks if you change 2147300000 to
-2147600000 as expected):
+Please pull from:
 
->From 2a4b91c2c29739191c6f7db9abee9296ae505c39 Mon Sep 17 00:00:00 2001
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Tue, 2 Oct 2012 12:55:06 +0930
-Subject: [PATCH] MODSIGN: fix expiry of auto-generated certificates on 32-bit
- systems
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-100-year certificates make time_t wrap, resulting in:
+to receive updates for the input subsystem. A few drivers were updated
+with device tree bindings and others got a few small cleanups and fixes.
 
-[    2.835272] X.509: Cert a94f6776f3f5483b0764011d1fcc6c0298362e63 has expired
-[    2.836346] MODSIGN: Problem loading in-kernel X.509 certificate (-127)
+You will get a conflict in omap-keymap driver (a small formatting
+cleanup clashed with work coming from another tree), please let me know
+if you want me to resolve it.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Thanks!
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index e951adf..86336c9 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -168,6 +168,13 @@ endif
- ifeq ($(sign_key_with_hash),)
- $(error Could not determine digest type to use from kernel config)
- endif
-+ifeq ($(CONFIG_64BIT),y)
-+# 100 years is beyond my best-before date, anyway.
-+end_of_time_days=36500
-+else
-+# Until 32-bit time_t wraps, with some slack.
-+end_of_time_days=$(shell expr \( 2147300000 - `date -u +%s` \) / 86400 )
-+endif
- 
- signing_key.priv signing_key.x509: x509.genkey
- 	@echo "###"
-@@ -180,7 +187,8 @@ signing_key.priv signing_key.x509: x509.genkey
- 	@echo "###"
- 	@echo "###     rngd -r /dev/hwrandom"
- 	@echo "###"
--	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
-+	openssl req -new -nodes -utf8 $(sign_key_with_hash) \
-+		-days $(end_of_time_days) -batch \
- 		-x509 -config x509.genkey \
- 		-outform DER -out signing_key.x509 \
- 		-keyout signing_key.priv
+Changelog:
+---------
+
+Alexandre Pereira da Silva (3):
+      Input: gpio_keys - clean up device tree parser
+      Input: gpio_keys_polled - convert to dt
+      Input: gpio_keys_polled - fix dt pdata->nbuttons
+
+Andy Shevchenko (1):
+      Input: hgpk - use %*ph to dump small buffer
+
+Baodong Chen (1):
+      Input: random formatting fixes
+
+Daniel Mack (3):
+      Input: rotary-encoder - defer calls gpio_to_irq()
+      Input: rotary-encoder - use gpio_request_one()
+      Input: rotary-encoder - add DT bindings
+
+David Herrmann (1):
+      Input: uinput - return -EINVAL when read buffer size is too small
+
+Dmitry Torokhov (8):
+      Input: gpio-keys-polled - constify pointers to platform data
+      Input: rotary-encoder - constify platform data pointers
+      Input: get rid of MATCH_BIT() macro
+      Input: uinput - take event lock when fetching events from buffer
+      Input: uinput - fix race that can block nonblocking read
+      Input: uinput - mark failed submission requests as free
+      Input: uinput - specify exact bit sizes on userspace APIs
+      Input: uinput - fix formatting
+
+Jason Gerecke (2):
+      Input: wacom - add support for EMR on Cintiq 24HD touch
+      Input: wacom - mark Intuos5 pad as in-prox when touching buttons
+
+Josh (1):
+      Input: omap-keypad - fixed formatting
+
+Michael Schutte (1):
+      Input: Add KD[GS]KBDIACRUC ioctls to the compatible list
+
+NeilBrown (2):
+      Input: gpio_keys - report a wakeup_event for a button press
+      Input: twl4030-pwrbutton - report a wakeup_event on button press
+
+Sachin Kamat (1):
+      Input: s3c2410_ts - make s3c_ts_pmops const
+
+Seth Forshee (1):
+      Input: synaptics - adjust threshold for treating position values as n=
+egative
+
+Stephen Warren (1):
+      Input: tegra - move platform data header
+
+Tobias Klauser (2):
+      Input: samsung-keypad - use of_match_ptr()
+      Input: samsung-keypad - use of_get_child_count() helper
+
+
+Diffstat:
+--------
+
+ .../devicetree/bindings/input/gpio-keys-polled.txt |  38 ++++
+ .../devicetree/bindings/input/rotary-encoder.txt   |  36 ++++
+ drivers/input/apm-power.c                          |   2 +-
+ drivers/input/ff-core.c                            |   4 +-
+ drivers/input/ff-memless.c                         |  14 +-
+ drivers/input/input.c                              |  43 +++--
+ drivers/input/joydev.c                             |   2 +-
+ drivers/input/keyboard/gpio_keys.c                 | 169 +++++++++---------
+ drivers/input/keyboard/gpio_keys_polled.c          | 147 +++++++++++++--
+ drivers/input/keyboard/omap-keypad.c               |   8 +-
+ drivers/input/keyboard/samsung-keypad.c            |  10 +-
+ drivers/input/keyboard/tegra-kbc.c                 |   2 +-
+ drivers/input/misc/rotary_encoder.c                | 140 ++++++++++-----
+ drivers/input/misc/twl4030-pwrbutton.c             |   1 +
+ drivers/input/misc/uinput.c                        | 197 +++++++++++++----=
+----
+ drivers/input/mouse/hgpk.c                         |   9 +-
+ drivers/input/mouse/synaptics.c                    |  31 +++-
+ drivers/input/mousedev.c                           |   9 +-
+ drivers/input/sparse-keymap.c                      |   4 +-
+ drivers/input/tablet/wacom_wac.c                   |   2 +-
+ drivers/input/touchscreen/s3c2410_ts.c             |   2 +-
+ fs/compat_ioctl.c                                  |   2 +
+ .../mach/kbc.h =3D> include/linux/input/tegra_kbc.h  |   0
+ include/linux/uinput.h                             |  27 +--
+ 24 files changed, 611 insertions(+), 288 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/gpio-keys-polle=
+d.txt
+ create mode 100644 Documentation/devicetree/bindings/input/rotary-encoder.=
+txt
+ rename arch/arm/mach-tegra/include/mach/kbc.h =3D> include/linux/input/teg=
+ra_kbc.h (100%)
+
+--=20
+Dmitry
+
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQaopjAAoJEH70+W8r6ZYqcTkP/iDbJnHz8tpHlBQPdXhYXJdl
+hQEGBagVZeHS1pmmc5saH1twB3EB0p32vJ6C1FUbkUWjeXXzP5BCXImQd7OUhzbS
+KTQoy42O+XHXnISx7Vsqo5OSW1AMhVVp3buT/1BF6425DP2ez62Fhli0xVPawDHG
+rt1I7XZxQWeVzv4uaFc9yiegE5vLODypFSApaSIr7AHqzRfHkbNc8zsMBnseSnPf
+nl9ZPDdW7F3tEvJzJwFzTx4i+bRpb9vah/DIp4Y2sYBZXClEVEpA4vJpHnbcC10n
+iqLs1pSER51ISTWsTEFyMHuwywk8gYdBBG9fRS4dLraDnCyUQypXyhdSMy/pG/Ss
+iBcBKOlBC3F3SKiHdkjW6JYmyENW5cJixk9r91ZMl9eKUyUGbPuMehZxFKad+0ra
+pOzEgUurrzFHo3YUEWu6T1HvN8rUFi+Pys4jhxvywi1DuI0O5Qt73sgUF27qYmXV
+OOGyOAyjszTT8jpsfe04mmHC5ECa2iq7qEvGSaLhvdqPEXYzP/h7stsyBaMEevjK
++qte58aGpFHyXJ2j1HurZ8elOIKo27yaQbG9BQ4PpZ9lKhwIv45n4+0obqtWusgd
+ksLSNTLgeNyl2hGUpsAGlVaEVKInvfF4X39dYvyQo3IQHxwWFygLDE0Xt41ST/bz
+sxz1v3WyJLbnPFnGmjK2
+=zY9q
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
