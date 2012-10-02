@@ -1,141 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2JBIPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 04:15:45 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:46210 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469Ab2JBIPh (ORCPT
+	id S1754233Ab2JBINs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 04:13:48 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63974 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab2JBINf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 04:15:37 -0400
-X-AuditID: b753bd60-945e1ba000004744-fb-506aa20dfa62
-X-AuditID: b753bd60-945e1ba000004744-fb-506aa20dfa62
-From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Subject: [PATCH -tip 0/4] tracing: make a snapshot feature available from
- userspace
-To: rostedt@goodmis.org, rob@landley.net
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        fweisbec@gmail.com, mingo@redhat.com, jolsa@redhat.com,
-        lizf@cn.fujitsu.com
-Date: Tue, 02 Oct 2012 17:13:09 +0900
-Message-ID: <20121002081309.8661.37629.stgit@falsita>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 2 Oct 2012 04:13:35 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 01/10] ARM: ux500: Move all Device Tree booting into cpu-db8500
+Date: Tue,  2 Oct 2012 09:13:14 +0100
+Message-Id: <1349165603-24401-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
+References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steven,
+To aid the kernel in its effort to move to DT only booting, we're
+transplanting all Device Tree related code to cpu-db8500 which will
+remain persistent throughout the transition. This change paths the
+way for complete removal of board-mop500, which will be done once
+the all DMA settings are moved into the respective DT source files.
 
-This patch series make a snapshot feature available from userspace
-via debugfs.
-(But I know that you are working for multi-buffer. If these
-patches collide with your work much, I will resubmit my patches
-after that. What would you think?)
-
-
-If we set CONFIG_TRACER_SNAPSHOT, this snapshot feature becomes
-available to all non latency tracers. (Latency tracers which
-record max latency, such as "irqsoff" or "wakeup", can't use
-this feature, since those are already using the snapshot
-mechanism internally.)
-
-Snapshot preserves a trace buffer at a particular point in time
-without stopping tracing. Ftrace swaps the current buffer with a
-spare buffer, and tracing continues in the (previous) spare
-buffer.
-
-The following debugfs files in "tracing" are related to this
-feature:
-
-  snapshot:
-
-	This is used to take a snapshot and to read the output
-	of the snapshot. Echo 1 into this file to allocate a
-	spare buffer and to take a snapshot, then read the
-	snapshot from the file in the same format as "trace".
-	Both reads snapshot and tracing are executable in
-	parallel. Echoing 0 erases the snapshot contents.
-
-  snapshot_allocate:
-
-	This is used to pre-allocate or free a spare buffer.
-	Echo 1 into this file to pre-allocate a spare buffer if
-	you don't want to fail in the next snapshot due to
-	memory allocation failure, or if you don't want to lose
-	older trace data while allocating buffer. Echo 0 to free
-	the spare buffer when the snapshot becomes unnecessary.
-	If you take the next snapshot again, you can reuse the
-	buffer, then just erase the snapshot contents by echoing
-	1 into the "snapshot" file, instead of freeing the
-	buffer.
-
-	Reads from this file display whether the spare buffer is
-	allocated. When current_tracer is changed, the allocated
-	spare buffer is freed. If the next tracer is one of the
-	latency tracers, this value turns into 1 and can't be
-	changed, or else the value starts with 0.
-
-
-Here is an example of using the snapshot feature.
-
- # echo 1 > snapshot_allocate (if you want to pre-allocate the spare buffer)
- # echo 1 > events/sched/enable
- # echo 1 > snapshot
- # cat snapshot
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 71/71   #P:8
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-          <idle>-0     [005] d...  2440.603828: sched_switch: prev_comm=swapper/5 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2242 next_prio=120
-           sleep-2242  [005] d...  2440.603846: sched_switch: prev_comm=snapshot-test-2 prev_pid=2242 prev_prio=120 prev_state=R ==> next_comm=kworker/5:1 next_pid=60 next_prio=120
-[...]
-          <idle>-0     [002] d...  2440.707230: sched_switch: prev_comm=swapper/2 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2229 next_prio=120
- # cat trace
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 77/77   #P:8
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-          <idle>-0     [007] d...  2440.707395: sched_switch: prev_comm=swapper/7 prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=snapshot-test-2 next_pid=2243 next_prio=120
- snapshot-test-2-2229  [002] d...  2440.707438: sched_switch: prev_comm=snapshot-test-2 prev_pid=2229 prev_prio=120 prev_state=S ==> next_comm=swapper/2 next_pid=0 next_prio=120
-[...]
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
+ arch/arm/mach-ux500/board-mop500.c |  105 ++---------------------------------
+ arch/arm/mach-ux500/board-mop500.h |    8 +--
+ arch/arm/mach-ux500/cpu-db8500.c   |  107 ++++++++++++++++++++++++++++++++++--
+ 3 files changed, 111 insertions(+), 109 deletions(-)
 
-Hiraku Toyooka (4):
-      tracing: add description of snapshot to Documentation/trace/ftrace.txt
-      tracing: make a snapshot feature available from userspace
-      tracing: add a resize function for making one buffer equivalent to the other buffer
-      tracing: change tracer's integer flags to bool
-
-
- Documentation/trace/ftrace.txt    |   97 +++++++++++++++
- include/linux/ftrace_event.h      |    3 
- kernel/trace/Kconfig              |   11 ++
- kernel/trace/trace.c              |  247 +++++++++++++++++++++++++++++++------
- kernel/trace/trace.h              |    5 -
- kernel/trace/trace_irqsoff.c      |   12 +-
- kernel/trace/trace_sched_wakeup.c |    8 +
- 7 files changed, 332 insertions(+), 51 deletions(-)
-
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 5dd4a59..2d7906a 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -33,8 +33,6 @@
+ #include <linux/smsc911x.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/delay.h>
+-#include <linux/of.h>
+-#include <linux/of_platform.h>
+ #include <linux/leds.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+@@ -464,7 +462,7 @@ static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
+ };
+ #endif
+ 
+-static struct pl022_ssp_controller ssp0_plat = {
++struct pl022_ssp_controller ssp0_plat = {
+ 	.bus_id = 0,
+ #ifdef CONFIG_STE_DMA40
+ 	.enable_dma = 1,
+@@ -561,7 +559,7 @@ static void ux500_uart0_reset(void)
+ 	udelay(1);
+ }
+ 
+-static struct amba_pl011_data uart0_plat = {
++struct amba_pl011_data uart0_plat = {
+ #ifdef CONFIG_STE_DMA40
+ 	.dma_filter = stedma40_filter,
+ 	.dma_rx_param = &uart0_dma_cfg_rx,
+@@ -570,7 +568,7 @@ static struct amba_pl011_data uart0_plat = {
+ 	.reset = ux500_uart0_reset,
+ };
+ 
+-static struct amba_pl011_data uart1_plat = {
++struct amba_pl011_data uart1_plat = {
+ #ifdef CONFIG_STE_DMA40
+ 	.dma_filter = stedma40_filter,
+ 	.dma_rx_param = &uart1_dma_cfg_rx,
+@@ -578,7 +576,7 @@ static struct amba_pl011_data uart1_plat = {
+ #endif
+ };
+ 
+-static struct amba_pl011_data uart2_plat = {
++struct amba_pl011_data uart2_plat = {
+ #ifdef CONFIG_STE_DMA40
+ 	.dma_filter = stedma40_filter,
+ 	.dma_rx_param = &uart2_dma_cfg_rx,
+@@ -737,98 +735,3 @@ MACHINE_START(SNOWBALL, "Calao Systems Snowball platform")
+ 	.init_machine	= snowball_init_machine,
+ 	.init_late	= NULL,
+ MACHINE_END
+-
+-#ifdef CONFIG_MACH_UX500_DT
+-
+-struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+-	/* Requires call-back bindings. */
+-	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
+-	/* Requires DMA and call-back bindings. */
+-	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
+-	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", &uart1_plat),
+-	OF_DEV_AUXDATA("arm,pl011", 0x80007000, "uart2", &uart2_plat),
+-	/* Requires DMA bindings. */
+-	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  &mop500_sdi0_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  &mop500_sdi1_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  &mop500_sdi2_data),
+-	OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  &mop500_sdi4_data),
+-	/* Requires clock name bindings. */
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e080, "gpio.1", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e000, "gpio.2", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e080, "gpio.3", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e100, "gpio.4", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e180, "gpio.5", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e000, "gpio.6", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e080, "gpio.7", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-gpio", 0xa03fe000, "gpio.8", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80004000, "nmk-i2c.0", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80122000, "nmk-i2c.1", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80128000, "nmk-i2c.2", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80110000, "nmk-i2c.3", NULL),
+-	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
+-	/* Requires device name bindings. */
+-	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
+-	/* Requires clock name and DMA bindings. */
+-	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
+-		"ux500-msp-i2s.0", &msp0_platform_data),
+-	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80124000,
+-		"ux500-msp-i2s.1", &msp1_platform_data),
+-	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80117000,
+-		"ux500-msp-i2s.2", &msp2_platform_data),
+-	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
+-		"ux500-msp-i2s.3", &msp3_platform_data),
+-	{},
+-};
+-
+-static const struct of_device_id u8500_local_bus_nodes[] = {
+-	/* only create devices below soc node */
+-	{ .compatible = "stericsson,db8500", },
+-	{ .compatible = "stericsson,db8500-prcmu", },
+-	{ .compatible = "simple-bus"},
+-	{ },
+-};
+-
+-static void __init u8500_init_machine(void)
+-{
+-	struct device *parent = NULL;
+-
+-	/* Pinmaps must be in place before devices register */
+-	if (of_machine_is_compatible("st-ericsson,mop500"))
+-		mop500_pinmaps_init();
+-	else if (of_machine_is_compatible("calaosystems,snowball-a9500"))
+-		snowball_pinmaps_init();
+-	else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
+-		hrefv60_pinmaps_init();
+-
+-	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
+-	parent = u8500_of_init_devices();
+-
+-	/* automatically probe child nodes of db8500 device */
+-	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
+-
+-	/* This board has full regulator constraints */
+-	regulator_has_full_constraints();
+-}
+-
+-static const char * u8500_dt_board_compat[] = {
+-	"calaosystems,snowball-a9500",
+-	"st-ericsson,hrefv60+",
+-	"st-ericsson,u8500",
+-	"st-ericsson,mop500",
+-	NULL,
+-};
+-
+-
+-DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
+-	.map_io		= u8500_map_io,
+-	.init_irq	= ux500_init_irq,
+-	/* we re-use nomadik timer here */
+-	.timer		= &ux500_timer,
+-	.handle_irq	= gic_handle_irq,
+-	.init_machine	= u8500_init_machine,
+-	.init_late	= ux500_init_late,
+-	.dt_compat      = u8500_dt_board_compat,
+-MACHINE_END
+-#endif
+diff --git a/arch/arm/mach-ux500/board-mop500.h b/arch/arm/mach-ux500/board-mop500.h
+index 1f86387..eaa605f 100644
+--- a/arch/arm/mach-ux500/board-mop500.h
++++ b/arch/arm/mach-ux500/board-mop500.h
+@@ -89,6 +89,10 @@ extern struct msp_i2s_platform_data msp1_platform_data;
+ extern struct msp_i2s_platform_data msp2_platform_data;
+ extern struct msp_i2s_platform_data msp3_platform_data;
+ extern struct arm_pmu_platdata db8500_pmu_platdata;
++extern struct amba_pl011_data uart0_plat;
++extern struct amba_pl011_data uart1_plat;
++extern struct amba_pl011_data uart2_plat;
++extern struct pl022_ssp_controller ssp0_plat;
+ 
+ extern void mop500_sdi_init(struct device *parent);
+ extern void snowball_sdi_init(struct device *parent);
+@@ -104,8 +108,4 @@ void mop500_audio_init(struct device *parent);
+ int __init mop500_uib_init(void);
+ void mop500_uib_i2c_add(int busnum, struct i2c_board_info *info,
+ 		unsigned n);
+-
+-/* TODO: Once all pieces are DT:ed, remove completely. */
+-struct device * __init u8500_of_init_devices(void);
+-
+ #endif
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 38b7f9c..610ad7f 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -17,9 +17,14 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/mfd/abx500/ab8500.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/regulator/machine.h>
+ 
+ #include <asm/mach/map.h>
+ #include <asm/pmu.h>
++#include <asm/mach/arch.h>
++#include <asm/hardware/gic.h>
+ #include <plat/gpio-nomadik.h>
+ #include <mach/hardware.h>
+ #include <mach/setup.h>
+@@ -29,6 +34,7 @@
+ 
+ #include "devices-db8500.h"
+ #include "ste-dma40-db8500.h"
++#include "board-mop500.h"
+ 
+ /* minimum static i/o mapping required to boot U8500 platforms */
+ static struct map_desc u8500_uart_io_desc[] __initdata = {
+@@ -227,12 +233,12 @@ struct device * __init u8500_init_devices(struct ab8500_platform_data *ab8500)
+ 	return parent;
+ }
+ 
++#ifdef CONFIG_MACH_UX500_DT
++
+ /* TODO: Once all pieces are DT:ed, remove completely. */
+-struct device * __init u8500_of_init_devices(void)
++static struct device * __init u8500_of_init_devices(void)
+ {
+-	struct device *parent;
+-
+-	parent = db8500_soc_device_init();
++	struct device *parent = db8500_soc_device_init();
+ 
+ 	db8500_add_usb(parent, usb_db8500_rx_dma_cfg, usb_db8500_tx_dma_cfg);
+ 
+@@ -251,3 +257,96 @@ struct device * __init u8500_of_init_devices(void)
+ 
+ 	return parent;
+ }
++
++static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
++	/* Requires call-back bindings. */
++	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
++	/* Requires DMA and call-back bindings. */
++	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
++	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", &uart1_plat),
++	OF_DEV_AUXDATA("arm,pl011", 0x80007000, "uart2", &uart2_plat),
++	/* Requires DMA bindings. */
++	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
++	OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  &mop500_sdi0_data),
++	OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  &mop500_sdi1_data),
++	OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  &mop500_sdi2_data),
++	OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  &mop500_sdi4_data),
++	/* Requires clock name bindings. */
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e080, "gpio.1", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e000, "gpio.2", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e080, "gpio.3", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e100, "gpio.4", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e180, "gpio.5", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e000, "gpio.6", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8011e080, "gpio.7", NULL),
++	OF_DEV_AUXDATA("st,nomadik-gpio", 0xa03fe000, "gpio.8", NULL),
++	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80004000, "nmk-i2c.0", NULL),
++	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80122000, "nmk-i2c.1", NULL),
++	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80128000, "nmk-i2c.2", NULL),
++	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80110000, "nmk-i2c.3", NULL),
++	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
++	/* Requires device name bindings. */
++	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
++	/* Requires clock name and DMA bindings. */
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
++		"ux500-msp-i2s.0", &msp0_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80124000,
++		"ux500-msp-i2s.1", &msp1_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80117000,
++		"ux500-msp-i2s.2", &msp2_platform_data),
++	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
++		"ux500-msp-i2s.3", &msp3_platform_data),
++	{},
++};
++
++static const struct of_device_id u8500_local_bus_nodes[] = {
++	/* only create devices below soc node */
++	{ .compatible = "stericsson,db8500", },
++	{ .compatible = "stericsson,db8500-prcmu", },
++	{ .compatible = "simple-bus"},
++	{ },
++};
++
++static void __init u8500_init_machine(void)
++{
++	struct device *parent = NULL;
++
++	/* Pinmaps must be in place before devices register */
++	if (of_machine_is_compatible("st-ericsson,mop500"))
++		mop500_pinmaps_init();
++	else if (of_machine_is_compatible("calaosystems,snowball-a9500"))
++		snowball_pinmaps_init();
++	else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
++		hrefv60_pinmaps_init();
++
++	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
++	parent = u8500_of_init_devices();
++
++	/* automatically probe child nodes of db8500 device */
++	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
++
++	/* This board has full regulator constraints */
++	regulator_has_full_constraints();
++}
++
++static const char * u8500_dt_board_compat[] = {
++	"calaosystems,snowball-a9500",
++	"st-ericsson,hrefv60+",
++	"st-ericsson,u8500",
++	"st-ericsson,mop500",
++	NULL,
++};
++
++DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
++	.map_io		= u8500_map_io,
++	.init_irq	= ux500_init_irq,
++	/* we re-use nomadik timer here */
++	.timer		= &ux500_timer,
++	.handle_irq	= gic_handle_irq,
++	.init_machine	= u8500_init_machine,
++	.init_late	= ux500_init_late,
++	.dt_compat      = u8500_dt_board_compat,
++MACHINE_END
++
++#endif
 -- 
-Hiraku TOYOOKA
-Linux Technology Center
-Yokohama Research Laboratory
-Hitachi Ltd.
+1.7.9.5
+
