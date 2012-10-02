@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab2JBW7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 18:59:54 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:23250 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755240Ab2JBW7w (ORCPT
+	id S1756672Ab2JBXby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 19:31:54 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46098 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab2JBXbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 18:59:52 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail03.sonyusa.com;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I1432I111aIzz1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839h93fhd25hf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <506B70C7.6080001@am.sony.com>
-Date: Tue, 2 Oct 2012 15:55:03 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 2 Oct 2012 19:31:53 -0400
+Date: Tue, 2 Oct 2012 16:31:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove
+ _rcu_barrier() dependency on __stop_machine()")
+Message-ID: <20121002233138.GD2465@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
+ <20121002170149.GC2465@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
 MIME-Version: 1.0
-To: Robert Nelson <robertcnelson@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with mmc DMA on panda board in 3.6
-References: <506B69B0.2010109@am.sony.com> <CAOCHtYjLFE0aXL_ReZSdQZFJDPRW3Cx3vk4WEo9DU4g8QiF=gg@mail.gmail.com>
-In-Reply-To: <CAOCHtYjLFE0aXL_ReZSdQZFJDPRW3Cx3vk4WEo9DU4g8QiF=gg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100223-7282-0000-0000-00000D8E4ABB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 03:28 PM, Robert Nelson wrote:
-> On Tue, Oct 2, 2012 at 5:24 PM, Tim Bird <tim.bird@am.sony.com> wrote:
->> This is an early report - I'm just checking if anyone else has seen this.
->>
->> With Linux version v3.6, my PandaBoard (OMAP-based) no longer boots.  The
->> system appears to fail to initialize the mmc controller.
->>
->> The kernel log message of interest appears to be this:
->> [    1.690002] omap_hsmmc omap_hsmmc.0: unable to obtain RX DMA engine channel 6
->>
->> I can supply full kernel log messages and my .config if needed.
->>
->> I bisected the code and arrived at the following commit:
->> -------
->> commit 26b88520b80695a6fa5fd95b5d97c03f4daf87e0
->> Author: Russell King <rmk+kernel@arm.linux.org.uk>
->> Date:   Fri Apr 13 12:27:37 2012 +0100
->>
->>     mmc: omap_hsmmc: remove private DMA API implementation
->>
->>     Remove the private DMA API implementation from omap_hsmmc, making it
->>     use entirely the DMA engine API.
->>
->>     Tested-by: Tony Lindgren <tony@atomide.com>
->>     Tested-by: Venkatraman S <svenkatr@ti.com>
->>     Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
->> -------
->> The board works up until this commit.
->> After this commit, the board hangs during boot after the message:
->> [    1.852508] Waiting for root device /dev/mmcblk0p3...
->> (and some other USB and network messages, which I presume
->> are unrelated.)
->>
->> My questions are these:
->> Has anyone else had problems with the PandaBoard (or other OMAP) on 3.6?
->> Are there any related CONFIG_ variables I could change to try alternatives?
->> What should I try next to debug this?
+On Tue, Oct 02, 2012 at 11:58:36PM +0200, Jiri Kosina wrote:
+> On Tue, 2 Oct 2012, Jiri Kosina wrote:
 > 
-> Check your config, to see if these are enabled:
+> > > > > 1331e7a1bbe1f11b19c4327ba0853bee2a606543 is the first bad commit
+> > > > > commit 1331e7a1bbe1f11b19c4327ba0853bee2a606543
+> > > > > Author: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > > Date:   Thu Aug 2 17:43:50 2012 -0700
+> > > > > 
+> > > > >     rcu: Remove _rcu_barrier() dependency on __stop_machine()
+> > > > >     
+> > > > >     Currently, _rcu_barrier() relies on preempt_disable() to prevent
+> > > > >     any CPU from going offline, which in turn depends on CPU hotplug's
+> > > > >     use of __stop_machine().
+> > > > >     
+> > > > >     This patch therefore makes _rcu_barrier() use get_online_cpus() to
+> > > > >     block CPU-hotplug operations.  This has the added benefit of removing
+> > > > >     the need for _rcu_barrier() to adopt callbacks:  Because CPU-hotplug
+> > > > >     operations are excluded, there can be no callbacks to adopt.  This
+> > > > >     commit simplifies the code accordingly.
+> > > > >     
+> > > > >     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > >     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > > > > ==
+> > > > > 
+> > > > > is causing lockdep to complain (see the full trace below). I haven't yet 
+> > > > > had time to analyze what exactly is happening, and probably will not have 
+> > > > > time to do so until tomorrow, so just sending this as a heads-up in case 
+> > > > > anyone sees the culprit immediately.
+> > > > 
+> > > > Hmmm...  Does the following patch help?  It swaps the order in which
+> > > > rcu_barrier() acquires the hotplug and rcu_barrier locks.
+> > > 
+> > > It changed the report slightly (see for example the change in possible 
+> > > unsafe locking scenario, rcu_sched_state.barrier_mutex vanished and it's 
+> > > now directly about cpu_hotplug.lock). With the patch applied I get
+> > > 
+> > > 
+> > > 
+> > > ======================================================
+> > > [ INFO: possible circular locking dependency detected ]
+> > > 3.6.0-03888-g3f99f3b #145 Not tainted
+> > 
+> > And it really seems valid. 
+
+Yep, it sure is.  I wasn't getting the full picture earlier, so please
+accept my apologies for the bogus patch.
+
+> > kmem_cache_destroy() calls rcu_barrier() with slab_mutex locked, which 
+> > introduces slab_mutex -> cpu_hotplug.lock dependency (through 
+> > rcu_barrier() -> _rcu_barrier() -> get_online_cpus()).
+> > 
+> > On the other hand, _cpu_up() acquires cpu_hotplug.lock through 
+> > cpu_hotplug_begin(), and with this lock held cpuup_callback() notifier 
+> > gets called, which acquires slab_mutex. This gives the reverse dependency, 
+> > i.e. deadlock scenario is valid one.
+> > 
+> > 1331e7a1bbe1f11b19c4327ba0853bee2a606543 is triggering this, because 
+> > before that, there was no slab_mutex -> cpu_hotplug.lock dependency.
+> > 
+> > Simply put, the commit causes get_online_cpus() to be called with 
+> > slab_mutex held, which is invalid.
 > 
-> CONFIG_DMADEVICES=y
-> CONFIG_DMA_OMAP=y
+> Oh, and it seems to be actually triggering in real.
+> 
+> With HEAD being 974a847e00c, machine suspends nicely. With 974a847e00c + 
+> your patch, changing the order in which rcu_barrier() acquires hotplug and 
+> rcu_barrier locks, the machine hangs 100% reliably during suspend, which 
+> very likely actually is the deadlock described above.
 
-They were not.  After enabling them, things work as expected.
+Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug
+notifier, which doesn't sit so well with rcu_barrier() trying to exclude
+CPU hotplug events.  I could go back to the old approach, but it is
+significantly more complex.  I cannot say that I am all that happy
+about anyone calling rcu_barrier() from a CPU hotplug notifier because
+it doesn't help CPU hotplug latency, but that is a separate issue.
 
-Thanks very much!! :-)
+But the thing is that rcu_barrier()'s assumptions work just fine if either
+(1) it excludes hotplug operations or (2) if it is called from a hotplug
+notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
+is executing.  So the right way to resolve this seems to be to do the
+get_online_cpus() only if rcu_barrier() is -not- executing in the context
+of a hotplug notifier.  Should be fixable without too much hassle...
 
-I've been doing the following on a mainline kernel to generate the
-.config for my panda board:
-
-make omap2plus_defconfig
-ttc set_config CONFIG_USB_EHCI_HCD=y CONFIG_MFD_OMAP_USB_HOST=y CONFIG_USB_EHCI_ROOT_HUB_TT=N CONFIG_USB_EHCI_TT_NEWSCHED=y CONFIG_USB_EHCI_HCD_OMAP=y CONFIG_USB_EHCI_MV=n
-ttc set_config CONFIG_USB_NET_SMSC95XX=y CONFIG_USB_SISUSBVGA=n
-make oldconfig
-
-I've kind of lost track of the preferred method of doing board-specific configurations,
-since the big defconfig purge of 2011.  I think I need to go back to the drawing board
-on my automatic config-setting.
-
-In any event, thanks again.
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
+							Thanx, Paul
 
