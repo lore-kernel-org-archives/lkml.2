@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2JBTMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 15:12:16 -0400
-Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:59768 "EHLO
-	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544Ab2JBTMO (ORCPT
+	id S1751981Ab2JBTRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 15:17:19 -0400
+Received: from 3.mo3.mail-out.ovh.net ([46.105.44.175]:33722 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751204Ab2JBTRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 15:12:14 -0400
+	Tue, 2 Oct 2012 15:17:17 -0400
+X-Greylist: delayed 1150 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Oct 2012 15:17:17 EDT
+Date: Tue, 2 Oct 2012 20:56:51 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 07/17] ARM: at91: skip at91_io_desc definition for NOMMU
+Message-ID: <20121002185651.GC5117@game.jcrosoft.org>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+ <1349195816-2225-8-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20121002123856.GX4360@opensource.wolfsonmicro.com>
-References: <1349089282-22105-1-git-send-email-sourav.poddar@ti.com>
-	<CAAe_U6+zEGuwMC1yn7O=LXE6PhPvPc2i7DCF0EAprkE8s+-iEw@mail.gmail.com>
-	<20121001114454.GA9170@sirena.org.uk>
-	<CAAe_U6JX9QDWvWA3KH7E9sOv0EHGkozVONuXDgn+a2MZ4GTE7Q@mail.gmail.com>
-	<20121001120907.GK4360@opensource.wolfsonmicro.com>
-	<CAAe_U6K6nAjsZUOk2rBFweWHtJmcLF7EJDpu9O6FXrq3tzv3yg@mail.gmail.com>
-	<20121002123856.GX4360@opensource.wolfsonmicro.com>
-Date: Wed, 3 Oct 2012 00:42:12 +0530
-Message-ID: <CAAe_U6LFOzSe9PDnFhjk4G5vXjoz3QSBM99NL4okjq2s5V0t3Q@mail.gmail.com>
-Subject: Re: [PATCHv3 1/4] mfd: smsc: Add support for smsc gpio io/keypad driver
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        b-cousson@ti.com, balbi@ti.com, santosh.shilimkar@ti.com,
-        sameo@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349195816-2225-8-git-send-email-arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 4144156082652293892
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 18:36 Tue 02 Oct     , Arnd Bergmann wrote:
+> On NOMMU systems, we do cannot remap the MMIO space, so the
+> definition of at91_io_desc is unused.
+> 
+> Without this patch, building at91x40_defconfig results in:
+> 
+> arch/arm/mach-at91/setup.c:90:24: warning: 'at91_io_desc' defined but not used [-Wunused-variable]
+I prefer a __maybe_unused on the struct so the compilator will just drop it
 
-On Tue, Oct 2, 2012 at 6:08 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Oct 01, 2012 at 08:54:23PM +0530, ABRAHAM, KISHON VIJAY wrote:
->> On Mon, Oct 1, 2012 at 5:39 PM, Mark Brown
->
->> > Why would that be helpful?  Most platforms don't support DT at all, and
->
->> I'm not sure how to put it correctly. All I'm trying to tell is mfd is
->> a framework that exposes a set of API's to create and remove a device
->> among others. If a mfd child device is not created using mfd API,
->> it'll be unfair to expect that child be removed properly using mfd
->> API. Like in this patch, the device is created using
->> of_platform_populate (not a mfd API) but is removed using
->> mfd_remove_devices (mfd API) [which should result in an abort].
->
-> That doesn't sound terribly clever, no, though it's not immediately
-> clear to me if the non-clever bit is using mfd_remove_devices() or
-> of_platform_populate().
->
->> This means mfd framework does not have an API to create a device from
->> dt data or so do I think since of_platform_populate() is used. Thats
->> why I suggested the idea of extending mfd_add_devices() (or adding a
->> new API in mfd framework) to create child devices from dt data so that
->> we'll have API's in mfd framework to both create and delete a device.
->
-> The trouble that always exists with representing MFD children in DT is
-> that unless you've got a usefully reusable IP block which is clearly
-> separate from the chip integration you end up essentially just dumping
-> the Linux data structures into DT which often doesn't leave you with
-> something which describes the hardware.
-
-indeed!
-
-Thanks
-Kishon
+Best Regards,
+J.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> ---
+>  arch/arm/mach-at91/setup.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+> index 944bffb..b9fdba0 100644
+> --- a/arch/arm/mach-at91/setup.c
+> +++ b/arch/arm/mach-at91/setup.c
+> @@ -87,12 +87,14 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+>  	iotable_init(desc, 1);
+>  }
+>  
+> +#ifdef CONFIG_MMU
+>  static struct map_desc at91_io_desc __initdata = {
+>  	.virtual	= AT91_VA_BASE_SYS,
+>  	.pfn		= __phys_to_pfn(AT91_BASE_SYS),
+>  	.length		= SZ_16K,
+>  	.type		= MT_DEVICE,
+>  };
+> +#endif
+>  
+>  static void __init soc_detect(u32 dbgu_base)
+>  {
+> -- 
+> 1.7.10
+> 
