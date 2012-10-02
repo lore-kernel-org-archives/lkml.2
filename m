@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab2JBAKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:10:55 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:38739 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2JBAKe (ORCPT
+	id S1752232Ab2JBAOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:14:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31307 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab2JBANx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:10:34 -0400
-From: Nix <nix@esperi.org.uk>
-To: Pierre Beck <mail@pierre-beck.de>
-Cc: Chris Murphy <lists@colorremedies.com>,
-        Linux RAID <linux-raid@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: Areca hardware RAID / first-ever SCSI bus reset: am I about to lose this disk controller?
-References: <87mx0lsv4d.fsf@spindle.srvr.nix>
-	<FCFB407F-9FED-4B4E-B5D9-62AB363050D2@colorremedies.com>
-	<87r4pslpau.fsf@spindle.srvr.nix> <506A0BFB.60606@pierre-beck.de>
-Emacs: a Lisp interpreter masquerading as ... a Lisp interpreter!
-Date: Tue, 02 Oct 2012 01:10:12 +0100
-In-Reply-To: <506A0BFB.60606@pierre-beck.de> (Pierre Beck's message of "Mon,
-	01 Oct 2012 23:33:15 +0200")
-Message-ID: <87mx057mzf.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=4 Fuz1=4 Fuz2=4
+	Mon, 1 Oct 2012 20:13:53 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=xeowkCQj3JcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=8TvKTV2g7BAA:10 a=VwQbUJbxAAAA:8 a=LFh7HCCk25KrJYzcJ_EA:9 a=PUjeQqilurYA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349136831.22822.133.camel@gandalf.local.home>
+Subject: [PATCH v2] lib tools traceevent: Add back pevent assignment in
+ __pevent_parse_format()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 01 Oct 2012 20:13:51 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 Oct 2012, Pierre Beck stated:
-> On 23.09.2012 17:42, Nix wrote:
->> On 19 Sep 2012, Chris Murphy outgrape:
->>
->>> On Sep 19, 2012, at 12:52 PM, Nix wrote:
->>>
->>>> So I have this x86-64 server running Linux 3.5.1 with a SATA-on-PCIe
->>>> Areca 1210 hardware RAID-5 controller
->>> Did you find this? Same controller family. Weird that this just shows
->>> up now, but perhaps instead of it being "bad hardware" out the gate,
->>> something's happened to it and now it's failing as you suspect.
->> Hm, it's possible I suppose. Just as possible that a disk is dying.
->>
->>
->> It looks to have been a one-off transient -- no recurrence yet, touch
->> wood :)
->>
-> Check the SMART values of the disks if possible. Watch for command
-> timeouts and the usual bad sector stuff. I've had similar issues with
-> Adaptec controllers. Bad disks seem to cause havoc. The outstanding
-> operation isn't answered within [SCSI Timeout, default 30,
-> /sys/block/sdX/device/timeout] seconds, so Linux performs a loop
-> reset, eventually resetting the controller. That means between 60 and
-> 120 seconds of zero I/O operation, varying between controllers and
-> disk array sizes. It's particularly annoying when in RAID and the disk
-> could've simply been kicked within few seconds. Something that needs
-> improvement IMHO.
+Even though with the change of commit commit 2b29175 "tools lib traceevent:
+Carve out events format parsing routine", allowed __pevent_parse_format() to
+parse an event without the need of a pevent handler, the event still needs to
+assign the pevent handed to it.
 
-The problem has not recurred in more than three weeks. SMART says no
-problems... so I guess the controller dropped off the bus for some
-reason. Probably some sort of subtle firmware bug or something. (There
-are hints in the driver that such bugs exist, hence the enormous amount
-of code the driver devotes to resetting the thing when it goes silent.)
+There's no problem with assigning it if the pevent is NULL, as the event->pevent
+would be NULL without the assignment. But function parsing handlers may be
+assigned to the pevent handler to help in parsing the event. If there's no
+pevent then there would not be any function handlers, but if the pevent
+isn't assigned first before parsing the event, it wont honor the function
+handlers that were assigned.
 
--- 
-NULL && (void)
+Worse yet, the current code crashes if an event has a function that it tries
+to parse. For example:
+
+ # perf record -e scsi:scsi_dispatch_cmd_timeout
+ Segmentation fault (core dumped)
+
+This happens because the scsi_dispatch_cmd_timeout event format has the following:
+
+  scsi_trace_parse_cdb(p, __get_dynamic_array(cmnd), REC->cmd_len)
+
+which hasn't been defined by the pevent code.
+
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 47264b4..f2989c5 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2602,6 +2602,9 @@ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+ 	struct pevent_function_handler *func;
+ 
++	if (!pevent)
++		return NULL;
++
+ 	for (func = pevent->func_handlers; func; func = func->next) {
+ 		if (strcmp(func->name, func_name) == 0)
+ 			break;
+@@ -4938,6 +4941,9 @@ enum pevent_errno __pevent_parse_format(struct event_format **eventp,
+ 		goto event_alloc_failed;
+ 	}
+ 
++	/* Add pevent to event so that it can be referenced */
++	event->pevent = pevent;
++
+ 	ret = event_read_format(event);
+ 	if (ret < 0) {
+ 		ret = PEVENT_ERRNO__READ_FORMAT_FAILED;
+@@ -5041,9 +5047,6 @@ enum pevent_errno pevent_parse_event(struct pevent *pevent, const char *buf,
+ 	if (event == NULL)
+ 		return ret;
+ 
+-	/* Add pevent to event so that it can be referenced */
+-	event->pevent = pevent;
+-
+ 	if (add_event(pevent, event)) {
+ 		ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 		goto event_add_failed;
+
+
+
+
