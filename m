@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab2JBVmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:42:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53242 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab2JBVmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:42:12 -0400
-Date: Tue, 2 Oct 2012 14:42:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <len.brown@intel.com>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        <wency@cn.fujitsu.com>
-Subject: Re: [PATCH 0/2] memory-hotplug : notification of memoty block's
- state
-Message-Id: <20121002144211.b60881a8.akpm@linux-foundation.org>
-In-Reply-To: <506AA4E2.7070302@jp.fujitsu.com>
-References: <506AA4E2.7070302@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932458Ab2JBVnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:43:41 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33196 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932356Ab2JBVnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 17:43:39 -0400
+Date: Tue, 2 Oct 2012 14:43:27 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexander Graf <agraf@suse.de>, linux-nfs@vger.kernel.org,
+        Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML List <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, anton@samba.org,
+        skinsbursky@parallels.com, bfields@redhat.com,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
+Message-ID: <20121002214327.GA29218@linux.vnet.ibm.com>
+References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
+ <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
+ <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
+ <20120928151043.GA19102@fieldses.org>
+ <2A52FC96-148C-4F7A-9950-E152E0C6698D@suse.de>
+ <1349139509.3847.2.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349139509.3847.2.camel@pasglop>
+X-Operating-System: Linux 3.2.0-31-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12100221-8974-0000-0000-00000ED56779
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00179273; UDB=6.00040600; UTC=2012-10-02
+ 21:43:37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012 17:25:06 +0900
-Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
+Hi Ben,
 
-> remove_memory() offlines memory. And it is called by following two cases:
+On 02.10.2012 [10:58:29 +1000], Benjamin Herrenschmidt wrote:
+> On Mon, 2012-10-01 at 16:03 +0200, Alexander Graf wrote:
+> > Phew. Here we go :). It looks to be more of a PPC specific problem
+> > than it appeared as at first:
 > 
-> 1. echo offline >/sys/devices/system/memory/memoryXX/state
-> 2. hot remove a memory device
+> Ok, so I suspect the problem is the pushing down of the locks which
+> breaks with iommu backends that have a separate flush callback. In
+> that case, the flush moves out of the allocator lock.
 > 
-> In the 1st case, the memory block's state is changed and the notification
-> that memory block's state changed is sent to userland after calling
-> offline_memory(). So user can notice memory block is changed.
-> 
-> But in the 2nd case, the memory block's state is not changed and the
-> notification is not also sent to userspcae even if calling offline_memory().
-> So user cannot notice memory block is changed.
-> 
-> We should also notify to userspace at 2nd case.
+> Now we do call flush before we return, still, but it becomes racy
+> I suspect, but somebody needs to give it a closer look. I'm hoping
+> Anton or Nish will later today.
 
-These two little patches look reasonable to me.
+Started looking into this. If your suspicion were accurate, wouldn't the
+bisection have stopped at 0e4bc95d87394364f408627067238453830bdbf3
+("powerpc/iommu: Reduce spinlock coverage in iommu_alloc and
+iommu_free")?
 
-There's a lot of recent activity with memory hotplug!  We're in the 3.7
-merge window now so it is not a good time to be merging new material. 
-Also there appear to be two teams working on it and it's unclear to me
-how well coordinated this work is?
+Alex, the error is reproducible, right? Does it go away by reverting
+that commit against mainline? Just trying to narrow down my focus.
 
-However these two patches are pretty simple and do fix a problem, so I
-added them to the 3.7 MM queue.
+Thanks,
+Nish
+
