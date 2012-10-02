@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2JBRLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:11:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264Ab2JBRLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:11:41 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+55aFyu9rJH0x9eAF7A=m64nSCRtcPxdE4MR3+ZSd8qxEbwFw@mail.gmail.com>
-References: <CA+55aFyu9rJH0x9eAF7A=m64nSCRtcPxdE4MR3+ZSd8qxEbwFw@mail.gmail.com> <13458.1349122608@warthog.procyon.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: dhowells@redhat.com, arnd@arndb.de, hpa@zytor.com,
-        alan@lxorguk.ukuu.org.uk, fengguang.wu@intel.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate the User API from the kernel headers
-Date: Tue, 02 Oct 2012 18:11:23 +0100
-Message-ID: <8455.1349197883@warthog.procyon.org.uk>
+	id S1754764Ab2JBRQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:16:50 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57736 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab2JBRQt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 13:16:49 -0400
+Message-ID: <506B217D.1000003@wwwdotorg.org>
+Date: Tue, 02 Oct 2012 11:16:45 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 17/17] ARM: soc: dependency warnings for errata
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-18-git-send-email-arnd@arndb.de>
+In-Reply-To: <1349195816-2225-18-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On 10/02/2012 10:36 AM, Arnd Bergmann wrote:
+> The PL310_ERRATA_753970 and ARM_ERRATA_764369 symbols only make sense
+> when the base features for them are enabled, so select them
+> conditionally in Kconfig to avoid warnings like:
+> 
+> warning: (UX500_SOC_COMMON) selects PL310_ERRATA_753970 which has unmet direct dependencies (CACHE_PL310)
+> warning: (ARCH_TEGRA_2x_SOC && ARCH_TEGRA_3x_SOC && UX500_SOC_COMMON) selects ARM_ERRATA_764369 which has unmet direct dependencies (CPU_V7 && SMP)
 
-> At the KS you said you'd be able to split this up into a preparatory
-> patch. That doesn't seem to have happened.
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-I've been generating a tag at the preparatory patch set point for quite a
-while now.  If you look in the tags list on:
 
-	http://git.infradead.org/users/dhowells/linux-headers.git
-
-you will see a number of tags of the form:
-
-	uapi-prep-YYYYMMDD
-
-that's the preparatory set if you want to take just that.
-
-Yesterday's preparatory set is at tag:
-
-	uapi-prep-20121001
-
-See: http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/tags/uapi-prep-20121001
-
-I have just done another regeneration so that arm64 is covered too.  That
-has now been posted under:
-
-	uapi-post-split-20121001	- The complete set
-	uapi-prep-20121002		- The preparatory set
-
-I will send you a pull request for just the preparatory set when I have tried
-some test builds on it and when gitweb has finally caught up.
-
-David
