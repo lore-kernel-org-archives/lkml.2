@@ -1,86 +1,381 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2JBO54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:57:56 -0400
-Received: from nm18.bullet.mail.ac4.yahoo.com ([98.139.52.215]:46137 "HELO
-	nm18.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751247Ab2JBO5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:57:48 -0400
-X-Yahoo-Newman-Id: 874916.12466.bm@omp1005.access.mail.mud.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: rySDBIYVM1nn1WYsYeO6MRmAVpCN_Yjy5Gxi5MOJJDDniu7
- YOr.Z2VA96h_0fIPex_NZBhFltqkVeS8XvldhsjRJMjHTWDjxjqUS_F1kdFT
- 9NalYaYuOmTsD51UYjqUVaBczRl.69NhmBlzAoZWa5l.R6sxZOG5F1lCTJEZ
- uFG3GlZafrz_oNWuCoqU694g_T1qOe.pJcUV3lu7KYIX7ignDALdqQpA9OTS
- E6HcSqGrkqUhkdP2LATohnVv2XoQ8sXP7Ldpbfubn2uODz13nYldwktwZO63
- HCJdfbOtnurC3SrEJByE9gZcxiq2lzkp89JO4.fhv6okmXwFr5REVE1_a6AQ
- raj5zaDdmvsudOZ8HWbadXMRAosTmA2WK0XV.QkfxjDU5JZutIYlET0RNU7P
- aV5L85y9FjGi71tH2lHumKdyX.NuWO2FkYW.VhPAixx0lg4PFUjdBwXulybs
- gmZdGoT_nOfVglcCGYb7sT2QshUdp370JIv1Ti_c8nkkYmoZVWGVNReK3QYE
- NkaqSfKj0TgtzU1BCkRKDwE55QzmK2SgIc0QCPi4-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <506B00EB.400@att.net>
-Date: Tue, 02 Oct 2012 09:57:47 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	id S1753382Ab2JBO6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:58:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247Ab2JBO6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:58:47 -0400
+Date: Tue, 2 Oct 2012 16:58:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCHv2] perf x86_64: Fix rsp register for system call fast path
+Message-ID: <20121002145815.GH6379@krava.brq.redhat.com>
+References: <1349112712-2590-1-git-send-email-jolsa@redhat.com>
+ <1349174644.7780.23.camel@twins>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/10] bug.h: Make BUILD_BUG_ON generate compile-time error
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-9-git-send-email-daniel.santos@pobox.com> <CANN689G9vurJj3+MUygn3gk6LCYr9E-eMFp+22Wf6Vgo22HRKA@mail.gmail.com>
-In-Reply-To: <CANN689G9vurJj3+MUygn3gk6LCYr9E-eMFp+22Wf6Vgo22HRKA@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349174644.7780.23.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 07:48 PM, Michel Lespinasse wrote:
-> On Fri, Sep 28, 2012 at 4:20 PM, Daniel Santos <daniel.santos@pobox.com> wrote:
->> Negative sized arrays wont create a compile-time error in some cases
->> starting with gcc 4.4 (e.g., inlined functions), but gcc 4.3 introduced
->> the error function attribute that will.  This patch modifies
->> BUILD_BUG_ON to behave like BUILD_BUG already does, using the error
->> function attribute so that you don't have to build the entire kernel to
->> discover that you have a problem, and then enjoy trying to track it down
->> from a link-time error.
-> Few other alternatives I've seen used in other projects (from memory,
-> so I may have gotten the details wrong):
->
-> 1) if (condition) { __asm__(".error \"Some error message\""); }
-> 2) switch (0) {
->     case 0: break;
->     case !condition: break;
->     }
->     (fails to compile if !condition evaluates to 0)
->
-> If you can get the first suggestion to work it'd be nice, as you could
-> get some descriptive error message (you can add the line number there
-> too).
-Thanks for this info.  I'm still pretty noob-ish in modern assembly, but
-is the .error directive available on all supported assemblers?  It
-appears to have been added to GNU binutils in version 2.16 from what I
-can tell (http://sourceware.org/binutils/docs-2.16/as/Error.html).  If
-it is supported, I would definitely prefer that one as a fallback option.
+On Tue, Oct 02, 2012 at 12:44:04PM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-10-01 at 19:31 +0200, Jiri Olsa wrote:
+> > @@ -696,7 +696,7 @@ struct perf_branch_stack {
+> >  
+> >  struct perf_regs_user {
+> >         __u64           abi;
+> > -       struct pt_regs  *regs;
+> > +       struct pt_regs  regs;
+> >  };
+> 
+> That's somewhat unfortunate but unavoidable I guess, can't go modify pt_regs. 
+> 
+> 
+> > +               if (uregs->abi)
+> > +                       stack_size = perf_sample_ustack_size(sample_stack_user,
+> > +                                                            header->size,
+> > +    
+> 
+> just a style nit, please add {} for all multi-line single stmt
+> constructs like that, even though not strictly required.
+> 
+> It reduces the possible confusion between multi-line and multi-statement
+> and reads easier.
 
-I did a search on sources for the regex \.error\s+\\?" and didn't turn
-up anything outside of arch/, so I'm guessing this may not be completely
-portable.  Note also that these BUILD_BUG* macros do emit an error
-message on gcc 4.3+ using __attribute__((error("msg"))).
+fixed, new version is attached
 
-Daniel
+thanks,
+jirka
+
+
+---
+The user level rsp register value attached to the sample is crucial
+for proper user stack dump and for proper dwarf backtrace post unwind.
+
+But currently, if the event happens within the system call fast path,
+we don't store proper rsp register value in the event sample.
+
+The reason is that the syscall fast path stores just minimal set of
+registers to the task's struct pt_regs area. The rsp itself is stored
+in per cpu variable 'old_rsp'.
+
+This patch fixes this rsp register value based on the:
+  - 'old_rsp' per cpu variable
+    (updated within the syscall fast path)
+  - guess on how we got into the kernel - syscall or interrupt
+    (via pt_regs::orig_ax value)
+    We can use 'old_rsp' value only if we are inside the syscall.
+    Thanks to Oleg who outlined this solution!
+
+Above guess introduces 2 race windows (fully desccribed within the patch
+comments), where we might get incorrect user level rsp value stored in
+sample. However, in comparison with system call fast path length, we still
+get much more precise rsp values than without the patch.
+
+Note that as we are now changing the pt_regs, we use statically allocated
+pt_regs inside the sample data instead of task pt_regs pointer.
+
+Example of syscall fast path dwarf backtrace unwind:
+(perf record -e cycles -g dwarf ls; perf report --stdio)
+
+Before the patch applied:
+
+  --23.76%-- preempt_schedule_irq
+             retint_kernel
+             tty_ldisc_deref
+             tty_write
+             vfs_write
+             sys_write
+             system_call_fastpath
+             __GI___libc_write
+             0x6
+
+With the patch applied:
+
+  --12.37%-- finish_task_switch
+             __schedule
+             preempt_schedule
+             queue_work
+             schedule_work
+             tty_flip_buffer_push
+             pty_write
+             n_tty_write
+             tty_write
+             vfs_write
+             sys_write
+             system_call_fastpath
+             __GI___libc_write
+             _IO_file_write@@GLIBC_2.2.5
+             new_do_write
+             _IO_do_write@@GLIBC_2.2.5
+             _IO_file_overflow@@GLIBC_2.2.5
+             print_current_files
+             main
+             __libc_start_main
+             _start
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   47 ++++++++++++++++++++++
+ include/linux/perf_event.h       |    6 +-
+ kernel/events/core.c             |   81 +++++++++++++++++++------------------
+ 3 files changed, 92 insertions(+), 42 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 915b876..11d62ff 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -34,6 +34,7 @@
+ #include <asm/timer.h>
+ #include <asm/desc.h>
+ #include <asm/ldt.h>
++#include <asm/syscall.h>
+ 
+ #include "perf_event.h"
+ 
+@@ -1699,6 +1700,52 @@ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+ 	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
+ }
+ 
++#ifdef CONFIG_X86_64
++__weak int arch_sample_regs_user(struct pt_regs *oregs, struct pt_regs *regs)
++{
++	int kernel = !user_mode(regs);
++
++	if (kernel) {
++		if (current->mm)
++			regs = task_pt_regs(current);
++		else
++			regs = NULL;
++	}
++
++	if (regs) {
++		memcpy(oregs, regs, sizeof(*regs));
++
++		/*
++		 * If the perf event was triggered within the kernel code
++		 * path, then it was either syscall or interrupt. While
++		 * interrupt stores almost all user registers, the syscall
++		 * fast path does not. At this point we can at least set
++		 * rsp register right, which is crucial for dwarf unwind.
++		 *
++		 * The syscall_get_nr function returns -1 (orig_ax) for
++		 * interrupt, and positive value for syscall.
++		 *
++		 * We have two race windows in here:
++		 *
++		 * 1) Few instructions from syscall entry until old_rsp is
++		 *    set.
++		 *
++		 * 2) In syscall/interrupt path from entry until the orig_ax
++		 *    is set.
++		 *
++		 * Above described race windows are fractional opposed to
++		 * the syscall fast path, so we get much better results
++		 * fixing rsp this way.
++		 */
++		if (kernel && (syscall_get_nr(current, regs) >= 0))
++			oregs->sp = this_cpu_read(old_rsp);
++
++	}
++
++	return regs ? 1 : 0;
++}
++#endif
++
+ /*
+  * callchain support
+  */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 599afc4..451dcc5 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -696,7 +696,7 @@ struct perf_branch_stack {
+ 
+ struct perf_regs_user {
+ 	__u64		abi;
+-	struct pt_regs	*regs;
++	struct pt_regs	regs;
+ };
+ 
+ struct task_struct;
+@@ -1190,8 +1190,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->raw  = NULL;
+ 	data->br_stack = NULL;
+ 	data->period = period;
+-	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+-	data->regs_user.regs = NULL;
++	/* Sets abi to PERF_SAMPLE_REGS_ABI_NONE. */
++	memset(&data->regs_user, 0, sizeof(data->regs_user));
+ 	data->stack_user_size = 0;
+ }
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7b9df35..bfe9b42 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3780,8 +3780,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+ 	}
+ }
+ 
+-static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+-				  struct pt_regs *regs)
++__weak int arch_sample_regs_user(struct pt_regs *oregs, struct pt_regs *regs)
+ {
+ 	if (!user_mode(regs)) {
+ 		if (current->mm)
+@@ -3790,10 +3789,19 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+ 			regs = NULL;
+ 	}
+ 
+-	if (regs) {
+-		regs_user->regs = regs;
+-		regs_user->abi  = perf_reg_abi(current);
+-	}
++	if (regs)
++		memcpy(oregs, regs, sizeof(*regs));
++
++	return regs ? 1 : 0;
++}
++
++static int perf_sample_regs_user(struct perf_regs_user *regs_user,
++				 struct pt_regs *regs)
++{
++	if (arch_sample_regs_user(&regs_user->regs, regs))
++		regs_user->abi = perf_reg_abi(current);
++
++	return regs_user->abi;
+ }
+ 
+ /*
+@@ -3819,10 +3827,6 @@ perf_sample_ustack_size(u16 stack_size, u16 header_size,
+ {
+ 	u64 task_size;
+ 
+-	/* No regs, no stack pointer, no dump. */
+-	if (!regs)
+-		return 0;
+-
+ 	/*
+ 	 * Check if we fit in with the requested stack size into the:
+ 	 * - TASK_SIZE
+@@ -3854,33 +3858,30 @@ perf_sample_ustack_size(u16 stack_size, u16 header_size,
+ 
+ static void
+ perf_output_sample_ustack(struct perf_output_handle *handle, u64 dump_size,
+-			  struct pt_regs *regs)
++			  struct perf_regs_user *uregs)
+ {
+-	/* Case of a kernel thread, nothing to dump */
+-	if (!regs) {
+-		u64 size = 0;
+-		perf_output_put(handle, size);
+-	} else {
++	/*
++	 * We dump:
++	 * static size
++	 *   - the size requested by user or the best one we can fit
++	 *     in to the sample max size
++	 *   - zero (and final data) if there's nothing to dump
++	 * data
++	 *   - user stack dump data
++	 * dynamic size
++	 *   - the actual dumped size
++	 */
++
++	/* Static size. */
++	perf_output_put(handle, dump_size);
++
++	if (dump_size) {
+ 		unsigned long sp;
+ 		unsigned int rem;
+ 		u64 dyn_size;
+ 
+-		/*
+-		 * We dump:
+-		 * static size
+-		 *   - the size requested by user or the best one we can fit
+-		 *     in to the sample max size
+-		 * data
+-		 *   - user stack dump data
+-		 * dynamic size
+-		 *   - the actual dumped size
+-		 */
+-
+-		/* Static size. */
+-		perf_output_put(handle, dump_size);
+-
+ 		/* Data. */
+-		sp = perf_user_stack_pointer(regs);
++		sp = perf_user_stack_pointer(&uregs->regs);
+ 		rem = __output_copy_user(handle, (void *) sp, dump_size);
+ 		dyn_size = dump_size - rem;
+ 
+@@ -4164,7 +4165,7 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		if (abi) {
+ 			u64 mask = event->attr.sample_regs_user;
+ 			perf_output_sample_regs(handle,
+-						data->regs_user.regs,
++						&data->regs_user.regs,
+ 						mask);
+ 		}
+ 	}
+@@ -4172,7 +4173,7 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_STACK_USER)
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+-					  data->regs_user.regs);
++					  &data->regs_user);
+ }
+ 
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -4229,9 +4230,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		/* regs dump ABI info */
+ 		int size = sizeof(u64);
+ 
+-		perf_sample_regs_user(&data->regs_user, regs);
+-
+-		if (data->regs_user.regs) {
++		if (perf_sample_regs_user(&data->regs_user, regs)) {
+ 			u64 mask = event->attr.sample_regs_user;
+ 			size += hweight64(mask) * sizeof(u64);
+ 		}
+@@ -4247,14 +4246,18 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		 * up the rest of the sample size.
+ 		 */
+ 		struct perf_regs_user *uregs = &data->regs_user;
+-		u16 stack_size = event->attr.sample_stack_user;
++		u64 sample_stack_user = event->attr.sample_stack_user;
++		u16 stack_size = 0;
+ 		u16 size = sizeof(u64);
+ 
+ 		if (!uregs->abi)
+ 			perf_sample_regs_user(uregs, regs);
+ 
+-		stack_size = perf_sample_ustack_size(stack_size, header->size,
+-						     uregs->regs);
++		if (uregs->abi) {
++			stack_size = perf_sample_ustack_size(sample_stack_user,
++							     header->size,
++							     &uregs->regs);
++		}
+ 
+ 		/*
+ 		 * If there is something to dump, add space for the dump
+-- 
+1.7.7.6
+
