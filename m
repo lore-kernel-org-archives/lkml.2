@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2JBTtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 15:49:08 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.104]:35701 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab2JBTtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 15:49:03 -0400
-Date: Tue, 02 Oct 2012 21:48:59 +0200
-Message-ID: <20121002214859.Horde.WGw4bbuWis5Qa0Ur8aFhtEA@webmail.df.eu>
-From: Stephan Schreiber <info@fs-driver.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-ia64@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, 679545@bugs.debian.org,
-        jrnieder@gmail.com
-Subject: Re: [RFC/PATCH v2] ia64, SR870, EFI bug breaks ata_piix,
- uninitialized ICH4 IDE EXBAR mem resource
-References: <20120916183914.Horde._TGALdjz9kRQVgCy6ATxxJA@webmail.df.eu>
- <20120917115619.13d3a3cb@pyramind.ukuu.org.uk>
- <20120920161603.Horde.aF7BBcL8999QWyUjk2AmsNA@webmail.df.eu>
- <CAErSpo6+WYE6wnj4CcKVidNHmg-oGH9SBsvg3QP9syC+vo09HQ@mail.gmail.com>
- <20120924190912.Horde.qznUIqGZi1VQYJO46HeGkwA@webmail.df.eu>
- <20120924235457.GA31372@google.com>
- <20120930000934.Horde.grdOKKGZi1VQZ3GeI_YW9ZA@webmail.df.eu>
- <CAErSpo4ErJsp5pWNLsu3x4YL9ZrtxHfk0tkYL7hZaY5TmMtH+A@mail.gmail.com>
-In-Reply-To: <CAErSpo4ErJsp5pWNLsu3x4YL9ZrtxHfk0tkYL7hZaY5TmMtH+A@mail.gmail.com>
-User-Agent: Internet Messaging Program (IMP) H4 (5.0.19)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed; DelSp=Yes
+	id S1754879Ab2JBTu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 15:50:58 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35336 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754177Ab2JBTu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 15:50:57 -0400
+Date: Tue, 2 Oct 2012 12:50:42 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121002195042.GA16087@www.outflux.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Df-Sender: aW5mb0Bmcy1kcml2ZXIub3Jn
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks a lot for testing this!  I'll fix up this typo and work on
-> getting something like this merged.
+This config item has not carried much meaning for a while now and is
+almost always enabled by default. As agreed during the Linux kernel
+summit, it should be removed. As a first step, remove it from being
+listed, and default it to on. Once it has been removed from all
+subsystem Kconfigs, it will be dropped entirely.
 
-Thank you very much!
-If you want me to test anything, don't hesitate to contact me.
+CC: Greg KH <gregkh@linuxfoundation.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Serge Hallyn <serge.hallyn@canonical.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+
+This is the first of a series of 202 patches removing EXPERIMENTAL from
+all the Kconfigs in the tree. Should I send them all to lkml (with all
+the associated CCs), or do people want to cherry-pick changes from my
+tree? I don't want to needlessly flood the list.
+
+http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
+
+I figure this patch can stand alone to at least make EXPERIMENTAL go
+away from the menus, and give us a taste of what the removal would do
+to builds.
+
+Thanks,
+
+-Kees
+
+---
+ init/Kconfig |   31 ++-----------------------------
+ 1 file changed, 2 insertions(+), 29 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index cb003a3..f6f8146 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -33,35 +33,8 @@ config BUILDTIME_EXTABLE_SORT
+ menu "General setup"
+ 
+ config EXPERIMENTAL
+-	bool "Prompt for development and/or incomplete code/drivers"
+-	---help---
+-	  Some of the various things that Linux supports (such as network
+-	  drivers, file systems, network protocols, etc.) can be in a state
+-	  of development where the functionality, stability, or the level of
+-	  testing is not yet high enough for general use. This is usually
+-	  known as the "alpha-test" phase among developers. If a feature is
+-	  currently in alpha-test, then the developers usually discourage
+-	  uninformed widespread use of this feature by the general public to
+-	  avoid "Why doesn't this work?" type mail messages. However, active
+-	  testing and use of these systems is welcomed. Just be aware that it
+-	  may not meet the normal level of reliability or it may fail to work
+-	  in some special cases. Detailed bug reports from people familiar
+-	  with the kernel internals are usually welcomed by the developers
+-	  (before submitting bug reports, please read the documents
+-	  <file:README>, <file:MAINTAINERS>, <file:REPORTING-BUGS>,
+-	  <file:Documentation/BUG-HUNTING>, and
+-	  <file:Documentation/oops-tracing.txt> in the kernel source).
+-
+-	  This option will also make obsoleted drivers available. These are
+-	  drivers that have been replaced by something else, and/or are
+-	  scheduled to be removed in a future kernel release.
+-
+-	  Unless you intend to help test and develop a feature or driver that
+-	  falls into this category, or you have a situation that requires
+-	  using these features, you should probably say N here, which will
+-	  cause the configurator to present you with fewer choices. If
+-	  you say Y here, you will be offered the choice of using features or
+-	  drivers that are currently considered to be in the alpha-test phase.
++	bool
++	default y
+ 
+ config BROKEN
+ 	bool
+-- 
+1.7.9.5
 
 
-> What's the output of "dmesg | grep 0000:00:1f.1; lspci -vs00:1f.1"?
-
-[    0.065506] pci 0000:00:1f.1: [8086:24cb] type 0 class 0x000101
-[    0.065520] pci 0000:00:1f.1: reg 10: [io  0x0000-0x0007]
-[    0.065531] pci 0000:00:1f.1: reg 14: [io  0x0000-0x0003]
-[    0.065542] pci 0000:00:1f.1: reg 18: [io  0x0000-0x0007]
-[    0.065553] pci 0000:00:1f.1: reg 1c: [io  0x0000-0x0003]
-[    0.065564] pci 0000:00:1f.1: reg 20: [io  0x1000-0x100f]
-[    0.065575] pci 0000:00:1f.1: reg 24: [mem 0x00000000-0x000003ff unset]
-[    1.415250] ata_piix 0000:00:1f.1: version 2.13
-[    1.415276] ata_piix 0000:00:1f.1: can't derive routing for PCI INT A
-00:1f.1 IDE interface: Intel Corporation 82801DB (ICH4) IDE Controller  
-(rev 02) (prog-if 8a [Master SecP PriP])
-	Subsystem: Intel Corporation Device 3404
-	Flags: bus master, medium devsel, latency 0
-	I/O ports at 01f0 [size=8]
-	I/O ports at 03f4 [size=1]
-	I/O ports at 0170 [size=8]
-	I/O ports at 0374 [size=1]
-	I/O ports at 1000 [size=16]
-	Kernel driver in use: ata_piix
-
-
-
-
-Stephan
-
-
-
-
+-- 
+Kees Cook
+Chrome OS Security
