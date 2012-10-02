@@ -1,252 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab2JBPVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:21:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27377 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab2JBPS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:18:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,524,1344236400"; 
-   d="scan'208";a="229573163"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v3 04/10] thp: do_huge_pmd_wp_page(): handle huge zero page
-Date: Tue,  2 Oct 2012 18:19:26 +0300
-Message-Id: <1349191172-28855-5-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1754671Ab2JBPWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:22:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53326 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab2JBPWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 11:22:01 -0400
+Date: Wed, 3 Oct 2012 01:21:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        <JBeulich@suse.com>
+Subject: Re: [PATCH] xen/Makefile: resolve merge conflict with 9fa5780beea1
+Message-Id: <20121003012159.029e5282fa108697eaa3a9ff@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Oct_2012_01_21_59_+1000_pG.fPmj3ziZxjhp2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+--Signature=_Wed__3_Oct_2012_01_21_59_+1000_pG.fPmj3ziZxjhp2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On right access to huge zero page we alloc a new page and clear it.
+Hi,
 
-In fallback path we create a new table and set pte around fault address
-to the newly allocated page. All other ptes set to normal zero page.
+On Tue, 2 Oct 2012 16:13:15 +0100 Stefano Stabellini <stefano.stabellini@eu=
+.citrix.com> wrote:
+>
+> This patch is actually a merge conflict resolution between Konrad's Xen
+> tree and the following commit:
+>=20
+> commit 9fa5780beea1274d498a224822397100022da7d4
+> Author: Jan Beulich <JBeulich@suse.com>
+> Date:   Tue Sep 18 12:23:02 2012 +0100
+>=20
+>     USB EHCI/Xen: propagate controller reset information to hypervisor
+>=20
+>=20
+> Compile dbgp.o only if CONFIG_USB is defined.
+> After all xen_dbgp_op relies on hcd_to_bus.
+>=20
+> This patch should be applied on top of=20
+>=20
+> http://marc.info/?l=3Dlinux-kernel&m=3D134919011231980&w=3D2
+>=20
+>=20
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/mm.h |    8 ++++
- mm/huge_memory.c   |  102 ++++++++++++++++++++++++++++++++++++++++++++--------
- mm/memory.c        |    7 ----
- 3 files changed, 95 insertions(+), 22 deletions(-)
+I'll use this resolution if it is needed tomorrow.  Assuming that the
+other build problem with the xen-two tree is fixed, of course.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 311be90..179a41c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -514,6 +514,14 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- }
- #endif
- 
-+#ifndef my_zero_pfn
-+static inline unsigned long my_zero_pfn(unsigned long addr)
-+{
-+	extern unsigned long zero_pfn;
-+	return zero_pfn;
-+}
-+#endif
-+
- /*
-  * Multiple processes may "see" the same page. E.g. for untouched
-  * mappings of /dev/null, all processes see the same page full of
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index c8b157d..f30f39d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -868,6 +868,61 @@ pgtable_t get_pmd_huge_pte(struct mm_struct *mm)
- 	return pgtable;
- }
- 
-+static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
-+		struct vm_area_struct *vma, unsigned long address,
-+		pmd_t *pmd, unsigned long haddr)
-+{
-+	pgtable_t pgtable;
-+	pmd_t _pmd;
-+	struct page *page;
-+	int i, ret = 0;
-+
-+	page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
-+	if (!page) {
-+		ret |= VM_FAULT_OOM;
-+		goto out;
-+	}
-+
-+	if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
-+		put_page(page);
-+		ret |= VM_FAULT_OOM;
-+		goto out;
-+	}
-+
-+	clear_user_highpage(page, address);
-+	__SetPageUptodate(page);
-+
-+	spin_lock(&mm->page_table_lock);
-+	pmdp_clear_flush_notify(vma, haddr, pmd);
-+	/* leave pmd empty until pte is filled */
-+
-+	pgtable = get_pmd_huge_pte(mm);
-+	pmd_populate(mm, &_pmd, pgtable);
-+
-+	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-+		pte_t *pte, entry;
-+		if (haddr == (address & PAGE_MASK)) {
-+			entry = mk_pte(page, vma->vm_page_prot);
-+			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
-+			page_add_new_anon_rmap(page, vma, haddr);
-+		} else {
-+			entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-+			entry = pte_mkspecial(entry);
-+		}
-+		pte = pte_offset_map(&_pmd, haddr);
-+		VM_BUG_ON(!pte_none(*pte));
-+		set_pte_at(mm, haddr, pte, entry);
-+		pte_unmap(pte);
-+	}
-+	smp_wmb(); /* make pte visible before pmd */
-+	pmd_populate(mm, pmd, pgtable);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	ret |= VM_FAULT_WRITE;
-+out:
-+	return ret;
-+}
-+
- static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 					struct vm_area_struct *vma,
- 					unsigned long address,
-@@ -965,17 +1020,19 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
- {
- 	int ret = 0;
--	struct page *page, *new_page;
-+	struct page *page = NULL, *new_page;
- 	unsigned long haddr;
- 
- 	VM_BUG_ON(!vma->anon_vma);
-+	haddr = address & HPAGE_PMD_MASK;
-+	if (is_huge_zero_pmd(orig_pmd))
-+		goto alloc;
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, orig_pmd)))
- 		goto out_unlock;
- 
- 	page = pmd_page(orig_pmd);
- 	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
--	haddr = address & HPAGE_PMD_MASK;
- 	if (page_mapcount(page) == 1) {
- 		pmd_t entry;
- 		entry = pmd_mkyoung(orig_pmd);
-@@ -987,7 +1044,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
- 	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--
-+alloc:
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
- 		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-@@ -997,28 +1054,39 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	if (unlikely(!new_page)) {
- 		count_vm_event(THP_FAULT_FALLBACK);
--		ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
--						   pmd, orig_pmd, page, haddr);
--		if (ret & VM_FAULT_OOM)
--			split_huge_page(page);
--		put_page(page);
-+		if (is_huge_zero_pmd(orig_pmd)) {
-+			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
-+					address, pmd, haddr);
-+		} else {
-+			ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
-+					pmd, orig_pmd, page, haddr);
-+			if (ret & VM_FAULT_OOM)
-+				split_huge_page(page);
-+			put_page(page);
-+		}
- 		goto out;
- 	}
- 	count_vm_event(THP_FAULT_ALLOC);
- 
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
- 		put_page(new_page);
--		split_huge_page(page);
--		put_page(page);
-+		if (page) {
-+			split_huge_page(page);
-+			put_page(page);
-+		}
- 		ret |= VM_FAULT_OOM;
- 		goto out;
- 	}
- 
--	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
-+	if (is_huge_zero_pmd(orig_pmd))
-+		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
-+	else
-+		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
- 	__SetPageUptodate(new_page);
- 
- 	spin_lock(&mm->page_table_lock);
--	put_page(page);
-+	if (page)
-+		put_page(page);
- 	if (unlikely(!pmd_same(*pmd, orig_pmd))) {
- 		spin_unlock(&mm->page_table_lock);
- 		mem_cgroup_uncharge_page(new_page);
-@@ -1026,7 +1094,6 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out;
- 	} else {
- 		pmd_t entry;
--		VM_BUG_ON(!PageHead(page));
- 		entry = mk_pmd(new_page, vma->vm_page_prot);
- 		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 		entry = pmd_mkhuge(entry);
-@@ -1034,8 +1101,13 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page_add_new_anon_rmap(new_page, vma, haddr);
- 		set_pmd_at(mm, haddr, pmd, entry);
- 		update_mmu_cache(vma, address, entry);
--		page_remove_rmap(page);
--		put_page(page);
-+		if (is_huge_zero_pmd(orig_pmd))
-+			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
-+		if (page) {
-+			VM_BUG_ON(!PageHead(page));
-+			page_remove_rmap(page);
-+			put_page(page);
-+		}
- 		ret |= VM_FAULT_WRITE;
- 	}
- out_unlock:
-diff --git a/mm/memory.c b/mm/memory.c
-index 5736170..dbd92ba 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -724,13 +724,6 @@ static inline int is_zero_pfn(unsigned long pfn)
- }
- #endif
- 
--#ifndef my_zero_pfn
--static inline unsigned long my_zero_pfn(unsigned long addr)
--{
--	return zero_pfn;
--}
--#endif
--
- /*
-  * vm_normal_page -- This function gets the "struct page" associated with a pte.
-  *
--- 
-1.7.7.6
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__3_Oct_2012_01_21_59_+1000_pG.fPmj3ziZxjhp2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQawaXAAoJEECxmPOUX5FEmCwP/i1qnJV8Gg636RBjQL1DnKEG
+wS3xy+qoZjcYA8yyxg2fIv5xinO7BCcrIcTiYHRNCr4/O38O8dPk9Fi5/t39jTHt
+D5DK5P8T6i5Q6WdmEzHN/YFgnOpYx+UC8jsmA4zq18+qhhQtqhGomHEFqsKjXblL
+k7DjmBuRrrptWA7VbJADFMKcmXTEjbuiJPyIsVZNQ6pSXh/FuC3iDV7U41tSRBd2
+gzb9thERjBPKdkXPk8ERYdwR36FuQloooBk6tXe/0utxPHnEf4sTRctlVtVPIKqT
+xNWD3hlWR1KmDapjzMgBDS3vYxS+golkaPEZ83kdIuWriCs1jfI0jAR+m0V6/F6U
+YcWe75i5nrIVIK6bJHx8TltiHmHIvShz7NHyrAtK0HaKUIZjTyCYOX3CEfw3zXc/
+ijDffBeiidnsfHTZistc16f+BBacBrZf0SdGfAnfiJ0Tq2HE38warwlbP9cpQt9Q
+h1F1KmsQEWmxQyjWCA8QDZh+4XMKblVSmUhqby4YofHCeUn4N466CvXUXDUaogSU
+EFtB0SaUuZTcW8Z2/UFAqn8Z/mTv40zW4Ruj9gs/0YUuQvYXp1CrA5pk2FVK7jge
+9sbzhk9If45X5D4KIl6NmBotXEdX6f4FnUHva0nSVCgWPTDVZznaPsOzskYWfw0a
+2lPfFVSiqeOfzLgnPo51
+=dG5J
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__3_Oct_2012_01_21_59_+1000_pG.fPmj3ziZxjhp2--
