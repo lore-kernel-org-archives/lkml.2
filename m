@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab2JBPaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:30:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52130 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab2JBPao (ORCPT
+	id S1754555Ab2JBPbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:31:09 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:34266 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab2JBPbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:30:44 -0400
-Message-ID: <1349191833.14338.1.camel@phoenix>
-Subject: [PATCH] extcon: Fix kerneldoc for extcon_set_cable_state and
- extcon_set_cable_state_
-From: Axel Lin <axel.lin@ingics.com>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Tue, 02 Oct 2012 23:30:33 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 2 Oct 2012 11:31:06 -0400
+X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
+   d="scan'208";a="14898130"
+Date: Tue, 2 Oct 2012 16:30:06 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Jan Beulich <JBeulich@suse.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/Makefile: resolve merge conflict with 9fa5780beea1
+In-Reply-To: <506B236C020000780009F281@nat28.tlf.novell.com>
+Message-ID: <alpine.DEB.2.02.1210021629440.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com> <506B236C020000780009F281@nat28.tlf.novell.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/extcon/extcon-class.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Tue, 2 Oct 2012, Jan Beulich wrote:
+> >>> On 02.10.12 at 17:13, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > This patch is actually a merge conflict resolution between Konrad's Xen
+> > tree and the following commit:
+> > 
+> > commit 9fa5780beea1274d498a224822397100022da7d4
+> > Author: Jan Beulich <JBeulich@suse.com>
+> > Date:   Tue Sep 18 12:23:02 2012 +0100
+> > 
+> >     USB EHCI/Xen: propagate controller reset information to hypervisor
+> > 
+> > 
+> > Compile dbgp.o only if CONFIG_USB is defined.
+> 
+> Now this is wrong: USB is a tristate config option, yet dbgp.o
+> must be built in. This is why I suggested to use USB_SUPPORT
+> (if anything at all).
 
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 946a318..337bbb4 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -362,7 +362,7 @@ int extcon_get_cable_state(struct extcon_dev *edev, const char *cable_name)
- EXPORT_SYMBOL_GPL(extcon_get_cable_state);
- 
- /**
-- * extcon_get_cable_state_() - Set the status of a specific cable.
-+ * extcon_set_cable_state_() - Set the status of a specific cable.
-  * @edev:	the extcon device that has the cable.
-  * @index:	cable index that can be retrieved by extcon_find_cable_index().
-  * @cable_state:	the new cable status. The default semantics is
-@@ -382,7 +382,7 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
- EXPORT_SYMBOL_GPL(extcon_set_cable_state_);
- 
- /**
-- * extcon_get_cable_state() - Set the status of a specific cable.
-+ * extcon_set_cable_state() - Set the status of a specific cable.
-  * @edev:	the extcon device that has the cable.
-  * @cable_name:	cable name.
-  * @cable_state:	the new cable status. The default semantics is
--- 
-1.7.9.5
-
-
-
+I see. You are right. I'll re-send the patch.
