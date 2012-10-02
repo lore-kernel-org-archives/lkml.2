@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab2JBLTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:19:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab2JBLTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:19:11 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf cgroups: Fix perf_cgroup_switch schedule in warning
-Date: Tue,  2 Oct 2012 13:18:43 +0200
-Message-Id: <1349176723-5537-1-git-send-email-jolsa@redhat.com>
+	id S1752225Ab2JBLTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:19:49 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40632 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab2JBLTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 07:19:48 -0400
+Message-ID: <1349176819.10698.16.camel@jlt4.sipsolutions.net>
+Subject: Re: How do I get mac80211 debugfs?
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Kevin Cruz <skate_ops@yahoo.com>
+Cc: Intel Wireless <ilw@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Date: Tue, 02 Oct 2012 13:20:19 +0200
+In-Reply-To: <1349159890.10698.2.camel@jlt4.sipsolutions.net> (sfid-20121002_083802_746542_57596E7B)
+References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
+	 <20120928121917.GF5368@mwanda>
+	 <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+	 <20120929072527.GA13767@mwanda>
+	 <1349102641.41622.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+	 <20121001150913.GC13767@mwanda>
+	 <1349109750.55372.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+	 (sfid-20121001_184314_573998_F50474BE) <1349119899.10330.53.camel@jlt4.sipsolutions.net>
+	 <1349132818.58475.YahooMailNeo@web164006.mail.gq1.yahoo.com>
+	 <1349159890.10698.2.camel@jlt4.sipsolutions.net>
+	 (sfid-20121002_083802_746542_57596E7B)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-I'm getting following warning when running basic cgroup perf stuff:
-(perf stat -a -e faults -G krava -- sleep 10)
+On Tue, 2012-10-02 at 08:38 +0200, Johannes Berg wrote:
+> Hi Kevin,
+> 
+> > So I tried that but all I got back was:
+> > 
+> >     cat: /sys/kernel/debug/ieee80211/phy*/queues: No such file or directory
+> > 
+> > so I'm assuming it's because I must not have mac80211 debugfs.  So how
+> > do I get it?
+> 
+> First, make sure it's mounted, check "mount" and if not mount it:
+> 
+> sudo mount -t debugfs debugfs /sys/kernel/debug
+> 
+> If that doesn't work you don't have it enabled in the kernel config,
+> check for CONFIG_DEBUG_FS. If you do have it, but not mac80211's files,
+> check for CONFIG_MAC80211_DEBUGFS.
 
- WARNING: at kernel/events/core.c:397 perf_cgroup_switch+0x1c6/0x1e0()
- Hardware name: Montevina platform
- Modules linked in:
- Pid: 1173, comm: bash Not tainted 3.6.0+ #129
- Call Trace:
-  [<ffffffff8103736f>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff810dc025>] ? perf_ctx_lock+0x15/0x30
-  [<ffffffff810373ca>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810e0b96>] perf_cgroup_switch+0x1c6/0x1e0
-  [<ffffffff810e09d0>] ? perf_event_context_sched_in+0xc0/0xc0
-  [<ffffffff810e0fa9>] __perf_event_task_sched_in+0xa9/0x200
-  [<ffffffff81089c67>] ? lock_release_holdtime.part.3+0xc7/0x160
-  [<ffffffff810689f8>] finish_task_switch+0xb8/0xf0
-  [<ffffffff814fab2b>] __schedule+0x2eb/0x930
-  [<ffffffff814fca10>] ? _raw_spin_unlock_irq+0x30/0x60
-  [<ffffffff8108fd75>] ? trace_hardirqs_on_caller+0x105/0x190
-  [<ffffffff8108fe0d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff814fca1b>] ? _raw_spin_unlock_irq+0x3b/0x60
-  [<ffffffff81055238>] ? start_flush_work+0x108/0x180
-  [<ffffffff814fb289>] schedule+0x29/0x70
-  [<ffffffff814f8725>] schedule_timeout+0x1c5/0x210
-  [<ffffffff8105cecd>] ? add_wait_queue+0x4d/0x60
-  [<ffffffff814fc9c5>] ? _raw_spin_unlock_irqrestore+0x65/0x80
-  [<ffffffff8108fd75>] ? trace_hardirqs_on_caller+0x105/0x190
-  [<ffffffff8108fe0d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff814fc9a2>] ? _raw_spin_unlock_irqrestore+0x42/0x80
-  [<ffffffff812b5151>] n_tty_read+0x461/0x8b0
-  [<ffffffff8106d040>] ? try_to_wake_up+0x310/0x310
-  [<ffffffff812af2b9>] tty_read+0x99/0xf0
-  [<ffffffff81128fff>] vfs_read+0xaf/0x180
-  [<ffffffff8112911d>] sys_read+0x4d/0x90
-  [<ffffffff81504412>] system_call_fastpath+0x16/0x1b
+Oh also, if tracing already works, that'd be sufficient. No need to
+enable debugfs just to confirm the issue, tracing would let me confirm
+it as well. I just thought debugfs would let me confirm the issue first
+before going to the trouble of enabling tracing.
 
-
-Looking at the code the cpuctx->cgrp condition seems legal,
-and need just some adjustment.
-
-However, I don't fully understand that code and could be
-wrong.. just want to get rid of probably wrong warning.. ;)
-
-thanks,
-jirka
-
-
----
-Changing WARN_ON_ONCE condition for PERF_CGROUP_SWIN leg.
-
-It's legal to have cpuctx->cgrp already defined, but it's
-not legal not to have events active at the same time.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/events/core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b9df35..733f794 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -394,7 +394,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
- 			}
- 
- 			if (mode & PERF_CGROUP_SWIN) {
--				WARN_ON_ONCE(cpuctx->cgrp);
-+				WARN_ON_ONCE(cpuctx->cgrp && !cpuctx->ctx.is_active);
-+
- 				/* set cgrp before ctxsw in to
- 				 * allow event_filter_match() to not
- 				 * have to pass task around
--- 
-1.7.7.6
+johannes
 
