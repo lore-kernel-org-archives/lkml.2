@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2JBPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:12:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37902 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab2JBPMx (ORCPT
+	id S1754292Ab2JBPOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:14:17 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:58432 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab2JBPOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:12:53 -0400
-Date: Wed, 3 Oct 2012 01:12:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        <virtualization@lists.linux-foundation.org>,
-        "kvm-devel" <kvm@vger.kernel.org>
-Subject: Re: Linux-next changes for module and virtio trees.
-Message-Id: <20121003011239.3445171ec17e422a289d2997@canb.auug.org.au>
-In-Reply-To: <871uhh4cen.fsf@rustcorp.com.au>
-References: <871uhh4cen.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Oct_2012_01_12_39_+1000_MhqrEcKkTYqu8wEQ"
+	Tue, 2 Oct 2012 11:14:15 -0400
+X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
+   d="scan'208";a="14897631"
+Date: Tue, 2 Oct 2012 16:13:15 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        <sfr@canb.auug.org.au>, <JBeulich@suse.com>
+Subject: [PATCH] xen/Makefile: resolve merge conflict with 9fa5780beea1
+Message-ID: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Oct_2012_01_12_39_+1000_MhqrEcKkTYqu8wEQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch is actually a merge conflict resolution between Konrad's Xen
+tree and the following commit:
 
-Hi Rusty,
+commit 9fa5780beea1274d498a224822397100022da7d4
+Author: Jan Beulich <JBeulich@suse.com>
+Date:   Tue Sep 18 12:23:02 2012 +0100
 
-On Tue, 02 Oct 2012 15:56:56 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
->         Please remove my quilt tree
-> http://ozlabs.org/~rusty/kernel/rr-latest/ from linux-next, and use my
-> git trees from now on:
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git
-> Branches:
->         modules-next
->         virtio-next
+    USB EHCI/Xen: propagate controller reset information to hypervisor
 
-Done.
 
-> For others: beware that these will rebase, usually once after the merge
-> window closes (so I can work on a more modern tree), and again just
-> before it opens (where I squash in fixup patches).
+Compile dbgp.o only if CONFIG_USB is defined.
+After all xen_dbgp_op relies on hcd_to_bus.
 
-The first should not be necessary since everything in these trees should
-have been merged by Linus during the merge window, so a merge of -rc1 or
-later should be a fast forward (though merging with the tag itself may
-produce a real merge).  The second can be tricky to pick the right
-moment :-)
+This patch should be applied on top of 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+http://marc.info/?l=linux-kernel&m=134919011231980&w=2
 
---Signature=_Wed__3_Oct_2012_01_12_39_+1000_MhqrEcKkTYqu8wEQ
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-iQIcBAEBCAAGBQJQawRnAAoJEECxmPOUX5FE6SoP+wctU7Y01f/eNenOQ5Jl1q62
-zFQyqq+3gLnunQmnUN9Eo3qgtJSFKHRoUxjVPPfrRV5+gl0p4/zX/iQHx4BjrvMe
-Dpx8iSBO/UWA1UE5mLi16ZnH63yO/dkvL9KtWmGifggDYnxGjjjpFtinm0LDJB7r
-3HBjRGXJdMZu4ESWjnnF3ufBI/MvI4IYgvcbrR/JARKtDobBNAQ0WaxRUWriS0fD
-whC28kGg+qrLDY7k4XsmC479oAl5l0K4mz8UaKlkp3HUQ0bKAOfOTDmRBLWWF1tL
-afKQ1/BAoSFaQ1mf9IhgdT5Ubrbm5N3jst/E2Qg6FuL7vFV5tN7f5a40AumOXdry
-GmPewFI6h6OQd1TFmbSa0LlcBEN3d8jG0j71PcVsi2BRCMUovzitUUuEYZoP54+F
-CFnyzfXB1sanHhxmFSzhzC++5fqnQWX9y9v4UAXLlb4AuNI5GUyI3Dw9RPf4jRLI
-1P3FjZnsNiPme7ZOLIjS8askQH1s7Zs3gfgCJAD0KDvl7ZFT1NhL1osUAqC/kdGi
-ixkUW6PAlJ+WAHubXgrUeEoDAildk739hNclB7zZq9Fl2HQq7kSYmX3nUKDSiEcX
-ud+h0f08hbIktWBvFaCzLQUQVJNsKRfwbnUI4ftikpdqzV2DlRHpXHW+uZEnwT6g
-1Brv8erQB660Qi0+aIXo
-=wFpj
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Oct_2012_01_12_39_+1000_MhqrEcKkTYqu8wEQ--
+diff --cc drivers/xen/Makefile
+index a4a3cab,275abfc..33711ad
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@@ -4,8 -8,11 +8,12 @@@ obj-y	+= xenbus
+  nostackp := $(call cc-option, -fno-stack-protector)
+  CFLAGS_features.o			:= $(nostackp)
+  
++ dom0-$(CONFIG_PCI) += pci.o
++ dom0-$(CONFIG_ACPI) += acpi.o
++ dom0-$(CONFIG_X86) += pcpu.o
+++dom0-$(CONFIG_USB) += dbgp.o
++ obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
+  obj-$(CONFIG_BLOCK)			+= biomerge.o
+- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+  obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
+  obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
+  obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
