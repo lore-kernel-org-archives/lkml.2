@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2JBJUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 05:20:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57848 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab2JBJUa (ORCPT
+	id S1753341Ab2JBJVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 05:21:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44095 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab2JBJVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 05:20:30 -0400
+	Tue, 2 Oct 2012 05:21:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349165603-24401-6-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1349165603-24401-7-git-send-email-lee.jones@linaro.org>
 References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
-	<1349165603-24401-6-git-send-email-lee.jones@linaro.org>
-Date: Tue, 2 Oct 2012 11:20:29 +0200
-Message-ID: <CACRpkdahgNCbTbfYSwhHOaqrjcuTByoxTjwmA=u=+htHpYdQjg@mail.gmail.com>
-Subject: Re: [PATCH 05/10] Input: bu21013_ts - Add support for Device Tree booting
+	<1349165603-24401-7-git-send-email-lee.jones@linaro.org>
+Date: Tue, 2 Oct 2012 11:21:33 +0200
+Message-ID: <CACRpkdb8gA+wtkzd=wQbp8kHf=j-DJC9QsN16ruWmvwhgD5HZA@mail.gmail.com>
+Subject: Re: [PATCH 06/10] Documentation: Detail permitted DT properties for
+ the BU21013 Touch Screen
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -27,14 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Oct 2, 2012 at 10:13 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Now we can register the BU21013_ts touch screen when booting with
-> Device Tree enabled. Here we parse all the necessary components
-> previously expected to be passed from platform data.
+> Here we apply required documentation for the Rohm BU21013 Touch
+> Screen driver which describe available properties and how to use
+> them.
 >
 > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > Cc: linux-input@vger.kernel.org
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+Should be CC to the devicetree-discuss list right?
+FWIW:
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
