@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2JBTHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 15:07:04 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:59752 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab2JBTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 15:07:01 -0400
-Message-ID: <506B3B52.7080001@msgid.tls.msk.ru>
-Date: Tue, 02 Oct 2012 23:06:58 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
+	id S1753419Ab2JBTLM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 15:11:12 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:40590 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2JBTLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 15:11:10 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH v4] trace,x86: add x86 irq vector tracepoints
+Thread-Topic: [PATCH v4] trace,x86: add x86 irq vector tracepoints
+Thread-Index: Ac2YWrA+n8Wn2uRQSgKoDvfneAuZiQClgnuAAIOLIPAAEMXIAADi3wmQ
+Date: Tue, 2 Oct 2012 19:10:29 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413869FD7@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com>
+ <50612729.2080307@zytor.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>
+ <50650A7E.90807@zytor.com>
+In-Reply-To: <50650A7E.90807@zytor.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Ferenc Wagner <wferi@niif.hu>
-CC: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter
- SoL
-References: <87txuhho5z.fsf@lant.ki.iif.hu> <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87a9w5dqle.fsf@lant.ki.iif.hu> <1349190185.5420.21.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87haqcddks.fsf@lant.ki.iif.hu> <1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87626sd80j.fsf@lant.ki.iif.hu>
-In-Reply-To: <87626sd80j.fsf@lant.ki.iif.hu>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-02_04:2012-10-02,2012-10-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210020210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q92JBI6q001318
 
-On 02.10.2012 22:49, Ferenc Wagner wrote:
-> "Michael Chan" <mchan@broadcom.com> writes:
->> These are the likely fixes:
->>
->> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db 
->> Author: Matt Carlson <mcarlson@broadcom.com>
->> Date: Mon Nov 28 09:41:03 2011 +0000
->>
->> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
+> >
+> > If I misunderstand something, please let me know.
+> >
 > 
-> You are exactly right: cf9ecf4b fixed the premanent SoL breakage
-> introduced by dabc5c67.  Looks like ASF utilizes similar technology to
-> that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
-> wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it's
-> possible to work around in 3.2 by eg. fiddling some ethtool setting?
+> Quite.
+> 
+> These functions are being invoked from the IDT, which is an indirect pointer structure.  When not being traced, there is absolutely no
+> reason why it should go through a thunk with tracepoints.
 
-Maybe it's better to push this commit to -stable instead? (the commit
-that broke things is part of 3.0 kernel so all current 3.x -stable
-kernels are affected)
+I agree that the cost can be absolutely zero by switching  each interrupt hander when turning on/off the tracepoint.
 
-(Besides, that commit "This patch fixes the problem by revisiting and
-reevaluating the decision after tg3_get_eeprom_hw_cfg() is called." -
-merely copies a somewhat "twisted" chunk of code into another place,
-which does not look optimal)
+But I would like to talk about a time penalty of a tracepoint more.
 
-Thanks,
+When not being traced, the tracepoint is just nop.
+And it is described in the documentation below.
+So, the tracepoint seems to be designed to add to performance critical paths.
 
-/mjt
+Documentation/trace/tracepoints.txt
+<snip>
+* Purpose of tracepoints
+
+A tracepoint placed in code provides a hook to call a function (probe) that you can provide at runtime. A tracepoint can be "on" (a probe is connected to it) or "off" (no probe is attached). When a tracepoint is "off" it has no effect, except for adding a tiny time penalty (checking a condition for a branch) and space penalty (adding a few bytes for the function call at the end of the instrumented function and adds a data structure in a separate section).  When a tracepoint is "on", the function you provide is called each time the tracepoint is executed, in the execution context of the caller. When the function provided ends its execution, it returns to the caller (continuing from the tracepoint site).
+
+You can put tracepoints at important locations in the code. They are lightweight hooks that can pass an arbitrary number of parameters, which prototypes are described in a tracepoint declaration placed in a header file.
+<snip>
+
+Also, as I submitted an actual latency measurement, the time penalty is almost zero.
+
+<snip>
+(1-1) local_timer_entry
+
+ - 3.6-rc6 original
+   	<...>-2788    2dNh. 894834337us : exit_idle <-smp_apic_timer_interrupt
+   	<...>-2788    2dNh. 894834337us : hrtimer_interrupt <-smp_apic_timer_interrupt
+
+ - 3.6-rc6 + this patch + trace off
+   	<...>-1981    0d.h. 210538us : exit_idle <-smp_apic_timer_interrupt
+   	<...>-1981    0d.h. 210538us : hrtimer_interrupt <-smp_apic_timer_interrupt
+<snip>
+
+When switching each interrupt handler, all cpus have to be interrupt-disable with smp_call_funciton() or something like that.
+
+IMO, rather than doing such a complex thing, just adding a tracepoint is reasonable.
+
+What do you think?
+
+Seiji
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
