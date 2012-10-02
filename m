@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2JBQLW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:11:22 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42854 "EHLO e9.ny.us.ibm.com"
+	id S1754888Ab2JBQNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:13:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21128 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754812Ab2JBQLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:11:20 -0400
-Message-ID: <506B121E.8090307@linux.vnet.ibm.com>
-Date: Tue, 02 Oct 2012 11:11:10 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754836Ab2JBQNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 12:13:37 -0400
+Date: Tue, 2 Oct 2012 18:13:30 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v3 00/10] Introduce huge zero page
+Message-ID: <20121002161330.GG4763@redhat.com>
+References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFC/PATCH] zcache2 on PPC64 (Was: [RFC] mm: add support for
- zsmalloc and zcache)
-References: <30a570e8-8157-47e1-867a-4960a7c1173d@default> <20120928133121.GH29125@suse.de>
-In-Reply-To: <20120928133121.GH29125@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-x-cbid: 12100216-7182-0000-0000-000002BA78E3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2012 08:31 AM, Mel Gorman wrote:
-> On Tue, Sep 25, 2012 at 04:31:01PM -0700, Dan Magenheimer wrote:
->> Attached patch applies to staging-next and I _think_ should
->> fix the reported problem where zbud in zcache2 does not
->> work on a PPC64 with PAGE_SIZE!=12.  I do not have a machine
->> to test this so testing by others would be appreciated.
->>
+On Tue, Oct 02, 2012 at 06:19:22PM +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
-> Seth, can you verify?
+> During testing I noticed big (up to 2.5 times) memory consumption overhead
+> on some workloads (e.g. ft.A from NPB) if THP is enabled.
+> 
+> The main reason for that big difference is lacking zero page in THP case.
+> We have to allocate a real page on read page fault.
+> 
+> A program to demonstrate the issue:
+> #include <assert.h>
+> #include <stdlib.h>
+> #include <unistd.h>
+> 
+> #define MB 1024*1024
+> 
+> int main(int argc, char **argv)
+> {
+>         char *p;
+>         int i;
+> 
+>         posix_memalign((void **)&p, 2 * MB, 200 * MB);
+>         for (i = 0; i < 200 * MB; i+= 4096)
+>                 assert(p[i] == 0);
+>         pause();
+>         return 0;
+> }
+> 
+> With thp-never RSS is about 400k, but with thp-always it's 200M.
+> After the patcheset thp-always RSS is 400k too.
+> 
+> v3:
+>  - fix potential deadlock in refcounting code on preemptive kernel.
+>  - do not mark huge zero page as movable.
+>  - fix typo in comment.
+>  - Reviewed-by tag from Andrea Arcangeli.
+> v2:
+>  - Avoid find_vma() if we've already had vma on stack.
+>    Suggested by Andrea Arcangeli.
+>  - Implement refcounting for huge zero page.
+> 
+> Kirill A. Shutemov (10):
+>   thp: huge zero page: basic preparation
+>   thp: zap_huge_pmd(): zap huge zero pmd
+>   thp: copy_huge_pmd(): copy huge zero page
+>   thp: do_huge_pmd_wp_page(): handle huge zero page
+>   thp: change_huge_pmd(): keep huge zero page write-protected
+>   thp: change split_huge_page_pmd() interface
+>   thp: implement splitting pmd for huge zero page
+>   thp: setup huge zero page on non-write page fault
+>   thp: lazy huge zero page allocation
+>   thp: implement refcounting for huge zero page
 
-Yes, this patch does prevent the crash on PPC64.
-
-Seth
-
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
