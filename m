@@ -1,220 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2JBGAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 02:00:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61370 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab2JBGAU (ORCPT
+	id S1752853Ab2JBGC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 02:02:29 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50535 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2JBGC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 02:00:20 -0400
-Date: Tue, 2 Oct 2012 08:00:14 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, nsekhar@ti.com, gururaja.hebbar@ti.com
-Subject: Re: [PATCH 1/2] pwm: pwm-tiecap: Add device-tree binding support for
- APWM driver
-Message-ID: <20121002060014.GA4298@avionic-0098.mockup.avionic-design.de>
-References: <1348658863-29428-1-git-send-email-avinashphilip@ti.com>
- <1348658863-29428-2-git-send-email-avinashphilip@ti.com>
+	Tue, 2 Oct 2012 02:02:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
-Content-Disposition: inline
-In-Reply-To: <1348658863-29428-2-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:brvqU6uaVMlvdmnzbcy4P3jZTMqSSwFMamN4efr+VYb
- 5Z5u1yAXwELhm4Pz83XlHrV5EMQ55qp2n4tlXiQCRtAN9+uhqI
- MxC6lE5htDaT92CAoN79+39mMykya1cSoK9KdCNTpqPLs5NhyK
- jqRaYpdLr3DNU4t3ywwSXReFzAWzBZoyIWMuy7J1E+fcOFd7to
- dn1RfaGdpaQu5nRcnIwEUGvHU2cuL6xmXNTznTwgG4PCpMjU9S
- HvVj9sisOXmUwvlCZ3d9BLXVyxDoqnydM5hYgv1wldCQFX/+lG
- RLUQXLOFa9hYPT19E4pdXR4sFFr8nWZs0/R86/YzbOM1XZROjh
- bdMQldVL9l1vgmeVhOCY2c69Z5sgjLtZ1rHGgnw/iYIW/qJto/
- hUiddiIIB4NDl1h4Z/3vcOIc3Fv9HZ4glFIUj5DFwuRtd1Ds5h
- eciZp
+Date: Tue, 2 Oct 2012 08:02:26 +0200
+Message-ID: <CACRpkdYbkLs=mSy37dE_tQGkeGBCmwu_Ajg3L4ezYeoU8gTYFQ@mail.gmail.com>
+Subject: [GIT PULL] GPIO changes for v3.7
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        arm@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+this is my major GPIO pull request for the v3.7 merge window.
+The description of what's going on is in the tag (see below).
+I think some of it is prerequisites for the ARM SoC tree so better
+send this pull early.
 
-On Wed, Sep 26, 2012 at 04:57:42PM +0530, Philip, Avinash wrote:
-[...]
-> +#include <linux/platform_data/ti-pwmss.h>
-[...]
-> +static struct pwmss_platform_data am33xx_data =3D {
-> +	.has_configspace	=3D true,
-> +};
+All has boiled in -next for some time except the 4 topmost
+commits, which are oneline fixes (would else be -rc material)
+and a documentation fix.
 
-This structure is defined in a public header. I don't see why it has to,
-given that it's only used to associate some data with an of_device_id
-entry below. Since AM33xx never had anything but OF support in the
-mainline kernel I don't think we should add platform data.
+Please pull it in!
+Yours,
+Linus Walleij
 
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id ecap_of_match[] =3D {
-> +	{
-> +		.compatible	=3D "ti,am33xx-ecap",
-> +		.data		=3D &am33xx_data,
-> +	},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, ecap_of_match);
-> +#endif
-> +
 
-I don't quite see why we need to pass this platform data to the device
-at all since there is no other variant anyway. I think this should only
-be added if this turns out to be required at some point.
+The following changes since commit d9875690d9b89a866022ff49e3fcea892345ad92:
 
->  static int __devinit ecap_pwm_probe(struct platform_device *pdev)
->  {
->  	int ret;
->  	struct resource *r;
->  	struct clk *clk;
->  	struct ecap_pwm_chip *pc;
-> +	struct pwmss_platform_data *pdata =3D pdev->dev.platform_data;
-> +	const struct of_device_id *match;
-> +	u16 regval;
-> +	struct pinctrl *pinctrl;
-> +
-> +	match =3D of_match_device(of_match_ptr(ecap_of_match), &pdev->dev);
+  Linux 3.6-rc2 (2012-08-16 14:51:24 -0700)
 
-I've never seen of_match_ptr() used this way. Maybe you should think
-about not #ifdef'ing OF specific code at all. That way ecap_of_match
-will always exist and you could use the IS_ENABLED() macro to
-conditionalize at compile time. The compiler will probably be clever
-enough to optimize the ecap_of_match away if OF is not enabled.
+are available in the git repository at:
 
-Given my comment earlier, since AM33xx is OF only you might just as well
-add a depends on OF to this driver and things will become a lot easier.
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-for-v3.7
 
-> +
-> +	if (match)
-> +		pdata =3D (struct pwmss_platform_data *)match->data;
-> +
-> +	pinctrl =3D devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl))
-> +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
-> =20
->  	pc =3D devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
->  	if (!pc) {
-> @@ -211,6 +268,8 @@ static int __devinit ecap_pwm_probe(struct platform_d=
-evice *pdev)
-> =20
->  	pc->chip.dev =3D &pdev->dev;
->  	pc->chip.ops =3D &ecap_pwm_ops;
-> +	pc->chip.of_xlate =3D of_ecap_xlate;
-> +	pc->chip.of_pwm_n_cells =3D PWM_CELL_SIZE;
->  	pc->chip.base =3D -1;
->  	pc->chip.npwm =3D 1;
-> =20
-> @@ -231,13 +290,56 @@ static int __devinit ecap_pwm_probe(struct platform=
-_device *pdev)
->  	}
-> =20
->  	pm_runtime_enable(&pdev->dev);
-> +
-> +	/*
-> +	 * Some platform has extra PWM-subsystem common config space
-> +	 * and requires special handling of clock gating.
-> +	 */
-> +	if (pdata && pdata->has_configspace) {
-> +		r =3D platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> +		if (!r) {
-> +			dev_err(&pdev->dev, "no memory resource defined\n");
-> +			ret =3D -ENODEV;
-> +			goto err_disable_clock;
-> +		}
-> +
-> +		pc->config_base =3D devm_ioremap(&pdev->dev, r->start,
-> +				resource_size(r));
-> +		if (!pc->config_base) {
-> +			dev_err(&pdev->dev, "failed to ioremap() registers\n");
-> +			ret =3D -EADDRNOTAVAIL;
-> +			goto err_disable_clock;
-> +		}
+for you to fetch changes up to 901acf5b2910434501c221a363bb3486b647b5c4:
 
-Isn't this missing a request_mem_region()? I assume you don't do that
-here because you need the same region in the EHRPWM driver, right? This
-should be indication enough that the design is not right here. I think
-we need a proper abstraction here. Can this not be done via PM runtime
-support? If not, maybe this should be represented by clock objects since
-the bit obviously enables a clock.
+  gpio: pcf857x: select IRQ_DOMAIN (2012-09-30 23:38:53 +0200)
 
-> +
-> +		/* Enable ECAP clock gating at PWM-subsystem common config */
-> +		pm_runtime_get_sync(&pdev->dev);
-> +		regval =3D readw(pc->config_base + PWMSS_CLKCONFIG);
-> +		regval |=3D PWMSS_ECAP_CLK_EN;
-> +		writew(regval, pc->config_base + PWMSS_CLKCONFIG);
-> +		pm_runtime_put_sync(&pdev->dev);
-> +	}
-> +
->  	platform_set_drvdata(pdev, pc);
->  	return 0;
-> +
-> +err_disable_clock:
-> +	pm_runtime_disable(&pdev->dev);
-> +	return ret;
->  }
-> =20
->  static int __devexit ecap_pwm_remove(struct platform_device *pdev)
->  {
->  	struct ecap_pwm_chip *pc =3D platform_get_drvdata(pdev);
-> +	u16 regval;
-> +
-> +	if (pc->config_base) {
-> +		/* Disable ECAP clock gating at PWM-subsystem common config */
-> +		pm_runtime_get_sync(&pdev->dev);
-> +		regval =3D readw(pc->config_base + PWMSS_CLKCONFIG);
-> +		regval &=3D ~PWMSS_ECAP_CLK_EN;
-> +		writew(regval, pc->config_base + PWMSS_CLKCONFIG);
-> +		pm_runtime_put_sync(&pdev->dev);
-> +	}
-> =20
->  	pm_runtime_put_sync(&pdev->dev);
->  	pm_runtime_disable(&pdev->dev);
-> @@ -247,6 +349,9 @@ static int __devexit ecap_pwm_remove(struct platform_=
-device *pdev)
->  static struct platform_driver ecap_pwm_driver =3D {
->  	.driver =3D {
->  		.name =3D "ecap",
-> +#ifdef CONFIG_OF
-> +		.of_match_table =3D of_match_ptr(ecap_of_match),
-> +#endif
+----------------------------------------------------------------
+So this is the LW GPIO patch stack for v3.7:
+- refactoring from Thierry Redding at Arnd Bergmann's request to use
+  the seq_file iterator interface in gpiolib.
+- A new driver for Avionic Design's N-bit GPIO expander.
+- Two instances of mutexes replaced by spinlocks from Axel Lin to
+  code that is supposed to be fastpath compliant.
+- IRQ demuxer and gpio_to_irq() support for pcf857x by Kuninori
+  Morimoto.
+- Dynamic GPIO numbers, device tree support, daisy chaining and some
+  other fixes for the 74x164 driver by Maxime Ripard.
+- IRQ domain and device tree support for the tc3589x driver by
+  Lee Jones.
+- Some conversion to use managed resources devm_* code.
+- Some instances of clk_prepare() or clk_prepare_enable() added to
+  support the new, stricter common clock framework.
+- Some for_each_set_bit() simplifications.
+- Then a lot of fixes as we fixed up all of the above tripping over
+  our own shoelaces and that kind of thing.
 
-If you use of_match_ptr() you don't need the additional #ifdef
-CONFIG_OF. But as I already said I don't think you need this at all
-anyway. You should really just depend on OF and be done with it.
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      gpio: pcf857x: select IRQ_DOMAIN
 
-Thierry
+Axel Lin (12):
+      gpio: gpio-ml-ioh: Use spinlock for register access protection
+      gpio: gpio-pch: Use spinlock for register access protection
+      gpio: mc9s08dz60: Use devm_kzalloc API
+      gpio: Remove broken mark for da9052 gpio driver
+      gpio: da9052: Convert to use devm_kzalloc API
+      gpio: tps65912: Convert to use devm_kzalloc API
+      gpio: Use DEFINE_PCI_DEVICE_TABLE macro
+      gpio: adp5588: Use module_i2c_driver
+      gpio: wm831x: Convert to use devm_kzalloc API
+      gpio: wm8350: Convert to use devm_kzalloc API
+      gpio: em: Use irq_data_get_irq_chip_data() at appropriate places
+      gpio: sx150x: Use irq_data_get_irq_chip_data() at appropriate places
 
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature
+Julia Lawall (1):
+      drivers/gpio/gpio-pxa.c: use clk_prepare_enable and clk_disable_unprepare
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Kuninori Morimoto (3):
+      gpio: pcf857x: enable gpio_to_irq() support
+      gpio: pcf857x: fixup smatch WARNING
+      ARM: shmobile: kzm9g: use gpio-keys instead of gpio-keys-polled
 
-iQIcBAEBAgAGBQJQaoLuAAoJEN0jrNd/PrOhMB0P/271N18vXFA0VwKa1EMTJSAC
-CiajselnLgvaXrsYECic6lVZWEZsxgpHlu+1chk8YCLjV18mluq+ux2syI7vIUXh
-nLGZ+CfEHdiK8w86fgkItsiSP4SFrR1xPM5alYIkpn4GHe9hTfysAi5pbSAMwYQi
-h0JjLhbcNnmagMT4AGcfwJ0BOC29VlUmpktZYMSilIQ4j3WZP2Q83u3BxzSGSvRf
-G4ye09juSQgEvxv+bJMOvt/HcIStSz/4xBIm2xcxPlJrpxEwXse8iLxpA2B/avu/
-iAZEF12t/6JCyULbFPN3vcqt606wdmRuRE0alBdHmn5l4qxY8Q0jxtgL0gZrZkOz
-XDbahlbT6EyaNQbIWD6+MN4FmrMNQRKEcXGKZ081ixr/s1tcHwpB5w+2RXUvrTXY
-0m+RevgyZlJbJivtifSQOFdmaJfmRecCC01lp82HoLl2UIfAOvO1PxYOfEJS4/xC
-LdHq5Qiyyp5qUP4xHQF4BKkR3ZkZhQKFcvsVUaMwSHUXq0c73xijA/mdDfLJRGyK
-+7c5cDEoPchIP6xVpEPN1s26/lFe9qnVkS+oMuUmRHo1giQP8q7tHQZaHvdxDyDG
-VLa8z9yCGHKbG3xXS2/a1V2pQfpIOjUIliSkbe3VUtIyBgM3X68qWq9Rr5cWr1Ih
-TjSOQKjeONTL0L6bVHJI
-=UkYO
------END PGP SIGNATURE-----
+Lee Jones (2):
+      gpio: Provide the tc3589x GPIO expander driver with an IRQ domain
+      gpio: Enable the tc3298x GPIO expander driver for Device Tree
 
---FL5UXtIhxfXey3p5--
+Maxime Ripard (6):
+      gpio: 74x164: Use module_spi_driver boiler plate function
+      gpio: 74x164: Use devm_kzalloc
+      gpio: 74x164: Use dynamic gpio number assignment if no pdata is present
+      gpio: 74x164: Add device tree support
+      gpio: 74x164: dts: Add documentation for the dt binding
+      gpio: 74x164: Add support for the daisy-chaining
+
+Murali Karicheri (1):
+      gpio: davinci: preparation for switch to common clock framework
+
+Roland Stigge (2):
+      gpio-lpc32xx: Add GPI_28
+      gpio: Document device_node's det_debounce
+
+Sachin Kamat (1):
+      dt: Fix incorrect reference in gpio-led documentation
+
+Thierry Reding (3):
+      gpiolib: Use seq_file's iterator interface
+      gpio: Add Avionic Design N-bit GPIO expander support
+      gpio: adnp: dt: Reference generic interrupt binding
+
+Wei Yongjun (2):
+      gpio_msm: using for_each_set_bit to simplify the code
+      gpio: pxa: using for_each_set_bit to simplify the code
+
+ .../devicetree/bindings/gpio/gpio-74x164.txt       |  22 +
+ .../devicetree/bindings/gpio/gpio-adnp.txt         |  34 ++
+ Documentation/devicetree/bindings/gpio/led.txt     |   2 +-
+ arch/arm/configs/kzm9g_defconfig                   |   2 +-
+ arch/arm/mach-shmobile/board-kzm9g.c               |   5 +-
+ drivers/gpio/Kconfig                               |  14 +-
+ drivers/gpio/Makefile                              |   1 +
+ drivers/gpio/gpio-74x164.c                         | 103 +++-
+ drivers/gpio/gpio-adnp.c                           | 611 +++++++++++++++++++++
+ drivers/gpio/gpio-adp5588.c                        |  14 +-
+ drivers/gpio/gpio-bt8xx.c                          |   2 +-
+ drivers/gpio/gpio-da9052.c                         |  15 +-
+ drivers/gpio/gpio-davinci.c                        |   2 +-
+ drivers/gpio/gpio-em.c                             |  12 +-
+ drivers/gpio/gpio-lpc32xx.c                        |   3 +-
+ drivers/gpio/gpio-mc9s08dz60.c                     |  21 +-
+ drivers/gpio/gpio-ml-ioh.c                         |  20 +-
+ drivers/gpio/gpio-msm-v2.c                         |   4 +-
+ drivers/gpio/gpio-pcf857x.c                        | 122 ++++
+ drivers/gpio/gpio-pch.c                            |  22 +-
+ drivers/gpio/gpio-pxa.c                            |  13 +-
+ drivers/gpio/gpio-sodaville.c                      |   2 +-
+ drivers/gpio/gpio-sx150x.c                         |  24 +-
+ drivers/gpio/gpio-tc3589x.c                        | 120 ++--
+ drivers/gpio/gpio-tps65912.c                       |  17 +-
+ drivers/gpio/gpio-wm831x.c                         |  19 +-
+ drivers/gpio/gpio-wm8350.c                         |  19 +-
+ drivers/gpio/gpiolib.c                             | 102 +++-
+ include/asm-generic/gpio.h                         |   2 +
+ include/linux/i2c/pcf857x.h                        |   3 +
+ 30 files changed, 1104 insertions(+), 248 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-74x164.txt
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-adnp.txt
+ create mode 100644 drivers/gpio/gpio-adnp.c
