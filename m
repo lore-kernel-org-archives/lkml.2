@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2JBUUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 16:20:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42615 "EHLO
+	id S1752906Ab2JBUWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:22:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35545 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2JBUUa (ORCPT
+	with ESMTP id S1752545Ab2JBUWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 16:20:30 -0400
-Date: Tue, 2 Oct 2012 13:20:26 -0700
+	Tue, 2 Oct 2012 16:22:30 -0400
+Date: Tue, 2 Oct 2012 13:22:27 -0700
 From: Kent Overstreet <koverstreet@google.com>
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, linux-s390@vger.kernel.org,
-        Chris Mason <chris.mason@fusionio.com>, Jiri Kosina <jkosina@suse.cz>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Alasdair Kergon <agk@redhat.com>, tj@kernel.org,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Lars Ellenberg <drbd-dev@lists.linbit.com>
-Subject: Re: [dm-devel] [PATCH v3 06/26] block: Add bio_end_sector()
-Message-ID: <20121002202026.GN26488@google.com>
+        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk
+Subject: Re: [dm-devel] [PATCH v3 11/26] block: Add submit_bio_wait(), remove
+ from md
+Message-ID: <20121002202227.GO26488@google.com>
 References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-7-git-send-email-koverstreet@google.com>
- <20121002181001.GB3283@redhat.com>
+ <1348526106-17074-12-git-send-email-koverstreet@google.com>
+ <20121002194132.GF3283@redhat.com>
+ <20121002201105.GL26488@google.com>
+ <20121002201630.GI758@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121002181001.GB3283@redhat.com>
+In-Reply-To: <20121002201630.GI758@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 02:10:01PM -0400, Vivek Goyal wrote:
-> On Mon, Sep 24, 2012 at 03:34:46PM -0700, Kent Overstreet wrote:
+On Tue, Oct 02, 2012 at 04:16:30PM -0400, Vivek Goyal wrote:
+> On Tue, Oct 02, 2012 at 01:11:05PM -0700, Kent Overstreet wrote:
+> > On Tue, Oct 02, 2012 at 03:41:32PM -0400, Vivek Goyal wrote:
+> > > On Mon, Sep 24, 2012 at 03:34:51PM -0700, Kent Overstreet wrote:
+> > > > Random cleanup - this code was duplicated and it's not really specific
+> > > > to md.
+> > > > 
+> > > > Also added the ability to return the actual error code.
+> > > 
+> > > Who is going to make use of actual error code and why checking
+> > > BIO_UPTODATE is not sufficient (as existing code is doing)?
+> > 
+> > Some things do, though it's not common and I forget where I saw it -
+> > checking for -ENOTSUPPORTED vs. other stuff
 > 
-> [..]
-> > diff --git a/include/linux/bio.h b/include/linux/bio.h
-> > index 4e32be1..d985e90 100644
-> > --- a/include/linux/bio.h
-> > +++ b/include/linux/bio.h
-> > @@ -67,6 +67,7 @@
-> >  #define bio_offset(bio)		bio_iovec((bio))->bv_offset
-> >  #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_idx)
-> >  #define bio_sectors(bio)	((bio)->bi_size >> 9)
-> > +#define bio_end_sector(bio)	((bio)->bi_sector + bio_sectors(bio))
-> 
-> May be it is just me. But bio_end_sector() kind of sounds that it will
-> calculate to the last sector of bio. So I thought of it more as
-> bio_last_sector() and not the sector which is next to the last sector.
-> 
-> Will it make sense to introduce bio_last_sector() and use +1 everywhere.
-> Or may be we need a better name. Can't think of one though.
+> May be we can introduce "submit_bio_ret" stuff when we find the actual
+> user in the series. Justifying code change becomes easier. 
 
-Ugh, that sounds like it'd be just begging for fencepost errors. I've
-never ran into a situation where I needed bio->bi_sector +
-bio_sectors(bio) - 1, either.
+Eh, IMO as generic code it's just better/more sensible that way;
+bio_endio() does pass an actual error code, so the sync version should
+pass it up too. Otherwise it's a needless inconsistency.
 
-I kind of see your point... it seems like there should be a name for
-this concept (same as a pointer to the end of an array), but I can't
-think of one.
+Honestly I would prefer sticking an error field in struct bio. That'd be
+useful for other things, too.
