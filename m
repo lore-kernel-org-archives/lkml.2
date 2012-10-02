@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2JBO2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:28:35 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:20561
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754038Ab2JBO2e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:28:34 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I542M1432I4015Izz1202h1d1ah1d2ahzz8275dhz2fh2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1155h)
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH net, 3/3] hyperv: Fix page buffer handling in
- rndis_filter_send_request()
-Thread-Topic: [PATCH net, 3/3] hyperv: Fix page buffer handling in
- rndis_filter_send_request()
-Thread-Index: AQHNoHljbgzgJY0lzkKaM4dpsOAA1pemE0uQ
-Date: Tue, 2 Oct 2012 14:28:25 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DE326F6@TK5EX14MBXC221.redmond.corp.microsoft.com>
-References: <1349130657-7987-1-git-send-email-haiyangz@microsoft.com>
- <1349130657-7987-3-git-send-email-haiyangz@microsoft.com>
- <20121002083847.GR4587@mwanda>
-In-Reply-To: <20121002083847.GR4587@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.75]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1754166Ab2JBOcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:32:17 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:65070 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753686Ab2JBOcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:32:16 -0400
+Subject: RE: How to schedule worker and threaded IRQ on same cpu/core
+From: anish kumar <anish198519851985@gmail.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD2A1EE5@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD2A1E0A@BGSMSX102.gar.corp.intel.com>
+	 <1349181465.1440.1.camel@anish-Inspiron-N5050>
+	 <D854C92F57B1B347B57E531E78D05EAD2A1EE5@BGSMSX102.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Oct 2012 20:02:06 +0530
+Message-ID: <1349188326.1440.22.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Tuesday, October 02, 2012 4:39 AM
-> To: Haiyang Zhang
-> Cc: davem@davemloft.net; netdev@vger.kernel.org; olaf@aepfle.de;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH net, 3/3] hyperv: Fix page buffer handling in
-> rndis_filter_send_request()
+On Tue, 2012-10-02 at 12:54 +0000, Pallala, Ramakrishna wrote:
+> > > How can I schedule driver's worker and threaded IRQ on the same core?
+> > >
+> > > For work queue we have schedule_delayed_work_on () API available.
+> > > But how to schedule the threaded IRQ on the same core where my worker
+> > thread is going to run?
+> > Why do you need to worry about where your worker thread is going to run?
+> > Or IOW what use case do you have in mind?
 > 
-> On Mon, Oct 01, 2012 at 03:30:57PM -0700, Haiyang Zhang wrote:
-> > Add another page buffer if the request message crossed page boundary.
-> >
+> In my driver I can get two independent events(IRQ and kernel notification). One will be handled by
+> Threaded IRQ and other will be handled by a worker and the order is not guaranteed and with two cores
+> Sometimes both workers are being scheduled  parallel.
+So what is the problem even if they run in parallel, it would
+be really help if we know what problem you are trying to solve?
+Even if you want to sync between these two then you can have some
+synchronisation mechanism between the two.
+What is the advantage you are going to get if they run on same core?
+
+Sorry but these answers would really help community in resolving your
+problem.
 > 
-> What are the user visible effects of this bug fix?  Please put that
-> in the commit message.
-
-Will do.
-
-Thanks,
-- Haiyang
+> The events I get from two sources are related so I wanted to run my workers and threaded IRQ on single(same) core/cpu.
+> 
+> Thanks,
+> Ram
+>  
+> 
 
 
