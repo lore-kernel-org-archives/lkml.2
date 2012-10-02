@@ -1,110 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab2JBVDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:03:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62950 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212Ab2JBVDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:03:47 -0400
+	id S932298Ab2JBVFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:05:03 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:49767 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756172Ab2JBVE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 17:04:59 -0400
+Date: Tue, 2 Oct 2012 15:04:53 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v2] TPM: Provide a tpm_tis OF driver
+Message-ID: <20121002210453.GA12231@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
-	<4FE37194.30407@redhat.com>
-	<4FE8B8BC.3020702@iki.fi>
-	<4FE8C4C4.1050901@redhat.com>
-	<4FE8CED5.104@redhat.com>
-	<20120625223306.GA2764@kroah.com>
-	<4FE9169D.5020300@redhat.com>
-	<20121002100319.59146693@redhat.com>
-	<CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
-Date: Wed, 3 Oct 2012 00:03:46 +0300
-Message-ID: <CABA=pqdRwA5_AVysq_0ynuChQ++oQ0j2BWyPg4Qq=LjYa-7P2A@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-From: Ivan Kalvachev <ikalvachev@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>, Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/2/12, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Tue, Oct 2, 2012 at 6:03 AM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
->>
->> I basically tried a few different approaches, including deferred probe(),
->> as you suggested, and request_firmware_async(), as Kay suggested.
->
-> Stop this crazy. FIX UDEV ALREADY, DAMMIT.
->
-> Who maintains udev these days? Is it Lennart/Kai, as part of systemd?
->
-> Lennart/Kai, fix the udev regression already. Lennart was the one who
-> brought up kernel ABI regressions at some conference, and if you now
-> you have the *gall* to break udev in an incompatible manner that
-> requires basically impossible kernel changes for the kernel to "fix"
-> the udev interface, I don't know what to say.
->
-> "Two-faced lying weasel" would be the most polite thing I could say.
-> But it almost certainly will involve a lot of cursing.
->
->> However, for 3.7 or 3.8, I think that the better is to revert changeset
->> 177bc7dade38b5
->> and to stop with udev's insanity of requiring asynchronous firmware load
->> during
->> device driver initialization. If udev's developers are not willing to do
->> that,
->> we'll likely need to add something at the drivers core to trick udev for
->> it to
->> think that the modules got probed before the probe actually happens.
->
-> The fact is, udev made new - and insane - rules that are simply
-> *invalid*. Modern udev is broken, and needs to be fixed.
->
-> I don't know where the problem started in udev, but the report I saw
-> was that udev175 was fine, and udev182 was broken, and would deadlock
-> if module_init() did a request_firmware(). That kind of nested
-> behavior is absolutely *required* to work, in order to not cause
-> idiotic problems for the kernel for no good reason.
->
-> What kind of insane udev maintainership do we have? And can we fix it?
->
-> Greg, I think you need to step up here too. You were the one who let
-> udev go. If the new maintainers are causing problems, they need to be
-> fixed some way.
+This provides an open firwmare driver binding for tpm_tis. OF
+is useful on arches where PNP is not used.
 
-I'm not kernel developer and probably my opinion would be a little
-naive, but here it is.
+Allow the tpm_tis driver to be selected if OF is compiled in.
 
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/Kconfig   |    2 +-
+ drivers/char/tpm/tpm_tis.c |   79 +++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 65 insertions(+), 16 deletions(-)
 
-Please, make the kernel load firmware from the filesystem on its own.
+v2 changes:
+ - Add irq_autoprobe to tpm_tis_init to simplify the logic around
+   the autoprobe function
+ - Use platform functions in tis_of_probe_one
+ - Rename tis_drv to tis_driver to silence MODPOST warnings
+ - checkpatch cleanups
+ - Do not attempt to auto-probe the TPM on OF configurations
 
+diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+index a048199..a346714 100644
+--- a/drivers/char/tpm/Kconfig
++++ b/drivers/char/tpm/Kconfig
+@@ -26,7 +26,7 @@ if TCG_TPM
+ 
+ config TCG_TIS
+ 	tristate "TPM Interface Specification 1.2 Interface"
+-	depends on X86
++	depends on X86 || OF
+ 	---help---
+ 	  If you have a TPM security chip that is compliant with the
+ 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index c4be351..23c6562 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -27,6 +27,7 @@
+ #include <linux/wait.h>
+ #include <linux/acpi.h>
+ #include <linux/freezer.h>
++#include <linux/of_device.h>
+ #include "tpm.h"
+ 
+ enum tis_access {
+@@ -507,7 +508,7 @@ module_param(interrupts, bool, 0444);
+ MODULE_PARM_DESC(interrupts, "Enable interrupts");
+ 
+ static int tpm_tis_init(struct device *dev, resource_size_t start,
+-			resource_size_t len, unsigned int irq)
++			resource_size_t len, int irq, int irq_autoprobe)
+ {
+ 	u32 vendor, intfcaps, intmask;
+ 	int rc, i, irq_s, irq_e, probe;
+@@ -605,9 +606,12 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 	iowrite32(intmask,
+ 		  chip->vendor.iobase +
+ 		  TPM_INT_ENABLE(chip->vendor.locality));
+-	if (interrupts)
+-		chip->vendor.irq = irq;
+-	if (interrupts && !chip->vendor.irq) {
++	if (!interrupts) {
++		irq = 0;
++		irq_autoprobe = 0;
++	}
++	chip->vendor.irq = irq;
++	if (irq == 0 && irq_autoprobe) {
+ 		irq_s =
+ 		    ioread8(chip->vendor.iobase +
+ 			    TPM_INT_VECTOR(chip->vendor.locality));
+@@ -739,13 +743,11 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+ 
+ 	if (pnp_irq_valid(pnp_dev, 0))
+ 		irq = pnp_irq(pnp_dev, 0);
+-	else
+-		interrupts = 0;
+ 
+ 	if (is_itpm(pnp_dev))
+ 		itpm = 1;
+ 
+-	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
++	return tpm_tis_init(&pnp_dev->dev, start, len, irq, 0);
+ }
+ 
+ static int tpm_tis_pnp_suspend(struct pnp_dev *dev, pm_message_t msg)
+@@ -768,7 +770,7 @@ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
+ 	return ret;
+ }
+ 
+-static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
++static const struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
+ 	{"PNP0C31", 0},		/* TPM */
+ 	{"ATM1200", 0},		/* Atmel */
+ 	{"IFX0102", 0},		/* Infineon */
+@@ -792,7 +794,7 @@ static __devexit void tpm_tis_pnp_remove(struct pnp_dev *dev)
+ }
+ 
+ 
+-static struct pnp_driver tis_pnp_driver = {
++static const struct pnp_driver tis_pnp_driver = {
+ 	.name = "tpm_tis",
+ 	.id_table = tpm_pnp_tbl,
+ 	.probe = tpm_tis_pnp_init,
+@@ -821,12 +823,52 @@ static int tpm_tis_resume(struct device *dev)
+ 
+ static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
+ 
+-static struct platform_driver tis_drv = {
++#ifdef CONFIG_OF
++static const struct of_device_id tis_of_platform_match[] __devinitdata = {
++	{.compatible = "tcg,tpm_tis"},
++	{},
++};
++MODULE_DEVICE_TABLE(of, tis_of_platform_match);
++
++static int __devinit tis_of_probe_one(struct platform_device *pdev)
++{
++	const struct resource *res;
++	int irq;
++
++	if (!pdev->dev.of_node)
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		irq = 0;
++	return tpm_tis_init(&pdev->dev, res->start, res->end - res->start + 1,
++			    irq, 0);
++}
++
++static int __devexit tis_of_remove_one(struct platform_device *odev)
++{
++	struct tpm_chip *chip = dev_get_drvdata(&odev->dev);
++	tpm_dev_vendor_release(chip);
++	kfree(chip);
++	return 0;
++}
++#endif
++
++static struct platform_driver tis_driver = {
+ 	.driver = {
+ 		.name = "tpm_tis",
+ 		.owner		= THIS_MODULE,
+ 		.pm		= &tpm_tis_pm,
++		.of_match_table = of_match_ptr(tis_of_platform_match),
+ 	},
++#ifdef CONFIG_OF
++	.probe = tis_of_probe_one,
++	.remove = __devexit_p(tis_of_remove_one)
++#endif
+ };
+ 
+ static struct platform_device *pdev;
+@@ -842,15 +884,22 @@ static int __init init_tis(void)
+ 		return pnp_register_driver(&tis_pnp_driver);
+ #endif
+ 
+-	rc = platform_driver_register(&tis_drv);
++	rc = platform_driver_register(&tis_driver);
+ 	if (rc < 0)
+ 		return rc;
+-	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
++	/* TIS_MEM_BASE is only going to work on x86.. */
++#ifndef CONFIG_OF
++	pdev = platform_device_register_simple("tpm_tis", -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		platform_driver_unregister(&tis_driver);
+ 		return PTR_ERR(pdev);
+-	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
++	}
++	rc = tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0, 1);
++	if (rc != 0) {
+ 		platform_device_unregister(pdev);
+-		platform_driver_unregister(&tis_drv);
++		platform_driver_unregister(&tis_driver);
+ 	}
++#endif
+ 	return rc;
+ }
+ 
+@@ -882,7 +931,7 @@ static void __exit cleanup_tis(void)
+ 	}
+ #endif
+ 	platform_device_unregister(pdev);
+-	platform_driver_unregister(&tis_drv);
++	platform_driver_unregister(&tis_driver);
+ }
+ 
+ module_init(init_tis);
+-- 
+1.7.5.4
 
-This should solve almost 99.9% of the problems related to firmware loading.
-
-I don't mind if there is still userland component that could be used
-to request a firmware from repository. You can even keep the udev
-userland piping as a fallback if you want, but I think you can
-simplify a lot of code if you phase it out. The firmware loading
-should follow the same concept as modules loading.
-
-I've heard that the udev userland piping of firmware is done to avoid
-some licensing issues. But honestly, if you can not store the firmware
-on the user's disk, no free operating system should support it at all.
-
-This piping thing have been feature creep that have metastasized all
-over the kernel while keeping a lot of obscure modules broken (in hard
-to find way) and requiring increasingly complicated schemes to
-workaround its flaws.
-
-KiSS.
-
-Best Regards
-   Ivan Kalvachev
