@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2JBWbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 18:31:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49602 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab2JBWbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 18:31:16 -0400
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20121002221736.GB29218@linux.vnet.ibm.com>
-Date: Wed, 3 Oct 2012 00:31:09 +0200
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, anton@samba.org,
-        skinsbursky@parallels.com, bfields@redhat.com,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+	id S1754624Ab2JBWbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 18:31:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53463 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab2JBWbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 18:31:50 -0400
+Date: Tue, 2 Oct 2012 15:31:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v3 00/10] Introduce huge zero page
+Message-Id: <20121002153148.1ae1020a.akpm@linux-foundation.org>
+In-Reply-To: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <E141CA01-F58C-47B1-8ED5-A314D1DEC968@suse.de>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de> <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com> <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de> <20120928151043.GA19102@fieldses.org> <2A52FC96-148C-4F7A-9950-E152E0C6698D@suse.de> <1349139509.3847.2.camel@pasglop> <20121002214327.GA29218@linux.vnet.ibm.com> <9257E705-4EF9-4347-945C-B4A7582C427F@suse.de> <20121002221736.GB29218@linux.vnet.ibm.com>
-To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  2 Oct 2012 18:19:22 +0300
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-On 03.10.2012, at 00:17, Nishanth Aravamudan wrote:
-
-> On 02.10.2012 [23:47:39 +0200], Alexander Graf wrote:
->> 
->> On 02.10.2012, at 23:43, Nishanth Aravamudan wrote:
->> 
->>> Hi Ben,
->>> 
->>> On 02.10.2012 [10:58:29 +1000], Benjamin Herrenschmidt wrote:
->>>> On Mon, 2012-10-01 at 16:03 +0200, Alexander Graf wrote:
->>>>> Phew. Here we go :). It looks to be more of a PPC specific problem
->>>>> than it appeared as at first:
->>>> 
->>>> Ok, so I suspect the problem is the pushing down of the locks which
->>>> breaks with iommu backends that have a separate flush callback. In
->>>> that case, the flush moves out of the allocator lock.
->>>> 
->>>> Now we do call flush before we return, still, but it becomes racy
->>>> I suspect, but somebody needs to give it a closer look. I'm hoping
->>>> Anton or Nish will later today.
->>> 
->>> Started looking into this. If your suspicion were accurate, wouldn't the
->>> bisection have stopped at 0e4bc95d87394364f408627067238453830bdbf3
->>> ("powerpc/iommu: Reduce spinlock coverage in iommu_alloc and
->>> iommu_free")?
->>> 
->>> Alex, the error is reproducible, right?
->> 
->> Yes. I'm having a hard time to figure out if the reason my U4 based G5
->> Mac crashes and fails reading data is the same since I don't have a
->> serial connection there, but I assume so.
+> During testing I noticed big (up to 2.5 times) memory consumption overhead
+> on some workloads (e.g. ft.A from NPB) if THP is enabled.
 > 
-> Ok, great, thanks. Yeah, that would imply (I think) that the I would
-> have thought the lock pushdown in the above commit (or even in one of
-> the others in Anton's series) would have been the real source if it was
-> a lock-based race. But that's just my first sniff at what Ben was
-> suggesting. Still reading/understanding the code.
+> The main reason for that big difference is lacking zero page in THP case.
+> We have to allocate a real page on read page fault.
 > 
->>> Does it go away by reverting
->>> that commit against mainline? Just trying to narrow down my focus.
->> 
->> The patch doesn't revert that easily. Mind to provide a revert patch
->> so I can try?
+> A program to demonstrate the issue:
+> #include <assert.h>
+> #include <stdlib.h>
+> #include <unistd.h>
 > 
-> The following at least builds on defconfig here:
+> #define MB 1024*1024
+> 
+> int main(int argc, char **argv)
+> {
+>         char *p;
+>         int i;
+> 
+>         posix_memalign((void **)&p, 2 * MB, 200 * MB);
+>         for (i = 0; i < 200 * MB; i+= 4096)
+>                 assert(p[i] == 0);
+>         pause();
+>         return 0;
+> }
+> 
+> With thp-never RSS is about 400k, but with thp-always it's 200M.
+> After the patcheset thp-always RSS is 400k too.
 
-Yes. With that patch applied, things work for me again.
+I'd like to see a full description of the design, please.
+
+>From reading the code, it appears that we initially allocate a huge
+page and point the pmd at that.  If/when there is a write fault against
+that page we then populate the mm with ptes which point at the normal
+4k zero page and populate the pte at the fault address with a newly
+allocated page?   Correct and complete?  If not, please fix ;)
+
+Also, IIRC, the early versions of the patch did not allocate the
+initial huge page at all - it immediately filled the mm with ptes which
+point at the normal 4k zero page.  Is that a correct recollection?
+If so, why the change?
+
+Also IIRC, Andrea had a little test app which demonstrated the TLB
+costs of the inital approach, and they were high?
+
+Please, let's capture all this knowledge in a single place, right here
+in the changelog.  And in code comments, where appropriate.  Otherwise
+people won't know why we made these decisions unless they go off and
+find lengthy, years-old and quite possibly obsolete email threads.
 
 
-Alex
+Also, you've presented some data on the memory savings, but no
+quantitative testing results on the performance cost.  Both you and
+Andrea have run these tests and those results are important.  Let's
+capture them here.  And when designing such tests we should not just
+try to demonstrate the benefits of a code change - we should think of
+test cases whcih might be adversely affected and run those as well.
+
+
+It's not an appropriate time to be merging new features - please plan
+on preparing this patchset against 3.7-rc1.
 
