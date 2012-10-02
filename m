@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab2JBSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 14:49:29 -0400
-Received: from listserv2.niif.hu ([193.225.14.155]:36253 "EHLO
-	listserv2.niif.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab2JBSt1 (ORCPT
+	id S1753226Ab2JBSvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 14:51:21 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45904 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab2JBSvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 14:49:27 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: "Michael Chan" <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org, "Matt Carlson" <mcarlson@broadcom.com>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        "Rob Herring" <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        wferi@niif.hu
-Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter SoL
-References: <87txuhho5z.fsf@lant.ki.iif.hu>
-	<1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<87a9w5dqle.fsf@lant.ki.iif.hu>
-	<1349190185.5420.21.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<87haqcddks.fsf@lant.ki.iif.hu>
-	<1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Date: Tue, 02 Oct 2012 20:49:15 +0200
-In-Reply-To: <1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	(Michael Chan's message of "Tue, 2 Oct 2012 10:06:47 -0700")
-Message-ID: <87626sd80j.fsf@lant.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Tue, 2 Oct 2012 14:51:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.DEB.2.02.1210021724300.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210021724300.29232@kaball.uk.xensource.com>
+Date: Tue, 2 Oct 2012 14:51:19 -0400
+X-Google-Sender-Auth: H2o8dullfBLSkNXiLKMs9X_pMUE
+Message-ID: <CACJDEmrV4uqLQ5wPGTQ7vHRAo3hHXDdWrTB5h65hfF+B9rJCgQ@mail.gmail.com>
+Subject: Re: [PATCH] xen: resolve merge conflict with 617276307cd4cdb9a95c77efaa3063695af63aa7
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        xen-devel@lists.xensource.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Chan" <mchan@broadcom.com> writes:
+On Tue, Oct 2, 2012 at 1:29 PM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> The Xen tree tries to add a line to
+> arch/arm/mach-vexpress/Makefile.boot that has been removed by the
+> following commit in Linus' master:
+>
+> commit 617276307cd4cdb9a95c77efaa3063695af63aa7
+> Author: Rob Herring <rob.herring@calxeda.com>
+> Date:   Thu Sep 6 13:43:04 2012 -0500
+>
+>     ARM: vexpress: convert to multi-platform
+>
+> In fact the dts Makefile is now arch/arm/boot/dts/Makefile, as per
+> commit 9cd11c0c47b8690b47e7573311ce5c483cb344ed.
+>
+>
+> This is the merge resolution patch.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-> On Tue, 2012-10-02 at 18:49 +0200, Ferenc Wagner wrote:
->
->> Going into the opposite direction: I found that Linux 3.6 does not
->> permanently break the SoL console on upping eth0!  I'll try to find
->> the commit which (sort of) fixed it.
->
-> These are the likely fixes:
->
-> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db 
-> Author: Matt Carlson <mcarlson@broadcom.com>
-> Date: Mon Nov 28 09:41:03 2011 +0000
->
-> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
-
-You are exactly right: cf9ecf4b fixed the premanent SoL breakage
-introduced by dabc5c67.  Looks like ASF utilizes similar technology to
-that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
-wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it's
-possible to work around in 3.2 by eg. fiddling some ethtool setting?
--- 
-Thanks,
-Feri.
+Great. Thanks for posting it!
