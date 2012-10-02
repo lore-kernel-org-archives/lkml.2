@@ -1,321 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986Ab2JBADm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:03:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56274 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab2JBADj (ORCPT
+	id S1752469Ab2JBAKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:10:55 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:38739 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2JBAKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:03:39 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506A2F2B.8060204@jp.fujitsu.com>
-Date: Tue, 2 Oct 2012 09:02:51 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 1 Oct 2012 20:10:34 -0400
+From: Nix <nix@esperi.org.uk>
+To: Pierre Beck <mail@pierre-beck.de>
+Cc: Chris Murphy <lists@colorremedies.com>,
+        Linux RAID <linux-raid@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: Areca hardware RAID / first-ever SCSI bus reset: am I about to lose this disk controller?
+References: <87mx0lsv4d.fsf@spindle.srvr.nix>
+	<FCFB407F-9FED-4B4E-B5D9-62AB363050D2@colorremedies.com>
+	<87r4pslpau.fsf@spindle.srvr.nix> <506A0BFB.60606@pierre-beck.de>
+Emacs: a Lisp interpreter masquerading as ... a Lisp interpreter!
+Date: Tue, 02 Oct 2012 01:10:12 +0100
+In-Reply-To: <506A0BFB.60606@pierre-beck.de> (Pierre Beck's message of "Mon,
+	01 Oct 2012 23:33:15 +0200")
+Message-ID: <87mx057mzf.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-CC: <wency@cn.fujitsu.com>, <x86@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC v9 PATCH 00/21] memory-hotplug: hot-remove physical memory
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <5066AF1A.4090509@gmail.com> <50691FBA.5080107@jp.fujitsu.com> <506A2B33.80603@gmail.com>
-In-Reply-To: <506A2B33.80603@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=4 Fuz1=4 Fuz2=4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
-
-2012/10/02 8:45, Ni zhan Chen wrote:
-> On 10/01/2012 12:44 PM, Yasuaki Ishimatsu wrote:
->> Hi Chen,
+On 1 Oct 2012, Pierre Beck stated:
+> On 23.09.2012 17:42, Nix wrote:
+>> On 19 Sep 2012, Chris Murphy outgrape:
 >>
->> 2012/09/29 17:19, Ni zhan Chen wrote:
->>> On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
->>>> From: Wen Congyang <wency@cn.fujitsu.com>
->>>>
->>>> This patch series aims to support physical memory hot-remove.
->>>>
->>>> The patches can free/remove the following things:
->>>>
->>>>    - acpi_memory_info                          : [RFC PATCH 4/19]
->>>>    - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 8/19]
->>>>    - iomem_resource                            : [RFC PATCH 9/19]
->>>>    - mem_section and related sysfs files       : [RFC PATCH 10-11, 13-16/19]
->>>>    - page table of removed memory              : [RFC PATCH 12/19]
->>>>    - node and related sysfs files              : [RFC PATCH 18-19/19]
->>>>
->>>> If you find lack of function for physical memory hot-remove, please let me
->>>> know.
->>>>
->>>> How to test this patchset?
->>>> 1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
->>>>     ACPI_HOTPLUG_MEMORY must be selected.
->>>> 2. load the module acpi_memhotplug
+>>> On Sep 19, 2012, at 12:52 PM, Nix wrote:
 >>>
->>> Hi Yasuaki,
->>>
->>> where is the acpi_memhotplug module?
->>
->> If you build acpi_memhotplug as module, it is created under
->> /lib/modules/<kernel-version>/driver/acpi/ directory. It depends
->> on config ACPI_HOTPLUG_MEMORY. The confing is [*], it becomes built-in
->> function. So you don't need to care about it.
->> Thanks,
->> Yasuaki Ishimatsu
->
-> Hi Yasuaki,
->
-> I build the kernel, MEMORY_HOTPLUG, MEMORY_HOTREMOVE, ACPI_HOTPLUG_MEMORY are seleted as [*], but I can't find PNP0C80:XX under the directory /sys/bus/acpi/devices/.
->
-> [root@localhost ~]# ls /sys/bus/acpi/devices/
-> device:00  device:07  device:0e  device:15  device:1c  device:23 device:2a   LNXCPU:00  LNXCPU:07    PNP0501:00  PNP0C02:00 PNP0C0F:02 PNP0C14:01
-> device:01  device:08  device:0f  device:16  device:1d  device:24 device:2b   LNXCPU:01  LNXPWRBN:00  PNP0800:00  PNP0C02:01 PNP0C0F:03 PNP0C31:00
-> device:02  device:09  device:10  device:17  device:1e  device:25 device:2c   LNXCPU:02  LNXSYSTM:00  PNP0A08:00  PNP0C02:02 PNP0C0F:04
-> device:03  device:0a  device:11  device:18  device:1f  device:26 device:2d   LNXCPU:03  PNP0000:00   PNP0B00:00  PNP0C04:00 PNP0C0F:05
-> device:04  device:0b  device:12  device:19  device:20  device:27 device:2e   LNXCPU:04  PNP0100:00   PNP0C01:00  PNP0C0C:00 PNP0C0F:06
-> device:05  device:0c  device:13  device:1a  device:21  device:28 device:2f   LNXCPU:05  PNP0103:00   PNP0C01:01  PNP0C0F:00 PNP0C0F:07
-> device:06  device:0d  device:14  device:1b  device:22  device:29 INT3F0D:00  LNXCPU:06  PNP0200:00   PNP0C01:02  PNP0C0F:01 PNP0C14:00
->
-> then what I miss ? thanks.
-
-It depend on hardware. It seems that your system does not support
-memory hotplug. If you use KVM, you can try memory hotplug on KVM
-guest by applying Vasilis' patch-set.
-
-http://lists.gnu.org/archive/html/qemu-devel/2012-07/msg01389.html
-
-Thanks,
-Yasuaki Ishimatsu
-
->
->>
->>>
->>>> 3. hotplug the memory device(it depends on your hardware)
->>>>     You will see the memory device under the directory /sys/bus/acpi/devices/.
->>>>     Its name is PNP0C80:XX.
->>>> 4. online/offline pages provided by this memory device
->>>>     You can write online/offline to /sys/devices/system/memory/memoryX/state to
->>>>     online/offline pages provided by this memory device
->>>> 5. hotremove the memory device
->>>>     You can hotremove the memory device by the hardware, or writing 1 to
->>>>     /sys/bus/acpi/devices/PNP0C80:XX/eject.
->>>>
->>>> Note: if the memory provided by the memory device is used by the kernel, it
->>>> can't be offlined. It is not a bug.
->>>>
->>>> Known problems:
->>>> 1. memory can't be offlined when CONFIG_MEMCG is selected.
->>>>     For example: there is a memory device on node 1. The address range
->>>>     is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
->>>>     and memory11 under the directory /sys/devices/system/memory/.
->>>>     If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
->>>>     when we online pages. When we online memory8, the memory stored page cgroup
->>>>     is not provided by this memory device. But when we online memory9, the memory
->>>>     stored page cgroup may be provided by memory8. So we can't offline memory8
->>>>     now. We should offline the memory in the reversed order.
->>>>     When the memory device is hotremoved, we will auto offline memory provided
->>>>     by this memory device. But we don't know which memory is onlined first, so
->>>>     offlining memory may fail. In such case, you should offline the memory by
->>>>     hand before hotremoving the memory device.
->>>> 2. hotremoving memory device may cause kernel panicked
->>>>     This bug will be fixed by Liu Jiang's patch:
->>>>     https://lkml.org/lkml/2012/7/3/1
->>>>
->>>> change log of v9:
->>>>   [RFC PATCH v9 8/21]
->>>>     * add a lock to protect the list map_entries
->>>>     * add an indicator to firmware_map_entry to remember whether the memory
->>>>       is allocated from bootmem
->>>>   [RFC PATCH v9 10/21]
->>>>     * change the macro to inline function
->>>>   [RFC PATCH v9 19/21]
->>>>     * don't offline the node if the cpu on the node is onlined
->>>>   [RFC PATCH v9 21/21]
->>>>     * create new patch: auto offline page_cgroup when onlining memory block
->>>>       failed
->>>>
->>>> change log of v8:
->>>>   [RFC PATCH v8 17/20]
->>>>     * Fix problems when one node's range include the other nodes
->>>>   [RFC PATCH v8 18/20]
->>>>     * fix building error when CONFIG_MEMORY_HOTPLUG_SPARSE or CONFIG_HUGETLBFS
->>>>       is not defined.
->>>>   [RFC PATCH v8 19/20]
->>>>     * don't offline node when some memory sections are not removed
->>>>   [RFC PATCH v8 20/20]
->>>>     * create new patch: clear hwpoisoned flag when onlining pages
->>>>
->>>> change log of v7:
->>>>   [RFC PATCH v7 4/19]
->>>>     * do not continue if acpi_memory_device_remove_memory() fails.
->>>>   [RFC PATCH v7 15/19]
->>>>     * handle usemap in register_page_bootmem_info_section() too.
->>>>
->>>> change log of v6:
->>>>   [RFC PATCH v6 12/19]
->>>>     * fix building error on other archtitectures than x86
->>>>
->>>>   [RFC PATCH v6 15-16/19]
->>>>     * fix building error on other archtitectures than x86
->>>>
->>>> change log of v5:
->>>>   * merge the patchset to clear page table and the patchset to hot remove
->>>>     memory(from ishimatsu) to one big patchset.
->>>>
->>>>   [RFC PATCH v5 1/19]
->>>>     * rename remove_memory() to offline_memory()/offline_pages()
->>>>
->>>>   [RFC PATCH v5 2/19]
->>>>     * new patch: implement offline_memory(). This function offlines pages,
->>>>       update memory block's state, and notify the userspace that the memory
->>>>       block's state is changed.
->>>>
->>>>   [RFC PATCH v5 4/19]
->>>>     * offline and remove memory in acpi_memory_disable_device() too.
->>>>
->>>>   [RFC PATCH v5 17/19]
->>>>     * new patch: add a new function __remove_zone() to revert the things done
->>>>       in the function __add_zone().
->>>>
->>>>   [RFC PATCH v5 18/19]
->>>>     * flush work befor reseting node device.
->>>>
->>>> change log of v4:
->>>>   * remove "memory-hotplug : unify argument of firmware_map_add_early/hotplug"
->>>>     from the patch series, since the patch is a bugfix. It is being disccussed
->>>>     on other thread. But for testing the patch series, the patch is needed.
->>>>     So I added the patch as [PATCH 0/13].
->>>>
->>>>   [RFC PATCH v4 2/13]
->>>>     * check memory is online or not at remove_memory()
->>>>     * add memory_add_physaddr_to_nid() to acpi_memory_device_remove() for
->>>>       getting node id
->>>>   [RFC PATCH v4 3/13]
->>>>     * create new patch : check memory is online or not at online_pages()
->>>>
->>>>   [RFC PATCH v4 4/13]
->>>>     * add __ref section to remove_memory()
->>>>     * call firmware_map_remove_entry() before remove_sysfs_fw_map_entry()
->>>>
->>>>   [RFC PATCH v4 11/13]
->>>>     * rewrite register_page_bootmem_memmap() for removing page used as PT/PMD
->>>>
->>>> change log of v3:
->>>>   * rebase to 3.5.0-rc6
->>>>
->>>>   [RFC PATCH v2 2/13]
->>>>     * remove extra kobject_put()
->>>>
->>>>     * The patch was commented by Wen. Wen's comment is
->>>>       "acpi_memory_device_remove() should ignore a return value of
->>>>       remove_memory() since caller does not care the return value".
->>>>       But I did not change it since I think caller should care the
->>>>       return value. And I am trying to fix it as follow:
->>>>
->>>>       https://lkml.org/lkml/2012/7/5/624
->>>>
->>>>   [RFC PATCH v2 4/13]
->>>>     * remove a firmware_memmap_entry allocated by kzmalloc()
->>>>
->>>> change log of v2:
->>>>   [RFC PATCH v2 2/13]
->>>>     * check whether memory block is offline or not before calling offline_memory()
->>>>     * check whether section is valid or not in is_memblk_offline()
->>>>     * call kobject_put() for each memory_block in is_memblk_offline()
->>>>
->>>>   [RFC PATCH v2 3/13]
->>>>     * unify the end argument of firmware_map_add_early/hotplug
->>>>
->>>>   [RFC PATCH v2 4/13]
->>>>     * add release_firmware_map_entry() for freeing firmware_map_entry
->>>>
->>>>   [RFC PATCH v2 6/13]
->>>>    * add release_memory_block() for freeing memory_block
->>>>
->>>>   [RFC PATCH v2 11/13]
->>>>    * fix wrong arguments of free_pages()
->>>>
->>>>
->>>> Wen Congyang (8):
->>>>    memory-hotplug: implement offline_memory()
->>>>    memory-hotplug: store the node id in acpi_memory_device
->>>>    memory-hotplug: export the function acpi_bus_remove()
->>>>    memory-hotplug: call acpi_bus_remove() to remove memory device
->>>>    memory-hotplug: introduce new function arch_remove_memory()
->>>>    memory-hotplug: remove sysfs file of node
->>>>    memory-hotplug: clear hwpoisoned flag when onlining pages
->>>>    memory-hotplug: auto offline page_cgroup when onlining memory block
->>>>      failed
->>>>
->>>> Yasuaki Ishimatsu (13):
->>>>    memory-hotplug: rename remove_memory() to
->>>>      offline_memory()/offline_pages()
->>>>    memory-hotplug: offline and remove memory when removing the memory
->>>>      device
->>>>    memory-hotplug: check whether memory is present or not
->>>>    memory-hotplug: remove /sys/firmware/memmap/X sysfs
->>>>    memory-hotplug: does not release memory region in PAGES_PER_SECTION
->>>>      chunks
->>>>    memory-hotplug: add memory_block_release
->>>>    memory-hotplug: remove_memory calls __remove_pages
->>>>    memory-hotplug: check page type in get_page_bootmem
->>>>    memory-hotplug: move register_page_bootmem_info_node and
->>>>      put_page_bootmem for sparse-vmemmap
->>>>    memory-hotplug: implement register_page_bootmem_info_section of
->>>>      sparse-vmemmap
->>>>    memory-hotplug: free memmap of sparse-vmemmap
->>>>    memory_hotplug: clear zone when the memory is removed
->>>>    memory-hotplug: add node_device_release
->>>>
->>>>   arch/ia64/mm/discontig.c                        |   14 +
->>>>   arch/ia64/mm/init.c                             |   16 +
->>>>   arch/powerpc/mm/init_64.c                       |   14 +
->>>>   arch/powerpc/mm/mem.c                           |   14 +
->>>>   arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
->>>>   arch/s390/mm/init.c                             |   12 +
->>>>   arch/s390/mm/vmem.c                             |   14 +
->>>>   arch/sh/mm/init.c                               |   15 +
->>>>   arch/sparc/mm/init_64.c                         |   14 +
->>>>   arch/tile/mm/init.c                             |    8 +
->>>>   arch/x86/include/asm/pgtable_types.h            |    1 +
->>>>   arch/x86/mm/init_32.c                           |   10 +
->>>>   arch/x86/mm/init_64.c                           |  331 ++++++++++++++++++
->>>>   arch/x86/mm/pageattr.c                          |   47 ++--
->>>>   drivers/acpi/acpi_memhotplug.c                  |   54 +++-
->>>>   drivers/acpi/scan.c                             |    3 +-
->>>>   drivers/base/memory.c                           |   88 ++++-
->>>>   drivers/base/node.c                             |   11 +
->>>>   drivers/firmware/memmap.c                       |   98 +++++-
->>>>   include/acpi/acpi_bus.h                         |    1 +
->>>>   include/linux/firmware-map.h                    |    6 +
->>>>   include/linux/memory.h                          |    5 +
->>>>   include/linux/memory_hotplug.h                  |   25 +-
->>>>   include/linux/mm.h                              |    5 +-
->>>>   include/linux/mmzone.h                          |   19 +
->>>>   mm/memory_hotplug.c                             |  424 +++++++++++++++++++++--
->>>>   mm/page_cgroup.c                                |    3 +
->>>>   mm/sparse.c                                     |    5 +-
->>>>   28 files changed, 1181 insertions(+), 92 deletions(-)
->>>>
->>>> --
->>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>>> see: http://www.linux-mm.org/ .
->>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>>
->>>
+>>>> So I have this x86-64 server running Linux 3.5.1 with a SATA-on-PCIe
+>>>> Areca 1210 hardware RAID-5 controller
+>>> Did you find this? Same controller family. Weird that this just shows
+>>> up now, but perhaps instead of it being "bad hardware" out the gate,
+>>> something's happened to it and now it's failing as you suspect.
+>> Hm, it's possible I suppose. Just as possible that a disk is dying.
 >>
 >>
+>> It looks to have been a one-off transient -- no recurrence yet, touch
+>> wood :)
 >>
->
+> Check the SMART values of the disks if possible. Watch for command
+> timeouts and the usual bad sector stuff. I've had similar issues with
+> Adaptec controllers. Bad disks seem to cause havoc. The outstanding
+> operation isn't answered within [SCSI Timeout, default 30,
+> /sys/block/sdX/device/timeout] seconds, so Linux performs a loop
+> reset, eventually resetting the controller. That means between 60 and
+> 120 seconds of zero I/O operation, varying between controllers and
+> disk array sizes. It's particularly annoying when in RAID and the disk
+> could've simply been kicked within few seconds. Something that needs
+> improvement IMHO.
 
+The problem has not recurred in more than three weeks. SMART says no
+problems... so I guess the controller dropped off the bus for some
+reason. Probably some sort of subtle firmware bug or something. (There
+are hints in the driver that such bugs exist, hence the enormous amount
+of code the driver devotes to resetting the thing when it goes silent.)
 
+-- 
+NULL && (void)
