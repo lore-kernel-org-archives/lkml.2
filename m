@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab2JBViw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:38:52 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:37842 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582Ab2JBViv (ORCPT
+	id S932408Ab2JBVlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:41:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37000 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab2JBVlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:38:51 -0400
-Date: Tue, 2 Oct 2012 21:40:41 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121002214041.GB31132@mail.hallyn.com>
-References: <20121002195042.GA16087@www.outflux.net>
+	Tue, 2 Oct 2012 17:41:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002195042.GA16087@www.outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
+References: <E1T1N2q-0001xm-5X@morero.ard.nu>
+	<20120820180037.GV4232@outflux.net>
+	<CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
+	<CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
+Date: Tue, 2 Oct 2012 23:41:02 +0200
+Message-ID: <CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
+Subject: Re: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
+From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit,
+2012/10/2 Kees Cook <keescook@chromium.org>:
+>> If desired, additional restrictions can be imposed by using the
+>> security framework, e.g,, disallow non-final r-x mappings.
+>
+> Interesting; what kind of interface did you have in mind?
+>
 
-Didn't this suggestion first come up around 2007 or so? :)
+The 'interface' we use is a LSM .ko which registers handlers for
+mmap() and mprotect() that fail the respective invocations if the
+passed arguments do not adhere to the policy.
 
->  it should be removed. As a first step, remove it from being
-> listed, and default it to on. Once it has been removed from all
-> subsystem Kconfigs, it will be dropped entirely.
-> 
-> CC: Greg KH <gregkh@linuxfoundation.org>
-> CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> CC: Serge Hallyn <serge.hallyn@canonical.com>
+>>> It seems like there needs to be a sensible way to detect that this flag is
+>>> available, though.
+>>
+>> I am open for suggestions to address this. Our particular
+>> implementation of the loader (on an embedded system) tries to set it
+>> on the first mmap invocation, and stops trying if it fails. Not the
+>> most elegant approach, I know ...
+>
+> Actually, that seems easiest.
+>
+> Has there been any more progress on this patch over-all?
+>
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+No progress.
 
-> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
-> 
-> This is the first of a series of 202 patches removing EXPERIMENTAL from
-> all the Kconfigs in the tree. Should I send them all to lkml (with all
-> the associated CCs), or do people want to cherry-pick changes from my
-> tree? I don't want to needlessly flood the list.
-> 
-> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
-> 
-> I figure this patch can stand alone to at least make EXPERIMENTAL go
-> away from the menus, and give us a taste of what the removal would do
-> to builds.
-> 
-> Thanks,
-> 
-> -Kees
-> 
-> ---
->  init/Kconfig |   31 ++-----------------------------
->  1 file changed, 2 insertions(+), 29 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index cb003a3..f6f8146 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -33,35 +33,8 @@ config BUILDTIME_EXTABLE_SORT
->  menu "General setup"
->  
->  config EXPERIMENTAL
-> -	bool "Prompt for development and/or incomplete code/drivers"
-> -	---help---
-> -	  Some of the various things that Linux supports (such as network
-> -	  drivers, file systems, network protocols, etc.) can be in a state
-> -	  of development where the functionality, stability, or the level of
-> -	  testing is not yet high enough for general use. This is usually
-> -	  known as the "alpha-test" phase among developers. If a feature is
-> -	  currently in alpha-test, then the developers usually discourage
-> -	  uninformed widespread use of this feature by the general public to
-> -	  avoid "Why doesn't this work?" type mail messages. However, active
-> -	  testing and use of these systems is welcomed. Just be aware that it
-> -	  may not meet the normal level of reliability or it may fail to work
-> -	  in some special cases. Detailed bug reports from people familiar
-> -	  with the kernel internals are usually welcomed by the developers
-> -	  (before submitting bug reports, please read the documents
-> -	  <file:README>, <file:MAINTAINERS>, <file:REPORTING-BUGS>,
-> -	  <file:Documentation/BUG-HUNTING>, and
-> -	  <file:Documentation/oops-tracing.txt> in the kernel source).
-> -
-> -	  This option will also make obsoleted drivers available. These are
-> -	  drivers that have been replaced by something else, and/or are
-> -	  scheduled to be removed in a future kernel release.
-> -
-> -	  Unless you intend to help test and develop a feature or driver that
-> -	  falls into this category, or you have a situation that requires
-> -	  using these features, you should probably say N here, which will
-> -	  cause the configurator to present you with fewer choices. If
-> -	  you say Y here, you will be offered the choice of using features or
-> -	  drivers that are currently considered to be in the alpha-test phase.
-> +	bool
-> +	default y
->  
->  config BROKEN
->  	bool
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Ard.
