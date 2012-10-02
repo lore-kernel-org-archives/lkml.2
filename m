@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2JBLwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:52:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64711 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2JBLwk (ORCPT
+	id S1752418Ab2JBLxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:53:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56411 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab2JBLxq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:52:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 11/12] pinctrl: samsung: use __devinit section for init code
-Date: Tue, 2 Oct 2012 11:52:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Thomas Abraham <thomas.abraham@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-References: <1348868177-21205-1-git-send-email-arnd@arndb.de> <1348868177-21205-12-git-send-email-arnd@arndb.de> <CACRpkdZv2b8M2Y4BJpqOX72prLHf4aACbmYk=imevX7h-X65QQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZv2b8M2Y4BJpqOX72prLHf4aACbmYk=imevX7h-X65QQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210021152.30099.arnd@arndb.de>
-X-Provags-ID: V02:K0:4AVnlLY8ov+AJmt9F2+tlLJZS83go1cVugK2N8neRVF
- 9YB4+RhdpzuQHu+vaLQgtb+RezBVSFkPcLMDs/rhTDqG5ih6Fj
- aj2Ie5HS1Nq2wX/QiEZ2CeozPeo55eU3pPZoorpuJu/Dz10rt0
- RtSxDFBCbEqqKsnfzVm6YEY0L+JLpCCFwlVVIo1loosOyfZehd
- jf2sc8CWwtjev5g7ZpkswAu/16qcsz7qEq3CRib50R82NRyJ9s
- qC1i8YxIc70PI+hfKuTeFw99CDqVc/ivkJpMk2MiB6LOeBCL96
- JPb36EDEzYVqviROEU0zPtz5lWhPQErZKEE0OOYhvSlmeKcz+g
- ugmHfNejWJq9EpWBOYPk=
+	Tue, 2 Oct 2012 07:53:46 -0400
+Message-ID: <1349178781.7780.29.camel@twins>
+Subject: Re: [PATCH] perf cgroups: Fix perf_cgroup_switch schedule in warning
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Date: Tue, 02 Oct 2012 13:53:01 +0200
+In-Reply-To: <20121002114218.GA5891@krava.brq.redhat.com>
+References: <20121002114218.GA5891@krava.brq.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 October 2012, Linus Walleij wrote:
-> On Fri, Sep 28, 2012 at 11:36 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > The samsung pinctrl driver has a probe function that is
-> > __devinit and that calls a lot of other functions that are
-> > marked __init, which kbuild complains about.
-> >
-> > Marking everything __devinit means that the code does not
-> > discarded when CONFIG_HOTPLUG is set, which is a little
-> > more wasteful, but also more consistent
-> >
-> > Without this patch, building exynos_defconfig results in:
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> I think the Samsing pinctrl driver has landed into next from some
-> branch in ARM SoC so you probably know better than me
-> where this thing should be merged...
-> 
+On Tue, 2012-10-02 at 13:42 +0200, Jiri Olsa wrote:
+> +++ b/kernel/events/core.c
+> @@ -394,7 +394,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+>                         }
+>  
+>                         if (mode & PERF_CGROUP_SWIN) {
+> -                               WARN_ON_ONCE(cpuctx->cgrp);
+> +                               WARN_ON_ONCE(cpuctx->cgrp && !cpuctx->ctx.is_active);
+> +
+>                                 /* set cgrp before ctxsw in to
+>                                  * allow event_filter_match() to not
+>                                  * have to pass task around 
 
-Sorry, I was too late for this one. Can you pick it up now that the
-driver is merged?
+OK, like you mentioned this is the result of multiple PMU being able to
+share a cpuctx, shouldn't we in that case avoid the second loop over the
+cpuctx as a whole?
 
-	Arnd
+Would something like the below do? IIRC I introduced that active_pmu for
+exactly such reasons..
+
+---
+ kernel/events/core.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7b9df35..e98f014 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -372,6 +372,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+ 
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		if (cpuctx->active_pmu != pmu)
++			continue;
+ 
+ 		/*
+ 		 * perf_cgroup_events says at least one
+
