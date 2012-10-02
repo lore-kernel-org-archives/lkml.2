@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab2JBINu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 04:13:50 -0400
+	id S932456Ab2JBINy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 04:13:54 -0400
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:55594 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab2JBINg (ORCPT
+	with ESMTP id S1754181Ab2JBINk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 04:13:36 -0400
+	Tue, 2 Oct 2012 04:13:40 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/10] ARM: ux500: Strip out duplicate touch screen platform information
-Date: Tue,  2 Oct 2012 09:13:15 +0100
-Message-Id: <1349165603-24401-3-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 05/10] Input: bu21013_ts - Add support for Device Tree booting
+Date: Tue,  2 Oct 2012 09:13:18 +0100
+Message-Id: <1349165603-24401-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
 References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
@@ -21,64 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're currently carrying two 'struct bu21013_platform_device's which
-are identical for no apparent reason. Here we remove the extra burden
-and apply the same information to the two different instances of the
-bu21012_tp driver registration.
+Now we can register the BU21013_ts touch screen when booting with
+Device Tree enabled. Here we parse all the necessary components
+previously expected to be passed from platform data.
 
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-stuib.c |   22 +++-------------------
- 1 file changed, 3 insertions(+), 19 deletions(-)
+ drivers/input/touchscreen/bu21013_ts.c |   39 ++++++++++++++++++++++++++++----
+ 1 file changed, 35 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-stuib.c b/arch/arm/mach-ux500/board-mop500-stuib.c
-index 8c97977..564f57d 100644
---- a/arch/arm/mach-ux500/board-mop500-stuib.c
-+++ b/arch/arm/mach-ux500/board-mop500-stuib.c
-@@ -162,18 +162,6 @@ static struct bu21013_platform_device tsc_plat_device = {
- 	.y_flip = true,
- };
+diff --git a/drivers/input/touchscreen/bu21013_ts.c b/drivers/input/touchscreen/bu21013_ts.c
+index 5d8fc75..3d1bff2 100644
+--- a/drivers/input/touchscreen/bu21013_ts.c
++++ b/drivers/input/touchscreen/bu21013_ts.c
+@@ -15,6 +15,8 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/module.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
  
--static struct bu21013_platform_device tsc_plat2_device = {
--	.cs_en = bu21013_gpio_board_init,
--	.cs_dis = bu21013_gpio_board_exit,
--	.irq_read_val = bu21013_read_pin_val,
--	.irq = NOMADIK_GPIO_TO_IRQ(TOUCH_GPIO_PIN),
--	.touch_x_max = TOUCH_XMAX,
--	.touch_y_max = TOUCH_YMAX,
--	.ext_clk = false,
--	.x_flip = false,
--	.y_flip = true,
--};
--
- static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
- 	{
- 		I2C_BOARD_INFO("bu21013_tp", 0x5C),
-@@ -181,21 +169,17 @@ static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
- 	},
- 	{
- 		I2C_BOARD_INFO("bu21013_tp", 0x5D),
--		.platform_data = &tsc_plat2_device,
-+		.platform_data = &tsc_plat_device,
- 	},
- 
- };
- 
- void __init mop500_stuib_init(void)
+ /* Reference tracking for multiple displays. */
+ static int bu21013_devices = 0;
+@@ -487,13 +489,33 @@ static void bu21013_free_irq(struct bu21013_ts_data *bu21013_data)
+  * This function used to initializes the i2c-client touchscreen
+  * driver and returns integer.
+  */
++static void __devinit bu21013_of_probe(struct device_node *np,
++				struct bu21013_platform_device *pdata)
++{
++	pdata->y_flip = pdata->x_flip = false;
++
++	if (of_get_property(np, "stricsson,flip-x", NULL))
++		pdata->x_flip = true;
++
++	if (of_get_property(np, "stricsson,flip-y", NULL))
++		pdata->y_flip = true;
++
++	of_property_read_u32(np, "stericsson,touch-max-x", &pdata->touch_x_max);
++	of_property_read_u32(np, "stericsson,touch-max-y", &pdata->touch_y_max);
++
++	pdata->touch_pin = of_get_named_gpio(np, "touch-gpio", 0);
++	pdata->cs_pin = of_get_named_gpio(np, "reset-gpio", 0);
++
++	pdata->ext_clk = false;
++}
++
+ static int __devinit bu21013_probe(struct i2c_client *client,
+ 					const struct i2c_device_id *id)
  {
--	if (machine_is_hrefv60()) {
-+	if (machine_is_hrefv60())
- 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
--		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
--	} else {
-+	else
- 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
--		tsc_plat2_device.cs_pin = GPIO_BU21013_CS;
--
--	}
+ 	struct bu21013_ts_data *bu21013_data;
+ 	struct input_dev *in_dev;
+-	const struct bu21013_platform_device *pdata =
+-					client->dev.platform_data;
++	struct device_node *np = client->dev.of_node;
++	struct bu21013_platform_device *pdata = client->dev.platform_data;
+ 	int error;
  
- 	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
- 			ARRAY_SIZE(mop500_i2c0_devices_stuib));
+ 	if (!i2c_check_functionality(client->adapter,
+@@ -503,8 +525,17 @@ static int __devinit bu21013_probe(struct i2c_client *client,
+ 	}
+ 
+ 	if (!pdata) {
+-		dev_err(&client->dev, "platform data not defined\n");
+-		return -EINVAL;
++		if (np) {
++			pdata = devm_kzalloc(&client->dev, sizeof(*pdata),
++					GFP_KERNEL);
++			if (!pdata)
++				return -ENOMEM;
++
++			bu21013_of_probe(np, pdata);
++		} else {
++			dev_err(&client->dev, "no device tree or platform data\n");
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	pdata->irq = gpio_to_irq(pdata->touch_pin);
 -- 
 1.7.9.5
 
