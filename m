@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab2JBQhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:37:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64293 "EHLO
+	id S1755281Ab2JBQhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:37:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52523 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab2JBQhb (ORCPT
+	with ESMTP id S1751264Ab2JBQhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:31 -0400
+	Tue, 2 Oct 2012 12:37:41 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH 17/17] ARM: soc: dependency warnings for errata
-Date: Tue,  2 Oct 2012 18:36:56 +0200
-Message-Id: <1349195816-2225-18-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Daniel Silverstone <dsilvers@simtec.co.uk>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH 16/17] ARM: ks8695: __arch_virt_to_dma type handling
+Date: Tue,  2 Oct 2012 18:36:55 +0200
+Message-Id: <1349195816-2225-17-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
 References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:wa98cI5tNEzVAw6h/8haDQyv2pqjcV9usSo89Sx9yY1
- VAbhTVa/+aw2DL2IRfqATigGXkJzTR+LQx8UbBCpN+RTrZ0qbB
- PB9UGx37HIXPgBPHpiiYe6Y55fKYTdwne2qxzTpU3Utgt+99Qy
- 417LXhX+hEr6qLk/wScPtqe8AkEXE656h2fH9TQ3QuSiicD3qQ
- qneWBpH8MFVuqXLSH0hWt4fpHG7liZbi/7pAd2o3L8cUBg/Yj/
- hZEI27iwo3yAp7LBrGIyOfsZ974rM0P49CZaIYHHtxcNenSyZg
- v2bYxuxs0j8KEG8x1D4cIrlbfl8WrGdkGJo3n8FxQnlQjHjMki
- oDXG9EE+Plgsqh8x+krChJlWFMDBC7Ch7UoRpSkXCbkcyam6Jr
- dn76CZgvhmqmQ==
+X-Provags-ID: V02:K0:ePFyVg6pDwSeJiUdayjvUymbrAjbKv1IBGCeuv6WIOK
+ v0OvWUCFTCOl08P14Avo/aJTSZst3xpMIuDz+TObrKl3R0BjSb
+ cuWUDMiRL8rqblzaxXNbuxfQg3tIuthkXBE0Fk2PsWLiw12U4a
+ 7/pUogjyPBVJzYtLjTHnO2lU7WyhO015/1SSuL5YFE7pRE6Y+X
+ I7HWk+G9vjW1cp7/lmMiAuzOW4ASN+/hWKRGtMAFNbljQiZQHg
+ 7nEn1jllxxlKfiRa6gwodamHq/juzs7MCmKQPBWAwxjKf0vMwF
+ nQcE12606kIHEiqd6P2nwrpJRhhdCPereIcoGwymC0Q8DJI/zH
+ iuDxvWdkGnV/a4dsTsVZgo6i+LC4STB2v9X6E4ts4gP8UfBVFt
+ yUlb4CuaVNP+Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PL310_ERRATA_753970 and ARM_ERRATA_764369 symbols only make sense
-when the base features for them are enabled, so select them
-conditionally in Kconfig to avoid warnings like:
+__arch_virt_to_dma expects a virtual address pointer, but
+the ks8695 implementation of this macro treats it as an
+integer. Adding a type cast avoids hundreds of identical
+warning messages.
 
-warning: (UX500_SOC_COMMON) selects PL310_ERRATA_753970 which has unmet direct dependencies (CACHE_PL310)
-warning: (ARCH_TEGRA_2x_SOC && ARCH_TEGRA_3x_SOC && UX500_SOC_COMMON) selects ARM_ERRATA_764369 which has unmet direct dependencies (CPU_V7 && SMP)
+Without this patch, building acs5k_defconfig results in:
+
+arch/arm/include/asm/dma-mapping.h: In function 'virt_to_dma':
+arch/arm/include/asm/dma-mapping.h:60:2: warning: passing argument 1 of '__virt_to_phys' makes integer from pointer without a cast [enabled by default]
+arch/arm/include/asm/memory.h:172:60: note: expected 'long unsigned int' but argument is of type 'void *'
+In file included from include/linux/dma-mapping.h:73:0,
+                 from include/linux/skbuff.h:33,
+                 from security/commoncap.c:21:
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Daniel Silverstone <dsilvers@simtec.co.uk>
+Cc: Ben Dooks <ben-linux@fluff.org>
 ---
- arch/arm/mach-tegra/Kconfig |    4 ++--
- arch/arm/mach-ux500/Kconfig |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-ks8695/include/mach/memory.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 9077aaa..b5f62ab 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -16,7 +16,7 @@ config ARCH_TEGRA_2x_SOC
- 	select ARM_ERRATA_742230
- 	select ARM_ERRATA_751472
- 	select ARM_ERRATA_754327
--	select ARM_ERRATA_764369
-+	select ARM_ERRATA_764369 if SMP
- 	select PL310_ERRATA_727915 if CACHE_L2X0
- 	select PL310_ERRATA_769419 if CACHE_L2X0
- 	select CPU_FREQ_TABLE if CPU_FREQ
-@@ -38,7 +38,7 @@ config ARCH_TEGRA_3x_SOC
- 	select ARM_ERRATA_743622
- 	select ARM_ERRATA_751472
- 	select ARM_ERRATA_754322
--	select ARM_ERRATA_764369
-+	select ARM_ERRATA_764369 if SMP
- 	select PL310_ERRATA_769419 if CACHE_L2X0
- 	select CPU_FREQ_TABLE if CPU_FREQ
- 	help
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index 53d3d46..18755f1 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -5,9 +5,9 @@ config UX500_SOC_COMMON
- 	default y
- 	select ARM_GIC
- 	select HAS_MTU
--	select PL310_ERRATA_753970
-+	select PL310_ERRATA_753970 if CACHE_PL310
- 	select ARM_ERRATA_754322
--	select ARM_ERRATA_764369
-+	select ARM_ERRATA_764369 if SMP
- 	select CACHE_L2X0
- 	select PINCTRL
- 	select PINCTRL_NOMADIK
+diff --git a/arch/arm/mach-ks8695/include/mach/memory.h b/arch/arm/mach-ks8695/include/mach/memory.h
+index f7e1b9b..95e731a 100644
+--- a/arch/arm/mach-ks8695/include/mach/memory.h
++++ b/arch/arm/mach-ks8695/include/mach/memory.h
+@@ -34,7 +34,8 @@ extern struct bus_type platform_bus_type;
+ #define __arch_dma_to_virt(dev, x)	({ (void *) (is_lbus_device(dev) ? \
+ 					__phys_to_virt(x) : __bus_to_virt(x)); })
+ #define __arch_virt_to_dma(dev, x)	({ is_lbus_device(dev) ? \
+-					(dma_addr_t)__virt_to_phys(x) : (dma_addr_t)__virt_to_bus(x); })
++					(dma_addr_t)__virt_to_phys((unsigned long)x) \
++					: (dma_addr_t)__virt_to_bus(x); })
+ #define __arch_pfn_to_dma(dev, pfn)	\
+ 	({ dma_addr_t __dma = __pfn_to_phys(pfn); \
+ 	   if (!is_lbus_device(dev)) \
 -- 
 1.7.10
 
