@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab2JBMIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 08:08:11 -0400
-Received: from listserv2.niif.hu ([193.225.14.155]:54366 "EHLO
-	listserv2.niif.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab2JBMIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 08:08:09 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: "Michael Chan" <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org, "Matt Carlson" <mcarlson@broadcom.com>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        "Rob Herring" <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        wferi@niif.hu
-Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter SoL
-References: <87txuhho5z.fsf@lant.ki.iif.hu>
-	<1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Date: Tue, 02 Oct 2012 14:07:57 +0200
-In-Reply-To: <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	(Michael Chan's message of "Mon, 1 Oct 2012 02:33:02 -0700")
-Message-ID: <87a9w5dqle.fsf@lant.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751694Ab2JBMLB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 08:11:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48115 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab2JBMK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 08:10:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,523,1344236400"; 
+   d="scan'208";a="229498419"
+Subject: Re: [RFC PATCH 08/13] mmc: omap_hsmmc: limit max_segs with the
+ EDMA DMAC
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        Rob Landley <rob@landley.net>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20121001163955.GO5641@beef>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+	 <1348152226-13588-9-git-send-email-mporter@ti.com>
+	 <CANfBPZ81anOy8fWgKM1PgCtB4V2pEp2x1Qi4x1uPsq7QieMN5g@mail.gmail.com>
+	 <20120921184721.GD31374@n2100.arm.linux.org.uk>
+	 <1348738868.1648.13.camel@vkoul-udesk3>  <20121001163955.GO5641@beef>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Oct 2012 17:33:43 +0530
+Message-ID: <1349179423.1648.44.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael Chan" <mchan@broadcom.com> writes:
+On Mon, 2012-10-01 at 12:39 -0400, Matt Porter wrote:
+> Anything you can show at this point? ;) I'd be happy to drop the
+> half-hack
+> for a real API. If not, I'm going to carry that to v2 atm. 
 
-> On Fri, 2012-09-28 at 22:45 +0200, Ferenc Wagner wrote: 
-> 
->> Upgrading the kernel on our HS20 blades resulted in their SoL (serial
->> over LAN) connection being broken.  The disconnection happens when eth0
->> (the interface involved in SoL) is brought up during the boot sequence.
->> If I later "ip link set eth0 down", then the connection is restored, but
->> "ip link set eth0 up" breaks it again on 3.2.  ethtool -a, -c, -g, -k
->> and -u show no difference; ethtool -i on the 2.6.32 kernel reports:
->> 
->> driver: tg3
->> version: 3.116
->> firmware-version: 5704s-v3.38, ASFIPMIs v2.47
->> bus-info: 0000:05:01.0
->> 
->> In the 3.2 kernel the driver version is 3.121.
->
-> 2.6.32 to 3.2 is a big jump.  Can you narrow this down further?  It will
-> be hard for us to find a HS20 with 5704 to test this.  Thanks.
+This is what I had done sometime back. Feel free to update....
 
-I'm done with bisecting it: the first bad commit is:
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 9c02a45..94ae006 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -86,11 +86,11 @@ enum dma_transaction_type {
+  * @DMA_DEV_TO_DEV: Slave mode & From Device to Device
+  */
+ enum dma_transfer_direction {
+-	DMA_MEM_TO_MEM,
+-	DMA_MEM_TO_DEV,
+-	DMA_DEV_TO_MEM,
+-	DMA_DEV_TO_DEV,
+-	DMA_TRANS_NONE,
++	DMA_MEM_TO_MEM	= 0x01,
++	DMA_MEM_TO_DEV	= 0x02,
++	DMA_DEV_TO_MEM	= 0x04,
++	DMA_DEV_TO_DEV	= 0x08,
++	DMA_TRANS_NONE	= 0x10,
+ };
+ 
+ /**
+@@ -371,6 +371,41 @@ struct dma_slave_config {
+ 	unsigned int slave_id;
+ };
+ 
++enum dmaengine_apis {
++	DMAENGINE_MEMCPY	= 0x0001,
++	DMAENGINE_XOR		= 0x0002,
++	DMAENGINE_XOR_VAL	= 0x0004,
++	DMAENGINE_PQ		= 0x0008,
++	DMAENGINE_PQ_VAL	= 0x0010,
++	DMAENGINE_MEMSET	= 0x0020,
++	DMAENGINE_SLAVE		= 0x0040,
++	DMAENGINE_CYCLIC	= 0x0080,
++	DMAENGINE_INTERLEAVED	= 0x0100,
++	DMAENGINE_SG		= 0x0200,
++};
++
++/* struct dmaengine_chan_caps - expose capability of a channel
++ * Note: each channel can have same or different capabilities
++ *
++ * This primarily classifies capabilities into
++ * a) APIs/ops supported
++ * b) channel physical capabilities
++ *
++ * @ops: or'ed api capability
++ * @widths: channel widths supported
++ * @dirn: channel directions supported
++ * @bursts: bitmask of burst lengths supported
++ * @mux: configurable slave id or hard wired
++ * 	-1 for hard wired, otherwise valid positive slave id (including zero)
++ */
++struct dmaengine_chan_caps {
++	enum dmaengine_apis	ops;
++	enum dma_slave_buswidth widths;
++	enum dma_transfer_direction dirn;
++	unsigned int dma_bursts;
++	int mux;
++};
++
+ static inline const char *dma_chan_name(struct dma_chan *chan)
+ {
+ 	return dev_name(&chan->dev->device);
+@@ -534,6 +569,7 @@ struct dma_tx_state {
+  *	struct with auxiliary transfer status information, otherwise the call
+  *	will just return a simple status code
+  * @device_issue_pending: push pending transactions to hardware
++ * @device_channel_caps: return the capablities of channel
+  */
+ struct dma_device {
+ 
+@@ -602,6 +638,9 @@ struct dma_device {
+ 					    dma_cookie_t cookie,
+ 					    struct dma_tx_state *txstate);
+ 	void (*device_issue_pending)(struct dma_chan *chan);
++
++	struct dmaengine_chan_caps *(*device_channel_caps)(
++		struct dma_chan *chan);
+ };
+ 
+ static inline int dmaengine_device_control(struct dma_chan *chan,
 
-commit dabc5c670d3f86d15ee4f42ab38ec5bd2682487d
-Author: Matt Carlson <mcarlson@broadcom.com>
-Date:   Thu May 19 12:12:52 2011 +0000
 
-    tg3: Move TSO_CAPABLE assignment
-    
-    This patch moves the code that asserts the TSO_CAPABLE flag closer to
-    where the TSO capabilities flags are set.  There isn't a good enough
-    reason for the code to be separated.
-    
-    Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-    Reviewed-by: Michael Chan <mchan@broadcom.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-On the other hand, losing the SoL console even temporarily during boot
-(as it happens with a minimal kernel before this commit) isn't nice
-either.  I'll try to look after that, too, just mentioning it here...
 -- 
-Regards,
-Feri.
+~Vinod
+
