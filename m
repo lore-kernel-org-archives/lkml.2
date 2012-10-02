@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757088Ab2JBXvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 19:51:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47790 "EHLO mga02.intel.com"
+	id S1757137Ab2JBXvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 19:51:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37543 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756856Ab2JBXtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 19:49:09 -0400
+	id S1756850Ab2JBXtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 19:49:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,525,1344236400"; 
-   d="scan'208";a="200845782"
+   d="scan'208";a="199832076"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, x86@vger.kernel.org, eranian@google.com, jolsa@redhat.com,
         a.p.zijlstra@chello.nl, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 27/31] perf, x86: Report the arch perfmon events in sysfs
-Date: Tue,  2 Oct 2012 16:48:47 -0700
-Message-Id: <1349221731-15665-28-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 24/31] perf, tools: Add browser support for transaction flags
+Date: Tue,  2 Oct 2012 16:48:44 -0700
+Message-Id: <1349221731-15665-25-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
 References: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
@@ -25,150 +25,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Report all the supported arch perfmon events as event aliases in
-/sys/devices/cpu/...
+Add histogram support for the transaction flags. Each flags instance becomes
+a separate histogram. Support sorting and displaying the flags in report
+and top.
 
-This is needed to use the TSX intx,intx_cp attributes with
-symbolic events, at least for these basic events.
-
-Currently cpu/instructions/ doesn't work because instructions
-is also a generic event. It works for all events which are not
-the same as generic events though.
-
-Probably needs to be fixed in the perf events parser.
+The patch is fairly large, but it's really mostly just plumbing to pass the
+flags around.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    7 ++++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   56 ++++++++++++++++++++++++++++++++
- 3 files changed, 64 insertions(+), 0 deletions(-)
+ tools/perf/builtin-annotate.c |    2 +-
+ tools/perf/builtin-diff.c     |    8 ++++--
+ tools/perf/builtin-report.c   |    4 +-
+ tools/perf/builtin-top.c      |    4 +-
+ tools/perf/util/hist.c        |    3 +-
+ tools/perf/util/hist.h        |    3 +-
+ tools/perf/util/sort.c        |   50 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h        |    2 +
+ 8 files changed, 66 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index b0f4edd..a5a5bef 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1309,6 +1309,11 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
- };
- 
-+static struct attribute_group x86_pmu_events_group = {
-+	.name = "events",
-+	.attrs = NULL,
-+};
-+
- static int __init init_hw_perf_events(void)
- {
- 	struct x86_pmu_quirk *quirk;
-@@ -1354,6 +1359,7 @@ static int __init init_hw_perf_events(void)
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-+	x86_pmu_events_group.attrs = x86_pmu.events_attrs;
- 
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
-@@ -1646,6 +1652,7 @@ static struct attribute_group x86_pmu_attr_group = {
- static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	&x86_pmu_attr_group,
- 	&x86_pmu_format_group,
-+	&x86_pmu_events_group,
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 002ecc9..9b71b34 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -358,6 +358,7 @@ struct x86_pmu {
- 	 */
- 	int		attr_rdpmc;
- 	struct attribute **format_attrs;
-+	struct attribute **events_attrs;
- 
- 	/*
- 	 * CPU Hotplug hooks
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 8b8bb61..4639aad 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -34,6 +34,18 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
- 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
- };
- 
-+static const char *intel_perfmon_names[PERF_COUNT_HW_MAX] __read_mostly =
-+{
-+	[PERF_COUNT_HW_CPU_CYCLES]		= "cycles",
-+	[PERF_COUNT_HW_INSTRUCTIONS]		= "instructions",
-+	[PERF_COUNT_HW_CACHE_REFERENCES]	= "cache-references",
-+	[PERF_COUNT_HW_CACHE_MISSES]		= "cache-misses",
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= "branches",
-+	[PERF_COUNT_HW_BRANCH_MISSES]		= "branch-misses",
-+	[PERF_COUNT_HW_BUS_CYCLES]		= "bus-cycles",
-+	[PERF_COUNT_HW_REF_CPU_CYCLES]		= "ref-cycles"
-+};
-+
- static struct event_constraint intel_core_event_constraints[] __read_mostly =
- {
- 	INTEL_EVENT_CONSTRAINT(0x11, 0x2), /* FP_ASSIST */
-@@ -1987,6 +1999,48 @@ static __init void intel_nehalem_quirk(void)
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 8f144ad..e91a01c 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -62,7 +62,7 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return 0;
  	}
- }
  
-+static struct attribute *intel_arch_events[PERF_COUNT_HW_MAX + 1] __read_mostly;
+-	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1);
++	he = __hists__add_entry(&evsel->hists, al, NULL, 1, 1, 0);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index d12332b..f5c9829 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -27,9 +27,10 @@ static bool show_displacement;
+ 
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period,
+-			    u64 weight)
++			    u64 weight, u64 transaction)
+ {
+-	if (__hists__add_entry(self, al, NULL, period, weight) != NULL)
++	if (__hists__add_entry(self, al, NULL, period, weight, transaction)
++	    != NULL)
+ 		return 0;
+ 	return -ENOMEM;
+ }
+@@ -51,7 +52,8 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 	if (al.filtered || al.sym == NULL)
+ 		return 0;
+ 
+-	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight)) {
++	if (hists__add_entry(&evsel->hists, &al, sample->period, sample->weight,
++			     sample->transaction)) {
+ 		pr_warning("problem incrementing symbol period, skipping event\n");
+ 		return -1;
+ 	}
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 22fbfc0..68bc4a6 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -147,7 +147,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	}
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, parent, sample->period,
+-					sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return -ENOMEM;
+ 
+@@ -597,7 +597,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx,  weight, global_weight"),
++		   " abort, intx,  weight, global_weight, transaction"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 187fd6d..3ba285c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -271,7 +271,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	struct hist_entry *he;
+ 
+ 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
+-				sample->weight);
++				sample->weight, sample->transaction);
+ 	if (he == NULL)
+ 		return NULL;
+ 
+@@ -1229,7 +1229,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+ 		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
+-		   " abort, intx, weight, global_weight"),
++		   " abort, intx, weight, global_weight, transaction"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index cb5be06..eed4dc1 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -339,7 +339,7 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *sym_parent, u64 period,
+-				      u64 weight)
++				      u64 weight, u64 transaction)
+ {
+ 	struct hist_entry entry = {
+ 		.thread	= al->thread,
+@@ -353,6 +353,7 @@ struct hist_entry *__hists__add_entry(struct hists *self,
+ 		.period	= period,
+ 		.parent = sym_parent,
+ 		.filtered = symbol__parent_filter(sym_parent),
++		.transaction = transaction,
+ 	};
+ 
+ 	return add_hist_entry(self, &entry, al, period, weight);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 374dfe0..33955a8 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -52,6 +52,7 @@ enum hist_column {
+ 	HISTC_SRCLINE,
+ 	HISTC_WEIGHT,
+ 	HISTC_GLOBAL_WEIGHT,
++	HISTC_TRANSACTION,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
+ 
+@@ -77,7 +78,7 @@ struct hists {
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *parent, u64 period,
+-				      u64 weight);
++				      u64 weight, u64 transaction);
+ int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
+ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ int hist_entry__sort_snprintf(struct hist_entry *self, char *bf, size_t size,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index e5b3d2f..9ff0e4d 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -562,6 +562,55 @@ struct sort_entry sort_global_weight = {
+ 	.se_width_idx	= HISTC_GLOBAL_WEIGHT,
+ };
+ 
++static int64_t
++sort__transaction_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->transaction - right->transaction;
++}
 +
-+struct event_attribute {
-+	struct device_attribute		attr;
-+	u64				config;
++static inline char *add_str(char *p, const char *str)
++{
++	strcpy(p, str);
++	return p + strlen(str);
++}
++
++static int hist_entry__transaction_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	u64 t = self->transaction;
++	char buf[128];
++	char *p = buf;
++
++	if (t & PERF_SAMPLE_TXN_ELISION)
++		*p++ = 'E';
++	if (t & PERF_SAMPLE_TXN_TRANSACTION)
++		*p++ = 'T';
++	if (t & PERF_SAMPLE_TXN_SYNC)
++		*p++ = 'I';
++	if (t & PERF_SAMPLE_TXN_RETRY)
++		*p++ = 'R';
++	*p = 0;
++	if (t & PERF_SAMPLE_TXN_CONFLICT)
++		p = add_str(p, ":con");
++	if (t & PERF_SAMPLE_TXN_CONFLICT)
++		p = add_str(p, ":cap");
++	if (t & PERF_SAMPLE_TXN_ABORT_MASK) {
++		sprintf(p, ":%" PRIx64,
++			(t & PERF_SAMPLE_TXN_ABORT_MASK) >>
++			PERF_SAMPLE_TXN_ABORT_SHIFT);
++		p += strlen(p);
++	}
++
++	return repsep_snprintf(bf, size, "%-*s", width, buf);
++}
++
++struct sort_entry sort_transaction = {
++	.se_header	= "Transaction",
++	.se_cmp		= sort__transaction_cmp,
++	.se_snprintf	= hist_entry__transaction_snprintf,
++	.se_width_idx	= HISTC_TRANSACTION,
 +};
 +
-+static struct event_attribute intel_arch_event_attr[PERF_COUNT_HW_MAX];
-+
-+static ssize_t show_event(struct device *dev,
-+			  struct device_attribute *attr,
-+			  char *page)
-+{
-+	struct event_attribute *e = container_of(attr, struct event_attribute, attr);
-+
-+	return sprintf(page, "event=%#llx,umask=%#llx",
-+		       e->config & 0xff,
-+		       (e->config >> 8) & 0xff);
-+}
-+
-+static __init void intel_gen_arch_events(void)
-+{
-+	int j, i;
-+
-+	j = 0;
-+	for_each_clear_bit(i, x86_pmu.events_mask, ARRAY_SIZE(intel_arch_events_map)) {
-+		struct event_attribute *e = intel_arch_event_attr + j;
-+		struct device_attribute *d = &e->attr;
-+		struct attribute *a = &d->attr;
-+		int id = intel_arch_events_map[i].id;
-+
-+		e->config = intel_perfmon_event_map[id];
-+		intel_arch_events[j] = a;
-+		a->name = intel_perfmon_names[id];
-+		a->mode = 0444;
-+		d->show = show_event;
-+		j++;
-+	}
-+	intel_arch_events[j] = NULL;
-+	x86_pmu.events_attrs = intel_arch_events;
-+}
-+
- __init int intel_pmu_init(void)
- {
- 	union cpuid10_edx edx;
-@@ -2030,6 +2084,8 @@ __init int intel_pmu_init(void)
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -587,6 +636,7 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_INTX, "intx", sort_intx),
+ 	DIM(SORT_WEIGHT, "weight", sort_weight),
+ 	DIM(SORT_GLOBAL_WEIGHT, "global_weight", sort_global_weight),
++	DIM(SORT_TRANSACTION, "transaction", sort_transaction),
+ };
  
- 	x86_pmu.max_pebs_events		= min_t(unsigned, MAX_PEBS_EVENTS, x86_pmu.num_counters);
+ int sort_dimension__add(const char *tok)
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 71074eb..7b7ace9 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -61,6 +61,7 @@ struct hist_entry {
+ 	struct thread		*thread;
+ 	u64			ip;
+ 	u64			weight;
++	u64			transaction;
+ 	s32			cpu;
+ 	u32			nr_events;
  
-+	intel_gen_arch_events();
-+
- 	/*
- 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
- 	 * assume at least 3 events:
+@@ -100,6 +101,7 @@ enum sort_type {
+ 	SORT_INTX,
+ 	SORT_WEIGHT,
+ 	SORT_GLOBAL_WEIGHT,
++	SORT_TRANSACTION,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
