@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2JBUQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 16:16:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44022 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab2JBUQr (ORCPT
+	id S932163Ab2JBUUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:20:34 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42615 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139Ab2JBUUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 16:16:47 -0400
-Subject: Re: [PATCH 1/6] target/file: Re-enable optional fd_buffered_io=1
- operation
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        stable@vger.kernel.org
-In-Reply-To: <20121001084605.GA23497@infradead.org>
-References: <1348984696-30992-1-git-send-email-nab@linux-iscsi.org>
-	 <1348984696-30992-2-git-send-email-nab@linux-iscsi.org>
-	 <20121001084605.GA23497@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Oct 2012 13:16:44 -0700
-Message-ID: <1349209004.28145.61.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Oct 2012 16:20:30 -0400
+Date: Tue, 2 Oct 2012 13:20:26 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, linux-s390@vger.kernel.org,
+        Chris Mason <chris.mason@fusionio.com>, Jiri Kosina <jkosina@suse.cz>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Alasdair Kergon <agk@redhat.com>, tj@kernel.org,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Lars Ellenberg <drbd-dev@lists.linbit.com>
+Subject: Re: [dm-devel] [PATCH v3 06/26] block: Add bio_end_sector()
+Message-ID: <20121002202026.GN26488@google.com>
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+ <1348526106-17074-7-git-send-email-koverstreet@google.com>
+ <20121002181001.GB3283@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002181001.GB3283@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-01 at 04:46 -0400, Christoph Hellwig wrote:
-> On Sun, Sep 30, 2012 at 05:58:11AM +0000, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > This patch re-adds the ability to optionally run in buffered FILEIO mode
-> > (eg: w/o O_DSYNC) for device backends in order to once again use the
-> > Linux buffered cache as a write-back storage mechanism.
-> > 
-> > This difference with this patch is that fd_create_virtdevice() now
-> > forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
-> > operation has been enabled.
+On Tue, Oct 02, 2012 at 02:10:01PM -0400, Vivek Goyal wrote:
+> On Mon, Sep 24, 2012 at 03:34:46PM -0700, Kent Overstreet wrote:
 > 
-> What this lacks is a clear reason why you would enable this inherently
-> unsafe mode.  While there is some clear precedence to allow people doing
-> stupid thing I'd least like a rationale for it, and it being documented
-> as unsafe.
+> [..]
+> > diff --git a/include/linux/bio.h b/include/linux/bio.h
+> > index 4e32be1..d985e90 100644
+> > --- a/include/linux/bio.h
+> > +++ b/include/linux/bio.h
+> > @@ -67,6 +67,7 @@
+> >  #define bio_offset(bio)		bio_iovec((bio))->bv_offset
+> >  #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_idx)
+> >  #define bio_sectors(bio)	((bio)->bi_size >> 9)
+> > +#define bio_end_sector(bio)	((bio)->bi_sector + bio_sectors(bio))
 > 
-> > +	 /*
+> May be it is just me. But bio_end_sector() kind of sounds that it will
+> calculate to the last sector of bio. So I thought of it more as
+> bio_last_sector() and not the sector which is next to the last sector.
 > 
-> Indention error.
-> 
+> Will it make sense to introduce bio_last_sector() and use +1 everywhere.
+> Or may be we need a better name. Can't think of one though.
 
-Fixed
+Ugh, that sounds like it'd be just begging for fencepost errors. I've
+never ran into a situation where I needed bio->bi_sector +
+bio_sectors(bio) - 1, either.
 
-> > +	 * Optionally allow fd_buffered_io=1 to be enabled for people
-> > +	 * who know what they are doing w/o O_DSYNC.
-> > +	 */
-> 
-> This comment doesn't explain at all what's going on here.  It should be
-> something like
-> 
-> 	/*
-> 	 * Unsafe mode allows disabling data integrity by not forcing
-> 	 * data out to disk in writethrough cache mode.  Only to be used
-> 	 * for benchmark cheating or similar purposes.
-> 	 */
-> 
-
-How about the following instead..?
-
-        /*
-         * Optionally allow fd_buffered_io=1 to be enabled for people
-         * who want use the fs buffer cache as an WriteCache mechanism.
-         *
-         * This means that in event of a hard failure, there is a risk
-         * of silent data-loss if the SCSI client has *not* performed a
-         * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
-         * to write-out the entire device cache.
-         */
-
-
-> >  #define FBDF_HAS_PATH		0x01
-> >  #define FBDF_HAS_SIZE		0x02
-> > +#define FDBD_USE_BUFFERED_IO	0x04
-> 
-> This should be named BDBD_UNSAFE
-> 
-
-As we are keeping the same fd_buffered_io key=value usage that rtslib
-user-space already knows about, how using FDBD_HAS_BUFFERED_IO_WCE
-instead for consistency..?
-
-
+I kind of see your point... it seems like there should be a name for
+this concept (same as a pointer to the end of an array), but I can't
+think of one.
