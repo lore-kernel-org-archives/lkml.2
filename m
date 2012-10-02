@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab2JBPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:31:09 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:34266 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab2JBPbG (ORCPT
+	id S1754458Ab2JBPgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:36:14 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61019
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753545Ab2JBPgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:31:06 -0400
-X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
-   d="scan'208";a="14898130"
-Date: Tue, 2 Oct 2012 16:30:06 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/Makefile: resolve merge conflict with 9fa5780beea1
-In-Reply-To: <506B236C020000780009F281@nat28.tlf.novell.com>
-Message-ID: <alpine.DEB.2.02.1210021629440.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com> <506B236C020000780009F281@nat28.tlf.novell.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 2 Oct 2012 11:36:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,524,1344204000"; 
+   d="scan'208";a="157610102"
+Message-ID: <506B09DF.7010209@inria.fr>
+Date: Tue, 02 Oct 2012 17:35:59 +0200
+From: Brice Goglin <Brice.Goglin@inria.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v3 04/10] thp: do_huge_pmd_wp_page(): handle huge zero
+ page
+References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com> <1349191172-28855-5-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1349191172-28855-5-git-send-email-kirill.shutemov@linux.intel.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012, Jan Beulich wrote:
-> >>> On 02.10.12 at 17:13, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > This patch is actually a merge conflict resolution between Konrad's Xen
-> > tree and the following commit:
-> > 
-> > commit 9fa5780beea1274d498a224822397100022da7d4
-> > Author: Jan Beulich <JBeulich@suse.com>
-> > Date:   Tue Sep 18 12:23:02 2012 +0100
-> > 
-> >     USB EHCI/Xen: propagate controller reset information to hypervisor
-> > 
-> > 
-> > Compile dbgp.o only if CONFIG_USB is defined.
-> 
-> Now this is wrong: USB is a tristate config option, yet dbgp.o
-> must be built in. This is why I suggested to use USB_SUPPORT
-> (if anything at all).
+Le 02/10/2012 17:19, Kirill A. Shutemov a écrit :
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> On right access to huge zero page we alloc a new page and clear it.
+>
 
-I see. You are right. I'll re-send the patch.
+s/right/write/ ?
+
+Brice
+
