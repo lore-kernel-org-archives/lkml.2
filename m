@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab2JBLx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:53:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37283 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab2JBLx4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:53:56 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 1/3] Fix trailing whitespace in trace.h
-Date: Tue,  2 Oct 2012 20:53:47 +0900
-Message-Id: <1349178827-29643-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752792Ab2JBLy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:54:26 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48264 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2JBLyY convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 2 Oct 2012 07:54:24 -0400
+Message-Id: <506AF20C020000780009F0B5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 02 Oct 2012 12:54:20 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>
+Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the xen-two tree with Linus'
+ tree
+References: <20121002141949.f6e61437bdce0d56d9d4321e@canb.auug.org.au>
+ <alpine.DEB.2.02.1210021141370.29232@kaball.uk.xensource.com>
+ <506AEE0C020000780009F0A1@nat28.tlf.novell.com>
+ <alpine.DEB.2.02.1210021240020.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1210021240020.29232@kaball.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch error.
+>>> On 02.10.12 at 13:45, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+>> > Considering that dbgp doesn't seem to be very useful without PCI at the
+>> > moment, could we just turn it into:
+>> > 
+>> > dom0-$(CONFIG_PCI) += dbgp.o
+>> > 
+>> > ?
+>> 
+>> Better not - the code is specifically not PCI-only. And I can't see
+>> how it would be harmful to be compiled on e.g. ARM (so the
+>> merge perhaps really should use XEN_DOM0 alone, without
+>> X86. If anything (and that may indeed be a minor oversight of
+>> the original patch) one might want it to depend on USB_SUPPORT,
+>> as without that no in-tree debug port capable driver would be
+>> able to load (and hence interfere with Xen's use of the debug
+>> port). However, as long as it builds fine with USB_SUPPORT
+>> undefined (which I believe it does), having it in the shape it
+>> is allows for out-of-tree drivers as well (as long as they make
+>> use of the designated interface).
+> 
+> OK for PCI.
+> Regarding USB_SUPPORT, considering that gbgp.c calls hcd_to_bus, I think
+> it would make sense to make it depend on it.
 
--ERROR: trailing whitespace
+As said - I'd prefer to do that only if indeed needed to get things
+to build without that option. Since include/usb/* doesn't reference
+CONFIG_USB_SUPPORT, I'm in favor of supporting at least those
+eventual out-of-tree drivers that do use the pre-existing data
+structures (and others shouldn't be calling pre-existing APIs
+anyway). But I wouldn't NAK a patch doing what you suggest
+either.
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/rts_pstor/trace.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/rts_pstor/trace.h b/drivers/staging/rts_pstor/trace.h
-index cf60a1b..740999c 100644
---- a/drivers/staging/rts_pstor/trace.h
-+++ b/drivers/staging/rts_pstor/trace.h
-@@ -39,7 +39,7 @@ static inline char *filename(char *path)
- 	while (*ptr != '\0') {
- 		if ((*ptr == '\\') || (*ptr == '/'))
- 			path = ptr + 1;
--		
-+
- 		ptr++;
- 	}
- 
--- 
-1.7.9.5
+Jan
 
