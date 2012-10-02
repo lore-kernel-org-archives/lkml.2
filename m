@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab2JBRoB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:44:01 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:45656
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1755319Ab2JBRqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:46:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2JBRoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:44:00 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@vger.kernel.org
-Subject: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit packets in the RESET path
-Date: Tue,  2 Oct 2012 11:03:31 -0700
-Message-Id: <1349201011-14572-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755209Ab2JBRqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 13:46:40 -0400
+Date: Tue, 2 Oct 2012 19:46:24 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        kirill@shutemov.name, Chris Metcalf <cmetcalf@tilera.com>,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121002174624.GI4763@redhat.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly account for I/O in transit before returning from the RESET call.
-In the absense of this patch, we could have a situation where the host may
-respond to a command that was issued prior to the issuance of the RESET
-command at some arbitrary time after responding to the RESET command.
-Currently, the host does not do anything with the RESET command. 
+On Tue, Oct 02, 2012 at 05:59:11PM +0100, Will Deacon wrote:
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
+> 
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
+> 
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
+> 
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+> 
+> v2: - Use pmd_trans_huge_lock to guard against splitting pmds
+>     - Propogate dirty (write) flag to low-level pmd modifier
+> 
+>  include/linux/huge_mm.h |    2 ++
+>  mm/huge_memory.c        |    8 ++++++++
+>  mm/memory.c             |    9 ++++++++-
+>  3 files changed, 18 insertions(+), 1 deletions(-)
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: stable@vger.kernel.org
----
- drivers/scsi/storvsc_drv.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 528d52b..0144078 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1221,7 +1221,12 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- 	/*
- 	 * At this point, all outstanding requests in the adapter
- 	 * should have been flushed out and return to us
-+	 * There is a potential race here where the host may be in
-+	 * the process of responding when we return from here.
-+	 * Just wait for all in-transit packets to be accounted for
-+	 * before we return from here.
- 	 */
-+	storvsc_wait_to_drain(stor_device);
- 
- 	return SUCCESS;
- }
--- 
-1.7.4.1
-
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
