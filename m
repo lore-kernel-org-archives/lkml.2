@@ -1,76 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2JBU0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 16:26:49 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59905 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab2JBU0r (ORCPT
+	id S1755259Ab2JBU2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:28:40 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44421 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab2JBU2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 16:26:47 -0400
-Date: Tue, 2 Oct 2012 13:26:43 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk,
-        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
-Subject: Re: [dm-devel] [PATCH v3 01/26] block: Fix a buffer overrun in
- bio_integrity_split()
-Message-ID: <20121002202643.GQ26488@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-2-git-send-email-koverstreet@google.com>
- <20121001212336.GA17165@redhat.com>
- <20121001214241.GE26488@google.com>
- <20121002140847.GD758@redhat.com>
+	Tue, 2 Oct 2012 16:28:39 -0400
+Date: Tue, 2 Oct 2012 13:27:54 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Shuah Khan <shuah.khan@hp.com>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernel NULL pointer dereference at rb_erase+0x1a3/0x370
+In-Reply-To: <1349200709.3141.30.camel@lorien2>
+Message-ID: <alpine.LSU.2.00.1210021317030.1700@eggly.anvils>
+References: <1349200709.3141.30.camel@lorien2>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002140847.GD758@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 10:08:47AM -0400, Vivek Goyal wrote:
-> On Mon, Oct 01, 2012 at 02:42:41PM -0700, Kent Overstreet wrote:
+On Tue, 2 Oct 2012, Shuah Khan wrote:
+> I started seeing the following null pointer dereference on
+> a linux-next sept 21 git and still seeing it on linux-next 
+> Sep 27th git.
 > 
-> [..]
-> > Here's the new patch:
-> > 
-> > 
-> > commit e270c9ca843b5c86d59431b0d7a676b7846946d6
-> > Author: Kent Overstreet <koverstreet@google.com>
-> > Date:   Mon Oct 1 14:41:08 2012 -0700
-> > 
-> >     block: Fix a buffer overrun in bio_integrity_split()
-> >     
-> >     bio_integrity_split() seemed to be confusing pointers and arrays -
-> >     bip_vec in bio_integrity_payload is an array appended to the end of the
-> >     payload, so the bio_vecs in struct bio_pair need to come immediately
-> >     after the bio_integrity_payload they're for, and there was an assignment
-> >     in bio_integrity_split() that didn't make any sense.
-> >     
-> >     Also, changed bio_integrity_split() to not refer to the bvecs embedded
-> >     in struct bio_pair, in case there's padding between them and
-> >     bip->bip_vec.
-> >     
-> >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> >     CC: Jens Axboe <axboe@kernel.dk>
-> >     CC: Martin K. Petersen <martin.petersen@oracle.com>
-> > 
-> > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> > index a3f28f3..4ae22a8 100644
-> > --- a/fs/bio-integrity.c
-> > +++ b/fs/bio-integrity.c
-> > @@ -694,15 +694,12 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
-> >  	bp->bio1.bi_integrity = &bp->bip1;
-> >  	bp->bio2.bi_integrity = &bp->bip2;
-> >  
-> > -	bp->iv1 = bip->bip_vec[0];
-> > -	bp->iv2 = bip->bip_vec[0];
-> > +	*bp->bip1.bip_vec = bip->bip_vec[0];
-> > +	*bp->bip2.bip_vec = bip->bip_vec[0];
+> Can be reproduced easily. I have been able to reproduce every
+> time I do a complete build of a kernel on fresh checkout or
+> touch a header file that forces full build.
 > 
-> I think this is horrible. Why not introduce bvec pointer in bip (like bio),
-> to cover the case when bvec are not inline.
+> Related to lib/rbtree.c commits that went into September 21 perhaps.
 
-That's... exactly what the next patch in the series does.
+That's a sensible suggestion, but I think probably not.
+
+> I didn't get a chance to investigate this yet, thought I would share
+> just in case others have seen it.
+> 
+> 
+> [ 2219.660124] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [ 2219.660182] IP: [<ffffffff81323c93>] rb_erase+0x1a3/0x370
+> [ 2219.660209] PGD 73f2f067 PUD 67246067 PMD 0 
+> [ 2219.660235] Oops: 0000 [#1] SMP 
+> [ 2219.660632] CPU 0 
+> [ 2219.660644] Pid: 1660, comm: recordmcount Not tainted 3.6.0-rc6-next-20120921+ #4 Hewlett-Packard HP EliteBook 6930p/30DC
+> [ 2219.664007] Process recordmcount (pid: 1660, threadinfo ffff880073f30000, task ffff88002fe9ada0)
+> [ 2219.664007] Call Trace:
+> [ 2219.664007]  [<ffffffff8125af6e>] ext4_es_insert_extent+0x28e/0x2f0
+
+ext4_es_insert_extent: this is probably something I posted a fix for on
+the 27th (copied below).  They're reworking that series more thoroughly,
+and it has for the moment dropped out of linux-next, so I expect you
+won't see this error at all with a newer next.  But you may want to
+continue with your Sep 27th tree, and try out this patch anyway...
+
+[PATCH next/mmotm] ext4: fix cache_es after merge_left
+
+Kernel build with CONFIG_DEBUG_SLAB or CONFIG_SLUB_DEBUG slub_debug=FPZ
+gives me kernel BUG at fs/ext4/extents_status.c:142!  That's the
+BUG_ON(es->start + es->len < es->start) in extent_status_end() called
+from ext4_es_insert_extent().  tree->cache_es has been freed and poisoned.
+
+This comes from when ext4_es_try_to_merge_left() merges es into leftward
+es1, but ext4_es_insert_extent()'s out then updates cache_es to the freed
+extent_status.  ext4_es_try_to_merge_right() does not pose a problem.
+
+Change ext4_es_try_to_merge_left() to return whichever extent_status
+should be recorded in tree->cache_es.  Remove cache_es update from
+both of them, leaving that to ext4_es_insert_extent()'s out label.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ fs/ext4/extents_status.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+--- mmotm/fs/ext4/extents_status.c	2012-09-26 10:15:29.340071552 -0700
++++ linux/fs/ext4/extents_status.c	2012-09-27 11:52:59.284937056 -0700
+@@ -244,24 +244,24 @@ static void ext4_es_free_extent(struct e
+ 	kmem_cache_free(ext4_es_cachep, es);
+ }
+ 
+-static void ext4_es_try_to_merge_left(struct ext4_es_tree *tree,
+-				      struct extent_status *es)
++static struct extent_status *
++ext4_es_try_to_merge_left(struct ext4_es_tree *tree, struct extent_status *es)
+ {
+ 	struct extent_status *es1;
+ 	struct rb_node *node;
+ 
+ 	node = rb_prev(&es->rb_node);
+ 	if (!node)
+-		return;
++		return es;
+ 
+ 	es1 = rb_entry(node, struct extent_status, rb_node);
+ 	if (es->start == extent_status_end(es1) + 1) {
+ 		es1->len += es->len;
+ 		rb_erase(&es->rb_node, &tree->root);
+-		if (es == tree->cache_es)
+-			tree->cache_es = es1;
+ 		ext4_es_free_extent(es);
++		es = es1;	/* Caller will update tree->cache_es to this */
+ 	}
++	return es;
+ }
+ 
+ static void ext4_es_try_to_merge_right(struct ext4_es_tree *tree,
+@@ -278,9 +278,8 @@ static void ext4_es_try_to_merge_right(s
+ 	if (es1->start == extent_status_end(es) + 1) {
+ 		es->len += es1->len;
+ 		rb_erase(node, &tree->root);
+-		if (es1 == tree->cache_es)
+-			tree->cache_es = es;
+ 		ext4_es_free_extent(es1);
++		/* Caller will update tree->cache_es to es */
+ 	}
+ }
+ 
+@@ -318,7 +317,7 @@ int ext4_es_insert_extent(struct inode *
+ 		es_debug("cached by [%u/%u)\n", es->start, es->len);
+ 		es->start = offset;
+ 		es->len += len;
+-		ext4_es_try_to_merge_left(tree, es);
++		es = ext4_es_try_to_merge_left(tree, es);
+ 		goto out;
+ 	} else if (es && in_range(offset, es->start, es->len)) {
+ 		es_debug("cached by [%u/%u)\n", es->start, es->len);
