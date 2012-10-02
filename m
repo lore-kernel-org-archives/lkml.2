@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2JBMxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 08:53:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57774 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab2JBMxe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 08:53:34 -0400
+	id S1753381Ab2JBMzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 08:55:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65270 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753174Ab2JBMzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 08:55:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,523,1344236400"; 
+   d="scan'208";a="228981535"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: anish kumar <anish198519851985@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: How to schedule worker and threaded IRQ on same cpu/core
+Thread-Topic: How to schedule worker and threaded IRQ on same cpu/core
+Thread-Index: Ac2gmCa8Mz8HGOSiRo6E8/HEDKZlVv//qPCA//+gawA=
+Date: Tue, 2 Oct 2012 12:54:55 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD2A1EE5@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD2A1E0A@BGSMSX102.gar.corp.intel.com>
+ <1349181465.1440.1.camel@anish-Inspiron-N5050>
+In-Reply-To: <1349181465.1440.1.camel@anish-Inspiron-N5050>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CALF0-+W25fAD0=kLD085G+H1b-WFaARudo-hkJO_LoBTNZC-Nw@mail.gmail.com>
-References: <1349179024-5319-1-git-send-email-peter.senna@gmail.com>
-	<20121002121443.GT4587@mwanda>
-	<CA+MoWDqxXPiuFwmznynn8SPK20eJUgCKonq+C=s8fKvcnkb4Aw@mail.gmail.com>
-	<CALF0-+W25fAD0=kLD085G+H1b-WFaARudo-hkJO_LoBTNZC-Nw@mail.gmail.com>
-Date: Tue, 2 Oct 2012 14:53:32 +0200
-Message-ID: <CA+MoWDoy+cqkzDHmR2=-3UhMn-i+fU0RVKwtkcsgRxOBk98oYA@mail.gmail.com>
-Subject: Re: [PATCH RFC] MAINTAINERS: Add section for subsystem shortname
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, joe@perches.com,
-        gregkh@linuxfoundation.org, davem@davemloft.net, arnd@arndb.de,
-        Julia.Lawall@lip6.fr, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q92CtATD031862
 
-On Tue, Oct 2, 2012 at 2:40 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> On Tue, Oct 2, 2012 at 9:33 AM, Peter Senna Tschudin
-> <peter.senna@gmail.com> wrote:
->> On Tue, Oct 2, 2012 at 2:14 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->>> On Tue, Oct 02, 2012 at 01:57:04PM +0200, Peter Senna Tschudin wrote:
->>>> The shortname for a subsystem, that is primarly used when sending patches over E-mail, is not stored anywhere in the source code. Actually one need to dig git log or mailing list archives. There is no standard, and the Maintainer choose how to short name his/her subsystem. MAINTAINERS file is the right place for storing this information.
->>>>
->>>> U is the second letter of Subsystem.
->>>>
->>>> This will also enable automatic tools like scripts/get_maintainer.pl to provide the correct short name for each filename in the Kernel source tree.
->>>>
->>>
->>> This is pretty useless without a script to parse it.  Also none of
->> With or without a script, there is no default way of finding the short
->> name. Changing scripts/get_maintainer.pl to do it does not seems very
->> complex.
->>
->
-> Perhaps you should do get_maintainer.pl changes yourself and then
-> use it to test on some of your patches to see what subject it produces.
-What are your doubts about this method of getting the short name?
+> > How can I schedule driver's worker and threaded IRQ on the same core?
+> >
+> > For work queue we have schedule_delayed_work_on () API available.
+> > But how to schedule the threaded IRQ on the same core where my worker
+> thread is going to run?
+> Why do you need to worry about where your worker thread is going to run?
+> Or IOW what use case do you have in mind?
 
->
-> Then it's easier to see if the proposal makes sense.
-> A new rule / standard is something hard to push and we want to have as much
-> facts as possible to make better decisions.
-The fact is that currently there is no standard way of getting the
-short name for a subsystem. My proposal fixes it allowing to look on
-the MAINTAINERS file to see what short name to use.
+In my driver I can get two independent events(IRQ and kernel notification). One will be handled by
+Threaded IRQ and other will be handled by a worker and the order is not guaranteed and with two cores
+Sometimes both workers are being scheduled  parallel.
 
->
-> Thanks,
-> Ezequiel.
+The events I get from two sources are related so I wanted to run my workers and threaded IRQ on single(same) core/cpu.
 
+Thanks,
+Ram
+ 
 
-
--- 
-Peter
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
