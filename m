@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab2JBEew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 00:34:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39701 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab2JBEd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 00:33:59 -0400
-Date: Tue, 2 Oct 2012 14:33:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Subject: linux-next: build failure after merge of the xen-two tree
-Message-Id: <20121002143350.0fc9812c8ace3bd986ee7d34@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Oct_2012_14_33_50_+1000_micA0leKeScAbAre"
+	id S1751925Ab2JBEj7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 00:39:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56988 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2JBEj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 00:39:58 -0400
+Date: Tue, 2 Oct 2012 06:39:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jamie Gloudon <jamie.gloudon@gmail.com>
+Cc: fenghua.yu@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86/microcode: Early load microcode
+Message-ID: <20121002043954.GA27331@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jamie Gloudon <jamie.gloudon@gmail.com>, fenghua.yu@intel.com,
+	linux-kernel@vger.kernel.org
+References: <20121001161151.GA2640@darkstar>
+ <20121001162745.GD23181@x1.osrc.amd.com>
+ <20121001233704.GA1344@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121001233704.GA1344@darkstar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Oct_2012_14_33_50_+1000_micA0leKeScAbAre
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 01, 2012 at 07:37:04PM -0400, Jamie Gloudon wrote:
+> On Mon, Oct 01, 2012 at 06:27:45PM +0200, Borislav Petkov wrote:
+> > On Mon, Oct 01, 2012 at 12:11:51PM -0400, Jamie Gloudon wrote:
+> > > Hey,
+> > > 
+> > >   Any chance of this getting merge for the 3.7 cycle? 
+> > 
+> > It is not ready yet: http://marc.info/?l=linux-kernel&m=134910582107898
+> > 
+> > Out of curiosity: why do you nee it?
+> > 
+> Seems like a better alternative to microcode_ctl which some distros don't
+> contain.
 
-Hi Konrad,
+ [ Let me reorganize the mail chain as it should be,
+   without top-posting. Please try not to top-post:
+   http://curl.haxx.se/mail/etiquette.html#Do_Not_Top_Post ]
 
-After merging the xen-two tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
 
-arch/x86/built-in.o: In function `xen_start_kernel':
-(.init.text+0xa88): undefined reference to `xen_acpi_notify_hypervisor_stat=
-e'
-drivers/built-in.o: In function `dbgp_reset_prep':
-(.text+0x12ddeb): undefined reference to `xen_dbgp_reset_prep'
-drivers/built-in.o: In function `dbgp_external_startup':
-(.text+0x12e6a9): undefined reference to `xen_dbgp_external_startup'
+Well,
 
-I have used the xen-two tree from next-20121001 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+if you want to reload your microcode, you shouldn't be needing
+microcode_ctl (I believe this should be the case too on Intel, from
+staring at the code - on AMD it works).
 
---Signature=_Tue__2_Oct_2012_14_33_50_+1000_micA0leKeScAbAre
-Content-Type: application/pgp-signature
+Basically, you simply put the microcode binaries into
+/lib/firmware/{amd,intel}-ucode/ and then do as root:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+$ echo 1 > /sys/devices/system/cpu/microcode/reload
 
-iQIcBAEBCAAGBQJQam6uAAoJEECxmPOUX5FEAQsP/1ucAy3YMQCb6yYkbVKChhOk
-5fEkHtcS/hnmf5Chv4lrKstgdE9mxk8d4Qo+0GsclBTV6vzZlPnq9ScXePQiAa/4
-nEJYlLN3gGbXxJw/ljNRSFJIZ9rpiBMSmjnDNzQAZ0AjAs8c7aGFc2ImhtfjehkY
-tc46MyjDvslcyMklGEEx5+6MaeKzgmUF0Ci3sJRYu5iBfDEGgvWqW5HMLazrtqET
-WBLUyBDht80UGhW8c7BUjPrRT4AuxSyoTpnsFlzjQtPkkhimocRL9qk40BiJu0rI
-OhVow0H9WZ63Kfc7Wxc7CmcOhjvky7htGBEh9qUjSuaw4x5XQWdpoAMHuETv26T5
-Ftycd7R7tPLzwQzjb68r81exIXLnM8qj6t2tStDq8/clDbrhehhHL1+KYKvoWul9
-jPDO1L3M3n4uwtQGsTVhXk+2vWipQRGmCQER06c+YDd71OF1QyIuOeaigyABeL2j
-Eht8zdwCeWSMyheQEKl/iYDomaI3e7knT3YTfrZyztuDFHPD+KscapGd4EEoxjmP
-D9if1YURnBqsvzj6TWXBUWiYSEeDGxoXvuZt0+l13vdnn5cws6l2GQ5tOurdW4tO
-d4ljx2uDogIynfQAyxlzBxgV5a/ASx3apiX3rE2xugCWkgzpBgiNPCgm/lndCyqi
-IM5febp1LdKPhYMqznj+
-=VO1T
------END PGP SIGNATURE-----
+That's it, no need for special tools.
 
---Signature=_Tue__2_Oct_2012_14_33_50_+1000_micA0leKeScAbAre--
+-- 
+Regards/Gruss,
+    Boris.
