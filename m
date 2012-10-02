@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab2JBPXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:23:22 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62932 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab2JBPWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:22:49 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] perf tools: Complete long option names of perf command
-Date: Wed,  3 Oct 2012 00:21:33 +0900
-Message-Id: <1349191294-6926-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1349191294-6926-1-git-send-email-namhyung@kernel.org>
-References: <1349191294-6926-1-git-send-email-namhyung@kernel.org>
+	id S1754629Ab2JBPZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:25:07 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:57093 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab2JBPZF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 2 Oct 2012 11:25:05 -0400
+Message-Id: <506B236C020000780009F281@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 02 Oct 2012 16:25:00 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <sfr@canb.auug.org.au>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/Makefile: resolve merge conflict with
+ 9fa5780beea1
+References: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main perf binary can receive a number of options that configure
-working environment.  Add them to the completion script.
+>>> On 02.10.12 at 17:13, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> This patch is actually a merge conflict resolution between Konrad's Xen
+> tree and the following commit:
+> 
+> commit 9fa5780beea1274d498a224822397100022da7d4
+> Author: Jan Beulich <JBeulich@suse.com>
+> Date:   Tue Sep 18 12:23:02 2012 +0100
+> 
+>     USB EHCI/Xen: propagate controller reset information to hypervisor
+> 
+> 
+> Compile dbgp.o only if CONFIG_USB is defined.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/bash_completion |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+Now this is wrong: USB is a tristate config option, yet dbgp.o
+must be built in. This is why I suggested to use USB_SUPPORT
+(if anything at all).
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 3d48cee1b5e5..bef06f0deeb5 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -21,10 +21,16 @@ _perf()
- 
- 	cmd=${COMP_WORDS[0]}
- 
--	# List perf subcommands
-+	# List perf subcommands or long options
- 	if [ $COMP_CWORD -eq 1 ]; then
--		cmds=$($cmd --list-cmds)
--		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+		if [[ $cur == --* ]]; then
-+			COMPREPLY=( $( compgen -W '--help --version \
-+			--exec-path --html-path --paginate --no-pager \
-+			--perf-dir --work-tree --debugfs-dir' -- "$cur" ) )
-+		else
-+			cmds=$($cmd --list-cmds)
-+			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+		fi
- 	# List possible events for -e option
- 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
- 		cmds=$($cmd list --raw-dump)
--- 
-1.7.9.2
+Jan
+
+> After all xen_dbgp_op relies on hcd_to_bus.
+> 
+> This patch should be applied on top of 
+> 
+> http://marc.info/?l=linux-kernel&m=134919011231980&w=2 
+> 
+> 
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --cc drivers/xen/Makefile
+> index a4a3cab,275abfc..33711ad
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@@ -4,8 -8,11 +8,12 @@@ obj-y	+= xenbus
+>   nostackp := $(call cc-option, -fno-stack-protector)
+>   CFLAGS_features.o			:= $(nostackp)
+>   
+> + dom0-$(CONFIG_PCI) += pci.o
+> + dom0-$(CONFIG_ACPI) += acpi.o
+> + dom0-$(CONFIG_X86) += pcpu.o
+> ++dom0-$(CONFIG_USB) += dbgp.o
+> + obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
+>   obj-$(CONFIG_BLOCK)			+= biomerge.o
+> - obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+>   obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
+>   obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
+>   obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
+
+
 
