@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab2JBEZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 00:25:24 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:43071 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2JBEZX (ORCPT
+	id S1751355Ab2JBEdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 00:33:50 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:47447 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2JBEds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 00:25:23 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Ben Guthro <ben@guthro.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: linux-next: build failure in dwarf-regs.c
-In-reply-to: <CAOvdn6WPUDqYPpHZip7dxVVXJXT0-zJOUCpgDGb=o+zqq98F0Q@mail.gmail.com>
-References: <CAOvdn6WPUDqYPpHZip7dxVVXJXT0-zJOUCpgDGb=o+zqq98F0Q@mail.gmail.com>
-Date: Tue, 02 Oct 2012 14:24:59 +1000
-Message-Id: <1349148496-sup-4820@delenn.ozlabs.ibm.com>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-x-cbid: 12100204-6102-0000-0000-000002511479
+	Tue, 2 Oct 2012 00:33:48 -0400
+Message-ID: <506A6E8E.2000005@synopsys.com>
+Date: Tue, 2 Oct 2012 10:03:18 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] serial/arc-uart: Add new driver
+References: <1348835752-28426-1-git-send-email-vgupta@synopsys.com> <20120928140248.54a10d06@bob.linux.org.uk>
+In-Reply-To: <20120928140248.54a10d06@bob.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ben,
+On Friday 28 September 2012 06:32 PM, Alan Cox wrote:
 
-Adding some people to CC...
+>> +static void
+>> +arc_serial_set_termios(struct uart_port *port, struct ktermios
+>> *termios,
+>> +		       struct ktermios *old)
+>> +{
+>> +	struct arc_uart_port *uart = (struct arc_uart_port *)port;
+>> +	unsigned int baud, uartl, uarth, hw_val;
+>> +	unsigned long flags;
+>> +
+> Two things here. Firstly you want to write the actual baud back to the
+> termios (tty_termios_encode_baud_rate) unless B0 is set.
+>
+> Secondly if you don't support hardware flow control, character size
+> setting etc then you need to set those bits back so the caller knows.
+> Two ways to do that. Either initialise the default termios for the tty
+> type to the correct values and use tty_termios_copy_hw() or set them in
+> the termios handler.
 
-Excerpts from Ben Guthro's message of 2012-10-02 11:02:59 +1000:
-> I pulled the latest bits up to 797b9e5ae93270ec27a1f1ed48cd697d01b2269f -
-> but am seeing the following build failure with gcc 4.6.3
+Just to give you an idea, is something on the lines of following OK for
+both the above points above !
 
-Building that SHA works for me (on x86, haven't tried PPC yet)...
+-       uart_update_timeout(port, termios->c_cflag, baud);
++       new->c_cflag &= ~(CMSPAR|CRTSCTS);  /* Don't care for
+parity/flow ctrl */
++
++       if (old)
++               tty_termios_copy_hw(new, old);
++
++       /* Don't rewrite B0 */
++       if (tty_termios_baud_rate(new))
++               tty_termios_encode_baud_rate(new, baud, baud);
++
++       uart_update_timeout(port, new->c_cflag, baud);
+ 
 
->  CC arch/x86/util/dwarf-regs.o
+Respun patch to follow shortly.
 
-Is this correct? i.e. Are you building perf for x86?
-
-What commandline are you using to build?
-
-Any exported environment variables that may be relevant?
-
-What dev libraries does perf warn is missing (Is libdw-dev among them)?
-
-> arch/x86/util/dwarf-regs.c:72:13: error: no previous prototype for
-> 'get_arch_regstr' [-Werror=missing-prototypes]
-
-Hmmm... util/include/dwarf-regs.h not included? DWARF_SUPPORT undefined
-but still building that file for some reason?
-
-Can't see any obvious way that could happen... You didn't happen to see
-an warning along the lines of 'DWARF register mappings not defined for
-x86' did you?
-
-> `/data/home/bguthro/dev/orc-newdev.git/linux/build/tools/tools/perf'
-
-I hope the two 'tools' here is just an O= artefact?
-
-> git blame shows that line coming in from the following changeset - though
-> April is a long time ago in kernel time
-
-Especially when it's April from two years ago...
-
-> - so this must have come in with some other merge in this 3.7 window
-
-Seems likely, especially as (excerpt from git diff --stat v3.6 797b9e5
--- tools/perf):
-
-tools/perf/arch/x86/Makefile            | 3 +
-tools/perf/arch/x86/include/perf_regs.h | 80 +++
-tools/perf/Makefile                     | 173 ++++--
-
-I see a few changes in there that may have caused this... Since I can't
-reproduce this myself I can't narrow it down, so I'm adding David Ahern,
-Namhyung Kim & Jiri Olsa to CC who have touched lines that look like the
-might be relevant.
-
-Ben: You should be able to narrow down the cause of the breakage a bit
-more with git bisect start 797b9e5 v3.6 -- tools/perf/Makefile
-
-Cheers,
--Ian
-
+Thx,
+Vineet
