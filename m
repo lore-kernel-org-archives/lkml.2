@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2JBXtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 19:49:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37543 "EHLO mga14.intel.com"
+	id S1756922Ab2JBXtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 19:49:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60113 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756799Ab2JBXs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 19:48:59 -0400
+	id S1756862Ab2JBXtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 19:49:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,525,1344236400"; 
-   d="scan'208";a="199832065"
+   d="scan'208";a="199832077"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, x86@vger.kernel.org, eranian@google.com, jolsa@redhat.com,
         a.p.zijlstra@chello.nl, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/31] perf, x86: Basic Haswell PEBS support
-Date: Tue,  2 Oct 2012 16:48:23 -0700
-Message-Id: <1349221731-15665-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 20/31] perf, core: Add generic transaction flags
+Date: Tue,  2 Oct 2012 16:48:40 -0700
+Message-Id: <1349221731-15665-21-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
 References: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
@@ -25,82 +25,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add basic PEBS support for Haswell.
-The constraints are similar to SandyBridge with a few new events.
+Add a generic qualifier for transaction events, as a new sample
+type that returns a flag word. This is particularly useful
+for qualifying aborts: to distinguish aborts which happen
+due to asynchronous events (like conflicts caused by another
+CPU) versus instructions that lead to an abort.
+
+The tuning strategies are very different for those cases,
+so it's important to distinguish them easily and early.
+
+Since it's inconvenient and inflexible to filter for this
+in the kernel we report all the events out and allow
+some post processing in user space.
+
+The flags are based on the Intel TSX events, but should be fairly
+generic and mostly applicable to other architectures too. In addition
+to various flag words there's also reserved space to report an
+program supplied abort code. For TSX this is used to distinguish specific
+classes of aborts, like a lock busy abort when doing lock elision.
+
+This adds the perf core glue needed for reporting the new flag word out.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c    |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
- 3 files changed, 32 insertions(+), 1 deletions(-)
+ include/linux/perf_event.h |   26 ++++++++++++++++++++++++--
+ kernel/events/core.c       |    6 ++++++
+ 2 files changed, 30 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8e50d8b..c1dfe5d 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -591,6 +591,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index b3ef0d8..0b66c1d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_TRANSACTION			= 1U << 15,
  
- extern struct event_constraint intel_ivb_pebs_event_constraints[];
- 
-+extern struct event_constraint intel_hsw_pebs_event_constraints[];
-+
- struct event_constraint *intel_pebs_constraints(struct perf_event *event);
- 
- void intel_pmu_pebs_enable(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 50c43ca..ea06a4b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2116,7 +2116,7 @@ __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
 -
-+		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
- 		x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9d0dae0..91c2ab7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         EVENT_CONSTRAINT_END
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
  };
  
-+struct event_constraint intel_hsw_pebs_event_constraints[] = {
-+	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-+	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0x01c5, 0xf),  /* BR_MISP_RETIRED.CONDITIONAL */
-+	INTEL_EVENT_CONSTRAINT(0x04c5, 0xf),  /* BR_MISP_RETIRED.ALL_BRANCHES */
-+	INTEL_EVENT_CONSTRAINT(0x20c5, 0xf),  /* BR_MISP_RETIRED.NEAR_TAKEN */
-+	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-+	INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-+	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-+	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-+	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-+	INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-+	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-+	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+ /*
+@@ -179,6 +179,26 @@ enum perf_sample_regs_abi {
+ };
+ 
+ /*
++ * Values for the transaction event qualifier, mostly for abort events.
++ */
++enum {
++	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
++	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
++	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
++	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
++	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
++	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
++	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
 +
-+	EVENT_CONSTRAINT_END
++	PERF_SAMPLE_TXN_MAX	    = (1 << 7),  /* non-ABI */
++
++	/* bits 24..31 are reserved for the abort code */
++
++	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
++	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
 +};
 +
- struct event_constraint *intel_pebs_constraints(struct perf_event *event)
- {
- 	struct event_constraint *c;
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+@@ -1193,6 +1213,7 @@ struct perf_sample_data {
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
+ 	u64				weight;
++	u64				transaction;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -1207,6 +1228,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->transaction = 0;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 4eeff67..507c1c3 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -953,6 +953,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		size += sizeof(data->weight);
+ 
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		size += sizeof(data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4090,6 +4093,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
+ 
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		perf_output_put(handle, data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		perf_output_read(handle, event);
+ 
 -- 
 1.7.7.6
 
