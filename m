@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab2JBGae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 02:30:34 -0400
-Received: from ozlabs.org ([203.10.76.45]:50845 "EHLO ozlabs.org"
+	id S1753799Ab2JBGbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 02:31:18 -0400
+Received: from ozlabs.org ([203.10.76.45]:56472 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab2JBGac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753312Ab2JBGac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Oct 2012 02:30:32 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
-        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        keyrings@linux-nfs.org
+To: Josh Boyer <jwboyer@redhat.com>, David Howells <dhowells@redhat.com>
+Cc: herbert@gondor.hengli.com.au, pjones@redhat.com,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
 Subject: Re: [GIT PULL] Asymmetric keys and module signing
-In-Reply-To: <29451.1348903010@warthog.procyon.org.uk>
-References: <87wqzdnwus.fsf@rustcorp.com.au> <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk> <27378.1348819793@warthog.procyon.org.uk> <29451.1348903010@warthog.procyon.org.uk>
+In-Reply-To: <20121001204150.GA20849@hansolo.jdub.homelinux.org>
+References: <87wqzdnwus.fsf@rustcorp.com.au> <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk> <27378.1348819793@warthog.procyon.org.uk> <29407.1348902805@warthog.procyon.org.uk> <20121001204150.GA20849@hansolo.jdub.homelinux.org>
 User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 02 Oct 2012 15:42:31 +0930
-Message-ID: <874nmd4d2o.fsf@rustcorp.com.au>
+Date: Tue, 02 Oct 2012 12:58:03 +0930
+Message-ID: <87626t4kos.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+Josh Boyer <jwboyer@redhat.com> writes:
 
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
->
->> I noticed the Cert number didn't change with rebuilds: "distclean"
->> didn't remove some files:
+> On Sat, Sep 29, 2012 at 08:13:25AM +0100, David Howells wrote:
+>> Rusty Russell <rusty@rustcorp.com.au> wrote:
 >> 
->> $ git clean -f -f -x -d
->> Removing extra_certificates
->> Removing signing_key.priv
->> Removing signing_key.x509
->> Removing signing_key.x509.keyid
->> Removing signing_key.x509.signer
->> Removing x509.genkey
+>> > [    2.808075] Loading module verification certificates
+>> > [    2.809331] X.509: Cert 6e03943da0f3b015ba6ed7f5e0cac4fe48680994 has expired
+>> > [    2.810500] MODSIGN: Problem loading in-kernel X.509 certificate (-127)
+>> 
+>> Hmmm...  Other people have seen that.
+>> 
+>> Ahhhhh!
+>> 
+>> I wonder if the problem is that the certificate is valid for 100 years....
+>> That might well cause an overflow on a 32-bit system.
 >
-> I'm not sure whether distclean should remove those, since they can be
-> externally supplied, or whether x509.genkey should have a Makefile dependency
-> on kernel/Makefile.
+> That does seem quite plausible.  The comparisons are done with time_t,
+> which boils down to 'long' and 100 years in seconds would overflow
+> LONG_MAX.
 >
-> I lean towards 'yes' when I'm altering kernel/Makefile trying to get things
-> right, and 'no' when I'm doing a make distclean to change my config or
-> changing kernel/Makefile for some unrelated reason.
+>> Could you try changing the '36500' in kernel/Makefile to something shorter,
+>> like 365?
+>
+> I tried two values today.  One close to LONG_MAX (24800 or ~68 years),
+> and 10 years (3650).  The former still seemed to overflow, but
+> specifying a 10yr lifetime appears to have worked.
 
-Right.  I think we need to use different names for generated vs supplied
-files, then, because 'distclean' really must delete generated files.
+That's because the timestamp is absolute, right?  Indeed, that seems to
+be the limit here.
 
-But it turns out you do try to clean these files, it just doesn't work.
-See below.  I've applied this, as well, to my tree:
+Here's my solution (tested, and it breaks if you change 2147300000 to
+2147600000 as expected):
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git modules-next
-
-BTW, you missed a Signed-off-by: on your "MODSIGN: Use the same digest
-for the autogen key sig as for the module sig" patch.  Please update.
-
-Cheers,
-Rusty.
-
->From 8921e2ede91f93dcdbd08fa6613f8458de5f8afe Mon Sep 17 00:00:00 2001
+>From 2a4b91c2c29739191c6f7db9abee9296ae505c39 Mon Sep 17 00:00:00 2001
 From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Tue, 2 Oct 2012 14:35:24 +0930
-Subject: [PATCH] MODSIGN: Make mrproper should remove generated files.
+Date: Tue, 2 Oct 2012 12:55:06 +0930
+Subject: [PATCH] MODSIGN: fix expiry of auto-generated certificates on 32-bit
+ systems
 
-It doesn't, because the clean targets don't include kernel/Makefile, and
-because two files were missing from the list.
+100-year certificates make time_t wrap, resulting in:
+
+[    2.835272] X.509: Cert a94f6776f3f5483b0764011d1fcc6c0298362e63 has expired
+[    2.836346] MODSIGN: Problem loading in-kernel X.509 certificate (-127)
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-diff --git a/Makefile b/Makefile
-index 1c88ec3..e70ebfe 100644
---- a/Makefile
-+++ b/Makefile
-@@ -995,7 +995,10 @@ MRPROPER_DIRS  += include/config usr/include include/generated          \
-                   arch/*/include/generated
- MRPROPER_FILES += .config .config.old .version .old_version             \
-                   include/linux/version.h                               \
--		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS
-+		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
-+		  signing_key.priv signing_key.x509 x509.genkey		\
-+		  extra_certificates signing_key.x509.keyid		\
-+		  signing_key.x509.signer
- 
- # clean - Delete most, but leave enough to build external modules
- #
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 86336c9..bb94783 100644
+index e951adf..86336c9 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
-@@ -216,4 +216,3 @@ x509.genkey:
- 	@echo >>x509.genkey "subjectKeyIdentifier=hash"
- 	@echo >>x509.genkey "authorityKeyIdentifier=keyid"
+@@ -168,6 +168,13 @@ endif
+ ifeq ($(sign_key_with_hash),)
+ $(error Could not determine digest type to use from kernel config)
  endif
--CLEAN_FILES += signing_key.priv signing_key.x509 x509.genkey extra_certificates
-
-
++ifeq ($(CONFIG_64BIT),y)
++# 100 years is beyond my best-before date, anyway.
++end_of_time_days=36500
++else
++# Until 32-bit time_t wraps, with some slack.
++end_of_time_days=$(shell expr \( 2147300000 - `date -u +%s` \) / 86400 )
++endif
+ 
+ signing_key.priv signing_key.x509: x509.genkey
+ 	@echo "###"
+@@ -180,7 +187,8 @@ signing_key.priv signing_key.x509: x509.genkey
+ 	@echo "###"
+ 	@echo "###     rngd -r /dev/hwrandom"
+ 	@echo "###"
+-	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
++	openssl req -new -nodes -utf8 $(sign_key_with_hash) \
++		-days $(end_of_time_days) -batch \
+ 		-x509 -config x509.genkey \
+ 		-outform DER -out signing_key.x509 \
+ 		-keyout signing_key.priv
