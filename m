@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab2JBLme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:42:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55043 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752694Ab2JBLmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:42:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,523,1344236400"; 
-   d="scan'208";a="199571508"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        balbi@ti.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 0/4] dw_dmac: few cleanups to the driver
-Date: Tue,  2 Oct 2012 14:41:57 +0300
-Message-Id: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753007Ab2JBLng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:43:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54854 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab2JBLmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 07:42:05 -0400
+From: matthew@walster.org
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, davem@davemloft.net,
+        Matthew Walster <matthew@walster.org>
+Subject: [PATCH 2/2] net: ethernet: Remove obsolete comment
+Date: Tue,  2 Oct 2012 12:41:45 +0100
+Message-Id: <1349178105-28269-3-git-send-email-matthew@walster.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1349178105-28269-1-git-send-email-matthew@walster.org>
+References: <1349178105-28269-1-git-send-email-matthew@walster.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are few cleanups to the driver which already acked and reviewed.
-I decide to split last series to two parts. This is first part.
+From: Matthew Walster <matthew@walster.org>
 
-Heikki Krogerus (4):
-  dmaengine: dw_dmac: use helper macro module_platform_driver()
-  dmaengine: dw_dmac: add module alias
-  dmaengine: dw_dmac: remove CLK dependency
-  dmaengine: dw_dmac: amend description and indentation
+The deleted comment was related to code I've just removed in the previous patch.
+---
+ net/ethernet/eth.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
- drivers/dma/Kconfig   |    1 -
- drivers/dma/dw_dmac.c |   20 ++++++--------------
- 2 files changed, 6 insertions(+), 15 deletions(-)
-
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index a9f8531..7d72108 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -170,14 +170,6 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
+ 			skb->pkt_type = PACKET_MULTICAST;
+ 	}
+ 
+-	/*
+-	 *      This ALLMULTI check should be redundant by 1.4
+-	 *      so don't forget to remove it.
+-	 *
+-	 *      Seems, you forgot to remove it. All silly devices
+-	 *      seems to set IFF_PROMISC.
+-	 */
+-
+ 	else if (unlikely(!ether_addr_equal_64bits(eth->h_dest, dev->dev_addr)))
+ 		skb->pkt_type = PACKET_OTHERHOST;
+ 
 -- 
 1.7.10.4
 
