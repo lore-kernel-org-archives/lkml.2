@@ -1,203 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab2JBAYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:24:37 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:54218 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab2JBARj (ORCPT
+	id S1754034Ab2JBBAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 21:00:18 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:34882 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2JBBAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:17:39 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: [PATCH v7 24/49] vfs: add new "reval" argument to kern_path_create and user_path_create
-Date: Mon,  1 Oct 2012 20:16:33 -0400
-Message-Id: <1349137018-21948-25-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
-References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
+	Mon, 1 Oct 2012 21:00:14 -0400
+X-Greylist: delayed 1027 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Oct 2012 21:00:14 EDT
+Message-ID: <506A3898.7000804@jonmasters.org>
+Date: Mon, 01 Oct 2012 20:43:04 -0400
+From: Jon Masters <jonathan@jonmasters.org>
+Organization: World Organi{s,z}ation of Broken Dreams
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-11-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1341608777-12982-11-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: [PATCH 10/36] AArch64: MMU definitions
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...for now, all of the callers pass in "false". Eventually, we'll set
-that to "true" when we retry the lookup after getting back an ESTALE on
-a call.
+On 07/06/2012 05:05 PM, Catalin Marinas wrote:
 
-While we're at it, change the is_dir arg to a bool since that's how it's
-used currently.
+> +/*
+> + * PAGE_OFFSET - the virtual address of the start of the kernel image.
+> + * VA_BITS - the maximum number of bits for virtual addresses.
+> + * TASK_SIZE - the maximum size of a user space task.
+> + * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area.
+> + * The module space lives between the addresses given by TASK_SIZE
+> + * and PAGE_OFFSET - it must be within 128MB of the kernel text.
+> + */
+> +#define PAGE_OFFSET		UL(0xffffffc000000000)
+> +#define MODULES_END		(PAGE_OFFSET)
+> +#define MODULES_VADDR		(MODULES_END - SZ_64M)
+> +#define VA_BITS			(39)
+> +#define TASK_SIZE_64		(UL(1) << VA_BITS)
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- arch/powerpc/platforms/cell/spufs/syscalls.c |  2 +-
- drivers/base/devtmpfs.c                      |  7 ++++---
- fs/namei.c                                   | 23 +++++++++++++++--------
- fs/ocfs2/refcounttree.c                      |  3 ++-
- include/linux/namei.h                        |  4 ++--
- net/unix/af_unix.c                           |  2 +-
- 6 files changed, 25 insertions(+), 16 deletions(-)
+Pedantic nit pick. Shouldn't that "it must be within 128MB of the kernel
+text" be "within 128MB of the *end* of the kernel text"? The point being
+that on AArch64 unconditional branches are encoded as imm26+1 (27 bits)
+and so you're going with -64MB to ensure that you're within the range.
 
-diff --git a/arch/powerpc/platforms/cell/spufs/syscalls.c b/arch/powerpc/platforms/cell/spufs/syscalls.c
-index 5b7d8ff..cb4acc7 100644
---- a/arch/powerpc/platforms/cell/spufs/syscalls.c
-+++ b/arch/powerpc/platforms/cell/spufs/syscalls.c
-@@ -66,7 +66,7 @@ static long do_spu_create(const char __user *pathname, unsigned int flags,
- 	struct dentry *dentry;
- 	int ret;
- 
--	dentry = user_path_create(AT_FDCWD, pathname, &path, 1);
-+	dentry = user_path_create(AT_FDCWD, pathname, &path, true, false);
- 	ret = PTR_ERR(dentry);
- 	if (!IS_ERR(dentry)) {
- 		ret = spufs_create(&path, dentry, flags, mode, neighbor);
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index deb4a45..2124437 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -148,7 +148,7 @@ static int dev_mkdir(const char *name, umode_t mode)
- 	struct path path;
- 	int err;
- 
--	dentry = kern_path_create(AT_FDCWD, name, &path, 1);
-+	dentry = kern_path_create(AT_FDCWD, name, &path, true, false);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
-@@ -193,10 +193,11 @@ static int handle_create(const char *nodename, umode_t mode, struct device *dev)
- 	struct path path;
- 	int err;
- 
--	dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
-+	dentry = kern_path_create(AT_FDCWD, nodename, &path, false, false);
- 	if (dentry == ERR_PTR(-ENOENT)) {
- 		create_path(nodename);
--		dentry = kern_path_create(AT_FDCWD, nodename, &path, 0);
-+		dentry = kern_path_create(AT_FDCWD, nodename, &path,
-+								false, false);
- 	}
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
-diff --git a/fs/namei.c b/fs/namei.c
-index d3f8998..6c75fc1 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3042,12 +3042,18 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	return file;
- }
- 
--struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
-+struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, bool is_dir, bool reval)
- {
- 	struct dentry *dentry = ERR_PTR(-EEXIST);
- 	struct nameidata nd;
- 	int err2;
--	int error = do_path_lookup(dfd, pathname, LOOKUP_PARENT, &nd);
-+	int error;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
-+
-+	if (reval)
-+		lookup_flags |= LOOKUP_REVAL;
-+
-+	error = do_path_lookup(dfd, pathname, lookup_flags, &nd);
- 	if (error)
- 		return ERR_PTR(error);
- 
-@@ -3111,13 +3117,14 @@ void done_path_create(struct path *path, struct dentry *dentry)
- }
- EXPORT_SYMBOL(done_path_create);
- 
--struct dentry *user_path_create(int dfd, const char __user *pathname, struct path *path, int is_dir)
-+struct dentry *user_path_create(int dfd, const char __user *pathname,
-+				struct path *path, bool is_dir, bool reval)
- {
- 	struct getname_info *tmp = getname(pathname);
- 	struct dentry *res;
- 	if (IS_ERR(tmp))
- 		return ERR_CAST(tmp);
--	res = kern_path_create(dfd, tmp->name, path, is_dir);
-+	res = kern_path_create(dfd, tmp->name, path, is_dir, reval);
- 	putname(tmp);
- 	return res;
- }
-@@ -3178,7 +3185,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 	if (error)
- 		return error;
- 
--	dentry = user_path_create(dfd, filename, &path, 0);
-+	dentry = user_path_create(dfd, filename, &path, false, false);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
-@@ -3240,7 +3247,7 @@ SYSCALL_DEFINE3(mkdirat, int, dfd, const char __user *, pathname, umode_t, mode)
- 	struct path path;
- 	int error;
- 
--	dentry = user_path_create(dfd, pathname, &path, 1);
-+	dentry = user_path_create(dfd, pathname, &path, true, false);
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
-@@ -3516,7 +3523,7 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
- 	if (IS_ERR(from))
- 		return PTR_ERR(from);
- 
--	dentry = user_path_create(newdfd, newname, &path, 0);
-+	dentry = user_path_create(newdfd, newname, &path, false, false);
- 	error = PTR_ERR(dentry);
- 	if (IS_ERR(dentry))
- 		goto out_putname;
-@@ -3616,7 +3623,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (error)
- 		return error;
- 
--	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
-+	new_dentry = user_path_create(newdfd, newname, &new_path, false, false);
- 	error = PTR_ERR(new_dentry);
- 	if (IS_ERR(new_dentry))
- 		goto out;
-diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-index 30a0550..645e225 100644
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -4453,7 +4453,8 @@ int ocfs2_reflink_ioctl(struct inode *inode,
- 		return error;
- 	}
- 
--	new_dentry = user_path_create(AT_FDCWD, newname, &new_path, 0);
-+	new_dentry = user_path_create(AT_FDCWD, newname, &new_path,
-+					false, false);
- 	error = PTR_ERR(new_dentry);
- 	if (IS_ERR(new_dentry)) {
- 		mlog_errno(error);
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 4bf19d8..2202740 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -65,8 +65,8 @@ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *,
- 
- extern int kern_path(const char *, unsigned, struct path *);
- 
--extern struct dentry *kern_path_create(int, const char *, struct path *, int);
--extern struct dentry *user_path_create(int, const char __user *, struct path *, int);
-+extern struct dentry *kern_path_create(int, const char *, struct path *, bool, bool);
-+extern struct dentry *user_path_create(int, const char __user *, struct path *, bool, bool);
- extern void done_path_create(struct path *, struct dentry *);
- extern struct dentry *kern_path_locked(const char *, struct path *);
- extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index c5ee4ff..f15b0ff 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -832,7 +832,7 @@ static int unix_mknod(const char *sun_path, umode_t mode, struct path *res)
- 	 * Get the parent directory, calculate the hash for last
- 	 * component.
- 	 */
--	dentry = kern_path_create(AT_FDCWD, sun_path, &path, 0);
-+	dentry = kern_path_create(AT_FDCWD, sun_path, &path, false, false);
- 	err = PTR_ERR(dentry);
- 	if (IS_ERR(dentry))
- 		return err;
--- 
-1.7.11.4
+Jon.
 
