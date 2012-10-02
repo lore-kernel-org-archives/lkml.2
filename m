@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab2JBKS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 06:18:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45410 "EHLO relay.sw.ru"
+	id S1755103Ab2JBKTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 06:19:43 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29612 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab2JBKSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 06:18:54 -0400
-Subject: [PATCH 4/5] nfs: include nfs4_fh.h in nfs4sysctl.c
+	id S1754473Ab2JBKSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 06:18:45 -0400
+Subject: [PATCH 0/5] nfs: few cleanup patches inspired by sparse
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 02 Oct 2012 14:19:09 +0400
-Message-ID: <20121002101909.15507.13942.stgit@localhost.localdomain>
-In-Reply-To: <20121002101649.15507.50466.stgit@localhost.localdomain>
-References: <20121002101649.15507.50466.stgit@localhost.localdomain>
+Date: Tue, 02 Oct 2012 14:18:43 +0400
+Message-ID: <20121002101649.15507.50466.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,27 +21,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse warnings:
-fs/nfs/nfs4sysctl.c:56:5: warning: symbol 'nfs4_register_sysctl' was not
-declared. Should it be static?
-fs/nfs/nfs4sysctl.c:64:6: warning: symbol 'nfs4_unregister_sysctl' was not
-declared. Should it be static?
+First two patched fixes problems reported by Fengguang Wu
+<fengguang.wu@intel.com>.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+The following series implements...
+
 ---
- fs/nfs/nfs4sysctl.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/nfs4sysctl.c b/fs/nfs/nfs4sysctl.c
-index 5729bc8..2628d92 100644
---- a/fs/nfs/nfs4sysctl.c
-+++ b/fs/nfs/nfs4sysctl.c
-@@ -9,6 +9,7 @@
- #include <linux/nfs_idmap.h>
- #include <linux/nfs_fs.h>
- 
-+#include "nfs4_fs.h"
- #include "callback.h"
- 
- static const int nfs_set_port_min = 0;
+Stanislav Kinsbursky (5):
+      nfs: include NFSv4 header in netns.h
+      nfs: declare nfs_callback_tcp_port in header
+      nfs: declare nfs_xdev_mount as static
+      nfs: include nfs4_fh.h in nfs4sysctl.c
+      nfs: include internah.h in getroot.h
+
+
+ fs/nfs/callback.h   |    1 +
+ fs/nfs/getroot.c    |    2 ++
+ fs/nfs/netns.h      |    1 +
+ fs/nfs/nfs4sysctl.c |    1 +
+ fs/nfs/super.c      |    2 +-
+ 5 files changed, 6 insertions(+), 1 deletions(-)
 
