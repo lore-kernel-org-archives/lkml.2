@@ -1,146 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab2JBQlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:41:07 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50557 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab2JBQhQ (ORCPT
+	id S1755135Ab2JBQpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:45:33 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:59994 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab2JBQpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 10/17] ARM: s3c24xx: fix multiple section mismatch warnings
-Date: Tue,  2 Oct 2012 18:36:49 +0200
-Message-Id: <1349195816-2225-11-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:DdiIwiYvzWkgNbI/HIxJ/RxdHgAgwD7RE0P1/zi//MB
- KpHl+VH7TFKasrXtdOGg6Ziw98tiaCFf7EgYyi+gC3/lrgAgoW
- PNr50pi9lM7o5vXJPCV7OIUHaFEt6ruHYe7UV9afZmjht+quOq
- Ha74DI0+Kh6un9GrzcxSEBt7TskrpY9zL9AeYLxN6OAiDgv6dx
- IEtH//K45i+QwRB+kjV5BAKuUL57Yoq4Hb74utK9hqFVl1Ss3x
- L81akPXHlOg0ZqKxvKqvtjYJ/vmD7SdgEE/1BhECzoZOVYtWLN
- ViKlLMJ/Tgwy9W3UCyygRCxovz4mxlN41oHovQcUHglSvI6o52
- 2pi5+FtuIQ15oPfloVp9tDcN0A/LprAhoimy07hGIJ+LLtm5mz
- FeDp56i740uhg==
+	Tue, 2 Oct 2012 12:45:30 -0400
+Message-ID: <506B1A26.2060609@pobox.com>
+Date: Tue, 02 Oct 2012 12:45:26 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v3 -tip 5/5] AHCI: Support multiple MSIs
+References: <cover.1349074231.git.agordeev@redhat.com> <cc6441a31a2c600ad9ae33e7715de65b8d46a66f.1349074231.git.agordeev@redhat.com> <20121002050929.GD7756@gmail.com> <20121002164220.GB2258@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20121002164220.GB2258@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The *_irq_add function should not be marked __init because the driver
-subsystem thinks they might be called at a later stage.
+On 10/02/2012 12:42 PM, Alexander Gordeev wrote:
+> On Tue, Oct 02, 2012 at 07:09:29AM +0200, Ingo Molnar wrote:
+>>> +irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
+>>> +{
+>>> +	struct ata_port *ap_this = dev_instance;
+>>> +	struct ahci_port_priv *pp = ap_this->private_data;
+>>> +	struct ata_host *host = ap_this->host;
+>>> +	struct ahci_host_priv *hpriv = host->private_data;
+>>> +	void __iomem *mmio = hpriv->mmio;
+>>> +	unsigned int i;
+>>> +	u32 irq_stat, irq_masked;
+>>> +
+>>> +	VPRINTK("ENTER\n");
+>>
+>> Is this per IRQ handler execution debugging code still needed?
+>> Same for the other VPRINTK() lines in this patch.
+>
+> These VPRINKs are only to make new handlers look like ahci_interrupt()
+> which did not change. I believe, if they need to go it is better to
+> remove them altogether, with a separate followup patch.
 
-The usb_simtec_init function accesses initdata and should be marked
-init. This is safe because the only caller is also an init function.
+Definitely followup patch material + discussion :)
 
-Without this patch, building s3c2410_defconfig results in:
+For the moment, the above is consistent with existing code, and by 
+default compiled out, as one would expect.
 
-WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0x1030): Section mismatch in reference from the variable s3c2416_irq_interface to the function .init.text:s3c2416_irq_add()
-The variable s3c2416_irq_interface references
-the function __init s3c2416_irq_add()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+	Jeff
 
-WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0x1b08): Section mismatch in reference from the variable s3c2443_irq_interface to the function .init.text:s3c2443_irq_add()
-The variable s3c2443_irq_interface references
-the function __init s3c2443_irq_add()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0xf44): Section mismatch in reference from the variable s3c2416_irq_interface to the function .init.text:s3c2416_irq_add()
-The variable s3c2416_irq_interface references
-the function __init s3c2416_irq_add()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-WARNING: arch/arm/mach-s3c24xx/built-in.o(.text+0x3f7c): Section mismatch in reference from the function usb_simtec_init() to the (unknown reference) .init.data:(unknown)
-The function usb_simtec_init() references
-the (unknown reference) __initdata (unknown).
-This is often because usb_simtec_init lacks a __initdata
-annotation or the annotation of (unknown) is wrong.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
----
- arch/arm/mach-s3c24xx/irq-s3c2416.c |    6 +++---
- arch/arm/mach-s3c24xx/irq-s3c2443.c |    4 ++--
- arch/arm/mach-s3c24xx/simtec-usb.c  |    2 +-
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/mach-s3c24xx/irq-s3c2416.c b/arch/arm/mach-s3c24xx/irq-s3c2416.c
-index 23ec973..ff141b0 100644
---- a/arch/arm/mach-s3c24xx/irq-s3c2416.c
-+++ b/arch/arm/mach-s3c24xx/irq-s3c2416.c
-@@ -232,7 +232,7 @@ struct irq_chip s3c2416_irq_second = {
- 
- /* IRQ initialisation code */
- 
--static int __init s3c2416_add_sub(unsigned int base,
-+static int s3c2416_add_sub(unsigned int base,
- 				   void (*demux)(unsigned int,
- 						 struct irq_desc *),
- 				   struct irq_chip *chip,
-@@ -251,7 +251,7 @@ static int __init s3c2416_add_sub(unsigned int base,
- 	return 0;
- }
- 
--static void __init s3c2416_irq_add_second(void)
-+static void s3c2416_irq_add_second(void)
- {
- 	unsigned long pend;
- 	unsigned long last;
-@@ -287,7 +287,7 @@ static void __init s3c2416_irq_add_second(void)
- 	}
- }
- 
--static int __init s3c2416_irq_add(struct device *dev,
-+static int s3c2416_irq_add(struct device *dev,
- 				  struct subsys_interface *sif)
- {
- 	printk(KERN_INFO "S3C2416: IRQ Support\n");
-diff --git a/arch/arm/mach-s3c24xx/irq-s3c2443.c b/arch/arm/mach-s3c24xx/irq-s3c2443.c
-index ac2829f..5e69109 100644
---- a/arch/arm/mach-s3c24xx/irq-s3c2443.c
-+++ b/arch/arm/mach-s3c24xx/irq-s3c2443.c
-@@ -222,7 +222,7 @@ static struct irq_chip s3c2443_irq_cam = {
- 
- /* IRQ initialisation code */
- 
--static int __init s3c2443_add_sub(unsigned int base,
-+static int s3c2443_add_sub(unsigned int base,
- 				   void (*demux)(unsigned int,
- 						 struct irq_desc *),
- 				   struct irq_chip *chip,
-@@ -241,7 +241,7 @@ static int __init s3c2443_add_sub(unsigned int base,
- 	return 0;
- }
- 
--static int __init s3c2443_irq_add(struct device *dev,
-+static int s3c2443_irq_add(struct device *dev,
- 				  struct subsys_interface *sif)
- {
- 	printk("S3C2443: IRQ Support\n");
-diff --git a/arch/arm/mach-s3c24xx/simtec-usb.c b/arch/arm/mach-s3c24xx/simtec-usb.c
-index d91c1a7..c303d1b 100644
---- a/arch/arm/mach-s3c24xx/simtec-usb.c
-+++ b/arch/arm/mach-s3c24xx/simtec-usb.c
-@@ -104,7 +104,7 @@ static struct s3c2410_hcd_info usb_simtec_info __initdata = {
- };
- 
- 
--int usb_simtec_init(void)
-+int __init usb_simtec_init(void)
- {
- 	int ret;
- 
--- 
-1.7.10
 
