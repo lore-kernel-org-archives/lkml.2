@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab2JBAVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:21:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43943 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab2JBASA (ORCPT
+	id S1756035Ab2JBAVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:21:34 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:40576 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234Ab2JBAR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:18:00 -0400
+	Mon, 1 Oct 2012 20:17:57 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: [PATCH v7 38/49] vfs: make fchownat retry once on ESTALE errors
-Date: Mon,  1 Oct 2012 20:16:47 -0400
-Message-Id: <1349137018-21948-39-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v7 36/49] vfs: make chroot retry once on ESTALE error
+Date: Mon,  1 Oct 2012 20:16:45 -0400
+Message-Id: <1349137018-21948-37-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
 References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
@@ -23,49 +23,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/open.c | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ fs/open.c | 37 +++++++++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
 
 diff --git a/fs/open.c b/fs/open.c
-index 232cbfb..1bdfd9a 100644
+index 81ba325..a015cb8 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -567,24 +567,29 @@ SYSCALL_DEFINE5(fchownat, int, dfd, const char __user *, filename, uid_t, user,
+@@ -437,27 +437,32 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
+ {
  	struct path path;
- 	int error = -EINVAL;
- 	int lookup_flags;
+ 	int error;
++	int lookup_flags = LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
 +	unsigned int try = 0;
  
- 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0)
--		goto out;
-+		return error;
- 
- 	lookup_flags = (flag & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW;
- 	if (flag & AT_EMPTY_PATH)
- 		lookup_flags |= LOOKUP_EMPTY;
--	error = user_path_at(dfd, filename, lookup_flags, &path);
+-	error = user_path_dir(filename, &path);
 -	if (error)
 -		goto out;
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto out_release;
--	error = chown_common(&path, user, group);
--	mnt_drop_write(path.mnt);
--out_release:
--	path_put(&path);
--out:
-+
 +	do {
-+		error = user_path_at(dfd, filename, lookup_flags, &path);
++		error = user_path_at(AT_FDCWD, filename, lookup_flags, &path);
 +		if (error)
 +			break;
-+
-+		error = mnt_want_write(path.mnt);
-+		if (!error) {
-+			error = chown_common(&path, user, group);
-+			mnt_drop_write(path.mnt);
-+		}
-+
+ 
+-	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
+-	if (error)
+-		goto dput_and_out;
++		error = inode_permission(path.dentry->d_inode,
++					 MAY_EXEC | MAY_CHDIR);
++		if (error)
++			goto dput_and_out;
+ 
+-	error = -EPERM;
+-	if (!capable(CAP_SYS_CHROOT))
+-		goto dput_and_out;
+-	error = security_path_chroot(&path);
+-	if (error)
+-		goto dput_and_out;
++		error = -EPERM;
++		if (!capable(CAP_SYS_CHROOT))
++			goto dput_and_out;
++		error = security_path_chroot(&path);
++		if (error)
++			goto dput_and_out;
+ 
+-	set_fs_root(current->fs, &path);
+-	error = 0;
++		set_fs_root(current->fs, &path);
++		error = 0;
+ dput_and_out:
+-	path_put(&path);
+-out:
 +		path_put(&path);
 +		lookup_flags |= LOOKUP_REVAL;
 +	} while (retry_estale(error, try++));
