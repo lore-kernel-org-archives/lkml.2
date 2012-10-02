@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab2JBTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 15:04:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51841 "EHLO mail.zytor.com"
+	id S1754139Ab2JBTHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 15:07:04 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:59752 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab2JBTE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 15:04:57 -0400
-Message-ID: <506B3AC2.2090108@zytor.com>
-Date: Tue, 02 Oct 2012 12:04:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752013Ab2JBTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 15:07:01 -0400
+Message-ID: <506B3B52.7080001@msgid.tls.msk.ru>
+Date: Tue, 02 Oct 2012 23:06:58 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, Jamie Gloudon <jamie.gloudon@gmail.com>,
-        fenghua.yu@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11] x86/microcode: Early load microcode
-References: <20121001161151.GA2640@darkstar> <20121001162745.GD23181@x1.osrc.amd.com> <506A8479.8030103@zytor.com> <CACJDEmpXHoOYK-8F3a4nQi5GELnRSmdmWdU=i9PkNuxGcyjZRg@mail.gmail.com>
-In-Reply-To: <CACJDEmpXHoOYK-8F3a4nQi5GELnRSmdmWdU=i9PkNuxGcyjZRg@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
+To: Ferenc Wagner <wferi@niif.hu>
+CC: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
+        Matt Carlson <mcarlson@broadcom.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter
+ SoL
+References: <87txuhho5z.fsf@lant.ki.iif.hu> <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87a9w5dqle.fsf@lant.ki.iif.hu> <1349190185.5420.21.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87haqcddks.fsf@lant.ki.iif.hu> <1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <87626sd80j.fsf@lant.ki.iif.hu>
+In-Reply-To: <87626sd80j.fsf@lant.ki.iif.hu>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 12:00 PM, Konrad Rzeszutek Wilk wrote:
+On 02.10.2012 22:49, Ferenc Wagner wrote:
+> "Michael Chan" <mchan@broadcom.com> writes:
+>> These are the likely fixes:
+>>
+>> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db 
+>> Author: Matt Carlson <mcarlson@broadcom.com>
+>> Date: Mon Nov 28 09:41:03 2011 +0000
+>>
+>> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
 > 
-> When he got interrupted did he have any beta patches to dracut that
-> could be posted?
-> 
+> You are exactly right: cf9ecf4b fixed the premanent SoL breakage
+> introduced by dabc5c67.  Looks like ASF utilizes similar technology to
+> that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
+> wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it's
+> possible to work around in 3.2 by eg. fiddling some ethtool setting?
 
-To *dracut*?
+Maybe it's better to push this commit to -stable instead? (the commit
+that broke things is part of 3.0 kernel so all current 3.x -stable
+kernels are affected)
 
-	-hpa
+(Besides, that commit "This patch fixes the problem by revisiting and
+reevaluating the decision after tg3_get_eeprom_hw_cfg() is called." -
+merely copies a somewhat "twisted" chunk of code into another place,
+which does not look optimal)
 
+Thanks,
+
+/mjt
