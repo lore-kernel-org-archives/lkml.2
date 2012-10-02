@@ -1,120 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2JBGvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 02:51:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40233 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab2JBGvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 02:51:47 -0400
-Date: Tue, 2 Oct 2012 07:51:43 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Netperf UDP_STREAM regression due to not sending IPIs in ttwu_queue()
-Message-ID: <20121002065143.GK29125@suse.de>
+	id S1754445Ab2JBGxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 02:53:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55539 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab2JBGxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 02:53:02 -0400
+Date: Mon, 1 Oct 2012 23:52:45 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-1396adc3c2bdc556d4cdd1cf107aa0b6d59fbb1e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, rjw@sisk.pl, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, rjw@sisk.pl
+In-Reply-To: <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+References: <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, suspend: Correct the restore of CR4, EFER;
+  skip computing EFLAGS.ID
+Git-Commit-ID: 1396adc3c2bdc556d4cdd1cf107aa0b6d59fbb1e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 01 Oct 2012 23:52:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm going through old test results to see could I find any leftover
-performance regressions that have not yet been fixed (most have at this point
-or at least changed in such a way to make a plain revert impossible). One
-major regression still left is with netperf UDP_STREAM regression. Bisection
-points the finger straight at 518cd623 (sched: Only queue remote wakeups
-when crossing cache boundaries).  Problem was introduced between 3.2 and
-3.3, current kernel still sucks as the following results show.
+Commit-ID:  1396adc3c2bdc556d4cdd1cf107aa0b6d59fbb1e
+Gitweb:     http://git.kernel.org/tip/1396adc3c2bdc556d4cdd1cf107aa0b6d59fbb1e
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 1 Oct 2012 14:34:42 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 2 Oct 2012 08:42:31 +0200
 
-NETPERF UDP
-                           3.3.0                 3.3.0                 3.6.0
-                         vanilla       revert-518cd623               vanilla
-Tput 64         328.38 (  0.00%)      436.58 ( 32.95%)      312.51 ( -4.83%)
-Tput 128        661.43 (  0.00%)      869.88 ( 31.52%)      625.70 ( -5.40%)
-Tput 256       1310.27 (  0.00%)     1724.45 ( 31.61%)     1243.65 ( -5.08%)
-Tput 1024      5466.85 (  0.00%)     6601.43 ( 20.75%)     4838.86 (-11.49%)
-Tput 2048     10885.95 (  0.00%)    12694.06 ( 16.61%)     9161.75 (-15.84%)
-Tput 3312     15930.33 (  0.00%)    19327.67 ( 21.33%)    14106.26 (-11.45%)
-Tput 4096     18025.47 (  0.00%)    22183.12 ( 23.07%)    16636.01 ( -7.71%)
-Tput 8192     30076.42 (  0.00%)    37280.86 ( 23.95%)    28575.84 ( -4.99%)
-Tput 16384    47742.12 (  0.00%)    56123.21 ( 17.55%)    46060.57 ( -3.52%)
+x86, suspend: Correct the restore of CR4, EFER; skip computing EFLAGS.ID
 
-Machine is a single-socket I7-2600.
+The patch:
 
-Netperf was running in loopback testing UDP_STREAM instead of TCP_STREAM
-which the commit was intended to fix. The netperf server and client were
-bound to CPUs 0 and 1 respectively. Scheduling domains for those two
-CPUs look like
+    73201dbe x86, suspend: On wakeup always initialize cr4 and EFER
 
-[    0.788535] CPU0 attaching sched-domain:
-[    0.788537]  domain 0: span 0,4 level SIBLING
-[    0.788538]   groups: 0 (cpu_power = 589) 4 (cpu_power = 589)
-[    0.788541]   domain 1: span 0-7 level MC
-[    0.788543]    groups: 0,4 (cpu_power = 1178) 1,5 (cpu_power = 1178) 2,6 (cpu_power = 1178) 3,7 (cpu_power = 1178)
-[    0.788548] CPU1 attaching sched-domain:
-[    0.788549]  domain 0: span 1,5 level SIBLING
-[    0.788550]   groups: 1 (cpu_power = 589) 5 (cpu_power = 589)
-[    0.788552]   domain 1: span 0-7 level MC
-[    0.788553]    groups: 1,5 (cpu_power = 1178) 2,6 (cpu_power = 1178) 3,7 (cpu_power = 1178) 0,4 (cpu_power = 1178)
+... was incorrectly committed in an intermediate (unfinished) form.
 
-CPUs 0,1 are not SMT siblings but are in the same MC domain so would share a
-common higher scheduling domain when searching for SD_SHARE_PKG_RESOURCES. I
-get the logic of the patch that only sends an IPI if waking up cross-domain
-but it's not a universal win either apparently. Unfortunately as I'm a
-bit weak on the scheduler, it's not obvious to me what the correct path
-forward is.
+- We need to test CF, not ZF, for a bit test with btl.
+- We don't actually need to compute the existence of EFLAGS.ID,
+  since we set a flag at suspend time if CR4 should be restored.
 
-FWIW, the following shows the results of allowing IPIs to be sent.
-
-NETPERF UDP
-                           3.3.0                 3.3.0                 3.6.0                 3.6.0
-                         vanilla          sendipi-v1r1               vanilla          sendipi-v1r1
-Tput 64         328.38 (  0.00%)      423.46 ( 28.95%)      312.51 ( -4.83%)      391.83 ( 19.32%)
-Tput 128        661.43 (  0.00%)      845.78 ( 27.87%)      625.70 ( -5.40%)      783.14 ( 18.40%)
-Tput 256       1310.27 (  0.00%)     1681.17 ( 28.31%)     1243.65 ( -5.08%)     1548.88 ( 18.21%)
-Tput 1024      5466.85 (  0.00%)     6553.80 ( 19.88%)     4838.86 (-11.49%)     5902.06 (  7.96%)
-Tput 2048     10885.95 (  0.00%)    12760.77 ( 17.22%)     9161.75 (-15.84%)    11245.34 (  3.30%)
-Tput 3312     15930.33 (  0.00%)    19480.40 ( 22.28%)    14106.26 (-11.45%)    17186.32 (  7.88%)
-Tput 4096     18025.47 (  0.00%)    22659.79 ( 25.71%)    16636.01 ( -7.71%)    20111.05 ( 11.57%)
-Tput 8192     30076.42 (  0.00%)    36865.53 ( 22.57%)    28575.84 ( -4.99%)    33801.49 ( 12.39%)
-Tput 16384    47742.12 (  0.00%)    55127.99 ( 15.47%)    46060.57 ( -3.52%)    52262.36 (  9.47%)
-
-MMTests Statistics: duration
-               3.3.0       3.3.0       3.6.0       3.6.0
-             vanillasendipi-v1r1     vanillasendipi-v1r1
-User           54.60       33.87       41.32       39.81
-System       2441.70     1245.99     1419.30     1380.85
-Elapsed      3010.63     1546.65     1764.70     1716.92
-
-A plain revert on 3.3 was a massive win but sending the IPI at least
-gets most of the performance back. It's not so great on 3.6 but too much
-has changed to make a plain revert feasible.
-
-It's also worth noting that in 3.3 at least, sending the IPI made netperf
-performance less variable. I am inferring this from the fact that it
-completed in about half the time and required fewer iterations to be
-confident of the result.
-
-This is obviously a stupid hack but illustrates the point.
-
-Not-signed-off-as-this-obviously-breaking-intent-of-original-patch
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/1348529239-17943-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/realmode/rm/wakeup_asm.S |   15 +++------------
+ 1 files changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 649c9f8..79d483c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1548,7 +1548,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
- 	struct rq *rq = cpu_rq(cpu);
+diff --git a/arch/x86/realmode/rm/wakeup_asm.S b/arch/x86/realmode/rm/wakeup_asm.S
+index e56479e..9e7e147 100644
+--- a/arch/x86/realmode/rm/wakeup_asm.S
++++ b/arch/x86/realmode/rm/wakeup_asm.S
+@@ -74,18 +74,9 @@ ENTRY(wakeup_start)
  
- #if defined(CONFIG_SMP)
--	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
-+	if (sched_feat(TTWU_QUEUE) && cpus_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
- 		return;
+ 	lidtl	wakeup_idt
+ 
+-	/* Clear the EFLAGS but remember if we have EFLAGS.ID */
+-	movl $X86_EFLAGS_ID, %ecx
+-	pushl %ecx
+-	popfl
+-	pushfl
+-	popl %edi
++	/* Clear the EFLAGS */
+ 	pushl $0
+ 	popfl
+-	pushfl
+-	popl %edx
+-	xorl %edx, %edi
+-	andl %ecx, %edi		/* %edi is zero iff CPUID & %cr4 are missing */
+ 
+ 	/* Check header signature... */
+ 	movl	signature, %eax
+@@ -120,12 +111,12 @@ ENTRY(wakeup_start)
+ 	movl	%eax, %cr3
+ 
+ 	btl	$WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
+-	jz	1f
++	jnc	1f
+ 	movl	pmode_cr4, %eax
+ 	movl	%eax, %cr4
+ 1:
+ 	btl	$WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
+-	jz	1f
++	jnc	1f
+ 	movl	pmode_efer, %eax
+ 	movl	pmode_efer + 4, %edx
+ 	movl	$MSR_EFER, %ecx
