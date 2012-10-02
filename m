@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab2JBNEu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 09:04:50 -0400
-Received: from rain.florz.de ([62.216.164.86]:48408 "EHLO
-	rain.florz.dyndns.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753479Ab2JBNEt (ORCPT
+	id S1753716Ab2JBNG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 09:06:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18702 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174Ab2JBNG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 09:04:49 -0400
-X-Greylist: delayed 2645 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Oct 2012 09:04:49 EDT
-Date: Tue, 2 Oct 2012 14:20:37 +0200
-From: Florian Zumbiehl <florz@florz.de>
-To: airlied@redhat.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/savage: re-add busmaster enable, regression fix
-Message-ID: <20121002122036.GN1162@florz.florz.dyndns.org>
+	Tue, 2 Oct 2012 09:06:57 -0400
+Date: Tue, 2 Oct 2012 08:55:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the xen-two tree with Linus' tree
+Message-ID: <20121002125519.GB9009@phenom.dumpdata.com>
+References: <20121002141949.f6e61437bdce0d56d9d4321e@canb.auug.org.au>
+ <alpine.DEB.2.02.1210021141370.29232@kaball.uk.xensource.com>
+ <506AEE0C020000780009F0A1@nat28.tlf.novell.com>
+ <alpine.DEB.2.02.1210021240020.29232@kaball.uk.xensource.com>
+ <506AF20C020000780009F0B5@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <506AF20C020000780009F0B5@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-466e69b8b03b8c1987367912782bc12988ad8794 dropped busmaster enable from the
-global drm code and moved it to the individual drivers, but missed the savage
-driver. So, this re-adds busmaster enable to the savage driver, fixing the
-regression.
+On Tue, Oct 02, 2012 at 12:54:20PM +0100, Jan Beulich wrote:
+> >>> On 02.10.12 at 13:45, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> >> > Considering that dbgp doesn't seem to be very useful without PCI at the
+> >> > moment, could we just turn it into:
+> >> > 
+> >> > dom0-$(CONFIG_PCI) += dbgp.o
+> >> > 
+> >> > ?
+> >> 
+> >> Better not - the code is specifically not PCI-only. And I can't see
+> >> how it would be harmful to be compiled on e.g. ARM (so the
+> >> merge perhaps really should use XEN_DOM0 alone, without
+> >> X86. If anything (and that may indeed be a minor oversight of
+> >> the original patch) one might want it to depend on USB_SUPPORT,
+> >> as without that no in-tree debug port capable driver would be
+> >> able to load (and hence interfere with Xen's use of the debug
+> >> port). However, as long as it builds fine with USB_SUPPORT
+> >> undefined (which I believe it does), having it in the shape it
+> >> is allows for out-of-tree drivers as well (as long as they make
+> >> use of the designated interface).
+> > 
+> > OK for PCI.
+> > Regarding USB_SUPPORT, considering that gbgp.c calls hcd_to_bus, I think
+> > it would make sense to make it depend on it.
+> 
+> As said - I'd prefer to do that only if indeed needed to get things
+> to build without that option. Since include/usb/* doesn't reference
+> CONFIG_USB_SUPPORT, I'm in favor of supporting at least those
+> eventual out-of-tree drivers that do use the pre-existing data
+> structures (and others shouldn't be calling pre-existing APIs
+> anyway). But I wouldn't NAK a patch doing what you suggest
+> either.
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
+Could it depend on EARLY_PRINTK_DBGP ?
 
-diff --git a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
-index 6eb507a..7d3f0f0 100644
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -547,6 +547,8 @@ int savage_driver_load(struct drm_device *dev, unsigned long chipset)
- 
- 	dev_priv->chipset = (enum savage_family)chipset;
- 
-+	pci_set_master(dev->pdev);
-+
- 	return 0;
- }
- 
+> 
+> Jan
