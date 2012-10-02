@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab2JBNG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 09:06:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18702 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab2JBNG5 (ORCPT
+	id S1753749Ab2JBNIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 09:08:15 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36970 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538Ab2JBNIN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 09:06:57 -0400
-Date: Tue, 2 Oct 2012 08:55:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the xen-two tree with Linus' tree
-Message-ID: <20121002125519.GB9009@phenom.dumpdata.com>
-References: <20121002141949.f6e61437bdce0d56d9d4321e@canb.auug.org.au>
- <alpine.DEB.2.02.1210021141370.29232@kaball.uk.xensource.com>
- <506AEE0C020000780009F0A1@nat28.tlf.novell.com>
- <alpine.DEB.2.02.1210021240020.29232@kaball.uk.xensource.com>
- <506AF20C020000780009F0B5@nat28.tlf.novell.com>
+	Tue, 2 Oct 2012 09:08:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506AF20C020000780009F0B5@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CA+MoWDoy+cqkzDHmR2=-3UhMn-i+fU0RVKwtkcsgRxOBk98oYA@mail.gmail.com>
+References: <1349179024-5319-1-git-send-email-peter.senna@gmail.com>
+	<20121002121443.GT4587@mwanda>
+	<CA+MoWDqxXPiuFwmznynn8SPK20eJUgCKonq+C=s8fKvcnkb4Aw@mail.gmail.com>
+	<CALF0-+W25fAD0=kLD085G+H1b-WFaARudo-hkJO_LoBTNZC-Nw@mail.gmail.com>
+	<CA+MoWDoy+cqkzDHmR2=-3UhMn-i+fU0RVKwtkcsgRxOBk98oYA@mail.gmail.com>
+Date: Tue, 2 Oct 2012 10:08:13 -0300
+Message-ID: <CALF0-+WcUzsQ3b3gyCoauAYmmV3xDT7H1veKkabhvC8hofCWAA@mail.gmail.com>
+Subject: Re: [PATCH RFC] MAINTAINERS: Add section for subsystem shortname
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, joe@perches.com,
+        gregkh@linuxfoundation.org, davem@davemloft.net, arnd@arndb.de,
+        Julia.Lawall@lip6.fr, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 12:54:20PM +0100, Jan Beulich wrote:
-> >>> On 02.10.12 at 13:45, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> >> > Considering that dbgp doesn't seem to be very useful without PCI at the
-> >> > moment, could we just turn it into:
-> >> > 
-> >> > dom0-$(CONFIG_PCI) += dbgp.o
-> >> > 
-> >> > ?
-> >> 
-> >> Better not - the code is specifically not PCI-only. And I can't see
-> >> how it would be harmful to be compiled on e.g. ARM (so the
-> >> merge perhaps really should use XEN_DOM0 alone, without
-> >> X86. If anything (and that may indeed be a minor oversight of
-> >> the original patch) one might want it to depend on USB_SUPPORT,
-> >> as without that no in-tree debug port capable driver would be
-> >> able to load (and hence interfere with Xen's use of the debug
-> >> port). However, as long as it builds fine with USB_SUPPORT
-> >> undefined (which I believe it does), having it in the shape it
-> >> is allows for out-of-tree drivers as well (as long as they make
-> >> use of the designated interface).
-> > 
-> > OK for PCI.
-> > Regarding USB_SUPPORT, considering that gbgp.c calls hcd_to_bus, I think
-> > it would make sense to make it depend on it.
-> 
-> As said - I'd prefer to do that only if indeed needed to get things
-> to build without that option. Since include/usb/* doesn't reference
-> CONFIG_USB_SUPPORT, I'm in favor of supporting at least those
-> eventual out-of-tree drivers that do use the pre-existing data
-> structures (and others shouldn't be calling pre-existing APIs
-> anyway). But I wouldn't NAK a patch doing what you suggest
-> either.
+On Tue, Oct 2, 2012 at 9:53 AM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> On Tue, Oct 2, 2012 at 2:40 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
+>> On Tue, Oct 2, 2012 at 9:33 AM, Peter Senna Tschudin
+>> <peter.senna@gmail.com> wrote:
+>>> On Tue, Oct 2, 2012 at 2:14 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>>>> On Tue, Oct 02, 2012 at 01:57:04PM +0200, Peter Senna Tschudin wrote:
+>>>>> The shortname for a subsystem, that is primarly used when sending patches over E-mail, is not stored anywhere in the source code. Actually one need to dig git log or mailing list archives. There is no standard, and the Maintainer choose how to short name his/her subsystem. MAINTAINERS file is the right place for storing this information.
+>>>>>
+>>>>> U is the second letter of Subsystem.
+>>>>>
+>>>>> This will also enable automatic tools like scripts/get_maintainer.pl to provide the correct short name for each filename in the Kernel source tree.
+>>>>>
+>>>>
+>>>> This is pretty useless without a script to parse it.  Also none of
+>>> With or without a script, there is no default way of finding the short
+>>> name. Changing scripts/get_maintainer.pl to do it does not seems very
+>>> complex.
+>>>
+>>
+>> Perhaps you should do get_maintainer.pl changes yourself and then
+>> use it to test on some of your patches to see what subject it produces.
+> What are your doubts about this method of getting the short name?
+>
 
-Could it depend on EARLY_PRINTK_DBGP ?
+No doubts so far since I haven't seen it in action.
+Some script results and more examples could help.
 
-> 
-> Jan
+>>
+>> Then it's easier to see if the proposal makes sense.
+>> A new rule / standard is something hard to push and we want to have as much
+>> facts as possible to make better decisions.
+> The fact is that currently there is no standard way of getting the
+> short name for a subsystem. My proposal fixes it allowing to look on
+> the MAINTAINERS file to see what short name to use.
+>
+
+There is no standard way of getting short name, and there isn't standard
+way of naming a patch either.
+
+Just looking through media list I can spot lots of different subject schemes:
+  [media] foo: fix some bug
+  media: foo: fix some bug
+  foo: fix some bug
+  Some random text and fix some bug
+
+Regards,
+Ezequiel.
