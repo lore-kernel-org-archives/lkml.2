@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab2JBKTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 06:19:43 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29612 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754473Ab2JBKSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754580Ab2JBKSp (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Oct 2012 06:18:45 -0400
-Subject: [PATCH 0/5] nfs: few cleanup patches inspired by sparse
+Received: from mailhub.sw.ru ([195.214.232.25]:4961 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588Ab2JBKSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 06:18:44 -0400
+Subject: [PATCH 1/5] nfs: include NFSv4 header in netns.h
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 02 Oct 2012 14:18:43 +0400
-Message-ID: <20121002101649.15507.50466.stgit@localhost.localdomain>
+Date: Tue, 02 Oct 2012 14:18:54 +0400
+Message-ID: <20121002101854.15507.84959.stgit@localhost.localdomain>
+In-Reply-To: <20121002101649.15507.50466.stgit@localhost.localdomain>
+References: <20121002101649.15507.50466.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,25 +23,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First two patched fixes problems reported by Fengguang Wu
-<fengguang.wu@intel.com>.
+Build error:
+fs/nfs/netns.h:27:15: error: 'NFS4_MAX_MINOR_VERSION' undeclared here (not in
+a function)
 
-The following series implements...
-
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
+ fs/nfs/netns.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Stanislav Kinsbursky (5):
-      nfs: include NFSv4 header in netns.h
-      nfs: declare nfs_callback_tcp_port in header
-      nfs: declare nfs_xdev_mount as static
-      nfs: include nfs4_fh.h in nfs4sysctl.c
-      nfs: include internah.h in getroot.h
-
-
- fs/nfs/callback.h   |    1 +
- fs/nfs/getroot.c    |    2 ++
- fs/nfs/netns.h      |    1 +
- fs/nfs/nfs4sysctl.c |    1 +
- fs/nfs/super.c      |    2 +-
- 5 files changed, 6 insertions(+), 1 deletions(-)
+diff --git a/fs/nfs/netns.h b/fs/nfs/netns.h
+index b9c7f9b..8ee1fab 100644
+--- a/fs/nfs/netns.h
++++ b/fs/nfs/netns.h
+@@ -5,6 +5,7 @@
+ #ifndef __NFS_NETNS_H__
+ #define __NFS_NETNS_H__
+ 
++#include <linux/nfs4.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
+ 
 
