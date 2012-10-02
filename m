@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab2JBMBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 08:01:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62828 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab2JBMBB (ORCPT
+	id S1751483Ab2JBMIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 08:08:11 -0400
+Received: from listserv2.niif.hu ([193.225.14.155]:54366 "EHLO
+	listserv2.niif.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab2JBMIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 08:01:01 -0400
+	Tue, 2 Oct 2012 08:08:09 -0400
+From: Ferenc Wagner <wferi@niif.hu>
+To: "Michael Chan" <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, "Matt Carlson" <mcarlson@broadcom.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        wferi@niif.hu
+Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter SoL
+References: <87txuhho5z.fsf@lant.ki.iif.hu>
+	<1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Date: Tue, 02 Oct 2012 14:07:57 +0200
+In-Reply-To: <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	(Michael Chan's message of "Mon, 1 Oct 2012 02:33:02 -0700")
+Message-ID: <87a9w5dqle.fsf@lant.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1349178781.7780.29.camel@twins>
-References: <20121002114218.GA5891@krava.brq.redhat.com>
-	<1349178781.7780.29.camel@twins>
-Date: Tue, 2 Oct 2012 14:01:00 +0200
-Message-ID: <CABPqkBSzgEjM9s3i5kQ-BSP-q6F3=8MwXfZ6B31UyJpEJ1Q9JA@mail.gmail.com>
-Subject: Re: [PATCH] perf cgroups: Fix perf_cgroup_switch schedule in warning
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 1:53 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> On Tue, 2012-10-02 at 13:42 +0200, Jiri Olsa wrote:
-> > +++ b/kernel/events/core.c
-> > @@ -394,7 +394,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
-> >                         }
-> >
-> >                         if (mode & PERF_CGROUP_SWIN) {
-> > -                               WARN_ON_ONCE(cpuctx->cgrp);
-> > +                               WARN_ON_ONCE(cpuctx->cgrp && !cpuctx->ctx.is_active);
-> > +
+"Michael Chan" <mchan@broadcom.com> writes:
 
-Wait a minute, I thought we had fixed that problem which was caused by
-the AMD IBS
-pmu not having the task_ctx_nr set properly or something like that. We
-were wrongfully
-sharing the cpuctx between PMUs.
+> On Fri, 2012-09-28 at 22:45 +0200, Ferenc Wagner wrote: 
+> 
+>> Upgrading the kernel on our HS20 blades resulted in their SoL (serial
+>> over LAN) connection being broken.  The disconnection happens when eth0
+>> (the interface involved in SoL) is brought up during the boot sequence.
+>> If I later "ip link set eth0 down", then the connection is restored, but
+>> "ip link set eth0 up" breaks it again on 3.2.  ethtool -a, -c, -g, -k
+>> and -u show no difference; ethtool -i on the 2.6.32 kernel reports:
+>> 
+>> driver: tg3
+>> version: 3.116
+>> firmware-version: 5704s-v3.38, ASFIPMIs v2.47
+>> bus-info: 0000:05:01.0
+>> 
+>> In the 3.2 kernel the driver version is 3.121.
+>
+> 2.6.32 to 3.2 is a big jump.  Can you narrow this down further?  It will
+> be hard for us to find a HS20 with 5704 to test this.  Thanks.
 
+I'm done with bisecting it: the first bad commit is:
 
+commit dabc5c670d3f86d15ee4f42ab38ec5bd2682487d
+Author: Matt Carlson <mcarlson@broadcom.com>
+Date:   Thu May 19 12:12:52 2011 +0000
 
->
-> >                                 /* set cgrp before ctxsw in to
-> >                                  * allow event_filter_match() to not
-> >                                  * have to pass task around
->
-> OK, like you mentioned this is the result of multiple PMU being able to
-> share a cpuctx, shouldn't we in that case avoid the second loop over the
-> cpuctx as a whole?
->
-> Would something like the below do? IIRC I introduced that active_pmu for
-> exactly such reasons..
->
-> ---
->  kernel/events/core.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 7b9df35..e98f014 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -372,6 +372,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
->
->         list_for_each_entry_rcu(pmu, &pmus, entry) {
->                 cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-> +               if (cpuctx->active_pmu != pmu)
-> +                       continue;
->
->                 /*
->                  * perf_cgroup_events says at least one
->
+    tg3: Move TSO_CAPABLE assignment
+    
+    This patch moves the code that asserts the TSO_CAPABLE flag closer to
+    where the TSO capabilities flags are set.  There isn't a good enough
+    reason for the code to be separated.
+    
+    Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
+    Reviewed-by: Michael Chan <mchan@broadcom.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+On the other hand, losing the SoL console even temporarily during boot
+(as it happens with a minimal kernel before this commit) isn't nice
+either.  I'll try to look after that, too, just mentioning it here...
+-- 
+Regards,
+Feri.
