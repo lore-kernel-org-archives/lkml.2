@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2JBLpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:45:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63523 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab2JBLo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:44:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 00/10] Platform data clean-up and UIB device enablement
-Date: Tue, 2 Oct 2012 11:44:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1753067Ab2JBLph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:45:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43009 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752661Ab2JBLpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 07:45:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,523,1344236400"; 
+   d="scan'208";a="229491163"
+Date: Tue, 2 Oct 2012 12:47:07 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: <Vineet.Gupta1@synopsys.com>
+Cc: <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] serial/arc-uart: Add new driver
+Message-ID: <20121002124707.32b70292@bob.linux.org.uk>
+In-Reply-To: <1349154216-7906-1-git-send-email-vgupta@synopsys.com>
+References: <1349154216-7906-1-git-send-email-vgupta@synopsys.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210021144.53559.arnd@arndb.de>
-X-Provags-ID: V02:K0:3dM4IshVEUF5VVM01RpO6Z8W0gR2EmBuR9tcEXt2yya
- RU68irMNUhLk5YuaCSAOtd8Sn3k2DwdL2g8vFA8OriR9i6XOSk
- rSq2+sHokIylleA6/ZeqESZZtdkphFmAkolZMGVfDZJykEZTGh
- 7x8eBA/wPajpU0UfgBEkx5isa08nw4HslNfV0fyD3tP1YntePC
- dqU1aQhjEpLrAiJ2C/+smkV6by549VPzna+ndSiwCghP0wQGep
- QWFr0wdjzyV4r3v6+tcxwu5XUQau4+bL35IdlorQ9qcrDFotlc
- K9WPG8N8heMRPbNA5s8tcCQlzy+adVT2s7PMX+Yo95i8pIjXlP
- 3RNzxdVGJY+EwCTYNFYw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 October 2012, Lee Jones wrote:
-> In this patch-set we move all Device Tree start-up code from the u8500
-> board file and into the more persistent db8500 cpu file. This will aid
-> future endeavours to remove platform code completely from Mainline. We
-> also enable some of the devices found on the STUIB (User Interface
-> board), which attaches to some of ST-Ericsson's reference platforms.
+> +/* Is this for UART emulation on ARC Instruction Set Simulator (ISS)
+> */ +int __attribute__((weak)) running_on_iss;
 
-Looks all good to me.
+Why not pass a quirks field in your platform data instead - much
+cleaner than a global.
+> +static void arc_serial_set_ldisc(struct uart_port *port, int ld)
+> +{
+> +}
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+If you don't need it just remove this one
+
+> +	new->c_cflag &= ~(CMSPAR|CRTSCTS);
+
+also force the CSIZE bits to CS8 if you only do 8N1.
+
+Alan
