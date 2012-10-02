@@ -1,217 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2JBPLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:11:54 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:46415
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	id S1754401Ab2JBPMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:12:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13888 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab2JBPLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:11:23 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net-next,5/6] hyperv: Report actual status in receive completion packet
-Date: Tue,  2 Oct 2012 08:30:23 -0700
-Message-Id: <1349191824-14001-5-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1349191824-14001-1-git-send-email-haiyangz@microsoft.com>
-References: <1349191824-14001-1-git-send-email-haiyangz@microsoft.com>
+	id S1754379Ab2JBPMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 11:12:14 -0400
+Date: Tue, 2 Oct 2012 11:12:02 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk,
+        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
+Subject: Re: [dm-devel] [PATCH v3 02/26] block: Convert integrity to
+ bvec_alloc_bs()
+Message-ID: <20121002151202.GE758@redhat.com>
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+ <1348526106-17074-3-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348526106-17074-3-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing code always reports NVSP_STAT_SUCCESS. This patch adds the
-mechanism to report failure when it happens.
+On Mon, Sep 24, 2012 at 03:34:42PM -0700, Kent Overstreet wrote:
+> This adds a pointer to the bvec array to struct bio_integrity_payload,
+> instead of the bvecs always being inline; then the bvecs are allocated
+> with bvec_alloc_bs().
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Ok, you are introducing bio_vec pointer in this patch. May be we can
+do it earlier so that we take care of bio pair related issue.
 
----
- drivers/net/hyperv/hyperv_net.h   |    2 ++
- drivers/net/hyperv/netvsc.c       |   18 ++++++++++++------
- drivers/net/hyperv/netvsc_drv.c   |    2 ++
- drivers/net/hyperv/rndis_filter.c |   19 ++++++++++++++-----
- 4 files changed, 30 insertions(+), 11 deletions(-)
+> 
+> Changed bvec_alloc_bs() and bvec_free_bs() to take a pointer to a
+> mempool instead of the bioset, so that bio integrity can use a different
+> mempool for its bvecs, and thus avoid a potential deadlock.
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index d58f28c..5fd6f46 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -35,6 +35,7 @@ struct hv_netvsc_packet;
- /* Represent the xfer page packet which contains 1 or more netvsc packet */
- struct xferpage_packet {
- 	struct list_head list_ent;
-+	u32 status;
- 
- 	/* # of netvsc packets this xfer packet contains */
- 	u32 count;
-@@ -47,6 +48,7 @@ struct xferpage_packet {
- struct hv_netvsc_packet {
- 	/* Bookkeeping stuff */
- 	struct list_head list_ent;
-+	u32 status;
- 
- 	struct hv_device *device;
- 	bool is_data_pkt;
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index d9c4c03..1cd7748 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -558,7 +558,7 @@ int netvsc_send(struct hv_device *device,
- }
- 
- static void netvsc_send_recv_completion(struct hv_device *device,
--					u64 transaction_id)
-+					u64 transaction_id, u32 status)
- {
- 	struct nvsp_message recvcompMessage;
- 	int retries = 0;
-@@ -571,9 +571,7 @@ static void netvsc_send_recv_completion(struct hv_device *device,
- 	recvcompMessage.hdr.msg_type =
- 				NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE;
- 
--	/* FIXME: Pass in the status */
--	recvcompMessage.msg.v1_msg.send_rndis_pkt_complete.status =
--		NVSP_STAT_SUCCESS;
-+	recvcompMessage.msg.v1_msg.send_rndis_pkt_complete.status = status;
- 
- retry_send_cmplt:
- 	/* Send the completion */
-@@ -613,6 +611,7 @@ static void netvsc_receive_completion(void *context)
- 	bool fsend_receive_comp = false;
- 	unsigned long flags;
- 	struct net_device *ndev;
-+	u32 status = NVSP_STAT_NONE;
- 
- 	/*
- 	 * Even though it seems logical to do a GetOutboundNetDevice() here to
-@@ -627,6 +626,9 @@ static void netvsc_receive_completion(void *context)
- 	/* Overloading use of the lock. */
- 	spin_lock_irqsave(&net_device->recv_pkt_list_lock, flags);
- 
-+	if (packet->status != NVSP_STAT_SUCCESS)
-+		packet->xfer_page_pkt->status = NVSP_STAT_FAIL;
-+
- 	packet->xfer_page_pkt->count--;
- 
- 	/*
-@@ -636,6 +638,7 @@ static void netvsc_receive_completion(void *context)
- 	if (packet->xfer_page_pkt->count == 0) {
- 		fsend_receive_comp = true;
- 		transaction_id = packet->completion.recv.recv_completion_tid;
-+		status = packet->xfer_page_pkt->status;
- 		list_add_tail(&packet->xfer_page_pkt->list_ent,
- 			      &net_device->recv_pkt_list);
- 
-@@ -647,7 +650,7 @@ static void netvsc_receive_completion(void *context)
- 
- 	/* Send a receive completion for the xfer page packet */
- 	if (fsend_receive_comp)
--		netvsc_send_recv_completion(device, transaction_id);
-+		netvsc_send_recv_completion(device, transaction_id, status);
- 
- }
- 
-@@ -736,7 +739,8 @@ static void netvsc_receive(struct hv_device *device,
- 				       flags);
- 
- 		netvsc_send_recv_completion(device,
--					    vmxferpage_packet->d.trans_id);
-+					    vmxferpage_packet->d.trans_id,
-+					    NVSP_STAT_FAIL);
- 
- 		return;
- 	}
-@@ -744,6 +748,7 @@ static void netvsc_receive(struct hv_device *device,
- 	/* Remove the 1st packet to represent the xfer page packet itself */
- 	xferpage_packet = (struct xferpage_packet *)listHead.next;
- 	list_del(&xferpage_packet->list_ent);
-+	xferpage_packet->status = NVSP_STAT_SUCCESS;
- 
- 	/* This is how much we can satisfy */
- 	xferpage_packet->count = count - 1;
-@@ -760,6 +765,7 @@ static void netvsc_receive(struct hv_device *device,
- 		list_del(&netvsc_packet->list_ent);
- 
- 		/* Initialize the netvsc packet */
-+		netvsc_packet->status = NVSP_STAT_SUCCESS;
- 		netvsc_packet->xfer_page_pkt = xferpage_packet;
- 		netvsc_packet->completion.recv.recv_completion =
- 					netvsc_receive_completion;
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index e91111a..f825a62 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -265,6 +265,7 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 	if (!net) {
- 		netdev_err(net, "got receive callback but net device"
- 			" not initialized yet\n");
-+		packet->status = NVSP_STAT_FAIL;
- 		return 0;
- 	}
- 
-@@ -272,6 +273,7 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 	skb = netdev_alloc_skb_ip_align(net, packet->total_data_buflen);
- 	if (unlikely(!skb)) {
- 		++net->stats.rx_dropped;
-+		packet->status = NVSP_STAT_FAIL;
- 		return 0;
- 	}
- 
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index f25f41e..e7e12cf 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -411,9 +411,12 @@ int rndis_filter_receive(struct hv_device *dev,
- 	struct rndis_device *rndis_dev;
- 	struct rndis_message *rndis_msg;
- 	struct net_device *ndev;
-+	int ret = 0;
- 
--	if (!net_dev)
--		return -EINVAL;
-+	if (!net_dev) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
- 
- 	ndev = net_dev->ndev;
- 
-@@ -421,14 +424,16 @@ int rndis_filter_receive(struct hv_device *dev,
- 	if (!net_dev->extension) {
- 		netdev_err(ndev, "got rndis message but no rndis device - "
- 			  "dropping this message!\n");
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto exit;
- 	}
- 
- 	rndis_dev = (struct rndis_device *)net_dev->extension;
- 	if (rndis_dev->state == RNDIS_DEV_UNINITIALIZED) {
- 		netdev_err(ndev, "got rndis message but rndis device "
- 			   "uninitialized...dropping this message!\n");
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto exit;
- 	}
- 
- 	rndis_msg = pkt->data;
-@@ -460,7 +465,11 @@ int rndis_filter_receive(struct hv_device *dev,
- 		break;
- 	}
- 
--	return 0;
-+exit:
-+	if (ret != 0)
-+		pkt->status = NVSP_STAT_FAIL;
-+
-+	return ret;
- }
- 
- static int rndis_filter_query_device(struct rndis_device *dev, u32 oid,
--- 
-1.7.4.1
+If you are taking mempool as input, then bvec_alloc_bs() name does not
+make sense, as I think the very fact "bs" in the name their suggests
+that you are taking a pointer to bio set (and not mempool).
 
+Given the fact that bio_vec pool for integrity inside bio set, why not
+take additional boolean/enum argument to function bvec_alloc_bs() and
+that argument can tell whehter to allocate bvec from which bvec pool.
+
+> 
+> This is eventually for immutable bio vecs - immutable bvecs aren't
+> useful if we still have to copy them, hence the need for the pointer.
+> Less code is always nice too, though.
+
+Can you explain a bit more about immutable bio vecs. I know there was
+some discussion and I missed it. So either point me to right mail thread
+or just explain a bit more what are immutable bio vecs, how we are
+planning to use these.
+
+Is it about during split we don't want to copy bio vecs and that's why we
+need a pointer so that newly created bio/bip can point to parent's bio_vec?
+
+Thanks
+Vivek
