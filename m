@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab2JBHmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 03:42:51 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:1512 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752957Ab2JBHmu (ORCPT
+	id S1753370Ab2JBHoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 03:44:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55282 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab2JBHoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 03:42:50 -0400
-Message-ID: <1349163768.1414.32.camel@x61.thuisdomein>
-Subject: [PATCH v2] qla2xxx: silence two GCC warnings
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 02 Oct 2012 09:42:48 +0200
-In-Reply-To: <3591681.K68OpP9yPi@eto>
-References: <1349003274.15306.6.camel@x61.thuisdomein>
-	 <3591681.K68OpP9yPi@eto>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 02 Oct 2012 07:42:48.0440 (UTC) FILETIME=[84DC6F80:01CDA071]
+	Tue, 2 Oct 2012 03:44:15 -0400
+Date: Tue, 2 Oct 2012 16:44:07 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: [GIT PULL] cgroup hierarchy changes for v3.7-rc1
+Message-ID: <20121002074407.GD6144@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling qla_gs.o (part of the qla2xxx module) triggers two GCC
-warnings:
-    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_rhba’:
-    drivers/scsi/qla2xxx/qla_gs.c:1339:7: warning: array subscript is above array bounds [-Warray-bounds]
-    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_register’:
-    drivers/scsi/qla2xxx/qla_gs.c:1663:15: warning: array subscript is above array bounds [-Warray-bounds]
+Hello,
 
-It seems that the sequence of a strcpy followed by a strlen confuses GCC
-when it is keeping track of array bounds here. (It is not clear to me
-which array triggers this warning and by how much GCC thinks the
-subscript is above its bounds. Neither is it clear to me why comparable
-code in these two functions doesn't trigger this warning.)
+This is another v3.7-rc1 pull request for cgroup.  Currently,
+different cgroup subsystems handle nested cgroups completely
+differently.  There's no consistency among subsystems and the
+behaviors often are outright broken.
 
-An easy way to silence these warnings is to use preprocessor macros
-here, as that apparently gives GCC enough information to keep track of
-array bounds.
+People at least seem to agree that the broken hierarhcy behaviors need
+to be weeded out if any progress is gonna be made on this front and
+that the fallouts from deprecating the broken behaviors should be
+acceptable especially given that the current behaviors don't make much
+sense when nested.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Rolf suggested to not use magic constants, to make sure things keep
-working when these strings change in the future. A trivial solution is
-to use preprocessor macros. I needed to add one for the manufacturer
-string.
+This patch makes cgroup emit warning messages if cgroups for
+subsystems with broken hierarchy behavior are nested to prepare for
+fixing them in the future.  This was put in a separate branch because
+more related changes were expected (didn't make it this round) and the
+memory cgroup wanted to pull in this and make changes on top.
 
-1) Still only compile tested.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.7-hierarchy
 
- drivers/scsi/qla2xxx/qla_def.h | 1 +
- drivers/scsi/qla2xxx/qla_gs.c  | 6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Thanks.
 
-diff --git a/drivers/scsi/qla2xxx/qla_def.h b/drivers/scsi/qla2xxx/qla_def.h
-index 39007f5..8895038 100644
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -37,6 +37,7 @@
- #include "qla_nx.h"
- #define QLA2XXX_DRIVER_NAME	"qla2xxx"
- #define QLA2XXX_APIDEV		"ql2xapidev"
-+#define QLA2XXX_MANUFACTURER	"QLogic Corporation"
- 
- /*
-  * We have MAILBOX_REGISTER_COUNT sized arrays in a few places,
-diff --git a/drivers/scsi/qla2xxx/qla_gs.c b/drivers/scsi/qla2xxx/qla_gs.c
-index 05260d2..1714035 100644
---- a/drivers/scsi/qla2xxx/qla_gs.c
-+++ b/drivers/scsi/qla2xxx/qla_gs.c
-@@ -1325,8 +1325,8 @@ qla2x00_fdmi_rhba(scsi_qla_host_t *vha)
- 	/* Manufacturer. */
- 	eiter = (struct ct_fdmi_hba_attr *) (entries + size);
- 	eiter->type = __constant_cpu_to_be16(FDMI_HBA_MANUFACTURER);
--	strcpy(eiter->a.manufacturer, "QLogic Corporation");
--	alen = strlen(eiter->a.manufacturer);
-+	strcpy(eiter->a.manufacturer, QLA2XXX_MANUFACTURER);
-+	alen = strlen(QLA2XXX_MANUFACTURER);
- 	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
- 	eiter->len = cpu_to_be16(4 + alen);
- 	size += 4 + alen;
-@@ -1647,7 +1647,7 @@ qla2x00_fdmi_rpa(scsi_qla_host_t *vha)
- 	eiter = (struct ct_fdmi_port_attr *) (entries + size);
- 	eiter->type = __constant_cpu_to_be16(FDMI_PORT_OS_DEVICE_NAME);
- 	strcpy(eiter->a.os_dev_name, QLA2XXX_DRIVER_NAME);
--	alen = strlen(eiter->a.os_dev_name);
-+	alen = strlen(QLA2XXX_DRIVER_NAME);
- 	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
- 	eiter->len = cpu_to_be16(4 + alen);
- 	size += 4 + alen;
--- 
-1.7.11.4
+Tejun Heo (1):
+      cgroup: mark subsystems with broken hierarchy support and whine if cgroups are nested for them
 
+ block/blk-cgroup.c        |    8 ++++++++
+ include/linux/cgroup.h    |   15 +++++++++++++++
+ kernel/cgroup.c           |   12 +++++++++++-
+ kernel/cgroup_freezer.c   |    8 ++++++++
+ kernel/events/core.c      |    7 +++++++
+ mm/memcontrol.c           |    7 +++++++
+ net/core/netprio_cgroup.c |   12 +++++++++++-
+ net/sched/cls_cgroup.c    |    9 +++++++++
+ security/device_cgroup.c  |    9 +++++++++
+ 9 files changed, 85 insertions(+), 2 deletions(-)
+
+--
+tejun
