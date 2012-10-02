@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab2JBA0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:26:36 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:59431 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab2JBA0d (ORCPT
+	id S1757561Ab2JBA3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:29:30 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:62333 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2JBA31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:26:33 -0400
-Subject: [PATCH] The nested NMI modifies the place (instruction,
-	flags and stack)
+	Mon, 1 Oct 2012 20:29:27 -0400
+Subject: [PATCH] [PATCH] x86: Don't clobber top of pt_regs in nested NMI
+In-Reply-To: <20121002002613.26956.5744.stgit@dungbeetle.mtv.corp.google.com>
 To: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
 From: Salman Qazi <sqazi@google.com>
-Date: Mon, 01 Oct 2012 17:26:13 -0700
-Message-ID: <20121002002613.26956.5744.stgit@dungbeetle.mtv.corp.google.com>
+Date: Mon, 01 Oct 2012 17:29:25 -0700
+Message-ID: <20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,6 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The nested NMI modifies the place (instruction, flags and stack)
 that the first NMI will iret to.  However, the copy of registers
 modified is exactly the one that is the part of pt_regs in
 the first NMI.  This can change the behaviour of the first NMI.
