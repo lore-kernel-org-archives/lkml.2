@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2JBWzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 18:55:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59176 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab2JBWzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 18:55:18 -0400
-Date: Wed, 3 Oct 2012 00:55:11 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v3 00/10] Introduce huge zero page
-Message-ID: <20121002225511.GS4763@redhat.com>
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20121002153148.1ae1020a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002153148.1ae1020a.akpm@linux-foundation.org>
+	id S1754902Ab2JBWzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 18:55:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53580 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab2JBWzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 18:55:45 -0400
+Date: Tue, 2 Oct 2012 15:55:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-mm@kvack.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        aarcange@redhat.com, hannes@cmpxchg.org,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Subject: Re: [PATCH 0/8] THP support for Sparc64
+Message-Id: <20121002155544.2c67b1e8.akpm@linux-foundation.org>
+In-Reply-To: <20121002.182601.845433592794197720.davem@davemloft.net>
+References: <20121002.182601.845433592794197720.davem@davemloft.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, 02 Oct 2012 18:26:01 -0400 (EDT)
+David Miller <davem@davemloft.net> wrote:
 
-On Tue, Oct 02, 2012 at 03:31:48PM -0700, Andrew Morton wrote:
-> From reading the code, it appears that we initially allocate a huge
-> page and point the pmd at that.  If/when there is a write fault against
-> that page we then populate the mm with ptes which point at the normal
-> 4k zero page and populate the pte at the fault address with a newly
-> allocated page?   Correct and complete?  If not, please fix ;)
+> Here is a set of patches that add THP support for sparc64.
+> 
+> A few of them are relatively minor portability issues I ran into.
+> Like the MIPS guys I hit the update_mmu_cache() typing issue so I have
+> a patch for that here.
+> 
+> It is very likely that I need the ACCESSED bit handling fix the
+> ARM folks have been posting recently as well.
+> 
+> On the sparc64 side the biggest issue was moving to only supporting
+> 4MB pages and then realigning the page tables so that the PMDs map 4MB
+> (instead of 8MB as they do now).
+> 
+> The rest was just trial and error, running tests, and fixing bugs.
+> 
+> A familiar test case that makes 5 million random accesses to a 1GB
+> memory area goes from 20 seconds down to 0.43 seconds with THP enabled
+> on my SPARC T4-2 box.
 
-During the cow, we never use 4k ptes, unless the 2m page allocation
-fails.
+Hardly worth bothering about ;)
 
-> Also, IIRC, the early versions of the patch did not allocate the
-> initial huge page at all - it immediately filled the mm with ptes which
-> point at the normal 4k zero page.  Is that a correct recollection?
-> If so, why the change?
+I had a shot at integrating all this onto the pending stuff in linux-next. 
+"mm: Add and use update_mmu_cache_pmd() in transparent huge page code."
+needed minor massaging in huge_memory.c.  But as Andrea mentioned, we
+ran aground on Gerald's
+http://ozlabs.org/~akpm/mmotm/broken-out/thp-remove-assumptions-on-pgtable_t-type.patch,
+part of the thp-for-s390 work.
 
-That was a different design yes. The design in this patchset will not
-do that.
 
-> Also IIRC, Andrea had a little test app which demonstrated the TLB
-> costs of the inital approach, and they were high?
-
-Yes we run the benchmarks yesterday, this version is the one that will
-decrease the TLB cost and that seems the safest tradeoff.
-
-> Please, let's capture all this knowledge in a single place, right here
-> in the changelog.  And in code comments, where appropriate.  Otherwise
-> people won't know why we made these decisions unless they go off and
-> find lengthy, years-old and quite possibly obsolete email threads.
-
-Agreed ;).
-
-> Also, you've presented some data on the memory savings, but no
-> quantitative testing results on the performance cost.  Both you and
-> Andrea have run these tests and those results are important.  Let's
-> capture them here.  And when designing such tests we should not just
-> try to demonstrate the benefits of a code change - we should think of
-> test cases whcih might be adversely affected and run those as well.
-
-Right.
-
-> It's not an appropriate time to be merging new features - please plan
-> on preparing this patchset against 3.7-rc1.
-
-Ok, I assume Kirill will take care of it.
-
-Thanks,
-Andrea
