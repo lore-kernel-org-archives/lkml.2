@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab2JBQh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:37:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64725 "EHLO
+	id S1755127Ab2JBQhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:37:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50953 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab2JBQhY (ORCPT
+	with ESMTP id S1755086Ab2JBQhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:24 -0400
+	Tue, 2 Oct 2012 12:37:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 09/17] ARM: imx: select ARM_CPU_SUSPEND if necessary
-Date: Tue,  2 Oct 2012 18:36:48 +0200
-Message-Id: <1349195816-2225-10-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: [PATCH 07/17] ARM: at91: skip at91_io_desc definition for NOMMU
+Date: Tue,  2 Oct 2012 18:36:46 +0200
+Message-Id: <1349195816-2225-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
 References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:pn/anpJJPD5ZXVH0eq/2sxgL77p+4Kk2Rca+iNfALy+
- 9EYsADEkHVXlv0Y7YjU6bXoF6RHdNc5yH2ch8tgJ90rBnwwTKl
- McCZnpNkmqbOsSjyzpn6qisaPGRsuxYjwHSRm5P6fZkNYbGth/
- NqRsBNYqb0sEYukPq4xDM9ZVS0aOToD5J+UGWJ3Y7cy/iqbq5o
- ygNYDDn7jya8fZ89EWJcZglH0pJ0suUkBT4LJE7IivoVKX18zv
- vohZHbD7w1sIWU2sV9LG4mhrMLLgyy968wWb9Iep8Co2KU1zO7
- t+8SZsxt6L7Qi5BjGA5jI2k7Pi0L+3ZNN1B/EPABmE595b871l
- 1e5ZudsqKqJILTOwiI9PIIUMkBDLekWIn/zNXnUNDMg8iLIrOL
- InSZCwckcqphw==
+X-Provags-ID: V02:K0:QlHjxEnwLmwA1epN32TkX6c5cr6WnGd/TanEiFmfhum
+ KpXYiX+zzt26aCVo/w5PDALnXqKSb6A3e/itiUtN4JWXZxoLKN
+ 7H6FwZKsKcEpLeVjuSeXkS8KLAPSe3lh0IstvvTN/7d0saXYqD
+ Ow3FxpwYj5Lah0KiYyXWfgoL4/A+E02wgEOBUyVOxY6p/FPzgb
+ gfxzJxhFs7UBGMyVQqfbRRMJkirNDza3oq+EGmNqtIqfOd1AGD
+ SmcdgpNT9lzlhomLbkpb6QoXs88EVfDpMGqAhDlQhmuX3Gqt0D
+ XglbHZxhkxCX6AzimNTwDwPYCcKiQZvuIWjAyDFgkyeyeVqr2/
+ PQNchHz5XtQMQWbF8VBKqsAFXRNW7DfHmB97X7LpP4FGgKU8Fk
+ lf73XimAq/OJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As tests using 'make randconfig' showed, imx5 requires the same logic
-as imx6 to select ARM_CPU_SUSPEND when building with power management
-enabled.
+On NOMMU systems, we do cannot remap the MMIO space, so the
+definition of at91_io_desc is unused.
 
-The defconfig does not have this problem because it enables imx6
-as well, but disabling it leads to this warning:
+Without this patch, building at91x40_defconfig results in:
 
-arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
-arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
+arch/arm/mach-at91/setup.c:90:24: warning: 'at91_io_desc' defined but not used [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
 ---
- arch/arm/mach-imx/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-at91/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index afd542a..8e96573 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -89,6 +89,7 @@ config SOC_IMX5
- 	select ARCH_MXC_IOMUX_V3
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_MX5
-+	select ARM_CPU_SUSPEND if PM
- 	bool
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 944bffb..b9fdba0 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -87,12 +87,14 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+ 	iotable_init(desc, 1);
+ }
  
- config SOC_IMX50
++#ifdef CONFIG_MMU
+ static struct map_desc at91_io_desc __initdata = {
+ 	.virtual	= AT91_VA_BASE_SYS,
+ 	.pfn		= __phys_to_pfn(AT91_BASE_SYS),
+ 	.length		= SZ_16K,
+ 	.type		= MT_DEVICE,
+ };
++#endif
+ 
+ static void __init soc_detect(u32 dbgu_base)
+ {
 -- 
 1.7.10
 
