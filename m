@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab2JBQjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:39:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59120 "EHLO
+	id S932141Ab2JBQlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:41:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55720 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab2JBQhV (ORCPT
+	with ESMTP id S1755093Ab2JBQhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:21 -0400
+	Tue, 2 Oct 2012 12:37:17 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@ti.com>
-Subject: [PATCH 14/17] ARM: davinci: don't mark da850_register_cpufreq as __init
-Date: Tue,  2 Oct 2012 18:36:53 +0200
-Message-Id: <1349195816-2225-15-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Pavel Machek <pavel@ucw.cz>,
+        Stanislav Brabec <utx@penguin.cz>, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH 05/17] ARM: pxa: remove sharpsl_fatal_check function
+Date: Tue,  2 Oct 2012 18:36:44 +0200
+Message-Id: <1349195816-2225-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
 References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:r48ZAw6AXZHnAsIM7obNs9NmDMZVg+ticdTdTHAkYJf
- VbDlbxPt+9WW//GRRR84+yf4i2TFtiuw4s8uTn7pz8xdt2EXom
- LbWMNpb1Kxcnwcc7R8L6NyCmFvmBQsU+lN5THBeN672xGnNvyf
- Lz+asCMYqV6sf1/Pk1DHO246TR/I3kLRjGngozfb9LeqI3NdJ1
- eFOnanConlh8eM5fU0zQ+3ptoEzQ3L6e9po0tNH/54xJyx0SRH
- YtJvEcVwWll6V/3WpyiyPDSZeKvbXZuI3y22JGb0PjhWzqGoAI
- KSYXWn1ryVqF/ECy0W6SPxaJVgDTN2Y8gTAFWTgFFBb8E6MR0s
- Cp6jXII4/5pqV2JvtHpGCIJkQUAIjSG5pcUn0EpqoLe/fscLyL
- Yc4l6plz10MBw==
+X-Provags-ID: V02:K0:BROzabsOdDRw7rJaQcxXsTdmdlCpJB40KrQKZm4FAfk
+ JrIz7RvfhM4kOCmp3/XpcdXdTGPu1O+yJW4GEmgI7zQ0Lw9vxe
+ kgKp+rRCS+8NNo5dLdncPpeVsqrnk56s4XehFDgfnzzaTYHlvM
+ VoFyI5i6+grhVfsab5bFHlG2BcyUE5hZg6KN62iKIV53kr3iYk
+ q8uwq988p4HMdMBXQ0XEwQLLa4E4wWnRLpT2L2kJJsDIa3fNmp
+ 7QiHOictbZNtwM4g6GoK7RbYWycFRIa9W3pnlFhbFys8M0qOr3
+ 3e+RbtNgC3jt2dgYEcg6x31KGKx/FVB3wW+WnW5bsdpX7/cUEv
+ TxsdX7SmOAA4zztBJGqm4GA5barpVYIkelheZMKv/dFnqcdMtM
+ ZIdgTnb3bpw4g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mityomapl138_cpufreq_init and read_factory_config function in
-board-mityomapl138.c are not __init functions and might be called
-at a later stage, so da850_register_cpufreq must not be __init either.
+The sharpsl_fatal_check has not been used since Pavel Machek removed
+the caller in 99f329a2b "pxa/sharpsl_pm: zaurus c3000 aka spitz: fix
+resume". Nobody has complained since 2009, so it's safe to assume we
+can just remove the function.
 
-Without this patch, building da8xx_omapl_defconfig results in:
+Without this patch, building corgi_defconfig results in:
 
-WARNING: arch/arm/mach-davinci/built-in.o(.text+0x2eb4): Section mismatch in reference from the function read_factory_config() to the function .init.text:da850_register_cpufreq()
-The function read_factory_config() references
-the function __init da850_register_cpufreq().
-This is often because read_factory_config lacks a __init
-annotation or the annotation of da850_register_cpufreq is wrong.
+/home/arnd/linux-arm/arch/arm/mach-pxa/sharpsl_pm.c:693:12: warning: 'sharpsl_fatal_check' defined but not used [-Wunused-function]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@ti.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Stanislav Brabec <utx@penguin.cz>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
 ---
- arch/arm/mach-davinci/da850.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-pxa/sharpsl_pm.c |   48 ----------------------------------------
+ 1 file changed, 48 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index b44dc84..8329e5b 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -939,7 +939,7 @@ static struct platform_device da850_cpufreq_device = {
+diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
+index bdf4cb8..6c9658f 100644
+--- a/arch/arm/mach-pxa/sharpsl_pm.c
++++ b/arch/arm/mach-pxa/sharpsl_pm.c
+@@ -55,7 +55,6 @@
+ #ifdef CONFIG_PM
+ static int sharpsl_off_charge_battery(void);
+ static int sharpsl_check_battery_voltage(void);
+-static int sharpsl_fatal_check(void);
+ #endif
+ static int sharpsl_check_battery_temp(void);
+ static int sharpsl_ac_check(void);
+@@ -686,53 +685,6 @@ static int corgi_pxa_pm_enter(suspend_state_t state)
+ 	return 0;
+ }
  
- unsigned int da850_max_speed = 300000;
- 
--int __init da850_register_cpufreq(char *async_clk)
-+int da850_register_cpufreq(char *async_clk)
+-/*
+- * Check for fatal battery errors
+- * Fatal returns -1
+- */
+-static int sharpsl_fatal_check(void)
+-{
+-	int buff[5], temp, i, acin;
+-
+-	dev_dbg(sharpsl_pm.dev, "sharpsl_fatal_check entered\n");
+-
+-	/* Check AC-Adapter */
+-	acin = sharpsl_pm.machinfo->read_devdata(SHARPSL_STATUS_ACIN);
+-
+-	if (acin && (sharpsl_pm.charge_mode == CHRG_ON)) {
+-		sharpsl_pm.machinfo->charge(0);
+-		udelay(100);
+-		sharpsl_pm.machinfo->discharge(1);	/* enable discharge */
+-		mdelay(SHARPSL_WAIT_DISCHARGE_ON);
+-	}
+-
+-	if (sharpsl_pm.machinfo->discharge1)
+-		sharpsl_pm.machinfo->discharge1(1);
+-
+-	/* Check battery : check inserting battery ? */
+-	for (i = 0; i < 5; i++) {
+-		buff[i] = sharpsl_pm.machinfo->read_devdata(SHARPSL_BATT_VOLT);
+-		mdelay(SHARPSL_CHECK_BATTERY_WAIT_TIME_VOLT);
+-	}
+-
+-	if (sharpsl_pm.machinfo->discharge1)
+-		sharpsl_pm.machinfo->discharge1(0);
+-
+-	if (acin && (sharpsl_pm.charge_mode == CHRG_ON)) {
+-		udelay(100);
+-		sharpsl_pm.machinfo->charge(1);
+-		sharpsl_pm.machinfo->discharge(0);
+-	}
+-
+-	temp = get_select_val(buff);
+-	dev_dbg(sharpsl_pm.dev, "sharpsl_fatal_check: acin: %d, discharge voltage: %d, no discharge: %ld\n", acin, temp, sharpsl_pm.machinfo->read_devdata(SHARPSL_BATT_VOLT));
+-
+-	if ((acin && (temp < sharpsl_pm.machinfo->fatal_acin_volt)) ||
+-			(!acin && (temp < sharpsl_pm.machinfo->fatal_noacin_volt)))
+-		return -1;
+-	return 0;
+-}
+-
+ static int sharpsl_off_charge_error(void)
  {
- 	int i;
- 
+ 	dev_err(sharpsl_pm.dev, "Offline Charger: Error occurred.\n");
 -- 
 1.7.10
 
