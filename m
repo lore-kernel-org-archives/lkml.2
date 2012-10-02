@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab2JBQpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:45:33 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:59994 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462Ab2JBQpa (ORCPT
+	id S1755200Ab2JBQqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:46:19 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:6383 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165Ab2JBQqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:45:30 -0400
-Message-ID: <506B1A26.2060609@pobox.com>
-Date: Tue, 02 Oct 2012 12:45:26 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 2 Oct 2012 12:46:18 -0400
+X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
+   d="scan'208";a="14899812"
+Date: Tue, 2 Oct 2012 17:45:17 +0100
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "JBeulich@suse.com" <JBeulich@suse.com>
+Subject: [PATCH v2] xen/Makefile: resolve merge conflict with 9fa5780beea1
+Message-ID: <alpine.DEB.2.02.1210021737000.29232@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v3 -tip 5/5] AHCI: Support multiple MSIs
-References: <cover.1349074231.git.agordeev@redhat.com> <cc6441a31a2c600ad9ae33e7715de65b8d46a66f.1349074231.git.agordeev@redhat.com> <20121002050929.GD7756@gmail.com> <20121002164220.GB2258@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20121002164220.GB2258@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 12:42 PM, Alexander Gordeev wrote:
-> On Tue, Oct 02, 2012 at 07:09:29AM +0200, Ingo Molnar wrote:
->>> +irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
->>> +{
->>> +	struct ata_port *ap_this = dev_instance;
->>> +	struct ahci_port_priv *pp = ap_this->private_data;
->>> +	struct ata_host *host = ap_this->host;
->>> +	struct ahci_host_priv *hpriv = host->private_data;
->>> +	void __iomem *mmio = hpriv->mmio;
->>> +	unsigned int i;
->>> +	u32 irq_stat, irq_masked;
->>> +
->>> +	VPRINTK("ENTER\n");
->>
->> Is this per IRQ handler execution debugging code still needed?
->> Same for the other VPRINTK() lines in this patch.
->
-> These VPRINKs are only to make new handlers look like ahci_interrupt()
-> which did not change. I believe, if they need to go it is better to
-> remove them altogether, with a separate followup patch.
+This patch is actually a merge conflict resolution between Konrad's Xen
+tree and the following commit:
 
-Definitely followup patch material + discussion :)
+commit 9fa5780beea1274d498a224822397100022da7d4
+Author: Jan Beulich <JBeulich@suse.com>
+Date:   Tue Sep 18 12:23:02 2012 +0100
 
-For the moment, the above is consistent with existing code, and by 
-default compiled out, as one would expect.
-
-	Jeff
+    USB EHCI/Xen: propagate controller reset information to hypervisor
 
 
+Compile dbgp.o only if CONFIG_USB_SUPPORT is defined.
+After all xen_dbgp_op relies on hcd_to_bus.
+
+This patch should be applied on top of 
+
+http://marc.info/?l=linux-kernel&m=134919011231980&w=2
 
 
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Suggested-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
+diff --cc drivers/xen/Makefile
+index a4a3cab,275abfc..33711ad
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@@ -4,8 -8,11 +8,12 @@@ obj-y	+= xenbus
+  nostackp := $(call cc-option, -fno-stack-protector)
+  CFLAGS_features.o			:= $(nostackp)
+  
++ dom0-$(CONFIG_PCI) += pci.o
++ dom0-$(CONFIG_ACPI) += acpi.o
++ dom0-$(CONFIG_X86) += pcpu.o
+++dom0-$(CONFIG_USB_SUPPORT) += dbgp.o
++ obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
+  obj-$(CONFIG_BLOCK)			+= biomerge.o
+- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+  obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
+  obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
+  obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
