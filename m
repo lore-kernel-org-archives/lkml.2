@@ -1,35 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab2JBKyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 06:54:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44180 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751086Ab2JBKyp (ORCPT
+	id S1751389Ab2JBK5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 06:57:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56861 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab2JBK5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 06:54:45 -0400
-Date: Tue, 2 Oct 2012 11:54:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: Duplicate sysfs file: microamps_requested_vmmc
-Message-ID: <20121002105442.GW4360@opensource.wolfsonmicro.com>
-References: <CAErSpo7SxK8F_M0kfRRr0k23UVNCtZXpMkcsGY3mJ_qsx3KBkw@mail.gmail.com>
+	Tue, 2 Oct 2012 06:57:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7SxK8F_M0kfRRr0k23UVNCtZXpMkcsGY3mJ_qsx3KBkw@mail.gmail.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349165603-24401-8-git-send-email-lee.jones@linaro.org>
+References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
+	<1349165603-24401-8-git-send-email-lee.jones@linaro.org>
+Date: Tue, 2 Oct 2012 12:57:08 +0200
+Message-ID: <CACRpkdbuk8Da1wO4UteeKr4nTX3Vf9pdW5cQknqZ9=3sA7Xfjg@mail.gmail.com>
+Subject: Re: [PATCH 07/10] ARM: ux500: Create a new Device Tree include file
+ for boards supporting STUIBs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 02:22:19PM -0600, Bjorn Helgaas wrote:
-> This is an old bug report I'd like to close out.  Do you guys know
-> anything about it?  I couldn't even find the
-> "microamps_requested_vmmc" string in the v3.6 kernel, so I suspect
-> it's obsolete.
+On Tue, Oct 2, 2012 at 10:13 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-You can't find the string because it's constructed at runtime with
-sprintf().  It's probably a bug in whatever driver is requesting the
-supply twice.
+> This is a skeleton creation which will be populated with the devices
+> found on one of ST-Ericsson's (UIB) User Interface Board.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
