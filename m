@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2JBWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 18:10:59 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52612 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2JBWK6 (ORCPT
+	id S1752888Ab2JBWMn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 18:12:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45826 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751475Ab2JBWMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 18:10:58 -0400
+	Tue, 2 Oct 2012 18:12:41 -0400
+X-Sasl-enc: CvPfpcx9ADo7fhm2nLrwFwNlTFyzIihdneoWLPHY0hx/ 1349215960
+Date: Tue, 2 Oct 2012 15:12:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, Kay Sievers <kay@vrfy.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
+ request_firmware_nowait()
+Message-ID: <20121002221239.GA30990@kroah.com>
+References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
+ <4FE37194.30407@redhat.com>
+ <4FE8B8BC.3020702@iki.fi>
+ <4FE8C4C4.1050901@redhat.com>
+ <4FE8CED5.104@redhat.com>
+ <20120625223306.GA2764@kroah.com>
+ <4FE9169D.5020300@redhat.com>
+ <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu>
-	<20120820180037.GV4232@outflux.net>
-	<CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
-	<CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
-	<CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
-Date: Tue, 2 Oct 2012 15:10:56 -0700
-X-Google-Sender-Auth: 5c1JydoOvL6UolxYrCK94LJSPhs
-Message-ID: <CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com>
-Subject: Re: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-From: Kees Cook <keescook@chromium.org>
-To: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        James Morris <jmorris@namei.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 2:41 PM, Ard Biesheuvel <ard.biesheuvel@gmail.com> wrote:
-> 2012/10/2 Kees Cook <keescook@chromium.org>:
->>> If desired, additional restrictions can be imposed by using the
->>> security framework, e.g,, disallow non-final r-x mappings.
->>
->> Interesting; what kind of interface did you have in mind?
->
-> The 'interface' we use is a LSM .ko which registers handlers for
-> mmap() and mprotect() that fail the respective invocations if the
-> passed arguments do not adhere to the policy.
+On Tue, Oct 02, 2012 at 09:33:03AM -0700, Linus Torvalds wrote:
+> I don't know where the problem started in udev, but the report I saw
+> was that udev175 was fine, and udev182 was broken, and would deadlock
+> if module_init() did a request_firmware(). That kind of nested
+> behavior is absolutely *required* to work, in order to not cause
+> idiotic problems for the kernel for no good reason.
+> 
+> What kind of insane udev maintainership do we have? And can we fix it?
+> 
+> Greg, I think you need to step up here too. You were the one who let
+> udev go. If the new maintainers are causing problems, they need to be
+> fixed some way.
 
-Seems reasonable.
+I've talked about this with Kay in the past (Plumbers conference I
+think) and I thought he said it was all fixed in the latest version of
+udev so there shouldn't be any problems anymore with this.
 
->>>> It seems like there needs to be a sensible way to detect that this flag is
->>>> available, though.
->>>
->>> I am open for suggestions to address this. Our particular
->>> implementation of the loader (on an embedded system) tries to set it
->>> on the first mmap invocation, and stops trying if it fails. Not the
->>> most elegant approach, I know ...
->>
->> Actually, that seems easiest.
->>
->> Has there been any more progress on this patch over-all?
->
-> No progress.
+Mauro, what version of udev are you using that is still showing this
+issue?
 
-Al, Andrew, anyone? Thoughts on this?
-(First email is https://lkml.org/lkml/2012/8/14/448)
+Kay, didn't you resolve this already?  If not, what was the reason why?
 
--Kees
+thanks,
 
--- 
-Kees Cook
-Chrome OS Security
+greg k-h
