@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab2JBCy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 22:54:29 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51839 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2JBCy2 (ORCPT
+	id S1752360Ab2JBDDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 23:03:41 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:41231 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751221Ab2JBDDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 22:54:28 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 1 Oct 2012 19:55:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, Steve Hardy <shardy@redhat.com>
-Subject: Re: [PATCH v2 1/2] hwmon: (ads7828) driver cleanup
-Message-ID: <20121002025504.GA3108@roeck-us.net>
-References: <1349133384-5181-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20121002010705.GB2437@roeck-us.net>
- <1349144167.5876.13.camel@trivette>
+	Mon, 1 Oct 2012 23:03:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/n2wLUaw1OWX3Nk5vCYNKh
+Date: Mon, 1 Oct 2012 20:03:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL 0/12] ARM: soc: updates for 3.7, first batch
+Message-ID: <20121002030332.GO4840@atomide.com>
+References: <1349135827-24790-1-git-send-email-olof@lixom.net>
+ <CA+55aFwoDOdKv9wcqEPkE76+w2TCz+419qp94T3_70jK9dR3-A@mail.gmail.com>
+ <20121002023420.GA838@quad.lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349144167.5876.13.camel@trivette>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121002023420.GA838@quad.lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 10:16:07PM -0400, Vivien Didelot wrote:
-> Hi Guenter,
+* Olof Johansson <olof@lixom.net> [121001 19:36]:
+> On Mon, Oct 01, 2012 at 07:22:34PM -0700, Linus Torvalds wrote:
 > 
-[ ... ]
-> > >  
-> > > -/* Each client has this additional data */
-> > > +/**
-> > > + * struct ads7828_data - client specific data
-> > > + * @hwmon_dev:		The hwmon device.
-> > > + * @update_lock:	Mutex protecting updates.
-> > > + * @valid:		Validity flag.
-> > > + * @last_updated:	Last updated time (in jiffies).
-> > > + * @adc_input:		ADS7828_NCH samples.
-> > > + */
-> > This isn't really an externally visible API, so I wonder if it provides value to
-> > document it this way. No strong opinion, just wondering.
-> I found the version below a bit cluttered, that's why I used the
-> KernelDoc notation. Would you prefer something else, like right-aligned
-> comments?
+> > Anyway, you should double-check the merges, the "soc.h" one in
+> > particular is suspect.
+> 
+> Yes, my bad for not remembering to move the tag forward. The patch is below.
 
-Tab aligned, maybe ? Not sure if that works out, though.
+Thanks, the current head is building just fine for omaps
+with that fix.
 
-Guenter
+Regards,
+
+Tony
