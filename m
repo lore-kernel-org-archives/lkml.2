@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab2JBQd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:33:26 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48713 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab2JBQdZ (ORCPT
+	id S1755084Ab2JBQhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:37:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49507 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab2JBQhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:33:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121002100319.59146693@redhat.com>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
- <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
- <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
- <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 2 Oct 2012 09:33:03 -0700
-X-Google-Sender-Auth: NGvtaPn5tV-DPsfR0jIb1aGQXc8
-Message-ID: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>
-Cc: Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Oct 2012 12:37:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@infradead.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, "Krzysztof Halasa" <khc@pm.waw.pl>
+Subject: [PATCH 02/17] ARM: shark: fix shark_pci_init return code
+Date: Tue,  2 Oct 2012 18:36:41 +0200
+Message-Id: <1349195816-2225-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:rFYR1JSIs/maBQvq9oNVwgA9H9nn96i1XUTbWfAAID9
+ xF06tfEusVC7uEWOPflLJh6upcxRN6gTOfQZmLGV5QZk0ysh1a
+ c7/0QI+WpKIdCvlaIbpfqTcWQJPNTsJUQOOH4kpE2gQOk8f6wF
+ 2DiQNlQCg1r7AnBYbZguiQ9UZwMes7a4MvJlXznAwLbStI3g8u
+ JYdoFENN0184f95CUbOLZ/pJg11IpoDY8lwUeiSI0RaJId8YEM
+ jSvbkY4bSPlWsxaJsKXLwq1leQFPBmHFyx6DGF/cBcmStMEhrC
+ zdZ0DZnxpa/v0BtRJdyzwycXUe/STDo87dlasnnF9Nbpv5xlu/
+ kKEXvWjf/3FBXXpcqAfFh2YMp8Uwhi9nwHMXZKUtOzMC+BTL30
+ jhJEkhF+KDjFA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 6:03 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
->
-> I basically tried a few different approaches, including deferred probe(),
-> as you suggested, and request_firmware_async(), as Kay suggested.
+When run on the wrong platform, the shark_pci_init function
+returns an undefined value, as reported by a gcc warning,
+so let's just return -ENODEV.
 
-Stop this crazy. FIX UDEV ALREADY, DAMMIT.
+Without this patch, building shark_defconfig results in:
 
-Who maintains udev these days? Is it Lennart/Kai, as part of systemd?
+arch/arm/mach-shark/pci.c: In function 'shark_pci_init':
+arch/arm/mach-shark/pci.c:42:3: warning: 'return' with no value, in function returning non-void [-Wreturn-type]
 
-Lennart/Kai, fix the udev regression already. Lennart was the one who
-brought up kernel ABI regressions at some conference, and if you now
-you have the *gall* to break udev in an incompatible manner that
-requires basically impossible kernel changes for the kernel to "fix"
-the udev interface, I don't know what to say.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: "Krzysztof Halasa" <khc@pm.waw.pl>
+---
+ arch/arm/mach-shark/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-"Two-faced lying weasel" would be the most polite thing I could say.
-But it almost certainly will involve a lot of cursing.
+diff --git a/arch/arm/mach-shark/pci.c b/arch/arm/mach-shark/pci.c
+index 9089407..2b351a3 100644
+--- a/arch/arm/mach-shark/pci.c
++++ b/arch/arm/mach-shark/pci.c
+@@ -38,7 +38,7 @@ static struct hw_pci shark_pci __initdata = {
+ static int __init shark_pci_init(void)
+ {
+ 	if (!machine_is_shark())
+-		return;
++		return -ENODEV;
+ 
+ 	pcibios_min_io = 0x6000;
+ 	pcibios_min_mem = 0x50000000;
+-- 
+1.7.10
 
-> However, for 3.7 or 3.8, I think that the better is to revert changeset 177bc7dade38b5
-> and to stop with udev's insanity of requiring asynchronous firmware load during
-> device driver initialization. If udev's developers are not willing to do that,
-> we'll likely need to add something at the drivers core to trick udev for it to
-> think that the modules got probed before the probe actually happens.
-
-The fact is, udev made new - and insane - rules that are simply
-*invalid*. Modern udev is broken, and needs to be fixed.
-
-I don't know where the problem started in udev, but the report I saw
-was that udev175 was fine, and udev182 was broken, and would deadlock
-if module_init() did a request_firmware(). That kind of nested
-behavior is absolutely *required* to work, in order to not cause
-idiotic problems for the kernel for no good reason.
-
-What kind of insane udev maintainership do we have? And can we fix it?
-
-Greg, I think you need to step up here too. You were the one who let
-udev go. If the new maintainers are causing problems, they need to be
-fixed some way.
-
-                Linus
