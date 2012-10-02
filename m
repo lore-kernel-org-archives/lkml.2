@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab2JBRQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:16:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57736 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2JBRQt (ORCPT
+	id S1755038Ab2JBRUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:20:00 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:54030 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752547Ab2JBRT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:16:49 -0400
-Message-ID: <506B217D.1000003@wwwdotorg.org>
-Date: Tue, 02 Oct 2012 11:16:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
+	Tue, 2 Oct 2012 13:19:59 -0400
+X-Greylist: delayed 1737 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Oct 2012 13:19:59 EDT
 To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 17/17] ARM: soc: dependency warnings for errata
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-18-git-send-email-arnd@arndb.de>
-In-Reply-To: <1349195816-2225-18-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 03/17] ARM: pxa: Wunused-result warning in viper board file
+X-PHP-Originating-Script: 0:func.inc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Tue, 02 Oct 2012 18:50:55 +0200
+From: Marc Zyngier <maz@misterjones.org>
+Cc: <linux-arm-kernel@infradead.org>, <arm@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Organization: Metropolis
+In-Reply-To: <1349195816-2225-4-git-send-email-arnd@arndb.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-4-git-send-email-arnd@arndb.de>
+Message-ID: <52173c1c1959ad9cd89b3d86a81acef2@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: arnd@arndb.de, linux-arm-kernel@infradead.org, arm@kernel.org, linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com, eric.y.miao@gmail.com
+X-SA-Exim-Mail-From: maz@misterjones.org
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 10:36 AM, Arnd Bergmann wrote:
-> The PL310_ERRATA_753970 and ARM_ERRATA_764369 symbols only make sense
-> when the base features for them are enabled, so select them
-> conditionally in Kconfig to avoid warnings like:
+On Tue,  2 Oct 2012 18:36:42 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> Calling kstrtoul requires checking the result. In case of
+> the viper_tpm_setup function, let's fail the __setup function
+> if the number was invalid.
 > 
-> warning: (UX500_SOC_COMMON) selects PL310_ERRATA_753970 which has unmet direct dependencies (CACHE_PL310)
-> warning: (ARCH_TEGRA_2x_SOC && ARCH_TEGRA_3x_SOC && UX500_SOC_COMMON) selects ARM_ERRATA_764369 which has unmet direct dependencies (CPU_V7 && SMP)
+> Without this patch, building viper_defconfig results in:
+> 
+> arch/arm/mach-pxa/viper.c: In function 'viper_tpm_setup':
+> arch/arm/mach-pxa/viper.c:771:10: warning: ignoring return value of
+> 'kstrtoul', declared with attribute warn_unused_result [-Wunused-result]
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Marc Zyngier <maz@misterjones.org>
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Marc Zyngier <maz@misterjones.org>
 
+> ---
+>  arch/arm/mach-pxa/viper.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+> index 130379f..ac733e9 100644
+> --- a/arch/arm/mach-pxa/viper.c
+> +++ b/arch/arm/mach-pxa/viper.c
+> @@ -768,8 +768,7 @@ static unsigned long viper_tpm;
+>  
+>  static int __init viper_tpm_setup(char *str)
+>  {
+> -	strict_strtoul(str, 10, &viper_tpm);
+> -	return 1;
+> +	return strict_strtoul(str, 10, &viper_tpm) >= 0;
+>  }
+>  
+>  __setup("tpm=", viper_tpm_setup);
 
+-- 
+Who you jivin' with that Cosmik Debris?
