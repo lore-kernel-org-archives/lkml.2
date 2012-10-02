@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab2JBVul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:50:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54132 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932392Ab2JBVuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:50:40 -0400
-Message-ID: <506B6191.6080605@zytor.com>
-Date: Tue, 02 Oct 2012 14:50:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756678Ab2JBV5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:57:04 -0400
+Received: from mailgw.tensilica.com ([65.119.96.134]:41224 "EHLO
+	mailgw.tensilica.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2JBV5C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 17:57:02 -0400
+X-Greylist: delayed 1392 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Oct 2012 17:57:02 EDT
+From: Marc Gauthier <marc@tensilica.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
+Date: Tue, 2 Oct 2012 14:33:46 -0700
+Subject: RE: [LKML] Re: Build regressions/improvements in v3.6
+Thread-Topic: [LKML] Re: Build regressions/improvements in v3.6
+Thread-Index: Ac2gzn/eAfLgbHpNT1Ca7e9Mmq4OdAAEEzpQ
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D05BF604843@exch.hq.tensilica.com>
+References: <1349202763-1601-1-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdXcMVkcqTJdH2zdo9=a2efeeQmPGUr9GZqRMuRrAuMBvw@mail.gmail.com>
+In-Reply-To: <CAMuHMdXcMVkcqTJdH2zdo9=a2efeeQmPGUr9GZqRMuRrAuMBvw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: T Makphaibulchoke <tmac@hp.com>
-CC: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        akpm@linux-foundation.org, yinghai@kernel.org, tiwai@suse.de,
-        viro@zeniv.linux.org.uk, aarcange@redhat.com, tony.luck@intel.com,
-        mgorman@suse.de, weiyang@linux.vnet.ibm.com,
-        octavian.purdila@intel.com, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] Fix devmem_is_allowed for below 1MB accesses for an efi
- machine
-References: <1349213536-3436-1-git-send-email-tmac@hp.com>
-In-Reply-To: <1349213536-3436-1-git-send-email-tmac@hp.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 02:32 PM, T Makphaibulchoke wrote:
-> Changing devmem_is_allowed so that on an EFI machine, access to physical
-> address below 1 MB is allowed only to physical pages that are valid in
-> the EFI memory map.  This prevents the possibility of an MCE due to
-> accessing an invalid physical address.
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> xtensa-allmodconfig (hmm, this is not a new one, it felt through the
+> cracks in -rc7 because of log line interleaving).
+>
+> Ugh, arch/xtensa/include/asm/regs.h defines way to generic symbols,
+> like "MISC" (which causes the above breakage), and even a few
+> 2-letter symbols, which surprisingly don't cause conflicts...
 
-What?
+This particular one is already fixed in the xtensa linux-next tree
+at git://github.com/czankel/xtensa-linux.git#for_next
+(commit 36c74c2a16678e9ee6f08ef89eeebfdd1a96693d).
 
-That sounds like exactly the opposite of normal /dev/mem behavior... we
-allow access to non-memory resources (which really could do anything if
-misused), but not memory.
+The short names in that header are for historical reasons.
+It is indeed due for a cleanup.
 
-You seem like you're flipping it on its head.
-
-	-hpa
-
+-Marc
