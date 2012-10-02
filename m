@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab2JBIVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 04:21:16 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35270 "EHLO
+	id S1754505Ab2JBIZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 04:25:11 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41405 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754133Ab2JBIVL convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754354Ab2JBIZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 04:21:11 -0400
+	Tue, 2 Oct 2012 04:25:05 -0400
 MIME-Version: 1.0
 X-Originating-IP: [93.172.255.235]
-In-Reply-To: <1348846506-9670-1-git-send-email-emilgoode@gmail.com>
-References: <1348846506-9670-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <20121001024544.GA12711@localhost>
+References: <20121001024544.GA12711@localhost>
 From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 2 Oct 2012 10:20:51 +0200
-Message-ID: <CAK=WgbaNz_20AoKCsw53f5UiG+5AhvpnFV-aiJTMUpO5+u1bnA@mail.gmail.com>
-Subject: Re: [PATCH] remoteproc: Fix use of format specifyer
-To: Emil Goode <emilgoode@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 2 Oct 2012 10:24:45 +0200
+Message-ID: <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
+Subject: Re: [remoteproc:for-next 6/9] remoteproc_virtio.c:(.text+0x238e7e):
+ undefined reference to `vring_transport_features'
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 5:35 PM, Emil Goode <emilgoode@gmail.com> wrote:
-> The dma_addr_t type can be eigher u32 or u64 depending on
-> the configuration. We should use a format specifyer for the
-> larges type and explicitly cast to it.
+On Mon, Oct 1, 2012 at 4:45 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Ohad,
 >
-> Sparse warnings:
-> drivers/remoteproc/remoteproc_core.c:234:2: warning:
->         format ‘%x’ expects argument of type ‘unsigned int’,
->         but argument 6 has type ‘dma_addr_t’ [-Wformat]
+> FYI, kernel build failed on
 >
-> drivers/remoteproc/remoteproc_core.c:596:2: warning:
->         format ‘%x’ expects argument of type ‘unsigned int’,
->         but argument 5 has type ‘dma_addr_t’ [-Wformat]
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
+> head:   bec109a430e8c67bae1743f7e71898283234a77f
+> commit: ec4d02d9180f407c41f8310a13b34e473c671fbb [6/9] remoteproc: Add STE modem driver
+> config: i386-randconfig-b102 (attached as .config)
 >
-> drivers/remoteproc/remoteproc_core.c:634:3:
->         warning: format ‘%x’ expects argument of type ‘unsigned int’,
->         but argument 5 has type ‘dma_addr_t’ [-Wformat]
->
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> It should be an old bug. The commit happen to be the one to trigger
+> the errors because it selects CONFIG_EMOTEPROC.
 
-Applied (after fixing some commit log typos), thanks.
+Thanks Fengguang.
+
+This should be fixed by a patch I pushed today to remoteproc's for-next branch.
+
+Though I wonder, Sjur, do we want to limit the architectures/platforms
+where the STE modem driver can be selected on ? Is it ARM only perhaps
+?
