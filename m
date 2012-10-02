@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab2JBRn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:43:27 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:55383 "EHLO tetsuo.zabbo.net"
+	id S1755329Ab2JBRoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:44:01 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:45656
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2JBRnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:43:24 -0400
-Date: Tue, 2 Oct 2012 10:43:23 -0700
-From: Zach Brown <zab@zabbo.net>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@google.com, tj@kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com,
-        Martin Petersen <martin.petersen@oracle.com>
-Subject: Re: [RFC, PATCH] Extensible AIO interface
-Message-ID: <20121002174323.GE14533@lenny.home.zabbo.net>
-References: <20121001222341.GF26488@google.com>
- <20121001231222.GB14533@lenny.home.zabbo.net>
- <20121001232235.GH26488@google.com>
- <20121001234439.GC14533@lenny.home.zabbo.net>
- <20121002002216.GI26488@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002002216.GI26488@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755209Ab2JBRoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 13:44:00 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@vger.kernel.org
+Subject: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit packets in the RESET path
+Date: Tue,  2 Oct 2012 11:03:31 -0700
+Message-Id: <1349201011-14572-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The generic code wouldn't know about any user pointers inside
-> attributes, so it'd have to be downstream consumers. Hopefully there
-> won't be many attributes with user pointers in them (I don't expect
-> there to be), so we won't have too much of this messyness.
+Properly account for I/O in transit before returning from the RESET call.
+In the absense of this patch, we could have a situation where the host may
+respond to a command that was issued prior to the issuance of the RESET
+command at some arbitrary time after responding to the RESET command.
+Currently, the host does not do anything with the RESET command. 
 
-I really don't like this.  We should have learned this lesson with ioctl
-structs that are nested pointers.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/scsi/storvsc_drv.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-What about security bits that are trying to determine if attributes are
-OK?
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 528d52b..0144078 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1221,7 +1221,12 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
+ 	/*
+ 	 * At this point, all outstanding requests in the adapter
+ 	 * should have been flushed out and return to us
++	 * There is a potential race here where the host may be in
++	 * the process of responding when we return from here.
++	 * Just wait for all in-transit packets to be accounted for
++	 * before we return from here.
+ 	 */
++	storvsc_wait_to_drain(stor_device);
+ 
+ 	return SUCCESS;
+ }
+-- 
+1.7.4.1
 
-What about contexts that can't easily deal with userspace pointers?  We
-tend to copy into relatively more accessible kernel memory as early as
-possible.
-
-What about fuse trying to extend this interface out to their fs clients?
-Look at the horrible mess it implements to bounce nested ioctl data
-parsing between the kernel's user pointer copying and the fuse client's
-parsing of that copied data.
-
-Let's not do this again, please.  I think it's a fallacy to claim that
-the interface can be opaque to high levels and only parsed by lower
-levels.  The interface should be explicit and fully specified on entry
-so that all levels have trivial access to it.
-
-- z
