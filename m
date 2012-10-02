@@ -1,140 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab2JBVc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:32:26 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:28423 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab2JBVcY (ORCPT
+	id S1756611Ab2JBVdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:33:31 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:19989 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172Ab2JBVd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:32:24 -0400
-From: T Makphaibulchoke <tmac@hp.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        akpm@linux-foundation.org, yinghai@kernel.org, tiwai@suse.de,
-        viro@zeniv.linux.org.uk, aarcange@redhat.com, tony.luck@intel.com,
-        mgorman@suse.de, weiyang@linux.vnet.ibm.com,
-        octavian.purdila@intel.com, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: T Makphaibulchoke <tmac@hp.com>
-Subject: [PATCH] Fix devmem_is_allowed for below 1MB accesses for an efi machine
-Date: Tue,  2 Oct 2012 15:32:16 -0600
-Message-Id: <1349213536-3436-1-git-send-email-tmac@hp.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 2 Oct 2012 17:33:29 -0400
+Message-ID: <1349213607.3141.57.camel@lorien2>
+Subject: Re: kernel NULL pointer dereference at rb_erase+0x1a3/0x370
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Hugh Dickins <hughd@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 02 Oct 2012 15:33:27 -0600
+In-Reply-To: <alpine.LSU.2.00.1210021317030.1700@eggly.anvils>
+References: <1349200709.3141.30.camel@lorien2>
+	 <alpine.LSU.2.00.1210021317030.1700@eggly.anvils>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing devmem_is_allowed so that on an EFI machine, access to physical
-address below 1 MB is allowed only to physical pages that are valid in
-the EFI memory map.  This prevents the possibility of an MCE due to
-accessing an invalid physical address.
+On Tue, 2012-10-02 at 13:27 -0700, Hugh Dickins wrote:
+> On Tue, 2 Oct 2012, Shuah Khan wrote:
+> > I started seeing the following null pointer dereference on
+> > a linux-next sept 21 git and still seeing it on linux-next 
+> > Sep 27th git.
+> > 
+> > Can be reproduced easily. I have been able to reproduce every
+> > time I do a complete build of a kernel on fresh checkout or
+> > touch a header file that forces full build.
+> > 
+> > Related to lib/rbtree.c commits that went into September 21 perhaps.
+> 
+> That's a sensible suggestion, but I think probably not.
+> 
+> > I didn't get a chance to investigate this yet, thought I would share
+> > just in case others have seen it.
+> > 
+> > 
+> > [ 2219.660124] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > [ 2219.660182] IP: [<ffffffff81323c93>] rb_erase+0x1a3/0x370
+> > [ 2219.660209] PGD 73f2f067 PUD 67246067 PMD 0 
+> > [ 2219.660235] Oops: 0000 [#1] SMP 
+> > [ 2219.660632] CPU 0 
+> > [ 2219.660644] Pid: 1660, comm: recordmcount Not tainted 3.6.0-rc6-next-20120921+ #4 Hewlett-Packard HP EliteBook 6930p/30DC
+> > [ 2219.664007] Process recordmcount (pid: 1660, threadinfo ffff880073f30000, task ffff88002fe9ada0)
+> > [ 2219.664007] Call Trace:
+> > [ 2219.664007]  [<ffffffff8125af6e>] ext4_es_insert_extent+0x28e/0x2f0
+> 
+> ext4_es_insert_extent: this is probably something I posted a fix for on
+> the 27th (copied below).  They're reworking that series more thoroughly,
+> and it has for the moment dropped out of linux-next, so I expect you
+> won't see this error at all with a newer next.  But you may want to
+> continue with your Sep 27th tree, and try out this patch anyway...
 
-Signed-off-by: T Makphaibulchoke <tmac@hp.com>
----
- arch/x86/mm/init.c |   12 ++++++++++--
- include/linux/mm.h |    1 +
- kernel/resource.c  |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 58 insertions(+), 2 deletions(-)
+Thanks for looking at both my null reference questions. In my case it is
+easier to upgrade, will just do that.
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index ab1f6a9..3ed95c5 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -4,6 +4,7 @@
- #include <linux/swap.h>
- #include <linux/memblock.h>
- #include <linux/bootmem.h>	/* for max_low_pfn */
-+#include <linux/efi.h>		/* for efi_enabled */
- 
- #include <asm/cacheflush.h>
- #include <asm/e820.h>
-@@ -319,8 +320,15 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
-  */
- int devmem_is_allowed(unsigned long pagenr)
- {
--	if (pagenr < 256)
--		return 1;
-+	if (pagenr < 256) {
-+		if (!efi_enabled)
-+			return 1;
-+		/* For EFI, allow access only to valid physical addresses. */
-+		if (page_is_valid(pagenr))
-+			return 1;
-+		return 0;
-+	}
-+
- 	if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
- 		return 0;
- 	if (!page_is_ram(pagenr))
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 311be90..fd1bcd4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -288,6 +288,7 @@ static inline int get_page_unless_zero(struct page *page)
- }
- 
- extern int page_is_ram(unsigned long pfn);
-+extern int page_is_valid(unsigned long pfn);
- 
- /* Support for virtually mapped pages */
- struct page *vmalloc_to_page(const void *addr);
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 34d4588..aeb091b 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -367,6 +367,53 @@ int __weak page_is_ram(unsigned long pfn)
- 	return walk_system_ram_range(pfn, 1, NULL, __is_ram) == 1;
- }
- 
-+static int find_next_system_resource(struct resource *res)
-+{
-+	resource_size_t start, end;
-+	struct resource *p;
-+
-+	BUG_ON(!res);
-+
-+	start = res->start;
-+	end = res->end;
-+	BUG_ON(start >= end);
-+
-+	read_lock(&resource_lock);
-+	for (p = iomem_resource.child; p ; p = p->sibling) {
-+		/* system ram is just marked as IORESOURCE_MEM */
-+		if (!(p->flags & res->flags))
-+			continue;
-+		if (p->start > end) {
-+			p = NULL;
-+			break;
-+		}
-+		if ((p->end >= start) && (p->start < end))
-+			break;
-+	}
-+	read_unlock(&resource_lock);
-+	if (!p)
-+		return -1;
-+	/* copy data */
-+	if (res->start < p->start)
-+		res->start = p->start;
-+	if (res->end > p->end)
-+		res->end = p->end;
-+	return 0;
-+}
-+
-+int __weak page_is_valid(unsigned long start_pfn)
-+{
-+	struct resource res;
-+	int ret = 0;
-+
-+	res.start = (u64) start_pfn << PAGE_SHIFT;
-+	res.end = ((u64)(start_pfn + 1) << PAGE_SHIFT) - 1;
-+	res.flags = IORESOURCE_MEM;
-+	if (find_next_system_resource(&res) >= 0)
-+		ret = 1;
-+	return ret;
-+}
-+
- void __weak arch_remove_reservations(struct resource *avail)
- {
- }
--- 
-1.7.1
+-- Shuah
+> 
+> [PATCH next/mmotm] ext4: fix cache_es after merge_left
+> 
+> Kernel build with CONFIG_DEBUG_SLAB or CONFIG_SLUB_DEBUG slub_debug=FPZ
+> gives me kernel BUG at fs/ext4/extents_status.c:142!  That's the
+> BUG_ON(es->start + es->len < es->start) in extent_status_end() called
+> from ext4_es_insert_extent().  tree->cache_es has been freed and poisoned.
+> 
+> This comes from when ext4_es_try_to_merge_left() merges es into leftward
+> es1, but ext4_es_insert_extent()'s out then updates cache_es to the freed
+> extent_status.  ext4_es_try_to_merge_right() does not pose a problem.
+> 
+> Change ext4_es_try_to_merge_left() to return whichever extent_status
+> should be recorded in tree->cache_es.  Remove cache_es update from
+> both of them, leaving that to ext4_es_insert_extent()'s out label.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+>  fs/ext4/extents_status.c |   15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+> 
+> --- mmotm/fs/ext4/extents_status.c	2012-09-26 10:15:29.340071552 -0700
+> +++ linux/fs/ext4/extents_status.c	2012-09-27 11:52:59.284937056 -0700
+> @@ -244,24 +244,24 @@ static void ext4_es_free_extent(struct e
+>  	kmem_cache_free(ext4_es_cachep, es);
+>  }
+>  
+> -static void ext4_es_try_to_merge_left(struct ext4_es_tree *tree,
+> -				      struct extent_status *es)
+> +static struct extent_status *
+> +ext4_es_try_to_merge_left(struct ext4_es_tree *tree, struct extent_status *es)
+>  {
+>  	struct extent_status *es1;
+>  	struct rb_node *node;
+>  
+>  	node = rb_prev(&es->rb_node);
+>  	if (!node)
+> -		return;
+> +		return es;
+>  
+>  	es1 = rb_entry(node, struct extent_status, rb_node);
+>  	if (es->start == extent_status_end(es1) + 1) {
+>  		es1->len += es->len;
+>  		rb_erase(&es->rb_node, &tree->root);
+> -		if (es == tree->cache_es)
+> -			tree->cache_es = es1;
+>  		ext4_es_free_extent(es);
+> +		es = es1;	/* Caller will update tree->cache_es to this */
+>  	}
+> +	return es;
+>  }
+>  
+>  static void ext4_es_try_to_merge_right(struct ext4_es_tree *tree,
+> @@ -278,9 +278,8 @@ static void ext4_es_try_to_merge_right(s
+>  	if (es1->start == extent_status_end(es) + 1) {
+>  		es->len += es1->len;
+>  		rb_erase(node, &tree->root);
+> -		if (es1 == tree->cache_es)
+> -			tree->cache_es = es;
+>  		ext4_es_free_extent(es1);
+> +		/* Caller will update tree->cache_es to es */
+>  	}
+>  }
+>  
+> @@ -318,7 +317,7 @@ int ext4_es_insert_extent(struct inode *
+>  		es_debug("cached by [%u/%u)\n", es->start, es->len);
+>  		es->start = offset;
+>  		es->len += len;
+> -		ext4_es_try_to_merge_left(tree, es);
+> +		es = ext4_es_try_to_merge_left(tree, es);
+>  		goto out;
+>  	} else if (es && in_range(offset, es->start, es->len)) {
+>  		es_debug("cached by [%u/%u)\n", es->start, es->len);
+
 
