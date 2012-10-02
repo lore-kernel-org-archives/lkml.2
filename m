@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab2JBPxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:53:41 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60000
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754134Ab2JBPxj (ORCPT
+	id S1754755Ab2JBPyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:54:19 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:42723 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab2JBPyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:53:39 -0400
-Date: Tue, 2 Oct 2012 11:53:38 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, eparis@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH v7 02/49] audit: pass in dentry to audit_copy_inode
- wherever possible
-Message-ID: <20121002155338.GB22698@infradead.org>
-References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
- <1349137018-21948-3-git-send-email-jlayton@redhat.com>
+	Tue, 2 Oct 2012 11:54:18 -0400
+Date: Tue, 2 Oct 2012 17:54:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] perf tools: Check existence of
+ _get_comp_words_by_ref when bash completing
+Message-ID: <20121002155358.GD10605@somewhere>
+References: <1349191294-6926-1-git-send-email-namhyung@kernel.org>
+ <1349191294-6926-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349137018-21948-3-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1349191294-6926-2-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 08:16:11PM -0400, Jeff Layton wrote:
-> In some cases, we were passing in NULL even when we have a dentry.
+On Wed, Oct 03, 2012 at 12:21:32AM +0900, Namhyung Kim wrote:
+> The '_get_comp_words_by_ref' function is available from the bash
+> completion v1.2 so that earlier version emits following warning:
 > 
-> Reported-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+>   $ perf re<TAB>_get_comp_words_by_ref: command not found
+> 
+> Use older '_get_cword' method when the above function doesn't exist.
+
+May be only use _get_cword then, if it works everywhere?
+
+> 
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  kernel/auditsc.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  tools/perf/bash_completion |   15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 4b96415..5c45b9b 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -2226,7 +2226,7 @@ void __audit_inode_child(const struct dentry *dentry,
->  		if (!strcmp(dname, n->name) ||
->  		     !audit_compare_dname_path(dname, n->name, &dirlen)) {
->  			if (inode)
-> -				audit_copy_inode(n, NULL, inode);
-> +				audit_copy_inode(n, dentry, inode);
-
-Btw, the calling conventions here also seems fairly ugly.
-
-Instead of the optional dentry parameter I'd have a audit_copy_inode
-that takes just the name and the inode, and an optional direct  call
-to audit_copy_fcaps for those callers that have a dentry.  That would
-also allow removing the branch for the dentry == NULL case in
-audit_copy_fcaps.
-
+> diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+> index 1958fa539d0f..3d48cee1b5e5 100644
+> --- a/tools/perf/bash_completion
+> +++ b/tools/perf/bash_completion
+> @@ -1,12 +1,23 @@
+>  # perf completion
+>  
+> +function_exists()
+> +{
+> +	declare -F $1 > /dev/null
+> +	return $?
+> +}
+> +
+>  have perf &&
+>  _perf()
+>  {
+> -	local cur cmd
+> +	local cur prev cmd
+>  
+>  	COMPREPLY=()
+> -	_get_comp_words_by_ref cur prev
+> +	if function_exists _get_comp_words_by_ref; then
+> +		_get_comp_words_by_ref cur prev
+> +	else
+> +		cur=$(_get_cword)
+> +		prev=${COMP_WORDS[COMP_CWORD-1]}
+> +	fi
+>  
+>  	cmd=${COMP_WORDS[0]}
+>  
+> -- 
+> 1.7.9.2
+> 
