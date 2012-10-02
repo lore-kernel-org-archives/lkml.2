@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2JBAdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:33:36 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43054 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2JBAdf (ORCPT
+	id S1757521Ab2JBA17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:27:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36736 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab2JBARX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:33:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1348888554.22822.108.camel@gandalf.local.home>
-References: <1348148044.13080.59.camel@gandalf.local.home> <1348181550-21931-1-git-send-email-dhsharp@google.com>
- <1348888554.22822.108.camel@gandalf.local.home>
-From: David Sharp <dhsharp@google.com>
-Date: Mon, 1 Oct 2012 17:33:12 -0700
-Message-ID: <CAJL_ekt5WZV_P71dwgJ3hYh4V08tJ41QJZCETq0P7EOo+uyN-Q@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] tracing,x86: add a TSC trace_clock
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Mon, 1 Oct 2012 20:17:23 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: [PATCH v7 12/49] vfs: make dir_name arg to do_mount a const char *
+Date: Mon,  1 Oct 2012 20:16:21 -0400
+Message-Id: <1349137018-21948-13-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
+References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 8:15 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2012-09-20 at 15:52 -0700, David Sharp wrote:
->
->> diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
->> new file mode 100644
->> index 0000000..6726f1b
->> --- /dev/null
->> +++ b/include/asm-generic/trace_clock.h
->> @@ -0,0 +1,16 @@
->> +#ifndef _ASM_GENERIC_TRACE_CLOCK_H
->> +#define _ASM_GENERIC_TRACE_CLOCK_H
->> +/*
->> + * Arch-specific trace clocks.
->> + */
->> +
->> +/*
->> + * Additional trace clocks added to the trace_clocks
->> + * array in kernel/trace/trace.c
->> + * None if the architecture has not defined it.
->> + */
->> +#ifndef ARCH_TRACE_CLOCKS
->> +# define ARCH_TRACE_CLOCKS
->> +#endif
->> +
->> +#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
->
-> Unfortunately this isn't enough. You need to add a stub in all
-> arch/*/include/asm/ directories. That has:
+Nothing changes it, so it should be safe to do.
 
-Oh really? Okay. Sorry, I really don't know the mechanics of the arch
-trees. I'll work on that now, and then send you a new series since I
-forgot to send out my last update.
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namespace.c     | 2 +-
+ include/linux/fs.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
->
-> --- trace_clock.h:
-> #ifndef _ASM_TRACE_CLOCK_H
-> #define _ASM_TRACE_CLOCK_H
->
-> #include <asm-generic/trace_clock.h>
->
-> #endif
-> ---
->
->
-> Because running this against my cross-compile test, failed on all archs
-> but x86.
->
-> -- Steve
->
->
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 4d31f73..8e52b1c 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2185,7 +2185,7 @@ int copy_mount_string(const void __user *data, char **where)
+  * Therefore, if this magic number is present, it carries no information
+  * and must be discarded.
+  */
+-long do_mount(char *dev_name, char *dir_name, char *type_page,
++long do_mount(char *dev_name, const char *dir_name, char *type_page,
+ 		  unsigned long flags, void *data_page)
+ {
+ 	struct path path;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 69513a7..b6ce6fc 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2072,7 +2072,7 @@ extern struct vfsmount *kern_mount_data(struct file_system_type *, void *data);
+ extern void kern_unmount(struct vfsmount *mnt);
+ extern int may_umount_tree(struct vfsmount *);
+ extern int may_umount(struct vfsmount *);
+-extern long do_mount(char *, char *, char *, unsigned long, void *);
++extern long do_mount(char *, const char *, char *, unsigned long, void *);
+ extern struct vfsmount *collect_mounts(struct path *);
+ extern void drop_collected_mounts(struct vfsmount *);
+ extern int iterate_mounts(int (*)(struct vfsmount *, void *), void *,
+-- 
+1.7.11.4
+
