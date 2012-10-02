@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2JBLm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:42:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48131 "EHLO mx1.redhat.com"
+	id S1752814Ab2JBLmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:42:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3579 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304Ab2JBLmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:42:55 -0400
-Date: Tue, 2 Oct 2012 13:42:18 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH] perf cgroups: Fix perf_cgroup_switch schedule in warning
-Message-ID: <20121002114218.GA5891@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752698Ab2JBLmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 07:42:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,523,1344236400"; 
+   d="scan'208";a="151464420"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        balbi@ti.com
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 3/4] dmaengine: dw_dmac: remove CLK dependency
+Date: Tue,  2 Oct 2012 14:42:00 +0300
+Message-Id: <1349178121-9105-4-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forgot to CC Stephane
-jirka
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
+This driver could be used on different platforms. Thus, the HAVE_CLK dependency
+is dropped away.
 
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-hi,
-I'm getting following warning when running basic cgroup perf stuff:
-(perf stat -a -e faults -G krava -- sleep 10)
+ drivers/dma/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
- WARNING: at kernel/events/core.c:397 perf_cgroup_switch+0x1c6/0x1e0()
- Hardware name: Montevina platform
- Modules linked in:
- Pid: 1173, comm: bash Not tainted 3.6.0+ #129
- Call Trace:
-  [<ffffffff8103736f>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff810dc025>] ? perf_ctx_lock+0x15/0x30
-  [<ffffffff810373ca>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810e0b96>] perf_cgroup_switch+0x1c6/0x1e0
-  [<ffffffff810e09d0>] ? perf_event_context_sched_in+0xc0/0xc0
-  [<ffffffff810e0fa9>] __perf_event_task_sched_in+0xa9/0x200
-  [<ffffffff81089c67>] ? lock_release_holdtime.part.3+0xc7/0x160
-  [<ffffffff810689f8>] finish_task_switch+0xb8/0xf0
-  [<ffffffff814fab2b>] __schedule+0x2eb/0x930
-  [<ffffffff814fca10>] ? _raw_spin_unlock_irq+0x30/0x60
-  [<ffffffff8108fd75>] ? trace_hardirqs_on_caller+0x105/0x190
-  [<ffffffff8108fe0d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff814fca1b>] ? _raw_spin_unlock_irq+0x3b/0x60
-  [<ffffffff81055238>] ? start_flush_work+0x108/0x180
-  [<ffffffff814fb289>] schedule+0x29/0x70
-  [<ffffffff814f8725>] schedule_timeout+0x1c5/0x210
-  [<ffffffff8105cecd>] ? add_wait_queue+0x4d/0x60
-  [<ffffffff814fc9c5>] ? _raw_spin_unlock_irqrestore+0x65/0x80
-  [<ffffffff8108fd75>] ? trace_hardirqs_on_caller+0x105/0x190
-  [<ffffffff8108fe0d>] ? trace_hardirqs_on+0xd/0x10
-  [<ffffffff814fc9a2>] ? _raw_spin_unlock_irqrestore+0x42/0x80
-  [<ffffffff812b5151>] n_tty_read+0x461/0x8b0
-  [<ffffffff8106d040>] ? try_to_wake_up+0x310/0x310
-  [<ffffffff812af2b9>] tty_read+0x99/0xf0
-  [<ffffffff81128fff>] vfs_read+0xaf/0x180
-  [<ffffffff8112911d>] sys_read+0x4d/0x90
-  [<ffffffff81504412>] system_call_fastpath+0x16/0x1b
-
-
-Looking at the code the cpuctx->cgrp condition seems legal,
-and need just some adjustment.
-
-However, I don't fully understand that code and could be
-wrong.. just want to get rid of probably wrong warning.. ;)
-
-thanks,
-jirka
-
-
----
-Changing WARN_ON_ONCE condition for PERF_CGROUP_SWIN leg.
-
-It's legal to have cpuctx->cgrp already defined, but it's
-not legal not to have events active at the same time.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/events/core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 7b9df35..733f794 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -394,7 +394,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
- 			}
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 677cd6e..df32537 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -83,7 +83,6 @@ config INTEL_IOP_ADMA
  
- 			if (mode & PERF_CGROUP_SWIN) {
--				WARN_ON_ONCE(cpuctx->cgrp);
-+				WARN_ON_ONCE(cpuctx->cgrp && !cpuctx->ctx.is_active);
-+
- 				/* set cgrp before ctxsw in to
- 				 * allow event_filter_match() to not
- 				 * have to pass task around
+ config DW_DMAC
+ 	tristate "Synopsys DesignWare AHB DMA support"
+-	depends on HAVE_CLK
+ 	select DMA_ENGINE
+ 	default y if CPU_AT32AP7000
+ 	help
 -- 
-1.7.7.6
+1.7.10.4
+
