@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab2JBAjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:39:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45438 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753350Ab2JBAjP (ORCPT
+	id S1756824Ab2JBAW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:22:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43333 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab2JBARr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:39:15 -0400
-Date: Tue, 2 Oct 2012 10:39:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the nfs tree
-Message-Id: <20121002103907.e43f5bb1cc9e6b85b3a51ef8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Oct_2012_10_39_07_+1000_FF/8XDs85xzEqtpr"
+	Mon, 1 Oct 2012 20:17:47 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: [PATCH v7 29/49] vfs: add a reval argument to user_path_parent
+Date: Mon,  1 Oct 2012 20:16:38 -0400
+Message-Id: <1349137018-21948-30-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
+References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Oct_2012_10_39_07_+1000_FF/8XDs85xzEqtpr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+...so we can tell it when to set LOOKUP_REVAL.
 
-Hi Trond,
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-After merging the nfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+diff --git a/fs/namei.c b/fs/namei.c
+index e0ee4b9..b73315d 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2187,15 +2187,20 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+  *     path-walking is complete.
+  */
+ static struct getname_info *
+-user_path_parent(int dfd, const char __user *path, struct nameidata *nd)
++user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
++		 unsigned int reval)
+ {
+ 	struct getname_info *s = getname(path);
+ 	int error;
++	unsigned int flags = LOOKUP_PARENT;
++
++	if (reval)
++		flags |= LOOKUP_REVAL;
+ 
+ 	if (IS_ERR(s))
+ 		return s;
+ 
+-	error = ginfo_lookup(dfd, s, LOOKUP_PARENT, nd);
++	error = ginfo_lookup(dfd, s, flags, nd);
+ 	if (error) {
+ 		putname(s);
+ 		return ERR_PTR(error);
+@@ -3343,7 +3348,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	struct dentry *dentry;
+ 	struct nameidata nd;
+ 
+-	name = user_path_parent(dfd, pathname, &nd);
++	name = user_path_parent(dfd, pathname, &nd, 0);
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
+ 
+@@ -3439,7 +3444,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+-	name = user_path_parent(dfd, pathname, &nd);
++	name = user_path_parent(dfd, pathname, &nd, 0);
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
+ 
+@@ -3834,13 +3839,13 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	struct getname_info *to;
+ 	int error;
+ 
+-	from = user_path_parent(olddfd, oldname, &oldnd);
++	from = user_path_parent(olddfd, oldname, &oldnd, 0);
+ 	if (IS_ERR(from)) {
+ 		error = PTR_ERR(from);
+ 		goto exit;
+ 	}
+ 
+-	to = user_path_parent(newdfd, newname, &newnd);
++	to = user_path_parent(newdfd, newname, &newnd, 0);
+ 	if (IS_ERR(to)) {
+ 		error = PTR_ERR(to);
+ 		goto exit1;
+-- 
+1.7.11.4
 
-fs/nfs/callback.c: In function 'nfs_minorversion_callback_svc_setup':
-fs/nfs/callback.c:206:21: error: 'ENOTSUP' undeclared (first use in this fu=
-nction)
-
-Caused by commit 141e1f553b6e ("NFSv4: Fix the minor version callback
-channel startup").
-
-I have used the nfs tree from next-20121001 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__2_Oct_2012_10_39_07_+1000_FF/8XDs85xzEqtpr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQajerAAoJEECxmPOUX5FEXKsP/RJTQ2qSVHap+AiQddDLnm1U
-kxvkD748u5T2A0wRzxfFBJ0rsVEPyT4eBZL9LCeJKJcoGdv6cHgkP+JWkwRwhv40
-gDsatVFw6ORqHizbOaAk2o510MthcvI5pMI5ogkikGYkjusJfBPIBNTh3drtDST4
-WLbvkxaanV0oL/cLE6woxC1rBHiYn55xzv3kWEAaIQXWo+MU7axDIy0m8+WpHYYV
-e/c2U39ZOkxyZssJS+i6N0dxYBBqNVtazdxo1QCSmzJZvkDKKFNzy6rp0CyYVz/3
-2SCJZTnLdyFsxXXFKr3GLY8WyIwlf0tMzzgpCvuNr4Sx2b4GsptBwNVwmYAduSYB
-33ygm1NGCAnRxzZT1kenc2+YD+r0HhSxWAgqleZIU0Lyke3/2wbViJAHcisqDNwZ
-018TlsxQABiPlctvy7Pf4BpYlL9y+QoswERJQP9CEJgYl1uGoiM/s3icpW8CISiJ
-glbBRCNFGsNjZKu2+HeEJWBcKaqk3y5t4a6r95rDNNizDCqmOO9ZxqayX5FUtdik
-tCR3YP132hEgzY9ukNHFFvS7g775VmP/EAUF+A/vZI65leA+npGwaq798S+4YQA2
-O88tAW6/kSOz7m/vJY3hkuRnTwZQxBg1lwtzuB/t5XE+YKgj2OGv4qKp0E3NQaok
-TpnEDhbp8h0zzlHmB09v
-=Tbp+
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Oct_2012_10_39_07_+1000_FF/8XDs85xzEqtpr--
