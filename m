@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab2JBQlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:41:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58243 "EHLO
+	id S932196Ab2JBQlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:41:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53866 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2JBQhQ (ORCPT
+	with ESMTP id S1755088Ab2JBQhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Oct 2012 12:37:16 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@infradead.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 11/17] ARM: mv78xx0: mark mv78xx0_timer_init as __init_refok
-Date: Tue,  2 Oct 2012 18:36:50 +0200
-Message-Id: <1349195816-2225-12-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Marc Zyngier <maz@misterjones.org>
+Subject: [PATCH 03/17] ARM: pxa: Wunused-result warning in viper board file
+Date: Tue,  2 Oct 2012 18:36:42 +0200
+Message-Id: <1349195816-2225-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
 References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:EC7p05dGVDFtyqMzNiRcLlVyC/bDD6NYiyAX6gRzDHE
- +u2fDPzP9dUO3EDtttDibAw6D7nLVr+zow/ic50OtvZmBTaWbx
- 5O9YkCR/Dge3n/JFbbVN3ZsJsn8f6NV7VkFP9HNq3ZHPK6WCPO
- YJA1WJq8zw6eFgvNPtmKdP0nwxgvyb+AJNdRldyijiKNvnN+0W
- +ANLV/wb8+XPvvu0g+b00RkotUIsAEREjks28qYb48UXSXzefF
- 78m7KbgPBknbpiHXuVQ1UkGOT9Tz5Xh/GL4KeXr4pu3LyvS84+
- 6OaWTCFQMVbeOm7Xn9VHyXmK8swwq7YqbyeGqL89cvn9vj532v
- p1wycBPGcGZXgXhV9SHYnm97maXB4XOAYCadLdFXl+SMqEC+gZ
- +oZO8PC6PAv0Q==
+X-Provags-ID: V02:K0:usoFP0SOu5ILcy84ibuD3ciuJc8x3lRXwcYrvJo2XlC
+ rAL1qz4eUhFJpoCpWUX4OHB/aWhyxn0ir0gu2FvXHxSh/RDPpF
+ EHUtA8MvIo23zN4bIffFEYyyhPgA27aknQ+HQKL+mYViqxZLh0
+ 0K/W/WBwPUNn6N6oEJ0a+BbqZ0lflcbQESXVC1KP8V2nnrwKy9
+ IKk/zYk20F/3xdooPPRFE3+N8oWOOKn3XxWo9zus6ifdZM3G8Z
+ Ab9tXMWJIalINGgan+cInLqp54He0ApyhRQjwovt08lxHM6TGT
+ XMNAUJyKSToysi13WqbFXNQlf5bhbVVunlVXWKeL+kM6GPKLGk
+ 2av89UDUg9dRUpM27DxXdJJphVXJucJdrXHjw1ng0Kz+mjefHF
+ IdzPAGlWem20w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sys_timer init function is only called at __init time,
-so it's safe to mark mv78xx0_timer_init as __init_refok,
-which allows us to call orion_time_init without getting
-a link time warning.
+Calling kstrtoul requires checking the result. In case of
+the viper_tpm_setup function, let's fail the __setup function
+if the number was invalid.
 
-Without this patch, building mv78xx0_defconfig results in:
+Without this patch, building viper_defconfig results in:
 
-WARNING: vmlinux.o(.text+0x15470): Section mismatch in reference from the function mv78xx0_timer_init() to the function .init.text:orion_time_init()
-The function mv78xx0_timer_init() references
-the function __init orion_time_init().
-This is often because mv78xx0_timer_init lacks a __init
-annotation or the annotation of orion_time_init is wrong.
+arch/arm/mach-pxa/viper.c: In function 'viper_tpm_setup':
+arch/arm/mach-pxa/viper.c:771:10: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result [-Wunused-result]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Marc Zyngier <maz@misterjones.org>
 ---
- arch/arm/mach-mv78xx0/common.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-pxa/viper.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-mv78xx0/common.c b/arch/arm/mach-mv78xx0/common.c
-index 3057f7d..e251ebc 100644
---- a/arch/arm/mach-mv78xx0/common.c
-+++ b/arch/arm/mach-mv78xx0/common.c
-@@ -341,7 +341,7 @@ void __init mv78xx0_init_early(void)
- 	orion_time_set_base(TIMER_VIRT_BASE);
+diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+index 130379f..ac733e9 100644
+--- a/arch/arm/mach-pxa/viper.c
++++ b/arch/arm/mach-pxa/viper.c
+@@ -768,8 +768,7 @@ static unsigned long viper_tpm;
+ 
+ static int __init viper_tpm_setup(char *str)
+ {
+-	strict_strtoul(str, 10, &viper_tpm);
+-	return 1;
++	return strict_strtoul(str, 10, &viper_tpm) >= 0;
  }
  
--static void mv78xx0_timer_init(void)
-+static void __init_refok mv78xx0_timer_init(void)
- {
- 	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
- 			IRQ_MV78XX0_TIMER_1, get_tclk());
+ __setup("tpm=", viper_tpm_setup);
 -- 
 1.7.10
 
