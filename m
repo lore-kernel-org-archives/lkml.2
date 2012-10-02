@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2JBUab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 16:30:31 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:30915 "EHLO relay.sw.ru"
+	id S1755476Ab2JBUdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:33:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57658 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab2JBUaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 16:30:30 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] proc: don't show nonexistent capabilities
-Date: Wed,  3 Oct 2012 00:30:32 +0400
-Message-Id: <1349209832-279922-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1752786Ab2JBUdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 16:33:04 -0400
+Date: Tue, 2 Oct 2012 16:32:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk,
+        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
+Subject: Re: [dm-devel] [PATCH v3 01/26] block: Fix a buffer overrun in
+ bio_integrity_split()
+Message-ID: <20121002203253.GA14471@redhat.com>
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+ <1348526106-17074-2-git-send-email-koverstreet@google.com>
+ <20121001212336.GA17165@redhat.com>
+ <20121001214241.GE26488@google.com>
+ <20121002140847.GD758@redhat.com>
+ <20121002202643.GQ26488@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002202643.GQ26488@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch it is really hard to interpret a bounding set,
-if CAP_LAST_CAP is unknown for a current kernel.
+On Tue, Oct 02, 2012 at 01:26:43PM -0700, Kent Overstreet wrote:
+> On Tue, Oct 02, 2012 at 10:08:47AM -0400, Vivek Goyal wrote:
+> > On Mon, Oct 01, 2012 at 02:42:41PM -0700, Kent Overstreet wrote:
+> > 
+> > [..]
+> > > Here's the new patch:
+> > > 
+> > > 
+> > > commit e270c9ca843b5c86d59431b0d7a676b7846946d6
+> > > Author: Kent Overstreet <koverstreet@google.com>
+> > > Date:   Mon Oct 1 14:41:08 2012 -0700
+> > > 
+> > >     block: Fix a buffer overrun in bio_integrity_split()
+> > >     
+> > >     bio_integrity_split() seemed to be confusing pointers and arrays -
+> > >     bip_vec in bio_integrity_payload is an array appended to the end of the
+> > >     payload, so the bio_vecs in struct bio_pair need to come immediately
+> > >     after the bio_integrity_payload they're for, and there was an assignment
+> > >     in bio_integrity_split() that didn't make any sense.
+> > >     
+> > >     Also, changed bio_integrity_split() to not refer to the bvecs embedded
+> > >     in struct bio_pair, in case there's padding between them and
+> > >     bip->bip_vec.
+> > >     
+> > >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > >     CC: Jens Axboe <axboe@kernel.dk>
+> > >     CC: Martin K. Petersen <martin.petersen@oracle.com>
+> > > 
+> > > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+> > > index a3f28f3..4ae22a8 100644
+> > > --- a/fs/bio-integrity.c
+> > > +++ b/fs/bio-integrity.c
+> > > @@ -694,15 +694,12 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+> > >  	bp->bio1.bi_integrity = &bp->bip1;
+> > >  	bp->bio2.bi_integrity = &bp->bip2;
+> > >  
+> > > -	bp->iv1 = bip->bip_vec[0];
+> > > -	bp->iv2 = bip->bip_vec[0];
+> > > +	*bp->bip1.bip_vec = bip->bip_vec[0];
+> > > +	*bp->bip2.bip_vec = bip->bip_vec[0];
+> > 
+> > I think this is horrible. Why not introduce bvec pointer in bip (like bio),
+> > to cover the case when bvec are not inline.
+> 
+> That's... exactly what the next patch in the series does.
 
-Non-existant capabilities can not be deleted from a bounding set
-with help of prctl.
+Yes, but if you want to push some of the these bug fixes in stable (as martin
+had said), we need to introduce that bip->bio_vec pointer early. Also that
+next patch is doing lot other other things like getting rid of bip_slabs
+and we don't require all that to fix this particular bug.
 
-E.g.: Here are two examples without/with this patch.
-CapBnd:	ffffffe0fdecffff
-CapBnd:	00000000fdecffff
+In fact I would say that it is beter to fix this blk integrity bug in a
+separate patchset so that it can be pushed out earlier.
 
-I suggest to hide non-existent capabilities. Here is two reasons.
-* It's logically and easier for using.
-* It helps to checkpoint-restore capabilities of tasks, because tasks
-can be restored on another kernel, where CAP_LAST_CAP is bigger.
-
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/linux/capability.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index d10b7ed..1642778 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -420,7 +420,8 @@ extern const kernel_cap_t __cap_init_eff_set;
- #else /* HAND-CODED capability initializers */
- 
- # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
--# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-+# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, \
-+					CAP_TO_MASK(CAP_LAST_CAP + 1) - 1 } })
- # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
- 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
- 				    CAP_FS_MASK_B1 } })
--- 
-1.7.1
-
+Thanks
+Vivek
