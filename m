@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab2JBVnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:43:41 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33196 "EHLO e3.ny.us.ibm.com"
+	id S1756668Ab2JBVpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:45:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8477 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab2JBVnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:43:39 -0400
-Date: Tue, 2 Oct 2012 14:43:27 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexander Graf <agraf@suse.de>, linux-nfs@vger.kernel.org,
-        Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, anton@samba.org,
-        skinsbursky@parallels.com, bfields@redhat.com,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
-Message-ID: <20121002214327.GA29218@linux.vnet.ibm.com>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
- <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
- <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
- <20120928151043.GA19102@fieldses.org>
- <2A52FC96-148C-4F7A-9950-E152E0C6698D@suse.de>
- <1349139509.3847.2.camel@pasglop>
+	id S1753908Ab2JBVps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 17:45:48 -0400
+Date: Tue, 2 Oct 2012 18:45:36 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ben Guthro <ben.guthro@gmail.com>, Ian Munsie <imunsie@au1.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf tool: Fix build for NO_DWARF=1 case
+Message-ID: <20121002214536.GA23354@infradead.org>
+References: <CAOvdn6WPUDqYPpHZip7dxVVXJXT0-zJOUCpgDGb=o+zqq98F0Q@mail.gmail.com>
+ <1349148496-sup-4820@delenn.ozlabs.ibm.com>
+ <CAOvdn6VELd9vPGyptmeBePsNsnQNtgXdgj4bYRfuLyz0cXsD9w@mail.gmail.com>
+ <20121002131049.GC6379@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1349139509.3847.2.camel@pasglop>
-X-Operating-System: Linux 3.2.0-31-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12100221-8974-0000-0000-00000ED56779
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00179273; UDB=6.00040600; UTC=2012-10-02
- 21:43:37
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121002131049.GC6379@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+Em Tue, Oct 02, 2012 at 03:10:49PM +0200, Jiri Olsa escreveu:
+> On Tue, Oct 02, 2012 at 07:39:23AM -0400, Ben Guthro wrote:
+> > Actually - I hadn't noticed these warnings before.
 
-On 02.10.2012 [10:58:29 +1000], Benjamin Herrenschmidt wrote:
-> On Mon, 2012-10-01 at 16:03 +0200, Alexander Graf wrote:
-> > Phew. Here we go :). It looks to be more of a PPC specific problem
-> > than it appeared as at first:
-> 
-> Ok, so I suspect the problem is the pushing down of the locks which
-> breaks with iommu backends that have a separate flush callback. In
-> that case, the flush moves out of the allocator lock.
-> 
-> Now we do call flush before we return, still, but it becomes racy
-> I suspect, but somebody needs to give it a closer look. I'm hoping
-> Anton or Nish will later today.
+> > After installing libdw-dev - the perf build completed successfully.
+> > Perhaps this should be fatal, rather than a warning?
 
-Started looking into this. If your suspicion were accurate, wouldn't the
-bisection have stopped at 0e4bc95d87394364f408627067238453830bdbf3
-("powerpc/iommu: Reduce spinlock coverage in iommu_alloc and
-iommu_free")?
+> attached patch fixies the issue for me. Adding Arnaldo to the loop.
 
-Alex, the error is reproducible, right? Does it go away by reverting
-that commit against mainline? Just trying to narrow down my focus.
+[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
+cc1: warnings being treated as errors
+arch/x86/util/dwarf-regs.c:72: error: no previous prototype for ‘get_arch_regstr’
+make: *** [/home/acme/git/build/perf/arch/x86/util/dwarf-regs.o] Error 1
+make: *** Waiting for unfinished jobs....
+make: Leaving directory `/home/git/linux/tools/perf'
+[acme@sandy linux]$
 
-Thanks,
-Nish
-
+- Arnaldo
