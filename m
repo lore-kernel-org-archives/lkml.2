@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab2JBPOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:14:17 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:58432 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab2JBPOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:14:15 -0400
-X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
-   d="scan'208";a="14897631"
-Date: Tue, 2 Oct 2012 16:13:15 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <sfr@canb.auug.org.au>, <JBeulich@suse.com>
-Subject: [PATCH] xen/Makefile: resolve merge conflict with 9fa5780beea1
-Message-ID: <alpine.DEB.2.02.1210021606000.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754388Ab2JBPO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:14:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27296 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754329Ab2JBPO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 11:14:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,524,1344236400"; 
+   d="scan'208";a="229033168"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: anish kumar <anish198519851985@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: How to schedule worker and threaded IRQ on same cpu/core
+Thread-Topic: How to schedule worker and threaded IRQ on same cpu/core
+Thread-Index: Ac2gmCa8Mz8HGOSiRo6E8/HEDKZlVv//qPCA//+gawCAAH+IAP//mOMw
+Date: Tue, 2 Oct 2012 15:14:22 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD2A26D7@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD2A1E0A@BGSMSX102.gar.corp.intel.com>
+	 <1349181465.1440.1.camel@anish-Inspiron-N5050>
+	 <D854C92F57B1B347B57E531E78D05EAD2A1EE5@BGSMSX102.gar.corp.intel.com>
+ <1349188326.1440.22.camel@anish-Inspiron-N5050>
+In-Reply-To: <1349188326.1440.22.camel@anish-Inspiron-N5050>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q92FEZ0v032524
 
-This patch is actually a merge conflict resolution between Konrad's Xen
-tree and the following commit:
+> On Tue, 2012-10-02 at 12:54 +0000, Pallala, Ramakrishna wrote:
+> > > > How can I schedule driver's worker and threaded IRQ on the same core?
+> > > >
+> > > > For work queue we have schedule_delayed_work_on () API available.
+> > > > But how to schedule the threaded IRQ on the same core where my
+> > > > worker
+> > > thread is going to run?
+> > > Why do you need to worry about where your worker thread is going to run?
+> > > Or IOW what use case do you have in mind?
+> >
+> > In my driver I can get two independent events(IRQ and kernel
+> > notification). One will be handled by Threaded IRQ and other will be
+> > handled by a worker and the order is not guaranteed and with two cores
+> Sometimes both workers are being scheduled  parallel.
+> So what is the problem even if they run in parallel, it would be really help if we
+> know what problem you are trying to solve?
+> Even if you want to sync between these two then you can have some
+> synchronisation mechanism between the two.
+> What is the advantage you are going to get if they run on same core?
+> 
+> Sorry but these answers would really help community in resolving your problem.
 
-commit 9fa5780beea1274d498a224822397100022da7d4
-Author: Jan Beulich <JBeulich@suse.com>
-Date:   Tue Sep 18 12:23:02 2012 +0100
+I think I got what I was looking for...
+synchronize_irq()
 
-    USB EHCI/Xen: propagate controller reset information to hypervisor
+basically I need to wait/pause my worker thread execution until my threaded handler is complete.
 
+Thanks for response.
 
-Compile dbgp.o only if CONFIG_USB is defined.
-After all xen_dbgp_op relies on hcd_to_bus.
-
-This patch should be applied on top of 
-
-http://marc.info/?l=linux-kernel&m=134919011231980&w=2
-
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-diff --cc drivers/xen/Makefile
-index a4a3cab,275abfc..33711ad
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@@ -4,8 -8,11 +8,12 @@@ obj-y	+= xenbus
-  nostackp := $(call cc-option, -fno-stack-protector)
-  CFLAGS_features.o			:= $(nostackp)
-  
-+ dom0-$(CONFIG_PCI) += pci.o
-+ dom0-$(CONFIG_ACPI) += acpi.o
-+ dom0-$(CONFIG_X86) += pcpu.o
-++dom0-$(CONFIG_USB) += dbgp.o
-+ obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
-  obj-$(CONFIG_BLOCK)			+= biomerge.o
-- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-  obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
-  obj-$(CONFIG_XEN_BALLOON)		+= xen-balloon.o
-  obj-$(CONFIG_XEN_SELFBALLOONING)	+= xen-selfballoon.o
+Thanks,
+Ram
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
