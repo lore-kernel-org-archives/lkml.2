@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2JBQhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:37:43 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:33178 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226Ab2JBQhf (ORCPT
+	id S1755293Ab2JBQiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:38:10 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55907 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2JBQiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:35 -0400
-X-IronPort-AV: E=Sophos;i="4.80,524,1344211200"; 
-   d="scan'208";a="14899673"
-Date: Tue, 2 Oct 2012 17:36:34 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: make dtbs in linus/master
-Message-ID: <alpine.DEB.2.02.1210021725320.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 2 Oct 2012 12:38:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <13458.1349122608@warthog.procyon.org.uk>
+References: <13458.1349122608@warthog.procyon.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 2 Oct 2012 09:37:44 -0700
+X-Google-Sender-Auth: vI0iK_ItxiEkEOoDZn2_nhrYYbA
+Message-ID: <CA+55aFyu9rJH0x9eAF7A=m64nSCRtcPxdE4MR3+ZSd8qxEbwFw@mail.gmail.com>
+Subject: Re: [GIT PULL] Disintegrate the User API from the kernel headers
+To: David Howells <dhowells@redhat.com>
+Cc: arnd@arndb.de, hpa@zytor.com, alan@lxorguk.ukuu.org.uk,
+        fengguang.wu@intel.com, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I am testing linus/master after the recent merge with the arm-soc tree
-and I find that if I choose:
+On Mon, Oct 1, 2012 at 1:16 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> Could you please pull this tree at the _end_ of this merge window?
 
-ARM system type
-  1. Allow multiple platforms to be selected (ARCH_MULTIPLATFORM) (NEW)
-  2. ARM Ltd. Integrator family (ARCH_INTEGRATOR)
-  3. ARM Ltd. RealView family (ARCH_REALVIEW)
->  4. ARM Ltd. Versatile family (ARCH_VERSATILE)
+At the KS you said you'd be able to split this up into a preparatory
+patch. That doesn't seem to have happened.
 
-in my kernel config, then "make dtbs" doesn't work.
-However if I choose ARCH_MULTIPLATFORM then it works properly.
+The whole "at the end of the merge window" tends to be something I
+hate doing anyway, but this merge window I'll be traveling at the end.
 
-Is it expected?
+The whole "this pull is magical" thing just isn't working.
 
-Cheers,
-
-Stefano
+                 Linus
