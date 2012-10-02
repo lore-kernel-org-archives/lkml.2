@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2JBP0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 11:26:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48885 "EHLO
+	id S1754344Ab2JBPaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 11:30:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52130 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab2JBP0M (ORCPT
+	with ESMTP id S1753597Ab2JBPao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 11:26:12 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
+	Tue, 2 Oct 2012 11:30:44 -0400
+Message-ID: <1349191833.14338.1.camel@phoenix>
+Subject: [PATCH] extcon: Fix kerneldoc for extcon_set_cable_state and
+ extcon_set_cable_state_
+From: Axel Lin <axel.lin@ingics.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, jbottomley@parallels.com
-Subject: [PATCH 2/3] virtio-scsi: fix LUNs greater than 255
-Date: Tue,  2 Oct 2012 17:25:47 +0200
-Message-Id: <1349191548-7120-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1349191548-7120-1-git-send-email-pbonzini@redhat.com>
-References: <1349191548-7120-1-git-send-email-pbonzini@redhat.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Tue, 02 Oct 2012 23:30:33 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio-scsi needs to report LUNs greater than 256 using the "flat"
-format.  Because the Linux SCSI layer just maps the SCSI LUN to
-an u32, without any parsing, these end up in the range from 16640
-to 32767.  Fix max_lun to account for the possibility that logical
-unit numbers are encoded with the "flat" format.
-
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/scsi/virtio_scsi.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/extcon/extcon-class.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 7554d78..a7cf726 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -677,7 +677,11 @@ static int __devinit virtscsi_probe(struct virtio_device *vdev)
- 	cmd_per_lun = virtscsi_config_get(vdev, cmd_per_lun) ?: 1;
- 	shost->cmd_per_lun = min_t(u32, cmd_per_lun, shost->can_queue);
- 	shost->max_sectors = virtscsi_config_get(vdev, max_sectors) ?: 0xFFFF;
--	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1;
-+
-+	/* LUNs > 256 are reported with format 1, so they go in the range
-+	 * 16640-32767.
-+	 */
-+	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1 + 0x4000;
- 	shost->max_id = num_targets;
- 	shost->max_channel = 0;
- 	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 946a318..337bbb4 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -362,7 +362,7 @@ int extcon_get_cable_state(struct extcon_dev *edev, const char *cable_name)
+ EXPORT_SYMBOL_GPL(extcon_get_cable_state);
+ 
+ /**
+- * extcon_get_cable_state_() - Set the status of a specific cable.
++ * extcon_set_cable_state_() - Set the status of a specific cable.
+  * @edev:	the extcon device that has the cable.
+  * @index:	cable index that can be retrieved by extcon_find_cable_index().
+  * @cable_state:	the new cable status. The default semantics is
+@@ -382,7 +382,7 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
+ EXPORT_SYMBOL_GPL(extcon_set_cable_state_);
+ 
+ /**
+- * extcon_get_cable_state() - Set the status of a specific cable.
++ * extcon_set_cable_state() - Set the status of a specific cable.
+  * @edev:	the extcon device that has the cable.
+  * @cable_name:	cable name.
+  * @cable_state:	the new cable status. The default semantics is
 -- 
-1.7.1
+1.7.9.5
+
 
 
