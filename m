@@ -1,153 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab2JBCSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 22:18:10 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:56873 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178Ab2JBCSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 22:18:08 -0400
-Date: Mon, 1 Oct 2012 20:18:04 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        Peter.Huewe@infineon.com
-Subject: [PATCHv2] TPM: Issue TPM_STARTUP at driver load if the TPM has not
- been started
-Message-ID: <20121002021804.GB8812@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752865Ab2JBCVg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 22:21:36 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:34396 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2JBCVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Oct 2012 22:21:34 -0400
+Message-ID: <1349144167.5876.13.camel@trivette>
+Subject: Re: [PATCH v2 1/2] hwmon: (ads7828) driver cleanup
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, Steve Hardy <shardy@redhat.com>
+Date: Mon, 01 Oct 2012 22:16:07 -0400
+In-Reply-To: <20121002010705.GB2437@roeck-us.net>
+References: <1349133384-5181-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20121002010705.GB2437@roeck-us.net>
+Organization: Savoir-faire Linux Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPM will respond to TPM_GET_CAP with TPM_ERR_INVALID_POSTINIT if
-TPM_STARTUP has not been issued. Detect this and automatically
-issue TPM_STARTUP.
+Hi Guenter,
 
-This is for embedded applications where the kernel is the first thing
-to touch the TPM.
+On Mon, 2012-10-01 at 18:07 -0700, Guenter Roeck wrote:
+> On Mon, Oct 01, 2012 at 07:16:23PM -0400, Vivien Didelot wrote:
+> > * Remove unused macros;
+> > * Point to the documentation;
+> > * Coding Style fixes (Kernel Doc, spacing);
+> > * Move driver declaration to avoid adding function prototypes.
+> > 
+> > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> 
+> Hi Vivien,
+> 
+> > ---
+> >  drivers/hwmon/ads7828.c | 91 +++++++++++++++++++++++--------------------------
+> >  1 file changed, 43 insertions(+), 48 deletions(-)
+> > 
+> > diff --git a/drivers/hwmon/ads7828.c b/drivers/hwmon/ads7828.c
+> > index bf3fdf4..fb3010d 100644
+> > --- a/drivers/hwmon/ads7828.c
+> > +++ b/drivers/hwmon/ads7828.c
+> > @@ -6,7 +6,7 @@
+> >   *
+> >   * Written by Steve Hardy <shardy@redhat.com>
+> >   *
+> > - * Datasheet available at: http://focus.ti.com/lit/ds/symlink/ads7828.pdf
+> > + * For further information, see the Documentation/hwmon/ads7828 file.
+> >   *
+> >   * This program is free software; you can redistribute it and/or modify
+> >   * it under the terms of the GNU General Public License as published by
+> > @@ -34,14 +34,12 @@
+> >  #include <linux/mutex.h>
+> >  
+> >  /* The ADS7828 registers */
+> > -#define ADS7828_NCH 8 /* 8 channels of 12-bit A-D supported */
+> > -#define ADS7828_CMD_SD_SE 0x80 /* Single ended inputs */
+> > -#define ADS7828_CMD_SD_DIFF 0x00 /* Differential inputs */
+> > -#define ADS7828_CMD_PD0 0x0 /* Power Down between A-D conversions */
+> > -#define ADS7828_CMD_PD1 0x04 /* Internal ref OFF && A-D ON */
+> > -#define ADS7828_CMD_PD2 0x08 /* Internal ref ON && A-D OFF */
+> > -#define ADS7828_CMD_PD3 0x0C /* Internal ref ON && A-D ON */
+> > -#define ADS7828_INT_VREF_MV 2500 /* Internal vref is 2.5V, 2500mV */
+> > +#define ADS7828_NCH		8	/* 8 channels supported */
+> > +#define ADS7828_CMD_SD_SE	0x80	/* Single ended inputs */
+> > +#define ADS7828_CMD_SD_DIFF	0x00	/* Differential inputs */
+> > +#define ADS7828_CMD_PD1		0x04	/* Internal ref OFF && A/D ON */
+> > +#define ADS7828_CMD_PD3		0x0C	/* Internal ref ON && A/D ON */
+> > +#define ADS7828_INT_VREF_MV	2500	/* Internal vref is 2.5V, 2500mV */
+> >  
+> >  /* Addresses to scan */
+> >  static const unsigned short normal_i2c[] = { 0x48, 0x49, 0x4a, 0x4b,
+> > @@ -59,25 +57,26 @@ module_param(vref_mv, int, S_IRUGO);
+> >  static u8 ads7828_cmd_byte; /* cmd byte without channel bits */
+> >  static unsigned int ads7828_lsb_resol; /* resolution of the ADC sample lsb */
+> >  
+> > -/* Each client has this additional data */
+> > +/**
+> > + * struct ads7828_data - client specific data
+> > + * @hwmon_dev:		The hwmon device.
+> > + * @update_lock:	Mutex protecting updates.
+> > + * @valid:		Validity flag.
+> > + * @last_updated:	Last updated time (in jiffies).
+> > + * @adc_input:		ADS7828_NCH samples.
+> > + */
+> This isn't really an externally visible API, so I wonder if it provides value to
+> document it this way. No strong opinion, just wondering.
+I found the version below a bit cluttered, that's why I used the
+KernelDoc notation. Would you prefer something else, like right-aligned
+comments?
+> 
+> >  struct ads7828_data {
+> >  	struct device *hwmon_dev;
+> > -	struct mutex update_lock; /* mutex protect updates */
+> > -	char valid; /* !=0 if following fields are valid */
+> > -	unsigned long last_updated; /* In jiffies */
+> > -	u16 adc_input[ADS7828_NCH]; /* ADS7828_NCH 12-bit samples */
+> > +	struct mutex update_lock;
+> > +	char valid;
+> > +	unsigned long last_updated;
+> > +	u16 adc_input[ADS7828_NCH];
+> >  };
+> >  
+> > -/* Function declaration - necessary due to function dependencies */
+> > -static int ads7828_detect(struct i2c_client *client,
+> > -			  struct i2c_board_info *info);
+> > -static int ads7828_probe(struct i2c_client *client,
+> > -			 const struct i2c_device_id *id);
+> > -
+> >  static inline u8 channel_cmd_byte(int ch)
+> >  {
+> >  	/* cmd byte C2,C1,C0 - see datasheet */
+> > -	u8 cmd = (((ch>>1) | (ch&0x01)<<2)<<4);
+> > +	u8 cmd = (((ch >> 1) | (ch & 0x01) << 2) << 4);
+> >  	cmd |= ads7828_cmd_byte;
+> >  	return cmd;
+> >  }
+> > @@ -120,9 +119,8 @@ static ssize_t show_in(struct device *dev, struct device_attribute *da,
+> >  		ads7828_lsb_resol)/1000);
+> 
+> Can you fix this one as well since you are at it ? There is another one in sensors_ads7828_init().
+> [ Wonder why checkpatch doesn't complain about it ]
+Sure.
+> 
+> >  }
+> >  
+> > -#define in_reg(offset)\
+> > -static SENSOR_DEVICE_ATTR(in##offset##_input, S_IRUGO, show_in,\
+> > -	NULL, offset)
+> > +#define in_reg(offset) \
+> > +static SENSOR_DEVICE_ATTR(in##offset##_input, S_IRUGO, show_in, NULL, offset)
+> >  
+> This causes a checkpatch error - checkpatch doesn't like the multi-line macros.
+My bad, I'm on a 2.6.37 box, I didn't checkout the upstream version of
+checkpatch.pl too.
+> 
+> >  in_reg(0);
+> >  in_reg(1);
+> 
+> Since it seems to be hardly worth it anyway (yes, I know there are 8 of them),
+> would be great if you can just get rid of the macro and just use
+> 	static SENSOR_DEVICE_ATTR(in[1-8]_input, ...)
+> instead.
+Ok.
+> 
+> > @@ -158,25 +156,6 @@ static int ads7828_remove(struct i2c_client *client)
+> >  	return 0;
+> >  }
+> >  
+> > -static const struct i2c_device_id ads7828_id[] = {
+> > -	{ "ads7828", 0 },
+> > -	{ }
+> > -};
+> > -MODULE_DEVICE_TABLE(i2c, ads7828_id);
+> > -
+> > -/* This is the driver that will be inserted */
+> > -static struct i2c_driver ads7828_driver = {
+> > -	.class = I2C_CLASS_HWMON,
+> > -	.driver = {
+> > -		.name = "ads7828",
+> > -	},
+> > -	.probe = ads7828_probe,
+> > -	.remove = ads7828_remove,
+> > -	.id_table = ads7828_id,
+> > -	.detect = ads7828_detect,
+> > -	.address_list = normal_i2c,
+> > -};
+> > -
+> >  /* Return 0 if detection is successful, -ENODEV otherwise */
+> >  static int ads7828_detect(struct i2c_client *client,
+> >  			  struct i2c_board_info *info)
+> > @@ -247,13 +226,29 @@ exit:
+> >  	return err;
+> >  }
+> >  
+> > +static const struct i2c_device_id ads7828_ids[] = {
+> > +	{ "ads7828", 0 },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, ads7828_ids);
+> > +
+> > +static struct i2c_driver ads7828_driver = {
+> > +	.class = I2C_CLASS_HWMON,
+> > +	.driver = {
+> > +		.name = "ads7828",
+> > +	},
+> > +	.address_list = normal_i2c,
+> > +	.detect = ads7828_detect,
+> > +	.probe = ads7828_probe,
+> > +	.remove = ads7828_remove,
+> > +	.id_table = ads7828_ids,
+> > +};
+> > +
+> >  static int __init sensors_ads7828_init(void)
+> >  {
+> >  	/* Initialize the command byte according to module parameters */
+> > -	ads7828_cmd_byte = se_input ?
+> > -		ADS7828_CMD_SD_SE : ADS7828_CMD_SD_DIFF;
+> > -	ads7828_cmd_byte |= int_vref ?
+> > -		ADS7828_CMD_PD3 : ADS7828_CMD_PD1;
+> > +	ads7828_cmd_byte = se_input ? ADS7828_CMD_SD_SE : ADS7828_CMD_SD_DIFF;
+> > +	ads7828_cmd_byte |= int_vref ? ADS7828_CMD_PD3 : ADS7828_CMD_PD1;
+> >  
+> >  	/* Calculate the LSB resolution */
+> >  	ads7828_lsb_resol = (vref_mv*1000)/4096;
+> > @@ -267,7 +262,7 @@ static void __exit sensors_ads7828_exit(void)
+> >  }
+> >  
+> >  MODULE_AUTHOR("Steve Hardy <shardy@redhat.com>");
+> > -MODULE_DESCRIPTION("ADS7828 driver");
+> > +MODULE_DESCRIPTION("Driver for TI ADS7828 A/D converter");
+> >  MODULE_LICENSE("GPL");
+> >  
+> >  module_init(sensors_ads7828_init);
+> > -- 
+> > 1.7.11.4
+> > 
+> > 
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/tpm.c |   43 +++++++++++++++++++++++++++++++++++++++----
- drivers/char/tpm/tpm.h |    6 ++++++
- 2 files changed, 45 insertions(+), 4 deletions(-)
-
-changes in v2: 
- - Created a tpm_startup function as per Kent's comment
- - Fixed the TPM_ST_* constants to be 16 bit
- - Provide ST_STATE and ST_DEACTIVATED constants for future users
-
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 817f0ee..5d79093 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -473,7 +473,7 @@ static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
- 		return -EFAULT;
- 
- 	err = be32_to_cpu(cmd->header.out.return_code);
--	if (err != 0)
-+	if (err != 0 && desc)
- 		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
- 
- 	return err;
-@@ -489,6 +489,16 @@ static const struct tpm_input_header tpm_getcap_header = {
- 	.ordinal = TPM_ORD_GET_CAP
- };
- 
-+#define TPM_ORD_STARTUP cpu_to_be32(153)
-+#define TPM_ST_CLEAR cpu_to_be16(1)
-+#define TPM_ST_STATE cpu_to_be16(2)
-+#define TPM_ST_DEACTIVATED cpu_to_be16(3)
-+static const struct tpm_input_header tpm_startup_header = {
-+	.tag = TPM_TAG_RQU_COMMAND,
-+	.length = cpu_to_be32(12),
-+	.ordinal = TPM_ORD_STARTUP
-+};
-+
- ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
- 		   const char *desc)
- {
-@@ -532,6 +542,15 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
- }
- EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
- 
-+static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
-+{
-+	struct tpm_cmd_t start_cmd;
-+	start_cmd.header.in = tpm_startup_header;
-+	start_cmd.params.startup_in.startup_type = startup_type;
-+	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
-+			    "attempting to start the TPM");
-+}
-+
- int tpm_get_timeouts(struct tpm_chip *chip)
- {
- 	struct tpm_cmd_t tpm_cmd;
-@@ -545,11 +564,27 @@ int tpm_get_timeouts(struct tpm_chip *chip)
- 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
- 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
- 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
-+	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
- 
--	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
--			"attempting to determine the timeouts");
--	if (rc)
-+	if (rc == TPM_ERR_INVALID_POSTINIT) {
-+		/* The TPM is not started, we are the first to talk to it.
-+		   Execute a startup command. */
-+		dev_info(chip->dev, "Issuing TPM_STARTUP");
-+		if (tpm_startup(chip, TPM_ST_CLEAR))
-+			return rc;
-+
-+		tpm_cmd.header.in = tpm_getcap_header;
-+		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
-+		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
-+		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
-+		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, 0);
-+	}
-+	if (rc) {
-+		dev_err(chip->dev,
-+			"A TPM error (%d) occurred attempting to determine the timeouts\n",
-+			rc);
- 		goto duration;
-+	}
- 
- 	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
- 	    be32_to_cpu(tpm_cmd.header.out.length)
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 917f727..2d583ef 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -41,6 +41,7 @@ enum tpm_addr {
- #define TPM_WARN_DOING_SELFTEST 0x802
- #define TPM_ERR_DEACTIVATED     0x6
- #define TPM_ERR_DISABLED        0x7
-+#define TPM_ERR_INVALID_POSTINIT 38
-
- #define TPM_HEADER_SIZE		10
- extern ssize_t tpm_show_pubek(struct device *, struct device_attribute *attr,
-@@ -269,6 +270,10 @@ struct tpm_pcrextend_in {
- 	u8	hash[TPM_DIGEST_SIZE];
- }__attribute__((packed));
- 
-+struct tpm_startup_in {
-+	__be16	startup_type;
-+} __packed;
-+
- typedef union {
- 	struct	tpm_getcap_params_out getcap_out;
- 	struct	tpm_readpubek_params_out readpubek_out;
-@@ -277,6 +282,7 @@ typedef union {
- 	struct	tpm_pcrread_in	pcrread_in;
- 	struct	tpm_pcrread_out	pcrread_out;
- 	struct	tpm_pcrextend_in pcrextend_in;
-+	struct tpm_startup_in startup_in;
- } tpm_cmd_params;
- 
- struct tpm_cmd_t {
--- 
-1.7.4.1
+Thanks for your comments,
+Vivien
 
