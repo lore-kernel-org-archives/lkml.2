@@ -1,110 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2JBSRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 14:17:18 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62288 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab2JBSQ4 (ORCPT
+	id S1755504Ab2JBSSi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 14:18:38 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43198 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2JBSSe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 14:16:56 -0400
-Date: Tue, 2 Oct 2012 11:16:12 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jan Beulich <JBeulich@suse.com>
-cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Jamie Gloudon <jamie.gloudon@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: x86_64: wrong DirectMap kB
-In-Reply-To: <506B141F020000780009F19A@nat28.tlf.novell.com>
-Message-ID: <alpine.LSU.2.00.1210021048110.1348@eggly.anvils>
-References: <alpine.LSU.2.00.1210010116570.6566@eggly.anvils> <506B141F020000780009F19A@nat28.tlf.novell.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 2 Oct 2012 14:18:34 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
+Date: Tue, 2 Oct 2012 11:17:51 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: RE: [RFC] mm: add support for zsmalloc and zcache
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com>
+ <505CB9BC.8040905@linux.vnet.ibm.com>
+ <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
+ <50609794.8030508@linux.vnet.ibm.com>
+ <b34c65c9-4b25-431d-8b82-cbe911126be9@default>
+ <5064B647.3000906@linux.vnet.ibm.com>
+ <76d1a3f1-efc5-48b5-b485-604a94adcc1d@default>
+ <506B2C4B.3080508@linux.vnet.ibm.com>
+In-Reply-To: <506B2C4B.3080508@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012, Jan Beulich wrote:
-> >>> On 01.10.12 at 10:37, Hugh Dickins <hughd@google.com> wrote:
-> > I noticed yesterday that the DirectMap counts at the bottom of x86_64's
-> > /proc/meminfo are wrong on v3.5 and v3.6.  For example, I happen to have
-> > booted this laptop with mem=700M to run a test, but /proc/meminfo shows
-> > 
-> > DirectMap4k:        4096 kB
-> > DirectMap2M:    18446744073709547520 kB
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [RFC] mm: add support for zsmalloc and zcache
 > 
-> I cannot see such odd effect with "mem="; with I can (for any
-                               without
-> value up to around 1G).
-
-Yes, only with a small "mem=" was my 2M number so low that it actually
-wrapped around to look so obviously wrong - I presume once pat came to
-carve a piece out of 0.
-
-But even without "mem=" the DirectMap numbers were wrong, adding up
-to less than the MemTotal: I did show numbers to make that clearer to
-Jamie yesterday, but missed that all but lkml had dropped from the Cc.
-
+> On 09/27/2012 05:07 PM, Dan Magenheimer wrote:
+> > Of course, I'm of the opinion that neither zcache1 nor
+> > zcache2 would be likely to be promoted for at least another
+> > cycle or two, so if you go with zcache2+zsmalloc as the compromise
+> > and it still takes six months for promotion, I hope you don't
+> > blame that on the "rewrite". ;-)
+> >
+> > Anyway, looking forward (hopefully) to working with you on
+> > a good compromise.  It would be nice to get back to coding
+> > and working together on a single path forward for zcache
+> > as there is a lot of work to do!
 > 
-> > Or if I boot with the full amount of physical memory, the DirectMap
-> > numbers do not add up to the full amount of physical memory, as they
-> > used to do on v3.4 and before.
+> We want to see zcache moving forward so that it can get out of staging
+> and into the hands of end users.  From the direction the discussion
+> has taken, replacing zcache with the new code appears to be the right
+> compromise for the situation.  Moving to the new zcache code resets
+> the clock so I would like to know that we're all on the same track...
 > 
-> That one I can see how could have happened, in that said patch
-> went a little too far: Dropping the "pages" increments from
-> phys_p[um]d_init() is necessary only for the hotplug case (as
-> otherwise duplicating accounting already done earlier), while
-> at boot time we would want to do the accounting.
-> 
-> > Whilst I've not yet tried reverting it, I strongly suspect your
-> > 20167d3421a0 "x86-64: Fix accounting in kernel_physical_mapping_init()".
-> > 
-> > Either it was a complete misunderstanding, totally bogus, and should
-> > simply be reverted; or perhaps you really noticed something wrong in
-> > your code inspection, but didn't get the fix quite right?
-> 
-> The latter, apparently. The patch below should fix both aspects.
+> 1- Promotion must be the top priority, focus needs to be on making the
+> code production ready rather than adding more features.
 
-Thanks, Jan, certainly this patch puts my "mem=700M" DirectMap numbers
-back to exactly what I would expect; and without any "mem=", the ~8GB
-total of DirectMap4k and DirectMap2M back to what it was with v3.4.
+Agreed.
 
-I'm wording it like that because these days I see 2048 kB of 4k instead
-of 4096 kB of 4k, but that's most probably due to other differences.
+> 2- The code is in the community and development must be done in
+> public, no further large private rewrites.
 
-Hugh
+Agreed.
 
-> 
-> Jan
-> 
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -386,7 +386,8 @@ phys_pte_init(pte_t *pte_page, unsigned 
->  		 * these mappings are more intelligent.
->  		 */
->  		if (pte_val(*pte)) {
-> -			pages++;
-> +			if (!after_bootmem)
-> +				pages++;
->  			continue;
->  		}
->  
-> @@ -451,6 +452,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned 
->  			 * attributes.
->  			 */
->  			if (page_size_mask & (1 << PG_LEVEL_2M)) {
-> +				if (!after_bootmem)
-> +					pages++;
->  				last_map_addr = next;
->  				continue;
->  			}
-> @@ -526,6 +529,8 @@ phys_pud_init(pud_t *pud_page, unsigned 
->  			 * attributes.
->  			 */
->  			if (page_size_mask & (1 << PG_LEVEL_1G)) {
-> +				if (!after_bootmem)
-> +					pages++;
->  				last_map_addr = next;
->  				continue;
->  			}
+> 3- Benchmarks need to be agreed on, Mel has suggested some of the
+> MMTests. We need a way to talk about performance so we can make
+> comparisions, avoid regressions, and talk about promotion criteria.
+> They should be something any developer can run.
+
+Agreed.
+
+> 4- Let's investigate breaking ramster out of zcache so that zcache
+> remains a separately testable building block; Konrad was looking at
+> this I believe.  RAMSTer adds another functional mode for zcache and
+> adds to the difficulty of validating patches.  Not every developer
+> has a cluster of machines to validate RAMSter.
+
+In zcache2 (which is now in Linus' 3.7-rc0 tree in the ramster directory),
+ramster is already broken out.  It can be disabled either at compile-time
+(simply by not specifying CONFIG_RAMSTER) or at run-time (by using
+"zcache" as the kernel boot parameter instead of "ramster").
+
+So... also agreed.  RAMster will not be allowed to get in the
+way of promotion or performance as long as any reasonable attempt
+is made to avoid breaking the existing hooks to RAMster.
+(This only because I expect future functionality to also
+use these hooks so would like to avoid breaking them, if possible.)
+
+Does this last clarification work for you, Seth?
+
+If so, <shake hands> and move forward?  What do you see as next steps?
+
+Dan
