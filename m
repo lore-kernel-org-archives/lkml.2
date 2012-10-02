@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab2JBCW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 22:22:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41892 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab2JBCW4 (ORCPT
+	id S1757952Ab2JBCb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 22:31:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48024 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab2JBCZI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 22:22:56 -0400
+	Mon, 1 Oct 2012 22:25:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349135827-24790-1-git-send-email-olof@lixom.net>
-References: <1349135827-24790-1-git-send-email-olof@lixom.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 1 Oct 2012 19:22:34 -0700
-X-Google-Sender-Auth: 5ZMqm9lOkdhreKrGQDj585FXhVc
-Message-ID: <CA+55aFwoDOdKv9wcqEPkE76+w2TCz+419qp94T3_70jK9dR3-A@mail.gmail.com>
-Subject: Re: [GIT PULL 0/12] ARM: soc: updates for 3.7, first batch
-To: Olof Johansson <olof@lixom.net>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120928232858.GT30928@sortiz-mobl>
+References: <1348222014-15927-1-git-send-email-haojian.zhuang@gmail.com>
+	<1348222014-15927-2-git-send-email-haojian.zhuang@gmail.com>
+	<20120928232858.GT30928@sortiz-mobl>
+Date: Tue, 2 Oct 2012 10:25:06 +0800
+Message-ID: <CAN1soZyAB3w=TQndi3ZcETFMp8QtZJJKcy0KbbLhg6hQ1Fu4Uw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] mfd: 88pm860x: use irqdomain
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 4:56 PM, Olof Johansson <olof@lixom.net> wrote:
+On Sat, Sep 29, 2012 at 7:28 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Haojian:
 >
-> Here is the first batch of pull requests for arm-soc for this merge
-> window. Some of them are tiny, and we will probably start to combine
-> them into slightly larger misc branches in the future. I didn't do it
-> this time around since the dependencies between branches ended up quite
-> complex this time around.
+> On Fri, Sep 21, 2012 at 06:06:51PM +0800, Haojian Zhuang wrote:
+>> @@ -593,13 +610,9 @@ static int __devinit device_irq_init(struct pm860x_chip *chip,
+>>                               : chip->companion;
+>>       unsigned char status_buf[INT_STATUS_NUM];
+>>       unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
+>> -     int i, data, mask, ret = -EINVAL;
+> That one breaks the build:
+>
+> drivers/mfd/88pm860x-core.c: In function ‘device_irq_init’:
+> drivers/mfd/88pm860x-core.c:628:7: error: ‘i’ undeclared (first use in this
+> function)
+> drivers/mfd/88pm860x-core.c:628:7: note: each undeclared identifier is
+> reported only once for each function it appears in
+> drivers/mfd/88pm860x-core.c:629:3: error: ‘__irq’ undeclared (first use in
+> this function)
+> make[2]: *** [drivers/mfd/88pm860x-core.o] Error 1
+>
+> I removed this patchset until it builds...
+>
+I'm sorry for inconvenience. Now fix it.
 
-Ok, I've merged them all. As usual, my end result is slightly
-different from yours, although the differences are pretty small.
-
- - I added exynos4210-trats.dtb to the "dtb-$(CONFIG_ARCH_EXYNOS)"
-case in arch/arm/boot/dts/Makefile
-
-   That seemed to be the right thing, otherwise that dtb file isn't
-actually accessed from anything. Hmm?
-
- - Commit dbc04161048d ("ARM: OMAP: Split plat/hardware.h, use local
-soc.h for omap2+") added the line
-
-    #include "soc.h"
-
-   to arch/arm/mach-omap2/omap_l3_noc.c, and I left it in as it moved
-into drivers/bus/.
-
-   My resolution is quite possibly wrong, but I didn't know what the
-right thing to do was. Please double-check.
-
- - non-semantic order/whitespace difference for
-CONFIG_CLKSRC_ARM_GENERIC in drivers/clocksource/Makefile.
-
-   I didn't want to mix the generic case up with the random cases.
-
-Anyway, you should double-check the merges, the "soc.h" one in
-particular is suspect.
-
-          Linus
+Regards
+Haojian
