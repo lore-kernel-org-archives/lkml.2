@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab2JBWUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 18:20:07 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:2219
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753874Ab2JBWUF (ORCPT
+	id S1754671Ab2JBWW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 18:22:59 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37215 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab2JBWW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 18:20:05 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839hd25hf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <506B69B0.2010109@am.sony.com>
-Date: Tue, 2 Oct 2012 15:24:48 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 2 Oct 2012 18:22:58 -0400
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 scsi] Short the path length of scsi_cmd_to_driver()
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1348464626.2475.13.camel@ThinkPad-T420>
+	<1348465493.2467.3.camel@dabdike>
+	<1348470210.2475.47.camel@ThinkPad-T420>
+	<1348472104.2467.8.camel@dabdike> <yq13924b4uw.fsf@sermon.lab.mkp.net>
+	<1348721055.2509.0.camel@dabdike> <yq1bogr8itb.fsf@sermon.lab.mkp.net>
+	<1348818498.2411.8.camel@dabdike.int.hansenpartnership.com>
+	<1348892617.6455.4.camel@ThinkPad-T420>
+Date: Tue, 02 Oct 2012 18:22:49 -0400
+In-Reply-To: <1348892617.6455.4.camel@ThinkPad-T420> (Li Zhong's message of
+	"Sat, 29 Sep 2012 12:23:37 +0800")
+Message-ID: <yq1626s4ipy.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, <svenkatr@ti.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Problem with mmc DMA on panda board in 3.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an early report - I'm just checking if anyone else has seen this.
+>>>>> "Li" == Li Zhong <zhong@linux.vnet.ibm.com> writes:
 
-With Linux version v3.6, my PandaBoard (OMAP-based) no longer boots.  The
-system appears to fail to initialize the mmc controller.
+Li> As suggested by James: this patch tries to short the path length of
+Li> scsi_cmd_to_driver(). As only REQ_TYPE_BLOCK_PC commands can be
+Li> submitted without a driver, so we could avoid the related NULL
+Li> checking, as long as we make sure we don't use it for
+Li> REQ_TYPE_BLOCK_PC type commands. Plus, this fixes a bug where you
+Li> get different behaviors from REQ_TYPE_BLOCK_PC commands when a
+Li> driver is and isn't attached.
 
-The kernel log message of interest appears to be this:
-[    1.690002] omap_hsmmc omap_hsmmc.0: unable to obtain RX DMA engine channel 6
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-I can supply full kernel log messages and my .config if needed.
-
-I bisected the code and arrived at the following commit:
--------
-commit 26b88520b80695a6fa5fd95b5d97c03f4daf87e0
-Author: Russell King <rmk+kernel@arm.linux.org.uk>
-Date:   Fri Apr 13 12:27:37 2012 +0100
-
-    mmc: omap_hsmmc: remove private DMA API implementation
-
-    Remove the private DMA API implementation from omap_hsmmc, making it
-    use entirely the DMA engine API.
-
-    Tested-by: Tony Lindgren <tony@atomide.com>
-    Tested-by: Venkatraman S <svenkatr@ti.com>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
--------
-The board works up until this commit.
-After this commit, the board hangs during boot after the message:
-[    1.852508] Waiting for root device /dev/mmcblk0p3...
-(and some other USB and network messages, which I presume
-are unrelated.)
-
-My questions are these:
-Has anyone else had problems with the PandaBoard (or other OMAP) on 3.6?
-Are there any related CONFIG_ variables I could change to try alternatives?
-What should I try next to debug this?
-
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
