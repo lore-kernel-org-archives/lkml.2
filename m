@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2JBOGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:06:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52224 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab2JBOGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:06:38 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] x86: remove quirk entry for SBC FITPC
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 02 Oct 2012 15:26:53 +0100
-Message-ID: <20121002142635.17403.59959.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753966Ab2JBOH7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:07:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753738Ab2JBOH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:07:57 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <874nmd4d2o.fsf@rustcorp.com.au>
+References: <874nmd4d2o.fsf@rustcorp.com.au> <87wqzdnwus.fsf@rustcorp.com.au> <87ipay3cof.fsf@rustcorp.com.au> <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk> <27378.1348819793@warthog.procyon.org.uk> <29451.1348903010@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, herbert@gondor.hengli.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: [GIT PULL] Asymmetric keys and module signing
+Date: Tue, 02 Oct 2012 15:07:45 +0100
+Message-ID: <23688.1349186865@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Hooper <dave@beermex.com>
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Remove the quirk for the SBC FITPC. It seems ot have been required when the
-default was kbd reboot, but no longer required now that the default is acpi
-reboot. Furthermore, BIOS reboot no longer works for this board as of
-2.6.39 or any of the 3.x kernels.
+> Right.  I think we need to use different names for generated vs supplied
+> files
 
-Signed-off-by: David Hooper <dave@beermex.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+The problem with supplied files is people who do allyesconfig, allmodconfig
+and randconfig just to test things finding that their builds break.  The
+kernel build magic is not really set up to handle external files like this.  I
+suppose make logic can be used to conditionally include stuff that might not
+exist.
 
- arch/x86/kernel/reboot.c |    8 --------
- 1 file changed, 8 deletions(-)
+> BTW, you missed a Signed-off-by: on your "MODSIGN: Use the same digest
+> for the autogen key sig as for the module sig" patch.  Please update.
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 52190a9..4e8ba39 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -358,14 +358,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
- 		},
- 	},
--	{	/* Handle problems with rebooting on CompuLab SBC-FITPC2 */
--		.callback = set_bios_reboot,
--		.ident = "CompuLab SBC-FITPC2",
--		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "CompuLab"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "SBC-FITPC2"),
--		},
--	},
- 	{	/* Handle problems with rebooting on ASUS P4S800 */
- 		.callback = set_bios_reboot,
- 		.ident = "ASUS P4S800",
+Done.
 
+I've also added a patch to convert the system clock to a struct tm and to
+produce a struct tm within the ASN.1 decode and then compare those rather than
+time_t values as a way to deal with the validity time overflow problem.  We
+may have to be able to handle certificates that we haven't generated that
+stretch beyond 2038 (I wonder if we might find such in the UEFI key database
+for example.
+
+Another way of dealing with this could be to make mktime() within the kernel
+produce a u64 rather than an unsigned long, and then compare those.
+
+David
