@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2JBKSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 06:18:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:35811 "EHLO relay.sw.ru"
+	id S1754967Ab2JBKSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 06:18:52 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:37805 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab2JBKSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 06:18:44 -0400
-Subject: [PATCH 2/5] nfs: declare nfs_callback_tcp_port in header
+	id S1754310Ab2JBKSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 06:18:50 -0400
+Subject: [PATCH 3/5] nfs: declare nfs_xdev_mount as static
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 02 Oct 2012 14:18:59 +0400
-Message-ID: <20121002101859.15507.9493.stgit@localhost.localdomain>
+Date: Tue, 02 Oct 2012 14:19:04 +0400
+Message-ID: <20121002101904.15507.60636.stgit@localhost.localdomain>
 In-Reply-To: <20121002101649.15507.50466.stgit@localhost.localdomain>
 References: <20121002101649.15507.50466.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,24 +24,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Sparse warning:
-fs/nfs/super.c:2638:16: sparse: symbol 'nfs_callback_tcpport' was not
-declared. Should it be static?
+fs/nfs/super.c:2517:15: warning: symbol 'nfs_xdev_mount' was not declared.
+Should it be static?
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/callback.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/nfs/super.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
-index c07a8d4..4251c2a 100644
---- a/fs/nfs/callback.h
-+++ b/fs/nfs/callback.h
-@@ -208,5 +208,6 @@ extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
- #define NFS41_BC_MAX_CALLBACKS 1
- 
- extern unsigned int nfs_callback_set_tcpport;
-+extern unsigned short nfs_callback_tcpport;
- 
- #endif /* __LINUX_FS_NFS_CALLBACK_H */
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index a719bc0..b4079bb 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2514,7 +2514,7 @@ EXPORT_SYMBOL_GPL(nfs_kill_super);
+ /*
+  * Clone an NFS2/3/4 server record on xdev traversal (FSID-change)
+  */
+-struct dentry *
++static struct dentry *
+ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
+ 		const char *dev_name, void *raw_data)
+ {
 
