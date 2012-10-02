@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2JBKTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 06:19:02 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4322 "EHLO relay.sw.ru"
+	id S1754998Ab2JBKS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 06:18:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45410 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755006Ab2JBKTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 06:19:00 -0400
-Subject: [PATCH 5/5] nfs: include internah.h in getroot.h
+	id S1754310Ab2JBKSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 06:18:54 -0400
+Subject: [PATCH 4/5] nfs: include nfs4_fh.h in nfs4sysctl.c
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org, devel@openvz.org,
         linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 02 Oct 2012 14:19:14 +0400
-Message-ID: <20121002101914.15507.39303.stgit@localhost.localdomain>
+Date: Tue, 02 Oct 2012 14:19:09 +0400
+Message-ID: <20121002101909.15507.13942.stgit@localhost.localdomain>
 In-Reply-To: <20121002101649.15507.50466.stgit@localhost.localdomain>
 References: <20121002101649.15507.50466.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,26 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse warning:
-fs/nfs/nfs4getroot.c:11:5: warning: symbol 'nfs4_get_rootfh' was not declared.
-Should it be static?
+Sparse warnings:
+fs/nfs/nfs4sysctl.c:56:5: warning: symbol 'nfs4_register_sysctl' was not
+declared. Should it be static?
+fs/nfs/nfs4sysctl.c:64:6: warning: symbol 'nfs4_unregister_sysctl' was not
+declared. Should it be static?
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/getroot.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/nfs/nfs4sysctl.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/getroot.c b/fs/nfs/getroot.c
-index 4654ced..033803c 100644
---- a/fs/nfs/getroot.c
-+++ b/fs/nfs/getroot.c
-@@ -32,6 +32,8 @@
+diff --git a/fs/nfs/nfs4sysctl.c b/fs/nfs/nfs4sysctl.c
+index 5729bc8..2628d92 100644
+--- a/fs/nfs/nfs4sysctl.c
++++ b/fs/nfs/nfs4sysctl.c
+@@ -9,6 +9,7 @@
+ #include <linux/nfs_idmap.h>
+ #include <linux/nfs_fs.h>
  
- #include <asm/uaccess.h>
++#include "nfs4_fs.h"
+ #include "callback.h"
  
-+#include "internal.h"
-+
- #define NFSDBG_FACILITY		NFSDBG_CLIENT
- 
- /*
+ static const int nfs_set_port_min = 0;
 
