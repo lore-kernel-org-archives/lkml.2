@@ -1,92 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2JBVBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:01:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50951 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab2JBVBr (ORCPT
+	id S932286Ab2JBVDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:03:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62950 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212Ab2JBVDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:01:47 -0400
-Date: Tue, 2 Oct 2012 14:01:43 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk,
-        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
-Subject: Re: [dm-devel] [PATCH v3 01/26] block: Fix a buffer overrun in
- bio_integrity_split()
-Message-ID: <20121002210143.GT26488@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-2-git-send-email-koverstreet@google.com>
- <20121001212336.GA17165@redhat.com>
- <20121001214241.GE26488@google.com>
- <20121002140847.GD758@redhat.com>
- <20121002202643.GQ26488@google.com>
- <20121002203253.GA14471@redhat.com>
+	Tue, 2 Oct 2012 17:03:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002203253.GA14471@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
+	<4FE37194.30407@redhat.com>
+	<4FE8B8BC.3020702@iki.fi>
+	<4FE8C4C4.1050901@redhat.com>
+	<4FE8CED5.104@redhat.com>
+	<20120625223306.GA2764@kroah.com>
+	<4FE9169D.5020300@redhat.com>
+	<20121002100319.59146693@redhat.com>
+	<CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+Date: Wed, 3 Oct 2012 00:03:46 +0300
+Message-ID: <CABA=pqdRwA5_AVysq_0ynuChQ++oQ0j2BWyPg4Qq=LjYa-7P2A@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+From: Ivan Kalvachev <ikalvachev@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>, Greg KH <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 04:32:53PM -0400, Vivek Goyal wrote:
-> On Tue, Oct 02, 2012 at 01:26:43PM -0700, Kent Overstreet wrote:
-> > On Tue, Oct 02, 2012 at 10:08:47AM -0400, Vivek Goyal wrote:
-> > > On Mon, Oct 01, 2012 at 02:42:41PM -0700, Kent Overstreet wrote:
-> > > 
-> > > [..]
-> > > > Here's the new patch:
-> > > > 
-> > > > 
-> > > > commit e270c9ca843b5c86d59431b0d7a676b7846946d6
-> > > > Author: Kent Overstreet <koverstreet@google.com>
-> > > > Date:   Mon Oct 1 14:41:08 2012 -0700
-> > > > 
-> > > >     block: Fix a buffer overrun in bio_integrity_split()
-> > > >     
-> > > >     bio_integrity_split() seemed to be confusing pointers and arrays -
-> > > >     bip_vec in bio_integrity_payload is an array appended to the end of the
-> > > >     payload, so the bio_vecs in struct bio_pair need to come immediately
-> > > >     after the bio_integrity_payload they're for, and there was an assignment
-> > > >     in bio_integrity_split() that didn't make any sense.
-> > > >     
-> > > >     Also, changed bio_integrity_split() to not refer to the bvecs embedded
-> > > >     in struct bio_pair, in case there's padding between them and
-> > > >     bip->bip_vec.
-> > > >     
-> > > >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > > >     CC: Jens Axboe <axboe@kernel.dk>
-> > > >     CC: Martin K. Petersen <martin.petersen@oracle.com>
-> > > > 
-> > > > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> > > > index a3f28f3..4ae22a8 100644
-> > > > --- a/fs/bio-integrity.c
-> > > > +++ b/fs/bio-integrity.c
-> > > > @@ -694,15 +694,12 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
-> > > >  	bp->bio1.bi_integrity = &bp->bip1;
-> > > >  	bp->bio2.bi_integrity = &bp->bip2;
-> > > >  
-> > > > -	bp->iv1 = bip->bip_vec[0];
-> > > > -	bp->iv2 = bip->bip_vec[0];
-> > > > +	*bp->bip1.bip_vec = bip->bip_vec[0];
-> > > > +	*bp->bip2.bip_vec = bip->bip_vec[0];
-> > > 
-> > > I think this is horrible. Why not introduce bvec pointer in bip (like bio),
-> > > to cover the case when bvec are not inline.
-> > 
-> > That's... exactly what the next patch in the series does.
-> 
-> Yes, but if you want to push some of the these bug fixes in stable (as martin
-> had said), we need to introduce that bip->bio_vec pointer early. Also that
-> next patch is doing lot other other things like getting rid of bip_slabs
-> and we don't require all that to fix this particular bug.
-> 
-> In fact I would say that it is beter to fix this blk integrity bug in a
-> separate patchset so that it can be pushed out earlier.
+On 10/2/12, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Tue, Oct 2, 2012 at 6:03 AM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+>>
+>> I basically tried a few different approaches, including deferred probe(),
+>> as you suggested, and request_firmware_async(), as Kay suggested.
+>
+> Stop this crazy. FIX UDEV ALREADY, DAMMIT.
+>
+> Who maintains udev these days? Is it Lennart/Kai, as part of systemd?
+>
+> Lennart/Kai, fix the udev regression already. Lennart was the one who
+> brought up kernel ABI regressions at some conference, and if you now
+> you have the *gall* to break udev in an incompatible manner that
+> requires basically impossible kernel changes for the kernel to "fix"
+> the udev interface, I don't know what to say.
+>
+> "Two-faced lying weasel" would be the most polite thing I could say.
+> But it almost certainly will involve a lot of cursing.
+>
+>> However, for 3.7 or 3.8, I think that the better is to revert changeset
+>> 177bc7dade38b5
+>> and to stop with udev's insanity of requiring asynchronous firmware load
+>> during
+>> device driver initialization. If udev's developers are not willing to do
+>> that,
+>> we'll likely need to add something at the drivers core to trick udev for
+>> it to
+>> think that the modules got probed before the probe actually happens.
+>
+> The fact is, udev made new - and insane - rules that are simply
+> *invalid*. Modern udev is broken, and needs to be fixed.
+>
+> I don't know where the problem started in udev, but the report I saw
+> was that udev175 was fine, and udev182 was broken, and would deadlock
+> if module_init() did a request_firmware(). That kind of nested
+> behavior is absolutely *required* to work, in order to not cause
+> idiotic problems for the kernel for no good reason.
+>
+> What kind of insane udev maintainership do we have? And can we fix it?
+>
+> Greg, I think you need to step up here too. You were the one who let
+> udev go. If the new maintainers are causing problems, they need to be
+> fixed some way.
 
-I'm honestly not sure what your complaint about my bugfix patch was -
-it's small and complete, it does fix the bug. I don't follow why you
-think we need to introduce the bip->bio_vec pointer early...
+I'm not kernel developer and probably my opinion would be a little
+naive, but here it is.
+
+
+Please, make the kernel load firmware from the filesystem on its own.
+
+
+This should solve almost 99.9% of the problems related to firmware loading.
+
+I don't mind if there is still userland component that could be used
+to request a firmware from repository. You can even keep the udev
+userland piping as a fallback if you want, but I think you can
+simplify a lot of code if you phase it out. The firmware loading
+should follow the same concept as modules loading.
+
+I've heard that the udev userland piping of firmware is done to avoid
+some licensing issues. But honestly, if you can not store the firmware
+on the user's disk, no free operating system should support it at all.
+
+This piping thing have been feature creep that have metastasized all
+over the kernel while keeping a lot of obscure modules broken (in hard
+to find way) and requiring increasingly complicated schemes to
+workaround its flaws.
+
+KiSS.
+
+Best Regards
+   Ivan Kalvachev
