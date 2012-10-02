@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab2JBQQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:16:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:49291 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2JBQQy (ORCPT
+	id S1754953Ab2JBQUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:20:11 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:57068 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab2JBQUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:16:54 -0400
-Date: Tue, 2 Oct 2012 18:16:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCHv2] perf x86_64: Fix rsp register for system call fast path
-Message-ID: <20121002161633.GF10605@somewhere>
-References: <1349112712-2590-1-git-send-email-jolsa@redhat.com>
- <1349174644.7780.23.camel@twins>
- <20121002145815.GH6379@krava.brq.redhat.com>
- <20121002154914.GC10605@somewhere>
- <20121002160626.GA26598@krava.brq.redhat.com>
+	Tue, 2 Oct 2012 12:20:09 -0400
+Date: Tue, 2 Oct 2012 12:20:31 -0400
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Ben Gardiner <bengardiner@nanometrics.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Walmsley <paul@pwsan.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 4/7] ARM: davinci: Add support for an L3RAM gen_pool
+Message-ID: <20121002162031.GQ5641@beef>
+References: <1348861072-14507-1-git-send-email-mporter@ti.com>
+ <1348861072-14507-5-git-send-email-mporter@ti.com>
+ <506986B2.1030000@ti.com>
+ <20121001123242.GJ5641@beef>
+ <CAPcSpELdAK6=O8HG9FJXG_t88eymZO1f3wxzFqmR-faUn4jx4g@mail.gmail.com>
+ <506ACC77.9090604@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121002160626.GA26598@krava.brq.redhat.com>
+In-Reply-To: <506ACC77.9090604@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 06:06:26PM +0200, Jiri Olsa wrote:
-> On Tue, Oct 02, 2012 at 05:49:26PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Oct 02, 2012 at 04:58:15PM +0200, Jiri Olsa wrote:
-> > > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> > > index 915b876..11d62ff 100644
-> > > --- a/arch/x86/kernel/cpu/perf_event.c
-> > > +++ b/arch/x86/kernel/cpu/perf_event.c
-> > > @@ -34,6 +34,7 @@
-> > >  #include <asm/timer.h>
-> > >  #include <asm/desc.h>
-> > >  #include <asm/ldt.h>
-> > > +#include <asm/syscall.h>
-> > >  
-> > >  #include "perf_event.h"
-> > >  
-> > > @@ -1699,6 +1700,52 @@ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-> > >  	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
-> > >  }
-> > >  
-> > > +#ifdef CONFIG_X86_64
-> > > +__weak int arch_sample_regs_user(struct pt_regs *oregs, struct pt_regs *regs)
-> > > +{
-> > > +	int kernel = !user_mode(regs);
-> > > +
-> > > +	if (kernel) {
-> > > +		if (current->mm)
-> > > +			regs = task_pt_regs(current);
-> > > +		else
-> > > +			regs = NULL;
-> > > +	}
+On Tue, Oct 02, 2012 at 04:43:59PM +0530, Sekhar Nori wrote:
+> On 10/1/2012 7:20 PM, Ben Gardiner wrote:
+> > On Mon, Oct 1, 2012 at 8:32 AM, Matt Porter <mporter@ti.com> wrote:
+> >> On Mon, Oct 01, 2012 at 05:34:02PM +0530, Sekhar Nori wrote:
+> >>> Hi Matt,
+> >>>
+> >>> On 9/29/2012 1:07 AM, Matt Porter wrote:
+> >>>> L3RAM (shared SRAM) is needed for use by several drivers.
+> >>>> This creates a genalloc pool and a hook for the platform code
+> >>>> to provide the struct gen_pool * in platform data.
+> >>>>
+> >>>> Signed-off-by: Matt Porter <mporter@ti.com>
+> >>>
+> >>> I am not sure if any of the DaVinci devices have a need to allocate from
+> >>> *both* ARM RAM and shared RAM. Shared RAM is not present on all DaVinci
+> >>> devices AFAIR, and on DA850, there is just 8KB ARM RAM so I am not sure
+> >>> if there is much point in trying to allocate from there.
+> >>>
+> >>> Can you instead see if Ben's earlier patch[1] to use shared RAM for SRAM
+> >>> allocation on DA850 makes sense for your case? If yes, can you repost
+> >>> with Ben's patch included in your series instead of this patch? I would
+> >>> prefer that over creating a new pool for shared RAM.
+> >>
+> >> Hrm, I did look at Ben's earlier patch. The reason I added a separate
+> >> pool mostly was so I didn't have to touch the PM code at all. That can
+> >> continue using the private SRAM API with the ARM RAM as it is now. The
+> >> idea here was to allow that to be separate since no other bus masters
+> >> can access the ARM RAM anyway and do something that didn't require
+> >> regression testing PM. Also, I figured there's really no reason to use
+> >> even a tiny bit of the shared SRAM on PM if we have that ARM RAM there
+> >> and working fine for that use case.
+> >> [...]
 > > 
-> > Shouldn't the above stay in generic code?
+> > I agree with Matt. Preserving the use of the ARM RAM (8K on L138 -- as
+> > you said, Sekhar) in any fashion is preferable to moving suspend
+> > support into shared RAM. There is more of it (128K on L138) but also
+> > more pressure on allocations there since there are more clients.
 > 
-> could be.. I guess I thought that having the regs retrieval
-> plus the fixup at the same place feels better/compact ;)
+> There is where I would like to see more information on who the potential
+> clients are. Even if DSP takes away 64K of the shared RAM on OMAP-L138,
+> there should be more than enough for PM, Audio and PRU. I haven't
+> checked the PM code size lately but it should be fairly small and I can
+> check the actual number if that helps. So, adding a new pool just to
+> save on those bytes doesn't sound like helping a lot.
+
+The only wildcard is PRU usage due to the small per-PRU memory on PRUss
+v1...though no sense in speculating further until somebody demonstrates a
+need.
+
+> > I appreciate that you are trying to preserve prior efforts in
+> > attempted merging of SRAM support -- thank you for that; however, that
+> > patch [1] was just an import of Subashish Ghosh's patch [2]  -- I
+> > chose _that_ implementation option then mainly because I imagined it
+> > would be the least risky to get accepted upstream and not because of
+> > any particular technical merits.
 > 
-> but could change that if needed
+> Its not a question of prior effort since Matt has already put in the
+> effort too. I am yet unconvinced that we need to add support to manage
+> two blocks of SoC internal RAM on DA850 in the kernel today. That's all.
 
-Yeah please.
+Yeah, I've come to agree with that. If somebody ends up needing that
+extra 8K of local ram on L138 then they can add support.
 
-> > 
-> > I'm trying to scratch my head to find a solution to detect the race and
-> > bail out instead of recording erroneous values but I can't find one.
-> > 
-> > Anyway this is still better than what we have now.
-> > 
-> > Another solution could be to force syscall slow path and have some variable
-> > set there that tells us we are in a syscall and every regs have been saved.
-> > 
-> > But we probably don't want to force syscall slow path...
-> 
-> I was trying something like that as well, but the one I sent looks
-> far less hacky to me.. :)
-
-Actually it's more hacky because it's less deterministic.
-But it's more simple, and doesn't hurt performances.
-
-Ok, let's start with that.
+-Matt
