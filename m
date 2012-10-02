@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2JBIQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 04:16:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63974 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab2JBINp (ORCPT
+	id S1754690Ab2JBISd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 04:18:33 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:42830 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754145Ab2JBIS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 04:13:45 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 08/10] ARM: ux500: Stop calling the UIB init function when using Device Tree
-Date: Tue,  2 Oct 2012 09:13:21 +0100
-Message-Id: <1349165603-24401-9-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
-References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
+	Tue, 2 Oct 2012 04:18:29 -0400
+Message-ID: <1349165906.2406.13.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/2] virtio-scsi fixes for 3.6
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org
+Date: Tue, 02 Oct 2012 09:18:26 +0100
+In-Reply-To: <50699682.9020804@redhat.com>
+References: <1343309288-32615-1-git-send-email-pbonzini@redhat.com>
+	 <50699682.9020804@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As there will be a Device Tree created for the UIBs, there is no
-need to call the UIB initiation functions. Each device will be
-detailed and registered from the Device Tree instead.
+On Mon, 2012-10-01 at 15:11 +0200, Paolo Bonzini wrote:
+> Il 26/07/2012 15:28, Paolo Bonzini ha scritto:
+> > James,
+> > 
+> > patch 1 fixes scanning of LUNs whose number is greater than 255.  QEMU
+> > passes a max_lun of 16383 (because it uses SAM numbering) but in Linux
+> > it must become 32768 (because LUNs above 255 are "relocated" to 16640).
+> > Patch 2 is a resubmission of the patch for online resizing of virtio-scsi
+> > LUNs, which needs to be rebased.
+> > 
+> > LUNs above 255 now work for all of scanning, hotplug, hotunplug and
+> > resize.
+> > 
+> > Thanks,
+> > 
+> > Paolo
+> > 
+> > Paolo Bonzini (2):
+> >   virtio-scsi: fix LUNs greater than 255
+> >   virtio-scsi: support online resizing of disks
+> > 
+> >  drivers/scsi/virtio_scsi.c  |   37 +++++++++++++++++++++++++++++++++++--
+> >  include/linux/virtio_scsi.h |    2 ++
+> >  2 files changed, 37 insertions(+), 2 deletions(-)
+> > 
+> 
+> Ping, are these patches going into 3.7?
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/cpu-db8500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+They're 3.7 candidates yes (enhancements certainly aren't 3.6).  I seem
+to have become lost with the virtio-scsi updates since what I have
+marked for inclusion is a patch series that's a partial intersection
+with this.  I'll flush my queue for virto-scsi, please resend all the
+missing patches you want in 3.7.
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 610ad7f..f85659b 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -345,7 +345,7 @@ DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
- 	.timer		= &ux500_timer,
- 	.handle_irq	= gic_handle_irq,
- 	.init_machine	= u8500_init_machine,
--	.init_late	= ux500_init_late,
-+	.init_late	= NULL,
- 	.dt_compat      = u8500_dt_board_compat,
- MACHINE_END
- 
--- 
-1.7.9.5
+Thanks,
+
+James
+
 
