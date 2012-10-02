@@ -1,79 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2JBQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:41:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932095Ab2JBQlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:41:00 -0400
-Date: Tue, 2 Oct 2012 12:40:50 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, eparis@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH v7 02/49] audit: pass in dentry to audit_copy_inode
- wherever possible
-Message-ID: <20121002124050.58ebe279@tlielax.poochiereds.net>
-In-Reply-To: <20121002155338.GB22698@infradead.org>
-References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
-	<1349137018-21948-3-git-send-email-jlayton@redhat.com>
-	<20121002155338.GB22698@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932157Ab2JBQlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:41:07 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50557 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab2JBQhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 12:37:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@infradead.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 10/17] ARM: s3c24xx: fix multiple section mismatch warnings
+Date: Tue,  2 Oct 2012 18:36:49 +0200
+Message-Id: <1349195816-2225-11-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:DdiIwiYvzWkgNbI/HIxJ/RxdHgAgwD7RE0P1/zi//MB
+ KpHl+VH7TFKasrXtdOGg6Ziw98tiaCFf7EgYyi+gC3/lrgAgoW
+ PNr50pi9lM7o5vXJPCV7OIUHaFEt6ruHYe7UV9afZmjht+quOq
+ Ha74DI0+Kh6un9GrzcxSEBt7TskrpY9zL9AeYLxN6OAiDgv6dx
+ IEtH//K45i+QwRB+kjV5BAKuUL57Yoq4Hb74utK9hqFVl1Ss3x
+ L81akPXHlOg0ZqKxvKqvtjYJ/vmD7SdgEE/1BhECzoZOVYtWLN
+ ViKlLMJ/Tgwy9W3UCyygRCxovz4mxlN41oHovQcUHglSvI6o52
+ 2pi5+FtuIQ15oPfloVp9tDcN0A/LprAhoimy07hGIJ+LLtm5mz
+ FeDp56i740uhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012 11:53:38 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
+The *_irq_add function should not be marked __init because the driver
+subsystem thinks they might be called at a later stage.
 
-> On Mon, Oct 01, 2012 at 08:16:11PM -0400, Jeff Layton wrote:
-> > In some cases, we were passing in NULL even when we have a dentry.
-> > 
-> > Reported-by: Eric Paris <eparis@redhat.com>
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  kernel/auditsc.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> > index 4b96415..5c45b9b 100644
-> > --- a/kernel/auditsc.c
-> > +++ b/kernel/auditsc.c
-> > @@ -2226,7 +2226,7 @@ void __audit_inode_child(const struct dentry *dentry,
-> >  		if (!strcmp(dname, n->name) ||
-> >  		     !audit_compare_dname_path(dname, n->name, &dirlen)) {
-> >  			if (inode)
-> > -				audit_copy_inode(n, NULL, inode);
-> > +				audit_copy_inode(n, dentry, inode);
-> 
-> Btw, the calling conventions here also seems fairly ugly.
-> 
-> Instead of the optional dentry parameter I'd have a audit_copy_inode
-> that takes just the name and the inode, and an optional direct  call
-> to audit_copy_fcaps for those callers that have a dentry.  That would
-> also allow removing the branch for the dentry == NULL case in
-> audit_copy_fcaps.
-> 
+The usb_simtec_init function accesses initdata and should be marked
+init. This is safe because the only caller is also an init function.
 
-[...]
+Without this patch, building s3c2410_defconfig results in:
 
-> On Mon, Oct 01, 2012 at 08:16:12PM -0400, Jeff Layton wrote:
-> > If name is NULL then the condition in the loop will never be true. Also,
-> > with this change, we can eliminate the check for n->name == NULL since
-> > the equivalence check will never be true if it is.
-> 
-> Given that name == NULL is a static condition it seems like these
-> should be two different calls, E.g. audit_dentry and audit_path.
-> 
+WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0x1030): Section mismatch in reference from the variable s3c2416_irq_interface to the function .init.text:s3c2416_irq_add()
+The variable s3c2416_irq_interface references
+the function __init s3c2416_irq_add()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-Thanks Christoph,
+WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0x1b08): Section mismatch in reference from the variable s3c2443_irq_interface to the function .init.text:s3c2443_irq_add()
+The variable s3c2443_irq_interface references
+the function __init s3c2443_irq_add()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-Both of the above are good suggestions, but I'd prefer not to have to
-respin this whole set to implement them. I believe what I have here is
-an improvement on what's there now. Do you have any objection to doing
-the above in a separate set on top of this series?
+WARNING: arch/arm/mach-s3c24xx/built-in.o(.data+0xf44): Section mismatch in reference from the variable s3c2416_irq_interface to the function .init.text:s3c2416_irq_add()
+The variable s3c2416_irq_interface references
+the function __init s3c2416_irq_add()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
+WARNING: arch/arm/mach-s3c24xx/built-in.o(.text+0x3f7c): Section mismatch in reference from the function usb_simtec_init() to the (unknown reference) .init.data:(unknown)
+The function usb_simtec_init() references
+the (unknown reference) __initdata (unknown).
+This is often because usb_simtec_init lacks a __initdata
+annotation or the annotation of (unknown) is wrong.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+---
+ arch/arm/mach-s3c24xx/irq-s3c2416.c |    6 +++---
+ arch/arm/mach-s3c24xx/irq-s3c2443.c |    4 ++--
+ arch/arm/mach-s3c24xx/simtec-usb.c  |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-s3c24xx/irq-s3c2416.c b/arch/arm/mach-s3c24xx/irq-s3c2416.c
+index 23ec973..ff141b0 100644
+--- a/arch/arm/mach-s3c24xx/irq-s3c2416.c
++++ b/arch/arm/mach-s3c24xx/irq-s3c2416.c
+@@ -232,7 +232,7 @@ struct irq_chip s3c2416_irq_second = {
+ 
+ /* IRQ initialisation code */
+ 
+-static int __init s3c2416_add_sub(unsigned int base,
++static int s3c2416_add_sub(unsigned int base,
+ 				   void (*demux)(unsigned int,
+ 						 struct irq_desc *),
+ 				   struct irq_chip *chip,
+@@ -251,7 +251,7 @@ static int __init s3c2416_add_sub(unsigned int base,
+ 	return 0;
+ }
+ 
+-static void __init s3c2416_irq_add_second(void)
++static void s3c2416_irq_add_second(void)
+ {
+ 	unsigned long pend;
+ 	unsigned long last;
+@@ -287,7 +287,7 @@ static void __init s3c2416_irq_add_second(void)
+ 	}
+ }
+ 
+-static int __init s3c2416_irq_add(struct device *dev,
++static int s3c2416_irq_add(struct device *dev,
+ 				  struct subsys_interface *sif)
+ {
+ 	printk(KERN_INFO "S3C2416: IRQ Support\n");
+diff --git a/arch/arm/mach-s3c24xx/irq-s3c2443.c b/arch/arm/mach-s3c24xx/irq-s3c2443.c
+index ac2829f..5e69109 100644
+--- a/arch/arm/mach-s3c24xx/irq-s3c2443.c
++++ b/arch/arm/mach-s3c24xx/irq-s3c2443.c
+@@ -222,7 +222,7 @@ static struct irq_chip s3c2443_irq_cam = {
+ 
+ /* IRQ initialisation code */
+ 
+-static int __init s3c2443_add_sub(unsigned int base,
++static int s3c2443_add_sub(unsigned int base,
+ 				   void (*demux)(unsigned int,
+ 						 struct irq_desc *),
+ 				   struct irq_chip *chip,
+@@ -241,7 +241,7 @@ static int __init s3c2443_add_sub(unsigned int base,
+ 	return 0;
+ }
+ 
+-static int __init s3c2443_irq_add(struct device *dev,
++static int s3c2443_irq_add(struct device *dev,
+ 				  struct subsys_interface *sif)
+ {
+ 	printk("S3C2443: IRQ Support\n");
+diff --git a/arch/arm/mach-s3c24xx/simtec-usb.c b/arch/arm/mach-s3c24xx/simtec-usb.c
+index d91c1a7..c303d1b 100644
+--- a/arch/arm/mach-s3c24xx/simtec-usb.c
++++ b/arch/arm/mach-s3c24xx/simtec-usb.c
+@@ -104,7 +104,7 @@ static struct s3c2410_hcd_info usb_simtec_info __initdata = {
+ };
+ 
+ 
+-int usb_simtec_init(void)
++int __init usb_simtec_init(void)
+ {
+ 	int ret;
+ 
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.10
+
