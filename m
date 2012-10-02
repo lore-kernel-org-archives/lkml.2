@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab2JBRlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 13:41:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32350 "EHLO mx1.redhat.com"
+	id S1755313Ab2JBRn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 13:43:27 -0400
+Received: from tetsuo.zabbo.net ([50.193.208.193]:55383 "EHLO tetsuo.zabbo.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2JBRlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 13:41:35 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
+	id S1755209Ab2JBRnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 13:43:24 -0400
+Date: Tue, 2 Oct 2012 10:43:23 -0700
+From: Zach Brown <zab@zabbo.net>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         tytso@google.com, tj@kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
         Dmitry Monakhov <dmonakhov@openvz.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com
+        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com,
+        Martin Petersen <martin.petersen@oracle.com>
 Subject: Re: [RFC, PATCH] Extensible AIO interface
+Message-ID: <20121002174323.GE14533@lenny.home.zabbo.net>
 References: <20121001222341.GF26488@google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 02 Oct 2012 13:41:17 -0400
-In-Reply-To: <20121001222341.GF26488@google.com> (Kent Overstreet's message of
-	"Mon, 1 Oct 2012 15:23:41 -0700")
-Message-ID: <x49zk44ojpe.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+ <20121001231222.GB14533@lenny.home.zabbo.net>
+ <20121001232235.GH26488@google.com>
+ <20121001234439.GC14533@lenny.home.zabbo.net>
+ <20121002002216.GI26488@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002002216.GI26488@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+> The generic code wouldn't know about any user pointers inside
+> attributes, so it'd have to be downstream consumers. Hopefully there
+> won't be many attributes with user pointers in them (I don't expect
+> there to be), so we won't have too much of this messyness.
 
-> So, I and other people keep running into things where we really need to
-> add an interface to pass some auxiliary... stuff along with a pread() or
-> pwrite().
->
-> A few examples:
->
-> * IO scheduler hints. Some userspace program wants to, per IO, specify
-> either priorities or a cgroup - by specifying a cgroup you can have a
-> fileserver in userspace that makes use of cfq's per cgroup bandwidth
-> quotas.
+I really don't like this.  We should have learned this lesson with ioctl
+structs that are nested pointers.
 
-You can do this today by splitting I/O between processes and placing
-those processes in different cgroups.  For io priority, there is
-ioprio_set, which incurs an extra system call, but can be used.  Not
-elegant, but possible.
+What about security bits that are trying to determine if attributes are
+OK?
 
-> * Cache hints. For bcache and other things, userspace may want to specify
-> "this data should be cached", "this data should bypass the cache", etc.
+What about contexts that can't easily deal with userspace pointers?  We
+tend to copy into relatively more accessible kernel memory as early as
+possible.
 
-Please explain how you will differentiate this from posix_fadvise.
+What about fuse trying to extend this interface out to their fs clients?
+Look at the horrible mess it implements to bounce nested ioctl data
+parsing between the kernel's user pointer copying and the fuse client's
+parsing of that copied data.
 
-> * Passing checksums out to userspace. We've got bio integrity, which is
-> a (somewhat) generic interface for passing data checksums between the
-> filesystem and the hardware. There are various circumstances under which
-> you may want to pass these checksums out to userspace, and if so we
-> ought to have a generic way of doing it.
+Let's not do this again, please.  I think it's a fallacy to claim that
+the interface can be opaque to high levels and only parsed by lower
+levels.  The interface should be explicit and fully specified on entry
+so that all levels have trivial access to it.
 
-Yes, that needs a new interface.
-
-> Hence, AIO attributes.
-
-*No.*  Start with the non-AIO case first.
-
-> * FUTURE STUFF:
->
-> Return values:
->
-> Some attributes are probably going to want to return something to
-> userspace.
->
-> If nothing else, we want this so that userspace can tell if anything
-> handled the attributes it specified - as dynamic as the io stack can be,
-> with something extensible like this there really isn't any generic way
-> of knowing ahead of time if something is going to interpret any
-> attribute - we want to return at least an error code.
-
-Seems odd to me.  Why not expose supported attributes via some other
-call?  fcntl?
-
-> One could imagine sticking the return in the attribute itself, but I
-> don't want to do this. For some things (checksums), the attribute will
-> contain a pointer to a buffer - that's fine. But I don't want the
-> attributes themselves to be writeable.
-
-One could imagine that attributes don't return anything, because, well,
-they're properties of something else, and properties don't return
-anything.
-
-Cheers,
-Jeff
+- z
