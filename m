@@ -1,219 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab2JBVFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:05:03 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:49767 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756172Ab2JBVE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:04:59 -0400
-Date: Tue, 2 Oct 2012 15:04:53 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v2] TPM: Provide a tpm_tis OF driver
-Message-ID: <20121002210453.GA12231@obsidianresearch.com>
+	id S1756728Ab2JBU7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:59:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40435 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab2JBUwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 16:52:53 -0400
+Date: Tue, 2 Oct 2012 13:52:50 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk,
+        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
+Subject: Re: [dm-devel] [PATCH v3 02/26] block: Convert integrity to
+ bvec_alloc_bs()
+Message-ID: <20121002205249.GR26488@google.com>
+References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
+ <1348526106-17074-3-git-send-email-koverstreet@google.com>
+ <20121002151202.GE758@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121002151202.GE758@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides an open firwmare driver binding for tpm_tis. OF
-is useful on arches where PNP is not used.
+On Tue, Oct 02, 2012 at 11:12:02AM -0400, Vivek Goyal wrote:
+> On Mon, Sep 24, 2012 at 03:34:42PM -0700, Kent Overstreet wrote:
+> > This adds a pointer to the bvec array to struct bio_integrity_payload,
+> > instead of the bvecs always being inline; then the bvecs are allocated
+> > with bvec_alloc_bs().
+> 
+> Ok, you are introducing bio_vec pointer in this patch. May be we can
+> do it earlier so that we take care of bio pair related issue.
 
-Allow the tpm_tis driver to be selected if OF is compiled in.
+I was just trying to make the bugfix patch small, since people
+complained about too much stuff being done in one patch.
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/char/tpm/Kconfig   |    2 +-
- drivers/char/tpm/tpm_tis.c |   79 +++++++++++++++++++++++++++++++++++--------
- 2 files changed, 65 insertions(+), 16 deletions(-)
+> > Changed bvec_alloc_bs() and bvec_free_bs() to take a pointer to a
+> > mempool instead of the bioset, so that bio integrity can use a different
+> > mempool for its bvecs, and thus avoid a potential deadlock.
+> 
+> If you are taking mempool as input, then bvec_alloc_bs() name does not
+> make sense, as I think the very fact "bs" in the name their suggests
+> that you are taking a pointer to bio set (and not mempool).
+> 
+> Given the fact that bio_vec pool for integrity inside bio set, why not
+> take additional boolean/enum argument to function bvec_alloc_bs() and
+> that argument can tell whehter to allocate bvec from which bvec pool.
 
-v2 changes:
- - Add irq_autoprobe to tpm_tis_init to simplify the logic around
-   the autoprobe function
- - Use platform functions in tis_of_probe_one
- - Rename tis_drv to tis_driver to silence MODPOST warnings
- - checkpatch cleanups
- - Do not attempt to auto-probe the TPM on OF configurations
+Eww, boolean arguments are always bad. 
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index a048199..a346714 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -26,7 +26,7 @@ if TCG_TPM
- 
- config TCG_TIS
- 	tristate "TPM Interface Specification 1.2 Interface"
--	depends on X86
-+	depends on X86 || OF
- 	---help---
- 	  If you have a TPM security chip that is compliant with the
- 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index c4be351..23c6562 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -27,6 +27,7 @@
- #include <linux/wait.h>
- #include <linux/acpi.h>
- #include <linux/freezer.h>
-+#include <linux/of_device.h>
- #include "tpm.h"
- 
- enum tis_access {
-@@ -507,7 +508,7 @@ module_param(interrupts, bool, 0444);
- MODULE_PARM_DESC(interrupts, "Enable interrupts");
- 
- static int tpm_tis_init(struct device *dev, resource_size_t start,
--			resource_size_t len, unsigned int irq)
-+			resource_size_t len, int irq, int irq_autoprobe)
- {
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e, probe;
-@@ -605,9 +606,12 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	iowrite32(intmask,
- 		  chip->vendor.iobase +
- 		  TPM_INT_ENABLE(chip->vendor.locality));
--	if (interrupts)
--		chip->vendor.irq = irq;
--	if (interrupts && !chip->vendor.irq) {
-+	if (!interrupts) {
-+		irq = 0;
-+		irq_autoprobe = 0;
-+	}
-+	chip->vendor.irq = irq;
-+	if (irq == 0 && irq_autoprobe) {
- 		irq_s =
- 		    ioread8(chip->vendor.iobase +
- 			    TPM_INT_VECTOR(chip->vendor.locality));
-@@ -739,13 +743,11 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 
- 	if (pnp_irq_valid(pnp_dev, 0))
- 		irq = pnp_irq(pnp_dev, 0);
--	else
--		interrupts = 0;
- 
- 	if (is_itpm(pnp_dev))
- 		itpm = 1;
- 
--	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
-+	return tpm_tis_init(&pnp_dev->dev, start, len, irq, 0);
- }
- 
- static int tpm_tis_pnp_suspend(struct pnp_dev *dev, pm_message_t msg)
-@@ -768,7 +770,7 @@ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
- 	return ret;
- }
- 
--static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
-+static const struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
- 	{"PNP0C31", 0},		/* TPM */
- 	{"ATM1200", 0},		/* Atmel */
- 	{"IFX0102", 0},		/* Infineon */
-@@ -792,7 +794,7 @@ static __devexit void tpm_tis_pnp_remove(struct pnp_dev *dev)
- }
- 
- 
--static struct pnp_driver tis_pnp_driver = {
-+static const struct pnp_driver tis_pnp_driver = {
- 	.name = "tpm_tis",
- 	.id_table = tpm_pnp_tbl,
- 	.probe = tpm_tis_pnp_init,
-@@ -821,12 +823,52 @@ static int tpm_tis_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
- 
--static struct platform_driver tis_drv = {
-+#ifdef CONFIG_OF
-+static const struct of_device_id tis_of_platform_match[] __devinitdata = {
-+	{.compatible = "tcg,tpm_tis"},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tis_of_platform_match);
-+
-+static int __devinit tis_of_probe_one(struct platform_device *pdev)
-+{
-+	const struct resource *res;
-+	int irq;
-+
-+	if (!pdev->dev.of_node)
-+		return -ENODEV;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		irq = 0;
-+	return tpm_tis_init(&pdev->dev, res->start, res->end - res->start + 1,
-+			    irq, 0);
-+}
-+
-+static int __devexit tis_of_remove_one(struct platform_device *odev)
-+{
-+	struct tpm_chip *chip = dev_get_drvdata(&odev->dev);
-+	tpm_dev_vendor_release(chip);
-+	kfree(chip);
-+	return 0;
-+}
-+#endif
-+
-+static struct platform_driver tis_driver = {
- 	.driver = {
- 		.name = "tpm_tis",
- 		.owner		= THIS_MODULE,
- 		.pm		= &tpm_tis_pm,
-+		.of_match_table = of_match_ptr(tis_of_platform_match),
- 	},
-+#ifdef CONFIG_OF
-+	.probe = tis_of_probe_one,
-+	.remove = __devexit_p(tis_of_remove_one)
-+#endif
- };
- 
- static struct platform_device *pdev;
-@@ -842,15 +884,22 @@ static int __init init_tis(void)
- 		return pnp_register_driver(&tis_pnp_driver);
- #endif
- 
--	rc = platform_driver_register(&tis_drv);
-+	rc = platform_driver_register(&tis_driver);
- 	if (rc < 0)
- 		return rc;
--	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
-+	/* TIS_MEM_BASE is only going to work on x86.. */
-+#ifndef CONFIG_OF
-+	pdev = platform_device_register_simple("tpm_tis", -1, NULL, 0);
-+	if (IS_ERR(pdev)) {
-+		platform_driver_unregister(&tis_driver);
- 		return PTR_ERR(pdev);
--	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
-+	}
-+	rc = tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0, 1);
-+	if (rc != 0) {
- 		platform_device_unregister(pdev);
--		platform_driver_unregister(&tis_drv);
-+		platform_driver_unregister(&tis_driver);
- 	}
-+#endif
- 	return rc;
- }
- 
-@@ -882,7 +931,7 @@ static void __exit cleanup_tis(void)
- 	}
- #endif
- 	platform_device_unregister(pdev);
--	platform_driver_unregister(&tis_drv);
-+	platform_driver_unregister(&tis_driver);
- }
- 
- module_init(init_tis);
--- 
-1.7.5.4
+You are right about bvec_alloc_bs() being misnamed now... honestly it
+doesn't bother me, but it should probably just be renamed to
+bvec_alloc().
 
+Much prefer the mempool arg to a boolean, though.
+
+> > This is eventually for immutable bio vecs - immutable bvecs aren't
+> > useful if we still have to copy them, hence the need for the pointer.
+> > Less code is always nice too, though.
+> 
+> Can you explain a bit more about immutable bio vecs. I know there was
+> some discussion and I missed it. So either point me to right mail thread
+> or just explain a bit more what are immutable bio vecs, how we are
+> planning to use these.
+
+http://article.gmane.org/gmane.linux.kernel.bcache.devel/890
+
+That's my writeup - Tejun and I have been talking about this for ages,
+and then Martin Petersen independently brought it up recently and that
+was when I decided to just dive in and do it - but they'd probably have
+their own ideas about what it's good for. (Tejun wants to reduce the
+number of different scatter/gather list implementations).
+
+> Is it about during split we don't want to copy bio vecs and that's why we
+> need a pointer so that newly created bio/bip can point to parent's bio_vec?
+
+That's one reason. It enables efficient arbitrary bio splitting, which
+enables a whole host of cleanups and simplifications (I've deleted ~1500
+lines of code in my tree).
+
+Also, the fact that bv_len and bv_offset are modified is a pain; the
+owner of the bio can't use them after the bio has completed, if it
+needed to know what memory the bio pointed to it's got to store that
+somewhere else. This fixes that.
+
+It's a real pain for error handling in stacking block drivers - if they
+want to be able to retry the bio, they have to clone not just the bio
+itself but the entire bvec.
