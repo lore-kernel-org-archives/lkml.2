@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2JBNcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 09:32:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630Ab2JBNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 09:32:33 -0400
-Date: Tue, 2 Oct 2012 15:32:00 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 03/14] perf hists: Separate overhead and baseline columns
-Message-ID: <20121002133200.GD6379@krava.brq.redhat.com>
-References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
- <1348744175-11115-4-git-send-email-jolsa@redhat.com>
- <87zk4au1vy.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753165Ab2JBNdv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 09:33:51 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45168 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2JBNdt convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 2 Oct 2012 09:33:49 -0400
+Message-Id: <506B0957020000780009F107@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 02 Oct 2012 14:33:43 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the xen-two tree with Linus'
+ tree
+References: <20121002141949.f6e61437bdce0d56d9d4321e@canb.auug.org.au>
+ <alpine.DEB.2.02.1210021141370.29232@kaball.uk.xensource.com>
+ <506AEE0C020000780009F0A1@nat28.tlf.novell.com>
+ <alpine.DEB.2.02.1210021240020.29232@kaball.uk.xensource.com>
+ <506AF20C020000780009F0B5@nat28.tlf.novell.com>
+ <20121002125519.GB9009@phenom.dumpdata.com>
+In-Reply-To: <20121002125519.GB9009@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <87zk4au1vy.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 02:56:01PM +0900, Namhyung Kim wrote:
-> On Thu, 27 Sep 2012 13:09:24 +0200, Jiri Olsa wrote:
-> > Currently the overhead and baseline columns are handled within
-> > single function and the distinction is made by 'baseline hists'
-> > pointer passed by 'struct perf_hpp::ptr'.
-> >
-> > Since hists pointer is now part of each hist_entry, it's possible
-> > to locate paired hists pointer directly from the passed struct
-> > hist_entry pointer.
-> >
-> > Also separating those 2 columns makes the code more obvious.
+>>> On 02.10.12 at 14:55, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Tue, Oct 02, 2012 at 12:54:20PM +0100, Jan Beulich wrote:
+>> >>> On 02.10.12 at 13:45, Stefano Stabellini <stefano.stabellini@eu.citrix.com> 
+> wrote:
+>> >> > Considering that dbgp doesn't seem to be very useful without PCI at the
+>> >> > moment, could we just turn it into:
+>> >> > 
+>> >> > dom0-$(CONFIG_PCI) += dbgp.o
+>> >> > 
+>> >> > ?
+>> >> 
+>> >> Better not - the code is specifically not PCI-only. And I can't see
+>> >> how it would be harmful to be compiled on e.g. ARM (so the
+>> >> merge perhaps really should use XEN_DOM0 alone, without
+>> >> X86. If anything (and that may indeed be a minor oversight of
+>> >> the original patch) one might want it to depend on USB_SUPPORT,
+>> >> as without that no in-tree debug port capable driver would be
+>> >> able to load (and hence interfere with Xen's use of the debug
+>> >> port). However, as long as it builds fine with USB_SUPPORT
+>> >> undefined (which I believe it does), having it in the shape it
+>> >> is allows for out-of-tree drivers as well (as long as they make
+>> >> use of the designated interface).
+>> > 
+>> > OK for PCI.
+>> > Regarding USB_SUPPORT, considering that gbgp.c calls hcd_to_bus, I think
+>> > it would make sense to make it depend on it.
+>> 
+>> As said - I'd prefer to do that only if indeed needed to get things
+>> to build without that option. Since include/usb/* doesn't reference
+>> CONFIG_USB_SUPPORT, I'm in favor of supporting at least those
+>> eventual out-of-tree drivers that do use the pre-existing data
+>> structures (and others shouldn't be calling pre-existing APIs
+>> anyway). But I wouldn't NAK a patch doing what you suggest
+>> either.
 > 
-> Yes, it was thinking about something like this.
-> 
-> 
-> >
-> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Namhyung Kim <namhyung@kernel.org>
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> [snip]
-> > +static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
-> > +{
-> > +	double percent = baseline_percent(he);
-> > +
-> > +	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
-> 
-> Is it possible to have a baseline value over 100%?  I changed 'overhead'
-> colum format from '2 spaces + %5.2f + %' to '1 space + %6.2f + %' for
-> the case.  Probably it'd better using it here too for consistency.
+> Could it depend on EARLY_PRINTK_DBGP ?
 
-I think you're right, I'll make the change
+No, that one would definitely be wrong (because we need the
+EHCI driver to propagate reset information no matter whether
+the kernel uses an early console).
 
-thanks,
-jirka
+Jan
+
