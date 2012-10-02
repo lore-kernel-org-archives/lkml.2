@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab2JBXtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 19:49:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60113 "EHLO mga14.intel.com"
+	id S1756866Ab2JBXtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 19:49:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15521 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756862Ab2JBXtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 19:49:13 -0400
+	id S1756783Ab2JBXs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 19:48:57 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,525,1344236400"; 
-   d="scan'208";a="199832077"
+   d="scan'208";a="229228983"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, x86@vger.kernel.org, eranian@google.com, jolsa@redhat.com,
         a.p.zijlstra@chello.nl, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 20/31] perf, core: Add generic transaction flags
-Date: Tue,  2 Oct 2012 16:48:40 -0700
-Message-Id: <1349221731-15665-21-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 18/31] perf, tools: Handle XBEGIN like a jump
+Date: Tue,  2 Oct 2012 16:48:38 -0700
+Message-Id: <1349221731-15665-19-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
 References: <1349221731-15665-1-git-send-email-andi@firstfloor.org>
@@ -25,116 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
-
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
-
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
-
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
-
-This adds the perf core glue needed for reporting the new flag word out.
+So that the browser still shows the abort label
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h |   26 ++++++++++++++++++++++++--
- kernel/events/core.c       |    6 ++++++
- 2 files changed, 30 insertions(+), 2 deletions(-)
+ tools/perf/util/annotate.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b3ef0d8..0b66c1d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 15,
- 
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a9103..a34a1ae 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -400,6 +400,8 @@ static struct ins instructions[] = {
+ 	{ .name = "testb", .ops  = &mov_ops, },
+ 	{ .name = "testl", .ops  = &mov_ops, },
+ 	{ .name = "xadd",  .ops  = &mov_ops, },
++	{ .name = "xbeginl", .ops  = &jump_ops, },
++	{ .name = "xbeginq", .ops  = &jump_ops, },
  };
  
- /*
-@@ -179,6 +179,26 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the transaction event qualifier, mostly for abort events.
-+ */
-+enum {
-+	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
-+	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
-+	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
-+	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
-+	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
-+	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
-+	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
-+
-+	PERF_SAMPLE_TXN_MAX	    = (1 << 7),  /* non-ABI */
-+
-+	/* bits 24..31 are reserved for the abort code */
-+
-+	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
-+	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
-+};
-+
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-@@ -1193,6 +1213,7 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	u64				transaction;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -1207,6 +1228,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->transaction = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4eeff67..507c1c3 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -953,6 +953,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4090,6 +4093,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
- 
+ static int ins__cmp(const void *name, const void *insp)
 -- 
 1.7.7.6
 
