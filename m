@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2JBJOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 05:14:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53181 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752041Ab2JBJN6 (ORCPT
+	id S1752779Ab2JBJQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 05:16:26 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51099 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2JBJQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 05:13:58 -0400
-Date: Tue, 2 Oct 2012 10:13:01 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: hw_breakpoint: Clear breakpoints before enabling
- monitor mode
-Message-ID: <20121002091301.GA8847@mudshark.cambridge.arm.com>
-References: <1348160260-19486-1-git-send-email-sboyd@codeaurora.org>
- <20120920173556.GQ4654@mudshark.cambridge.arm.com>
- <20120924171934.GE5522@mudshark.cambridge.arm.com>
- <506A3694.4070004@codeaurora.org>
+	Tue, 2 Oct 2012 05:16:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506A3694.4070004@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349165603-24401-4-git-send-email-lee.jones@linaro.org>
+References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
+	<1349165603-24401-4-git-send-email-lee.jones@linaro.org>
+Date: Tue, 2 Oct 2012 11:16:23 +0200
+Message-ID: <CACRpkdatjOMxS_pQNPQjoNXgSTYhh7iQoxhKGzdTL=bdQMtwvg@mail.gmail.com>
+Subject: Re: [PATCH 03/10] Input: bu21013_ts - Request a regulator that
+ actually exists
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 01:34:28AM +0100, Stephen Boyd wrote:
-> On 09/24/12 10:19, Will Deacon wrote:
-> > Ok, I've pushed a bunch of patches to my hw-breakpoint branch (head commit
-> > 55cb726797c7). I'll post them to the list after the merge window, but please
-> > do take them for a spin if you get a chance.
-> >
-> 
-> Forgot to reply here. Took them for a spin last week with that commit.
-> No more boot hangs but I can't say much else beyond that. When you post
-> to the list I'll add my tested-by.
+On Tue, Oct 2, 2012 at 10:13 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Thanks Stephen. I've also got some patches for OS save/restore of the debug
-registers using the various hardware locking and readout mechanisms, so that
-debug state can be persisted across low-power states.
+> Currently the BU21013 Touch Screen driver requests a regulator by the
+> name of 'V-TOUCH', which doesn't exist anywhere in the kernel. The
+> correct name, as referenced in platform regulator code is 'avdd'. Here,
+> when we request a regulator, we use the correct name instead.
+>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Do any of the Qualcomm chips (v7 as opposed to v7.1) implement the save/restore
-registers?
+Mark Brown requested this (real) name of the regulator a while back.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-Will
+This should go separately into the -rc fixes or directly upstream.
+
+Yours,
+Linus Walleij
