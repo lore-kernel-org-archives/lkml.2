@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab2JBAsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:48:23 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:65235 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab2JBAsT (ORCPT
+	id S1753276Ab2JBBIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 21:08:15 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:31773 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab2JBBIL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:48:19 -0400
+	Mon, 1 Oct 2012 21:08:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,520,1344236400"; 
+   d="scan'208";a="696342408"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: build failure after merge of the nfs tree
+Thread-Topic: linux-next: build failure after merge of the nfs tree
+Thread-Index: AQHNoDn1kxosC68qYU+fhaFfmC0VMpelNATg
+Date: Tue, 2 Oct 2012 01:08:09 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA908FFCB41@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20121002103907.e43f5bb1cc9e6b85b3a51ef8@canb.auug.org.au>
+In-Reply-To: <20121002103907.e43f5bb1cc9e6b85b3a51ef8@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.53]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1348874411-28288-9-git-send-email-daniel.santos@pobox.com>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
-	<1348874411-28288-9-git-send-email-daniel.santos@pobox.com>
-Date: Mon, 1 Oct 2012 17:48:18 -0700
-Message-ID: <CANN689G9vurJj3+MUygn3gk6LCYr9E-eMFp+22Wf6Vgo22HRKA@mail.gmail.com>
-Subject: Re: [PATCH 8/10] bug.h: Make BUILD_BUG_ON generate compile-time error
-From: Michel Lespinasse <walken@google.com>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 4:20 PM, Daniel Santos <daniel.santos@pobox.com> wrote:
-> Negative sized arrays wont create a compile-time error in some cases
-> starting with gcc 4.4 (e.g., inlined functions), but gcc 4.3 introduced
-> the error function attribute that will.  This patch modifies
-> BUILD_BUG_ON to behave like BUILD_BUG already does, using the error
-> function attribute so that you don't have to build the entire kernel to
-> discover that you have a problem, and then enjoy trying to track it down
-> from a link-time error.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Stephen Rothwell
+> Sent: Monday, October 01, 2012 8:39 PM
+> To: Trond Myklebust
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: linux-next: build failure after merge of the nfs tree
+> 
+> Hi Trond,
+> 
+> After merging the nfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/nfs/callback.c: In function 'nfs_minorversion_callback_svc_setup':
+> fs/nfs/callback.c:206:21: error: 'ENOTSUP' undeclared (first use in this
+> function)
+> 
+> Caused by commit 141e1f553b6e ("NFSv4: Fix the minor version callback
+> channel startup").
+> 
 
-Few other alternatives I've seen used in other projects (from memory,
-so I may have gotten the details wrong):
+Hi Stephen,
 
-1) if (condition) { __asm__(".error \"Some error message\""); }
-2) switch (0) {
-    case 0: break;
-    case !condition: break;
-    }
-    (fails to compile if !condition evaluates to 0)
+Thanks! We've already fixed this issue and pushed out a new tree...
 
-If you can get the first suggestion to work it'd be nice, as you could
-get some descriptive error message (you can add the line number there
-too).
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Cheers
+  Trond
