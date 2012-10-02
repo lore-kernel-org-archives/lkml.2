@@ -1,185 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2JBQOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:14:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37137 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab2JBQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:14:17 -0400
-Date: Tue, 2 Oct 2012 18:14:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Lockdep complains about commit 1331e7a1bb ("rcu: Remove _rcu_barrier()
- dependency on __stop_machine()") 
-Message-ID: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754917Ab2JBQQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:16:55 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49291 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab2JBQQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 12:16:54 -0400
+Date: Tue, 2 Oct 2012 18:16:47 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCHv2] perf x86_64: Fix rsp register for system call fast path
+Message-ID: <20121002161633.GF10605@somewhere>
+References: <1349112712-2590-1-git-send-email-jolsa@redhat.com>
+ <1349174644.7780.23.camel@twins>
+ <20121002145815.GH6379@krava.brq.redhat.com>
+ <20121002154914.GC10605@somewhere>
+ <20121002160626.GA26598@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002160626.GA26598@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 02, 2012 at 06:06:26PM +0200, Jiri Olsa wrote:
+> On Tue, Oct 02, 2012 at 05:49:26PM +0200, Frederic Weisbecker wrote:
+> > On Tue, Oct 02, 2012 at 04:58:15PM +0200, Jiri Olsa wrote:
+> > > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> > > index 915b876..11d62ff 100644
+> > > --- a/arch/x86/kernel/cpu/perf_event.c
+> > > +++ b/arch/x86/kernel/cpu/perf_event.c
+> > > @@ -34,6 +34,7 @@
+> > >  #include <asm/timer.h>
+> > >  #include <asm/desc.h>
+> > >  #include <asm/ldt.h>
+> > > +#include <asm/syscall.h>
+> > >  
+> > >  #include "perf_event.h"
+> > >  
+> > > @@ -1699,6 +1700,52 @@ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+> > >  	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_X86_64
+> > > +__weak int arch_sample_regs_user(struct pt_regs *oregs, struct pt_regs *regs)
+> > > +{
+> > > +	int kernel = !user_mode(regs);
+> > > +
+> > > +	if (kernel) {
+> > > +		if (current->mm)
+> > > +			regs = task_pt_regs(current);
+> > > +		else
+> > > +			regs = NULL;
+> > > +	}
+> > 
+> > Shouldn't the above stay in generic code?
+> 
+> could be.. I guess I thought that having the regs retrieval
+> plus the fixup at the same place feels better/compact ;)
+> 
+> but could change that if needed
 
-this commit:
+Yeah please.
 
-==
-1331e7a1bbe1f11b19c4327ba0853bee2a606543 is the first bad commit
-commit 1331e7a1bbe1f11b19c4327ba0853bee2a606543
-Author: Paul E. McKenney <paul.mckenney@linaro.org>
-Date:   Thu Aug 2 17:43:50 2012 -0700
+> > 
+> > I'm trying to scratch my head to find a solution to detect the race and
+> > bail out instead of recording erroneous values but I can't find one.
+> > 
+> > Anyway this is still better than what we have now.
+> > 
+> > Another solution could be to force syscall slow path and have some variable
+> > set there that tells us we are in a syscall and every regs have been saved.
+> > 
+> > But we probably don't want to force syscall slow path...
+> 
+> I was trying something like that as well, but the one I sent looks
+> far less hacky to me.. :)
 
-    rcu: Remove _rcu_barrier() dependency on __stop_machine()
-    
-    Currently, _rcu_barrier() relies on preempt_disable() to prevent
-    any CPU from going offline, which in turn depends on CPU hotplug's
-    use of __stop_machine().
-    
-    This patch therefore makes _rcu_barrier() use get_online_cpus() to
-    block CPU-hotplug operations.  This has the added benefit of removing
-    the need for _rcu_barrier() to adopt callbacks:  Because CPU-hotplug
-    operations are excluded, there can be no callbacks to adopt.  This
-    commit simplifies the code accordingly.
-    
-    Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-    Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-==
+Actually it's more hacky because it's less deterministic.
+But it's more simple, and doesn't hurt performances.
 
-is causing lockdep to complain (see the full trace below). I haven't yet 
-had time to analyze what exactly is happening, and probably will not have 
-time to do so until tomorrow, so just sending this as a heads-up in case 
-anyone sees the culprit immediately.
-
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
- -------------------------------------------------------
- kworker/u:2/40 is trying to acquire lock:
-  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
- 
- but task is already holding lock:
-  (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
- 
- which lock already depends on the new lock.
- 
- 
- the existing dependency chain (in reverse order) is:
- 
- -> #2 (slab_mutex){+.+.+.}:
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
-        [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
-        [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
-        [<ffffffff8155719d>] _cpu_up+0xba/0x14e
-        [<ffffffff815572ed>] cpu_up+0xbc/0x117
-        [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
-        [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
-        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
- 
- -> #1 (cpu_hotplug.lock){+.+.+.}:
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff81049197>] get_online_cpus+0x37/0x50
-        [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
-        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-        [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
-        [<ffffffff8118cc01>] deactivate_super+0x61/0x70
-        [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
-        [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
-        [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
- 
- -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
-        [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-        [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
-        [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
-        [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
-        [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
-        [<ffffffff81454b79>] ops_exit_list+0x39/0x60
-        [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
-        [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
-        [<ffffffff81069f3e>] worker_thread+0x12e/0x320
-        [<ffffffff8106f73e>] kthread+0x9e/0xb0
-        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
- 
- other info that might help us debug this:
- 
- Chain exists of:
-   rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
- 
-  Possible unsafe locking scenario:
- 
-        CPU0                    CPU1
-        ----                    ----
-   lock(slab_mutex);
-                                lock(cpu_hotplug.lock);
-                                lock(slab_mutex);
-   lock(rcu_sched_state.barrier_mutex);
- 
-  *** DEADLOCK ***
- 
- 4 locks held by kworker/u:2/40:
-  #0:  (netns){.+.+.+}, at: [<ffffffff810690b2>] process_one_work+0x1a2/0x4c0
-  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff810690b2>] process_one_work+0x1a2/0x4c0
-  #2:  (net_mutex){+.+.+.}, at: [<ffffffff81455130>] cleanup_net+0x80/0x1b0
-  #3:  (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
- 
- stack backtrace:
- Pid: 40, comm: kworker/u:2 Not tainted 3.6.0-rc5-00004-g0d8ee37 #143
- Call Trace:
-  [<ffffffff810ac85f>] print_circular_bug+0x10f/0x120
-  [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
-  [<ffffffff810ad85a>] ? check_prev_add+0xea/0x440
-  [<ffffffff8102c72f>] ? flat_send_IPI_mask+0x7f/0xc0
-  [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-  [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-  [<ffffffff810ae921>] lock_acquire+0x121/0x190
-  [<ffffffff810f2126>] ? _rcu_barrier+0x26/0x1e0
-  [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-  [<ffffffff810f2126>] ? _rcu_barrier+0x26/0x1e0
-  [<ffffffff810b5e45>] ? on_each_cpu+0x65/0xc0
-  [<ffffffff810f2126>] ? _rcu_barrier+0x26/0x1e0
-  [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-  [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-  [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-  [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-  [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
-  [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
-  [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
-  [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
-  [<ffffffff81454b79>] ops_exit_list+0x39/0x60
-  [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
-  [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
-  [<ffffffff810690b2>] ? process_one_work+0x1a2/0x4c0
-  [<ffffffff81069e69>] ? worker_thread+0x59/0x320
-  [<ffffffff814550b0>] ? net_drop_ns+0x40/0x40
-  [<ffffffff81069f3e>] worker_thread+0x12e/0x320
-  [<ffffffff81069e10>] ? manage_workers+0x110/0x110
-  [<ffffffff8106f73e>] kthread+0x9e/0xb0
-  [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81560b70>] ? retint_restore_args+0x13/0x13
-  [<ffffffff8106f6a0>] ? __init_kthread_worker+0x70/0x70
-  [<ffffffff8156ab40>] ? gs_change+0x13/0x13
-
-
--- 
-Jiri Kosina
-SUSE Labs
+Ok, let's start with that.
