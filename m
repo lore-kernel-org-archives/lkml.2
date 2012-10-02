@@ -1,93 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab2JBAez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 20:34:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47191 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab2JBAew (ORCPT
+	id S1757540Ab2JBA2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 20:28:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37115 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab2JBARR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 20:34:52 -0400
-Message-ID: <506A36A1.6030709@gmail.com>
-Date: Tue, 02 Oct 2012 08:34:41 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [RFC v9 PATCH 06/21] memory-hotplug: export the function acpi_bus_remove()
-References: <1346837155-534-1-git-send-email-wency@cn.fujitsu.com> <1346837155-534-7-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1346837155-534-7-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Oct 2012 20:17:17 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: eparis@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: [PATCH v7 09/49] audit: optimize audit_compare_dname_path
+Date: Mon,  1 Oct 2012 20:16:18 -0400
+Message-Id: <1349137018-21948-10-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
+References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2012 05:25 PM, wency@cn.fujitsu.com wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
->
-> The function acpi_bus_remove() can remove a acpi device from acpi device.
+In the cases where we already know the length of the parent, pass it as
+a parm so we don't need to recompute it. In the cases where we don't
+know the length, pass in AUDIT_NAME_FULL (-1) to indicate that it should
+be determined.
 
-IIUC, s/acpi device/acpi bus
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ kernel/audit.h       |  5 ++++-
+ kernel/audit_watch.c |  3 ++-
+ kernel/auditfilter.c | 16 +++++++++++-----
+ kernel/auditsc.c     |  8 +++-----
+ 4 files changed, 20 insertions(+), 12 deletions(-)
 
->   
-> When a acpi device is removed, we need to call this function to remove
-> the acpi device from acpi bus. So export this function.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->   drivers/acpi/scan.c     |    3 ++-
->   include/acpi/acpi_bus.h |    1 +
->   2 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index d1ecca2..1cefc34 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1224,7 +1224,7 @@ static int acpi_device_set_context(struct acpi_device *device)
->   	return -ENODEV;
->   }
->   
-> -static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
-> +int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->   {
->   	if (!dev)
->   		return -EINVAL;
-> @@ -1246,6 +1246,7 @@ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->   
->   	return 0;
->   }
-> +EXPORT_SYMBOL(acpi_bus_remove);
->   
->   static int acpi_add_single_object(struct acpi_device **child,
->   				  acpi_handle handle, int type,
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index bde976e..2ccf109 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -360,6 +360,7 @@ bool acpi_bus_power_manageable(acpi_handle handle);
->   bool acpi_bus_can_wakeup(acpi_handle handle);
->   int acpi_power_resource_register_device(struct device *dev, acpi_handle handle);
->   void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle);
-> +int acpi_bus_remove(struct acpi_device *dev, int rmdevice);
->   #ifdef CONFIG_ACPI_PROC_EVENT
->   int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
->   int acpi_bus_generate_proc_event4(const char *class, const char *bid, u8 type, int data);
+diff --git a/kernel/audit.h b/kernel/audit.h
+index ee31316..34af33c 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -74,10 +74,13 @@ static inline int audit_hash_ino(u32 ino)
+ 	return (ino & (AUDIT_INODE_BUCKETS-1));
+ }
+ 
++/* Indicates that audit should log the full pathname. */
++#define AUDIT_NAME_FULL -1
++
+ extern int audit_match_class(int class, unsigned syscall);
+ extern int audit_comparator(const u32 left, const u32 op, const u32 right);
+ extern int parent_len(const char *path);
+-extern int audit_compare_dname_path(const char *dname, const char *path);
++extern int audit_compare_dname_path(const char *dname, const char *path, int plen);
+ extern struct sk_buff *	    audit_make_reply(int pid, int seq, int type,
+ 					     int done, int multi,
+ 					     const void *payload, int size);
+diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
+index b6a873a..f8e9353 100644
+--- a/kernel/audit_watch.c
++++ b/kernel/audit_watch.c
+@@ -265,7 +265,8 @@ static void audit_update_watch(struct audit_parent *parent,
+ 	/* Run all of the watches on this parent looking for the one that
+ 	 * matches the given dname */
+ 	list_for_each_entry_safe(owatch, nextw, &parent->watches, wlist) {
+-		if (audit_compare_dname_path(dname, owatch->path))
++		if (audit_compare_dname_path(dname, owatch->path,
++					     AUDIT_NAME_FULL))
+ 			continue;
+ 
+ 		/* If the update involves invalidating rules, do the inode-based
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index f47ba18..1e0899d 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -1228,11 +1228,17 @@ int parent_len(const char *path)
+ 	return p - path;
+ }
+ 
+-/* Compare given dentry name with last component in given path,
+- * return of 0 indicates a match. */
+-int audit_compare_dname_path(const char *dname, const char *path)
++/**
++ * audit_compare_dname_path - compare given dentry name with last component in
++ * 			      given path. Return of 0 indicates a match.
++ * @dname:	dentry name that we're comparing
++ * @path:	full pathname that we're comparing
++ * @parentlen:	length of the parent if known. Passing in AUDIT_NAME_FULL
++ * 		here indicates that we must compute this value.
++ */
++int audit_compare_dname_path(const char *dname, const char *path, int parentlen)
+ {
+-	int dlen, pathlen, parentlen;
++	int dlen, pathlen;
+ 	const char *p;
+ 
+ 	dlen = strlen(dname);
+@@ -1240,7 +1246,7 @@ int audit_compare_dname_path(const char *dname, const char *path)
+ 	if (pathlen < dlen)
+ 		return 1;
+ 
+-	parentlen = parent_len(path);
++	parentlen = parentlen == AUDIT_NAME_FULL ? parent_len(path) : parentlen;
+ 	if (pathlen - parentlen != dlen)
+ 		return 1;
+ 
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index b03ef6a..52d1f0f 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -81,9 +81,6 @@
+  * a name dynamically and also add those to the list anchored by names_list. */
+ #define AUDIT_NAMES	5
+ 
+-/* Indicates that audit should log the full pathname. */
+-#define AUDIT_NAME_FULL -1
+-
+ /* no execve audit message should be longer than this (userspace limits) */
+ #define MAX_EXECVE_AUDIT_LEN 7500
+ 
+@@ -2236,7 +2233,7 @@ void __audit_inode_child(const struct inode *parent,
+ 			continue;
+ 
+ 		if (n->ino == parent->i_ino &&
+-		    !audit_compare_dname_path(dname, n->name)) {
++		    !audit_compare_dname_path(dname, n->name, n->name_len)) {
+ 			found_parent = n->name;
+ 			goto add_names;
+ 		}
+@@ -2249,7 +2246,8 @@ void __audit_inode_child(const struct inode *parent,
+ 
+ 		/* strcmp() is the more likely scenario */
+ 		if (!strcmp(dname, n->name) ||
+-		     !audit_compare_dname_path(dname, n->name)) {
++		    !audit_compare_dname_path(dname, n->name,
++						AUDIT_NAME_FULL)) {
+ 			if (inode)
+ 				audit_copy_inode(n, dentry, inode);
+ 			else
+-- 
+1.7.11.4
 
