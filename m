@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779Ab2JBJQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 05:16:26 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51099 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab2JBJQZ (ORCPT
+	id S1753034Ab2JBJSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 05:18:37 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34593 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab2JBJSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 05:16:25 -0400
+	Tue, 2 Oct 2012 05:18:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349165603-24401-4-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1349165603-24401-5-git-send-email-lee.jones@linaro.org>
 References: <1349165603-24401-1-git-send-email-lee.jones@linaro.org>
-	<1349165603-24401-4-git-send-email-lee.jones@linaro.org>
-Date: Tue, 2 Oct 2012 11:16:23 +0200
-Message-ID: <CACRpkdatjOMxS_pQNPQjoNXgSTYhh7iQoxhKGzdTL=bdQMtwvg@mail.gmail.com>
-Subject: Re: [PATCH 03/10] Input: bu21013_ts - Request a regulator that
- actually exists
+	<1349165603-24401-5-git-send-email-lee.jones@linaro.org>
+Date: Tue, 2 Oct 2012 11:18:32 +0200
+Message-ID: <CACRpkdYE1GgLPMjQ-Oz_ap022OykhfK8D7BoN6oTXGYwttxN9A@mail.gmail.com>
+Subject: Re: [PATCH 04/10] Input: bu21013_ts - Move GPIO init and exit
+ functions into the driver
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -28,19 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Oct 2, 2012 at 10:13 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Currently the BU21013 Touch Screen driver requests a regulator by the
-> name of 'V-TOUCH', which doesn't exist anywhere in the kernel. The
-> correct name, as referenced in platform regulator code is 'avdd'. Here,
-> when we request a regulator, we use the correct name instead.
+> These GPIO init and exit functions have no place in platform data.
+> Instead they should be part of the driver. This patch moves them to
+> their rightful place, which subsequently elevates platform data of
+> yet more cruft.
 >
 > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > Cc: linux-input@vger.kernel.org
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Mark Brown requested this (real) name of the regulator a while back.
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-
-This should go separately into the -rc fixes or directly upstream.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
 Linus Walleij
