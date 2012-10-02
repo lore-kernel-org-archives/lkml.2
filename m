@@ -1,177 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2JBOmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:42:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60724 "EHLO mx2.suse.de"
+	id S1752810Ab2JBOmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:42:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60732 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab2JBOmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:42:01 -0400
-Date: Tue, 2 Oct 2012 15:41:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20121002144135.GO29125@suse.de>
-References: <50656459.70309@ti.com>
- <20120928102728.GN3429@suse.de>
- <20120928103207.GA22811@avionic-0098.mockup.avionic-design.de>
- <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
- <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
- <20120928110712.GB29125@suse.de>
- <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
- <20120928124332.GC29125@suse.de>
- <20121001142428.GA2798@avionic-0098.mockup.avionic-design.de>
- <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751317Ab2JBOmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 10:42:04 -0400
+Subject: [PATCH v3] kbuild: Fix gcc -x syntax
+From: Jean Delvare <jdelvare@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Bernhard Walle <bernhard@bwalle.de>,
+        Michal Marek <mmarek@suse.cz>, Ralf Baechle <ralf@linux-mips.org>,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Tue, 02 Oct 2012 16:42:36 +0200
+Message-ID: <1349188956.4441.12.camel@amber.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 02:48:14PM +0200, Thierry Reding wrote:
-> > So this really isn't all that new, but I just wanted to confirm my
-> > results from last week. We'll see if bisection shows up something
-> > interesting.
-> 
-> I just finished bisecting this and git reports:
-> 
-> 	3750280f8bd0ed01753a72542756a8c82ab27933 is the first bad commit
-> 
-> I'm attaching the complete bisection log and a diff of all the changes
-> applied on top of the bad commit to make it compile and run on my board.
-> Most of the patch is probably not important, though. There are two hunks
-> which have the pageblock changes I already posted an two other hunks
-> with the patch you posted earlier.
-> 
-> I hope this helps. If you want me to run any other tests, please let me
-> know.
-> 
+The correct syntax for gcc -x is "gcc -x assembler", not
+"gcc -xassembler". Even though the latter happens to work, the former
+is what is documented in the manual page and thus what gcc wrappers
+such as icecream do expect.
 
-Can you test with this on top please?
+This isn't a cosmetic change. The missing space prevents icecream from
+recognizing compilation tasks it can't handle, leading to silent kernel
+miscompilations.
 
----8<---
-diff --git a/mm/compaction.c b/mm/compaction.c
-index d6e260a..1f1d46d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -374,20 +374,13 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
-  * a free page).
-  */
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn)
+Besides me, credits go to Michael Matz and Dirk Mueller for
+investigating the miscompilation issue and tracking it down to this
+incorrect -x parameter syntax.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: stable@vger.kernel.org
+Cc: Bernhard Walle <bernhard@bwalle.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+---
+Changes since v2:
+ * Fix credits. I can't believe I worked with one of my colleagues
+   for a full week on this issue, and credited another one :( Working
+   too much I suppose...
+
+ arch/mips/Makefile                         |    2 +-
+ arch/mips/kernel/Makefile                  |    2 +-
+ arch/x86/Makefile                          |    2 +-
+ scripts/Kbuild.include                     |   12 ++++++------
+ scripts/gcc-version.sh                     |    6 +++---
+ scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
+ scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
+ scripts/kconfig/check.sh                   |    2 +-
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
+ tools/perf/Makefile                        |    2 +-
+ tools/power/cpupower/Makefile              |    2 +-
+ 11 files changed, 18 insertions(+), 18 deletions(-)
+
+--- linux-3.6-rc7.orig/arch/mips/Makefile	2012-09-29 09:25:39.906995722 +0200
++++ linux-3.6-rc7/arch/mips/Makefile	2012-09-29 14:30:22.541600872 +0200
+@@ -225,7 +225,7 @@ KBUILD_CPPFLAGS += -DDATAOFFSET=$(if $(d
+ LDFLAGS			+= -m $(ld-emul)
+ 
+ ifdef CONFIG_MIPS
+-CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
++CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
+ 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
+ 	sed -e "s/^\#define /-D'/" -e "s/ /'='/" -e "s/$$/'/")
+ ifdef CONFIG_64BIT
+--- linux-3.6-rc7.orig/arch/mips/kernel/Makefile	2012-09-29 09:25:39.906995722 +0200
++++ linux-3.6-rc7/arch/mips/kernel/Makefile	2012-09-29 14:30:22.542600873 +0200
+@@ -104,7 +104,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
+ 
+ obj-$(CONFIG_OF)		+= prom.o
+ 
+-CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
++CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
+ 
+ obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
+ 
+--- linux-3.6-rc7.orig/arch/x86/Makefile	2012-09-29 09:25:39.907995723 +0200
++++ linux-3.6-rc7/arch/x86/Makefile	2012-09-29 14:30:22.542600873 +0200
+@@ -92,7 +92,7 @@ endif
+ ifdef CONFIG_X86_X32
+ 	x32_ld_ok := $(call try-run,\
+ 			/bin/echo -e '1: .quad 1b' | \
+-			$(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" - && \
++			$(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" - && \
+ 			$(OBJCOPY) -O elf32-x86-64 "$$TMP" "$$TMPO" && \
+ 			$(LD) -m elf32_x86_64 "$$TMPO" -o "$$TMP",y,n)
+         ifeq ($(x32_ld_ok),y)
+--- linux-3.6-rc7.orig/scripts/Kbuild.include	2012-09-29 09:25:39.906995722 +0200
++++ linux-3.6-rc7/scripts/Kbuild.include	2012-09-29 14:30:22.543600874 +0200
+@@ -98,24 +98,24 @@ try-run = $(shell set -e;		\
+ # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
+ 
+ as-option = $(call try-run,\
+-	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # as-instr
+ # Usage: cflags-y += $(call as-instr,instr,option1,option2)
+ 
+ as-instr = $(call try-run,\
+-	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
++	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
+ 
+ # cc-option
+ # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+ 
+ cc-option = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # cc-option-yn
+ # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
+ cc-option-yn = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
+ 
+ # cc-option-align
+ # Prefix align with either -falign or -malign
+@@ -125,7 +125,7 @@ cc-option-align = $(subst -functions=0,,
+ # cc-disable-warning
+ # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
+ cc-disable-warning = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
+ 
+ # cc-version
+ # Usage gcc-ver := $(call cc-version)
+@@ -143,7 +143,7 @@ cc-ifversion = $(shell [ $(call cc-versi
+ # cc-ldoption
+ # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
+ cc-ldoption = $(call try-run,\
+-	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # ld-option
+ # Usage: LDFLAGS += $(call ld-option, -X)
+--- linux-3.6-rc7.orig/scripts/gcc-version.sh	2012-09-29 14:51:40.429574745 +0200
++++ linux-3.6-rc7/scripts/gcc-version.sh	2012-09-29 14:51:48.507577172 +0200
+@@ -22,10 +22,10 @@ if [ ${#compiler} -eq 0 ]; then
+ 	exit 1
+ fi
+ 
+-MAJOR=$(echo __GNUC__ | $compiler -E -xc - | tail -n 1)
+-MINOR=$(echo __GNUC_MINOR__ | $compiler -E -xc - | tail -n 1)
++MAJOR=$(echo __GNUC__ | $compiler -E -x c - | tail -n 1)
++MINOR=$(echo __GNUC_MINOR__ | $compiler -E -x c - | tail -n 1)
+ if [ "x$with_patchlevel" != "x" ] ; then
+-	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -xc - | tail -n 1)
++	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -x c - | tail -n 1)
+ 	printf "%02d%02d%02d\\n" $MAJOR $MINOR $PATCHLEVEL
+ else
+ 	printf "%02d%02d\\n" $MAJOR $MINOR
+--- linux-3.6-rc7.orig/scripts/gcc-x86_32-has-stack-protector.sh	2012-09-29 14:51:40.429574745 +0200
++++ linux-3.6-rc7/scripts/gcc-x86_32-has-stack-protector.sh	2012-09-29 14:51:48.508577173 +0200
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- linux-3.6-rc7.orig/scripts/gcc-x86_64-has-stack-protector.sh	2012-09-29 14:51:40.429574745 +0200
++++ linux-3.6-rc7/scripts/gcc-x86_64-has-stack-protector.sh	2012-09-29 14:51:48.508577173 +0200
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- linux-3.6-rc7.orig/scripts/kconfig/check.sh	2012-09-29 14:51:40.430574747 +0200
++++ linux-3.6-rc7/scripts/kconfig/check.sh	2012-09-29 14:51:48.508577173 +0200
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ # Needed for systems without gettext
+-$* -xc -o /dev/null - > /dev/null 2>&1 << EOF
++$* -x c -o /dev/null - > /dev/null 2>&1 << EOF
+ #include <libintl.h>
+ int main()
  {
- 	unsigned long isolated, pfn, block_end_pfn;
--	struct zone *zone = NULL;
-+	struct zone *zone = cc->zone;
- 	LIST_HEAD(freelist);
+--- linux-3.6-rc7.orig/scripts/kconfig/lxdialog/check-lxdialog.sh	2012-09-29 14:51:40.430574747 +0200
++++ linux-3.6-rc7/scripts/kconfig/lxdialog/check-lxdialog.sh	2012-09-29 14:51:48.508577173 +0200
+@@ -38,7 +38,7 @@ trap "rm -f $tmp" 0 1 2 3 15
  
--	/* cc needed for isolate_freepages_block to acquire zone->lock */
--	struct compact_control cc = {
--		.sync = true,
--	};
--
--	if (pfn_valid(start_pfn))
--		cc.zone = zone = page_zone(pfn_to_page(start_pfn));
--
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
- 		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
- 			break;
-@@ -399,7 +392,7 @@ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
+ # Check if we can link to ncurses
+ check() {
+-        $cc -xc - -o $tmp 2>/dev/null <<'EOF'
++        $cc -x c - -o $tmp 2>/dev/null <<'EOF'
+ #include CURSES_LOC
+ main() {}
+ EOF
+--- linux-3.6-rc7.orig/tools/perf/Makefile	2012-09-29 14:51:40.430574747 +0200
++++ linux-3.6-rc7/tools/perf/Makefile	2012-09-29 14:51:48.509577174 +0200
+@@ -62,7 +62,7 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+ 	IS_X86_64 := 0
+ 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+ 	endif
+ 	ifeq (${IS_X86_64}, 1)
+ 		RAW_ARCH := x86_64
+--- linux-3.6-rc7.orig/tools/power/cpupower/Makefile	2012-09-29 09:25:39.907995723 +0200
++++ linux-3.6-rc7/tools/power/cpupower/Makefile	2012-09-29 14:30:22.547600878 +0200
+@@ -111,7 +111,7 @@ GMO_FILES = ${shell for HLANG in ${LANGU
+ export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
  
--		isolated = isolate_freepages_block(&cc, pfn, block_end_pfn,
-+		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
- 						   &freelist, true);
+ # check if compiler option is supported
+-cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
++cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -x c /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
  
- 		/*
-diff --git a/mm/internal.h b/mm/internal.h
-index 7052289..ffe0473 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -135,7 +135,8 @@ struct compact_control {
- };
- 
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn);
- unsigned long
- isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 			   unsigned long low_pfn, unsigned long end_pfn);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 0a1906b..076d08d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5650,23 +5650,14 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
- }
- 
- /* [start, end) must belong to a single zone. */
--static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-+static int __alloc_contig_migrate_range(struct compact_control *cc,
-+					unsigned long start, unsigned long end)
- {
- 	/* This function is based on compact_zone() from compaction.c. */
--
- 	unsigned long pfn = start;
- 	unsigned int tries = 0;
- 	int ret = 0;
- 
--	struct compact_control cc = {
--		.nr_migratepages = 0,
--		.order = -1,
--		.zone = page_zone(pfn_to_page(start)),
--		.sync = true,
--		.ignore_skip_hint = true,
--	};
--	INIT_LIST_HEAD(&cc.migratepages);
--
- 	migrate_prep_local();
- 
- 	while (pfn < end || !list_empty(&cc.migratepages)) {
-@@ -5775,6 +5766,15 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	unsigned long outer_start, outer_end;
- 	int ret = 0, order;
- 
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start)),
-+		.sync = true,
-+		.ignore_skip_hint = true,
-+	};
-+	INIT_LIST_HEAD(&cc.migratepages);
-+
- 	/*
- 	 * What we do here is we mark all pageblocks in range as
- 	 * MIGRATE_ISOLATE.  Because pageblock and max order pages may
-@@ -5804,7 +5804,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	if (ret)
- 		goto done;
- 
--	ret = __alloc_contig_migrate_range(start, end);
-+	ret = __alloc_contig_migrate_range(cc, start, end);
- 	if (ret)
- 		goto done;
- 
-@@ -5853,7 +5853,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	__reclaim_pages(zone, GFP_HIGHUSER_MOVABLE, end-start);
- 
- 	/* Grab isolated pages from freelists. */
--	outer_end = isolate_freepages_range(outer_start, end);
-+	outer_end = isolate_freepages_range(cc, outer_start, end);
- 	if (!outer_end) {
- 		ret = -EBUSY;
- 		goto done;
+ # use '-Os' optimization if available, else use -O2
+ OPTIMIZATION := $(call cc-supports,-Os,-O2)
+
+-- 
+Jean Delvare
+Suse L3
+
