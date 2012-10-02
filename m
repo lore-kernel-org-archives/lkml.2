@@ -1,153 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2JBI2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 04:28:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58573 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab2JBI2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754847Ab2JBI2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 04:28:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56556 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754809Ab2JBI2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Oct 2012 04:28:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506AA57C.1090209@jp.fujitsu.com>
-Date: Tue, 2 Oct 2012 17:27:40 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Message-ID: <506AA57B.50807@ti.com>
+Date: Tue, 2 Oct 2012 13:57:39 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [Patch 1/2] memory-hotplug : Preparation to notify memory block's
- state at memory hot remove
-References: <506AA4E2.7070302@jp.fujitsu.com>
-In-Reply-To: <506AA4E2.7070302@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "Philip, Avinash" <avinashphilip@ti.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <gururaja.hebbar@ti.com>
+Subject: Re: [PATCH 1/2] pwm: pwm-tiecap: Add device-tree binding support
+ for APWM driver
+References: <1348658863-29428-1-git-send-email-avinashphilip@ti.com> <1348658863-29428-2-git-send-email-avinashphilip@ti.com> <20121002060014.GA4298@avionic-0098.mockup.avionic-design.de> <506A94C0.1010106@ti.com> <20121002080751.GA16928@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121002080751.GA16928@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On 10/2/2012 1:37 PM, Thierry Reding wrote:
+> On Tue, Oct 02, 2012 at 12:46:16PM +0530, Sekhar Nori wrote:
+>> Hi Thierry,
+>>
+>> On 10/2/2012 11:30 AM, Thierry Reding wrote:
+>>> On Wed, Sep 26, 2012 at 04:57:42PM +0530, Philip, Avinash wrote:
+>>> [...]
+>>>> +#include <linux/platform_data/ti-pwmss.h>
+>>> [...]
+>>>> +static struct pwmss_platform_data am33xx_data = {
+>>>> +	.has_configspace	= true,
+>>>> +};
+>>>
+>>> This structure is defined in a public header. I don't see why it has to,
+>>> given that it's only used to associate some data with an of_device_id
+>>> entry below. Since AM33xx never had anything but OF support in the
+>>> mainline kernel I don't think we should add platform data.
+>>
+>> Avinash probably introduced platform data because the same PWM IP is
+>> used in older DaVinci family SoCs (DA830 and DA850) which are not
+>> converted to DT. There are existing boards for those SoCs  (supported in
+>> mainline) which could benefit from this driver.
+> 
+> Okay. If that's the case platform data should be added along with
+> support for those SoCs. Ideally, of course, the DaVinci boards would be
+> converted to DT first so we wouldn't have to introduce platform data
+> just to get rid of it when the conversion does take place. Until now it
+> seems like the boards have managed to get by without PWM support so
+> maybe they just don't use or need it?
 
-remove_memory() is called in two cases:
-1. echo offline >/sys/devices/system/memory/memoryXX/state
-2. hot remove a memory device
+On top of my head, the DA850 EVM uses PWM for LCD backlight control.
+Attempts were made in the past to support PWM on this board back when
+Bill Gatliff was attempting to get a framework accepted. So, I guess the
+boards were waiting for a framework to materialize ;-)
 
-In the 1st case, the memory block's state is changed and the notification
-that memory block's state changed is sent to userland after calling
-remove_memory(). So user can notice memory block is changed.
+I posted some patches to add basic DT support for DA850 EVM. It will be
+a while before the entire board is converted over. Also, platforms like
+DA830 have lesser number of users so it will likely not be converted at all.
 
-But in the 2nd case, the memory block's state is not changed and the
-notification is not also sent to userspcae even if calling remove_memory().
-So user cannot notice memory block is changed.
+It is fair to add platform data along with SoC support. Thanks!
 
-For adding the notification at memory hot remove, the patch just prepare
-as follows:
-1st case uses offline_pages() for offlining memory.
-2nd case uses remove_memory() for offlining memory and changing memory block's
-state and notifing the information.
-
-The patch does not implement notification to remove_memory().
-
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- drivers/base/memory.c          |    9 +++------
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |   13 +++++++++++--
- 3 files changed, 15 insertions(+), 8 deletions(-)
-
-Index: linux-3.6/drivers/base/memory.c
-===================================================================
---- linux-3.6.orig/drivers/base/memory.c	2012-10-02 16:01:46.000000000 +0900
-+++ linux-3.6/drivers/base/memory.c	2012-10-02 16:07:08.278081232 +0900
-@@ -248,26 +248,23 @@ static bool pages_correctly_reserved(uns
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
- {
--	unsigned long start_pfn, start_paddr;
-+	unsigned long start_pfn;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
- 	int ret;
- 
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
-+	start_pfn = page_to_pfn(first_page);
- 
- 	switch (action) {
- 		case MEM_ONLINE:
--			start_pfn = page_to_pfn(first_page);
--
- 			if (!pages_correctly_reserved(start_pfn, nr_pages))
- 				return -EBUSY;
- 
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
--			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
--			ret = remove_memory(start_paddr,
--					    nr_pages << PAGE_SHIFT);
-+			ret = offline_pages(start_pfn, nr_pages);
- 			break;
- 		default:
- 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
-Index: linux-3.6/include/linux/memory_hotplug.h
-===================================================================
---- linux-3.6.orig/include/linux/memory_hotplug.h	2012-10-02 16:01:46.000000000 +0900
-+++ linux-3.6/include/linux/memory_hotplug.h	2012-10-02 16:07:08.281081235 +0900
-@@ -233,6 +233,7 @@ static inline int is_mem_section_removab
- extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
-+extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
- extern int remove_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
-Index: linux-3.6/mm/memory_hotplug.c
-===================================================================
---- linux-3.6.orig/mm/memory_hotplug.c	2012-10-02 16:01:46.000000000 +0900
-+++ linux-3.6/mm/memory_hotplug.c	2012-10-02 16:07:08.279081233 +0900
-@@ -870,7 +870,7 @@ check_pages_isolated(unsigned long start
- 	return offlined;
- }
- 
--static int __ref offline_pages(unsigned long start_pfn,
-+static int __ref __offline_pages(unsigned long start_pfn,
- 		  unsigned long end_pfn, unsigned long timeout)
- {
- 	unsigned long pfn, nr_pages, expire;
-@@ -998,15 +998,24 @@ out:
- 	return ret;
- }
- 
-+int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
-+{
-+	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
-+}
-+
- int remove_memory(u64 start, u64 size)
- {
- 	unsigned long start_pfn, end_pfn;
- 
- 	start_pfn = PFN_DOWN(start);
- 	end_pfn = start_pfn + PFN_DOWN(size);
--	return offline_pages(start_pfn, end_pfn, 120 * HZ);
-+	return __offline_pages(start_pfn, end_pfn, 120 * HZ);
- }
- #else
-+int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
-+{
-+	return -EINVAL;
-+}
- int remove_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
-
+Regards,
+Sekhar
