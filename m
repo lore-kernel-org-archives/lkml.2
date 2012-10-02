@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2JBBf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 21:35:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47773 "EHLO
+	id S1752955Ab2JBBvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 21:51:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58647 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2JBBfz (ORCPT
+	with ESMTP id S1752715Ab2JBBv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 21:35:55 -0400
-Date: Tue, 2 Oct 2012 11:35:46 +1000
+	Mon, 1 Oct 2012 21:51:26 -0400
+Date: Tue, 2 Oct 2012 11:51:17 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: linux-next: build failure after merge of the acpi tree
-Message-Id: <20121002113546.cf53b96a62e0e32786e76af2@canb.auug.org.au>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the net-next tree with Linus' tree
+Message-Id: <20121002115117.e13fe5efd765117d513c60de@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Oct_2012_11_35_46_+1000_PRRWy7bHa1hMOnjm"
+ boundary="Signature=_Tue__2_Oct_2012_11_51_17_+1000_kz5QJZ6tkGNGMWb."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Oct_2012_11_35_46_+1000_PRRWy7bHa1hMOnjm
+--Signature=_Tue__2_Oct_2012_11_51_17_+1000_kz5QJZ6tkGNGMWb.
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Len,
+Hi all,
 
-After merging the acpi tree, today's linux-next build (x86_64_allmodconfig)
-failed like this:
+Today's linux-next merge of the net-next tree got a conflict in
+Documentation/feature-removal-schedule.txt between commit 9c0ece069b32
+("Get rid of Documentation/feature-removal.txt") from Linus' tree and
+commits 965505015bec ("netfilter: remove xt_NOTRACK") and 7b55279f6a45
+("NFC: Remove the pn544 raw driver") from the net-next tree.
 
-drivers/usb/core/usb-acpi.c: In function 'usb_acpi_check_port_connect_type':
-drivers/usb/core/usb-acpi.c:90:18: error: storage size of 'pld' isn't known
-
-Caused by commit 05f916894a69 ("usb/acpi: Store info on device
-removability") from Linus' tree interacting with commit 8ede06aba5df
-("ACPI: Use ACPICA native way to decode the PLD buffer") from the acpi
-tree.
-
-I applied this merge fix that I have been applying to the usb tree (which
-has now been merged by Linus).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 24 Sep 2012 16:51:38 +1000
-Subject: [PATCH] usb-acpi: Comply with the ACPI API change after usb tree m=
-erge
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/usb/core/usb-acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/core/usb-acpi.c b/drivers/usb/core/usb-acpi.c
-index 0ef7d42..e9b159a 100644
---- a/drivers/usb/core/usb-acpi.c
-+++ b/drivers/usb/core/usb-acpi.c
-@@ -87,7 +87,7 @@ static int usb_acpi_check_port_connect_type(struct usb_de=
-vice *hdev,
- 	acpi_status status;
- 	struct acpi_buffer buffer =3D { ACPI_ALLOCATE_BUFFER, NULL };
- 	union acpi_object *upc;
--	struct acpi_pld pld;
-+	struct acpi_pld_info *pld;
- 	int ret =3D 0;
-=20
- 	/*
-@@ -111,13 +111,13 @@ static int usb_acpi_check_port_connect_type(struct us=
-b_device *hdev,
- 	}
-=20
- 	if (upc->package.elements[0].integer.value)
--		if (pld.user_visible)
-+		if (pld->user_visible)
- 			usb_set_hub_port_connect_type(hdev, port1,
- 				USB_PORT_CONNECT_TYPE_HOT_PLUG);
- 		else
- 			usb_set_hub_port_connect_type(hdev, port1,
- 				USB_PORT_CONNECT_TYPE_HARD_WIRED);
--	else if (!pld.user_visible)
-+	else if (!pld->user_visible)
- 		usb_set_hub_port_connect_type(hdev, port1, USB_PORT_NOT_USED);
-=20
- out:
+I removed the file and can carry the fix as necessary (no action
+is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__2_Oct_2012_11_35_46_+1000_PRRWy7bHa1hMOnjm
+--Signature=_Tue__2_Oct_2012_11_51_17_+1000_kz5QJZ6tkGNGMWb.
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQakTyAAoJEECxmPOUX5FEplAQAJsktGKXLNAWYvGDZZ7Rpnhx
-iB+4hdziZYOhAv4o1ZhhbmpdiHwRX2+oVQPdBGfFq9AFajdiTwywGIWJ99O+9ODT
-QXLeqyU+EgiNhUvMFMgjksJwnZrDmzKhyWNahvb/zpIWj1jLqfa0ohWOD+1bpC3S
-CIRQnL3iLKJtO17mZwW88Z9LkSX9tZ31jPbR0E9NlqQnEE8bFmBbkgQ14f4IXUf5
-HyOgvr6M+9jGe2y5vyi6QzeWHxE7Hsvhhu8QImA2qPT7UbdlpH6rNZODGwZLrJZ3
-NNXdCUVbwgpZiq0Xve2PSGpWkXjsr4AYC4t613k04OxwdKrMUTiIo3joHCBfysB1
-JzES6m3QV9R3jy2vny94NhcAZFv5B5/Sj8fF0luke+UMRkUd+2buoapi1pcCB2sA
-gmIu9I/oYBg4TG96j8JUr7b2u5JTSzit6rSyT8HDT0w1I5omJgZPImZZdDJOUFpz
-cLOjDwICJ2C5/kS7l/Yt4dQrhEv5FERiYlYVPCiRkwLdm9PtG76jOlajVzf+2fJy
-4R5xYRQ/RwbqtIkk0ciPQerCrHvoN0irdi9U0n32MbeyvTb209Z2R3e05XIvkZsl
-z7YNt9/GozFlft6YZR9SAH4mZXbL67A/Mc1/iSChD8HHuPJeMDLl+qnP09YL0agB
-J+yFGZmLIwEb8YfbsNRy
-=96cu
+iQIcBAEBCAAGBQJQakiVAAoJEECxmPOUX5FEeHsQAKii9OPf4Fane16Lqj8Wb0rM
+yDZ3EuUqc94uXE0ZiOoaRt9aMCO57HnHQvlSkPDLuoeXshy2pkSool2diAWAh5I5
+P1F/OGBoFxZ78iDjk1Rd5jXLqJatbDxznqzWESNTM1Jc0TK544WqxQ+RsrrchQgE
+bfbNweEXY4POjcNRLlfNE6QqGBHhDe/IQb2huKoOMbj5d3OTUOaNQLoBhWEI/0Yw
+EkE4ncl9j580iWmAGGYqGMC0mx1eehfiU0gJ/w21RTJbXaNqS38twl3nlqwUo+tm
+bDnYQdE4kK+5C3NPLg2xvk4ElbxOxl+sTF1xnemwnhf9g8O90HV8UNYN8R77GBi5
+p/E4BGC3G8PxPEmvqZm+6047OX6QtQVsnESuaveO53n87p7sbuFkUClv0rCZh5Wf
+Vgaz3oKToR2RkHYsytJAp/E9TJanjOQym2fkvnxQyPoknsmMqG/z9MIgpDISxTey
+jLySg0uW5lRZ9X35HKKmMu21sFyO796oD/PkF/7PHmhJtFc2355+Ehdwfp2isJnK
+j/jeUQBMm0WW0h2aWFoto/ljs6d5LsXF49Yii4iCqVz+5SOw3E8M1clUNFJ7HQas
+sFVrPhTaHKJiiA42PCtYFV4hwj9Oknjz5eGr8MIcIclO2Xcjdbh8svbZmiIhio4b
+mXmxrXFByXDNYGE/RI99
+=zUBo
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__2_Oct_2012_11_35_46_+1000_PRRWy7bHa1hMOnjm--
+--Signature=_Tue__2_Oct_2012_11_51_17_+1000_kz5QJZ6tkGNGMWb.--
