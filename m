@@ -1,49 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401Ab2JBVbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:31:44 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44247 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab2JBVbn (ORCPT
+	id S1756573Ab2JBVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 17:32:26 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:28423 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172Ab2JBVcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:31:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349202763-1601-1-git-send-email-geert@linux-m68k.org>
-References: <1349202763-1601-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 3 Oct 2012 00:31:42 +0300
-Message-ID: <CAJL_dMuCO6kvrHKkYU47nbp0=LbT5nMHo6WWkK0u5SjWXEtUWw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.6
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <greg@linux-foundation.org>, trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Oct 2012 17:32:24 -0400
+From: T Makphaibulchoke <tmac@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        akpm@linux-foundation.org, yinghai@kernel.org, tiwai@suse.de,
+        viro@zeniv.linux.org.uk, aarcange@redhat.com, tony.luck@intel.com,
+        mgorman@suse.de, weiyang@linux.vnet.ibm.com,
+        octavian.purdila@intel.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH] Fix devmem_is_allowed for below 1MB accesses for an efi machine
+Date: Tue,  2 Oct 2012 15:32:16 -0600
+Message-Id: <1349213536-3436-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 9:32 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Below is the list of build error/warning regressions/improvements in
-> v3.6[1] compared to v3.5[2].
->
-> To make this mail fit in the lkml limit, I deleted
->   - 6008 lines about __mcount_loc on sparc64
->
-> Summarized:
->   - build errors: +56/-119
->   - build warnings: +6296/-246
->
-> JFYI, when comparing v3.6 to v3.6-rc7[3], the summaries are:
->   - build errors: +4/-1
->   - build warnings: +716/-107
->
-> Note that there may be false regressions, as some logs are incomplete.
-> Still, they're build errors/warnings.
->
-> As I haven't mastered kup yet, there's no verbose summary at
-> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.6.summary.gz
->
-> Happy fixing! ;-)
+Changing devmem_is_allowed so that on an EFI machine, access to physical
+address below 1 MB is allowed only to physical pages that are valid in
+the EFI memory map.  This prevents the possibility of an MCE due to
+accessing an invalid physical address.
 
-More errors, more warnings...
+Signed-off-by: T Makphaibulchoke <tmac@hp.com>
+---
+ arch/x86/mm/init.c |   12 ++++++++++--
+ include/linux/mm.h |    1 +
+ kernel/resource.c  |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 58 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index ab1f6a9..3ed95c5 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -4,6 +4,7 @@
+ #include <linux/swap.h>
+ #include <linux/memblock.h>
+ #include <linux/bootmem.h>	/* for max_low_pfn */
++#include <linux/efi.h>		/* for efi_enabled */
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/e820.h>
+@@ -319,8 +320,15 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+  */
+ int devmem_is_allowed(unsigned long pagenr)
+ {
+-	if (pagenr < 256)
+-		return 1;
++	if (pagenr < 256) {
++		if (!efi_enabled)
++			return 1;
++		/* For EFI, allow access only to valid physical addresses. */
++		if (page_is_valid(pagenr))
++			return 1;
++		return 0;
++	}
++
+ 	if (iomem_is_exclusive(pagenr << PAGE_SHIFT))
+ 		return 0;
+ 	if (!page_is_ram(pagenr))
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 311be90..fd1bcd4 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -288,6 +288,7 @@ static inline int get_page_unless_zero(struct page *page)
+ }
+ 
+ extern int page_is_ram(unsigned long pfn);
++extern int page_is_valid(unsigned long pfn);
+ 
+ /* Support for virtually mapped pages */
+ struct page *vmalloc_to_page(const void *addr);
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 34d4588..aeb091b 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -367,6 +367,53 @@ int __weak page_is_ram(unsigned long pfn)
+ 	return walk_system_ram_range(pfn, 1, NULL, __is_ram) == 1;
+ }
+ 
++static int find_next_system_resource(struct resource *res)
++{
++	resource_size_t start, end;
++	struct resource *p;
++
++	BUG_ON(!res);
++
++	start = res->start;
++	end = res->end;
++	BUG_ON(start >= end);
++
++	read_lock(&resource_lock);
++	for (p = iomem_resource.child; p ; p = p->sibling) {
++		/* system ram is just marked as IORESOURCE_MEM */
++		if (!(p->flags & res->flags))
++			continue;
++		if (p->start > end) {
++			p = NULL;
++			break;
++		}
++		if ((p->end >= start) && (p->start < end))
++			break;
++	}
++	read_unlock(&resource_lock);
++	if (!p)
++		return -1;
++	/* copy data */
++	if (res->start < p->start)
++		res->start = p->start;
++	if (res->end > p->end)
++		res->end = p->end;
++	return 0;
++}
++
++int __weak page_is_valid(unsigned long start_pfn)
++{
++	struct resource res;
++	int ret = 0;
++
++	res.start = (u64) start_pfn << PAGE_SHIFT;
++	res.end = ((u64)(start_pfn + 1) << PAGE_SHIFT) - 1;
++	res.flags = IORESOURCE_MEM;
++	if (find_next_system_resource(&res) >= 0)
++		ret = 1;
++	return ret;
++}
++
+ void __weak arch_remove_reservations(struct resource *avail)
+ {
+ }
+-- 
+1.7.1
+
