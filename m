@@ -1,88 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab2JBDuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Oct 2012 23:50:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53862 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2JBDuK (ORCPT
+	id S1751885Ab2JBDvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Oct 2012 23:51:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55345 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab2JBDvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 23:50:10 -0400
-Date: Mon, 1 Oct 2012 20:49:53 -0700
-From: tip-bot for David Rientjes <rientjes@google.com>
-Message-ID: <tip-3dfd8235002727dbd759bb0f80f8ac862f392071@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        lenb@kernel.org, trenn@suse.de, tglx@linutronix.de,
-        hpa@linux.intel.com, rientjes@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, trenn@suse.de, tglx@linutronix.de,
-        hpa@linux.intel.com, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.00.1210012032470.31644@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1210012032470.31644@chino.kir.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/acpi] ACPI: Fix build when disabled
-Git-Commit-ID: 3dfd8235002727dbd759bb0f80f8ac862f392071
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 01 Oct 2012 20:49:58 -0700 (PDT)
+	Mon, 1 Oct 2012 23:51:13 -0400
+Date: Tue, 2 Oct 2012 13:50:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Timur Tabi <timur@freescale.com>
+Subject: linux-next: manual merge of the dt-rh tree with Linus' tree
+Message-Id: <20121002135059.3b97bb158fcb6417daa3a7ae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__2_Oct_2012_13_50_59_+1000_Tu/btOT+y/m5A2LE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3dfd8235002727dbd759bb0f80f8ac862f392071
-Gitweb:     http://git.kernel.org/tip/3dfd8235002727dbd759bb0f80f8ac862f392071
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Mon, 1 Oct 2012 20:38:47 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 1 Oct 2012 20:41:43 -0700
+--Signature=_Tue__2_Oct_2012_13_50_59_+1000_Tu/btOT+y/m5A2LE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ACPI: Fix build when disabled
+Hi Rob,
 
-"ACPI: Store valid ACPI tables passed via early initrd in reserved
-memblock areas" breaks the build if either CONFIG_ACPI or
-CONFIG_BLK_DEV_INITRD is disabled:
+Today's linux-next merge of the dt-rh tree got a conflict in
+drivers/of/base.c include/linux/of.h between commit 3296193d1421 ("dt:
+introduce for_each_available_child_of_node, of_get_next_available_child")
+from Linus' tree and commit 9c19761a7ecd ("dt: introduce
+of_get_child_by_name to get child node by name") from the dt-rh tree.
 
-arch/x86/kernel/setup.c: In function 'setup_arch':
-arch/x86/kernel/setup.c:944: error: implicit declaration of function 'acpi_initrd_override'
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-or
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-arch/x86/built-in.o: In function `setup_arch':
-(.init.text+0x1397): undefined reference to `initrd_start'
-arch/x86/built-in.o: In function `setup_arch':
-(.init.text+0x139e): undefined reference to `initrd_end'
+diff --cc drivers/of/base.c
+index 4a8d46f,e2e8136..0000000
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@@ -364,33 -364,29 +364,56 @@@ struct device_node *of_get_next_child(c
+  EXPORT_SYMBOL(of_get_next_child);
+ =20
+  /**
+ + *	of_get_next_available_child - Find the next available child node
+ + *	@node:	parent node
+ + *	@prev:	previous child of the parent node, or NULL to get first
+ + *
+ + *      This function is like of_get_next_child(), except that it
+ + *      automatically skips any disabled nodes (i.e. status =3D "disabled=
+").
+ + */
+ +struct device_node *of_get_next_available_child(const struct device_node =
+*node,
+ +	struct device_node *prev)
+ +{
+ +	struct device_node *next;
+ +
+ +	read_lock(&devtree_lock);
+ +	next =3D prev ? prev->sibling : node->child;
+ +	for (; next; next =3D next->sibling) {
+ +		if (!of_device_is_available(next))
+ +			continue;
+ +		if (of_node_get(next))
+ +			break;
+ +	}
+ +	of_node_put(prev);
+ +	read_unlock(&devtree_lock);
+ +	return next;
+ +}
+ +EXPORT_SYMBOL(of_get_next_available_child);
+ +
+ +/**
++  *	of_get_child_by_name - Find the child node by name for a given parent
++  *	@node:	parent node
++  *	@name:	child name to look for.
++  *
++  *      This function looks for child node for given matching name
++  *
++  *	Returns a node pointer if found, with refcount incremented, use
++  *	of_node_put() on it when done.
++  *	Returns NULL if node is not found.
++  */
++ struct device_node *of_get_child_by_name(const struct device_node *node,
++ 				const char *name)
++ {
++ 	struct device_node *child;
++=20
++ 	for_each_child_of_node(node, child)
++ 		if (child->name && (of_node_cmp(child->name, name) =3D=3D 0))
++ 			break;
++ 	return child;
++ }
++ EXPORT_SYMBOL(of_get_child_by_name);
++=20
++ /**
+   *	of_find_node_by_path - Find a node matching a full OF path
+   *	@path:	The full path to match
+   *
+diff --cc include/linux/of.h
+index 5c7a158,fabb524..0000000
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@@ -190,9 -190,8 +190,11 @@@ extern struct device_node *of_get_paren
+  extern struct device_node *of_get_next_parent(struct device_node *node);
+  extern struct device_node *of_get_next_child(const struct device_node *no=
+de,
+  					     struct device_node *prev);
+ +extern struct device_node *of_get_next_available_child(
+ +	const struct device_node *node, struct device_node *prev);
+ +
++ extern struct device_node *of_get_child_by_name(const struct device_node =
+*node,
++ 					const char *name);
+  #define for_each_child_of_node(parent, child) \
+  	for (child =3D of_get_next_child(parent, NULL); child !=3D NULL; \
+  	     child =3D of_get_next_child(parent, child))
 
-The dummy acpi_initrd_override() function in acpi.h isn't defined without
-CONFIG_ACPI and initrd_{start,end} are declared but not defined without
-CONFIG_BLK_DEV_INITRD.
+--Signature=_Tue__2_Oct_2012_13_50_59_+1000_Tu/btOT+y/m5A2LE
+Content-Type: application/pgp-signature
 
-[ hpa: applying this as a fix, but this really should be done cleaner ]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1210012032470.31644@chino.kir.corp.google.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Len Brown <lenb@kernel.org>
----
- arch/x86/kernel/setup.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+iQIcBAEBCAAGBQJQamSjAAoJEECxmPOUX5FEzmYP/3WYcjzLIls+VQtTlamvM6Rk
+ySfyyKeJIb16hfoKJkg+fNetpULlUj2/A6E15pcEiVX7VssgNSeKJDyXIkT5NohD
+EIAQg2nKiwrrnql+jQij3MEs8utH+eAZTasfuFxPa9C5Y6msFzF1fy2Gtj9106dA
+gTt2pUMxmA6q0Rad6sVI4P0QG0wah8Y1+MmdmYmkZppBrm2xwO7/QRbJRsfcvvCL
+GfUpRnHkzFgVVU2s766PxbfsIN9SuYFvHy/Lt/dUKcrH44L1FBS8cx34AAk3yZGC
+DyNQNrg/18J1XkCSX3/8fwtJ+YHRrv1JdIFGb4lFiZOe6hjzFZN1bO3nP9hyJQAu
+7griEMnGSKKeM29miH6WM+jqI+cED2fZxpUHeTV3vj+UhgHxFLm8p/5V592xlkOt
+kuwr2DBnQmgrPxKKPwLHwyLkDdkXJdS9RB4arL+EYzVToMFqb6559ImA9Z8PoSJp
+kVIFrauVSwyt3fo6xvBCJuiWjs15hLI2jF9XAU8kWhJT4Wbm5EYLinrdZ1OYhEiO
+0qc3rriErmtVGFaexpvmEULNXAihD1XBurHEyIy8hSYWzcG9CiDHgeFxtxcZ0gKq
+4ytt+eA0yn3C/bwVNgzA83PxSOW666pfask+FwJqSc+Wub7E1hJumWQ5aNMMKYCq
+e34jzL/X9hkIaE7mwtL7
+=08Z+
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 764e543..bf82c1e 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -941,7 +941,9 @@ void __init setup_arch(char **cmdline_p)
- 
- 	reserve_initrd();
- 
-+#if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
- 	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
-+#endif
- 
- 	reserve_crashkernel();
- 
+--Signature=_Tue__2_Oct_2012_13_50_59_+1000_Tu/btOT+y/m5A2LE--
