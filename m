@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2JBLTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 07:19:49 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:40632 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab2JBLTs (ORCPT
+	id S1752026Ab2JBLZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 07:25:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43041 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2JBLZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 07:19:48 -0400
-Message-ID: <1349176819.10698.16.camel@jlt4.sipsolutions.net>
-Subject: Re: How do I get mac80211 debugfs?
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Kevin Cruz <skate_ops@yahoo.com>
-Cc: Intel Wireless <ilw@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Date: Tue, 02 Oct 2012 13:20:19 +0200
-In-Reply-To: <1349159890.10698.2.camel@jlt4.sipsolutions.net> (sfid-20121002_083802_746542_57596E7B)
-References: <1348086305.81224.YahooMailNeo@web164004.mail.gq1.yahoo.com>
-	 <20120928121917.GF5368@mwanda>
-	 <1348870515.1973.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-	 <20120929072527.GA13767@mwanda>
-	 <1349102641.41622.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-	 <20121001150913.GC13767@mwanda>
-	 <1349109750.55372.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-	 (sfid-20121001_184314_573998_F50474BE) <1349119899.10330.53.camel@jlt4.sipsolutions.net>
-	 <1349132818.58475.YahooMailNeo@web164006.mail.gq1.yahoo.com>
-	 <1349159890.10698.2.camel@jlt4.sipsolutions.net>
-	 (sfid-20121002_083802_746542_57596E7B)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Oct 2012 07:25:30 -0400
+Date: Tue, 2 Oct 2012 13:25:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v3 -tip 1/5] x86, MSI: Support multiple MSIs in presense
+ of IRQ remapping
+Message-ID: <20121002112524.GA12420@gmail.com>
+References: <cover.1349074231.git.agordeev@redhat.com>
+ <b15a9b5242c7de5770d2315ea8d13f4dcf63c00b.1349074231.git.agordeev@redhat.com>
+ <20121002045518.GA7756@gmail.com>
+ <20121002110630.GA2258@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002110630.GA2258@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 08:38 +0200, Johannes Berg wrote:
-> Hi Kevin,
+
+* Alexander Gordeev <agordeev@redhat.com> wrote:
+
+> On Tue, Oct 02, 2012 at 06:55:18AM +0200, Ingo Molnar wrote:
 > 
-> > So I tried that but all I got back was:
+> Thanks for the review, Ingo.
+> 
+> > > @@ -584,8 +586,12 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+> > >  #define irq_alloc_desc_from(from, node)		\
+> > >  	irq_alloc_descs(-1, from, 1, node)
+> > >  
+> > > +#define irq_alloc_descs_from(from, cnt, node)	\
+> > > +	irq_alloc_descs(-1, from, cnt, node)
+> > > +
 > > 
-> >     cat: /sys/kernel/debug/ieee80211/phy*/queues: No such file or directory
+> > Please use inlines instead of macros. Might transform the one 
+> > above it as well in the process.
+> 
+> You mean here do not introduce irq_alloc_descs_from, but rather use
+> irq_alloc_descs() directly?
+
+My suggestion is to add irq_alloc_descs_from() as a (very 
+simple) inline function and change irq_alloc_desc_from() to be 
+an inline function as well.
+
+> > > +int irq_can_alloc_irqs(unsigned int from, unsigned int cnt)
+> > > +{
+> > > +	unsigned int start;
+> > > +	int ret = 0;
+> > > +
+> > > +	if (!cnt)
+> > > +		return -EINVAL;
+> > > +
+> > > +	mutex_lock(&sparse_irq_lock);
+> > > +	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
+> > > +					   from, cnt, 0);
+> > > +	mutex_unlock(&sparse_irq_lock);
+> > > +	if (start + cnt > nr_irqs)
+> > > +		ret = irq_can_expand_nr_irqs(start + cnt);
+> > > +	return ret;
 > > 
-> > so I'm assuming it's because I must not have mac80211 debugfs.  So how
-> > do I get it?
+> > How is this supposed to work wrt. races?
 > 
-> First, make sure it's mounted, check "mount" and if not mount it:
-> 
-> sudo mount -t debugfs debugfs /sys/kernel/debug
-> 
-> If that doesn't work you don't have it enabled in the kernel config,
-> check for CONFIG_DEBUG_FS. If you do have it, but not mac80211's files,
-> check for CONFIG_MAC80211_DEBUGFS.
+> It is not supposed. Just a quick check if there are enough bits before an
+> attempt to allocate memory in __create_irqs(). Otherwise __create_irqs()
+> might allocate irq_cfg's, then realize there are no bits, then deallocate
+> and fail.
+>
+> But strictly speaking, irq_can_alloc_irqs() is unnecessary.
 
-Oh also, if tracing already works, that'd be sufficient. No need to
-enable debugfs just to confirm the issue, tracing would let me confirm
-it as well. I just thought debugfs would let me confirm the issue first
-before going to the trouble of enabling tracing.
+Why complicate it if it's unnecessary? The function is inviting 
+wrong logic: it *cannot* tell whether there are enough bits, 
+because the check is racy.
 
-johannes
+So I'd suggest to keep this out - this will further simplify the 
+patches.
 
+Thanks,
+
+	Ingo
