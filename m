@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab2JBOS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 10:18:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61411 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab2JBOSZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 10:18:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349185609.7780.34.camel@twins>
-References: <20121002114218.GA5891@krava.brq.redhat.com>
-	<1349178781.7780.29.camel@twins>
-	<20121002123921.GB6379@krava.brq.redhat.com>
-	<CABPqkBQvhUk=3OU4brv0LefZnRn2xSALA2-cVmE3A1wazDT=XA@mail.gmail.com>
-	<1349183446.7780.32.camel@twins>
-	<CABPqkBSRTDbN7Sq9Pg0GOUFNiKGpVgOBY82ZMK--4Tgy9=iZDA@mail.gmail.com>
-	<1349185609.7780.34.camel@twins>
-Date: Tue, 2 Oct 2012 16:18:23 +0200
-Message-ID: <CABPqkBQDHAjWRWfWdayKiLL3rwk_iefZCXRr-1Qk8GJO2x2+AQ@mail.gmail.com>
-Subject: Re: [PATCH] perf cgroups: Fix perf_cgroup_switch schedule in warning
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1754023Ab2JBOTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 10:19:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59685 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab2JBOTt convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 2 Oct 2012 10:19:49 -0400
+Message-Id: <506B141F020000780009F19A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 02 Oct 2012 15:19:43 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Hugh Dickins" <hughd@google.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "Ingo Molnar" <mingo@kernel.org>,
+        <x86@kernel.org>, "Yinghai Lu" <yinghai@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: x86_64: wrong DirectMap kB
+References: <alpine.LSU.2.00.1210010116570.6566@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1210010116570.6566@eggly.anvils>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cool. Thanks.
+>>> On 01.10.12 at 10:37, Hugh Dickins <hughd@google.com> wrote:
+> I noticed yesterday that the DirectMap counts at the bottom of x86_64's
+> /proc/meminfo are wrong on v3.5 and v3.6.  For example, I happen to have
+> booted this laptop with mem=700M to run a test, but /proc/meminfo shows
+> 
+> DirectMap4k:        4096 kB
+> DirectMap2M:    18446744073709547520 kB
 
-On Tue, Oct 2, 2012 at 3:46 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2012-10-02 at 15:34 +0200, Stephane Eranian wrote:
->> And adding a comment in cgroup_switch()
->>
->> +               /* ensure we process each cpuctx only once */
->> +               if (cpuctx->active_pmu != pmu)
->> +                       continue;
->>
-> ---
-> Subject: perf: Fix perf_cgroup_switch for sw-events
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Tue Oct 02 15:41:23 CEST 2012
->
-> Jiri reported that he could trigger the WARN_ON_ONCE() in
-> perf_cgroup_switch() using sw-events. This is because sw-events share
-> a cpuctx with multiple PMUs.
->
-> Use the ->unique_pmu pointer to limit the pmu iteration to unique
-> cpuctx instances.
->
-> Reported-and-Tested-by: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/events/core.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
->
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -372,6 +372,8 @@ void perf_cgroup_switch(struct task_stru
->
->         list_for_each_entry_rcu(pmu, &pmus, entry) {
->                 cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-> +               if (cpuctx->unique_pmu != pmu)
-> +                       continue; /* ensure we process each cpuctx once */
->
->                 /*
->                  * perf_cgroup_events says at least one
-> @@ -395,9 +397,10 @@ void perf_cgroup_switch(struct task_stru
->
->                         if (mode & PERF_CGROUP_SWIN) {
->                                 WARN_ON_ONCE(cpuctx->cgrp);
-> -                               /* set cgrp before ctxsw in to
-> -                                * allow event_filter_match() to not
-> -                                * have to pass task around
-> +                               /*
-> +                                * set cgrp before ctxsw in to allow
-> +                                * event_filter_match() to not have to pass
-> +                                * task around
->                                  */
->                                 cpuctx->cgrp = perf_cgroup_from_task(task);
->                                 cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
->
+I cannot see such odd effect with "mem="; with I can (for any
+value up to around 1G).
+
+> Or if I boot with the full amount of physical memory, the DirectMap
+> numbers do not add up to the full amount of physical memory, as they
+> used to do on v3.4 and before.
+
+That one I can see how could have happened, in that said patch
+went a little too far: Dropping the "pages" increments from
+phys_p[um]d_init() is necessary only for the hotplug case (as
+otherwise duplicating accounting already done earlier), while
+at boot time we would want to do the accounting.
+
+> Whilst I've not yet tried reverting it, I strongly suspect your
+> 20167d3421a0 "x86-64: Fix accounting in kernel_physical_mapping_init()".
+> 
+> Either it was a complete misunderstanding, totally bogus, and should
+> simply be reverted; or perhaps you really noticed something wrong in
+> your code inspection, but didn't get the fix quite right?
+
+The latter, apparently. The patch below should fix both aspects.
+
+Jan
+
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -386,7 +386,8 @@ phys_pte_init(pte_t *pte_page, unsigned 
+ 		 * these mappings are more intelligent.
+ 		 */
+ 		if (pte_val(*pte)) {
+-			pages++;
++			if (!after_bootmem)
++				pages++;
+ 			continue;
+ 		}
+ 
+@@ -451,6 +452,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned 
+ 			 * attributes.
+ 			 */
+ 			if (page_size_mask & (1 << PG_LEVEL_2M)) {
++				if (!after_bootmem)
++					pages++;
+ 				last_map_addr = next;
+ 				continue;
+ 			}
+@@ -526,6 +529,8 @@ phys_pud_init(pud_t *pud_page, unsigned 
+ 			 * attributes.
+ 			 */
+ 			if (page_size_mask & (1 << PG_LEVEL_1G)) {
++				if (!after_bootmem)
++					pages++;
+ 				last_map_addr = next;
+ 				continue;
+ 			}
+
+
