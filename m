@@ -1,130 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab2JBU2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 16:28:40 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44421 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2JBU2j (ORCPT
+	id S1755406Ab2JBU2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 16:28:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60592 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab2JBU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 16:28:39 -0400
-Date: Tue, 2 Oct 2012 13:27:54 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Shuah Khan <shuah.khan@hp.com>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernel NULL pointer dereference at rb_erase+0x1a3/0x370
-In-Reply-To: <1349200709.3141.30.camel@lorien2>
-Message-ID: <alpine.LSU.2.00.1210021317030.1700@eggly.anvils>
-References: <1349200709.3141.30.camel@lorien2>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 2 Oct 2012 16:28:51 -0400
+Date: Tue, 2 Oct 2012 22:28:35 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Thomas Abraham <thomas.abraham@linaro.org>
+Subject: Re: [PATCH 11/12] pinctrl: samsung: use __devinit section for init
+ code
+Message-ID: <20121002202835.GA31446@avionic-0098.mockup.avionic-design.de>
+References: <1348868177-21205-1-git-send-email-arnd@arndb.de>
+ <1348868177-21205-12-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+In-Reply-To: <1348868177-21205-12-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:hFcoWe28i9o1swcaD+XeAwWKHB63v1gECBMMpl6y12W
+ KLne3oj6bgyVuzbYLgf2E65O9o+RjU6by4KCK0ScPZeUrKT8in
+ TrdA0snKOUuKOV4CgMeY2eWwHn74K9fnvTgxwNvVdgIaGGQ4Id
+ 0o/+ACgH/bhBWTnEhxmNm1NXQ7sjKqhpgmgY9fRL4MexTtZb68
+ DqyxMuuzEANm4Bxw2VP4ujUwPzuALZc3Rf/bYEoRLctSz9sMcp
+ ztul3nEKJ8mnQi4GBy8DtUaiLd/oG8+Tyuw6dDDmXI/GuwmaWV
+ OvhUyIrrC2x6XEiNvO7xSJR2SDnwbXEX91GtEed34EuTzgXCPu
+ ktqcrDNm1yItaUrsecswQdeFU2zwO7nNdO6AzzuHaqweCIYA2M
+ QdQbTAxSmn5ZTHShU6MQnrdHW/OMhSM+CnTdf8Z97bay29fdoI
+ sCzN7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012, Shuah Khan wrote:
-> I started seeing the following null pointer dereference on
-> a linux-next sept 21 git and still seeing it on linux-next 
-> Sep 27th git.
-> 
-> Can be reproduced easily. I have been able to reproduce every
-> time I do a complete build of a kernel on fresh checkout or
-> touch a header file that forces full build.
-> 
-> Related to lib/rbtree.c commits that went into September 21 perhaps.
 
-That's a sensible suggestion, but I think probably not.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I didn't get a chance to investigate this yet, thought I would share
-> just in case others have seen it.
-> 
-> 
-> [ 2219.660124] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> [ 2219.660182] IP: [<ffffffff81323c93>] rb_erase+0x1a3/0x370
-> [ 2219.660209] PGD 73f2f067 PUD 67246067 PMD 0 
-> [ 2219.660235] Oops: 0000 [#1] SMP 
-> [ 2219.660632] CPU 0 
-> [ 2219.660644] Pid: 1660, comm: recordmcount Not tainted 3.6.0-rc6-next-20120921+ #4 Hewlett-Packard HP EliteBook 6930p/30DC
-> [ 2219.664007] Process recordmcount (pid: 1660, threadinfo ffff880073f30000, task ffff88002fe9ada0)
-> [ 2219.664007] Call Trace:
-> [ 2219.664007]  [<ffffffff8125af6e>] ext4_es_insert_extent+0x28e/0x2f0
+On Fri, Sep 28, 2012 at 11:36:16PM +0200, Arnd Bergmann wrote:
+> The samsung pinctrl driver has a probe function that is
+> __devinit and that calls a lot of other functions that are
+> marked __init, which kbuild complains about.
+>=20
+> Marking everything __devinit means that the code does not
+> discarded when CONFIG_HOTPLUG is set, which is a little
+> more wasteful, but also more consistent
+>=20
+> Without this patch, building exynos_defconfig results in:
+>=20
+> WARNING: drivers/pinctrl/built-in.o(.devinit.text+0x124): Section mismatc=
+h in reference from the function samsung_pinctrl_probe() to the function .i=
+nit.text:samsung_gpiolib_register()
+> The function __devinit samsung_pinctrl_probe() references
+> a function __init samsung_gpiolib_register().
+> If samsung_gpiolib_register is only used by samsung_pinctrl_probe then
+> annotate samsung_gpiolib_register with a matching annotation.
 
-ext4_es_insert_extent: this is probably something I posted a fix for on
-the 27th (copied below).  They're reworking that series more thoroughly,
-and it has for the moment dropped out of linux-next, so I expect you
-won't see this error at all with a newer next.  But you may want to
-continue with your Sep 27th tree, and try out this patch anyway...
+Note that work is underway to remove HOTPLUG altogether (see commit
+45f035a, "CONFIG_HOTPLUG should be always on" in linux-next), so it
+may make more sense to just drop the __init markings.
 
-[PATCH next/mmotm] ext4: fix cache_es after merge_left
+Thierry
 
-Kernel build with CONFIG_DEBUG_SLAB or CONFIG_SLUB_DEBUG slub_debug=FPZ
-gives me kernel BUG at fs/ext4/extents_status.c:142!  That's the
-BUG_ON(es->start + es->len < es->start) in extent_status_end() called
-from ext4_es_insert_extent().  tree->cache_es has been freed and poisoned.
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature
 
-This comes from when ext4_es_try_to_merge_left() merges es into leftward
-es1, but ext4_es_insert_extent()'s out then updates cache_es to the freed
-extent_status.  ext4_es_try_to_merge_right() does not pose a problem.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Change ext4_es_try_to_merge_left() to return whichever extent_status
-should be recorded in tree->cache_es.  Remove cache_es update from
-both of them, leaving that to ext4_es_insert_extent()'s out label.
+iQIcBAEBAgAGBQJQa05zAAoJEN0jrNd/PrOhZ5gP/3hgMjNUEIC6ptBiKdblR5r4
+qg9mggjtL+F/3oDi/UwirbyYHE9fEog9BJS92aY+VpOOVvUmOXkjaz6ien6kdvSC
+i/ke7CxCQS1CSDZf5Dgi9WyU7pt6tyOWaBL2AlGmnKcAnKIPKSjVuU/V5BnqSDax
+Gy/v9uVvtxGqAsAaO6naij6m6FSL/kzQ2Ic3z7eJ/PRJTu/G4PO6DgsiGu1X3xzy
+VZjt7XH3FRzZMzwRC19hFN5EFkU0ti43Kt+dwY1+Efv4EwsOeWMYmDcdxYOE1Cuq
+RkUWMwOhdpDlRS1wSF/p5Z/jFQl3GzBH22yxwoWLvVzcNGSjGj3ySPuzk1KWKkir
+WnSCdnrlAgx6zIanU0UaVwn44PsuGzmsoqqEdHtNwTaHiC1lSPhRAcP05PkcaTsp
+ccwWLkQ7tguLifni+6xi9vRCQMdSswLBdpbNLPLXng+BkfMgM1jcA+12rq23jyCK
+5rRAY/DXCH0n91RePpu5/Uw2OvRsiLPJg3FeGsFXuuSCSzMUa6WBZJ+06IguBjOW
+ldYBYTAkgKaJzKhu7kdfvdHF8HrwIbQjz7Vz4UVLzmwpoF3G5/GsQDTvkhC/Xmk2
+qw6pDcrJGbVIaUW/uaEHec93HUdH5R5BTNbcCHi9/43GgPdIW1//zR+l/3ldgVZR
+O5avLD/jL5Um4ihuOKYU
+=bXKI
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
- fs/ext4/extents_status.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
---- mmotm/fs/ext4/extents_status.c	2012-09-26 10:15:29.340071552 -0700
-+++ linux/fs/ext4/extents_status.c	2012-09-27 11:52:59.284937056 -0700
-@@ -244,24 +244,24 @@ static void ext4_es_free_extent(struct e
- 	kmem_cache_free(ext4_es_cachep, es);
- }
- 
--static void ext4_es_try_to_merge_left(struct ext4_es_tree *tree,
--				      struct extent_status *es)
-+static struct extent_status *
-+ext4_es_try_to_merge_left(struct ext4_es_tree *tree, struct extent_status *es)
- {
- 	struct extent_status *es1;
- 	struct rb_node *node;
- 
- 	node = rb_prev(&es->rb_node);
- 	if (!node)
--		return;
-+		return es;
- 
- 	es1 = rb_entry(node, struct extent_status, rb_node);
- 	if (es->start == extent_status_end(es1) + 1) {
- 		es1->len += es->len;
- 		rb_erase(&es->rb_node, &tree->root);
--		if (es == tree->cache_es)
--			tree->cache_es = es1;
- 		ext4_es_free_extent(es);
-+		es = es1;	/* Caller will update tree->cache_es to this */
- 	}
-+	return es;
- }
- 
- static void ext4_es_try_to_merge_right(struct ext4_es_tree *tree,
-@@ -278,9 +278,8 @@ static void ext4_es_try_to_merge_right(s
- 	if (es1->start == extent_status_end(es) + 1) {
- 		es->len += es1->len;
- 		rb_erase(node, &tree->root);
--		if (es1 == tree->cache_es)
--			tree->cache_es = es;
- 		ext4_es_free_extent(es1);
-+		/* Caller will update tree->cache_es to es */
- 	}
- }
- 
-@@ -318,7 +317,7 @@ int ext4_es_insert_extent(struct inode *
- 		es_debug("cached by [%u/%u)\n", es->start, es->len);
- 		es->start = offset;
- 		es->len += len;
--		ext4_es_try_to_merge_left(tree, es);
-+		es = ext4_es_try_to_merge_left(tree, es);
- 		goto out;
- 	} else if (es && in_range(offset, es->start, es->len)) {
- 		es_debug("cached by [%u/%u)\n", es->start, es->len);
+--d6Gm4EdcadzBjdND--
