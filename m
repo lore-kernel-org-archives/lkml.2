@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2JBJb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 05:31:28 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:41686 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752916Ab2JBJb0 (ORCPT
+	id S1753705Ab2JBJbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 05:31:33 -0400
+Received: from listserv2.niif.hu ([193.225.14.155]:52074 "EHLO
+	listserv2.niif.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752916Ab2JBJba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 05:31:26 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+xB/J+Owix98QMx/PNGKQIP6isaGkkKqSOGD6s4P
-	GnF1X2IyKgE2Ch
-Message-ID: <1349170282.7086.56.camel@marge.simpson.net>
-Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
- ttwu_queue()
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 02 Oct 2012 11:31:22 +0200
-In-Reply-To: <20121002084501.GL29125@suse.de>
-References: <20121002065143.GK29125@suse.de>
-	 <1349164176.7086.43.camel@marge.simpson.net>
-	 <20121002084501.GL29125@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Tue, 2 Oct 2012 05:31:30 -0400
+From: Ferenc Wagner <wferi@niif.hu>
+To: "Michael Chan" <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, "Matt Carlson" <mcarlson@broadcom.com>,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Rob Herring" <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter SoL
+References: <87txuhho5z.fsf@lant.ki.iif.hu>
+	<1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Date: Tue, 02 Oct 2012 11:31:02 +0200
+In-Reply-To: <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	(Michael Chan's message of "Mon, 1 Oct 2012 02:33:02 -0700")
+Message-ID: <87sj9xdxux.fsf@lant.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 09:45 +0100, Mel Gorman wrote: 
-> On Tue, Oct 02, 2012 at 09:49:36AM +0200, Mike Galbraith wrote:
+"Michael Chan" <mchan@broadcom.com> writes:
 
-> > Hm, 518cd623 fixed up the troubles I saw.  How exactly are you running
-> > this?
-> > 
+> On Fri, 2012-09-28 at 22:45 +0200, Ferenc Wagner wrote: 
 > 
-> You saw problems with TCP_RR where as this is UDP_STREAM.
+>> Upgrading the kernel on our HS20 blades resulted in their SoL (serial
+>> over LAN) connection being broken.  The disconnection happens when eth0
+>> (the interface involved in SoL) is brought up during the boot sequence.
+>> If I later "ip link set eth0 down", then the connection is restored, but
+>> "ip link set eth0 up" breaks it again on 3.2.  ethtool -a, -c, -g, -k
+>> and -u show no difference; ethtool -i on the 2.6.32 kernel reports:
+>> 
+>> driver: tg3
+>> version: 3.116
+>> firmware-version: 5704s-v3.38, ASFIPMIs v2.47
+>> bus-info: 0000:05:01.0
+>> 
+>> In the 3.2 kernel the driver version is 3.121.
+>
+> 2.6.32 to 3.2 is a big jump.  Can you narrow this down further?  It will
+> be hard for us to find a HS20 with 5704 to test this.  Thanks.
 
-Yeah, but I wanted to stare at UDP_STREAM as you run it to see if it
-would tell me anything about why those numbers happen.
-
-> I'm running this through MMTests with a version of the
-> configs/config-global-dhp__network-performance file that only runs
-> netperf-udp. Ultimately it runs netperf for a size something like
-> this
-> 
-> SIZE=64
-> taskset -c 0 netserver
-> taskset -c 1 netperf -t UDP_STREAM -i 50,6 -I 99,1 -l 20 -H 127.0.0.1 -- -P 15895 -s 32768 -S 32768 -m $SIZE -M $SIZE
-
-Thanks.
-
--Mike
-
-
+Certainly, I'm bisecting it now, but I thought I would drop in the
+question in case it rings some bells somewhere.  Given the nature of the
+problem, it isn't much fun to bisect, and the stripped down kernel I'm
+testing with breaks the SoL connection for a couple of seconds even in
+the "good" cases.  I'm already down to 13 steps...
+-- 
+Thanks,
+Feri.
