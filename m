@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2JBMde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 08:33:34 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33963 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2JBMdc convert rfc822-to-8bit (ORCPT
+	id S1753059Ab2JBMhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 08:37:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59654 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2JBMhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 08:33:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121002121443.GT4587@mwanda>
-References: <1349179024-5319-1-git-send-email-peter.senna@gmail.com>
-	<20121002121443.GT4587@mwanda>
-Date: Tue, 2 Oct 2012 14:33:31 +0200
-Message-ID: <CA+MoWDqxXPiuFwmznynn8SPK20eJUgCKonq+C=s8fKvcnkb4Aw@mail.gmail.com>
-Subject: Re: [PATCH RFC] MAINTAINERS: Add section for subsystem shortname
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: joe@perches.com, gregkh@linuxfoundation.org, davem@davemloft.net,
-        arnd@arndb.de, elezegarcia@gmail.com, Julia.Lawall@lip6.fr,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 2 Oct 2012 08:37:52 -0400
+Subject: Re: How to schedule worker and threaded IRQ on same cpu/core
+From: anish kumar <anish198519851985@gmail.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD2A1E0A@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD2A1E0A@BGSMSX102.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Oct 2012 18:07:45 +0530
+Message-ID: <1349181465.1440.1.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 2:14 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Tue, Oct 02, 2012 at 01:57:04PM +0200, Peter Senna Tschudin wrote:
->> The shortname for a subsystem, that is primarly used when sending patches over E-mail, is not stored anywhere in the source code. Actually one need to dig git log or mailing list archives. There is no standard, and the Maintainer choose how to short name his/her subsystem. MAINTAINERS file is the right place for storing this information.
->>
->> U is the second letter of Subsystem.
->>
->> This will also enable automatic tools like scripts/get_maintainer.pl to provide the correct short name for each filename in the Kernel source tree.
->>
->
-> This is pretty useless without a script to parse it.  Also none of
-With or without a script, there is no default way of finding the short
-name. Changing scripts/get_maintainer.pl to do it does not seems very
-complex.
-
-> subsystem names you chose as examples are correct.  Please line wrap
-See? It's not easy to find three examples to put on the text. Can you
-please provide three examples?
-
-> your commit message at 72 characters.
-Yes. I'll fix it.
-
-Thank you,
-
-Peter
-
->
-> regards,
-> dan carpenter
->
+On Tue, 2012-10-02 at 12:19 +0000, Pallala, Ramakrishna wrote:
+> Hi,
+> 
+> How can I schedule driver's worker and threaded IRQ on the same core?
+> 
+> For work queue we have schedule_delayed_work_on () API available.
+> But how to schedule the threaded IRQ on the same core where my worker thread is going to run?
+Why do you need to worry about where your worker thread is going to run?
+Or IOW what use case do you have in mind?
+> Thanks in Advance.
+> 
+> Thanks,
+> Ram
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-
--- 
-Peter
