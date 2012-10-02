@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab2JBQlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:41:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53866 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab2JBQhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Marc Zyngier <maz@misterjones.org>
-Subject: [PATCH 03/17] ARM: pxa: Wunused-result warning in viper board file
-Date: Tue,  2 Oct 2012 18:36:42 +0200
-Message-Id: <1349195816-2225-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:usoFP0SOu5ILcy84ibuD3ciuJc8x3lRXwcYrvJo2XlC
- rAL1qz4eUhFJpoCpWUX4OHB/aWhyxn0ir0gu2FvXHxSh/RDPpF
- EHUtA8MvIo23zN4bIffFEYyyhPgA27aknQ+HQKL+mYViqxZLh0
- 0K/W/WBwPUNn6N6oEJ0a+BbqZ0lflcbQESXVC1KP8V2nnrwKy9
- IKk/zYk20F/3xdooPPRFE3+N8oWOOKn3XxWo9zus6ifdZM3G8Z
- Ab9tXMWJIalINGgan+cInLqp54He0ApyhRQjwovt08lxHM6TGT
- XMNAUJyKSToysi13WqbFXNQlf5bhbVVunlVXWKeL+kM6GPKLGk
- 2av89UDUg9dRUpM27DxXdJJphVXJucJdrXHjw1ng0Kz+mjefHF
- IdzPAGlWem20w==
+	id S932177Ab2JBQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:41:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932095Ab2JBQlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 12:41:00 -0400
+Date: Tue, 2 Oct 2012 12:40:50 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, eparis@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH v7 02/49] audit: pass in dentry to audit_copy_inode
+ wherever possible
+Message-ID: <20121002124050.58ebe279@tlielax.poochiereds.net>
+In-Reply-To: <20121002155338.GB22698@infradead.org>
+References: <1349137018-21948-1-git-send-email-jlayton@redhat.com>
+	<1349137018-21948-3-git-send-email-jlayton@redhat.com>
+	<20121002155338.GB22698@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling kstrtoul requires checking the result. In case of
-the viper_tpm_setup function, let's fail the __setup function
-if the number was invalid.
+On Tue, 2 Oct 2012 11:53:38 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
-Without this patch, building viper_defconfig results in:
+> On Mon, Oct 01, 2012 at 08:16:11PM -0400, Jeff Layton wrote:
+> > In some cases, we were passing in NULL even when we have a dentry.
+> > 
+> > Reported-by: Eric Paris <eparis@redhat.com>
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  kernel/auditsc.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > index 4b96415..5c45b9b 100644
+> > --- a/kernel/auditsc.c
+> > +++ b/kernel/auditsc.c
+> > @@ -2226,7 +2226,7 @@ void __audit_inode_child(const struct dentry *dentry,
+> >  		if (!strcmp(dname, n->name) ||
+> >  		     !audit_compare_dname_path(dname, n->name, &dirlen)) {
+> >  			if (inode)
+> > -				audit_copy_inode(n, NULL, inode);
+> > +				audit_copy_inode(n, dentry, inode);
+> 
+> Btw, the calling conventions here also seems fairly ugly.
+> 
+> Instead of the optional dentry parameter I'd have a audit_copy_inode
+> that takes just the name and the inode, and an optional direct  call
+> to audit_copy_fcaps for those callers that have a dentry.  That would
+> also allow removing the branch for the dentry == NULL case in
+> audit_copy_fcaps.
+> 
 
-arch/arm/mach-pxa/viper.c: In function 'viper_tpm_setup':
-arch/arm/mach-pxa/viper.c:771:10: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result [-Wunused-result]
+[...]
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Marc Zyngier <maz@misterjones.org>
----
- arch/arm/mach-pxa/viper.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> On Mon, Oct 01, 2012 at 08:16:12PM -0400, Jeff Layton wrote:
+> > If name is NULL then the condition in the loop will never be true. Also,
+> > with this change, we can eliminate the check for n->name == NULL since
+> > the equivalence check will never be true if it is.
+> 
+> Given that name == NULL is a static condition it seems like these
+> should be two different calls, E.g. audit_dentry and audit_path.
+> 
 
-diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
-index 130379f..ac733e9 100644
---- a/arch/arm/mach-pxa/viper.c
-+++ b/arch/arm/mach-pxa/viper.c
-@@ -768,8 +768,7 @@ static unsigned long viper_tpm;
- 
- static int __init viper_tpm_setup(char *str)
- {
--	strict_strtoul(str, 10, &viper_tpm);
--	return 1;
-+	return strict_strtoul(str, 10, &viper_tpm) >= 0;
- }
- 
- __setup("tpm=", viper_tpm_setup);
+Thanks Christoph,
+
+Both of the above are good suggestions, but I'd prefer not to have to
+respin this whole set to implement them. I believe what I have here is
+an improvement on what's there now. Do you have any objection to doing
+the above in a separate set on top of this series?
+
 -- 
-1.7.10
-
+Jeff Layton <jlayton@redhat.com>
