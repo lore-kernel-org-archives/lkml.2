@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2JBV67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 17:58:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab2JBV65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 17:58:57 -0400
-Date: Tue, 2 Oct 2012 17:58:45 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk,
-        "Martin K. Petersen" <martin.petersen@oracle.com>, tj@kernel.org
-Subject: Re: [dm-devel] [PATCH v3 01/26] block: Fix a buffer overrun in
- bio_integrity_split()
-Message-ID: <20121002215845.GB14471@redhat.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-2-git-send-email-koverstreet@google.com>
- <20121001212336.GA17165@redhat.com>
- <20121001214241.GE26488@google.com>
- <20121002140847.GD758@redhat.com>
- <20121002202643.GQ26488@google.com>
- <20121002203253.GA14471@redhat.com>
- <20121002210143.GT26488@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002210143.GT26488@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932488Ab2JBWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 18:01:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53338 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932355Ab2JBWBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 18:01:06 -0400
+Date: Tue, 2 Oct 2012 15:01:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mhocko@suse.cz, kirill@shutemov.name,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-Id: <20121002150104.da57fa94.akpm@linux-foundation.org>
+In-Reply-To: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 02:01:43PM -0700, Kent Overstreet wrote:
-> On Tue, Oct 02, 2012 at 04:32:53PM -0400, Vivek Goyal wrote:
-> > On Tue, Oct 02, 2012 at 01:26:43PM -0700, Kent Overstreet wrote:
-> > > On Tue, Oct 02, 2012 at 10:08:47AM -0400, Vivek Goyal wrote:
-> > > > On Mon, Oct 01, 2012 at 02:42:41PM -0700, Kent Overstreet wrote:
-> > > > 
-> > > > [..]
-> > > > > Here's the new patch:
-> > > > > 
-> > > > > 
-> > > > > commit e270c9ca843b5c86d59431b0d7a676b7846946d6
-> > > > > Author: Kent Overstreet <koverstreet@google.com>
-> > > > > Date:   Mon Oct 1 14:41:08 2012 -0700
-> > > > > 
-> > > > >     block: Fix a buffer overrun in bio_integrity_split()
-> > > > >     
-> > > > >     bio_integrity_split() seemed to be confusing pointers and arrays -
-> > > > >     bip_vec in bio_integrity_payload is an array appended to the end of the
-> > > > >     payload, so the bio_vecs in struct bio_pair need to come immediately
-> > > > >     after the bio_integrity_payload they're for, and there was an assignment
-> > > > >     in bio_integrity_split() that didn't make any sense.
-> > > > >     
-> > > > >     Also, changed bio_integrity_split() to not refer to the bvecs embedded
-> > > > >     in struct bio_pair, in case there's padding between them and
-> > > > >     bip->bip_vec.
-> > > > >     
-> > > > >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > > > >     CC: Jens Axboe <axboe@kernel.dk>
-> > > > >     CC: Martin K. Petersen <martin.petersen@oracle.com>
-> > > > > 
-> > > > > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-> > > > > index a3f28f3..4ae22a8 100644
-> > > > > --- a/fs/bio-integrity.c
-> > > > > +++ b/fs/bio-integrity.c
-> > > > > @@ -694,15 +694,12 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
-> > > > >  	bp->bio1.bi_integrity = &bp->bip1;
-> > > > >  	bp->bio2.bi_integrity = &bp->bip2;
-> > > > >  
-> > > > > -	bp->iv1 = bip->bip_vec[0];
-> > > > > -	bp->iv2 = bip->bip_vec[0];
-> > > > > +	*bp->bip1.bip_vec = bip->bip_vec[0];
-> > > > > +	*bp->bip2.bip_vec = bip->bip_vec[0];
-> > > > 
-> > > > I think this is horrible. Why not introduce bvec pointer in bip (like bio),
-> > > > to cover the case when bvec are not inline.
-> > > 
-> > > That's... exactly what the next patch in the series does.
-> > 
-> > Yes, but if you want to push some of the these bug fixes in stable (as martin
-> > had said), we need to introduce that bip->bio_vec pointer early. Also that
-> > next patch is doing lot other other things like getting rid of bip_slabs
-> > and we don't require all that to fix this particular bug.
-> > 
-> > In fact I would say that it is beter to fix this blk integrity bug in a
-> > separate patchset so that it can be pushed out earlier.
+On Tue,  2 Oct 2012 17:59:11 +0100
+Will Deacon <will.deacon@arm.com> wrote:
+
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
 > 
-> I'm honestly not sure what your complaint about my bugfix patch was -
-> it's small and complete, it does fix the bug. I don't follow why you
-> think we need to introduce the bip->bio_vec pointer early...
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
+> 
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
 
-I think having iv1 and iv2 and then not even accessing these using 
-bp->iv1 and bp->iv2 is a bad idea even for bugfix.
+Alas, the code you're altering has changed so much in linux-next that I
+am reluctant to force this fix in there myself.  Can you please
+redo/retest/resend?  You can do that on 3.7-rc1 if you like, then we
+can feed this into -rc2.
 
-I have never seen a code which says, hey I have defined two fields in a
-struct but, don't access those fields directly(as there might be padding
-issues). These fields are just there for blocking a chunk of memory but are
-never meant to be accessed directly. I think, that's what my issue is. It
-is bad programming (does not matter whether it is bug fix or not).
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3524,7 +3524,8 @@ retry:
+>  
+>  		barrier();
+>  		if (pmd_trans_huge(orig_pmd)) {
+> -			if (flags & FAULT_FLAG_WRITE &&
+> +			int dirty = flags & FAULT_FLAG_WRITE;
 
-For your series it probably is still fine as you will overide it pretty
-soon but what about stable. Anybody looking at that code might want
-to say, hey why not directly initialize bp->iv1 instead of trying to
-do *bp->bip1.bip_vec. And everybody will say, yes looks fine and boom
-a bug is introduced because we did bad programming.
+`flags' is `unsigned int', so making `dirty' match that is nicer.
 
-Thanks
-Vivek
+
