@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab2JBNba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 09:31:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42600 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab2JBNb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 09:31:29 -0400
+	id S1752967Ab2JBNcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 09:32:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630Ab2JBNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 09:32:33 -0400
+Date: Tue, 2 Oct 2012 15:32:00 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 03/14] perf hists: Separate overhead and baseline columns
+Message-ID: <20121002133200.GD6379@krava.brq.redhat.com>
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+ <1348744175-11115-4-git-send-email-jolsa@redhat.com>
+ <87zk4au1vy.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20121002132805.GA30187@kroah.com>
-References: <87627b9453.fsf@intel.com>
-	<1348336331-20957-1-git-send-email-daniel.vetter@ffwll.ch>
-	<20120922200629.GC14004@kroah.com>
-	<CAKMK7uGkocM2Kmy6mkLya1O+hCf9ZDMF_+aLsfe==0Lx0nQrsQ@mail.gmail.com>
-	<20121002132805.GA30187@kroah.com>
-Date: Tue, 2 Oct 2012 15:31:28 +0200
-Message-ID: <CAKMK7uHDwoLbXCUbWyJr9NX7g0MN_8B=sV-6w=tYGWYk+GN4tg@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] console: implement lockdep support for console_lock
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk4au1vy.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 3:28 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> No, as it hasn't been in linux-next already, I can't send it in for 3.7,
-> sorry, you know that.  I'll be glad to queue it up for 3.8 if you want me to.
+On Fri, Sep 28, 2012 at 02:56:01PM +0900, Namhyung Kim wrote:
+> On Thu, 27 Sep 2012 13:09:24 +0200, Jiri Olsa wrote:
+> > Currently the overhead and baseline columns are handled within
+> > single function and the distinction is made by 'baseline hists'
+> > pointer passed by 'struct perf_hpp::ptr'.
+> >
+> > Since hists pointer is now part of each hist_entry, it's possible
+> > to locate paired hists pointer directly from the passed struct
+> > hist_entry pointer.
+> >
+> > Also separating those 2 columns makes the code more obvious.
+> 
+> Yes, it was thinking about something like this.
+> 
+> 
+> >
+> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Namhyung Kim <namhyung@kernel.org>
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> [snip]
+> > +static int hpp__color_baseline(struct perf_hpp *hpp, struct hist_entry *he)
+> > +{
+> > +	double percent = baseline_percent(he);
+> > +
+> > +	return percent_color_snprintf(hpp->buf, hpp->size, "  %5.2f%%", percent);
+> 
+> Is it possible to have a baseline value over 100%?  I changed 'overhead'
+> colum format from '2 spaces + %5.2f + %' to '1 space + %6.2f + %' for
+> the case.  Probably it'd better using it here too for consistency.
 
-Hey, was worth a shot ;-) Yeah, if you can pick it up for 3.8, that
-would be nice, since the patches have been floating for a while by now
-...
+I think you're right, I'll make the change
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+thanks,
+jirka
