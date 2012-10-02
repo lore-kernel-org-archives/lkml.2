@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab2JBQjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 12:39:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65129 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab2JBQhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 12:37:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@infradead.org
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: [PATCH 06/17] ARM: pxa: work around duplicate definition of GPIO24_SSP1_SFRM
-Date: Tue,  2 Oct 2012 18:36:45 +0200
-Message-Id: <1349195816-2225-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:KT0mO/nDxTFBQYV/ia7fYlWiYtMlb3ONz6bX+6wRQzM
- h72RDfUOlmYpEI1TVSa6HDIJnwc0rXqKfaAnqnWhscxz00S91T
- 9atFq4qABBMKivgad7vO60fYZE5/NpQagCFJNjLROnOuarHdZl
- /fTutAGL8ILqSjKFit3haVkuSG/1hg0iVAo8Z3yfB6u2AYeQHe
- emeSfe085wo4G7W32kTzwFDn2schTWV60vYnSmtopMLjY+DhxR
- TlexYWZYPYCwCvfMJsXIQQDiI6LeR2d+c7H8XBQ6XeFvo6JPnV
- dkIiuBARrXbTkLmJbjnkzKS+kmmbykYr1Ttiwpg3gPncfuXjLS
- OzVnUpq+sLxQJB4hdZadvFWRSA1BYWFA6Op6Xk2b57g2eIBrBt
- CvJQC3A/wyY/Q==
+	id S932116Ab2JBQjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 12:39:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29450 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932095Ab2JBQjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 12:39:40 -0400
+Date: Tue, 2 Oct 2012 18:42:21 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>, Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v3 -tip 5/5] AHCI: Support multiple MSIs
+Message-ID: <20121002164220.GB2258@dhcp-26-207.brq.redhat.com>
+References: <cover.1349074231.git.agordeev@redhat.com>
+ <cc6441a31a2c600ad9ae33e7715de65b8d46a66f.1349074231.git.agordeev@redhat.com>
+ <20121002050929.GD7756@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002050929.GD7756@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol "GPIO24_SSP1_SFRM" is defined in both mfp-pxa27x.h and
-mfp-pxa25x.h. Since the macro is not actually used in the cm-x2xx.c
-file, but it includes both headers, a safe workaround should be
-to just undefine it from the .c file. This is a bit hacky and
-the headers should be fixed to not both define it, but for now
-it gets us around an annoying warning.
+On Tue, Oct 02, 2012 at 07:09:29AM +0200, Ingo Molnar wrote:
+> > +irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
+> > +{
+> > +	struct ata_port *ap_this = dev_instance;
+> > +	struct ahci_port_priv *pp = ap_this->private_data;
+> > +	struct ata_host *host = ap_this->host;
+> > +	struct ahci_host_priv *hpriv = host->private_data;
+> > +	void __iomem *mmio = hpriv->mmio;
+> > +	unsigned int i;
+> > +	u32 irq_stat, irq_masked;
+> > +
+> > +	VPRINTK("ENTER\n");
+> 
+> Is this per IRQ handler execution debugging code still needed? 
+> Same for the other VPRINTK() lines in this patch.
 
-Without this patch, building cm_x2xx_defconfig results in:
+These VPRINKs are only to make new handlers look like ahci_interrupt()
+which did not change. I believe, if they need to go it is better to
+remove them altogether, with a separate followup patch.
 
-In file included from arch/arm/mach-pxa/include/mach-pxa/pxa27x.h:7:0,
-                 from arch/arm/mach-pxa/cm-x2xx.c:25:
-arch/arm/mach-pxa/include/mach-pxa/mfp-pxa27x.h:215:0: warning: "GPIO24_SSP1_SFRM" redefined [enabled by default]
-arch/arm/mach-pxa/include/mach-pxa/mfp-pxa25x.h:111:0: note: this is the location of the previous definition
+Jeff, what do you think?
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Mike Rapoport <mike@compulab.co.il>
----
- arch/arm/mach-pxa/cm-x2xx.c |    1 +
- 1 file changed, 1 insertion(+)
+Thanks!
 
-diff --git a/arch/arm/mach-pxa/cm-x2xx.c b/arch/arm/mach-pxa/cm-x2xx.c
-index 8fa4ad2..ae5e74a 100644
---- a/arch/arm/mach-pxa/cm-x2xx.c
-+++ b/arch/arm/mach-pxa/cm-x2xx.c
-@@ -22,6 +22,7 @@
- #include <asm/mach/map.h>
- 
- #include <mach/pxa25x.h>
-+#undef GPIO24_SSP1_SFRM
- #include <mach/pxa27x.h>
- #include <mach/audio.h>
- #include <mach/pxafb.h>
 -- 
-1.7.10
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
