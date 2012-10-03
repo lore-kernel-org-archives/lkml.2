@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab2JCT0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 15:26:44 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:40749 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab2JCTZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 15:25:40 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: [PATCH 3/5] rapidio: run discovery as an asynchronous process
-Date: Wed,  3 Oct 2012 15:18:41 -0400
-Message-Id: <1349291923-22860-4-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
-In-Reply-To: <1349291923-22860-1-git-send-email-alexandre.bounine@idt.com>
-References: <1349291923-22860-1-git-send-email-alexandre.bounine@idt.com>
+	id S1752487Ab2JCT05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 15:26:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56893 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab2JCT0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 15:26:42 -0400
+Date: Wed, 3 Oct 2012 20:26:36 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
+ request_firmware_nowait()
+Message-ID: <20121003192636.GC23473@ZenIV.linux.org.uk>
+References: <4FE9169D.5020300@redhat.com>
+ <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+ <20121002221239.GA30990@kroah.com>
+ <20121002222333.GA32207@kroah.com>
+ <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
+ <506C562E.5090909@redhat.com>
+ <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
+ <20121003170907.GA23473@ZenIV.linux.org.uk>
+ <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify mport initialization routine to run the RapidIO discovery process
-asynchronously. This allows to have an arbitrary order of enumerating and
-discovering ports in systems with multiple RapidIO controllers without
-creating a deadlock situation if enumerator port is registered after a
-discovering one.
+On Wed, Oct 03, 2012 at 10:32:08AM -0700, Linus Torvalds wrote:
+> On Wed, Oct 3, 2012 at 10:09 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > +       if (!S_ISREG(inode->i_mode))
+> > +               return false;
+> > +       size = i_size_read(inode);
+> >
+> > Probably better to do vfs_getattr() and check mode and size in kstat; if
+> > it's sufficiently hot for that to hurt, we are fucked anyway.
+> >
+> > +               file = filp_open(path, O_RDONLY, 0);
+> > +               if (IS_ERR(file))
+> > +                       continue;
+> > +printk("from file '%s' ", path);
+> > +               success = fw_read_file_contents(file, fw);
+> > +               filp_close(file, NULL);
+> >
+> > fput(file), please.  We have enough misuses of filp_close() as it is...
+> 
+> Ok, like this?
 
-Making netID matching to mportID ensures consistent net ID assignment in
-multiport RapidIO systems with asynchronous discovery process (global counter
-implementation is affected by race between threads).
+Looks sane.  TBH, I'd still prefer to see udev forcibly taken over and put into
+usr/udev in kernel tree - I don't trust that crowd at all and the fewer
+critical userland bits they can play leverage games with, the safer we are.  
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
----
- drivers/rapidio/rio-scan.c |    3 +-
- drivers/rapidio/rio.c      |   51 ++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 50 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index 8b7c4bc..745670f 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -44,7 +44,6 @@ static void rio_init_em(struct rio_dev *rdev);
- DEFINE_SPINLOCK(rio_global_list_lock);
- 
- static int next_destid = 0;
--static int next_net = 0;
- static int next_comptag = 1;
- 
- static int rio_mport_phys_table[] = {
-@@ -1062,7 +1061,7 @@ static struct rio_net __devinit *rio_alloc_net(struct rio_mport *port)
- 		INIT_LIST_HEAD(&net->mports);
- 		list_add_tail(&port->nnode, &net->mports);
- 		net->hport = port;
--		net->id = next_net++;
-+		net->id = port->id;
- 	}
- 	return net;
- }
-diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
-index d7b68cc..7cdc3e6d 100644
---- a/drivers/rapidio/rio.c
-+++ b/drivers/rapidio/rio.c
-@@ -1260,15 +1260,62 @@ static int __devinit rio_init(void)
- 	return 0;
- }
- 
-+static struct workqueue_struct *rio_wq;
-+
-+struct rio_disc_work {
-+	struct work_struct	work;
-+	struct rio_mport	*mport;
-+};
-+
-+static void __devinit disc_work_handler(struct work_struct *_work)
-+{
-+	struct rio_disc_work *work = container_of(_work,
-+						  struct rio_disc_work, work);
-+
-+	pr_debug("RIO: discovery work for mport %d %s\n",
-+		 work->mport->id, work->mport->name);
-+	rio_disc_mport(work->mport);
-+
-+	kfree(work);
-+}
-+
- int __devinit rio_init_mports(void)
- {
- 	struct rio_mport *port;
-+	struct rio_disc_work *work;
-+	int no_disc = 0;
- 
- 	list_for_each_entry(port, &rio_mports, node) {
- 		if (port->host_deviceid >= 0)
- 			rio_enum_mport(port);
--		else
--			rio_disc_mport(port);
-+		else if (!no_disc) {
-+			if (!rio_wq) {
-+				rio_wq = alloc_workqueue("riodisc", 0, 0);
-+				if (!rio_wq) {
-+					pr_err("RIO: unable allocate rio_wq\n");
-+					no_disc = 1;
-+					continue;
-+				}
-+			}
-+
-+			work = kzalloc(sizeof *work, GFP_KERNEL);
-+			if (!work) {
-+				pr_err("RIO: no memory for work struct\n");
-+				no_disc = 1;
-+				continue;
-+			}
-+
-+			work->mport = port;
-+			INIT_WORK(&work->work, disc_work_handler);
-+			queue_work(rio_wq, &work->work);
-+		}
-+	}
-+
-+	if (rio_wq) {
-+		pr_debug("RIO: flush discovery workqueue\n");
-+		flush_workqueue(rio_wq);
-+		pr_debug("RIO: flush discovery workqueue finished\n");
-+		destroy_workqueue(rio_wq);
- 	}
- 
- 	rio_init();
--- 
-1.7.8.4
-
+Al, that -><- close to volunteering for maintaining that FPOS kernel-side...
