@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2JCOB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:01:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13292 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2JCOB4 (ORCPT
+	id S932251Ab2JCODR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:03:17 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:35112 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630Ab2JCODQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:01:56 -0400
-X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=G3BEk8p8RQsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=aoqRPjQY2hgA:10 a=D19gQVrFAAAA:8 a=rkHj0rLWfqlQ7V6cfNQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349272914.22822.169.camel@gandalf.local.home>
-Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
- attribute
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed, 03 Oct 2012 10:01:54 -0400
-In-Reply-To: <506C1F8B.1070307@att.net>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
-	 <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
-	 <20120929002626.GD13907@jtriplet-mobl1> <50664308.6020601@att.net>
-	 <20120929005043.GD14293@jtriplet-mobl1>
-	 <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com>
-	 <20121003065959.GA4963@leaf>
-	 <alpine.DEB.2.00.1210030052040.16922@chino.kir.corp.google.com>
-	 <506C1F8B.1070307@att.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 3 Oct 2012 10:03:16 -0400
+Message-ID: <1349272988.9436.20.camel@trivette>
+Subject: Re: [PATCH v4 2/2] hwmon: (ads7828) add support for ADS7830
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org,
+        Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        Steve Hardy <shardy@redhat.com>
+Date: Wed, 03 Oct 2012 10:03:08 -0400
+In-Reply-To: <20121003050739.GB7491@roeck-us.net>
+References: <1349235207-7517-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <1349235207-7517-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <20121003050739.GB7491@roeck-us.net>
+Organization: Savoir-faire Linux Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-03 at 06:20 -0500, Daniel Santos wrote:
+Hi Guenter,
 
-> > Daniel, please introduce __flatten in the patch series that uses it, 
-> > thanks.
-> That isn't going to work. I split my patches out into three sets
-> because, otherwise, the list of maintainers that must be CCed exceeds
-> the allowable size of the LKML server and my messages get tagged as
-> spam, causing untold confusion as messages reach maintainers, but not
-> the LKML.  Please note from the summary of this patch set
-> (https://lkml.org/lkml/2012/9/28/1136)
+On Tue, 2012-10-02 at 22:07 -0700, Guenter Roeck wrote:
+> On Tue, Oct 02, 2012 at 11:33:27PM -0400, Vivien Didelot wrote:
+> > From: Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>
+> > 
+> > The ADS7830 device is almost the same as the ADS7828,
+> > except that it does 8-bit sampling, instead of 12-bit.
+> > This patch extends the ads7828 driver to support this chip.
+> > 
+> > Signed-off-by: Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>
+> > Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> 
+> Guillaume,
+> Vivien,
+> 
+> [ ... ]
+> 
+> > @@ -147,6 +152,7 @@ static int ads7828_detect(struct i2c_client *client,
+> >  {
+> >  	struct i2c_adapter *adapter = client->adapter;
+> >  	u8 default_cmd_byte = ADS7828_CMD_SD_SE | ADS7828_CMD_PD3;
+> > +	bool is_8bit = false;
+> >  	int ch;
+> >  
+> >  	/* Check we have a valid client */
+> > @@ -158,7 +164,9 @@ static int ads7828_detect(struct i2c_client *client,
+> >  	 * dedicated register so attempt to sanity check using knowledge of
+> >  	 * the chip
+> >  	 * - Read from the 8 channel addresses
+> > -	 * - Check the top 4 bits of each result are not set (12 data bits)
+> > +	 * - Check the top 4 bits of each result:
+> > +	 *   - They should not be set in case of 12-bit samples
+> > +	 *   - The two bytes should be equal in case of 8-bit samples
+> >  	 */
+> >  	for (ch = 0; ch < ADS7828_NCH; ch++) {
+> >  		u8 cmd = ads7828_cmd_byte(default_cmd_byte, ch);
+> > @@ -168,13 +176,20 @@ static int ads7828_detect(struct i2c_client *client,
+> >  			return -ENODEV;
+> >  
+> >  		if (in_data & 0xF000) {
+> > -			pr_debug("%s : Doesn't look like an ads7828 device\n",
+> > -				 __func__);
+> > -			return -ENODEV;
+> > +			if ((in_data >> 8) == (in_data & 0xFF)) {
+> > +				/* Seems to be an ADS7830 (8-bit sample) */
+> > +				is_8bit = true;
+> > +			} else {
+> > +				dev_dbg(&client->dev, "doesn't look like an ADS7828 compatible device\n");
+> > +				return -ENODEV;
+> > +			}
+> >  		}
+> >  	}
+> 
+> I have been thinking about this. The detection function is already quite weak,
+> and this makes it even weaker. Reason is that you conly check for ADS7830 if the
+> check for ADS7828 failed, and you repeat the pattern for each channel.
+> Unfortunately, that means that you don't check for the ADS7830 condition if the
+> value returned for a channel happens to be a valid ADS7828 value, even if it is
+> not valid for ADS7830 (and even if you already know that the chip is not a
+> ADS7828).
+> 
+> Example:
+> 	ch=0: 0x1818	--> You know it is not ADS7828
+> 	ch=1: 0x0818	--> You know it is not ADS7830, but you don't check for it
+> 
+> I don't know an optimal solution right now, but maybe something like
+> 
+>  	maybe_7828 = true;
+> 	maybe_7830 = true;
+> 	for (ch = 0; ch < ADS7828_NCH && (maybe_7828 || maybe_7830); ch++) {
+> 		...
+> 		if (in_data & 0xF000)
+> 			maybe_7828 = false;
+> 		if ((in_data >> 8) != (in_data & 0xFF))
+> 			maybe_7830 = false;
+> 	}
+> 	if (!maybe_7828 && !maybe_7830)
+> 		return -ENODEV;
+> 
+> 	if (maybe_7828)
+> 		strlcpy(info->type, "ads7828", I2C_NAME_SIZE);
+> 	else
+> 		strlcpy(info->type, "ads7830", I2C_NAME_SIZE);
+> 
+> Frankly I would prefer to get rid of the _detect function entirely, I just don't
+> know if that would negatively affect some users. To give you an example for a
+> bad result: The function will wrongly detect an ADS7830 as ADS7828 if all ADC
+> channels report a value between 0x00 and 0x0f.
 
-That's not a valid reason to not included it with the other patch
-series.
+We totally agree with you here. There is no clean way to detect (i.e. to
+be sure) that this *is* an ADS7828 compatible device.
 
-> > This patch set is a dependency of the generic red-black tree patch set, which
-> > I have now split up into three smaller sets.
-> And the patch set this depends upon was submitted 9/28 as well
-> (https://lkml.org/lkml/2012/9/28/1183) and the summary starts with this
-> text:
-> > This patch set depends upon the following:
-> > * Cleanup & new features for compiler*.h and bug.h
-> > * kernel-doc bug fixes (for generating docs)
-> If I move this patch to the other patch set,
-> scripts/get_maintainers.pl will give me a list longer than the LKML
-> administrator will allow for recipients (1024 bytes max)
+> How do you use the chip ? Do you need the detect function in your application ?
 
-You don't need to use get_maintainers. It's more of a help tool to find
-maintainers and not something that is mandatory. Not everyone that has
-ever touched one of these files needs to be Cc'd.
+In our application, this device is statically declared in the platform
+support code, so we don't need to "detect" it.
 
-Please move the patch to the patch series where it is used. Otherwise it
-confuses reviewers as it did here.
+I propose to re-send a v5 with the "s/u16 in_data/int in_data/" fix and
+the ads7828_detect() removal in the first cleanup patch, then the
+ADS7830 support. Does it sound good for you?
 
--- Steve
-
+Thanks,
+Vivien
 
