@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2JCXIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:08:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45667 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab2JCXIA (ORCPT
+	id S932712Ab2JCXIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:08:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36958 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413Ab2JCXIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:08:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <50682402.8020402@antcom.de>
-References: <1348780923-27428-1-git-send-email-stigge@antcom.de>
-	<CAOY=C6GG6jqqEAAGJjmDG-BFT2eq=9+ck+F_EOcthRgDCDv8=Q@mail.gmail.com>
-	<50682402.8020402@antcom.de>
-Date: Thu, 4 Oct 2012 01:07:59 +0200
-Message-ID: <CACRpkdYGePft_XvhhoNyRfBm484FD46WGagivQzjh5-OE3VJUA@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/2] gpio: Add a block GPIO API to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Stijn Devriendt <highguy@gmail.com>, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        bgat@billgatliff.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Oct 2012 19:08:15 -0400
+Date: Thu, 4 Oct 2012 09:08:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH -next] asymmetric keys: fix printk format warning
+Message-Id: <20121004090806.70274213735de74211f4334d@canb.auug.org.au>
+In-Reply-To: <506CC48E.2020303@xenotime.net>
+References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
+	<506CC48E.2020303@xenotime.net>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Oct_2012_09_08_06_+1000_HbjgVEvsKnic/mrA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 30, 2012 at 12:50 PM, Roland Stigge <stigge@antcom.de> wrote:
+--Signature=_Thu__4_Oct_2012_09_08_06_+1000_HbjgVEvsKnic/mrA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Besides what I discussed with JC and Linus, I find the unsigned int
-> (i.e. u32 or u64, depending on the arch) quite appealing. It is a nice
-> compromise between my general bit mapped data model (variable size *u8
-> array) and the bool *values list. Even maps easily onto a single sysfs
-> entry for values, by abstracting a gpio list to an actual data word.
+[Lets also cc Rusty who committed the patch ...]
+
+On Wed, 03 Oct 2012 16:04:46 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
 >
-> What do others think? JC? Linus? I'm considering this (unsigned int
-> data) a valid option.
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>=20
+> Fix printk format warning in x509_cert_parser.c:
+>=20
+> crypto/asymmetric_keys/x509_cert_parser.c: In function 'x509_note_OID':
+> crypto/asymmetric_keys/x509_cert_parser.c:113:3: warning: format '%zu' ex=
+pects type 'size_t', but argument 2 has type 'long unsigned int'
+>=20
+> Builds cleanly on i386 and x86_64.
+>=20
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: linux-crypto@vger.kernel.org
+> ---
+>  crypto/asymmetric_keys/x509_cert_parser.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> --- linux-next-20121003.orig/crypto/asymmetric_keys/x509_cert_parser.c
+> +++ linux-next-20121003/crypto/asymmetric_keys/x509_cert_parser.c
+> @@ -110,7 +110,7 @@ int x509_note_OID(void *context, size_t
+>  	if (ctx->last_oid =3D=3D OID__NR) {
+>  		char buffer[50];
+>  		sprint_oid(value, vlen, buffer, sizeof(buffer));
+> -		pr_debug("Unknown OID: [%zu] %s\n",
+> +		pr_debug("Unknown OID: [%lu] %s\n",
+>  			 (unsigned long)value - ctx->data, buffer);
+>  	}
+>  	return 0;
+>=20
 
-I think we mostly use an unsigned long for such stuff as IRQ flags
-and ioctl() parameters in the kernel.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-In this case it has the upside that it will be 32bit on 32bit systems
-and 64bit on 64bit systems if I'm not mistaken.
+--Signature=_Thu__4_Oct_2012_09_08_06_+1000_HbjgVEvsKnic/mrA
+Content-Type: application/pgp-signature
 
-Yours,
-Linus Walleij
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQbMVWAAoJEECxmPOUX5FEfMYQAIOtycJymW1cUHVtns7qmTWe
+GTsQtKy3G/WiM0kjwC0bYTGj9RpSxEvj0+7K1y71soc3qrFbsuEWqcwC3hJ9iqQ4
+Mwh7BEpOzCnlKJ6KTYPWreEOK3X0yjgWaS8AzG0nGn60Luep2c78hba3ZOsGd9IP
+/go+U28LJM6FhnpSJZ6haMw1H2NRyXkThJehjMvNZNLSrT1QAMnDJjw6VS1eMgYf
+XDD1HP5GAMWrY5KzBRqwgk1yYJ682y+OWro8cq8E65D+E2tjgEs9iAAPTfJie46H
+Dcl6GmOEBElP68z1uQliEuSaDnuxOM6yoQJQKQF44gNdOW5hcIYLCOc/Un10Edhz
+NK3ruiFPWw5M/2rPcYVunsqD1HooUqzVpp87hFPdVCIJRKPXpzTXWbKvlvKiHjfk
+ymvVxObZpU/99xEvNK2PQMUvAVc1sFf7351SDYuI7kAZ4j/rsX/OHOnxYhDo5n0A
+uPUWv0AKgMO/azRWSSf/BkuuWti3MztFKE0ex6Ko4dDtrLBho/4WpaT18x9LekmQ
+nk08n8SSaQ9nNcxtjnbyx/tii9MpO1uTPEbFm4r9JI4MJqKAiVmi/qvKUe6O4iOE
+A0Qb7cedH353ylR85GCro9tkDf9/HUrH7c217WF023UzVWoRS5Pt+e8dCfQc/Y8t
+oTjROrdDkrc7u88C0eAJ
+=ggiV
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Oct_2012_09_08_06_+1000_HbjgVEvsKnic/mrA--
