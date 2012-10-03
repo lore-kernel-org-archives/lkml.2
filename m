@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965323Ab2JCRQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:16:22 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:51877 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536Ab2JCRQV (ORCPT
+	id S1755054Ab2JCRVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:21:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47970 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753274Ab2JCRVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:16:21 -0400
-Message-ID: <506C6F59.8050403@linaro.org>
-Date: Wed, 03 Oct 2012 10:01:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 3 Oct 2012 13:21:45 -0400
+X-Sasl-enc: iqez19xzhJhZHPu6qj2qBB4d5O2zHHU2p9ABUA0bG/Ts 1349284904
+Date: Wed, 3 Oct 2012 10:21:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121003172142.GA5061@kroah.com>
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
+ <20121003161702.GA22008@kroah.com>
+ <20121003164712.GF2527@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>
-Subject: Re: [ 008/180] 2.6.32.x: ntp: Fix leap-second hrtimer livelock
-References: <20121001225157.951753597@1wt.eu> <1349275814.16173.13.camel@deadeye.wl.decadent.org.uk> <20121003160151.GE3889@1wt.eu>
-In-Reply-To: <20121003160151.GE3889@1wt.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100317-7606-0000-0000-0000042BC515
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003164712.GF2527@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 09:01 AM, Willy Tarreau wrote:
-> Hi Ben,
->
-> On Wed, Oct 03, 2012 at 03:50:14PM +0100, Ben Hutchings wrote:
->> On Tue, 2012-10-02 at 00:52 +0200, Willy Tarreau wrote:
->>> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
->> [...]
->>
->> No objection, but please remove the '2.6.32.x: ' prefix from the subject
->> before committing this and the other ntp/timekeeping/hrtimer fixes.
-> Good point. Initially John used this as a differenciator when sending to
-> stable@ but I directly applied the mbox without fixing the subject, which
-> isn't a good thing.
-Do let me know if there's a better way for me to send them (and keep the 
-versions straight) without creating more work for you.
+On Wed, Oct 03, 2012 at 09:47:12AM -0700, Paul E. McKenney wrote:
+> On Wed, Oct 03, 2012 at 09:17:02AM -0700, Greg Kroah-Hartman wrote:
+> > On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
+> > > On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
+> > > > This config item has not carried much meaning for a while now and is
+> > > > almost always enabled by default. As agreed during the Linux kernel
+> > > > summit, it should be removed. As a first step, remove it from being
+> > > > listed, and default it to on. Once it has been removed from all
+> > > > subsystem Kconfigs, it will be dropped entirely.
+> > > > 
+> > > > CC: Greg KH <gregkh@linuxfoundation.org>
+> > > > CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> > > > CC: Serge Hallyn <serge.hallyn@canonical.com>
+> > > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > CC: Andrew Morton <akpm@linux-foundation.org>
+> > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > > > ---
+> > > > 
+> > > > This is the first of a series of 202 patches removing EXPERIMENTAL from
+> > > > all the Kconfigs in the tree. Should I send them all to lkml (with all
+> > > > the associated CCs), or do people want to cherry-pick changes from my
+> > > > tree? I don't want to needlessly flood the list.
+> > > > 
+> > > > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
+> > > > 
+> > > > I figure this patch can stand alone to at least make EXPERIMENTAL go
+> > > > away from the menus, and give us a taste of what the removal would do
+> > > > to builds.
+> > > 
+> > > OK, I will bite...  How should I flag an option that is initially only
+> > > intended for those willing to take some level of risk?
+> > 
+> > In the text say "You really don't want to enable this option, use at
+> > your own risk!"  Or something like that :)
+> 
+> OK, so the only real hope for experimental features is to refrain from
+> creating a config option for them, so that people wishing to use them
+> must modify the code?  Or is the philosophy that we keep things out of
+> tree until we are comfortable with distros turning them on?
 
-thanks
--john
+I think that should have been your philosophy for a long time, as they
+turn on everything, and I don't blame them.  Why would we have included
+it in the kernel tree, unless we wanted people to use the option?
 
+greg k-h
