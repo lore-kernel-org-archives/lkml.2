@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab2JCVro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:47:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64108 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab2JCVrm (ORCPT
+	id S1756571Ab2JCVuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:50:55 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:39589 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756434Ab2JCVux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:47:42 -0400
-Date: Wed, 3 Oct 2012 14:46:59 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch -mm] mm, thp: fix mlock statistics fix
-In-Reply-To: <20121003142519.93375e01.akpm@linux-foundation.org>
-Message-ID: <alpine.LSU.2.00.1210031430190.14479@eggly.anvils>
-References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com> <alpine.LSU.2.00.1209192021270.28543@eggly.anvils> <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com> <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
- <alpine.LSU.2.00.1209271814340.2107@eggly.anvils> <20121003131012.f88b0d66.akpm@linux-foundation.org> <alpine.DEB.2.00.1210031403270.4352@chino.kir.corp.google.com> <20121003142519.93375e01.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 3 Oct 2012 17:50:53 -0400
+Message-ID: <506CB331.8000101@xenotime.net>
+Date: Wed, 03 Oct 2012 14:50:41 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] infiniband: fix ipoib build error when IPOIB_CM is
+ not enabled
+References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
+In-Reply-To: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Andrew Morton wrote:
-> On Wed, 3 Oct 2012 14:10:41 -0700 (PDT)
-> David Rientjes <rientjes@google.com> wrote:
-> 
-> > > The free_page_mlock() hunk gets dropped because free_page_mlock() is
-> > > removed.  And clear_page_mlock() doesn't need this treatment.  But
-> > > please check my handiwork.
-> > > 
-> > 
-> > I reviewed what was merged into -mm and clear_page_mlock() does need this 
-> > fix as well.
-> 
-> argh, it got me *again*.  grr.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-I've no objection to more documentation on PageHuge, but neither you nor
-it were to blame for that "oversight".  It's simply that David's original
-patch clearly did not need such a change in clear_page_mlock(), because
-it could never be necessary from where it was then called; but I changed
-where it's called, whereupon it becomes evident that the extra is needed.
+Fix build error when INFINIBAND_IPOIB_CM is not enabled:
 
-"evident" puts it rather too strongly.  Most munlocking happens through
-munlock_vma_page() instead, but the clear_page_mlock() path covers
-truncation.  THPages cannot be file pages at present, but perhaps they
-could be anonymous pages COWed from file pages (I've not checked the
-exact criteria THP applies)?  In which case, subject to truncation too.
+ERROR: "ipoib_set_mode" [drivers/infiniband/ulp/ipoib/ib_ipoib.ko] undefined!
 
-Hugh
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Roland Dreier <roland@kernel.org>
+Cc:	Sean Hefty <sean.hefty@intel.com>
+Cc:	Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc:	linux-rdma@vger.kernel.org
+---
+ drivers/infiniband/ulp/ipoib/ipoib_netlink.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm: document PageHuge somewhat
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  mm/hugetlb.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff -puN mm/hugetlb.c~mm-document-pagehuge-somewhat mm/hugetlb.c
-> --- a/mm/hugetlb.c~mm-document-pagehuge-somewhat
-> +++ a/mm/hugetlb.c
-> @@ -671,6 +671,11 @@ static void prep_compound_gigantic_page(
->  	}
->  }
->  
-> +/*
-> + * PageHuge() only returns true for hugetlbfs pages, but not for normal or
-> + * transparent huge pages.  See the PageTransHuge() documentation for more
-> + * details.
-> + */
->  int PageHuge(struct page *page)
->  {
->  	compound_page_dtor *dtor;
-> _
+--- linux-next-20121003.orig/drivers/infiniband/ulp/ipoib/ipoib_netlink.c
++++ linux-next-20121003/drivers/infiniband/ulp/ipoib/ipoib_netlink.c
+@@ -30,6 +30,7 @@
+  * SOFTWARE.
+  */
+ 
++#include <linux/kconfig.h>
+ #include <linux/netdevice.h>
+ #include <linux/module.h>
+ #include <net/rtnetlink.h>
+@@ -71,11 +72,13 @@ static int ipoib_changelink(struct net_d
+ 
+ 	if (data[IFLA_IPOIB_MODE]) {
+ 		mode  = nla_get_u16(data[IFLA_IPOIB_MODE]);
++#if IS_ENABLED(CONFIG_INFINIBAND_IPOIB_CM)
+ 		if (mode == IPOIB_MODE_DATAGRAM)
+ 			ret = ipoib_set_mode(dev, "datagram\n");
+ 		else if (mode == IPOIB_MODE_CONNECTED)
+ 			ret = ipoib_set_mode(dev, "connected\n");
+ 		else
++#endif
+ 			ret = -EINVAL;
+ 
+ 		if (ret < 0)
