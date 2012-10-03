@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab2JCJLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:11:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38879 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab2JCJLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 05:11:52 -0400
-Message-ID: <506BDECA.90701@kernel.dk>
-Date: Wed, 03 Oct 2012 08:44:26 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1755300Ab2JCJRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:17:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37612 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753836Ab2JCJRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 05:17:53 -0400
+Message-ID: <506C02BB.20606@suse.cz>
+Date: Wed, 03 Oct 2012 11:17:47 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] drbd-8.3 updates
-References: <8391701.3EY4hQfmFv@fat-tyre>
-In-Reply-To: <8391701.3EY4hQfmFv@fat-tyre>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jean Delvare <jdelvare@suse.de>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Bernhard Walle <bernhard@bwalle.de>,
+        Ralf Baechle <ralf@linux-mips.org>, akpm@linux-foundation.org
+Subject: Re: [PATCH v3] kbuild: Fix gcc -x syntax
+References: <1349188956.4441.12.camel@amber.site>
+In-Reply-To: <1349188956.4441.12.camel@amber.site>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-02 15:02, Philipp Reisner wrote:
-> Hi Jens,
+On 2.10.2012 16:42, Jean Delvare wrote:
+> The correct syntax for gcc -x is "gcc -x assembler", not
+> "gcc -xassembler". Even though the latter happens to work, the former
+> is what is documented in the manual page and thus what gcc wrappers
+> such as icecream do expect.
 > 
-> Please consider to pull these changes for the 3.7 merge window.
+> This isn't a cosmetic change. The missing space prevents icecream from
+> recognizing compilation tasks it can't handle, leading to silent kernel
+> miscompilations.
 > 
-> Best,
->  Phil
-> 
-> The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
-> 
->   Linux 3.6 (2012-09-30 16:47:46 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.drbd.org/linux-drbd.git for-jens
-> 
-> for you to fetch changes up to a783d564a1badbb87b3f96aa8df581ed4167a9c9:
-> 
->   drbd: log request sector offset and size for IO errors (2012-10-02 14:52:24 +0200)
+> Besides me, credits go to Michael Matz and Dirk Mueller for
+> investigating the miscompilation issue and tracking it down to this
+> incorrect -x parameter syntax.
 
-Not pulled. Two reasons:
+Applied to kbuild.git#rc-fixes. Thanks to everyone involved.
 
-- It's late (in the merge window)
-- and it's not based off my for-3.7/drivers branch, hence I get a ton of
-  unrelated changes with a pull into that branch.
-
--- 
-Jens Axboe
-
+Michal
