@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2JCJGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:06:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60357 "EHLO mail.zytor.com"
+	id S1753316Ab2JCJGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:06:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49944 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab2JCJGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751845Ab2JCJGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Oct 2012 05:06:13 -0400
-Message-ID: <506BFFF1.8040207@zytor.com>
-Date: Wed, 03 Oct 2012 02:05:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+Message-ID: <506BFFFB.5050103@ti.com>
+Date: Wed, 3 Oct 2012 14:36:03 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] MAINTAINERS: Add EFI maintainer entry
-References: <1349255042-20971-1-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1349255042-20971-1-git-send-email-matt@console-pimps.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+To: Prabhakar <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        VGER <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] davinci: vpbe: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with
+ V4L2_OUT_CAP_DV_TIMINGS
+References: <1349245973-7377-1-git-send-email-prabhakar.lad@ti.com>
+In-Reply-To: <1349245973-7377-1-git-send-email-prabhakar.lad@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 02:04 AM, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On 10/3/2012 12:02 PM, Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
 > 
-> We're starting to need a channel through which we can funnel EFI
-> patches to make sure they get merged in a timely fashion. Matthew and
-> Peter seem happy enough for me to take that bullet.
+> This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
+> V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
+> out.
 > 
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
-> ---
->  MAINTAINERS | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Hans Verkuil <hansverk@cisco.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+For the DaVinci platform change:
 
-	-hpa
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
+Thanks,
+Sekhar
