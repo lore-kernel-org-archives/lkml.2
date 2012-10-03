@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab2JCLYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 07:24:47 -0400
-Received: from mout.web.de ([212.227.17.11]:49344 "EHLO mout.web.de"
+	id S1754239Ab2JCLYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 07:24:46 -0400
+Received: from mout.web.de ([212.227.17.12]:57864 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab2JCLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 07:22:00 -0400
+	id S1753273Ab2JCLWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 07:22:01 -0400
 From: Jan Kiszka <jan.kiszka@web.de>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 03/13] scripts/gdb: Add lx-symbols command
-Date: Wed,  3 Oct 2012 13:21:34 +0200
-Message-Id: <4a908732afc40165be20f6f2b7eeff92c0f6883f.1349263293.git.jan.kiszka@web.de>
+        kgdb-bugreport@lists.sourceforge.net, Kay Sievers <kay@vrfy.org>
+Subject: [PATCH 06/13] scripts/gdb: Add lx-dmesg command
+Date: Wed,  3 Oct 2012 13:21:37 +0200
+Message-Id: <805b20bb0e1fb1ec06acf8e50237cdb40dd54290.1349263293.git.jan.kiszka@web.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
-X-Provags-ID: V02:K0:0ZUarzZlUS38NQSamCD4DXlJ64MTGwn6s/R/U/QQqV2
- ju1CZdO6z2fWyQ9UUBhuSn7RiNa/9Mr/CYCOR+rh3ZgKtGuKxY
- k2krFyN7UzO64k31dPvGzPYfdVZq1iU1PUuCUcgh85vOGZQbqt
- ITildRGr9PUbKTppU7Ua87klnZ6JZsJaW+ELiu5As9oDcgKc4o
- E4njM2AnsxUajUZikBloA==
+X-Provags-ID: V02:K0:7vpseFInKTcydlRk6JQZXn6V1MLA/2t6AwoDF8hgvno
+ 5ctRuF+A4kEKrpM+rXVJhP3Au3hM8iytumbA47yLA9dXjOQY5/
+ xn78KjcvJJuGFK5iK449BCWGL1g05O2f2QUNrWYT7krR3RMY3w
+ UiDuv93zj9KFcurSYvTPXogph2wiQ088szrWLzt2zYDbnRIr4M
+ bppBOd0FyErfJj+WICCDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kiszka <jan.kiszka@siemens.com>
 
-This is probably the most useful helper when debugging kernel modules:
-lx-symbols will first reload vmlinux. Then it searches recursively for
-*.ko files in the specified paths and the current directory. Finally it
-walks the kernel's module list, issuing the necessary add-symbol-file
-command for each loaded module so that gdb know which module symbol
-correspond to which address.
+This pokes into the log buffer of the debugged kernel, dumping it to the
+gdb console. Helping in case the target should or can no longer execute
+dmesg itself.
 
+CC: Kay Sievers <kay@vrfy.org>
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/symbols.py     |   88 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/dmesg.py       |   63 ++++++++++++++++++++++++++++++++++++++++++++
  scripts/gdb/vmlinux-gdb.py |    1 +
- 2 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/symbols.py
+ 2 files changed, 64 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/dmesg.py
 
-diff --git a/scripts/gdb/symbols.py b/scripts/gdb/symbols.py
+diff --git a/scripts/gdb/dmesg.py b/scripts/gdb/dmesg.py
 new file mode 100644
-index 0000000..dd13b0d
+index 0000000..2f475bc
 --- /dev/null
-+++ b/scripts/gdb/symbols.py
-@@ -0,0 +1,88 @@
++++ b/scripts/gdb/dmesg.py
+@@ -0,0 +1,63 @@
 +#
 +# gdb helper commands and functions for Linux kernel debugging
 +#
-+#  load kernel and module symbols
++#  kernel log buffer dump
 +#
 +# Copyright (c) 2011, 2012 Siemens AG
 +#
@@ -63,89 +61,64 @@ index 0000000..dd13b0d
 +#
 +
 +import gdb
-+import os
-+import re
 +import string
 +
 +from utils import *
 +
-+class LinuxSymbols(gdb.Command):
-+	__doc__ = "(Re-)load symbols of Linux kernel and currently loaded modules.\n" \
-+		  "\n" \
-+		  "The kernel (vmlinux) is taken from the current working directly. Modules (.ko)\n" \
-+		  "are scanned recursively, starting in the same directory. Optionally, the module\n" \
-+		  "search path can be extended by a space separated list of paths passed to the\n" \
-+		  "lx-symbols command."
++class LinuxDmesg(gdb.Command):
++	__doc__ = "Print Linux kernel log buffer."
 +
 +	def __init__(self):
-+		super(LinuxSymbols, self).__init__("lx-symbols",
-+						   gdb.COMMAND_FILES,
-+						   gdb.COMPLETE_FILENAME)
++		super(LinuxDmesg, self).__init__("lx-dmesg", gdb.COMMAND_DATA)
 +
 +	def invoke(self, arg, from_tty):
-+		print "loading vmlinux"
-+		gdb.execute("symbol-file vmlinux")
++		log_buf_addr = int(str(gdb.parse_and_eval("(void *)log_buf")),
++				   16)
++		log_first_idx = int(gdb.parse_and_eval("log_first_idx"))
++		log_next_idx = int(gdb.parse_and_eval("log_next_idx"))
++		log_buf_len = int(gdb.parse_and_eval("log_buf_len"))
 +
-+		modules = gdb.parse_and_eval("modules")
-+		entry = modules['next']
-+		if entry == modules.address:
-+			print "no modules found"
-+			return
++		inf = gdb.inferiors()[0]
++		start = log_buf_addr + log_first_idx
++		if log_first_idx < log_next_idx:
++			log_buf_2nd_half = -1
++			length = log_next_idx - log_first_idx
++			log_buf = inf.read_memory(start, length)
++		else:
++			log_buf_2nd_half = log_buf_len - log_first_idx
++			log_buf = inf.read_memory(start, log_buf_2nd_half) + \
++				  inf.read_memory(log_buf_addr, log_next_idx)
 +
-+		module_files = []
-+		paths = arg.split()
-+		paths.append(os.getcwd())
-+		for path in paths:
-+			print "scanning for modules in " + path
-+			for root, dirs, files in os.walk(path):
-+				for name in files:
-+					if re.match(r".*\.ko$", name):
-+						module_files.append(root + \
-+								    "/" + name)
-+
-+		module_type = gdb.lookup_type("struct module").pointer()
-+
-+		while entry != modules.address:
-+			module = container_of(entry, module_type, "list")
-+			module_name = module['name'].string()
-+			module_addr = str(module['module_core'])
-+			module_pattern = ".*/" + \
-+				string.replace(module_name, "_", r"[_\-]") + \
-+				r"\.ko$"
-+			module_path = ""
-+			for name in module_files:
-+				if re.match(module_pattern, name):
-+					module_path = name
++		pos = 0
++		while pos < log_buf.__len__():
++			length = read_u16(log_buf[pos + 8 : pos + 10])
++			if length == 0:
++				if log_buf_2nd_half == -1:
++					print "Corrupted log buffer!"
 +					break
++				pos = log_buf_2nd_half
++				continue
 +
-+			if module_path:
-+				print "loading @" + module_addr + ": " + \
-+				      module_path
-+				if gdb.VERSION >= "7.2":
-+					gdb.execute("add-symbol-file " + \
-+						    module_path + " " + \
-+						    module_addr,
-+						    to_string = True)
-+				else:
-+					gdb.execute("add-symbol-file " + \
-+						    module_path + " " + \
-+						    module_addr)
-+			else:
-+				print "no module object found for '" + \
-+				      module_name + "'"
++			text_len = read_u16(log_buf[pos + 10 : pos + 12])
++			time_stamp = read_u64(log_buf[pos : pos + 8])
 +
-+			entry = entry['next']
++			for line in log_buf[pos + 16 :
++					    pos + 16 + text_len].splitlines():
++				print "[%13.6f] " % \
++				      (time_stamp / 1000000000.0) + line
 +
-+LinuxSymbols()
++			pos += length
++
++LinuxDmesg()
 diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index 62c30b8..fa1d5e1 100644
+index fa1d5e1..8b0422e 100644
 --- a/scripts/gdb/vmlinux-gdb.py
 +++ b/scripts/gdb/vmlinux-gdb.py
-@@ -20,3 +20,4 @@ if not gdb.VERSION >= "7.1":
- 	      "to work."
+@@ -21,3 +21,4 @@ if not gdb.VERSION >= "7.1":
  else:
  	import utils
-+	import symbols
+ 	import symbols
++	import dmesg
 -- 
 1.7.3.4
 
