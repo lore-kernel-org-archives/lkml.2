@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab2JCUlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 16:41:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38687 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab2JCUle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 16:41:34 -0400
+	id S1754363Ab2JCUls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 16:41:48 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53653 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754264Ab2JCUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 16:41:46 -0400
+Date: Wed, 3 Oct 2012 16:41:41 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kees Cook <kees@outflux.net>, Nick Bowler <nbowler@elliptictech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6
+Message-ID: <20121003204141.GB6026@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Kees Cook <kees@outflux.net>,
+	Nick Bowler <nbowler@elliptictech.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
+ <20121003194614.GA2893@elliptictech.com>
+ <20121003200515.GZ9092@outflux.net>
+ <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <506C8A35.8010100@redhat.com>
-References: <506C3B11.9010009@redhat.com>
-	<1349286695-26713-1-git-send-email-yinghai@kernel.org>
-	<1349286695-26713-4-git-send-email-yinghai@kernel.org>
-	<506C8A35.8010100@redhat.com>
-Date: Wed, 3 Oct 2012 13:41:33 -0700
-X-Google-Sender-Auth: XKckmTCuxczvHpFCSnID4hPX_yQ
-Message-ID: <CAE9FiQUq_AJUs04-UKYc+VbsXNihMh5cS_Xf4qW5=tSgU66kUQ@mail.gmail.com>
-Subject: Re: [PATCH 3/5] PCI: add set_max_vfs in pci_driver ops
-From: Yinghai Lu <yinghai@kernel.org>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuvalmin@broadcom.com, bhutchings@solarflare.com,
-        gregory.v.rose@intel.com, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 11:55 AM, Don Dutile <ddutile@redhat.com> wrote:
-> On 10/03/2012 01:51 PM, Yinghai Lu wrote:
->>
->> Will use it enable sriov for pci devices.
->>
->> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
->> ---
->>   include/linux/pci.h |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index be1de01..7d70a5e 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -590,6 +590,7 @@ struct pci_driver {
->>         const struct pci_device_id *id_table;   /* must be non-NULL for
->> probe to be called */
->>         int  (*probe)  (struct pci_dev *dev, const struct pci_device_id
->> *id);   /* New device inserted */
->>         void (*remove) (struct pci_dev *dev);   /* Device removed (NULL if
->> not a hot-plug capable driver) */
->> +       void (*set_max_vfs) (struct pci_dev *dev); /* enable sriov */
->>         int  (*suspend) (struct pci_dev *dev, pm_message_t state);      /*
->> Device suspended */
->>         int  (*suspend_late) (struct pci_dev *dev, pm_message_t state);
->>         int  (*resume_early) (struct pci_dev *dev);
->
->
-> I thought I stated the following in your earlier patch set....
->
-> (a) don't use 'set_max_vfs' ;  it is not changing the max; the max
->     is whatever the device supports. This kind of terminology confuses
->     what is being done, and not descripting what is being done.
-> (b) this is equiv to the sriov_enable_vfs in the RFC set I sent.
->     -- in this set, it prevents the user trying to do more than one enable,
->        and that check should be done, and reject the request, which solves
-> one
->        of the complaints Alexander had.
->
-> I'll try to mind-meld your sysfs attr creation patches to mind later today
-> and post a new series tonight or tomorrow.  Sorry, stuck in mtgs today (and
-> right now!),
-> thus the delay.
+On Wed, Oct 03, 2012 at 01:29:15PM -0700, Linus Torvalds wrote:
+> On Wed, Oct 3, 2012 at 1:05 PM, Kees Cook <kees@outflux.net> wrote:
+> >
+> > 3.6 introduced link restrictions:
+> 
+> Hmm. If this causes problems for others, I suspect we need to turn it
+> off by default.
+> 
+> It's a nice security thing, but considering how quickly people started
+> complaining after 3.6 was out, I suspect we'll see more of these, and
+> we may not have any choice.
 
-Sure. please update 3, 4 as your like, and ask greg.rose work on patch 5.
+True, although I'm not sure we should be encouraging kernel developers
+to have world-writeable directories.  I suppose if it's a single-user
+workstation it wouldn't matter, but you could imagine a daemon running
+has "nobody" which has a stack overflow bug, and then if the user has
+been careless and uses umasks so that directories in their home
+directory are world writeable, well.....
 
-Thanks
+Regardless of whether or not we turn this security feature off by
+default, I think it's worthwhile to look at how and why did Nick's
+directories become world-writeable, and whether there is so distro
+default which is causing or encouraging this.
 
-Yinghai
+					 - Ted
