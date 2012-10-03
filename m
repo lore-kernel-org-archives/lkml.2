@@ -1,153 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab2JCWoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 18:44:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38642 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab2JCWoO (ORCPT
+	id S932214Ab2JCWsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 18:48:54 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:46511 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932105Ab2JCWsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 18:44:14 -0400
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, hughd@google.com, akpm@linux-foundation.org,
-        riel@redhat.com, hannes@cmpxchg.org, dan.magenheimer@oracle.com,
-        aarcange@redhat.com, mgorman@suse.de, gregkh@linuxfoundation.org
-Subject: [RFC/PATCH 2/3] swap: add read_frontswap_async to move a page from frontswap to swapcache
-Date: Wed,  3 Oct 2012 15:43:53 -0700
-Message-Id: <1349304234-19273-3-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1349304234-19273-1-git-send-email-dan.magenheimer@oracle.com>
-References: <1349304234-19273-1-git-send-email-dan.magenheimer@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 3 Oct 2012 18:48:52 -0400
+References: <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com> <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com> <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com> <506C562E.5090909@redhat.com> <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com> <20121003170907.GA23473@ZenIV.linux.org.uk> <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com> <20121003195059.GA13541@kroah.com> <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+From: Andy Walls <awalls@md.metrocast.net>
+Date: Wed, 03 Oct 2012 18:48:52 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
+Message-ID: <3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-03_02:2012-10-03,2012-10-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=11
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1203120001 definitions=main-1210030276
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We would like to move a "swap page" identified by swaptype/offset
-out of frontswap and into swap cache.  Add read_frontswap_async
-that, given an unused new page and a gfp_mask (for necessary radix
-tree work), attempts to do that and communicates success, failure,
-or the fact that a (possibly dirty) copy already exists in swap cache.
-This new routine will be called from zcache (via frontswap) to
-allow pages to be swapped to a true swap device when zcache gets "full".
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- include/linux/swap.h |    1 +
- mm/swap_state.c      |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 81 insertions(+), 0 deletions(-)
+>On Wed, Oct 3, 2012 at 12:50 PM, Greg KH <gregkh@linuxfoundation.org>
+>wrote:
+>>>
+>>> Ok, like this?
+>>
+>> This looks good to me.  Having udev do firmware loading and tieing it
+>to
+>> the driver model may have not been such a good idea so many years
+>ago.
+>> Doing it this way makes more sense.
+>
+>Ok, I wish this had been getting more testing in Linux-next or
+>something, but I suspect that what I'll do is to commit this patch
+>asap, and then commit another patch that turns off udev firmware
+>loading entirely for the synchronous firmware loading case.
+>
+>Why? Just to get more testing, and seeing if there are reports of
+>breakage. Maybe some udev out there has a different search path (or
+>because udev runs in a different filesystem namespace or whatever), in
+>which case running udev as a fallback would otherwise hide the fact
+>that he direct kernel firmware loading isn't working.
+>
+>We can (and will) revert things if that turns out to break things, but
+>I'd like to make any failures of the firmware direct-load path be fast
+>and hard, so that we can see when/what it breaks.
+>
+>Ok? Comments?
+>
+>              Linus
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-media"
+>in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index d3c7281..8a59ddb 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -352,6 +352,7 @@ extern void free_pages_and_swap_cache(struct page **, int);
- extern struct page *lookup_swap_cache(swp_entry_t);
- extern struct page *read_swap_cache_async(swp_entry_t, gfp_t,
- 			struct vm_area_struct *vma, unsigned long addr);
-+extern int read_frontswap_async(int, pgoff_t, struct page *, gfp_t);
- extern struct page *swapin_readahead(swp_entry_t, gfp_t,
- 			struct vm_area_struct *vma, unsigned long addr);
- 
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 0cb36fb..ad790bf 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -18,6 +18,7 @@
- #include <linux/pagevec.h>
- #include <linux/migrate.h>
- #include <linux/page_cgroup.h>
-+#include <linux/frontswap.h>
- 
- #include <asm/pgtable.h>
- 
-@@ -351,6 +352,85 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 	return found_page;
- }
- 
-+/*
-+ * Similar to read_swap_cache_async except we know the page is in frontswap
-+ * and we are trying to place it in swapcache so we can remove it from
-+ * frontswap. Success means the data in frontswap can be thrown away,
-+ * ENOMEM means it cannot, and -EEXIST means a (possibly dirty) copy
-+ * already exists in the swapcache.
-+ */
-+int read_frontswap_async(int type, pgoff_t offset, struct page *new_page,
-+				gfp_t gfp_mask)
-+{
-+	struct page *found_page;
-+	swp_entry_t entry;
-+	int ret = 0;
-+
-+	entry = swp_entry(type, offset);
-+	do {
-+		/*
-+		 * First check the swap cache.  Since this is normally
-+		 * called after lookup_swap_cache() failed, re-calling
-+		 * that would confuse statistics.
-+		 */
-+		found_page = find_get_page(&swapper_space, entry.val);
-+		if (found_page) {
-+			/* its already in the swap cache */
-+			ret = -EEXIST;
-+			break;
-+		}
-+
-+
-+		/*
-+		 * call radix_tree_preload() while we can wait.
-+		 */
-+		ret = radix_tree_preload(gfp_mask);
-+		if (ret)
-+			break;
-+
-+		/*
-+		 * Swap entry may have been freed since our caller observed it.
-+		 */
-+		ret = swapcache_prepare(entry);
-+		if (ret == -EEXIST) {	/* seems racy */
-+			radix_tree_preload_end();
-+			continue;
-+		}
-+		if (ret) {		/* swp entry is obsolete ? */
-+			radix_tree_preload_end();
-+			break;
-+		}
-+
-+		/* May fail (-ENOMEM) if radix-tree node allocation failed. */
-+		__set_page_locked(new_page);
-+		SetPageSwapBacked(new_page);
-+		ret = __add_to_swap_cache(new_page, entry);
-+		if (likely(!ret)) {
-+			radix_tree_preload_end();
-+			/* FIXME: how do I add this at tail of lru? */
-+			SetPageDirty(new_page);
-+			lru_cache_add_anon_tail(new_page);
-+			/* Get page (from frontswap) and return */
-+			if (frontswap_load(new_page) == 0)
-+				SetPageUptodate(new_page);
-+			unlock_page(new_page);
-+			ret = 0;
-+			goto out;
-+		}
-+		radix_tree_preload_end();
-+		ClearPageSwapBacked(new_page);
-+		__clear_page_locked(new_page);
-+		/*
-+		 * add_to_swap_cache() doesn't return -EEXIST, so we can safely
-+		 * clear SWAP_HAS_CACHE flag.
-+		 */
-+		swapcache_free(entry, NULL);
-+	} while (ret != -ENOMEM);
-+
-+out:
-+	return ret;
-+}
-+
- /**
-  * swapin_readahead - swap in pages in hope we need them soon
-  * @entry: swap entry of this memory
--- 
-1.7.1
+I don't know if you can remove the /sys/.../firmware ABI altogether, because there is at least one, somewhat popular udev replacement that also uses it: mdev
 
+http://git.busybox.net/busybox/plain/docs/mdev.txt
+
+Regards,
+Andy
