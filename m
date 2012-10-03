@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964973Ab2JCP5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:57:47 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:2849 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932472Ab2JCP5p (ORCPT
+	id S964962Ab2JCP5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:57:40 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40945 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932472Ab2JCP5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:57:45 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14920233"
-Message-ID: <1349279862.650.171.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
- for PV on HVM guests
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 3 Oct 2012 16:57:42 +0100
-In-Reply-To: <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
-	 <1349272182.650.150.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
-	 <1349272482.650.151.camel@zakaz.uk.xensource.com>
-	 <20121003141116.GA10633@phenom.dumpdata.com>
-	 <1349276431.650.156.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 3 Oct 2012 11:57:39 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX18mzXQiD5cmMfZG2r6x09/xy1oUMv9WbXMrXBiYmo
+	rR2IMXvgZ3DJuN
+Message-ID: <506C6065.3070202@gmx.net>
+Date: Wed, 03 Oct 2012 17:57:25 +0200
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com, lenb@kernel.org
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
+References: <50158321.4030007@gmx.net> <201208022340.16948.rjw@sisk.pl> <5055DFB6.6070809@gmx.net> <201209182342.30244.rjw@sisk.pl>
+In-Reply-To: <201209182342.30244.rjw@sisk.pl>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-03 at 16:48 +0100, Stefano Stabellini wrote:
-> On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > On Wed, 2012-10-03 at 15:11 +0100, Konrad Rzeszutek Wilk wrote:
-> > > On Wed, Oct 03, 2012 at 02:54:42PM +0100, Ian Campbell wrote:
-> > > > On Wed, 2012-10-03 at 14:51 +0100, Stefano Stabellini wrote:
-> > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > > > > > On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
-> > > > > > > PV on HVM guests don't have a start_info page mapped by Xen, so
-> > > > > > > xen_start_info is just NULL for them.
-> > > > > > > That is problem because other parts of the code expect xen_start_info to
-> > > > > > > point to something valid, for example xen_initial_domain() is defined as
-> > > > > > > follow:
-> > > > > > > 
-> > > > > > > #define xen_initial_domain()    (xen_domain() && \
-> > > > > > >                  xen_start_info->flags & SIF_INITDOMAIN)
-> > > > > > 
-> > > > > > But anyone who calls this before xen_start_info is setup is going to get
-> > > > > > a bogus result, specifically in this case they will think they are domU
-> > > > > > when in reality they are dom0 -- wouldn't it be better to fix those
-> > > > > > callsites?
-> > > > > 
-> > > > > That cannot be the case because setting up xen_start_info is the very
-> > > > > first thing that is done, before even calling to C.
-> > > > 
-> > > > On PV, yes, but you are trying to fix PVHVM here, no?
-> > > > 
-> > > > Otherwise if this is always set before calling into C then what is the
-> > > > purpose of this patch?
-> > > 
-> > > to fix this - as PVHVM has it set to NULL and we end up de-referencing
-> > > the xen_start_info and crashing. As so::
-> > > 
-> > 
-> > Right, so returning to my original point: The caller here is calling
-> > xen_initial_domain() *before* start info is setup. This is bogus and is
-> > your actual bug, all this patch does is hide that real issue.
+On 18/09/12 23:42, Rafael J. Wysocki wrote:
+> Hi,
 > 
-> That is because xen_start_info wasn't setup at all for PV on HVM guests.
+> On Sunday, September 16, 2012, Witold Szczeponik wrote:
+>> Hi Rafael, 
+>>
+>> what about the patches 1 and 3 which do not make any changes to the ABI?
+>> The first patch simplifies the code, while the third patch fixes a problem in
+>> the PNP resource allocation.  Any chances to have them included in 3.7?
 > 
-> The real reason is that PV on HVM guests don't have one, but that is
-> another matter. Until we get rid of all the references to xen_start_info
-> outside of PV specific code, we should just assume that there is one,
-> and that is already setup.
+> They would be fine as far as I'm concerned, but I'm not maintaining that part
+> of the kernel (at least at the moment).
 > 
-> One day not too far from now, we might refactor the code to never
-> reference xen_start_info directly, but I don't think that now is the
-> time for that. Also consider that this is the same thing we do on ARM.
+> I'm not sure who's the maintainer of it, to be honest.
 
-We actual fill in the dummy start info with valid information on ARM
-though, we don't just leave it full of zeroes.
+According to the maintainer list, this would be Len and Bjorn.  
+Hence...
 
-If we do start out with start_info pointing to an uninitialised
-start_info on ARM too then I would argue that this is also a mistake. We
-should leave the NULL pointer in place until we setup the content of the
-dummy start info -- exactly because the resulting crash indicates to us
-that someone has accessed the si before we've initialised it.
 
-> > With this "fix" the caller of xen_initial_domain shown in this trace now
-> > gets a rubbish result based on the content of a dummy shared info
-> > instead of the real answer from that actual shared info.
+Len and Bjorn, 
+
+any chances to include the patches in 3.7?  I checked them 
+against 3.6 and they applied without any change.  Or should 
+I resend them individually? 
+
+Thanks. 
+
+--- Witold
+
 > 
-> That is not true. The caller gets a zero result, that is completely
-> appropriate in this case, given that a PV on HVM guest doesn't have a
-> start_info.
-
-It's just a side effect of Linux zeroing its bss though and zero
-happening to be the right answer for a PVHVM guest in this case.
-
-Is it true that zero is an appropriate result for all uses of fields in
-start_info on PVHVM?
-
-> > The right fix is to fix the caller to not call xen_initial_domain()
-> > until after the shared info has been setup. Maybe that means moving
-> > shinfo setup earlier, or maybe it means deferring this call until later
-> > in the PVHVM case.
+> Thanks,
+> Rafael
 > 
-> I don't think so, we should be able to call xen_initial_domain() at any
-> point in the code.
-> 
-> The best course of action is taking this fix now (making PVHVM x86
-> guests behave the same way as ARM guests) and refactor all the callers to
-> xen_start_info later.
-
-
