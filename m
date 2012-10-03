@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab2JCXLI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:11:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab2JCXLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:11:03 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/2] UAPI: Split compound conditionals containing __KERNEL__
- in Arm64
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Date: Thu, 04 Oct 2012 00:10:59 +0100
-Message-ID: <20121003231058.19239.7392.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121003231044.19239.81961.stgit@warthog.procyon.org.uk>
-References: <20121003231044.19239.81961.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932804Ab2JCXLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:11:16 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47744 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab2JCXLN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 19:11:13 -0400
+Message-ID: <506CC607.8060703@gmail.com>
+Date: Thu, 04 Oct 2012 07:11:03 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@amd64.org>, Conny Seidel <conny.seidel@amd.com>,
+        Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] CPU hotplug, writeback: Don't call writeback_set_ratelimit()
+ too often during hotplug
+References: <20120924102324.GA22303@aftab.osrc.amd.com> <20120924142305.GD12264@quack.suse.cz> <20120924143609.GH22303@aftab.osrc.amd.com> <20120924201650.6574af64.conny.seidel@amd.com> <20120924181927.GA25762@aftab.osrc.amd.com> <5060AB0E.3070809@linux.vnet.ibm.com> <5060C714.8030606@linux.vnet.ibm.com> <20120928122719.GA3067@localhost>
+In-Reply-To: <20120928122719.GA3067@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split compound conditionals containing __KERNEL__ in Arm64 where possible to
-make it easier for the UAPI disintegration scripts to handle them.
+On 09/28/2012 08:27 PM, Fengguang Wu wrote:
+> On Tue, Sep 25, 2012 at 02:18:20AM +0530, Srivatsa S. Bhat wrote:
+>> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>
+>> The CPU hotplug callback related to writeback calls writeback_set_ratelimit()
+>> during every state change in the hotplug sequence. This is unnecessary
+>> since num_online_cpus() changes only once during the entire hotplug operation.
+>>
+>> So invoke the function only once per hotplug, thereby avoiding the
+>> unnecessary repetition of those costly calculations.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+> Looks good to me. I'll include it in the writeback tree.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
----
+Hi Fengguang,
 
- arch/arm64/include/asm/hwcap.h  |    4 +++-
- arch/arm64/include/asm/stat.h   |    4 +++-
- arch/arm64/include/asm/unistd.h |    4 +++-
- 3 files changed, 9 insertions(+), 3 deletions(-)
+Could you tell me when  inode->i_state & I_DIRTY will be set? thanks.
 
-diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
-index f8190ba..db05f97 100644
---- a/arch/arm64/include/asm/hwcap.h
-+++ b/arch/arm64/include/asm/hwcap.h
-@@ -35,7 +35,8 @@
- #define COMPAT_HWCAP_IDIVT	(1 << 18)
- #define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
- 
--#if defined(__KERNEL__) && !defined(__ASSEMBLY__)
-+#ifdef __KERNEL__
-+#ifndef __ASSEMBLY__
- /*
-  * This yields a mask that user programs can use to figure out what
-  * instruction set this cpu supports.
-@@ -49,5 +50,6 @@
- 
- extern unsigned int elf_hwcap;
- #endif
-+#endif
- 
- #endif
-diff --git a/arch/arm64/include/asm/stat.h b/arch/arm64/include/asm/stat.h
-index d87225c..a9f580c 100644
---- a/arch/arm64/include/asm/stat.h
-+++ b/arch/arm64/include/asm/stat.h
-@@ -18,7 +18,8 @@
- 
- #include <asm-generic/stat.h>
- 
--#if defined(__KERNEL__) && defined(CONFIG_COMPAT)
-+#ifdef __KERNEL__
-+#ifdef CONFIG_COMPAT
- 
- #include <asm/compat.h>
- 
-@@ -58,5 +59,6 @@ struct stat64 {
- };
- 
- #endif
-+#endif
- 
- #endif
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index f55ba3e..8f03dee 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -18,6 +18,8 @@
- #include <asm-generic/unistd.h>
- #endif
- 
--#if defined(__KERNEL__) && defined(CONFIG_COMPAT)
-+#ifdef __KERNEL__
-+#ifdef CONFIG_COMPAT
- #include <asm/unistd32.h>
- #endif
-+#endif
+Regards,
+Chen
+
+>
+> Thanks,
+> Fengguang
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
