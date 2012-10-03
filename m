@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab2JCARn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 20:17:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41214 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932864Ab2JCARm (ORCPT
+	id S932900Ab2JCASm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 20:18:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:48729 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932882Ab2JCASl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 20:17:42 -0400
-Message-ID: <1349223432.16173.10.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter
- SoL
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Michael Tokarev <mjt@tls.msk.ru>, David Miller <davem@davemloft.net>
-Cc: Ferenc Wagner <wferi@niif.hu>, Michael Chan <mchan@broadcom.com>,
-        netdev@vger.kernel.org, Matt Carlson <mcarlson@broadcom.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Wed, 03 Oct 2012 01:17:12 +0100
-In-Reply-To: <506B3B52.7080001@msgid.tls.msk.ru>
-References: <87txuhho5z.fsf@lant.ki.iif.hu>
-	 <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <87a9w5dqle.fsf@lant.ki.iif.hu>
-	 <1349190185.5420.21.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <87haqcddks.fsf@lant.ki.iif.hu>
-	 <1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <87626sd80j.fsf@lant.ki.iif.hu> <506B3B52.7080001@msgid.tls.msk.ru>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-jW9i/cAqqWcZPssdvSkp"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 2 Oct 2012 20:18:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1349179923.13371.186.camel@smile>
+References: <1349178827-29643-1-git-send-email-yamanetoshi@gmail.com>
+	<1349179923.13371.186.camel@smile>
+Date: Wed, 3 Oct 2012 09:18:39 +0900
+Message-ID: <CAOTypNRU8WODGkgsjs-kEAxcX8adZrvTTC4b27oWV2PL3q-Nxg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Fix trailing whitespace in trace.h
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 2, 2012 at 9:12 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Tue, 2012-10-02 at 20:53 +0900, YAMANE Toshiaki wrote:
+>> fixed below checkpatch error.
+>>
+>> -ERROR: trailing whitespace
+>>
+>> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+>> ---
+>>  drivers/staging/rts_pstor/trace.h |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/rts_pstor/trace.h b/drivers/staging/rts_pstor/trace.h
+>> index cf60a1b..740999c 100644
+>> --- a/drivers/staging/rts_pstor/trace.h
+>> +++ b/drivers/staging/rts_pstor/trace.h
+>> @@ -39,7 +39,7 @@ static inline char *filename(char *path)
+>>       while (*ptr != '\0') {
+>>               if ((*ptr == '\\') || (*ptr == '/'))
+>>                       path = ptr + 1;
+>> -
+>> +
+>>               ptr++;
+>>       }
+>
+> For me it seems total filename() function could be squeezed to just strrchr(path, '/') + 1;
+> Moreover there is already basename() in the lib/dynamic_debug.c you
+> could rename, export and reuse.
 
---=-jW9i/cAqqWcZPssdvSkp
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I will destroy this patch series.
+thanks.
 
-On Tue, 2012-10-02 at 23:06 +0400, Michael Tokarev wrote:
-> On 02.10.2012 22:49, Ferenc Wagner wrote:
-> > "Michael Chan" <mchan@broadcom.com> writes:
-> >> These are the likely fixes:
-> >>
-> >> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db=20
-> >> Author: Matt Carlson <mcarlson@broadcom.com>
-> >> Date: Mon Nov 28 09:41:03 2011 +0000
-> >>
-> >> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
-> >=20
-> > You are exactly right: cf9ecf4b fixed the premanent SoL breakage
-> > introduced by dabc5c67.  Looks like ASF utilizes similar technology to
-> > that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
-> > wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it'=
-s
-> > possible to work around in 3.2 by eg. fiddling some ethtool setting?
->=20
-> Maybe it's better to push this commit to -stable instead?
 
-But that will take time, so I imagine a temporary workaround would be
-useful to Ferenc.
-
-> (the commit
-> that broke things is part of 3.0 kernel so all current 3.x -stable
-> kernels are affected)
-[...]
-
-The fix went into 3.3, so only 3.0 and 3.2 need it.
-
-David, please can you include the above commit in your next batches for
-these stable series?
-
-Ben.
-
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
-
---=-jW9i/cAqqWcZPssdvSkp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUGuECee/yOyVhhEJAQp6lRAA0NpZTL6AlgNhaV+xQqkaD7Iho4V0S4lS
-/q0HVfgojE9215gL04mOjouKiwJrsdhSx73b7/zrLiQRJF5T9gAyn3+TkkCqAgSM
-z5t4ml63Wcw6TyNVAonrFYE0jpI7vrtoMjQ1L35/+UiMCRIM3oS/A5IJrkvb4A+o
-JxX8AJl8FNPThyp+QOV3B1GdY9bQAzoRoP4PbhcWN9cauYsE0wlGQSjGmbszS2tN
-THoDtGZMBCOQ7pyr99SPCw9swmZvw5MnrjuQO9wuM54dCYWzT6pJTKya+EBAdi1g
-sQBhFEV3kcDjyY9lNdTnopbzNUHT+qw2HXIbnocsvHYW+lDqywK8bubkmgx5knkJ
-DH9AWQhXZ7YTEK1H/tRRoUF6gFKkzIODAuR4Df6ILkfV3rkmLrYAo4RNIAhK/vkG
-T3Y/gMCjY8C4cLkSDQeobCDlO5HopCfjJFSvok8UQH98F01psemJo8iv+NLps0RA
-2D0Ocxw25NDm6IAYvRTBJvsKLY5ky/TiFp92mh/XDL/TFY5qDG+HmFB2W2n92iuO
-bHIduJ7iQ+CdzBRNwgrzkN1YcAT/C2Aoe5e1bLZk6KRQWBANBb5C3XI1nn3ouNIv
-a7txJbq515tliZghsi6RftfeXjpD9mdkdNs64L6AQD7ypxX89fdnbPsXJPM0K0zh
-WtQOTXQ/OTo=
-=2w/Z
------END PGP SIGNATURE-----
-
---=-jW9i/cAqqWcZPssdvSkp--
+YAMANE Toshiaki
