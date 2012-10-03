@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab2JCPTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:19:40 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:36932 "EHLO zmc.proxad.net"
+	id S933062Ab2JCPUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:20:32 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:36935 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932556Ab2JCPNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:13:54 -0400
+	id S932516Ab2JCPNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:13:52 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-mips@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 09/25] MIPS: Octeon: use ehci-platform driver
-Date: Wed,  3 Oct 2012 17:03:04 +0200
-Message-Id: <1349276601-8371-10-git-send-email-florian@openwrt.org>
+Subject: [PATCH 12/25] USB: ehci: remove CNS3xxx EHCI platform driver
+Date: Wed,  3 Oct 2012 17:03:07 +0200
+Message-Id: <1349276601-8371-13-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349276601-8371-1-git-send-email-florian@openwrt.org>
 References: <1349276601-8371-1-git-send-email-florian@openwrt.org>
@@ -24,89 +22,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The users have been converted to use the ehci platform driver instead.
+
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
- arch/mips/cavium-octeon/octeon-platform.c |   43 ++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ drivers/usb/host/Kconfig        |    6 +-
+ drivers/usb/host/ehci-cns3xxx.c |  155 ---------------------------------------
+ drivers/usb/host/ehci-hcd.c     |   10 ---
+ 3 files changed, 5 insertions(+), 166 deletions(-)
+ delete mode 100644 drivers/usb/host/ehci-cns3xxx.c
 
-diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
-index 0938df1..539e1bc 100644
---- a/arch/mips/cavium-octeon/octeon-platform.c
-+++ b/arch/mips/cavium-octeon/octeon-platform.c
-@@ -18,9 +18,11 @@
- #include <linux/of_platform.h>
- #include <linux/of_fdt.h>
- #include <linux/libfdt.h>
-+#include <linux/usb/ehci_pdriver.h>
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 18cf37f..0754dd1 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -215,9 +215,13 @@ config USB_W90X900_EHCI
+ 		Enables support for the W90X900 USB controller
  
- #include <asm/octeon/octeon.h>
- #include <asm/octeon/cvmx-rnm-defs.h>
-+#include <asm/octeon/cvmx-uctlx-defs.h>
- #include <asm/octeon/cvmx-helper.h>
- #include <asm/octeon/cvmx-helper-board.h>
+ config USB_CNS3XXX_EHCI
+-	bool "Cavium CNS3XXX EHCI Module"
++	bool "Cavium CNS3XXX EHCI Module (DEPRECATED)"
+ 	depends on USB_EHCI_HCD && ARCH_CNS3XXX
++	select USB_EHCI_HCD_PLATFORM
+ 	---help---
++	  This option is deprecated now and the driver was removed, use
++	  USB_EHCI_HCD_PLATFORM instead.
++
+ 	  Enable support for the CNS3XXX SOC's on-chip EHCI controller.
+ 	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
+ 	  support.
+diff --git a/drivers/usb/host/ehci-cns3xxx.c b/drivers/usb/host/ehci-cns3xxx.c
+deleted file mode 100644
+index d91708d..0000000
+--- a/drivers/usb/host/ehci-cns3xxx.c
++++ /dev/null
+@@ -1,155 +0,0 @@
+-/*
+- * Copyright 2008 Cavium Networks
+- *
+- * This file is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License, Version 2, as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/platform_device.h>
+-#include <linux/atomic.h>
+-#include <mach/cns3xxx.h>
+-#include <mach/pm.h>
+-
+-static int cns3xxx_ehci_init(struct usb_hcd *hcd)
+-{
+-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+-	int retval;
+-
+-	/*
+-	 * EHCI and OHCI share the same clock and power,
+-	 * resetting twice would cause the 1st controller been reset.
+-	 * Therefore only do power up  at the first up device, and
+-	 * power down at the last down device.
+-	 *
+-	 * Set USB AHB INCR length to 16
+-	 */
+-	if (atomic_inc_return(&usb_pwr_ref) == 1) {
+-		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
+-		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+-		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
+-		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
+-			MISC_CHIP_CONFIG_REG);
+-	}
+-
+-	ehci->caps = hcd->regs;
+-
+-	hcd->has_tt = 0;
+-
+-	retval = ehci_setup(hcd);
+-	if (retval)
+-		return retval;
+-
+-	ehci_port_power(ehci, 0);
+-
+-	return retval;
+-}
+-
+-static const struct hc_driver cns3xxx_ehci_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "CNS3XXX EHCI Host Controller",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-	.reset			= cns3xxx_ehci_init,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-	.get_frame_number	= ehci_get_frame,
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-#ifdef CONFIG_PM
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-#endif
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+-static int cns3xxx_ehci_probe(struct platform_device *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct usb_hcd *hcd;
+-	const struct hc_driver *driver = &cns3xxx_ehci_hc_driver;
+-	struct resource *res;
+-	int irq;
+-	int retval;
+-
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (!res) {
+-		dev_err(dev, "Found HC with no IRQ.\n");
+-		return -ENODEV;
+-	}
+-	irq = res->start;
+-
+-	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+-	if (!hcd)
+-		return -ENOMEM;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "Found HC with no register addr.\n");
+-		retval = -ENODEV;
+-		goto err1;
+-	}
+-
+-	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = resource_size(res);
+-
+-	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (hcd->regs == NULL) {
+-		dev_dbg(dev, "error mapping memory\n");
+-		retval = -EFAULT;
+-		goto err1;
+-	}
+-
+-	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+-	if (retval == 0)
+-		return retval;
+-
+-err1:
+-	usb_put_hcd(hcd);
+-
+-	return retval;
+-}
+-
+-static int cns3xxx_ehci_remove(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-
+-	usb_remove_hcd(hcd);
+-
+-	/*
+-	 * EHCI and OHCI share the same clock and power,
+-	 * resetting twice would cause the 1st controller been reset.
+-	 * Therefore only do power up  at the first up device, and
+-	 * power down at the last down device.
+-	 */
+-	if (atomic_dec_return(&usb_pwr_ref) == 0)
+-		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+-
+-	usb_put_hcd(hcd);
+-
+-	platform_set_drvdata(pdev, NULL);
+-
+-	return 0;
+-}
+-
+-MODULE_ALIAS("platform:cns3xxx-ehci");
+-
+-static struct platform_driver cns3xxx_ehci_driver = {
+-	.probe = cns3xxx_ehci_probe,
+-	.remove = cns3xxx_ehci_remove,
+-	.driver = {
+-		.name = "cns3xxx-ehci",
+-	},
+-};
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index a954a95..57b7bd0 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1254,16 +1254,6 @@ MODULE_LICENSE ("GPL");
+ #define	PLATFORM_DRIVER		ehci_atmel_driver
+ #endif
  
-@@ -169,6 +171,41 @@ out:
- device_initcall(octeon_rng_device_init);
- 
- #ifdef CONFIG_USB
-+void octeon2_usb_clocks_start(void);
-+void octeon2_usb_clocks_stop(void);
-+
-+static int octeon_ehci_power_on(struct platform_device *pdev)
-+{
-+	union cvmx_uctlx_ehci_ctl ehci_ctl;
-+
-+	octeon2_usb_clocks_start();
-+
-+	ehci_ctl.u64 = cvmx_read_csr(CVMX_UCTLX_EHCI_CTL(0));
-+	/* Use 64-bit addressing. */
-+	ehci_ctl.s.ehci_64b_addr_en = 1;
-+	ehci_ctl.s.l2c_addr_msb = 0;
-+	ehci_ctl.s.l2c_buff_emod = 1; /* Byte swapped. */
-+	ehci_ctl.s.l2c_desc_emod = 1; /* Byte swapped. */
-+	cvmx_write_csr(CVMX_UCTLX_EHCI_CTL(0), ehci_ctl.u64);
-+
-+	return 0;
-+}
-+
-+static void octeon_ehci_power_off(struct platform_device *pdev)
-+{
-+	octeon2_usb_clocks_stop();
-+}
-+
-+static struct usb_ehci_pdata octeon_ehci_pdata = {
-+#ifdef __BIG_ENDIAN
-+	.big_endian_mmio = 1,
-+#endif
-+	.port_power_on	= 1,
-+	.power_on	= octeon_ehci_power_on,
-+	.power_off	= octeon_ehci_power_off,
-+};
-+
-+static u64 octeon_ehci_dma_mask = DMA_BIT_MASK(64);
- 
- static int __init octeon_ehci_device_init(void)
- {
-@@ -190,7 +227,7 @@ static int __init octeon_ehci_device_init(void)
- 	if (octeon_is_simulation() || usb_disabled())
- 		return 0; /* No USB in the simulator. */
- 
--	pd = platform_device_alloc("octeon-ehci", 0);
-+	pd = platform_device_alloc("ehci-platform", 0);
- 	if (!pd) {
- 		ret = -ENOMEM;
- 		goto out;
-@@ -207,6 +244,10 @@ static int __init octeon_ehci_device_init(void)
- 	if (ret)
- 		goto fail;
- 
-+	pd.dev.platform_data = &octeon_ehci_pdata;
-+	pd.dev.coherent_dma_mask = DMA_BIT_MASK(32);
-+	pd.dev.dma_mask = &octeon_ehci_dma_mask;
-+
- 	ret = platform_device_add(pd);
- 	if (ret)
- 		goto fail;
+-#ifdef CONFIG_USB_OCTEON_EHCI
+-#include "ehci-octeon.c"
+-#define PLATFORM_DRIVER		ehci_octeon_driver
+-#endif
+-
+-#ifdef CONFIG_USB_CNS3XXX_EHCI
+-#include "ehci-cns3xxx.c"
+-#define PLATFORM_DRIVER		cns3xxx_ehci_driver
+-#endif
+-
+ #ifdef CONFIG_ARCH_VT8500
+ #include "ehci-vt8500.c"
+ #define	PLATFORM_DRIVER		vt8500_ehci_driver
 -- 
 1.7.9.5
 
