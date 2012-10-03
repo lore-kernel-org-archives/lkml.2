@@ -1,183 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab2JCOo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:44:57 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48791 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab2JCOoz (ORCPT
+	id S1756011Ab2JCOqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:46:44 -0400
+Received: from nm20-vm1.bullet.mail.ne1.yahoo.com ([98.138.91.21]:30312 "HELO
+	nm20-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754671Ab2JCOqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:44:55 -0400
-Message-ID: <506C4F29.4090303@gmail.com>
-Date: Wed, 03 Oct 2012 16:43:53 +0200
-From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 3 Oct 2012 10:46:43 -0400
+X-Yahoo-Newman-Id: 227293.7560.bm@omp1001.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 3dvgAA4VM1l6S6yBCavqf_jbefxvUcNndncX9ib.6I3oOL.
+ mSO_.amF._VlNHA2aLAzLESY9hgwrEikH70R2TYBFtKeXAf4gmSqiGKQYHie
+ _79xbbDlLpW7N67vu_UhiL7zFxh_GVKHMf4K3l9Juqdj1eH3Rwrc3ow6HXvT
+ lJ13DEdQHw95LxKVd9pEYg0FORZVSuuNcZVloot.O3T36Tod0Nw_a2IOw33j
+ i9LAWubNMXhcq6MnaKnqjjqOnarRpVfgDWipm59ExD2ctpLClh7GyRTKsAub
+ UfcuLpRrlAxn7FYTSQYV.4wHChHR7R8x93.24GzC3FZbxYou05xZDRJvQPso
+ tYUfqFNvP2dnz3ypP2Lm9tO3twSonBYqt4EMGs0JS.azaOXSDJfGgqmVv_GE
+ ByXmRwvjK1d_ItwbuNIw0Jy.AHnPy740BN.uB4EMiNI3D_kM10akZ9rePn7x
+ aKo.Grey8daLpSTCZBvXN6rHhk1Q8DhFF4SeRX9FSodfcKy83oWipzt3z_0i
+ dIPKJCVtPELjK74nxQVG0vkkNbr.A7MTyrT1CQtzutITTesaU_ZDXGmutIJj
+ lM.6E.w--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <506C4FD0.4040307@att.net>
+Date: Wed, 03 Oct 2012 09:46:40 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-References: <E1T1N2q-0001xm-5X@morero.ard.nu> <20120820180037.GV4232@outflux.net> <CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com> <CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com> <CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com> <CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com> <20121002153841.a03ad73b.akpm@linux-foundation.org> <alpine.LSU.2.00.1210021733580.1343@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1210021733580.1343@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Daniel Santos <daniel.santos@pobox.com>,
+        David Rientjes <rientjes@google.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
+ attribute
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-8-git-send-email-daniel.santos@pobox.com> <20120929002626.GD13907@jtriplet-mobl1> <50664308.6020601@att.net> <20120929005043.GD14293@jtriplet-mobl1> <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com> <20121003065959.GA4963@leaf> <alpine.DEB.2.00.1210030052040.16922@chino.kir.corp.google.com> <506C1F8B.1070307@att.net> <1349272914.22822.169.camel@gandalf.local.home>
+In-Reply-To: <1349272914.22822.169.camel@gandalf.local.home>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the PROT_FINAL flag to
-the mmap() and mprotect() syscalls.
+On 10/03/2012 09:01 AM, Steven Rostedt wrote:
+> On Wed, 2012-10-03 at 06:20 -0500, Daniel Santos wrote:
+>
+>>> Daniel, please introduce __flatten in the patch series that uses it, 
+>>> thanks.
+>> That isn't going to work. I split my patches out into three sets
+>> because, otherwise, the list of maintainers that must be CCed exceeds
+>> the allowable size of the LKML server and my messages get tagged as
+>> spam, causing untold confusion as messages reach maintainers, but not
+>> the LKML.  Please note from the summary of this patch set
+>> (https://lkml.org/lkml/2012/9/28/1136)
+> That's not a valid reason to not included it with the other patch
+> series.
+>
+>>> This patch set is a dependency of the generic red-black tree patch set, which
+>>> I have now split up into three smaller sets.
+>> And the patch set this depends upon was submitted 9/28 as well
+>> (https://lkml.org/lkml/2012/9/28/1183) and the summary starts with this
+>> text:
+>>> This patch set depends upon the following:
+>>> * Cleanup & new features for compiler*.h and bug.h
+>>> * kernel-doc bug fixes (for generating docs)
+>> If I move this patch to the other patch set,
+>> scripts/get_maintainers.pl will give me a list longer than the LKML
+>> administrator will allow for recipients (1024 bytes max)
+> You don't need to use get_maintainers. It's more of a help tool to find
+> maintainers and not something that is mandatory. Not everyone that has
+> ever touched one of these files needs to be Cc'd.
+>
+> Please move the patch to the patch series where it is used. Otherwise it
+> confuses reviewers as it did here.
+Ok then, but this would also apply to the addition of these macros as well:
+BUILD_BUG_ON_NON_CONST
+BUILD_BUG42
+BUILD_BUG_ON_NON_CONST42
 
-The PROT_FINAL flag indicates that the requested set
-of protection bits should be final, i.e., it shall
-not be allowed for a subsequent mprotect call to
-set protection bits that were not set already.
+Should these then also be moved?
+Should I only CC those who have responded to these patches and whomever
+is in the MAINTAINERS file then?
 
-This is mainly intended for the dynamic linker,
-which sets up the address space on behalf of
-dynamic binaries. By using this flag, it can
-prevent exploited code from remapping read-only
-executable code or data sections read-write.
-
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@gmail.com>
----
- arch/alpha/include/asm/mman.h     |    1 +
- arch/mips/include/asm/mman.h      |    1 +
- arch/parisc/include/asm/mman.h    |    1 +
- arch/powerpc/include/asm/mman.h   |    3 ++-
- arch/xtensa/include/asm/mman.h    |    1 +
- include/asm-generic/mman-common.h |    1 +
- include/linux/mman.h              |    3 ++-
- mm/mmap.c                         |    8 ++++++++
- mm/mprotect.c                     |    8 ++++++++
- 9 files changed, 25 insertions(+), 2 deletions(-)
-
-diff --git a/arch/alpha/include/asm/mman.h b/arch/alpha/include/asm/mman.h
-index cbeb361..ab46252 100644
---- a/arch/alpha/include/asm/mman.h
-+++ b/arch/alpha/include/asm/mman.h
-@@ -6,6 +6,7 @@
- #define PROT_EXEC	0x4		/* page can be executed */
- #define PROT_SEM	0x8		/* page may be used for atomic ops */
- #define PROT_NONE	0x0		/* page can not be accessed */
-+#define PROT_FINAL	0x80	/* unset page prot bits cannot be set later */
- #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
- #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
- 
-diff --git a/arch/mips/include/asm/mman.h b/arch/mips/include/asm/mman.h
-index 46d3da0..9cd50e4 100644
---- a/arch/mips/include/asm/mman.h
-+++ b/arch/mips/include/asm/mman.h
-@@ -20,6 +20,7 @@
- #define PROT_EXEC	0x04		/* page can be executed */
- /*			0x08		   reserved for PROT_EXEC_NOFLUSH */
- #define PROT_SEM	0x10		/* page may be used for atomic ops */
-+#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
- #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
- #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
- 
-diff --git a/arch/parisc/include/asm/mman.h b/arch/parisc/include/asm/mman.h
-index 12219eb..0cf18e3 100644
---- a/arch/parisc/include/asm/mman.h
-+++ b/arch/parisc/include/asm/mman.h
-@@ -6,6 +6,7 @@
- #define PROT_EXEC	0x4		/* page can be executed */
- #define PROT_SEM	0x8		/* page may be used for atomic ops */
- #define PROT_NONE	0x0		/* page can not be accessed */
-+#define PROT_FINAL	0x80	/* unset page prot bits cannot be set later */
- #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
- #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
- 
-diff --git a/arch/powerpc/include/asm/mman.h b/arch/powerpc/include/asm/mman.h
-index d4a7f64..c0014eb 100644
---- a/arch/powerpc/include/asm/mman.h
-+++ b/arch/powerpc/include/asm/mman.h
-@@ -52,7 +52,8 @@ static inline pgprot_t arch_vm_get_page_prot(unsigned long vm_flags)
- 
- static inline int arch_validate_prot(unsigned long prot)
- {
--	if (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM | PROT_SAO))
-+	if (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM
-+		     | PROT_SAO | PROT_FINAL))
- 		return 0;
- 	if ((prot & PROT_SAO) && !cpu_has_feature(CPU_FTR_SAO))
- 		return 0;
-diff --git a/arch/xtensa/include/asm/mman.h b/arch/xtensa/include/asm/mman.h
-index 25bc6c1..680b3c4 100644
---- a/arch/xtensa/include/asm/mman.h
-+++ b/arch/xtensa/include/asm/mman.h
-@@ -27,6 +27,7 @@
- #define PROT_EXEC	0x4		/* page can be executed */
- 
- #define PROT_SEM	0x10		/* page may be used for atomic ops */
-+#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
- #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
- #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end fo growsup vma */
- 
-diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-index d030d2c..5687993 100644
---- a/include/asm-generic/mman-common.h
-+++ b/include/asm-generic/mman-common.h
-@@ -10,6 +10,7 @@
- #define PROT_WRITE	0x2		/* page can be written */
- #define PROT_EXEC	0x4		/* page can be executed */
- #define PROT_SEM	0x8		/* page may be used for atomic ops */
-+#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
- #define PROT_NONE	0x0		/* page can not be accessed */
- #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
- #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index 8b74e9b..c11b1ab 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -51,7 +51,8 @@ static inline void vm_unacct_memory(long pages)
-  */
- static inline int arch_validate_prot(unsigned long prot)
- {
--	return (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM)) == 0;
-+	return (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC
-+			 | PROT_SEM | PROT_FINAL)) == 0;
- }
- #define arch_validate_prot arch_validate_prot
- #endif
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 872441e..292f988 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1101,6 +1101,14 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 		}
- 	}
- 
-+	/*
-+	 * PROT_FINAL indicates that prot bits not requested by this
-+	 * mmap() call cannot be added later
-+	 */
-+	if (prot & PROT_FINAL)
-+		vm_flags &= ~(VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+			    | (vm_flags << 4);
-+
- 	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
- }
- 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..7a39f73 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -301,6 +301,14 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
- 			goto out;
- 		}
- 
-+		/*
-+		 * PROT_FINAL indicates that prot bits removed by this
-+		 * mprotect() call cannot be added later
-+		 */
-+		if (prot & PROT_FINAL)
-+			newflags &= ~(VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+				    | (newflags << 4);
-+
- 		error = security_file_mprotect(vma, reqprot, prot);
- 		if (error)
- 			goto out;
--- 
-1.7.9.5
-
+Thanks
+Daniel
 
