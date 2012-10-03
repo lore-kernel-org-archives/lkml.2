@@ -1,121 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab2JCAPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 20:15:42 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33402 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932810Ab2JCAPl (ORCPT
+	id S932877Ab2JCARn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 20:17:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41214 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932864Ab2JCARm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 20:15:41 -0400
-Date: Tue, 2 Oct 2012 17:15:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove
- _rcu_barrier() dependency on __stop_machine()")
-Message-ID: <20121003001530.GF2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
- <20121002170149.GC2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
- <20121002233138.GD2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100300-2876-0000-0000-000000AD6AF4
+	Tue, 2 Oct 2012 20:17:42 -0400
+Message-ID: <1349223432.16173.10.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM Bladecenter
+ SoL
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Michael Tokarev <mjt@tls.msk.ru>, David Miller <davem@davemloft.net>
+Cc: Ferenc Wagner <wferi@niif.hu>, Michael Chan <mchan@broadcom.com>,
+        netdev@vger.kernel.org, Matt Carlson <mcarlson@broadcom.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Wed, 03 Oct 2012 01:17:12 +0100
+In-Reply-To: <506B3B52.7080001@msgid.tls.msk.ru>
+References: <87txuhho5z.fsf@lant.ki.iif.hu>
+	 <1349083982.5420.16.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <87a9w5dqle.fsf@lant.ki.iif.hu>
+	 <1349190185.5420.21.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <87haqcddks.fsf@lant.ki.iif.hu>
+	 <1349197607.5420.25.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <87626sd80j.fsf@lant.ki.iif.hu> <506B3B52.7080001@msgid.tls.msk.ru>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-jW9i/cAqqWcZPssdvSkp"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 01:48:21AM +0200, Jiri Kosina wrote:
-> On Tue, 2 Oct 2012, Paul E. McKenney wrote:
-> 
-> > Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug 
-> > notifier, which doesn't sit so well with rcu_barrier() trying to exclude 
-> > CPU hotplug events.  I could go back to the old approach, but it is 
-> > significantly more complex.  I cannot say that I am all that happy about 
-> > anyone calling rcu_barrier() from a CPU hotplug notifier because it 
-> > doesn't help CPU hotplug latency, but that is a separate issue.
-> > 
-> > But the thing is that rcu_barrier()'s assumptions work just fine if either
-> > (1) it excludes hotplug operations or (2) if it is called from a hotplug
-> > notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
-> > is executing.  So the right way to resolve this seems to be to do the
-> > get_online_cpus() only if rcu_barrier() is -not- executing in the context
-> > of a hotplug notifier.  Should be fixable without too much hassle...
-> 
-> Sorry, I don't think I understand what you are proposing just yet.
-> 
-> If I understand it correctly, you are proposing to introduce some magic 
-> into _rcu_barrier() such as (pseudocode of course):
-> 
-> 	if (!being_called_from_hotplug_notifier_callback)
-> 		get_online_cpus()
-> 
-> How does that protect from the scenario I've outlined before though?
-> 
-> 	CPU 0                           CPU 1
-> 	kmem_cache_destroy()
-> 	mutex_lock(slab_mutex)
-> 					_cpu_up()
-> 					cpu_hotplug_begin()
-> 					mutex_lock(cpu_hotplug.lock)
-> 	rcu_barrier()
-> 	_rcu_barrier()
-> 	get_online_cpus()
-> 	mutex_lock(cpu_hotplug.lock)
-> 	 (blocks, CPU 1 has the mutex)
-> 					__cpu_notify()
-> 					mutex_lock(slab_mutex)	
-> 
-> CPU 0 grabs both locks anyway (it's not running from notifier callback). 
-> CPU 1 grabs both locks as well, as there is no _rcu_barrier() being called 
-> from notifier callback either.
-> 
-> What did I miss?
 
-You didn't miss anything, I was suffering a failure to read carefully.
+--=-jW9i/cAqqWcZPssdvSkp
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So my next stupid question is "Why can't kmem_cache_destroy drop
-slab_mutex early?" like the following:
+On Tue, 2012-10-02 at 23:06 +0400, Michael Tokarev wrote:
+> On 02.10.2012 22:49, Ferenc Wagner wrote:
+> > "Michael Chan" <mchan@broadcom.com> writes:
+> >> These are the likely fixes:
+> >>
+> >> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db=20
+> >> Author: Matt Carlson <mcarlson@broadcom.com>
+> >> Date: Mon Nov 28 09:41:03 2011 +0000
+> >>
+> >> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
+> >=20
+> > You are exactly right: cf9ecf4b fixed the premanent SoL breakage
+> > introduced by dabc5c67.  Looks like ASF utilizes similar technology to
+> > that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
+> > wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it'=
+s
+> > possible to work around in 3.2 by eg. fiddling some ethtool setting?
+>=20
+> Maybe it's better to push this commit to -stable instead?
 
-	void kmem_cache_destroy(struct kmem_cache *cachep)
-	{
-		BUG_ON(!cachep || in_interrupt());
+But that will take time, so I imagine a temporary workaround would be
+useful to Ferenc.
 
-		/* Find the cache in the chain of caches. */
-		get_online_cpus();
-		mutex_lock(&slab_mutex);
-		/*
-		 * the chain is never empty, cache_cache is never destroyed
-		 */
-		list_del(&cachep->list);
-		if (__cache_shrink(cachep)) {
-			slab_error(cachep, "Can't free all objects");
-			list_add(&cachep->list, &slab_caches);
-			mutex_unlock(&slab_mutex);
-			put_online_cpus();
-			return;
-		}
-		mutex_unlock(&slab_mutex);
+> (the commit
+> that broke things is part of 3.0 kernel so all current 3.x -stable
+> kernels are affected)
+[...]
 
-		if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
-			rcu_barrier();
+The fix went into 3.3, so only 3.0 and 3.2 need it.
 
-		__kmem_cache_destroy(cachep);
-		put_online_cpus();
-	}
+David, please can you include the above commit in your next batches for
+these stable series?
 
-Or did I miss some reason why __kmem_cache_destroy() needs that lock?
-Looks to me like it is just freeing now-disconnected memory.
+Ben.
 
-							Thanx, Paul
+--=20
+Ben Hutchings
+For every complex problem
+there is a solution that is simple, neat, and wrong.
 
+--=-jW9i/cAqqWcZPssdvSkp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUGuECee/yOyVhhEJAQp6lRAA0NpZTL6AlgNhaV+xQqkaD7Iho4V0S4lS
+/q0HVfgojE9215gL04mOjouKiwJrsdhSx73b7/zrLiQRJF5T9gAyn3+TkkCqAgSM
+z5t4ml63Wcw6TyNVAonrFYE0jpI7vrtoMjQ1L35/+UiMCRIM3oS/A5IJrkvb4A+o
+JxX8AJl8FNPThyp+QOV3B1GdY9bQAzoRoP4PbhcWN9cauYsE0wlGQSjGmbszS2tN
+THoDtGZMBCOQ7pyr99SPCw9swmZvw5MnrjuQO9wuM54dCYWzT6pJTKya+EBAdi1g
+sQBhFEV3kcDjyY9lNdTnopbzNUHT+qw2HXIbnocsvHYW+lDqywK8bubkmgx5knkJ
+DH9AWQhXZ7YTEK1H/tRRoUF6gFKkzIODAuR4Df6ILkfV3rkmLrYAo4RNIAhK/vkG
+T3Y/gMCjY8C4cLkSDQeobCDlO5HopCfjJFSvok8UQH98F01psemJo8iv+NLps0RA
+2D0Ocxw25NDm6IAYvRTBJvsKLY5ky/TiFp92mh/XDL/TFY5qDG+HmFB2W2n92iuO
+bHIduJ7iQ+CdzBRNwgrzkN1YcAT/C2Aoe5e1bLZk6KRQWBANBb5C3XI1nn3ouNIv
+a7txJbq515tliZghsi6RftfeXjpD9mdkdNs64L6AQD7ypxX89fdnbPsXJPM0K0zh
+WtQOTXQ/OTo=
+=2w/Z
+-----END PGP SIGNATURE-----
+
+--=-jW9i/cAqqWcZPssdvSkp--
