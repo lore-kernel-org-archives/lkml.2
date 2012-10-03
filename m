@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab2JCH5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 03:57:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45543 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2JCH5Y (ORCPT
+	id S1755895Ab2JCIHC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 04:07:02 -0400
+Received: from fed1rmfepo103.cox.net ([68.230.241.145]:43066 "EHLO
+	fed1rmfepo103.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755793Ab2JCIG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 03:57:24 -0400
-Message-ID: <506BEFE0.2060906@canonical.com>
-Date: Wed, 03 Oct 2012 09:57:20 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 3 Oct 2012 04:06:59 -0400
+X-Greylist: delayed 816 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 04:06:55 EDT
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020203.506BEDD3.005D,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=M53P2lMs c=1 sm=1
+ a=Xcb5yju4Z4PA5UOA+0GUaw==:17 a=G8Uczd0VNMoA:10 a=rXZKsSmlCtAA:10
+ a=SVaW9KGmhr8A:10 a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8 a=Zo5euW2OAAAA:8
+ a=N3LtLOKsdXOsC1fvgtIA:9 a=QEXdDO2ut3YA:10 a=CzrMnq8LMnkOYsON:21
+ a=82OG3SWfQrJ44mmZ:21 a=Xcb5yju4Z4PA5UOA+0GUaw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20121003035453.2BTN3.529602.imail@fed1rmwml208>
+Date: Wed, 3 Oct 2012 0:54:53 -0700
+From: BBC <qaqqq11@cox.net>
+Reply-To: bbc779@hotmail.co.uk
+Subject: AWARD
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, sumit.semwal@linaro.org,
-        linux-media@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [PATCH 1/5] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-References: <20120928124148.14366.21063.stgit@patser.local> <5065B0C9.7040209@canonical.com> <5065FDAA.5080103@vmware.com> <50696699.7020009@canonical.com> <506A8DC8.5020706@vmware.com> <20121002080341.GA5679@phenom.ffwll.local> <506BED25.2060804@vmware.com>
-In-Reply-To: <506BED25.2060804@vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
 
-Op 03-10-12 09:45, Thomas Hellstrom schreef:
-> On 10/02/2012 10:03 AM, Daniel Vetter wrote:
->> On Tue, Oct 02, 2012 at 08:46:32AM +0200, Thomas Hellstrom wrote:
->>> On 10/01/2012 11:47 AM, Maarten Lankhorst wrote:
->>>> I was doing a evil hack where I 'released' lru_lock to lockdep before doing the annotation
->>>> for a blocking acquire, and left trylock annotations as they were. This made lockdep do the
->>>> right thing.
->>> I've never looked into how lockdep works. Is this something that can
->>> be done permanently or just for testing
->>> purposes? Although not related to this, is it possible to do
->>> something similar to the trylock reversal in the
->>> fault() code where mmap_sem() and reserve() change order using a
->>> reserve trylock?
->> lockdep just requires a bunch of annotations, is a compile-time configure
->> option CONFIG_PROVE_LOCKING and if disabled, has zero overhead. And it's
->> rather awesome in detected deadlocks and handling crazy locking schemes
->> correctly:
->> - correctly handles trylocks
->> - correctly handles nested locking (i.e. grabbing a global lock, then
->>    grabbing subordinate locks in an unordered sequence since the global
->>    lock ensures that no deadlocks can happen).
->> - any kinds of inversions with special contexts like hardirq, softirq
->> - same for page-reclaim, i.e. it will yell if you could (potentially)
->>    deadlock because your shrinker grabs a lock that you hold while calling
->>    kmalloc.
->> - there are special annotates for various subsystems, e.g. to check for
->>    del_timer_sync vs. locks held by that timer. Or the console_lock
->>    annotations I've just recently submitted.
->> - all that with a really flexible set of annotation primitives that afaics
->>    should work for almost any insane locking scheme. The fact that Maarten
->>    could come up with proper reservation annotations without any changes to
->>    lockdep testifies this (he only had to fix a tiny thing to make it a bit
->>    more strict in a corner case).
->>
->> In short I think it's made of awesome. The only downside is that it lacks
->> documentation, you have to read the code to understand it :(
->>
->> The reason I've suggested to Maarten to abolish the trylock_reservation
->> within the lru_lock is that in that way lockdep only ever sees the
->> trylock, and hence is less strict about complainig about deadlocks. But
->> semantically it's an unconditional reserve. Maarten had some horrible
->> hacks that leaked the lockdep annotations out of the new reservation code,
->> which allowed ttm to be properly annotated.  But those also reduced the
->> usefulness for any other users of the reservation code, and so Maarten
->> looked into whether he could remove that trylock dance in ttm.
->>
->> Imo having excellent lockdep support for cross-device reservations is a
->> requirment, and ending up with less strict annotations for either ttm
->> based drivers or other drivers is not good. And imo the ugly layering that
->> Maarten had in his first proof-of-concept also indicates that something is
->> amiss in the design.
->>
->>
-> So if I understand you correctly, the reservation changes in TTM are motivated by the
-> fact that otherwise, in the generic reservation code, lockdep can only be
-> annotated for a trylock and not a waiting lock, when it *is* in fact a waiting lock.
->
-> I'm completely unfamiliar with setting up lockdep annotations, but the only place a
-> deadlock might occur is if the trylock fails and we do a wait_for_unreserve().
-> Isn't it possible to annotate the call to wait_for_unreserve() just like an interruptible waiting lock
-> (that is always interrupted, but at least any deadlock will be catched?).
-That would not find all bugs, lockdep is meant to find even theoretical bugs, so annotating it as a
-waiting lock makes more sense. Otherwise lockdep will only barf when the initial trylock fails.
 
-~Maarten
+Your email was Selected to ticket number 661768432463,
 
+serial numbers FTS/8070337201/06, lucky numbers 15-72-24-48-50-37 (40)
+
+One Million Gbp is being awarded to you from our promotions board BBC AWARD
+
+send below the requested info
+
+1) Full Names, (2) Full Address, (3) Gender, 4) Occupation,
+
+(5) Country, (6) telephone (7) Age, (8) Marital Status
