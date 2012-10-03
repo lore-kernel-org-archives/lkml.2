@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab2JCJ23 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:28:29 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59349 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152Ab2JCJ2X (ORCPT
+	id S932150Ab2JCJ2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:28:20 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:49649 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108Ab2JCJ2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 05:28:23 -0400
+	Wed, 3 Oct 2012 05:28:15 -0400
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: platform-driver-x86@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
-        Corentin Chary <corentincj@iksaif.net>,
         Corentin Chary <corentin.chary@gmail.com>,
         Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] asus-wmi: add display toggle quirk
-Date: Wed,  3 Oct 2012 11:26:31 +0200
-Message-Id: <1349256392-20320-9-git-send-email-corentin.chary@gmail.com>
+Subject: [PATCH 5/8] asus-laptop: add all video switch keys
+Date: Wed,  3 Oct 2012 11:26:28 +0200
+Message-Id: <1349256392-20320-6-git-send-email-corentin.chary@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1349256392-20320-1-git-send-email-corentin.chary@gmail.com>
 References: <1349256392-20320-1-git-send-email-corentin.chary@gmail.com>
@@ -26,165 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: AceLan Kao <acelan.kao@canonical.com>
 
-For machines with AMD graphic chips, it will send out WMI event and ACPI
-interrupt at the same time while hitting the hotkey. BIOS will notify the
-system the next display output mode throught WMI event code, so that
-windows' application can show an OSD to tell the user which mode will be
-taken effect. User can hit the display toggle key many times within 2
-seconds to choose the mode they want. After 2 seconds, WMI dirver should
-send a WMIMethod(SDSP) command to tell the BIOS which mode the user chose.
-And then BIOS will raise another ACPI interrupt to tell the system to
-really switch the display mode.
-
-In Linux desktop, we don't have this kind of OSD to let users to choose
-the mode they want, so we don't need to call WMIMethod(SDSP) to have
-another ACPI interrupt. To simplify the problem, we just have to ignore
-the WMI event, and let the first ACPI interrupt to send out the key event.
-
-For the need, here comes another quirk to add machines with this kind of
-behavior. When the WMI driver receives the display toggle WMI event, and
-found the machin is in the list, it will do nothing and let ACPI video
-driver to report the key event.
+Fill up all the video switch keys in the map.
 
 Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 ---
- drivers/platform/x86/asus-nb-wmi.c |   31 ++++++++++++++++++++++++++++++-
- drivers/platform/x86/asus-wmi.c    |   31 ++++++++++++++++++++++++++++---
- drivers/platform/x86/asus-wmi.h    |    7 +++++++
- 3 files changed, 65 insertions(+), 4 deletions(-)
+ drivers/platform/x86/asus-laptop.c |   26 +++++++++++++++++++++++---
+ 1 files changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
-index 87d45e0..9aa6642 100644
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -59,6 +59,17 @@ static struct quirk_entry quirk_asus_unknown = {
- 	.wapf = 0,
- };
- 
-+/*
-+ * For those machines that need software to control bt/wifi status
-+ * and can't adjust brightness through ACPI interface
-+ * and have duplicate events(ACPI and WMI) for display toggle
-+ */
-+static struct quirk_entry quirk_asus_x55u = {
-+	.wapf = 4,
-+	.wmi_backlight_power = true,
-+	.no_display_toggle = true,
-+};
-+
- static struct quirk_entry quirk_asus_x401u = {
- 	.wapf = 4,
- };
-@@ -77,6 +88,15 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X401U"),
- 		},
-+		.driver_data = &quirk_asus_x55u,
-+	},
-+	{
-+		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X401A",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X401A"),
-+		},
- 		.driver_data = &quirk_asus_x401u,
- 	},
- 	{
-@@ -95,6 +115,15 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X501U"),
- 		},
-+		.driver_data = &quirk_asus_x55u,
-+	},
-+	{
-+		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X501A",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X501A"),
-+		},
- 		.driver_data = &quirk_asus_x401u,
- 	},
- 	{
-@@ -131,7 +160,7 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X55U"),
- 		},
--		.driver_data = &quirk_asus_x401u,
-+		.driver_data = &quirk_asus_x55u,
- 	},
- 	{
- 		.callback = dmi_matched,
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 912ec7d..b4db530 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1341,6 +1341,23 @@ static void asus_wmi_backlight_exit(struct asus_wmi *asus)
- 	asus->backlight_device = NULL;
- }
- 
-+static int is_display_toggle(int code)
-+{
-+	/* display toggle keys */
-+	if ((code >= 0x61 && code <= 0x67) ||
-+	    (code >= 0x8c && code <= 0x93) ||
-+	    (code >= 0xa0 && code <= 0xa7) ||
-+	    (code >= 0xd0 && code <= 0xd5))
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static void do_nothing(void)
-+{
-+	return;
-+}
-+
- static void asus_wmi_notify(u32 value, void *context)
- {
- 	struct asus_wmi *asus = context;
-@@ -1380,10 +1397,18 @@ static void asus_wmi_notify(u32 value, void *context)
- 		code = NOTIFY_BRNDOWN_MIN;
- 
- 	if (code == NOTIFY_BRNUP_MIN || code == NOTIFY_BRNDOWN_MIN) {
--		if (!acpi_video_backlight_support())
-+		if (!acpi_video_backlight_support()) {
- 			asus_wmi_backlight_notify(asus, orig_code);
--	} else if (!sparse_keymap_report_event(asus->inputdev, code,
--					       key_value, autorelease))
-+		}
-+		goto exit;
-+	}
-+
-+	if (is_display_toggle(code) &&
-+	    asus->driver->quirks->no_display_toggle) {
-+		goto exit;
-+
-+	if (!sparse_keymap_report_event(asus->inputdev, code,
-+					key_value, autorelease))
- 		pr_info("Unknown key %x pressed\n", code);
- 
- exit:
-diff --git a/drivers/platform/x86/asus-wmi.h b/drivers/platform/x86/asus-wmi.h
-index 4c9bd38..776524c 100644
---- a/drivers/platform/x86/asus-wmi.h
-+++ b/drivers/platform/x86/asus-wmi.h
-@@ -41,6 +41,13 @@ struct quirk_entry {
- 	bool store_backlight_power;
- 	bool wmi_backlight_power;
- 	int wapf;
-+	/*
-+	 * For machines with AMD graphic chips, it will send out WMI event
-+	 * and ACPI interrupt at the same time while hitting the hotkey.
-+	 * To simplify the problem, we just have to ignore the WMI event,
-+	 * and let the ACPI interrupt to send out the key event.
-+	 */
-+	int no_display_toggle;
- };
- 
- struct asus_wmi_driver {
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 73d0198..0d371d0 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -321,9 +321,13 @@ static const struct key_entry asus_keymap[] = {
+ 	{KE_KEY, 0x5E, { KEY_WLAN } }, /* WLAN Enable */
+ 	{KE_KEY, 0x5F, { KEY_WLAN } }, /* WLAN Disable */
+ 	{KE_KEY, 0x60, { KEY_TOUCHPAD_ON } },
+-	{KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* LCD Only */
+-	{KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* CRT Only */
+-	{KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* LCD + CRT */
++	{KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD only */
++	{KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT only */
++	{KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT */
++	{KE_KEY, 0x64, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV */
++	{KE_KEY, 0x65, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV */
++	{KE_KEY, 0x66, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV */
++	{KE_KEY, 0x67, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV */
+ 	{KE_KEY, 0x6B, { KEY_TOUCHPAD_TOGGLE } }, /* Lock Touchpad */
+ 	{KE_KEY, 0x6C, { KEY_SLEEP } }, /* Suspend */
+ 	{KE_KEY, 0x6D, { KEY_SLEEP } }, /* Hibernate */
+@@ -333,8 +337,24 @@ static const struct key_entry asus_keymap[] = {
+ 	{KE_KEY, 0x82, { KEY_CAMERA } },
+ 	{KE_KEY, 0x88, { KEY_RFKILL  } }, /* Radio Toggle Key */
+ 	{KE_KEY, 0x8A, { KEY_PROG1 } }, /* Color enhancement mode */
++	{KE_KEY, 0x8C, { KEY_SWITCHVIDEOMODE } }, /* SDSP DVI only */
++	{KE_KEY, 0x8D, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + DVI */
++	{KE_KEY, 0x8E, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + DVI */
++	{KE_KEY, 0x8F, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + DVI */
++	{KE_KEY, 0x90, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + DVI */
++	{KE_KEY, 0x91, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + DVI */
++	{KE_KEY, 0x92, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + DVI */
++	{KE_KEY, 0x93, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + DVI */
+ 	{KE_KEY, 0x95, { KEY_MEDIA } },
+ 	{KE_KEY, 0x99, { KEY_PHONE } },
++	{KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
++	{KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
++	{KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
++	{KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
++	{KE_KEY, 0xA4, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + HDMI */
++	{KE_KEY, 0xA5, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + HDMI */
++	{KE_KEY, 0xA6, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + HDMI */
++	{KE_KEY, 0xA7, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + HDMI */
+ 	{KE_KEY, 0xB5, { KEY_CALC } },
+ 	{KE_KEY, 0xC4, { KEY_KBDILLUMUP } },
+ 	{KE_KEY, 0xC5, { KEY_KBDILLUMDOWN } },
 -- 
 1.7.8.6
 
