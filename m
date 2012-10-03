@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab2JCNsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:48:09 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37179 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538Ab2JCNsH (ORCPT
+	id S1751848Ab2JCNtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:49:18 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:42090 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2JCNtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:48:07 -0400
-Date: Wed, 3 Oct 2012 06:47:57 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCHv2 00/14] perf diff: Factor diff command
-Message-ID: <20121003134757.GA18700@ghostprotocols.net>
-References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
- <20120927213102.GO16230@one.firstfloor.org>
- <20121001081631.GB991@krava.brq.redhat.com>
- <20121002163002.GD16230@one.firstfloor.org>
+	Wed, 3 Oct 2012 09:49:17 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd-8.3 updates
+Date: Wed, 03 Oct 2012 15:49:13 +0200
+Message-ID: <1646250.CkOtqoMF8x@fat-tyre>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <506C343E.60203@kernel.dk>
+References: <8391701.3EY4hQfmFv@fat-tyre> <10403443.3yRLLBkj5b@fat-tyre> <506C343E.60203@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002163002.GD16230@one.firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 02, 2012 at 06:30:02PM +0200, Andi Kleen escreveu:
-> The other problem I ran into is that perf archive doesn't seem to work very
-> well with kernels, so it's hard to move profiles from different kernels
-> around to diff them (e.g. for a performance regression) One way around this
-> would be options to diff to specify the vmlinux etc.  manually
+> Thanks, one question before this is pulled in:
+> > Philipp Reisner (6):
+> >       drbd: Add a drbd directory to sysfs
+> >       drbd: expose the data generation identifiers via sysfs
+> 
+> What are these? It's sitting in /sys/block/<dev>/drbd/, I don't see any
+> documentation or justification for that.
+> 
+> Why isn't it off in debugfs or similar instead?
 
-Can you describe more precisely what is not working well with 'archive'
-and build ids?
+The long-time goal is to get rid of the /proc/drbd virtual file, and
+present the information that was there in a more structured way in /sys.
 
-When you do a 'perf record', at the end of the session, it traverses the
-samples looking for DSOs with hits, and then stashes a copy (or a
-hardlink, if possible) of these DSOs in your ~/.cache/, keyed by its
-build id.
+This patch adds a very first step into that direction. Later we intend to
+have here things like the connections state, device roles, statistics
+counters there.
 
-Later, when you do a perf archive, it will look again at your perf.data
-files, look again for DSOs with hits and pass them on a tar command
-line, you transfer those tarballs to your analysis machine and it should
-just work.
+When coming up with the layout we used the sysfs presence of software raid 
+as example.
 
-To debug you may follow some of these steps:
+I have removed it from this pull-request, so that there is more time for
+consideration before the next merge window.
 
-[root@sandy linux]# perf record -a usleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.447 MB perf.data (~19534 samples) ]
-[root@sandy linux]# perf buildid-list 
-62b97af6897371571caef35fd5ae88e29bde5e89 [kernel.kallsyms]
-[root@sandy linux]# ls -la ~/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 
-lrwxrwxrwx. 1 root root 64 Oct  3 10:41 /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 -> ../../[kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
-[root@sandy linux]# perf buildid-list --hell
-  Error: unknown option `hell'
+The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
 
- usage: perf buildid-list [<options>]
+  loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
 
-    -H, --with-hits       Show only DSOs with hits
-    -i, --input <file>    input file name
-    -f, --force           don't complain, do it
-    -k, --kernel          Show current kernel build id
-    -v, --verbose         be more verbose
+are available in the git repository at:
 
-[root@sandy linux]# perf buildid-list -k
-62b97af6897371571caef35fd5ae88e29bde5e89
-[root@sandy linux]# perf archive
-Now please run:
+  git://git.drbd.org/linux-drbd.git for-jens
 
-$ tar xvf perf.data.tar.bz2 -C ~/.debug
+for you to fetch changes up to 56a2dabd4d953b70c4630387368d79d6d1625c1d:
 
-wherever you need to run 'perf report' on.
-[root@sandy linux]# tar tvf perf.data.tar.bz2
-lrwxrwxrwx root/root         0 2012-10-03 10:41 .build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 -> ../../[kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
--rw-r--r-- root/root   4115683 2012-10-03 10:41 [kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
-[root@sandy linux]# 
+  drbd: log request sector offset and size for IO errors (2012-10-03 15:46:04 +0200)
 
-[root@sandy linux]# sha256sum /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 /proc/kallsyms 
-43724edebe7f144d43a8664e237fa14df96bb79943002f1f17f45379a16418bf  /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89
-43724edebe7f144d43a8664e237fa14df96bb79943002f1f17f45379a16418bf  /proc/kallsyms
-[root@sandy linux]# 
+----------------------------------------------------------------
+Lars Ellenberg (8):
+      drbd: introduce stop-sector to online verify
+      drbd: panic on delayed completion of aborted requests
+      drbd: fix potential deadlock during bitmap (re-)allocation
+      drbd: a few more GFP_KERNEL -> GFP_NOIO
+      drbd: wait for meta data IO completion even with failed disk, unless force-detached
+      drbd: prepare for more than 32 bit flags
+      drbd: always write bitmap on detach
+      drbd: log request sector offset and size for IO errors
 
-- Arnaldo
+Philipp Reisner (4):
+      drbd: Protect accesses to the uuid set with a spinlock
+      drbd: Fix a potential issue with the DISCARD_CONCURRENT flag
+      drbd: Avoid NetworkFailure state during disconnect
+      drbd: Remove dead code
+
+ drivers/block/drbd/drbd_actlog.c   |   19 ++--
+ drivers/block/drbd/drbd_bitmap.c   |   24 ++---
+ drivers/block/drbd/drbd_int.h      |  108 +++++++++++++++++------
+ drivers/block/drbd/drbd_main.c     |  170 ++++++++++++++++++++++++------------
+ drivers/block/drbd/drbd_nl.c       |   74 +++++++++-------
+ drivers/block/drbd/drbd_proc.c     |   14 ++-
+ drivers/block/drbd/drbd_receiver.c |  147 ++++++++++++++++---------------
+ drivers/block/drbd/drbd_req.c      |   43 ++++++---
+ drivers/block/drbd/drbd_worker.c   |   87 ++++++++++++++----
+ include/linux/drbd.h               |    4 +-
+ include/linux/drbd_nl.h            |    1 +
+ 11 files changed, 451 insertions(+), 240 deletions(-)
+
+Best,
+ Phil
