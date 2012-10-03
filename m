@@ -1,142 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab2JCEcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 00:32:11 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:39983 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750940Ab2JCEcG (ORCPT
+	id S1751976Ab2JCElg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 00:41:36 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44465 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab2JCEld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 00:32:06 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Date: Wed, 3 Oct 2012 06:31:44 +0200
-Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Index: Ac2hHhBgaFBIcraQQuelf/W19/jKZAAAUvqw
-Message-ID: <F45880696056844FA6A73F415B568C695B6962CC98@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
-	<1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
-	<20120928160045.GD2625@kroah.com>
-	<F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
-	<20121001155940.GA1957@kroah.com>
-	<F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
- <CAK7N6vqpHvi0R4eY0NPJ90Yu1_sVXOri-qOU5FPhp_5XcY3z0w@mail.gmail.com>
-In-Reply-To: <CAK7N6vqpHvi0R4eY0NPJ90Yu1_sVXOri-qOU5FPhp_5XcY3z0w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Wed, 3 Oct 2012 00:41:33 -0400
 MIME-Version: 1.0
+In-Reply-To: <25815442.471031349156505509.JavaMail.weblogic@epml02>
+References: <25815442.471031349156505509.JavaMail.weblogic@epml02>
+Date: Wed, 3 Oct 2012 10:11:32 +0530
+Message-ID: <CA+Z25wXZstv8rb0s0O_SBb4-jrFhPYK-J_8m5_aHgtoCb3jP2g@mail.gmail.com>
+Subject: Re: Re: [PATCH v3 1/3] devfreq: Core updates to support devices which
+ can idle
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: myungjoo.ham@samsung.com
+Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q934WIZX003176
 
-> On Wed, Oct 3, 2012 at 9:24 AM, Arun MURTHY
-> <arun.murthy@stericsson.com> wrote:
-> >> On Mon, Oct 01, 2012 at 07:30:38AM +0200, Arun MURTHY wrote:
-> >> > > On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
-> >> > > > +#include <linux/module.h>
-> >> > > > +#include <linux/slab.h>
-> >> > > > +#include <linux/err.h>
-> >> > > > +#include <linux/printk.h>
-> >> > > > +#include <linux/modem_shm/modem.h>
-> >> > > > +
-> >> > > > +static struct class *modem_class;
-> >> > >
-> >> > > What's wrong with a bus_type instead?
-> >> >
-> >> > Can I know the advantage of using bus_type over class?
-> >>
-> >> You have devices living on a bus, and it's much more descriptive than
-> >> a class (which we are going to eventually get rid of one of these days...).
-> >>
-> >> Might I ask why you choose a class over a bus_type?
-> >
-> > Basically my requirement is to create a central entity for accessing
-> > and releasing modem from APE. Since this is done by different clients
-> > the central entity should be able to handle the request and play
-> > safely, since this has more affect in system suspend and deep sleep.
-> > Using class helps me in achieving this and also create an entry to
-> > user space which can be used in the later parts. Moreover
-> You can have that same mechanism work for bus_type as well.
-> > this not something like a bus or so, so I didn't use bus instead went
-> > with a simple class approach.
-> >
-> >>
-> >> > > > +int modem_release(struct modem_desc *mdesc) {
-> >> > > > +       if (!mdesc->release)
-> >> > > > +               return -EFAULT;
-> >> > > > +
-> >> > > > +       if (modem_is_requested(mdesc)) {
-> >> > > > +               atomic_dec(&mdesc->mclients->cnt);
-> >> > > > +               if (atomic_read(&mdesc->use_cnt) == 1) {
-> >> > > > +                       mdesc->release(mdesc);
-> >> > > > +                       atomic_dec(&mdesc->use_cnt);
-> >> > > > +               }
-> >> > >
-> >> > > Eeek, why aren't you using the built-in reference counting that
-> >> > > the struct device provided to you, and instead are rolling your own?
-> >> > > This happens in many places, why?
-> >> >
-> >> > My usage of counters over here is for each modem there are many
-> clients.
-> >> > Each of the clients will have a ref to modem_desc. Each of them use
-> >> > this for requesting and releasing the modem. One counter for
-> >> > tracking the request and release for each client which is done by
-> >> > variable 'cnt' in
-> >> struct clients.
-> >> > The counter use_cnt is used for tracking the modem request/release
-> >> > irrespective of the clients and counter cli_cnt is used for
-> >> > restricting the modem_get to the no of clients defined in no_clients.
-> >> >
-> >> > So totally 3 counter one for restricting the usage of modem_get by
-> >> > clients, second for restricting modem request/release at top level,
-> >> > and 3rd for restricting modem release/request for per client per
-> >> > modem
-> >> basis.
-> >> >
-> >> > Can you let me know if the same can be achieved by using built-in
-> >> > ref counting?
-> >>
-> >> Yes, because you don't need all of those different levels, just stick
-> >> with one and you should be fine. :)
-> >>
-> >
-> > No, checks at all these levels are required, I have briefed out the need also.
-> > This will have effect on system power management, i.e suspend and deep
-> > sleep.
-> > We restrict that the drivers should request modem only once and
-> > release only once, but we cannot rely on the clients hence a check for
-> > the same has to be done in the MAF. Also the no of clients should be
-> > defined and hence a check for the same is done in MAF. Apart from all
-> > these the requests coming from all the clients is to be accumulated
-> > and based on that modem release or access should be performed, hence
-> so.
-> I think best way to deal with this is:
-> Define a new bus type and have your clients call the bus exposed
-> functionality when ever they need a service.So in your case it would be
-> request and release only AND when all of your clients have released the bus
-> then you can do the cleanup i.e. switch off the modem and on added
-> advantage of making it a bus_type would be that you can do the reference
-> counting in your bus driver.
-> 
-> Designing is not my forte but I feel this way you can solve the problem at
-> hand.
-> Please feel free to correct me.I would really appreciate it.
+On 2 October 2012 11:11, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> On 27 September 2012 13:50, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> >> Prepare devfreq core framework to support devices which
+>> >> can idle. When device idleness is detected perhaps through
+>> >> runtime-pm, need some mechanism to suspend devfreq load
+>> >> monitoring and resume back when device is online. Present
+>> >> code continues monitoring unless device is removed from
+>> >> devfreq core.
+>> >>
+>> >> This patch introduces following design changes,
+>> >>
+>> >> - use per device work instead of global work to monitor device
+>> >>   load. This enables suspend/resume of device devfreq and
+>> >>   reduces monitoring code complexity.
+>> >> - decouple delayed work based load monitoring logic from core
+>> >>   by introducing helpers functions to be used by governors. This
+>> >>   provides flexibility for governors either to use delayed work
+>> >>   based monitoring functions or to implement their own mechanism.
+>> >> - devfreq core interacts with governors via events to perform
+>> >>   specific actions. These events include start/stop devfreq.
+>> >>   This sets ground for adding suspend/resume events.
+>> >>
+>> >> The devfreq apis are not modified and are kept intact.
+>> >>
+>> >> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>> >
+>> > Hello,
+>> >
+>> >
+>> > I'll do more through review tomorrow (sorry, I was occuppied by
+>> > something other than Linux tasks for a while again); however,
+>> > there are two concerns in this patch.
+>> >
+>> > 1. (minor but may bothersome in some rare but not-ignorable cases)
+>> > Serialization issue between suspend/resume
+>> > functions; this may happen with some failure or interrupts while entering STR or
+>> > unexpected usage of the API at drivers.
+>>
+>> Regarding the invalid usage of suspend/resume apis, we can have
+>> additional checks
+>> something like,
+>>
+>> void devfreq_monitor_suspend(struct devfreq *devfreq)
+>> {
+>>         .....
+>>         if (devfreq->stop_polling)
+>>                 return;
+>>         ......
+>> }
+>>
+>> void devfreq_monitor_resume(struct devfreq *devfreq)
+>> {
+>>         .....
+>>         if (!devfreq->stop_polling)
+>>                 return;
+>>         ......
+>> }
+>>
+>> >
+>> >   For example, if devfreq_monitor_suspend() and devfreq_montir_resume() are called
+>> > almost simultaneously, we may execute 1) locked part of suspend, 2) locked part of
+>> > resume, 3) cancel_delayed_work_sync of suspend.
+>> >
+>> >   Then, we may have stop_polling = false w/ cancel_delayed_work_sync() in effect.
+>> >
+>> >   Let's not assume that suspend() and resume() may called almost simultaneously,
+>> > especially in subsystem core code.
+>
+> (sorry, I missed "not be" between "may" and "called" here)
+>
+>> >
+>>
+>> These devfreq_monitor_suspend() and devfreq_monitor_resume() functions are
+>> executed when device idleness is detected. Perhaps,
+>> - using runtime-pm: the runtime_suspend() and runtime_resume() are mutually
+>> exclusive and is guaranteed not to run in parallel.
+>> - driver may have its own mechanism: in my opinion, driver should ensure
+>> suspend/resume are sequential even for it to know its devfreq status.
+>>
+>> Assuming even if above sequence occurs, I don't see any problem having
+>> stop_polling = false w/ cancel_delayed_work_sync() in effect. Since the suspend
+>> is the last one to complete, monitoring will not continue.
+>
+> Why don't you simply extend the mutex-locked context?
+>
+> I.e.,
+> +       mutex_lock(&devfreq->lock);
+> +       devfreq->stop_polling = true;
+> +       mutex_unlock(&devfreq->lock);
+> +       cancel_delayed_work_sync(&devfreq->work);
+> -->
+> +       mutex_lock(&devfreq->lock);
+> +       devfreq->stop_polling = true;
+> +       cancel_delayed_work_sync(&devfreq->work);
+> +       mutex_unlock(&devfreq->lock);
+>
+Extending the mutex-locked context would cause deadlock.
 
-At the very first look itself this MAF is not a bus by its technical meaning, so
-why to use bus_type is the point that I have.
+Since scheduled work callback also needs mutex lock, calling
+cancel_delayed_work_sync
+with lock held, would cause deadlock.
 
-Thanks and Regards,
-Arun R Murthy
-------------------
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> This serializes data-update and the execution based on the data-update,
+> resolving any inconsistency issues with the queue-status and devfreq
+> variable.
+>
+> It doesn't have a heavy overhead to extend it and we have the
+> probably of inconsistency due to serialization issues.
+>
+>>
+>> >
+>> > 2. What if polling_ms = 0 w/ active governors (such as ondemand)?
+>> >
+>> >  Users may declare the initial polling_ms = 0 w/ simple-ondemand in order to
+>> > pause sampling at boot-time and start sampling at run-time some time later.
+>> >
+>> > It appears that this patch will start forcibly at boot-time in such a case.
+>>
+>> Yes. This is a valid case which can be handled by
+>>
+>>  void devfreq_monitor_start(struct devfreq *devfreq)
+>>  {
+>>         INIT_DELAYED_WORK_DEFERRABLE(&devfreq->work, devfreq_monitor);
+>> +       if (devfreq->profile->polling_ms)
+>>                 queue_delayed_work(devfreq_wq, &devfreq->work,
+>>                         msecs_to_jiffies(devfreq->profile->polling_ms));
+>>  }
+>
+>
+> Please add the checking statement to every queue_delayed_work() statement:
+> resume and interval-update functions.
+Done.
+>
+>
+>
+> Cheers!
+> MyungJoo
+>
+
+
+
+-- 
+Regards,
+Rajagopal
