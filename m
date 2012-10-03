@@ -1,197 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab2JCOe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:34:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49911 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab2JCOe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:34:56 -0400
-Date: Wed, 3 Oct 2012 16:34:33 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-mm@kvack.org
-Subject: [PATCH v3] mm, slab: release slab_mutex earlier in
- kmem_cache_destroy()
-In-Reply-To: <0000013a26fb253a-fb5df733-ad41-47c1-af1d-3d6739e417de-000000@email.amazonses.com>
-Message-ID: <alpine.LNX.2.00.1210031631150.23544@pobox.suse.cz>
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
- <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
- <0000013a26fb253a-fb5df733-ad41-47c1-af1d-3d6739e417de-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755193Ab2JCOhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:37:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61557 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829Ab2JCOhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:37:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121002221239.GA30990@kroah.com>
+References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
+ <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
+ <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
+ <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 3 Oct 2012 16:36:53 +0200
+Message-ID: <CAPXgP11UQUHyCAo=GbAigQMqKWta12L19EsVaocU0ia6JKmd1Q@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Christoph Lameter wrote:
+On Wed, Oct 3, 2012 at 12:12 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> > How about the patch below? Pekka, Christoph, please?
-> 
-> Looks fine for -stable. For upstream there is going to be a move to
-> slab_common coming in this merge period. We would need a fix against -next
-> or Pekka's tree too.
+> Mauro, what version of udev are you using that is still showing this
+> issue?
+>
+> Kay, didn't you resolve this already?  If not, what was the reason why?
 
-Thanks Christoph. Patch against Pekka's slab/for-linus branch below.
+It's the same in the current release, we still haven't wrapped our
+head around how to fix it/work around it.
 
-I have kept the Acked-by/Reviewed-by from the version of the patch against 
-current Linus' tree, if anyone object, please shout loudly. Ideally should 
-go in during this merge window to keep lockdep happy.
+Unlike what the heated and pretty uncivilized and rude emails here
+claim, udev does not dead-lock or "break" things, it's just "slow".
+The modprobe event handling runs into a ~30 second event timeout.
+Everything is still fully functional though, there's only this delay.
 
+Udev ensures full dependency resolution between parent and child
+events. Parent events have to finish the event handling and have to
+return, before child event handlers are started. We need to ensure
+such things so that (among other things) disk events have finished
+their operations before the partition events are started, so they can
+rely and access their fully set up parent devices.
 
+What happens here is that the module_init() call blocks in a userspace
+transaction, creating a child event that is not started until the
+parent event has finished. The event handler for modprobe times out
+then the child event loads the firmware.
 
+Having kernel module relying on a running and fully functional
+userspace to return from module_init() is surely a broken driver
+model, at least it's not how things should work. If userspace does not
+respond to firmware requests, module_init() locks up until the
+firmware timeout happens.
 
+This all is not so much about how probe() should behave, it's about a
+fragile dependency on a specific userspace transaction to link a
+loadable module into the kernel. Drivers should avoid such loops for
+many reasons. Also, it's unclear in many cases how such a model should
+work at all if the module is compiled in and initialized when no
+userspace is running.
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
+If that unfortunate module_init() lockup can't be solved properly in
+the kernel, we need to find out if we need to make the modprobe
+handling in udev async, or let firmware events bypass dependency
+resolving. As mentioned, we haven't decided as of now which road to
+take here.
 
-Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
-__stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
-dependency through kmem_cache_destroy() -> rcu_barrier() ->
-_rcu_barrier() -> get_online_cpus().
-
-Lockdep thinks that this might actually result in ABBA deadlock,
-and reports it as below:
-
-=== [ cut here ] ===
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
- -------------------------------------------------------
- kworker/u:2/40 is trying to acquire lock:
-  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-
- but task is already holding lock:
-  (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
-
- which lock already depends on the new lock.
-
- the existing dependency chain (in reverse order) is:
-
- -> #2 (slab_mutex){+.+.+.}:
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
-        [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
-        [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
-        [<ffffffff8155719d>] _cpu_up+0xba/0x14e
-        [<ffffffff815572ed>] cpu_up+0xbc/0x117
-        [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
-        [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
-        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
-
- -> #1 (cpu_hotplug.lock){+.+.+.}:
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff81049197>] get_online_cpus+0x37/0x50
-        [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
-        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-        [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
-        [<ffffffff8118cc01>] deactivate_super+0x61/0x70
-        [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
-        [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
-        [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
-
- -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
-        [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
-        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-        [<ffffffff810ae921>] lock_acquire+0x121/0x190
-        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-        [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-        [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
-        [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
-        [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
-        [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
-        [<ffffffff81454b79>] ops_exit_list+0x39/0x60
-        [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
-        [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
-        [<ffffffff81069f3e>] worker_thread+0x12e/0x320
-        [<ffffffff8106f73e>] kthread+0x9e/0xb0
-        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
-
- other info that might help us debug this:
-
- Chain exists of:
-   rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
-
-  Possible unsafe locking scenario:
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(slab_mutex);
-                                lock(cpu_hotplug.lock);
-                                lock(slab_mutex);
-   lock(rcu_sched_state.barrier_mutex);
-
-  *** DEADLOCK ***
-=== [ cut here ] ===
-
-This is actually a false positive. Lockdep has no way of knowing the fact
-that the ABBA can actually never happen, because of special semantics of
-cpu_hotplug.refcount and itss handling in cpu_hotplug_begin(); the mutual
-exclusion there is not achieved through mutex, but through
-cpu_hotplug.refcount.
-
-The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
-until everyone who called get_online_cpus() will call put_online_cpus()"
-semantics is totally invisible to lockdep.
-
-This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
-is being called with it unlocked. It has two advantages:
-
-- it slightly reduces hold time of slab_mutex; as it's used to protect
-  the cachep list, it's not necessary to hold it over kmem_cache_free()
-  call any more
-- it silences the lockdep false positive warning, as it avoids lockdep ever
-  learning about slab_mutex -> cpu_hotplug.lock dependency
-
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- mm/slab_common.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 9c21725..90c3053 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -166,6 +166,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 	s->refcount--;
- 	if (!s->refcount) {
- 		list_del(&s->list);
-+		mutex_unlock(&slab_mutex);
- 
- 		if (!__kmem_cache_shutdown(s)) {
- 			if (s->flags & SLAB_DESTROY_BY_RCU)
-@@ -179,8 +180,9 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 				s->name);
- 			dump_stack();
- 		}
-+	} else {
-+		mutex_unlock(&slab_mutex);
- 	}
--	mutex_unlock(&slab_mutex);
- 	put_online_cpus();
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Kay
