@@ -1,37 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2JCPQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:16:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38549 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932605Ab2JCPQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:16:35 -0400
-Message-ID: <506C56B2.50505@zytor.com>
-Date: Wed, 03 Oct 2012 08:16:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932930Ab2JCPSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:18:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58565 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932314Ab2JCPRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:17:50 -0400
+X-Sasl-enc: Z9I/VQvSBEo5DGEzYuR0EGg1Ses7EH6PGt2bwtqT0KIF 1349277469
+Date: Wed, 3 Oct 2012 08:17:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
+Message-ID: <20121003151748.GA5745@kroah.com>
+References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
+ <1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
+ <20120928160045.GD2625@kroah.com>
+ <F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
+ <20121001155940.GA1957@kroah.com>
+ <F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel@numascale-asia.com>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steffen Persvold <sp@numascale.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] RFC: Fix AMD Northbridge-ID contiguity assumptions
-References: <1349256029-14851-1-git-send-email-daniel@numascale-asia.com>
-In-Reply-To: <1349256029-14851-1-git-send-email-daniel@numascale-asia.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 02:20 AM, Daniel J Blueman wrote:
-> The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
-> are contiguous, which no longer holds on federated systems with multiple
-> HyperTransport fabrics with multiple PCI domains.
+On Wed, Oct 03, 2012 at 05:54:08AM +0200, Arun MURTHY wrote:
+> > On Mon, Oct 01, 2012 at 07:30:38AM +0200, Arun MURTHY wrote:
+> > > > On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
+> > > > > +#include <linux/module.h>
+> > > > > +#include <linux/slab.h>
+> > > > > +#include <linux/err.h>
+> > > > > +#include <linux/printk.h>
+> > > > > +#include <linux/modem_shm/modem.h>
+> > > > > +
+> > > > > +static struct class *modem_class;
+> > > >
+> > > > What's wrong with a bus_type instead?
+> > >
+> > > Can I know the advantage of using bus_type over class?
+> > 
+> > You have devices living on a bus, and it's much more descriptive than a class
+> > (which we are going to eventually get rid of one of these days...).
+> > 
+> > Might I ask why you choose a class over a bus_type?
+> 
+> Basically my requirement is to create a central entity for accessing and releasing
+> modem from APE.
 
-Is that "on NumaScale systems"?  If so, please say so rather than trying
-to make it sound generic; if it is not, can you give some other examples?
+What is an "APE"?
 
-	-hpa
+And what do you mean by "accessing" and "releasing"?
+
+> Since this is done by different clients the central entity should
+> be able to handle the request and play safely, since this has more affect in
+> system suspend and deep sleep. Using class helps me in achieving this
+> and also create an entry to user space which can be used in the later
+> parts. Moreover this not something like a bus or so, so I didn't use
+> bus instead went with a simple class approach.
+
+But as you have devices that are "binding" to this "controller", a bus
+might make more sense, right?
+
+I don't see how a class helps out for you here more than anything else,
+what are you expecting from the class interface?  You aren't using the
+reference counting logic it provides, so why use it at all?
+
+Actually, why use the driver core at all in the first place if you
+aren't needing the devices to show up in sysfs (as you don't have a
+device, you are just a mediator)?
+
+> > > > > +int modem_release(struct modem_desc *mdesc) {
+> > > > > +	if (!mdesc->release)
+> > > > > +		return -EFAULT;
+> > > > > +
+> > > > > +	if (modem_is_requested(mdesc)) {
+> > > > > +		atomic_dec(&mdesc->mclients->cnt);
+> > > > > +		if (atomic_read(&mdesc->use_cnt) == 1) {
+> > > > > +			mdesc->release(mdesc);
+> > > > > +			atomic_dec(&mdesc->use_cnt);
+> > > > > +		}
+> > > >
+> > > > Eeek, why aren't you using the built-in reference counting that the
+> > > > struct device provided to you, and instead are rolling your own?
+> > > > This happens in many places, why?
+> > >
+> > > My usage of counters over here is for each modem there are many clients.
+> > > Each of the clients will have a ref to modem_desc. Each of them use
+> > > this for requesting and releasing the modem. One counter for tracking
+> > > the request and release for each client which is done by variable 'cnt' in
+> > struct clients.
+> > > The counter use_cnt is used for tracking the modem request/release
+> > > irrespective of the clients and counter cli_cnt is used for
+> > > restricting the modem_get to the no of clients defined in no_clients.
+> > >
+> > > So totally 3 counter one for restricting the usage of modem_get by
+> > > clients, second for restricting modem request/release at top level,
+> > > and 3rd for restricting modem release/request for per client per modem
+> > basis.
+> > >
+> > > Can you let me know if the same can be achieved by using built-in ref
+> > > counting?
+> > 
+> > Yes, because you don't need all of those different levels, just stick with one
+> > and you should be fine. :)
+> > 
+> 
+> No, checks at all these levels are required, I have briefed out the need also.
+
+I still don't understand, sorry.
+
+> This will have effect on system power management, i.e suspend and deep
+> sleep.
+
+How does power management matter?  If you tie into the driver model
+properly, power management comes "for free" so you don't have to do
+anything special about it.  Why not use that logic instead of trying to
+roll your own?
+
+> We restrict that the drivers should request modem only once and release
+> only once, but we cannot rely on the clients hence a check for the same has
+> to be done in the MAF.
+
+You can't rely on the clients to do what?  And why can't you rely on
+them?  What is going to happen?  Who is a "client" here?  Other kernel
+code?
+
+I really don't understand your model at all as to what you are trying to
+mediate and manage here, sorry.  I suggest writing it all up as your
+first patch (documentation is good), so that we can properly review your
+implementation and not argue about how to implement something that I
+honestly don't understand.
+
+> Also the no of clients should be defined and hence a
+> check for the same is done in MAF.
+
+Defined where?  What is "MAF"?
+
+> Apart from all these the requests coming from all the clients is to be
+> accumulated and based on that modem release or access should be
+> performed, hence so.
+
+That sentance makes no sense to me, it must be too early for me here...
+
+greg k-h
