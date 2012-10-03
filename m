@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2JCHLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 03:11:38 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39492 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab2JCHLg (ORCPT
+	id S1755969Ab2JCHLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 03:11:55 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:56834 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754461Ab2JCHLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 03:11:36 -0400
-Subject: Re: [PATCH 0/2] PCI-Express Non-Transparent Bridge Support
-From: "Nicholas A. Bellinger" <nab@risingtidesystems.com>
-Reply-To: nab@risingtidesystems.com
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
-References: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Rising Tide Systems
-Date: Wed, 03 Oct 2012 00:11:29 -0700
-Message-ID: <1349248289.28145.165.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 03:11:52 -0400
+Date: Wed, 3 Oct 2012 15:11:19 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: David Miller <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v0] Add SHA-3 hash algorithm
+Message-ID: <20121003071119.GA2571@gondor.apana.org.au>
+References: <20121003054542.GA2416@havoc.gtf.org>
+ <20121003.020619.772556428995851933.davem@davemloft.net>
+ <506BE0E7.1070701@pobox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506BE0E7.1070701@pobox.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 14:26 -0700, Jon Mason wrote:
-> I am submitting version 4 of the PCI-Express Non-Transparent Bridge
-> patches for inclusion in 3.7.  All outstanding issues from the RFC
-> process have been addressed.
-> 
-> version 1
-> http://thread.gmane.org/gmane.linux.kernel.pci/16443
-> 
-> Version 2 incorporates numerous clean-ups 
-> http://thread.gmane.org/gmane.linux.kernel.pci/16696
-> 
-> Version 3 incorporates changes to conform NTB and client devices to the
-> Linux device model (per Greg KH's request).
-> http://thread.gmane.org/gmane.linux.kernel.pci/17808
-> 
-> Version 4 removes the transport transmit tasklet (per Dave Miller's
-> request).
-> http://thread.gmane.org/gmane.linux.network/244491
-> 
+On Wed, Oct 03, 2012 at 02:53:27AM -0400, Jeff Garzik wrote:
+>
+> Maybe my patch is the best we can do in the current kernel, if
+> dynamic digest size is not currently possible. Register "sha3_224",
+> "sha3_256", ... as you describe, and wait for actual users to appear
+> with unsupported digest sizes.
 
-Hi Jon,
+Let's see what people use before we do anything more fancy.
 
-I'm really excited to see this series merged for v3.7-rc code.
+If the variants really start proliferating, we can add a template
+called "trunc" and then have things like "trunc(sha3,224)", etc.
 
-Please feel free to add my:
-
-Reviewed-by: Nicholas Bellinger <nab@linux-iscsi.org>
-
-to the two individual patches for an initial merge.  I'm not sure which
-tree that your intending to take this code upstream via, but also feel
-free to add my:
-
-Acked-by: Nicholas Bellinger <nab@linux-iscsi.org>
-
-of your maintainer-ship of /drivers/ntb/ subsystem code.
-
-Very nice work on this series Jon !
-
---nab
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
