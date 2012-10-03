@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab2JCPBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754956Ab2JCPBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:01:23 -0400
-Date: Wed, 3 Oct 2012 17:01:17 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@localhost
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Dave Chinner <dchinner@redhat.com>,
-        =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
-In-Reply-To: <x49txubvd9d.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LFD.2.00.1210031659480.18540@localhost>
-References: <1348767205-17230-1-git-send-email-lczerner@redhat.com> <x49ipaukud8.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1210021042580.21903@localhost> <20121002195934.GA2657@devil.redhat.com>
- <x49txubvd9d.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756366Ab2JCPCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:02:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47736 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756352Ab2JCPCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:02:00 -0400
+Date: Wed, 3 Oct 2012 12:01:54 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alex Elder <aelder@sgi.com>, Carlos Maiolino <cmaiolino@redhat.com>
+Subject: Re: [ 046/180] xfs: Fix possible memory corruption in xfs_readlink
+Message-ID: <20121003150153.GA3222@herton-Z68MA-D2H-B3>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+ <20121001225159.562823590@1wt.eu>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="571107329-122787644-1349276481=:18540"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001225159.562823590@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---571107329-122787644-1349276481=:18540
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 3 Oct 2012, Jeff Moyer wrote:
-
-> Date: Wed, 03 Oct 2012 10:30:54 -0400
-> From: Jeff Moyer <jmoyer@redhat.com>
-> To: Dave Chinner <dchinner@redhat.com>
-> Cc: Lukáš Czerner <lczerner@redhat.com>, Jens Axboe <axboe@kernel.dk>,
->     linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
+On Tue, Oct 02, 2012 at 12:52:43AM +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> Dave Chinner <dchinner@redhat.com> writes:
+> ------------------
 > 
-> > On Tue, Oct 02, 2012 at 10:52:05AM +0200, Lukáš Czerner wrote:
-> >> On Mon, 1 Oct 2012, Jeff Moyer wrote:
-> >> > Date: Mon, 01 Oct 2012 12:52:19 -0400
-> >> > From: Jeff Moyer <jmoyer@redhat.com>
-> >> > To: Lukas Czerner <lczerner@redhat.com>
-> >> > Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-> >> >     Dave Chinner <dchinner@redhat.com>
-> >> > Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
-> >> > 
-> >> > Lukas Czerner <lczerner@redhat.com> writes:
-> >> > 
-> >> > > Currently there is not limitation of number of requests in the loop bio
-> >> > > list. This can lead into some nasty situations when the caller spawns
-> >> > > tons of bio requests taking huge amount of memory. This is even more
-> >> > > obvious with discard where blkdev_issue_discard() will submit all bios
-> >> > > for the range and wait for them to finish afterwards. On really big loop
-> >> > > devices this can lead to OOM situation as reported by Dave Chinner.
-> >> > >
-> >> > > With this patch we will wait in loop_make_request() if the number of
-> >> > > bios in the loop bio list would exceed 'nr_requests' number of requests.
-> >> > > We'll wake up the process as we process the bios form the list.
-> >> > 
-> >> > I think you might want to do something similar to what is done for
-> >> > request_queues by implementing a congestion on and off threshold.  As
-> >> > Jens writes in this commit (predating the conversion to git):
-> >> 
-> >> Right, I've had the same idea. However my first proof-of-concept
-> >> worked quite well without this and my simple performance testing did
-> >> not show any regression.
+> From: Carlos Maiolino <cmaiolino@redhat.com>
 > 
-> Did you look at system time?
+> commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream
 > 
-> -Jeff
+[...]
+> @@ -564,13 +564,20 @@ xfs_readlink(
+>  
+>  	xfs_ilock(ip, XFS_ILOCK_SHARED);
+>  
+> -	ASSERT((ip->i_d.di_mode & S_IFMT) == S_IFLNK);
+> -	ASSERT(ip->i_d.di_size <= MAXPATHLEN);
+> -
+>  	pathlen = ip->i_d.di_size;
+>  	if (!pathlen)
+>  		goto out;
+>  
+> +	if (pathlen < 0 || pathlen > MAXPATHLEN) {
+> +		xfs_fs_cmn_err(CE_ALERT, mp,
+> +			 "%s: inode (%llu) bad symlink length (%lld)",
+> +			 __func__, (unsigned long long) ip->i_ino,
+> +			 (long long) pathlen);
+> +		ASSERT(0);
+> +		return XFS_ERROR(EFSCORRUPTED);
 
-Hi, none of the times showed any significant difference, there was
-not any pattern suggesting a problem. Also the system time is included
-in the real time, so it would show anyway I guess.
+This needs a followup fix, commit 9b025eb3a89e041bab6698e3858706be2385d692
+("xfs: Fix missing xfs_iunlock() on error recovery path in xfs_readlink()").
+I think it should be also cherry-picked in this release.
 
--Lukas
---571107329-122787644-1349276481=:18540--
+> +	}
+> +
+> +
+>  	if (ip->i_df.if_flags & XFS_IFINLINE) {
+>  		memcpy(link, ip->i_df.if_u1.if_data, pathlen);
+>  		link[pathlen] = '\0';
+
+-- 
+[]'s
+Herton
