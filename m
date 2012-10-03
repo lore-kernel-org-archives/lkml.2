@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2JCMlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 08:41:13 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52490 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2JCMlG (ORCPT
+	id S1754833Ab2JCMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 08:43:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56178 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754124Ab2JCMnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 08:41:06 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, Donghwa Lee <dh09.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/video/exynos/exynos_mipi_dsi.c: fix error return code
-Date: Wed,  3 Oct 2012 14:40:44 +0200
-Message-Id: <1349268044-32616-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 3 Oct 2012 08:43:07 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: lp8788-ldo: Staticise non-exported symbol
+Date: Wed,  3 Oct 2012 13:43:00 +0100
+Message-Id: <1349268182-21804-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1349268182-21804-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1349268182-21804-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/video/exynos/exynos_mipi_dsi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/regulator/lp8788-ldo.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
-index c4f25de..07d70a3 100644
---- a/drivers/video/exynos/exynos_mipi_dsi.c
-+++ b/drivers/video/exynos/exynos_mipi_dsi.c
-@@ -375,6 +375,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	dsim->clock = clk_get(&pdev->dev, "dsim0");
- 	if (IS_ERR(dsim->clock)) {
- 		dev_err(&pdev->dev, "failed to get dsim clock source\n");
-+		ret = -ENODEV;
- 		goto err_clock_get;
- 	}
+diff --git a/drivers/regulator/lp8788-ldo.c b/drivers/regulator/lp8788-ldo.c
+index 6796eeb..e496ba0 100644
+--- a/drivers/regulator/lp8788-ldo.c
++++ b/drivers/regulator/lp8788-ldo.c
+@@ -126,7 +126,7 @@ struct lp8788_ldo {
+ };
  
-@@ -383,6 +384,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "failed to get io memory region\n");
-+		ret = -ENODEV;
- 		goto err_platform_get;
- 	}
- 
-@@ -407,6 +409,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
- 	dsim_ddi = exynos_mipi_dsi_bind_lcd_ddi(dsim, dsim_pd->lcd_panel_name);
- 	if (!dsim_ddi) {
- 		dev_err(&pdev->dev, "mipi_dsim_ddi object not found.\n");
-+		ret = -EINVAL;
- 		goto err_bind;
- 	}
- 
+ /* DLDO 1, 2, 3, 9 voltage table */
+-const int lp8788_dldo1239_vtbl[] = {
++static const int lp8788_dldo1239_vtbl[] = {
+ 	1800000, 1900000, 2000000, 2100000, 2200000, 2300000, 2400000, 2500000,
+ 	2600000, 2700000, 2800000, 2900000, 3000000, 2850000, 2850000, 2850000,
+ 	2850000, 2850000, 2850000, 2850000, 2850000, 2850000, 2850000, 2850000,
+-- 
+1.7.10.4
 
