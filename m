@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2JCISK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 04:18:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46384 "EHLO bear.ext.ti.com"
+	id S1755994Ab2JCITY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 04:19:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35142 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab2JCISH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 04:18:07 -0400
-Message-ID: <506BF4B6.8090701@ti.com>
-Date: Wed, 3 Oct 2012 13:47:58 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1751642Ab2JCITT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 04:19:19 -0400
+Date: Wed, 3 Oct 2012 10:19:11 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
+Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove
+ _rcu_barrier() dependency on __stop_machine()")
+In-Reply-To: <506BF339.6020201@linux.vnet.ibm.com>
+Message-ID: <alpine.LNX.2.00.1210031013110.23544@pobox.suse.cz>
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <506B50F1.8070907@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030008590.23544@pobox.suse.cz> <506BB283.4010800@linux.vnet.ibm.com> <20121003034405.GB13192@linux.vnet.ibm.com> <506BB950.3000102@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210030937490.23544@pobox.suse.cz> <506BF339.6020201@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.lad@ti.com>
-CC: LAK <linux-arm-kernel@lists.infradead.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>
-Subject: Re: [PATCH v3 0/2] ARM: davinci: da850/omap-l138: add support for
- VPIF driver
-References: <1347344709-6180-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1347344709-6180-1-git-send-email-prabhakar.lad@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Wed, 3 Oct 2012, Srivatsa S. Bhat wrote:
 
-On 9/11/2012 11:55 AM, Prabhakar Lad wrote:
-> This patch series adds support for VPIF
-> capture and display driver on da850/omap-l138.
-> Enables SD capture and display.
+> On 10/03/2012 01:13 PM, Jiri Kosina wrote:
+> > On Wed, 3 Oct 2012, Srivatsa S. Bhat wrote:
+> > 
+> >>>>> 	CPU 0				CPU 1
+> >>>>> 	kmem_cache_destroy()
+> >>>>
+> >>>> What about the get_online_cpus() right here at CPU0 before
+> >>>> calling mutex_lock(slab_mutex)? How can the cpu_up() proceed
+> >>>> on CPU1?? I still don't get it... :(
+> >>>>
+> >>>> (kmem_cache_destroy() uses get/put_online_cpus() around acquiring
+> >>>> and releasing slab_mutex).
+> >>>
+> >>> The problem is that there is a CPU-hotplug notifier for slab, which
+> >>> establishes hotplug->slab.
+> >>
+> >> Agreed.
+> >>
+> >>>  Then having kmem_cache_destroy() call
+> >>> rcu_barrier() under the lock
+> >>
+> >> Ah, that's where I disagree. kmem_cache_destroy() *cannot* proceed at
+> >> this point in time, because it has invoked get_online_cpus()! It simply
+> >> cannot be running past that point in the presence of a running hotplug
+> >> notifier! So, kmem_cache_destroy() should have been sleeping on the
+> >> hotplug lock, waiting for the notifier to release it, no?
+> > 
+> > Please look carefully at the scenario again. kmem_cache_destroy() calls 
+> > get_online_cpus() before the hotplug notifier even starts. Hence it has no 
+> > reason to block there (noone is holding hotplug lock).
+> > 
 > 
-> This patch series is dependent on the following patch:
-> https://patchwork.kernel.org/patch/1332311/
+> Agreed.
 > 
-> Changes for v3:
-> 1: Clubbed the code for DA850_UI_SD_VIDEO_PORT config
->    as pointed by Sekhar.
-> 2: Define  the resource structure outside the function as pointed
->    by Sekhar.
+> > *Then* hotplug notifier fires up, succeeds obtaining hotplug lock, 
 > 
-> Changes for v2:
-> 1: Avoid breaking of print messages.
-> 2: Removed the handlers which just returned zero (which did nothing).
-> 3: Clubbed the code where ever possible for DA850_UI_SD_VIDEO_PORT
->    config option.
-> 4: Removed the dma_declare_coherent_memory() calls and used
->    global CMA.
-> 5: Added the base address in increasing order.
+> Ah, that's the problem! The hotplug reader-writer synchronization is not just
+> via a simple mutex. Its a refcount underneath. If kmem_cache_destroy() incremented
+> the refcount, the hotplug-writer (cpu_up) will release the hotplug lock immediately
+> and try again. IOW, a hotplug-reader (kmem_cache_destroy()) and a hotplug-writer
+> (cpu_up) can *NEVER* run concurrently. If they do, we are totally screwed!
 > 
-> Manjunath Hadli (2):
->   ARM: da850/omap-l138: Add SoC related definitions for VPIF
->   ARM: da850/omap-l138: Add EVM specific code for VPIF to work
 > 
-> Manjunath Hadli (2):
->   ARM: da850/omap-l138: Add SoC related definitions for VPIF
->   ARM: da850/omap-l138: Add EVM specific code for VPIF to work
+> Take a look at the hotplug lock acquire function at the writer side:
 > 
->  arch/arm/mach-davinci/Kconfig              |    7 ++
->  arch/arm/mach-davinci/board-da850-evm.c    |  156 ++++++++++++++++++++++++++++
->  arch/arm/mach-davinci/da850.c              |  152 +++++++++++++++++++++++++++
->  arch/arm/mach-davinci/include/mach/da8xx.h |   11 ++
->  arch/arm/mach-davinci/include/mach/mux.h   |   42 ++++++++
->  arch/arm/mach-davinci/include/mach/psc.h   |    1 +
->  6 files changed, 369 insertions(+), 0 deletions(-)
+> static void cpu_hotplug_begin(void)
+> {
+>         cpu_hotplug.active_writer = current;
+> 
+>         for (;;) {
+>                 mutex_lock(&cpu_hotplug.lock);
+>                 if (likely(!cpu_hotplug.refcount))   <================ This one!
+>                         break;
+>                 __set_current_state(TASK_UNINTERRUPTIBLE);
+>                 mutex_unlock(&cpu_hotplug.lock);
+>                 schedule();
+>         }   
+> }
 
-The patches look good to me. In case you want to queue them through the
-media tree to manage the dependencies, feel free to add my:
+I acutally just came to the same conclusion (7 hours of sleep later, the 
+mind indeed seems to be brighter ... what a poet I am).
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+Lockdep doesn't know about this semantics of cpu_hotplug_begin(), and 
+therefore gets confused by the fact that mutual exclusion is actually 
+achieved through the refcount instead of mutex (and the same apparently 
+happened to me).
 
-Note that the subject like prefix for DA850 soc patches should be
+So right, now I agree that the deadlock scenario I have come up with is 
+indeed bogus (*), and we just have to annotate this fact to lockdep 
+somehow.
 
-"ARM: davinci: da850: .."
+And I actually believe that moving the slab_mutex around in 
+kmem_cache_destroy() is a good anotation (maybe worth a separate comment 
+in the code), as it not only makes the lockdep false positive go away, but 
+it also reduces the mutex hold time.
 
-and that for DA850 EVM patches should be:
+(*) I have seen machine locking hard reproducibly, but that was only with 
+additional Paul's patch, so I guess the lock order there actually was 
+wrong
 
-"ARM: davinci: da850 evm: .."
+Thanks!
 
-instead of what you have used here. Please fix these if you are queuing
-them and take care of this in future.
-
-Thanks,
-Sekhar
+-- 
+Jiri Kosina
+SUSE Labs
