@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab2JCSol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:44:41 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:51393 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755645Ab2JCSoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:44:39 -0400
-Date: Wed, 3 Oct 2012 12:44:38 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
- program headers
-Message-ID: <20121003184437.GB12231@obsidianresearch.com>
-References: <20120930232116.GC30637@obsidianresearch.com>
- <20121001153952.GB2100@linaro.org>
- <20121001160639.GA31620@obsidianresearch.com>
- <20121001175647.GD2100@linaro.org>
- <20121001183543.GC22342@obsidianresearch.com>
- <20121002102346.GB2108@linaro.org>
- <20121002174759.GC23733@obsidianresearch.com>
- <20121003104335.GA2254@linaro.org>
+	id S1755709Ab2JCSpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:45:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49841 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab2JCSpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 14:45:44 -0400
+Date: Wed, 3 Oct 2012 21:45:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
+        bhutchings@solarflare.com, gregory.v.rose@intel.com,
+        davem@davemloft.net--no-chain-reply-to,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] ixgbe: add driver set_max_vfs support
+Message-ID: <20121003184502.GM13767@mwanda>
+References: <506C3B11.9010009@redhat.com>
+ <1349286695-26713-1-git-send-email-yinghai@kernel.org>
+ <1349286695-26713-6-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121003104335.GA2254@linaro.org>
+In-Reply-To: <1349286695-26713-6-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 11:43:35AM +0100, Dave Martin wrote:
-
-> I'm not sure exactly what you mean by linking the DTB into vmlinux.
-> I don't think this is supported upstream, at least for ARM.  It could
-> be done externally by post-processing vmlinux to add extra sections
-> and some boot shim code which initialises the registers appropriately
-> for kernel entry ... but you're really inventing a bootloader if you
-> start to do that.
-
-We use the existing build infrastructure (see cmd_dt_S_dtb) and add a
-4 line patch to head.S to put the dtb address into the right
-register. I think it would be great to have a CONFIG_ARM_BUILT_IN_DTB
-for applications like mine, but it is really no problem to carry the
-head.S patch. The normal build process produces a vmlinux that is self
-contained, no post processing required.
-
-> Making a simple bootloader DT-aware is not actually that hard: libfdt
-> is intentionally pretty straightforward to integrate.
-
-Sure, but we have several major issues with that entire idea:
- 1) Our bootloader (on PPC and ARM) is in redundant NOR flash and
-    is limited to 16K. That is just enough to do gzip, elf, cramfs
-    and tftpv6 - there is no space left for dtb or fdt code.
- 2) Experience using DT with PPC has shown that the vmlinux is very
-    sensitive to the DTB. Every DTB/vmlinux combination must be tested
-    to ensure it works. By far the best way to manage this *for us* is
-    to guarentee that the vmlinux sees only the DTB it was designed
-    for by including it in vmlinux.
- 3) The DTB *changes*. We change it because we've changed things in the
-    programmable part of our environment and we change it because the
-    kernel has shifted. Planning for this inevitable change is
-    necessary.
- 4) On our ARM platforms updating the boot loader in the field is more
-    challenging than updating the vmlinux, not impossible, but not
-    something we want to do every day. Our PPC boot loader has
-    survived without change since 2007, and has booted kernels from
-    2.6.12 to 3.6 with and without DT. This is a time tested,
-    field proven approach.
-
-Fundamentally we treat the DTB like the .config - an integral,
-internal, part of vmlinux.
-
-As far as I can see, the *only* argument to put the DT in the boot
-loader is to support standard, distribution kernels.
-
-> It's more than 100 lines, but not _that_ much more, and contains
-> some implementation features you probably don't need.
-
-But that is not enough, variations of our platforms use bit bang I2C,
-SPI and NOR FLASH to store things like the MAC address and other
-DT-relevant information. So, swaths of that code would need to go into
-the boot loader/zImage as well.
-
-At that point we may as well take our chances with uBoot. :)
-
-> From my side, I think that the fact this takes arch/arm/vmlinux.lds.S
-> closer to some other common arches means that this is low risk and should
-> be mostly harmless, but I will take another look at the patch first.
-
-This matches my opinion..
-
-> > > You store vmlinux.gz in a cramfs?  Is that a typo, or have you already
-> > > compressed the kernel twice?
-> > 
-> > The compression can either be intrisic to cramfs or a raw elf that has
-> > been gzip'd.
+On Wed, Oct 03, 2012 at 10:51:35AM -0700, Yinghai Lu wrote:
+> Need ixgbe guys to close the loop to use set_max_vfs instead
+> kernel parameters.
 > 
-> If you can have files with intrinsic compression such that they don't
-> get double-compressed, why can you not do this for zImage?
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Cc: Greg Rose <gregory.v.rose@intel.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: John Fastabend <john.r.fastabend@intel.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe.h      |    2 +
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   44 +++++++++++++++++++-----
+>  2 files changed, 37 insertions(+), 9 deletions(-)
 > 
-> Am I still misunderstanding something?
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+> index b9623e9..d39d975 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+> @@ -558,6 +558,8 @@ struct ixgbe_adapter {
+>  	u32 interrupt_event;
+>  	u32 led_reg;
+>  
+> +	struct ixgbe_info *ixgbe_info;
+> +
+>  #ifdef CONFIG_IXGBE_PTP
+>  	struct ptp_clock *ptp_clock;
+>  	struct ptp_clock_info ptp_caps;
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> index ee61819..1c097c7 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> @@ -129,13 +129,6 @@ static struct notifier_block dca_notifier = {
+>  };
+>  #endif
+>  
+> -#ifdef CONFIG_PCI_IOV
+> -static unsigned int max_vfs;
+> -module_param(max_vfs, uint, 0);
+> -MODULE_PARM_DESC(max_vfs,
+> -		 "Maximum number of virtual functions to allocate per physical function - default is zero and maximum value is 63");
+> -#endif /* CONFIG_PCI_IOV */
+> -
+>  static unsigned int allow_unsupported_sfp;
+>  module_param(allow_unsupported_sfp, uint, 0);
+>  MODULE_PARM_DESC(allow_unsupported_sfp,
+> @@ -4496,7 +4489,7 @@ static int __devinit ixgbe_sw_init(struct ixgbe_adapter *adapter)
+>  #ifdef CONFIG_PCI_IOV
+>  	/* assign number of SR-IOV VFs */
+>  	if (hw->mac.type != ixgbe_mac_82598EB)
+> -		adapter->num_vfs = (max_vfs > 63) ? 0 : max_vfs;
+> +		adapter->num_vfs = min_t(int, pdev->max_vfs, 63);
 
-We have two boot modes, one boots ELF.gz (for development), the other
-boots ELF in CRAMFS (for deployment). Both are compressed, one is
-compressed using gzip and one is compressed using zlib in CRAMFS. It
-is hard to see how to store a zImage in CRAMFS and avoid double
-de-compression. We never store an ELF.gz in CRAMFS.
+Could we make this min_t(uint, ...);
 
-Since the entire point of zImage is to introduce compression it is
-hard to see *why* we'd want to store a zImage in a CRAMFS.
+->max_vfs is type unsigned int. We take an unsigned long from sysfs.
+We silently truncate it to an unsigned int.  Then we cast it to a
+negative number and compare against 63 and take the minimum...
 
-Jason
+It's root only so it's not a problem but it's a hassle to audit.
+
+regards,
+dan carpenter
+
