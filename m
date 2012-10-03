@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2JCMrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 08:47:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46891 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2JCMq7 (ORCPT
+	id S1754901Ab2JCMtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 08:49:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42925 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab2JCMtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 08:46:59 -0400
-Message-ID: <506C33C0.5000501@canonical.com>
-Date: Wed, 03 Oct 2012 14:46:56 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 3 Oct 2012 08:49:40 -0400
+Message-ID: <506C343E.60203@kernel.dk>
+Date: Wed, 03 Oct 2012 14:49:02 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: Daniel Vetter <daniel@ffwll.ch>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        sumit.semwal@linaro.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/5] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-References: <20120928124148.14366.21063.stgit@patser.local> <5065B0C9.7040209@canonical.com> <5065FDAA.5080103@vmware.com> <50696699.7020009@canonical.com> <506A8DC8.5020706@vmware.com> <20121002080341.GA5679@phenom.ffwll.local> <506BED25.2060804@vmware.com> <CAKMK7uGDaCCL-UT7JaArd3qrnMSc74r32fQ2dnouO3csRGvakg@mail.gmail.com> <506BF93B.5010805@vmware.com> <CAKMK7uGg5pbReAUA+cKWk-jyS3YwkUaZXE7MTcv9w7sk-4a10A@mail.gmail.com> <506C190E.5050803@vmware.com>
-In-Reply-To: <506C190E.5050803@vmware.com>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd-8.3 updates
+References: <8391701.3EY4hQfmFv@fat-tyre> <506BDECA.90701@kernel.dk> <1538845.40xQlPEFSm@fat-tyre> <10403443.3yRLLBkj5b@fat-tyre>
+In-Reply-To: <10403443.3yRLLBkj5b@fat-tyre>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 03-10-12 12:53, Thomas Hellstrom schreef:
-> On 10/03/2012 10:53 AM, Daniel Vetter wrote:
->> On Wed, Oct 3, 2012 at 10:37 AM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
->>>>> So if I understand you correctly, the reservation changes in TTM are
->>>>> motivated by the
->>>>> fact that otherwise, in the generic reservation code, lockdep can only be
->>>>> annotated for a trylock and not a waiting lock, when it *is* in fact a
->>>>> waiting lock.
->>>>>
->>>>> I'm completely unfamiliar with setting up lockdep annotations, but the
->>>>> only
->>>>> place a
->>>>> deadlock might occur is if the trylock fails and we do a
->>>>> wait_for_unreserve().
->>>>> Isn't it possible to annotate the call to wait_for_unreserve() just like
->>>>> an
->>>>> interruptible waiting lock
->>>>> (that is always interrupted, but at least any deadlock will be catched?).
->>>> Hm, I have to admit that idea hasn't crossed my mind, but it's indeed
->>>> a hole in our current reservation lockdep annotations - since we're
->>>> blocking for the unreserve, other threads could potential block
->>>> waiting on us to release a lock we're holding already, resulting in a
->>>> deadlock.
->>>>
->>>> Since no other locking primitive that I know of has this
->>>> wait_for_unlocked interface, I don't know how we could map this in
->>>> lockdep. One idea is to grab the lock and release it again immediately
->>>> (only in the annotations, not the real lock ofc). But I need to check
->>>> the lockdep code to see whether that doesn't trip it up.
+On 2012-10-03 12:07, Philipp Reisner wrote:
+> Am Mittwoch, 3. Oktober 2012, 11:24:09 schrieben Sie:
+>>> Not pulled. Two reasons:
 >>>
->>> I imagine doing the same as mutex_lock_interruptible() does in the
->>> interrupted path should work...
->> It simply calls the unlock lockdep annotation function if it breaks
->> out. So doing a lock/unlock cycle in wait_unreserve should do what we
->> want.
+>>> - It's late (in the merge window)
+>>> - and it's not based off my for-3.7/drivers branch, hence I get a ton of
+>>>
+>>>   unrelated changes with a pull into that branch.
 >>
->> And to properly annotate the ttm reserve paths we could just add an
->> unconditional wait_unreserve call at the beginning like you suggested
->> (maybe with #ifdef CONFIG_PROVE_LOCKING in case ppl freak out about
->> the added atomic read in the uncontended case).
->> -Daniel
->
-> I think atomic_read()s are cheap, at least on intel as IIRC they don't require bus locking,
-> still I think we should keep it within CONFIG_PROVE_LOCKING
->
-> which btw reminds me there's an optimization that can be done in that one should really only
-> call atomic_cmpxchg() if a preceding atomic_read() hints that it will succeed.
->
-> Now, does this mean TTM can keep the atomic reserve <-> lru list removal?
-I don't think it would be a good idea to keep this across devices, there's currently no
-callback to remove buffers off the lru list.
+>> Hi Jens,
+>>
+>> I can rebase it for you in a few hours. Would influence this your decission?
+>>
+> 
+> Hi Jens,
+> 
+> Is there a convenient way for me to find our when it is the right time
+> to send pull requests your way? (i.e. a notification when you create your
+> for-3.x/drivers branch)
 
-However I am convinced that the current behavior where swapout and
-eviction/destruction never ever do a blocking reserve should be preserved. I looked
-more into it and it seems to allow to recursely quite a few times between all the
-related commands, and it wouldn't surprise me if that turned out to be cause of the
-lockups before moving to the current code.
-no_wait_reserve in those functions should be removed and always treated as true.
+The right time is anytime between -rc1 and -rcN for the previous
+release, where N is the last released -rc for that series. IOW, I should
+have it before the next merge window opens, not a days into that window.
 
-Atomic lru_lock + reserve can still be done in the places where it matters though,
-but it might have to try the list for multiple bo's before it succeeds. As long as no
-blocking is done the effective behavior would stay the same.
+> Rebasing it on your drivers tree was trivial, here is the updated pull
+> request:
+> 
+> The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
+> 
+>   loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.drbd.org/linux-drbd.git for-jens
+> 
+> for you to fetch changes up to 61e8114a682b0e868696f8363ed03e5fd4c750d1:
+> 
+>   drbd: log request sector offset and size for IO errors (2012-10-03 11:54:45 +0200)
 
-~Maarten
+Thanks, one question before this is pulled in:
+
+> Philipp Reisner (6):
+>       drbd: Add a drbd directory to sysfs
+>       drbd: expose the data generation identifiers via sysfs
+
+What are these? It's sitting in /sys/block/<dev>/drbd/, I don't see any
+documentation or justification for that.
+
+Why isn't it off in debugfs or similar instead?
+
+-- 
+Jens Axboe
+
