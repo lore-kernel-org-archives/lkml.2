@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909Ab2JCQWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:22:00 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:39029 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965047Ab2JCQSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:31 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: jitendra.kalsaria@qlogic.com
-Cc: kernel-janitors@vger.kernel.org, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 12/20] drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c: fix error return code
-Date: Wed,  3 Oct 2012 18:18:02 +0200
-Message-Id: <1349281090-10013-12-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S965360Ab2JCQZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:25:48 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:35525 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964943Ab2JCQZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 12:25:45 -0400
+Date: Wed, 3 Oct 2012 09:25:08 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: mlindner@marvell.com, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+Message-ID: <20121003092508.6a7da662@nehalam.linuxnetplumber.net>
+In-Reply-To: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
+References: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+On Wed,  3 Oct 2012 18:18:10 +0200
+Peter Senna Tschudin <peter.senna@gmail.com> wrote:
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Thanks for looking into these kind of problems. The contents
+of the patch are correct, but the automated commit message is useless.
+You shouldn't just blindly say what the automated
+script was looking for, you should describe what the bug is so that evaluators
+can decide what the impact is and if it should be backported to stable
+and vendor kernels.
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
+Please resubmit the patchs with a reasonable analysis in the commit message.
+Something like:
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+  There is a bug in skge driver. If alloc_etherdev() fails, then
+  skge_devinit() will return NULL, and the skge_probe function incorrectly
+  returns success 0. It should return -ENOMEM instead.
 
----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index 473ce13..24ad17e 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -1601,7 +1601,8 @@ qlcnic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	adapter->netdev  = netdev;
- 	adapter->pdev    = pdev;
- 
--	if (qlcnic_alloc_adapter_resources(adapter))
-+	err = qlcnic_alloc_adapter_resources(adapter);
-+	if (err)
- 		goto err_out_free_netdev;
- 
- 	adapter->dev_rst_time = jiffies;
 
