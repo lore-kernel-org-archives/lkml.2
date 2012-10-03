@@ -1,194 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab2JCTpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 15:45:24 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:37016 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab2JCTpW (ORCPT
+	id S1752588Ab2JCTrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 15:47:00 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:5929 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab2JCTq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 15:45:22 -0400
-Date: Wed, 3 Oct 2012 12:44:37 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to
- mmap/mprotect
-In-Reply-To: <506C4F29.4090303@gmail.com>
-Message-ID: <alpine.LSU.2.00.1210031240520.1323@eggly.anvils>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu> <20120820180037.GV4232@outflux.net> <CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com> <CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com> <CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
- <CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com> <20121002153841.a03ad73b.akpm@linux-foundation.org> <alpine.LSU.2.00.1210021733580.1343@eggly.anvils> <506C4F29.4090303@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 3 Oct 2012 15:46:58 -0400
+Date: Wed, 3 Oct 2012 15:46:14 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6
+Message-ID: <20121003194614.GA2893@elliptictech.com>
+References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Ard Biesheuvel wrote:
+On 2012-09-30 17:38 -0700, Linus Torvalds wrote:
+> So here it is, 3.6 final. Sure, I'd have been happier with even fewer
+> changes, but that just never happens. And holding off the release
+> until people get too bored to send me the small stuff just makes the
+> next merge window more painful.
 
-> This patch adds support for the PROT_FINAL flag to
-> the mmap() and mprotect() syscalls.
-> 
-> The PROT_FINAL flag indicates that the requested set
-> of protection bits should be final, i.e., it shall
-> not be allowed for a subsequent mprotect call to
-> set protection bits that were not set already.
-> 
-> This is mainly intended for the dynamic linker,
-> which sets up the address space on behalf of
-> dynamic binaries. By using this flag, it can
-> prevent exploited code from remapping read-only
-> executable code or data sections read-write.
-> 
-> Signed-off-by: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+Just upgraded to 3.6 from 3.5, and now some of my kernel build scripts
+are throwing "permission denied" errors.  Apparently symlinks are
+broken somehow?
 
-Acked-by: Hugh Dickins <hughd@google.com>
+  # id
+  uid=0(root) gid=0(root) groups=0(root),1(bin),2(daemon),3(sys),4(adm),6(disk),10(wheel),11(floppy),20(dialout),26(tape),27(video)
 
-(and I rather enjoy the way you ask PROT_GROWSDOWN for an alibi, in case
-someone accuses the PROT_FINAL comment of a checkpatch linelength crime.)
+  # ls -l /scratch_space/linux
+  drwxr-xr-x 24 nbowler eng 4096 2012-10-03 13:41 /scratch_space/linux
 
-> ---
->  arch/alpha/include/asm/mman.h     |    1 +
->  arch/mips/include/asm/mman.h      |    1 +
->  arch/parisc/include/asm/mman.h    |    1 +
->  arch/powerpc/include/asm/mman.h   |    3 ++-
->  arch/xtensa/include/asm/mman.h    |    1 +
->  include/asm-generic/mman-common.h |    1 +
->  include/linux/mman.h              |    3 ++-
->  mm/mmap.c                         |    8 ++++++++
->  mm/mprotect.c                     |    8 ++++++++
->  9 files changed, 25 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/alpha/include/asm/mman.h b/arch/alpha/include/asm/mman.h
-> index cbeb361..ab46252 100644
-> --- a/arch/alpha/include/asm/mman.h
-> +++ b/arch/alpha/include/asm/mman.h
-> @@ -6,6 +6,7 @@
->  #define PROT_EXEC	0x4		/* page can be executed */
->  #define PROT_SEM	0x8		/* page may be used for atomic ops */
->  #define PROT_NONE	0x0		/* page can not be accessed */
-> +#define PROT_FINAL	0x80	/* unset page prot bits cannot be set later */
->  #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
->  #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
->  
-> diff --git a/arch/mips/include/asm/mman.h b/arch/mips/include/asm/mman.h
-> index 46d3da0..9cd50e4 100644
-> --- a/arch/mips/include/asm/mman.h
-> +++ b/arch/mips/include/asm/mman.h
-> @@ -20,6 +20,7 @@
->  #define PROT_EXEC	0x04		/* page can be executed */
->  /*			0x08		   reserved for PROT_EXEC_NOFLUSH */
->  #define PROT_SEM	0x10		/* page may be used for atomic ops */
-> +#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
->  #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
->  #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
->  
-> diff --git a/arch/parisc/include/asm/mman.h b/arch/parisc/include/asm/mman.h
-> index 12219eb..0cf18e3 100644
-> --- a/arch/parisc/include/asm/mman.h
-> +++ b/arch/parisc/include/asm/mman.h
-> @@ -6,6 +6,7 @@
->  #define PROT_EXEC	0x4		/* page can be executed */
->  #define PROT_SEM	0x8		/* page may be used for atomic ops */
->  #define PROT_NONE	0x0		/* page can not be accessed */
-> +#define PROT_FINAL	0x80	/* unset page prot bits cannot be set later */
->  #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
->  #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
->  
-> diff --git a/arch/powerpc/include/asm/mman.h b/arch/powerpc/include/asm/mman.h
-> index d4a7f64..c0014eb 100644
-> --- a/arch/powerpc/include/asm/mman.h
-> +++ b/arch/powerpc/include/asm/mman.h
-> @@ -52,7 +52,8 @@ static inline pgprot_t arch_vm_get_page_prot(unsigned long vm_flags)
->  
->  static inline int arch_validate_prot(unsigned long prot)
->  {
-> -	if (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM | PROT_SAO))
-> +	if (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM
-> +		     | PROT_SAO | PROT_FINAL))
->  		return 0;
->  	if ((prot & PROT_SAO) && !cpu_has_feature(CPU_FTR_SAO))
->  		return 0;
-> diff --git a/arch/xtensa/include/asm/mman.h b/arch/xtensa/include/asm/mman.h
-> index 25bc6c1..680b3c4 100644
-> --- a/arch/xtensa/include/asm/mman.h
-> +++ b/arch/xtensa/include/asm/mman.h
-> @@ -27,6 +27,7 @@
->  #define PROT_EXEC	0x4		/* page can be executed */
->  
->  #define PROT_SEM	0x10		/* page may be used for atomic ops */
-> +#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
->  #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
->  #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end fo growsup vma */
->  
-> diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-> index d030d2c..5687993 100644
-> --- a/include/asm-generic/mman-common.h
-> +++ b/include/asm-generic/mman-common.h
-> @@ -10,6 +10,7 @@
->  #define PROT_WRITE	0x2		/* page can be written */
->  #define PROT_EXEC	0x4		/* page can be executed */
->  #define PROT_SEM	0x8		/* page may be used for atomic ops */
-> +#define PROT_FINAL	0x80		/* unset page prot bits cannot be set later */
->  #define PROT_NONE	0x0		/* page can not be accessed */
->  #define PROT_GROWSDOWN	0x01000000	/* mprotect flag: extend change to start of growsdown vma */
->  #define PROT_GROWSUP	0x02000000	/* mprotect flag: extend change to end of growsup vma */
-> diff --git a/include/linux/mman.h b/include/linux/mman.h
-> index 8b74e9b..c11b1ab 100644
-> --- a/include/linux/mman.h
-> +++ b/include/linux/mman.h
-> @@ -51,7 +51,8 @@ static inline void vm_unacct_memory(long pages)
->   */
->  static inline int arch_validate_prot(unsigned long prot)
->  {
-> -	return (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC | PROT_SEM)) == 0;
-> +	return (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC
-> +			 | PROT_SEM | PROT_FINAL)) == 0;
->  }
->  #define arch_validate_prot arch_validate_prot
->  #endif
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 872441e..292f988 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1101,6 +1101,14 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
->  		}
->  	}
->  
-> +	/*
-> +	 * PROT_FINAL indicates that prot bits not requested by this
-> +	 * mmap() call cannot be added later
-> +	 */
-> +	if (prot & PROT_FINAL)
-> +		vm_flags &= ~(VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-> +			    | (vm_flags << 4);
-> +
->  	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
->  }
->  
-> diff --git a/mm/mprotect.c b/mm/mprotect.c
-> index a409926..7a39f73 100644
-> --- a/mm/mprotect.c
-> +++ b/mm/mprotect.c
-> @@ -301,6 +301,14 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
->  			goto out;
->  		}
->  
-> +		/*
-> +		 * PROT_FINAL indicates that prot bits removed by this
-> +		 * mprotect() call cannot be added later
-> +		 */
-> +		if (prot & PROT_FINAL)
-> +			newflags &= ~(VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-> +				    | (newflags << 4);
-> +
->  		error = security_file_mprotect(vma, reqprot, prot);
->  		if (error)
->  			goto out;
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
+  # readlink /scratch_space/linux-2.6
+  linux
+
+  # cd /scratch_space/linux
+  # pwd
+  /scratch_space/linux
+
+  # cd /scratch_space/linux-2.6
+  cd: permission denied: /scratch_space/linux-2.6
+
+WTF?  3.5 is fine.  I will try to bisect this later, but I figured I'd
+throw this out there now in case anyone has any ideas...
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
