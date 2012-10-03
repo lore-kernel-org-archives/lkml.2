@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab2JCWzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 18:55:09 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54535 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2JCWzH (ORCPT
+	id S932297Ab2JCW6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 18:58:46 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52313 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932179Ab2JCW6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 18:55:07 -0400
-Date: Thu, 4 Oct 2012 07:54:58 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20121003225458.GE19248@localhost>
-References: <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120927120806.GA29104@dhcp22.suse.cz>
- <20120927143300.GA4251@mtj.dyndns.org>
- <20120927144307.GH3429@suse.de>
- <20120927145802.GC4251@mtj.dyndns.org>
- <50649B4C.8000208@parallels.com>
- <20120930082358.GG10383@mtj.dyndns.org>
- <50695817.2030201@parallels.com>
+	Wed, 3 Oct 2012 18:58:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50695817.2030201@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
+References: <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+ <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com>
+ <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
+ <506C562E.5090909@redhat.com> <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
+ <20121003170907.GA23473@ZenIV.linux.org.uk> <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+ <20121003195059.GA13541@kroah.com> <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+ <3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Oct 2012 15:58:22 -0700
+X-Google-Sender-Auth: McEYpB6SB6QxlV9vJ8ROqUoxYNU
+Message-ID: <CA+55aFwVFtUU4TCjz4EDgGDaeR_QwLjmBAJA0kijHkQQ+jxLCw@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
+On Wed, Oct 3, 2012 at 3:48 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+>
+> I don't know if you can remove the /sys/.../firmware ABI altogether, because there is at least one, somewhat popular udev replacement that also uses it: mdev
+>
+> http://git.busybox.net/busybox/plain/docs/mdev.txt
 
-On Mon, Oct 01, 2012 at 12:45:11PM +0400, Glauber Costa wrote:
-> > where kmemcg_slab_idx is updated from sched notifier (or maybe add and
-> > use current->kmemcg_slab_idx?).  You would still need __GFP_* and
-> > in_interrupt() tests but current->mm and PF_KTHREAD tests can be
-> > rolled into index selection.
-> 
-> How big would this array be? there can be a lot more kmem_caches than
-> there are memcgs. That is why it is done from memcg side.
+Heh. That web doc documents /lib/firmware as being the place to be.
 
-The total number of memcgs are pretty limited due to the ID thing,
-right?  And kmemcg is only applied to subset of caches.  I don't think
-the array size would be a problem in terms of memory overhead, would
-it?  If so, RCU synchronize and dynamically grow them?
+That said, there's clearly enough variation here that I think that for
+now I won't take the step to disable the udev part. I'll do the patch
+to support "direct filesystem firmware loading" using the udev default
+paths, and that hopefully fixes the particular case people see with
+media modules.
 
-Thanks.
+We definitely want to have configurable paths and a way to configure
+udev entirely off for firmware (together with a lack of paths
+configuring the direct filesystem loading off - that way people can
+set things up just the way they like), but since I'm travelling
+tomorrow and this clearly needs more work, I'll do the first step only
+for now..
 
--- 
-tejun
+                Linus
