@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2JCGi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 02:38:59 -0400
-Received: from softlayer.compulab.co.il ([50.23.254.55]:37805 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab2JCGi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 02:38:57 -0400
-Message-ID: <506BDD5E.9060302@compulab.co.il>
-Date: Wed, 03 Oct 2012 08:38:22 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120711 Thunderbird/10.0.5
+	id S1754911Ab2JCGlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 02:41:00 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:65363 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab2JCGk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 02:40:58 -0400
+Date: Tue, 2 Oct 2012 23:40:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>
+cc: Daniel Santos <daniel.santos@pobox.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [Bulk] Re: [PATCH 4/10] compiler-gcc{3,4}.h: Use GCC_VERSION
+ macro
+In-Reply-To: <20120929004231.GB14293@jtriplet-mobl1>
+Message-ID: <alpine.DEB.2.00.1210022337400.12717@chino.kir.corp.google.com>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-5-git-send-email-daniel.santos@pobox.com> <20120929002029.GA13907@jtriplet-mobl1> <50664179.5090608@att.net> <20120929004231.GB14293@jtriplet-mobl1>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCH 06/17] ARM: pxa: work around duplicate definition of GPIO24_SSP1_SFRM
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-7-git-send-email-arnd@arndb.de>
-In-Reply-To: <1349195816-2225-7-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/12 18:36, Arnd Bergmann wrote:
-> The symbol "GPIO24_SSP1_SFRM" is defined in both mfp-pxa27x.h and
-> mfp-pxa25x.h. Since the macro is not actually used in the cm-x2xx.c
-> file, but it includes both headers, a safe workaround should be
-> to just undefine it from the .c file. This is a bit hacky and
-> the headers should be fixed to not both define it, but for now
-> it gets us around an annoying warning.
+On Fri, 28 Sep 2012, Josh Triplett wrote:
 
-Yep, agreed...
-
+> GCC 4.1.0 and 4.1.1 miscompiling __weak has nothing to do with
+> __compiletime_object_size; why should *this* version check exclude those
+> versions?
 > 
-> Without this patch, building cm_x2xx_defconfig results in:
-> 
-> In file included from arch/arm/mach-pxa/include/mach-pxa/pxa27x.h:7:0,
->                  from arch/arm/mach-pxa/cm-x2xx.c:25:
-> arch/arm/mach-pxa/include/mach-pxa/mfp-pxa27x.h:215:0: warning: "GPIO24_SSP1_SFRM" redefined [enabled by default]
-> arch/arm/mach-pxa/include/mach-pxa/mfp-pxa25x.h:111:0: note: this is the location of the previous definition
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: Mike Rapoport <mike@compulab.co.il>
 
-Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+Agreed, we shouldn't be relying on any #error directives to fail the build 
+and then try to factor those version numbers out of other directives; if 
+the #error directive were ever to be removed (or commented out, like in 
+this case), nobody would make the other directives inclusive of that 
+now-allowed version where things like __compiletime_object_size() are 
+valid.
 
-Thanks for the patch.
+After __compiletime_object_size() is compiled for GCC_VERSION >= 40100, 
+then:
 
-> ---
->  arch/arm/mach-pxa/cm-x2xx.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/mach-pxa/cm-x2xx.c b/arch/arm/mach-pxa/cm-x2xx.c
-> index 8fa4ad2..ae5e74a 100644
-> --- a/arch/arm/mach-pxa/cm-x2xx.c
-> +++ b/arch/arm/mach-pxa/cm-x2xx.c
-> @@ -22,6 +22,7 @@
->  #include <asm/mach/map.h>
->  
->  #include <mach/pxa25x.h>
-> +#undef GPIO24_SSP1_SFRM
->  #include <mach/pxa27x.h>
->  #include <mach/audio.h>
->  #include <mach/pxafb.h>
-
--- 
-Regards,
-Igor.
+	Acked-by: David Rientjes <rientjes@google.com>
