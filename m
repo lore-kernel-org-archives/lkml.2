@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2JCOhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:37:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61557 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab2JCOhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:37:15 -0400
+	id S932261Ab2JCOiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:38:01 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47427 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab2JCOh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:37:59 -0400
+Date: Wed, 3 Oct 2012 19:59:42 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+Message-ID: <20121003142942.GB15253@linux.vnet.ibm.com>
+Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+References: <1348486479.11847.46.camel@twins>
+ <50604988.2030506@linux.vnet.ibm.com>
+ <1348490165.11847.58.camel@twins>
+ <50606050.309@linux.vnet.ibm.com>
+ <1348494895.11847.64.camel@twins>
+ <50606B33.1040102@linux.vnet.ibm.com>
+ <5061B437.8070300@linux.vnet.ibm.com>
+ <5064101A.5070902@redhat.com>
+ <50643745.6010202@linux.vnet.ibm.com>
+ <506440AF.9080202@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121002221239.GA30990@kroah.com>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
- <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
- <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
- <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
- <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 3 Oct 2012 16:36:53 +0200
-Message-ID: <CAPXgP11UQUHyCAo=GbAigQMqKWta12L19EsVaocU0ia6JKmd1Q@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <506440AF.9080202@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12100314-5112-0000-0000-00000D097D1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 12:12 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+* Avi Kivity <avi@redhat.com> [2012-09-27 14:03:59]:
 
-> Mauro, what version of udev are you using that is still showing this
-> issue?
->
-> Kay, didn't you resolve this already?  If not, what was the reason why?
+> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+> >>
+[...]
+> > 2) looking at the result (comparing A & C) , I do feel we have
+> > significant in iterating over vcpus (when compared to even vmexit)
+> > so We still would need undercommit fix sugested by PeterZ (improving by
+> > 140%). ?
+> 
+> Looking only at the current runqueue?  My worry is that it misses a lot
+> of cases.  Maybe try the current runqueue first and then others.
+> 
 
-It's the same in the current release, we still haven't wrapped our
-head around how to fix it/work around it.
+Okay. Do you mean we can have something like
 
-Unlike what the heated and pretty uncivilized and rude emails here
-claim, udev does not dead-lock or "break" things, it's just "slow".
-The modprobe event handling runs into a ~30 second event timeout.
-Everything is still fully functional though, there's only this delay.
++       if (rq->nr_running == 1 && p_rq->nr_running == 1) {
++               yielded = -ESRCH;
++               goto out_irq;
++       }
 
-Udev ensures full dependency resolution between parent and child
-events. Parent events have to finish the event handling and have to
-return, before child event handlers are started. We need to ensure
-such things so that (among other things) disk events have finished
-their operations before the partition events are started, so they can
-rely and access their fully set up parent devices.
+in the Peter's patch ?
 
-What happens here is that the module_init() call blocks in a userspace
-transaction, creating a child event that is not started until the
-parent event has finished. The event handler for modprobe times out
-then the child event loads the firmware.
+( I thought lot about && or || . Both seem to have their own cons ).
+But that should be only when we have short term imbalance, as PeterZ
+told.
 
-Having kernel module relying on a running and fully functional
-userspace to return from module_init() is surely a broken driver
-model, at least it's not how things should work. If userspace does not
-respond to firmware requests, module_init() locks up until the
-firmware timeout happens.
+I am experimenting all these for V2 patch. Will come back with analysis
+and patch.
 
-This all is not so much about how probe() should behave, it's about a
-fragile dependency on a specific userspace transaction to link a
-loadable module into the kernel. Drivers should avoid such loops for
-many reasons. Also, it's unclear in many cases how such a model should
-work at all if the module is compiled in and initialized when no
-userspace is running.
+> Or were you referring to something else?
+> 
 
-If that unfortunate module_init() lockup can't be solved properly in
-the kernel, we need to find out if we need to make the modprobe
-handling in udev async, or let firmware events bypass dependency
-resolving. As mentioned, we haven't decided as of now which road to
-take here.
-
-Thanks,
-Kay
