@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab2JCRY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:24:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56057 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965396Ab2JCRYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:24:55 -0400
+	id S1756226Ab2JCR0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:26:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755168Ab2JCR0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 13:26:22 -0400
+Message-ID: <506C7524.2010103@redhat.com>
+Date: Wed, 03 Oct 2012 19:25:56 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121003165726.GA24577@kroah.com>
-References: <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi>
- <4FE8C4C4.1050901@redhat.com> <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
- <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
- <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
- <20121002221239.GA30990@kroah.com> <CAPXgP11UQUHyCAo=GbAigQMqKWta12L19EsVaocU0ia6JKmd1Q@mail.gmail.com>
- <20121003165726.GA24577@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 3 Oct 2012 19:24:34 +0200
-Message-ID: <CAPXgP120SFAV4ZF_fYC3EdW0P6ZfaHFuLFFeNArgM5C9K7WXqA@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Tom Gundersen <tomegun@archlinux.org>
-Content-Type: text/plain; charset=UTF-8
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com> <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com> <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com> <20121003142942.GB15253@linux.vnet.ibm.com>
+In-Reply-To: <20121003142942.GB15253@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 6:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+On 10/03/2012 04:29 PM, Raghavendra K T wrote:
+> * Avi Kivity <avi@redhat.com> [2012-09-27 14:03:59]:
+> 
+>> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+>> >>
+> [...]
+>> > 2) looking at the result (comparing A & C) , I do feel we have
+>> > significant in iterating over vcpus (when compared to even vmexit)
+>> > so We still would need undercommit fix sugested by PeterZ (improving by
+>> > 140%). ?
+>> 
+>> Looking only at the current runqueue?  My worry is that it misses a lot
+>> of cases.  Maybe try the current runqueue first and then others.
+>> 
+> 
+> Okay. Do you mean we can have something like
+> 
+> +       if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> +               yielded = -ESRCH;
+> +               goto out_irq;
+> +       }
+> 
+> in the Peter's patch ?
+> 
+> ( I thought lot about && or || . Both seem to have their own cons ).
+> But that should be only when we have short term imbalance, as PeterZ
+> told.
 
->> It's the same in the current release, we still haven't wrapped our
->> head around how to fix it/work around it.
->
-> Ick, as this is breaking people's previously-working machines, shouldn't
-> this be resolved quickly?
+I'm missing the context.  What is p_rq?
 
-Nothing really "breaks", It's "slow" and it will surely be fixed when
-we know what's the right fix, which we haven't sorted out at this
-moment.
+What I mean was:
 
-> module_init() can do lots of "bad" things, sleeping, asking for
-> firmware, and lots of other things.  To have userspace block because of
-> this doesn't seem very wise.
+  if can_yield_to_process_in_current_rq
+     do that
+  else if can_yield_to_process_in_other_rq
+     do that
+  else
+     return -ESRCH
 
-Not saying that it is right or nice, but it's the kernel itself that
-blocks. Run init=/bin/sh and do a modprobe of one of these drivers and
-it hangs un-interruptible until the kernel's internal firmware loading
-request times out, just because userspace is not there.
 
-> But previously this all "just worked" as we ran 'modprobe' in a new
-> thread/process right?
-
-No, we used to un-queue events which had a timeout specified in the
-environment, that code caused other issues and was removed.
-
-> it can do without worrying about stopping anything else in the system that might
-> want to happen at the same time (like load multiple modules in a row).
-
-It should not be an issue, the serialization is strictly parent <->
-child, everything else runs in parallel.
-
->> If that unfortunate module_init() lockup can't be solved properly in
->> the kernel, we need to find out if we need to make the modprobe
->> handling in udev async, or let firmware events bypass dependency
->> resolving. As mentioned, we haven't decided as of now which road to
->> take here.
->
-> It's not a lockup, there have never been rules about what a driver could
-> and could not do in its module_init() function.  Sure, there are some
-> not-nice drivers out there, but don't halt the whole system just because
-> of them.
-
-It is a kind of lock up, just try modprobe with the init=/bin/sh boot.
-
-> I recommend making module loading async, like it used to be, and then
-> all should be fine, right?
-
-That's the current idea, and Tom is looking into it how it could look like.
-
-I also have no issues at all if the kernel does load the firmware from
-the filesystem on its own; it sounds like the simplest and most robust
-solution from a general look at the problem. It would also make the
-difference between in-kernel firmware and out-of-kernel firmware less
-visible, which sounds good.
-Honestly, requiring firmware-loading userspace-transactions to
-successfully link a module into the kernel sounds like a pretty bad
-idea to start with. Unlike module loading which needs the depmod alias
-database and userspace configuration; with firmware loading, there is
-no policy involved where userspace would add any single additional
-value to that step.
-
-Thanks,
-Kay
+-- 
+error compiling committee.c: too many arguments to function
