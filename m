@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab2JCHps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 03:45:48 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:48865 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753941Ab2JCHpq (ORCPT
+	id S1755518Ab2JCHxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 03:53:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32786 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab2JCHxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 03:45:46 -0400
-Message-ID: <506BED25.2060804@vmware.com>
-Date: Wed, 03 Oct 2012 09:45:41 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 3 Oct 2012 03:53:10 -0400
+Date: Wed, 3 Oct 2012 00:53:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Josh Triplett <josh@joshtriplett.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
+ attribute
+In-Reply-To: <20121003065959.GA4963@leaf>
+Message-ID: <alpine.DEB.2.00.1210030052040.16922@chino.kir.corp.google.com>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-8-git-send-email-daniel.santos@pobox.com> <20120929002626.GD13907@jtriplet-mobl1> <50664308.6020601@att.net> <20120929005043.GD14293@jtriplet-mobl1>
+ <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com> <20121003065959.GA4963@leaf>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, sumit.semwal@linaro.org,
-        linux-media@vger.kernel.org, Daniel Vetter <daniel@ffwll.ch>
-Subject: Re: [PATCH 1/5] dma-buf: remove fallback for !CONFIG_DMA_SHARED_BUFFER
-References: <20120928124148.14366.21063.stgit@patser.local> <5065B0C9.7040209@canonical.com> <5065FDAA.5080103@vmware.com> <50696699.7020009@canonical.com> <506A8DC8.5020706@vmware.com> <20121002080341.GA5679@phenom.ffwll.local>
-In-Reply-To: <20121002080341.GA5679@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 10:03 AM, Daniel Vetter wrote:
-> On Tue, Oct 02, 2012 at 08:46:32AM +0200, Thomas Hellstrom wrote:
->> On 10/01/2012 11:47 AM, Maarten Lankhorst wrote:
->>> I was doing a evil hack where I 'released' lru_lock to lockdep before doing the annotation
->>> for a blocking acquire, and left trylock annotations as they were. This made lockdep do the
->>> right thing.
->> I've never looked into how lockdep works. Is this something that can
->> be done permanently or just for testing
->> purposes? Although not related to this, is it possible to do
->> something similar to the trylock reversal in the
->> fault() code where mmap_sem() and reserve() change order using a
->> reserve trylock?
-> lockdep just requires a bunch of annotations, is a compile-time configure
-> option CONFIG_PROVE_LOCKING and if disabled, has zero overhead. And it's
-> rather awesome in detected deadlocks and handling crazy locking schemes
-> correctly:
-> - correctly handles trylocks
-> - correctly handles nested locking (i.e. grabbing a global lock, then
->    grabbing subordinate locks in an unordered sequence since the global
->    lock ensures that no deadlocks can happen).
-> - any kinds of inversions with special contexts like hardirq, softirq
-> - same for page-reclaim, i.e. it will yell if you could (potentially)
->    deadlock because your shrinker grabs a lock that you hold while calling
->    kmalloc.
-> - there are special annotates for various subsystems, e.g. to check for
->    del_timer_sync vs. locks held by that timer. Or the console_lock
->    annotations I've just recently submitted.
-> - all that with a really flexible set of annotation primitives that afaics
->    should work for almost any insane locking scheme. The fact that Maarten
->    could come up with proper reservation annotations without any changes to
->    lockdep testifies this (he only had to fix a tiny thing to make it a bit
->    more strict in a corner case).
->
-> In short I think it's made of awesome. The only downside is that it lacks
-> documentation, you have to read the code to understand it :(
->
-> The reason I've suggested to Maarten to abolish the trylock_reservation
-> within the lru_lock is that in that way lockdep only ever sees the
-> trylock, and hence is less strict about complainig about deadlocks. But
-> semantically it's an unconditional reserve. Maarten had some horrible
-> hacks that leaked the lockdep annotations out of the new reservation code,
-> which allowed ttm to be properly annotated.  But those also reduced the
-> usefulness for any other users of the reservation code, and so Maarten
-> looked into whether he could remove that trylock dance in ttm.
->
-> Imo having excellent lockdep support for cross-device reservations is a
-> requirment, and ending up with less strict annotations for either ttm
-> based drivers or other drivers is not good. And imo the ugly layering that
-> Maarten had in his first proof-of-concept also indicates that something is
-> amiss in the design.
->
->
-So if I understand you correctly, the reservation changes in TTM are 
-motivated by the
-fact that otherwise, in the generic reservation code, lockdep can only be
-annotated for a trylock and not a waiting lock, when it *is* in fact a 
-waiting lock.
+On Tue, 2 Oct 2012, Josh Triplett wrote:
 
-I'm completely unfamiliar with setting up lockdep annotations, but the 
-only place a
-deadlock might occur is if the trylock fails and we do a 
-wait_for_unreserve().
-Isn't it possible to annotate the call to wait_for_unreserve() just like 
-an interruptible waiting lock
-(that is always interrupted, but at least any deadlock will be catched?).
+> This patch series started out as part of another patch series by Daniel
+> Santos that makes use of __flatten; I think Daniel plans to have that
+> patch series depend on this one.  Thus, I think it makes sense to
+> introduce __flatten at this point.
+> 
 
-/Thomas
-
-
+Daniel, please introduce __flatten in the patch series that uses it, 
+thanks.
