@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965201Ab2JCRrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:47:45 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48978 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965174Ab2JCRro (ORCPT
+	id S965250Ab2JCRua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:50:30 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4558 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965174Ab2JCRu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:47:44 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 3 Oct 2012 19:47:31 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire updates post v3.6
-Message-ID: <20121003194731.226dd535@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 13:50:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 03 Oct 2012 10:50:26 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <arm@vger.kernel.org>, <djbw@fb.com>, <vinod.koul@intel.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <stable@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
+Date: Wed, 3 Oct 2012 22:48:07 +0530
+Message-ID: <1349284687-22311-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+When watching the interrupts through /proc/interrupts,
+the name of the interrupts are blank or garbage. The
+reason is the pointer passed for devname during irq
+registration is stack and so it get changed after
+dma registration completes.
+Allocate the pointer as part of dma channel and pass
+this pointer as the devname for irq registration to
+avoid change of name.
 
-please pull from the tag "firewire-updates" at
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
-
-to receive the following IEEE 1394 (FireWire) subsystem changes:
-  - Feed GUIDs of FireWire nodes to the random pool,
-  - more complete quirk handling of a TI S400B phy,
-  - avoid holding a core lock while calling into highlevel drivers.
-Thanks.
-
-Clemens Ladisch (1):
-      firewire: core: feed /dev/random with devices' GUIDs
-
-Peter Hurley (1):
-      firewire: remove global lock around address handlers, convert to RCU
-
-Stefan Richter (1):
-      firewire: addendum to address handler RCU conversion
-
-Stephan Gatzka (1):
-      firewire: ohci: get IR bit from TSB41BA3D phy
-
- drivers/firewire/core-device.c      |  3 +++
- drivers/firewire/core-transaction.c | 33 +++++++++++++++++++--------------
- drivers/firewire/ohci.c             | 28 +++++++++++++++++++++++++++-
- include/linux/firewire.h            | 12 ++++++++++--
- 4 files changed, 59 insertions(+), 17 deletions(-)
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 24a6512..528c62d 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -169,6 +169,7 @@ typedef void (*dma_isr_handler)(struct tegra_dma_channel *tdc,
+ /* tegra_dma_channel: Channel specific information */
+ struct tegra_dma_channel {
+ 	struct dma_chan		dma_chan;
++	char			name[30];
+ 	bool			config_init;
+ 	int			id;
+ 	int			irq;
+@@ -1282,7 +1283,6 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&tdma->dma_dev.channels);
+ 	for (i = 0; i < cdata->nr_channels; i++) {
+ 		struct tegra_dma_channel *tdc = &tdma->channels[i];
+-		char irq_name[30];
+ 
+ 		tdc->chan_base_offset = TEGRA_APBDMA_CHANNEL_BASE_ADD_OFFSET +
+ 					i * TEGRA_APBDMA_CHANNEL_REGISTER_SIZE;
+@@ -1294,9 +1294,9 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+ 			goto err_irq;
+ 		}
+ 		tdc->irq = res->start;
+-		snprintf(irq_name, sizeof(irq_name), "apbdma.%d", i);
++		snprintf(tdc->name, sizeof(tdc->name), "apbdma.%d", i);
+ 		ret = devm_request_irq(&pdev->dev, tdc->irq,
+-				tegra_dma_isr, 0, irq_name, tdc);
++				tegra_dma_isr, 0, tdc->name, tdc);
+ 		if (ret) {
+ 			dev_err(&pdev->dev,
+ 				"request_irq failed with err %d channel %d\n",
 -- 
-Stefan Richter
--=====-===-- =-=- ---==
-http://arcgraph.de/sr/
+1.7.1.1
+
