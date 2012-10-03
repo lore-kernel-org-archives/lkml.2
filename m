@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195Ab2JCSGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:06:10 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:39210 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932277Ab2JCSGJ (ORCPT
+	id S1755914Ab2JCSHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:07:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63283 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab2JCSHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:06:09 -0400
-Date: Wed, 3 Oct 2012 11:06:03 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCHv2 00/14] perf diff: Factor diff command
-Message-ID: <20121003180603.GA18961@ghostprotocols.net>
-References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
- <20120927213102.GO16230@one.firstfloor.org>
- <20121001081631.GB991@krava.brq.redhat.com>
- <20121002163002.GD16230@one.firstfloor.org>
- <20121003134757.GA18700@ghostprotocols.net>
- <20121003161816.GG16230@one.firstfloor.org>
- <20121003165342.GH16230@one.firstfloor.org>
+	Wed, 3 Oct 2012 14:07:15 -0400
+Date: Wed, 3 Oct 2012 11:07:13 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, linux-wireless@vger.kernel.org,
+        johannes.berg@intel.com, wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
+In-Reply-To: <20121003113659.GD2259@redhat.com>
+Message-ID: <alpine.DEB.2.00.1210031104120.29765@chino.kir.corp.google.com>
+References: <20120909213228.GA5538@elf.ucw.cz> <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com> <20120910111113.GA25159@elf.ucw.cz> <20120911162536.bd5171a1.akpm@linux-foundation.org> <20120912101826.GL11266@suse.de>
+ <20121003113659.GD2259@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003165342.GH16230@one.firstfloor.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 03, 2012 at 06:53:42PM +0200, Andi Kleen escreveu:
-> The problem is with the perf-archive script. After some hacking I got it running
-> now. I suspect the perf tool needs to pass its own executable name to
-> the script to run.
+On Wed, 3 Oct 2012, Stanislaw Gruszka wrote:
+
+> So, can this problem be solved like on below patch, or I should rather
+> split firmware loading into chunks similar like was already iwlwifi did?
 > 
-> Also would be nice if another file than perf.data could be specified
-> (currently have to symlink)
+> diff --git a/drivers/net/wireless/iwlegacy/common.h b/drivers/net/wireless/iwlegacy/common.h
+> index 5f50177..1b58222 100644
+> --- a/drivers/net/wireless/iwlegacy/common.h
+> +++ b/drivers/net/wireless/iwlegacy/common.h
+> @@ -2247,7 +2247,7 @@ il_alloc_fw_desc(struct pci_dev *pci_dev, struct fw_desc *desc)
+>  
+>  	desc->v_addr =
+>  	    dma_alloc_coherent(&pci_dev->dev, desc->len, &desc->p_addr,
+> -			       GFP_KERNEL);
+> +			       GFP_KERNEL | __GFP_REPEAT);
+>  	return (desc->v_addr != NULL) ? 0 : -ENOMEM;
+>  }
+>  
 
-It was done as a proof of concept to illustrate using scripts as
-porcelain, just like in git, but yeah, it needs to be rewritten in C to
-handle different filenames, etc, will try to move it to the head of my
-todo list.
-
-- Arnaldo
+I think this will certainly make memory compaction more aggressive by 
+avoiding the logic to defer calling compaction in the page allocator, but 
+because we lack lumpy reclaim this still has a higher probability of 
+failing than it had in the past because it will fail if 128KB of memory is 
+reclaimed that may not happen to be contiguous for an order-5 allocation 
+to succeed.
