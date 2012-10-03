@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab2JCMtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 08:49:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42925 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab2JCMtk (ORCPT
+	id S1754942Ab2JCMxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 08:53:21 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:43901 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab2JCMxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 08:49:40 -0400
-Message-ID: <506C343E.60203@kernel.dk>
-Date: Wed, 03 Oct 2012 14:49:02 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 3 Oct 2012 08:53:20 -0400
+Message-ID: <506C3532.4020400@synopsys.com>
+Date: Wed, 3 Oct 2012 16:53:06 +0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] drbd-8.3 updates
-References: <8391701.3EY4hQfmFv@fat-tyre> <506BDECA.90701@kernel.dk> <1538845.40xQlPEFSm@fat-tyre> <10403443.3yRLLBkj5b@fat-tyre>
-In-Reply-To: <10403443.3yRLLBkj5b@fat-tyre>
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.kernel,gmane.linux.serial
+To: Alan Cox <alan@linux.intel.com>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH v3] serial/8250/8250_early: Prevent rounding error in
+ uartclk
+References: <1349267263-21683-1-git-send-email-abrodkin@synopsys.com> <20121003133740.69c9dbce@bob.linux.org.uk>
+In-Reply-To: <20121003133740.69c9dbce@bob.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.121.8.154]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-03 12:07, Philipp Reisner wrote:
-> Am Mittwoch, 3. Oktober 2012, 11:24:09 schrieben Sie:
->>> Not pulled. Two reasons:
->>>
->>> - It's late (in the merge window)
->>> - and it's not based off my for-3.7/drivers branch, hence I get a ton of
->>>
->>>   unrelated changes with a pull into that branch.
->>
->> Hi Jens,
->>
->> I can rebase it for you in a few hours. Would influence this your decission?
->>
-> 
-> Hi Jens,
-> 
-> Is there a convenient way for me to find our when it is the right time
-> to send pull requests your way? (i.e. a notification when you create your
-> for-3.x/drivers branch)
-
-The right time is anytime between -rc1 and -rcN for the previous
-release, where N is the last released -rc for that series. IOW, I should
-have it before the next merge window opens, not a days into that window.
-
-> Rebasing it on your drivers tree was trivial, here is the updated pull
-> request:
-> 
-> The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
-> 
->   loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
-> 
-> are available in the git repository at:
-> 
->   git://git.drbd.org/linux-drbd.git for-jens
-> 
-> for you to fetch changes up to 61e8114a682b0e868696f8363ed03e5fd4c750d1:
-> 
->   drbd: log request sector offset and size for IO errors (2012-10-03 11:54:45 +0200)
-
-Thanks, one question before this is pulled in:
-
-> Philipp Reisner (6):
->       drbd: Add a drbd directory to sysfs
->       drbd: expose the data generation identifiers via sysfs
-
-What are these? It's sitting in /sys/block/<dev>/drbd/, I don't see any
-documentation or justification for that.
-
-Why isn't it off in debugfs or similar instead?
-
--- 
-Jens Axboe
-
+On 03.10.2012 16:37, Alan Cox wrote:
+>> So the bug had been latent and it only showed up with such low cock
+>> rates.
+>
+> clock ?
+>
+> Perhaps Greg can tweak the description as it goes in - otherwise all
+> fine with me
+>
+Sorry for this.
+Essentially I meant "clock".
+May do another respin if needed.
