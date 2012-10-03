@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab2JCLWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 07:22:20 -0400
-Received: from mout.web.de ([212.227.15.4]:55773 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753659Ab2JCLWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 07:22:11 -0400
-From: Jan Kiszka <jan.kiszka@web.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 09/13] scripts/gdb: Add is_target_arch helper
-Date: Wed,  3 Oct 2012 13:21:40 +0200
-Message-Id: <132771c0ae3f24b888c8af2dc07557ee6f583509.1349263293.git.jan.kiszka@web.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
-References: <cover.1349263293.git.jan.kiszka@web.de>
-In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
-References: <cover.1349263293.git.jan.kiszka@web.de>
-X-Provags-ID: V02:K0:ObdH/Kf4GvONF2kvV7VBuHT+wJ6eTnpSIYrJGD4V7Jt
- tXL2Zysb/mZQpQA/+qVrjmZBfnMVyWU0OUQK3+VCVxEXE1Ju/x
- mFez50rNMrH5REXOfr8g4YsZ1k9Fqubka0eJmW6fTVqtXXdRJF
- c19G+p0Q8BkDCwz2ISWJ4FQJxRoNkWyKRBll60wJ2CfqCQaskl
- hpGbjVC+Fp6xQTT5I1tWg==
+	id S1754060Ab2JCLXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 07:23:25 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37223 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2JCLXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 07:23:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <1349195816-2225-18-git-send-email-arnd@arndb.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+	<1349195816-2225-18-git-send-email-arnd@arndb.de>
+Date: Wed, 3 Oct 2012 13:23:19 +0200
+Message-ID: <CACRpkdYJs1NA8CUx8e551BPuvWr87LH8Lpb=nyxs9uZW4rtPAg@mail.gmail.com>
+Subject: Re: [PATCH 17/17] ARM: soc: dependency warnings for errata
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+On Tue, Oct 2, 2012 at 6:36 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-This helper caches to result of "show architecture" and matches the
-provided arch (sub-)string against that output.
+> The PL310_ERRATA_753970 and ARM_ERRATA_764369 symbols only make sense
+> when the base features for them are enabled, so select them
+> conditionally in Kconfig to avoid warnings like:
+>
+> warning: (UX500_SOC_COMMON) selects PL310_ERRATA_753970 which has unmet direct dependencies (CACHE_PL310)
+> warning: (ARCH_TEGRA_2x_SOC && ARCH_TEGRA_3x_SOC && UX500_SOC_COMMON) selects ARM_ERRATA_764369 which has unmet direct dependencies (CPU_V7 && SMP)
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/utils.py |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Makes perfect sense.
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index 17762c5..7c09787 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -88,3 +88,12 @@ def read_u64(buffer):
- 		return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
- 	else:
- 		return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
-+
-+
-+target_arch = None
-+
-+def is_target_arch(arch):
-+	global target_arch
-+	if target_arch == None:
-+		target_arch = gdb.execute("show architecture", False, True)
-+	return target_arch.find(arch) >= 0
--- 
-1.7.3.4
-
+Yours,
+Linus Walleij
