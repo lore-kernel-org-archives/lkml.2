@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2JCLYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 07:24:05 -0400
-Received: from mout.web.de ([212.227.15.3]:65436 "EHLO mout.web.de"
+	id S1754204Ab2JCLYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 07:24:07 -0400
+Received: from mout.web.de ([212.227.17.11]:50107 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab2JCLWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 07:22:15 -0400
+	id S1753597Ab2JCLWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 07:22:10 -0400
 From: Jan Kiszka <jan.kiszka@web.de>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 12/13] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
-Date: Wed,  3 Oct 2012 13:21:43 +0200
-Message-Id: <f728c9c94781719585d7514a5ac748df702b5a50.1349263293.git.jan.kiszka@web.de>
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 11/13] scripts/gdb: Add get_gdbserver_type helper
+Date: Wed,  3 Oct 2012 13:21:42 +0200
+Message-Id: <dc74efefe70641d6217695394b080823050c41d6.1349263293.git.jan.kiszka@web.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
-X-Provags-ID: V02:K0:oTby3ISRQLMJriauk01Xu2r4HfDqPIdwyXrxWl7mT2J
- QfLOF8sD2H+h7bLBbnHkGoSCPjYgcoxRLsxVWWjn0LsXhybhgC
- +1Z7fRJdjoMmKTsHA8P8O0cGmlypL8MKaDzhH4JwoFpL09u9rh
- Ve84hxSUDEa0hEOzy9+dZAhTNDmd6uqpel8gT/YpkCFpMfHy+7
- SK/10gDfTeRfJRkE3ncKQ==
+X-Provags-ID: V02:K0:fgKSUnURVSEkKIERNN3Lg6UnG6YewzKUaA98UnuyOwn
+ +dYvN/Yt+p40tjYFfq9wx8h3SY3o8Tinn2aUvExH1oaYgwSmNn
+ FvyLdf6fa5gX0gw+ITZWHK2nVZfs7T7GEhggmbiGIOzpXVekir
+ 8LPR+N/kYb4ty9LpDWtsrel7OhXNM98f8bgFcWrquQkbM6BoYQ
+ pIHQKtjoek9UR4sU/EMDA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kiszka <jan.kiszka@siemens.com>
 
-This function allows to obtain a per-cpu variable, either of the current
-or an explicitly specified CPU.
+This helper probes the type of the gdb server. Supported are QEMU and
+KGDB so far. Knowledge about the gdb server is required e.g. to retrieve
+the current CPU or current task.
 
-Note: sparc64 version is untested.
-
-CC: "David S. Miller" <davem@davemloft.net>
-CC: sparclinux@vger.kernel.org
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/percpu.py      |   61 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |    1 +
- 2 files changed, 62 insertions(+), 0 deletions(-)
- create mode 100644 scripts/gdb/percpu.py
+ scripts/gdb/utils.py |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
-new file mode 100644
-index 0000000..6e24400
---- /dev/null
-+++ b/scripts/gdb/percpu.py
-@@ -0,0 +1,61 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  per-cpu tools
-+#
-+# Copyright (c) 2011, 2012 Siemens AG
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from utils import *
-+from task import *
-+
-+MAX_CPUS = 4096
-+
-+def get_current_cpu():
-+	if get_gdbserver_type() == GDBSERVER_QEMU:
-+		return gdb.selected_thread().num - 1
-+	elif get_gdbserver_type() == GDBSERVER_KGDB:
-+		tid = gdb.selected_thread().ptid[2]
-+		if tid > (0x100000000 - MAX_CPUS - 2):
-+			return 0x100000000 - tid - 2
-+		else:
-+			return get_thread_info(get_task_by_pid(tid))['cpu']
-+	else:
-+		raise gdb.GdbError("Sorry, obtaining the current CPU is "
-+				   "not yet supported with this gdb server.")
-+
-+def per_cpu(var_name, cpu):
-+	var = gdb.parse_and_eval("&" + var_name)
-+	if cpu == -1:
-+		cpu = get_current_cpu()
-+	if is_target_arch("sparc:v9"):
-+		offset = gdb.parse_and_eval("trap_block[" + str(cpu) +
-+					    "].__per_cpu_base")
-+	else:
-+		offset = gdb.parse_and_eval("__per_cpu_offset[" + str(cpu) +
-+					    "]")
-+	pointer = var.cast(get_long_type()) + offset
-+	return pointer.cast(var.type).dereference()
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index 7c09787..6558a80 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -97,3 +97,38 @@ def is_target_arch(arch):
+ 	if target_arch == None:
+ 		target_arch = gdb.execute("show architecture", False, True)
+ 	return target_arch.find(arch) >= 0
 +
 +
-+class PerCpu(gdb.Function):
-+	__doc__ = "Return per-cpu variable.\n" \
-+		  "\n" \
-+		  "$lx_per_cpu(\"VAR\"[, CPU]): Return the per-cpu variable called VAR for the\n" \
-+		  "given CPU number. If CPU is omitted, the CPU of the current context is used.\n" \
-+		  "Note that VAR has to be quoted as string."
++GDBSERVER_QEMU = 0
++GDBSERVER_KGDB = 1
++gdbserver_type = None
 +
-+	def __init__(self):
-+		super(PerCpu, self).__init__("lx_per_cpu")
++def get_gdbserver_type():
++	def exit_handler(event):
++		global gdbserver_type
++		gdbserver_type = None
++		gdb.events.exited.disconnect(exit_handler)
 +
-+	def invoke(self, var_name, cpu = -1):
-+		return per_cpu(var_name.string(), cpu)
++	def probe_qemu():
++		try:
++			return gdb.execute("monitor info version", False,
++					   True) != ""
++		except:
++			return False
 +
-+PerCpu()
-diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
-index deaf652..1d952b5 100644
---- a/scripts/gdb/vmlinux-gdb.py
-+++ b/scripts/gdb/vmlinux-gdb.py
-@@ -23,3 +23,4 @@ else:
- 	import symbols
- 	import dmesg
- 	import task
-+	import percpu
++	def probe_kgdb():
++		try:
++			thread_info = gdb.execute("info thread 2", False, True)
++			return thread_info.find("shadowCPU0") >= 0
++		except:
++			return False
++
++	global gdbserver_type
++	if gdbserver_type == None:
++		if probe_qemu():
++			gdbserver_type = GDBSERVER_QEMU
++		elif probe_kgdb():
++			gdbserver_type = GDBSERVER_KGDB
++		if gdbserver_type != None:
++			gdb.events.exited.connect(exit_handler)
++	return gdbserver_type
 -- 
 1.7.3.4
 
