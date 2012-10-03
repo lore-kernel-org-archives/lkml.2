@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab2JCNbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:31:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46738 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241Ab2JCNbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:31:21 -0400
-Date: Wed, 3 Oct 2012 15:30:07 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCHv4] perf x86_64: Fix rsp register for system call fast path
-Message-ID: <20121003133007.GD945@krava.brq.redhat.com>
-References: <1349112712-2590-1-git-send-email-jolsa@redhat.com>
- <1349174644.7780.23.camel@twins>
- <20121002145815.GH6379@krava.brq.redhat.com>
- <20121002154914.GC10605@somewhere>
- <20121002160626.GA26598@krava.brq.redhat.com>
- <20121002161633.GF10605@somewhere>
- <20121003122947.GB945@krava.brq.redhat.com>
- <20121003123448.GA637@somewhere>
- <20121003131344.GC945@krava.brq.redhat.com>
- <1349270537.7780.47.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932204Ab2JCNba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:31:30 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:51513 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab2JCNb1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Wed, 3 Oct 2012 09:31:27 -0400
+Message-Id: <506C4C3A020000780008D041@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 03 Oct 2012 14:31:22 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <matt@console-pimps.org>, <linux-kernel@vger.kernel.org>
+Cc: <matt.fleming@intel.com>, <mingo@kernel.org>, <x86@kernel.org>,
+        <mjg@redhat.com>, <linux-efi@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, mm: Include the entire kernel memory map
+ in trampoline_pgd
+References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
+ <1349269157-25956-2-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1349269157-25956-2-git-send-email-matt@console-pimps.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1349270537.7780.47.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 03:22:17PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-10-03 at 15:13 +0200, Jiri Olsa wrote:
-> > @@ -1190,8 +1191,8 @@ static inline void perf_sample_data_init(struct
-> > perf_sample_data *data,
-> >         data->raw  = NULL;
-> >         data->br_stack = NULL;
-> >         data->period = period;
-> > -       data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
-> > -       data->regs_user.regs = NULL;
-> > +       /* Sets abi to PERF_SAMPLE_REGS_ABI_NONE. */
-> > +       memset(&data->regs_user, 0, sizeof(data->regs_user));
-> >         data->stack_user_size = 0;
-> >  } 
-> 
-> Hmm, this will slow down all events, regardless of whether they use any
-> of that stuff or not. Since the one user actually does something like:
-> 
->   data->regs_user = *pt_regs;
-> 
-> except it does a memcpy() for some obscure reason, it really doesn't
-> matter what is in there when uninitialized, right?
+>>> Matt Fleming <matt@console-pimps.org> 10/03/12 2:59 PM >>>
+>+static int insert_identity_mapping(resource_size_t paddr, unsigned long vaddr,
+>+                    unsigned long size)
+>+{
+>+    unsigned long end = vaddr + size;
+>+    unsigned long next;
+>+    pgd_t *vpgd, *ppgd;
+>+
+>+#ifdef CONFIG_X86_32
+>+    ppgd = initial_page_table + pgd_index(paddr);
+>+
+>+    if (paddr >= PAGE_OFFSET || paddr + size > PAGE_OFFSET)
+>+        return 1;
+>+#else
+>+    ppgd = __va(real_mode_header->trampoline_pgd) + pgd_index(paddr);
 
-right, the init can stay as it was
+Missing equivalent code (to the 32-bit one above) here - after all, you're trying
+to potentially insert a 52-bit physical address into 48-bit virtual space.
 
-jirka
+>+#endif
+>+
+>+    vpgd = pgd_offset_k(vaddr);
+>+    do {
+>+        next = pgd_addr_end(vaddr, end);
+>+
+>+        if (!pgd_present(*ppgd)) {
+>+            pud_t *ppud = (pud_t *)get_zeroed_page(GFP_KERNEL);
+>+            if (!ppud)
+>+                return 1;
+>+
+>+            set_pgd(ppgd, __pgd(_KERNPG_TABLE | __pa(ppud)));
+>+        }
+>+
+>+        if (ident_pud_range(paddr, vaddr, ppgd, vpgd, next))
+>+            return 1;
+>+    } while (ppgd++, vpgd++, vaddr = next, vaddr != end);
+>+
+>+    return 0;
+>+}
+>+
+ >/*
+>* Remap an arbitrary physical address space into the kernel virtual
+>* address space. Needed when the kernel wants to access high addresses
+>@@ -163,6 +258,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+>    ret_addr = (void __iomem *) (vaddr + offset);
+>    mmiotrace_ioremap(unaligned_phys_addr, unaligned_size, ret_addr);
+ >
+>+    if (insert_identity_mapping(phys_addr, vaddr, size))
+>+        printk(KERN_WARNING "ioremap: unable to map 0x%llx in identity pagetable\n",
+>+                    (unsigned long long)phys_addr);
+
+Isn't that going to trigger quite frequently on 32-bit kernels?
+
+Jan
+
