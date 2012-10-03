@@ -1,97 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2JCKHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 06:07:13 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:34276 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230Ab2JCKHL (ORCPT
+	id S1754699Ab2JCKJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 06:09:54 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42676 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab2JCKJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 06:07:11 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] drbd-8.3 updates
-Date: Wed, 03 Oct 2012 12:07:08 +0200
-Message-ID: <10403443.3yRLLBkj5b@fat-tyre>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1538845.40xQlPEFSm@fat-tyre>
-References: <8391701.3EY4hQfmFv@fat-tyre> <506BDECA.90701@kernel.dk> <1538845.40xQlPEFSm@fat-tyre>
+	Wed, 3 Oct 2012 06:09:52 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <506C0EC6.9000503@jp.fujitsu.com>
+Date: Wed, 3 Oct 2012 19:09:10 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [PATCH 3/6] acpi,memory-hotplug : add physical memory hotplug code
+ to acpi_memhotplug.c
+References: <506C0AE8.40702@jp.fujitsu.com>
+In-Reply-To: <506C0AE8.40702@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 3. Oktober 2012, 11:24:09 schrieben Sie:
-> > Not pulled. Two reasons:
-> > 
-> > - It's late (in the merge window)
-> > - and it's not based off my for-3.7/drivers branch, hence I get a ton of
-> > 
-> >   unrelated changes with a pull into that branch.
-> 
-> Hi Jens,
-> 
-> I can rebase it for you in a few hours. Would influence this your decission?
-> 
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Hi Jens,
+For hot removing physical memory, the patch adds remove_memory() into
+acpi_memory_remove_memory(). But we cannot support physical memory
+hot remove. So remove_memory() do nothinig.
 
-Is there a convenient way for me to find our when it is the right time
-to send pull requests your way? (i.e. a notification when you create your
-for-3.x/drivers branch)
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c |   10 ++++++++++
+ include/linux/memory_hotplug.h |    5 +++++
+ mm/memory_hotplug.c            |    7 +++++++
+ 3 files changed, 22 insertions(+)
 
-Rebasing it on your drivers tree was trivial, here is the updated pull
-request:
+Index: linux-3.6/drivers/acpi/acpi_memhotplug.c
+===================================================================
+--- linux-3.6.orig/drivers/acpi/acpi_memhotplug.c	2012-10-03 19:03:10.960400793 +0900
++++ linux-3.6/drivers/acpi/acpi_memhotplug.c	2012-10-03 19:03:26.818401966 +0900
+@@ -310,6 +310,9 @@ static int acpi_memory_remove_memory(str
+ {
+ 	int result;
+ 	struct acpi_memory_info *info, *n;
++	int node;
++
++	node = acpi_get_node(mem_device->device->handle);
+ 
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (!info->enabled)
+@@ -319,6 +322,13 @@ static int acpi_memory_remove_memory(str
+ 		if (result)
+ 			return result;
+ 
++		if (node < 0)
++			node = memory_add_physaddr_to_nid(info->start_addr);
++
++		result = remove_memory(node, info->start_addr, info->length);
++		if (result)
++			return result;
++
+ 		list_del(&info->list);
+ 		kfree(info);
+ 	}
+Index: linux-3.6/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.6.orig/include/linux/memory_hotplug.h	2012-10-03 19:03:10.963400796 +0900
++++ linux-3.6/include/linux/memory_hotplug.h	2012-10-03 19:03:26.820401968 +0900
+@@ -222,6 +222,7 @@ static inline void unlock_memory_hotplug
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ 
+ extern int is_mem_section_removable(unsigned long pfn, unsigned long nr_pages);
++extern int remove_memory(int nid, u64 start, u64 size);
+ 
+ #else
+ static inline int is_mem_section_removable(unsigned long pfn,
+@@ -229,6 +230,10 @@ static inline int is_mem_section_removab
+ {
+ 	return 0;
+ }
++static inline int remove_memory(int nid, u64 start, u64 size)
++{
++	return -EBUSY;
++}
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+ extern int mem_online_node(int nid);
+Index: linux-3.6/mm/memory_hotplug.c
+===================================================================
+--- linux-3.6.orig/mm/memory_hotplug.c	2012-10-03 19:03:10.962400795 +0900
++++ linux-3.6/mm/memory_hotplug.c	2012-10-03 19:04:15.493404911 +0900
+@@ -1042,6 +1042,13 @@ int offline_memory(u64 start, u64 size)
+ 
+ 	return 0;
+ }
++
++int remove_memory(int nid, u64 start, u64 size)
++{
++	/* It is not implemented yet*/
++	return 0;
++}
++EXPORT_SYMBOL_GPL(remove_memory);
+ #else
+ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ {
 
-The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
-
-  loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
-
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens
-
-for you to fetch changes up to 61e8114a682b0e868696f8363ed03e5fd4c750d1:
-
-  drbd: log request sector offset and size for IO errors (2012-10-03 11:54:45 +0200)
-
-----------------------------------------------------------------
-Lars Ellenberg (9):
-      drbd: introduce stop-sector to online verify
-      drbd: change error cleanup goto for failed kobject_init_and_add
-      drbd: panic on delayed completion of aborted requests
-      drbd: fix potential deadlock during bitmap (re-)allocation
-      drbd: a few more GFP_KERNEL -> GFP_NOIO
-      drbd: wait for meta data IO completion even with failed disk, unless force-detached
-      drbd: prepare for more than 32 bit flags
-      drbd: always write bitmap on detach
-      drbd: log request sector offset and size for IO errors
-
-Philipp Reisner (6):
-      drbd: Add a drbd directory to sysfs
-      drbd: expose the data generation identifiers via sysfs
-      drbd: Protect accesses to the uuid set with a spinlock
-      drbd: Fix a potential issue with the DISCARD_CONCURRENT flag
-      drbd: Avoid NetworkFailure state during disconnect
-      drbd: Remove dead code
-
- drivers/block/drbd/Makefile        |    1 +
- drivers/block/drbd/drbd_actlog.c   |   19 ++--
- drivers/block/drbd/drbd_bitmap.c   |   24 ++---
- drivers/block/drbd/drbd_int.h      |  112 +++++++++++++++++------
- drivers/block/drbd/drbd_main.c     |  175 ++++++++++++++++++++++++------------
- drivers/block/drbd/drbd_nl.c       |  109 +++++++++++++---------
- drivers/block/drbd/drbd_proc.c     |   14 ++-
- drivers/block/drbd/drbd_receiver.c |  147 ++++++++++++++++--------------
- drivers/block/drbd/drbd_req.c      |   43 ++++++---
- drivers/block/drbd/drbd_sysfs.c    |   86 ++++++++++++++++++
- drivers/block/drbd/drbd_worker.c   |   87 ++++++++++++++----
- include/linux/drbd.h               |    4 +-
- include/linux/drbd_nl.h            |    1 +
- 13 files changed, 571 insertions(+), 251 deletions(-)
- create mode 100644 drivers/block/drbd/drbd_sysfs.c
-
-Best,
- Phil
