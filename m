@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2JCKDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 06:03:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33407 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab2JCKDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 06:03:48 -0400
-Message-ID: <506C0D6F.1070700@ti.com>
-Date: Wed, 3 Oct 2012 15:33:27 +0530
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754643Ab2JCKHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 06:07:13 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:34276 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab2JCKHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 06:07:11 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd-8.3 updates
+Date: Wed, 03 Oct 2012 12:07:08 +0200
+Message-ID: <10403443.3yRLLBkj5b@fat-tyre>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1538845.40xQlPEFSm@fat-tyre>
+References: <8391701.3EY4hQfmFv@fat-tyre> <506BDECA.90701@kernel.dk> <1538845.40xQlPEFSm@fat-tyre>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: LMML <linux-media@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: [GIT PULL FOR v3.7] Davinci VPBE feature enhancement and fixes
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+Am Mittwoch, 3. Oktober 2012, 11:24:09 schrieben Sie:
+> > Not pulled. Two reasons:
+> > 
+> > - It's late (in the merge window)
+> > - and it's not based off my for-3.7/drivers branch, hence I get a ton of
+> > 
+> >   unrelated changes with a pull into that branch.
+> 
+> Hi Jens,
+> 
+> I can rebase it for you in a few hours. Would influence this your decission?
+> 
 
-Can you please pull the following patches for davinci VPBE driver.
-Some of the patches include platform changes for which Sekhar has Acked it.
+Hi Jens,
 
-Thanks and Regards,
---Prabhakar Lad
+Is there a convenient way for me to find our when it is the right time
+to send pull requests your way? (i.e. a notification when you create your
+for-3.x/drivers branch)
 
-The following changes since commit 2425bb3d4016ed95ce83a90b53bd92c7f31091e4:
+Rebasing it on your drivers tree was trivial, here is the updated pull
+request:
 
-  em28xx: regression fix: use DRX-K sync firmware requests on em28xx
-(2012-10-02 17:15:22 -0300)
+The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
+
+  loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
 
 are available in the git repository at:
-  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git vpbe_3.7_pull
 
-Hans Verkuil (1):
-      dm644x: replace the obsolete preset API by the timings API.
+  git://git.drbd.org/linux-drbd.git for-jens
 
-Lad, Prabhakar (2):
-      media: davinci: vpbe: fix build warning
-      davinci: vpbe: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with
-V4L2_OUT_CAP_DV_TIMINGS
+for you to fetch changes up to 61e8114a682b0e868696f8363ed03e5fd4c750d1:
 
-Manjunath Hadli (1):
-      ths7303: enable THS7303 for HD modes
+  drbd: log request sector offset and size for IO errors (2012-10-03 11:54:45 +0200)
 
- arch/arm/mach-davinci/board-dm644x-evm.c      |   15 ++--
- arch/arm/mach-davinci/dm644x.c                |   17 +---
- drivers/media/i2c/ths7303.c                   |  106
-++++++++++++++++++++----
- drivers/media/platform/davinci/vpbe.c         |  110
-+++++++++++--------------
- drivers/media/platform/davinci/vpbe_display.c |   80 +++++++++---------
- drivers/media/platform/davinci/vpbe_venc.c    |   25 +++---
- include/media/davinci/vpbe.h                  |   14 ++--
- include/media/davinci/vpbe_types.h            |    8 +--
- include/media/davinci/vpbe_venc.h             |    2 +-
- 9 files changed, 211 insertions(+), 166 deletions(-)
+----------------------------------------------------------------
+Lars Ellenberg (9):
+      drbd: introduce stop-sector to online verify
+      drbd: change error cleanup goto for failed kobject_init_and_add
+      drbd: panic on delayed completion of aborted requests
+      drbd: fix potential deadlock during bitmap (re-)allocation
+      drbd: a few more GFP_KERNEL -> GFP_NOIO
+      drbd: wait for meta data IO completion even with failed disk, unless force-detached
+      drbd: prepare for more than 32 bit flags
+      drbd: always write bitmap on detach
+      drbd: log request sector offset and size for IO errors
+
+Philipp Reisner (6):
+      drbd: Add a drbd directory to sysfs
+      drbd: expose the data generation identifiers via sysfs
+      drbd: Protect accesses to the uuid set with a spinlock
+      drbd: Fix a potential issue with the DISCARD_CONCURRENT flag
+      drbd: Avoid NetworkFailure state during disconnect
+      drbd: Remove dead code
+
+ drivers/block/drbd/Makefile        |    1 +
+ drivers/block/drbd/drbd_actlog.c   |   19 ++--
+ drivers/block/drbd/drbd_bitmap.c   |   24 ++---
+ drivers/block/drbd/drbd_int.h      |  112 +++++++++++++++++------
+ drivers/block/drbd/drbd_main.c     |  175 ++++++++++++++++++++++++------------
+ drivers/block/drbd/drbd_nl.c       |  109 +++++++++++++---------
+ drivers/block/drbd/drbd_proc.c     |   14 ++-
+ drivers/block/drbd/drbd_receiver.c |  147 ++++++++++++++++--------------
+ drivers/block/drbd/drbd_req.c      |   43 ++++++---
+ drivers/block/drbd/drbd_sysfs.c    |   86 ++++++++++++++++++
+ drivers/block/drbd/drbd_worker.c   |   87 ++++++++++++++----
+ include/linux/drbd.h               |    4 +-
+ include/linux/drbd_nl.h            |    1 +
+ 13 files changed, 571 insertions(+), 251 deletions(-)
+ create mode 100644 drivers/block/drbd/drbd_sysfs.c
+
+Best,
+ Phil
