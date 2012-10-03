@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965285Ab2JCQW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:22:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42254 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965044Ab2JCQSb (ORCPT
+	id S965315Ab2JCQXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:23:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:62261 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964822Ab2JCQS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:31 -0400
+	Wed, 3 Oct 2012 12:18:29 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: samuel@sortiz.org
 Cc: kernel-janitors@vger.kernel.org, irda-users@lists.sourceforge.net,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/20] drivers/net/irda/mcs7780.c: fix error return code
-Date: Wed,  3 Oct 2012 18:18:00 +0200
-Message-Id: <1349281090-10013-10-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 9/20] drivers/net/irda/sa1100_ir.c: fix error return code
+Date: Wed,  3 Oct 2012 18:17:58 +0200
+Message-Id: <1349281090-10013-8-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,23 +47,23 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/irda/mcs7780.c |    4 +++-
+ drivers/net/irda/sa1100_ir.c |    4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/irda/mcs7780.c b/drivers/net/irda/mcs7780.c
-index 1a00b59..f07c340 100644
---- a/drivers/net/irda/mcs7780.c
-+++ b/drivers/net/irda/mcs7780.c
-@@ -920,8 +920,10 @@ static int mcs_probe(struct usb_interface *intf,
+diff --git a/drivers/net/irda/sa1100_ir.c b/drivers/net/irda/sa1100_ir.c
+index e250675..42fde9e 100644
+--- a/drivers/net/irda/sa1100_ir.c
++++ b/drivers/net/irda/sa1100_ir.c
+@@ -940,8 +940,10 @@ static int sa1100_irda_probe(struct platform_device *pdev)
+ 		goto err_mem_3;
  
- 	ndev->netdev_ops = &mcs_netdev_ops;
- 
--	if (!intf->cur_altsetting)
-+	if (!intf->cur_altsetting) {
-+		ret = -ENOMEM;
- 		goto error2;
+ 	dev = alloc_irdadev(sizeof(struct sa1100_irda));
+-	if (!dev)
++	if (!dev) {
++		err = -ENOMEM;
+ 		goto err_mem_4;
 +	}
  
- 	ret = mcs_find_endpoints(mcs, intf->cur_altsetting->endpoint,
- 				 intf->cur_altsetting->desc.bNumEndpoints);
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 
 
