@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab2JCSCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:02:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48762 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245Ab2JCSCO (ORCPT
+	id S933110Ab2JCSET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:04:19 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:29364 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933032Ab2JCSER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:02:14 -0400
-Date: Wed, 3 Oct 2012 13:02:04 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121003180204.GA23425@sergelap>
-References: <20121002195042.GA16087@www.outflux.net>
- <20121003132538.GE13192@linux.vnet.ibm.com>
- <20121003161702.GA22008@kroah.com>
- <20121003164712.GF2527@linux.vnet.ibm.com>
- <20121003172142.GA5061@kroah.com>
- <20121003174621.GJ2527@linux.vnet.ibm.com>
+	Wed, 3 Oct 2012 14:04:17 -0400
+Message-ID: <506C7E20.4090103@hp.com>
+Date: Wed, 03 Oct 2012 11:04:16 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003174621.GJ2527@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Jones <rick.jones2@hp.com>
+Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in ttwu_queue()
+References: <20121002065143.GK29125@suse.de> <1349164176.7086.43.camel@marge.simpson.net> <20121002084501.GL29125@suse.de> <506B6F59.8060800@hp.com> <20121003094732.GQ29125@suse.de>
+In-Reply-To: <20121003094732.GQ29125@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Paul E. McKenney (paulmck@linux.vnet.ibm.com):
-> On Wed, Oct 03, 2012 at 10:21:42AM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Oct 03, 2012 at 09:47:12AM -0700, Paul E. McKenney wrote:
-> > > On Wed, Oct 03, 2012 at 09:17:02AM -0700, Greg Kroah-Hartman wrote:
-> > > > On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
-> > > > > On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
-> > > > > > This config item has not carried much meaning for a while now and is
-> > > > > > almost always enabled by default. As agreed during the Linux kernel
-> > > > > > summit, it should be removed. As a first step, remove it from being
-> > > > > > listed, and default it to on. Once it has been removed from all
-> > > > > > subsystem Kconfigs, it will be dropped entirely.
-> > > > > > 
-> > > > > > CC: Greg KH <gregkh@linuxfoundation.org>
-> > > > > > CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> > > > > > CC: Serge Hallyn <serge.hallyn@canonical.com>
-> > > > > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > > > > > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > > > > > ---
-> > > > > > 
-> > > > > > This is the first of a series of 202 patches removing EXPERIMENTAL from
-> > > > > > all the Kconfigs in the tree. Should I send them all to lkml (with all
-> > > > > > the associated CCs), or do people want to cherry-pick changes from my
-> > > > > > tree? I don't want to needlessly flood the list.
-> > > > > > 
-> > > > > > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
-> > > > > > 
-> > > > > > I figure this patch can stand alone to at least make EXPERIMENTAL go
-> > > > > > away from the menus, and give us a taste of what the removal would do
-> > > > > > to builds.
-> > > > > 
-> > > > > OK, I will bite...  How should I flag an option that is initially only
-> > > > > intended for those willing to take some level of risk?
-> > > > 
-> > > > In the text say "You really don't want to enable this option, use at
-> > > > your own risk!"  Or something like that :)
-> > > 
-> > > OK, so the only real hope for experimental features is to refrain from
-> > > creating a config option for them, so that people wishing to use them
-> > > must modify the code?  Or is the philosophy that we keep things out of
-> > > tree until we are comfortable with distros turning them on?
-> > 
-> > I think that should have been your philosophy for a long time, as they
-> > turn on everything, and I don't blame them.  Why would we have included
-> > it in the kernel tree, unless we wanted people to use the option?
-> 
-> Because some sizeable group of people would like to use the option,
-> but it is not helpful to many others?
+On 10/03/2012 02:47 AM, Mel Gorman wrote:
+> On Tue, Oct 02, 2012 at 03:48:57PM -0700, Rick Jones wrote:
+>> On 10/02/2012 01:45 AM, Mel Gorman wrote:
+>>
+>>> SIZE=64
+>>> taskset -c 0 netserver
+>>> taskset -c 1 netperf -t UDP_STREAM -i 50,6 -I 99,1 -l 20 -H 127.0.0.1 -- -P 15895 -s 32768 -S 32768 -m $SIZE -M $SIZE
+>>
+>> Just FYI, unless you are running a hacked version of netperf, the
+>> "50" in "-i 50,6" will be silently truncated to 30.
+>>
+>
+> I'm not using a hacked version of netperf. The 50,6 has been there a long
+> time so I'm not sure where I took it from any more. It might have been an
+> older version or me being over-zealous at the time.
 
-The way that is worded, that wouldn't sound like CONFIG_EXPERIMENTAL
-even if that worked the way we wanted.  Just a clearly worded separate
-config option for your feature would be best in that case.  Yes there
-are tons of options to wade through, but you can't make
-CONFIG_EXPERIMENTAL a binary for what you describe, since the
-experimental options i'd want (user namespaces, etc) would not be the
-same ones you'd want.
+No version has ever gone past 30.  It has been that way since the 
+confidence interval code was contributed.  It doesn't change anything, 
+so it hasn't messed-up any results.  It would be good to fix but not 
+critical.
 
--serge
+>> PS - I trust it is the receive-side throughput being reported/used
+>> with UDP_STREAM :)
+>
+> Good question. Now that I examine the scripts, it is in fact the sending
+> side that is being reported which is flawed. Granted I'm not expecting any
+> UDP loss on loopback and looking through a range of results, the
+> difference is marginal. It's still wrong to report just the sending side
+> for UDP_STREAM and I'll correct the scripts for it in the future.
+
+Switching from sending to receiving throughput in UDP_STREAM could be a 
+non-trivial disconnect in throughputs.  As Eric mentions, the receiver 
+could be dropping lots of datagrams if it cannot keep-up, and netperf 
+makes not attempt to provide any application-layer flow-control.
+
+Not sure which version of netperf you are using to know whether or not 
+it has gone to the "omni" code path.  If you aren't using 2.5.0 or 2.6.0 
+then the confidence intervals will have been computed based on the 
+receive side throughput, so you will at least know that it was stable, 
+even if it wasn't the same as the sending side.
+
+The top of trunk will use the remote's receive stats for the omni 
+migration of a UDP_STREAM test too.  I think it is that way in 2.5.0 and 
+2.6.0 as well but I've not gone into the repository to check.
+
+Of course, that means you don't necessarily know that the sending 
+throughput met your confidence intervals :)
+
+If you are on 2.5.0 or later, you may find:
+
+http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#Omni-Output-Selection
+
+helpful when looking to parse results.
+
+One more, little thing - taskset may indeed be better for what you are 
+doing (it will happen "sooner" certainly), but there is also the global 
+-T option to bind netperf/netserver to the specified CPU id. 
+http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#index-g_t_002dT_002c-Global-41
+
+happy benchmarking,
+
+rick jones
