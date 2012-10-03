@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2JCHXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 03:23:43 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:1370 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755705Ab2JCHXm (ORCPT
+	id S932076Ab2JCH1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 03:27:07 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:32015 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab2JCH1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 03:23:42 -0400
-Message-ID: <1349249016.1414.55.camel@x61.thuisdomein>
-Subject: Re: [PATCH] regmap: silence GCC warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Valdis.Kletnieks@vt.edu
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 03 Oct 2012 09:23:36 +0200
-In-Reply-To: <64681.1349223065@turing-police.cc.vt.edu>
-References: <1349000155.1553.27.camel@x61.thuisdomein>
-	 <20121001100321.GB4360@opensource.wolfsonmicro.com>
-	 <64681.1349223065@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Oct 2012 07:23:36.0182 (UTC) FILETIME=[00799160:01CDA138]
+	Wed, 3 Oct 2012 03:27:03 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-df-506be8c573d1
+From: Tomasz Figa <t.figa@samsung.com>
+To: chander.kashyap@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, mturquette@linaro.org, mturquette@ti.com,
+        linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: Re: [PATCH 0/2] ARM: Exynos4: Migrate to common clock framework.
+Date: Wed, 03 Oct 2012 09:26:50 +0200
+Message-id: <2779610.RIGYtRk86h@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.9.1 (Linux/3.5.3-gentoo; KDE/4.9.1; x86_64; ; )
+In-reply-to: <1349093361-18820-1-git-send-email-thomas.abraham@linaro.org>
+References: <1349093361-18820-1-git-send-email-thomas.abraham@linaro.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jQd2jL7IDDL6c4be4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4+uk5a8F0nopd3SsYGxhfc3YxcnBICJhIzLoX3MXI
+	CWSKSVy4t56ti5GLQ0hgOqPElUn7GSGcFiaJt9/fs4NUsQmoSXxueMQGYosIyEks37uLGaSI
+	WeAWo8Tac/dZQRLCAp4Sv4/fYgKxWQRUJZ5seQsW5xXQlHhydT1YM7+AusS7bU/BakQFnCWu
+	NC5iBLE5Bbwkvs88C2YLAc3pfzidDaJXUOLH5HssIDazgLzEvv1TWSFsLYn1O48zTWAUnIWk
+	bBaSsllIyhYwMq9iFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA7SZ1I7GFc2WBxiFOBgVOLh
+	vcCVHSDEmlhWXJl7iFGCg1lJhNflEVCINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpi
+	SWp2ampBahFMlomDU6qBMW+OpaAc9+7rjP4qvIJvFI+vFdindEjo+Y6mPlafxmkWCoY2p7NY
+	/zh9j0k8emv324N3rK3+bOpef4W7+PPyBe0OccdmZFrN/177eNtMftXqwlv8Apq/K0T3HNxw
+	dXtb/ObjQrOjyru/bd0uZ3jwlMqhFb92sp2/OGv7qx9njNTtY1W/WDNIrVBiKc5INNRiLipO
+	BAAfnG5nTgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 20:11 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 01 Oct 2012 11:03:21 +0100, Mark Brown said:
-> > On Sun, Sep 30, 2012 at 12:15:55PM +0200, Paul Bolle wrote:
-> > > Building regmap.o triggers this GCC warning:
-> > >     drivers/base/regmap/regmap.c: In function regmap_raw_read:
-> > >     drivers/base/regmap/regmap.c:1172:6: warning: ret may be used uninitialized in this function [-Wmaybe-uninitialized]
-> > >
-> > > It seems 'ret' should always be set when this function returns. See, the
-> > > else-branch can leave 'ret' uninitialized only if 'val_count' is zero.
-> > > But if 'val_count' is zero regmap_volatile_range() will return true.
+Hi Chander, Thomas,
+
+On Monday 01 of October 2012 17:39:19 chander.kashyap@linaro.org wrote:
+> From: Thomas Abraham <thomas.abraham@linaro.org>
 > 
-> I've not dug into it that deeply - is there a way that gcc is able to intuit
-> this fact and use it for flow analysis?  If not, it's not going to be able to
-> include that information in its analysis.
-
-I know little about GCC, and even less about the analyses it uses. I
-did, however, disassemble regmap_raw_read() with GDB. And the output
-this generated does suggest that GCC uses one register to track 'ret'
-and that this register is set to -EINVAL quite early. Ie, gdb's
-disassembler's output suggests that 'ret' will not be used
-uninitialized. (This I need to recheck, though.) But, even assuming I
-understood the disassembled code correctly, I have no idea whether we
-may expect GCC to understand the code it generates enough to know that,
-yes, it did actually set 'ret' itself in that code.
-
-> > > That implies that 'ret' will be set in the if-branch. ('val_count' could
-> > > be zero if 'val_len' is, for example, zero. That would be useless input,
-> > > however.)
+> This patch series migrates Exynos4 clock support to common clock
+> framework. The first patch in this series removes the existing Exynos4
+> clock support that uses the Samsung specific clock framework. The second
+> patch in this series add Exynos4 clock support using common clock
+> framework.
 > 
-> But gcc doesn't know what "useless input" means, semantically.
+> Thomas Abraham (2):
+>   ARM: Exynos4: Remove Samsung clock type support
+>   ARM: Exynos4: Register clocks via common clock framework
 
-Correct. When this function is compiled gcc has to take into account
-that 'val_len' will be called with useless input, like zero.
+I think the order of changes is a little bit off here:
+ - patch 1 will break all exynos4-based boards (what about bisects?)
+ - patch 2 will be still broken until all related drivers get converted to 
+use clk_prepare(_enable) and clk_(disable_)unprepare.
 
-By the way, GCC doesn't warn if I add an early check whether 'val_count'
-is non-zero:
+Shouldn't the order be exactly opposite, i.e.:
+ - all the patches for prepare/unprepare first
+ - then the patch adding common clock frameworks support for exynos4 
+(disabling the old clock code)
+ - and finally the patch removing remaining (disabled by previous patch) 
+code.
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index c241ae2..d41527b 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1171,6 +1171,8 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
-        unsigned int v;
-        int ret, i;
- 
-+       if (!val_count)
-+               return -EINVAL;
-        if (val_len % map->format.val_bytes)
-                return -EINVAL;
-        if (reg % map->reg_stride)
+Also, I assume that these patches doesn't consider native device tree 
+support (without auxdata, using OF-based clock lookup), correct me if I'm 
+wrong. If I'm right, since Exynos SoCs are going to be DT-only, is there 
+really a point for adding common clock framework support for non-DT 
+platforms (which are going to be eventually dropped anyway)?
 
-That is another way to silence GCC here.
-
-
-Paul Bolle
+Best regards,
+-- 
+Tomasz Figa
+Samsung Poland R&D Center
 
