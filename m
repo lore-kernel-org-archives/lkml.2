@@ -1,200 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab2JCIV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 04:21:59 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53036 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2JCIV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 04:21:56 -0400
-Message-ID: <506BF573.70205@linux.vnet.ibm.com>
-Date: Wed, 03 Oct 2012 13:51:07 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
- (was Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove _rcu_barrier()
- dependency on __stop_machine()"))
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <506BB612.5090504@linux.vnet.ibm.com> <506BD649.5000704@linux.vnet.ibm.com>
-In-Reply-To: <506BD649.5000704@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755941Ab2JCIWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 04:22:39 -0400
+Received: from ozlabs.org ([203.10.76.45]:59222 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753192Ab2JCIWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 04:22:35 -0400
+Message-ID: <1349252551.31536.29.camel@concordia>
+Subject: Re: linux-next: fate of the kvmtool tree
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 03 Oct 2012 18:22:31 +1000
+In-Reply-To: <CAOJsxLFeVa6WCpr25t3hA3xGJb6rUgFqOLDrc5_3iLnUb-xTHw@mail.gmail.com>
+References: <20121003152921.c08e7019d2ada843888a2570@canb.auug.org.au>
+	 <CAOJsxLFeVa6WCpr25t3hA3xGJb6rUgFqOLDrc5_3iLnUb-xTHw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100308-1396-0000-0000-000001F33617
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 11:38 AM, Srivatsa S. Bhat wrote:
-> On 10/03/2012 09:20 AM, Srivatsa S. Bhat wrote:
->> On 10/03/2012 06:15 AM, Jiri Kosina wrote:
->>> On Tue, 2 Oct 2012, Paul E. McKenney wrote:
->>>
->>>> On Wed, Oct 03, 2012 at 01:48:21AM +0200, Jiri Kosina wrote:
->>>>> On Tue, 2 Oct 2012, Paul E. McKenney wrote:
->>>>>
->>>>>> Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug 
->>>>>> notifier, which doesn't sit so well with rcu_barrier() trying to exclude 
->>>>>> CPU hotplug events.  I could go back to the old approach, but it is 
->>>>>> significantly more complex.  I cannot say that I am all that happy about 
->>>>>> anyone calling rcu_barrier() from a CPU hotplug notifier because it 
->>>>>> doesn't help CPU hotplug latency, but that is a separate issue.
->>>>>>
->>>>>> But the thing is that rcu_barrier()'s assumptions work just fine if either
->>>>>> (1) it excludes hotplug operations or (2) if it is called from a hotplug
->>>>>> notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
->>>>>> is executing.  So the right way to resolve this seems to be to do the
->>>>>> get_online_cpus() only if rcu_barrier() is -not- executing in the context
->>>>>> of a hotplug notifier.  Should be fixable without too much hassle...
->>>>>
->>>>> Sorry, I don't think I understand what you are proposing just yet.
->>>>>
->>>>> If I understand it correctly, you are proposing to introduce some magic 
->>>>> into _rcu_barrier() such as (pseudocode of course):
->>>>>
->>>>> 	if (!being_called_from_hotplug_notifier_callback)
->>>>> 		get_online_cpus()
->>>>>
->>>>> How does that protect from the scenario I've outlined before though?
->>>>>
->>>>> 	CPU 0                           CPU 1
->>>>> 	kmem_cache_destroy()
->>>>> 	mutex_lock(slab_mutex)
->>>>> 					_cpu_up()
->>>>> 					cpu_hotplug_begin()
->>>>> 					mutex_lock(cpu_hotplug.lock)
->>>>> 	rcu_barrier()
->>>>> 	_rcu_barrier()
->>>>> 	get_online_cpus()
->>>>> 	mutex_lock(cpu_hotplug.lock)
->>>>> 	 (blocks, CPU 1 has the mutex)
->>>>> 					__cpu_notify()
->>>>> 					mutex_lock(slab_mutex)	
->>>>>
->>>>> CPU 0 grabs both locks anyway (it's not running from notifier callback). 
->>>>> CPU 1 grabs both locks as well, as there is no _rcu_barrier() being called 
->>>>> from notifier callback either.
->>>>>
->>>>> What did I miss?
->>>>
->>>> You didn't miss anything, I was suffering a failure to read carefully.
->>>>
->>>> So my next stupid question is "Why can't kmem_cache_destroy drop
->>>> slab_mutex early?" like the following:
->>>>
->>>> 	void kmem_cache_destroy(struct kmem_cache *cachep)
->>>> 	{
->>>> 		BUG_ON(!cachep || in_interrupt());
->>>>
->>>> 		/* Find the cache in the chain of caches. */
->>>> 		get_online_cpus();
->>>> 		mutex_lock(&slab_mutex);
->>>> 		/*
->>>> 		 * the chain is never empty, cache_cache is never destroyed
->>>> 		 */
->>>> 		list_del(&cachep->list);
->>>> 		if (__cache_shrink(cachep)) {
->>>> 			slab_error(cachep, "Can't free all objects");
->>>> 			list_add(&cachep->list, &slab_caches);
->>>> 			mutex_unlock(&slab_mutex);
->>>> 			put_online_cpus();
->>>> 			return;
->>>> 		}
->>>> 		mutex_unlock(&slab_mutex);
->>>>
->>>> 		if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
->>>> 			rcu_barrier();
->>>>
->>>> 		__kmem_cache_destroy(cachep);
->>>> 		put_online_cpus();
->>>> 	}
->>>>
->>>> Or did I miss some reason why __kmem_cache_destroy() needs that lock?
->>>> Looks to me like it is just freeing now-disconnected memory.
->>>
->>> Good question. I believe it should be safe to drop slab_mutex earlier, as 
->>> cachep has already been unlinked. I am adding slab people and linux-mm to 
->>> CC (the whole thread on LKML can be found at 
->>> https://lkml.org/lkml/2012/10/2/296 for reference).
->>>
->>> How about the patch below? Pekka, Christoph, please?
->>>
->>> It makes the lockdep happy again, and obviously removes the deadlock (I 
->>> tested it).
->>>
->>>
->>>
->>> From: Jiri Kosina <jkosina@suse.cz>
->>> Subject: mm, slab: release slab_mutex earlier in kmem_cache_destroy()
->>>
->>> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
->>> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
->>> dependency through kmem_cache_destroy() -> rcu_barrier() ->
->>> _rcu_barrier() -> get_online_cpus().
->>>
->>> This opens a possibilty for deadlock:
->>>
->>>         CPU 0                           CPU 1
->>> 	        kmem_cache_destroy()
->>> 	        mutex_lock(slab_mutex)
->>> 	                                        _cpu_up()
->>> 	                                        cpu_hotplug_begin()
->>> 	                                        mutex_lock(cpu_hotplug.lock)
->>> 	        rcu_barrier()
->>> 	        _rcu_barrier()
->>> 	        get_online_cpus()
->>> 	        mutex_lock(cpu_hotplug.lock)
->>> 	         (blocks, CPU 1 has the mutex)
->>> 	                                        __cpu_notify()
->>> 	                                        mutex_lock(slab_mutex)
->>
->> Hmm.. no, this should *never* happen IMHO!
->>
->> If I am seeing the code right, kmem_cache_destroy() wraps its entire content
->> inside get/put_online_cpus(), which means it cannot run concurrently with cpu_up()
->> or cpu_down(). Are we really hitting a corner case where the refcounting logic
->> in get/put_online_cpus() is failing and allowing a hotplug writer to run in
->> parallel with a hotplug reader? If yes, *that* is the problem we have to fix..
->>
+On Wed, 2012-10-03 at 09:47 +0300, Pekka Enberg wrote:
+> Hi Stephen,
 > 
-> One scenario where we can see this happen is if we had a put_online_cpus() "leak"
-> somewhere.. that is, perhaps the task that was about to invoke kmem_cache_destroy()
-> previously called put_online_cpus() once too many. In that case, the get_online_cpus()
-> in kmem_cache_destroy() might prove useless in excluding it from concurrent hotplug
-> operations.
+> On Wed, Oct 3, 2012 at 8:29 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Well, here we are at another merge window and the kvmtool tree is still
+> > not merged.  So, is it likely that it will be merged in this merge
+> > window?  or the next?  If not, can I please remove it from linux-next
+> > (and have it removed from the auto-latest branch of the tip tree) as it
+> > just adds weight to the patches and the tree that people have to fetch to
+> > work with.
 > 
-> Jiri, can you please try the debug patch below? It would be good to see if the
-> refcount ever went negative...
-> 
+> I have no idea how likely it is that it will be merged but I'm
+> planning to send a pull request for this merge cycle. ;-)
 
-Better to catch the bug even earlier, at the right moment, in put_online_cpus()
-itself. Could you try this one instead?
+Hi Pekka,
 
-Regards,
-Srivatsa S. Bhat
+I just noticed kvmtool doesn't build for powerpc anymore, since 8074303
+"remove global kvm object".
 
-----------------------------------------------------
+It'd be nice if it wasn't broken when it hit Linus' tree, I'll try and
+get you a patch in the next day.
 
- kernel/cpu.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index f560598..00d29bc 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -80,6 +80,7 @@ void put_online_cpus(void)
- 	if (cpu_hotplug.active_writer == current)
- 		return;
- 	mutex_lock(&cpu_hotplug.lock);
-+	BUG_ON(cpu_hotplug.refcount == 0);
- 	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
- 		wake_up_process(cpu_hotplug.active_writer);
- 	mutex_unlock(&cpu_hotplug.lock);
-
+cheers
 
