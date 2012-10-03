@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab2JCNjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:39:22 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:2223 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2JCNjV (ORCPT
+	id S1755828Ab2JCNkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:40:13 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62881 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755730Ab2JCNkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:39:21 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14916519"
-Date: Wed, 3 Oct 2012 14:37:53 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH] xen: point xen_start_info to a dummy struct for PV on HVM
- guests
-Message-ID: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 3 Oct 2012 09:40:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <1348741972.1648.28.camel@vkoul-udesk3>
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348735450.1648.5.camel@vkoul-udesk3>
+	<1348739022.13371.157.camel@smile>
+	<1348740071.1648.25.camel@vkoul-udesk3>
+	<CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
+	<1348741972.1648.28.camel@vkoul-udesk3>
+Date: Wed, 3 Oct 2012 16:40:09 +0300
+Message-ID: <CAHp75Vd+_SBHkUf2DfSq=-nwWdC99jNx+VEuq4mb99aB7xGDNw@mail.gmail.com>
+Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: viresh kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PV on HVM guests don't have a start_info page mapped by Xen, so
-xen_start_info is just NULL for them.
-That is problem because other parts of the code expect xen_start_info to
-point to something valid, for example xen_initial_domain() is defined as
-follow:
+On Thu, Sep 27, 2012 at 1:32 PM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+> On Thu, 2012-09-27 at 15:41 +0530, viresh kumar wrote:
+>> On Thu, Sep 27, 2012 at 3:31 PM, Vinod Koul <vinod.koul@linux.intel.com> wrote:
+>> > Let me try again.
+>> >
+>> > what does it take to do platform and PCI driver for this:
+>> > 1. make dma h/w access (read/write) platform independent. which you have
+>> > already done
+>> > 2. Device registration: Create two probes, or use common probe.
+>> > You smartly chose the second one BUT by creating another device.
+>> > If you look closely at the probe then I would say it would be easy to
+>> > create library for probe which can be used across both pci and platform
+>> > driver probes. The probe library which initializes driver and registers
+>> > with dmaengine needs device struct and resources can be provided by each
+>> > probe.
+>>
+>> Or in other words... create three files
+>> - dw_dmac.c
+>> - dw_dmac-pltfm.c
+>> - dw_dmac-pci.c...
+>>
+>> Don't do anything specific to platform or pci in dw_dmac.c...
+>> Keep pltfm and pci files to smallest possible size, and keep as much of
+>> common part in dmac.c...
+>>
+>> Similar is done in drivers/mmc/host/sdhci*...
+> Yes that IMHO would be simpler approach :)
+Oh, thanks, I got the idea. Will implement soon.
 
-#define xen_initial_domain()    (xen_domain() && \
-                 xen_start_info->flags & SIF_INITDOMAIN)
-
-
-Allocate a dummy start_info struct and point xen_start_info to it, as we
-do on ARM.
-This is not going to change things for PV guests because
-xen_start_info is set by arch/x86/xen/xen-head.S:startup_xen.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index bf788d3..5f242cb 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -96,7 +96,8 @@ EXPORT_SYMBOL(machine_to_phys_mapping);
- unsigned long  machine_to_phys_nr;
- EXPORT_SYMBOL(machine_to_phys_nr);
- 
--struct start_info *xen_start_info;
-+static struct start_info _xen_start_info;
-+struct start_info *xen_start_info = &_xen_start_info;
- EXPORT_SYMBOL_GPL(xen_start_info);
- 
- struct shared_info xen_dummy_shared_info;
+-- 
+With Best Regards,
+Andy Shevchenko
