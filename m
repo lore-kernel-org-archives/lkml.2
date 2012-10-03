@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965250Ab2JCRua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:50:30 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4558 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965174Ab2JCRu2 (ORCPT
+	id S965288Ab2JCRuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:50:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33720 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965267Ab2JCRug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:50:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 03 Oct 2012 10:50:26 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <arm@vger.kernel.org>, <djbw@fb.com>, <vinod.koul@intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <stable@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
-Date: Wed, 3 Oct 2012 22:48:07 +0530
-Message-ID: <1349284687-22311-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 3 Oct 2012 13:50:36 -0400
+Date: Wed, 3 Oct 2012 10:50:33 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
+cc: herbert@gondor.hengli.com.au, pjones@redhat.com, jwboyer@redhat.com,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
+Subject: [patch] MODSIGN: Fix build error with strict typechecking
+In-Reply-To: <16088.1348736905@warthog.procyon.org.uk>
+Message-ID: <alpine.DEB.2.00.1210031045060.29765@chino.kir.corp.google.com>
+References: <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When watching the interrupts through /proc/interrupts,
-the name of the interrupts are blank or garbage. The
-reason is the pointer passed for devname during irq
-registration is stack and so it get changed after
-dma registration completes.
-Allocate the pointer as part of dma channel and pass
-this pointer as the devname for irq registration to
-avoid change of name.
+"MODSIGN: Provide module signing public keys to the kernel" causes a build 
+error when CONFIG_UIDGID_STRICT_TYPE_CHECKS is enabled:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+kernel/modsign_pubkey.c: In function 'module_verify_init':
+kernel/modsign_pubkey.c:47: error: incompatible type for argument 3 of 'key_alloc'
+include/linux/key.h:195: note: expected 'kuid_t' but argument is of type 'int'
+kernel/modsign_pubkey.c:47: error: incompatible type for argument 4 of 'key_alloc'
+include/linux/key.h:195: note: expected 'kgid_t' but argument is of type 'int'
+
+Cast the parameters accordingly.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- drivers/dma/tegra20-apb-dma.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/modsign_pubkey.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index 24a6512..528c62d 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -169,6 +169,7 @@ typedef void (*dma_isr_handler)(struct tegra_dma_channel *tdc,
- /* tegra_dma_channel: Channel specific information */
- struct tegra_dma_channel {
- 	struct dma_chan		dma_chan;
-+	char			name[30];
- 	bool			config_init;
- 	int			id;
- 	int			irq;
-@@ -1282,7 +1283,6 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&tdma->dma_dev.channels);
- 	for (i = 0; i < cdata->nr_channels; i++) {
- 		struct tegra_dma_channel *tdc = &tdma->channels[i];
--		char irq_name[30];
+diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
+--- a/kernel/modsign_pubkey.c
++++ b/kernel/modsign_pubkey.c
+@@ -41,7 +41,8 @@ static __init int module_verify_init(void)
+ 	pr_notice("Initialise module verification\n");
  
- 		tdc->chan_base_offset = TEGRA_APBDMA_CHANNEL_BASE_ADD_OFFSET +
- 					i * TEGRA_APBDMA_CHANNEL_REGISTER_SIZE;
-@@ -1294,9 +1294,9 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
- 			goto err_irq;
- 		}
- 		tdc->irq = res->start;
--		snprintf(irq_name, sizeof(irq_name), "apbdma.%d", i);
-+		snprintf(tdc->name, sizeof(tdc->name), "apbdma.%d", i);
- 		ret = devm_request_irq(&pdev->dev, tdc->irq,
--				tegra_dma_isr, 0, irq_name, tdc);
-+				tegra_dma_isr, 0, tdc->name, tdc);
- 		if (ret) {
- 			dev_err(&pdev->dev,
- 				"request_irq failed with err %d channel %d\n",
--- 
-1.7.1.1
-
+ 	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
+-				    0, 0, current_cred(),
++				    KUIDT_INIT(0), KGIDT_INIT(0),
++				    current_cred(),
+ 				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
+ 				    KEY_USR_VIEW | KEY_USR_READ,
+ 				    KEY_ALLOC_NOT_IN_QUOTA);
