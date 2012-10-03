@@ -1,32 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab2JCVAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:00:39 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54088 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab2JCVAi (ORCPT
+	id S1754990Ab2JCVBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:01:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33774 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab2JCVBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:00:38 -0400
-Date: Wed, 3 Oct 2012 22:05:25 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kees Cook <kees@outflux.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.6
-Message-ID: <20121003220525.780cf3f2@pyramind.ukuu.org.uk>
-In-Reply-To: <20121003205818.GB9092@outflux.net>
-References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
-	<20121003194614.GA2893@elliptictech.com>
-	<20121003200515.GZ9092@outflux.net>
-	<CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
-	<20121003204141.GB6026@thunk.org>
-	<20121003204919.GA9092@outflux.net>
-	<CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
-	<20121003205818.GB9092@outflux.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 3 Oct 2012 17:01:37 -0400
+Date: Wed, 3 Oct 2012 14:01:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>, Johannes Stezenbach <js@sig21.net>
+Subject: Re: [GIT PULL v2] Update LZO compression
+Message-Id: <20121003140136.f2b071df.akpm@linux-foundation.org>
+In-Reply-To: <CAFLxGvw3OqOb0UVhjtwC+CD+wtubH-O1FM7=fYFT8ztWPVPd6w@mail.gmail.com>
+References: <5033A78E.3080703@oberhumer.com>
+	<506C14BA.70006@oberhumer.com>
+	<CAFLxGvw3OqOb0UVhjtwC+CD+wtubH-O1FM7=fYFT8ztWPVPd6w@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -34,10 +28,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If this happens, I _really_ want to bring back the CONFIG options I had in
-> an earlier version of this patch. I want to be able to declare the default
-> at build time, and not leave a system vulnerable from boot until sysctls
-> get set.
+On Wed, 3 Oct 2012 12:48:46 +0200
+richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
 
-If your early boot code trusts a random writeable user directory I think
-you have other problems.
+> CC'in akpm.
+
+Thanks.
+
+> >>> Hi all,
+> >>>
+> >>> I finally have prepared a small package that updates the LZO version
+> >>> in the Linux kernel. Please get it from:
+> >>>
+> >>> http://www.oberhumer.com/opensource/lzo/download/Testing/linux-kernel-lzo-20120716.tar.gz
+> >>>
+> >>> As stated in the README this version is significantly faster (typically more
+> >>> than 2 times faster!) than the current version, has been thoroughly tested on
+> >>> x86_64/i386/powerpc platforms and is intended to get included into the
+> >>> official Linux 3.6 or 3.7 release.
+> >>>
+> >>> I encourage all compression users to test and benchmark this new version,
+> >>> and I also would ask some official LZO maintainer to convert the updated
+> >>> source files into a GIT commit and possibly push it to Linus or linux-next.
+
+No, lib/lzo has no identifiable maintainer.  I suggest you proceed as
+follows:
+
+- Post the entire patch series to lkml for review (I'd like a cc please)
+
+- After that process has played out, ask Stephen to add this git tree
+  to linux-next.
+
+- After that process has played out, ask Linus to pull the tree
+  during a merge window.
+
+I haven't actually looked at the patches yet, but if they are as
+extensive as they sound, it would be appropriate for you become the
+formal maintainer of lib/lzo.
+
