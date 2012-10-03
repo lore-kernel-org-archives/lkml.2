@@ -1,207 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab2JCJUt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:20:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44529 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab2JCJUs (ORCPT
+	id S1755011Ab2JCJXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:23:35 -0400
+Received: from www84.your-server.de ([213.133.104.84]:41750 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab2JCJXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 05:20:48 -0400
-From: Daniel J Blueman <daniel@numascale-asia.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Daniel J Blueman <daniel@numascale-asia.com>
-Subject: [PATCH] RFC: Fix AMD Northbridge-ID contiguity assumptions
-Date: Wed,  3 Oct 2012 17:20:29 +0800
-Message-Id: <1349256029-14851-1-git-send-email-daniel@numascale-asia.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 3 Oct 2012 05:23:33 -0400
+X-Greylist: delayed 1885 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 05:23:32 EDT
+Message-ID: <1349254268.16946.35.camel@wall-e>
+Subject: losetup kernel crash in drivers/block/loop.c kernel 3.4.11
+From: Stefani Seibold <stefani@seibold.net>
+To: linux-kernel <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Monakhov <dmonakhov@openvz.org>, Dave Young <dyoung@redhat.com>,
+        JeffMoyer <jmoyer@redhat.com>
+Date: Wed, 03 Oct 2012 10:51:08 +0200
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
-are contiguous, which no longer holds on federated systems with multiple
-HyperTransport fabrics with multiple PCI domains.
+Hi,
 
-Address this assumption by searching the Northbridge ID array, rather than
-directly indexing it, using the upper bits for the PCI domain.
+i am faced with a strange kernel crash while removing a loopback device
+with losetup, during a software update of my embedded device, which was
+introduced between 3.0 and 3.4. All other used kernels 2.6.39, 2.6.35,
+2.6.33, 2.6.29, 2.6.27 and 2.6.20 works well.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
----
- arch/x86/include/asm/amd_nb.h |   17 +++++++++++++++--
- arch/x86/kernel/amd_nb.c      |   15 ++++++++-------
- drivers/edac/amd64_edac.c     |   18 +++++++++---------
- drivers/edac/amd64_edac.h     |    4 ++--
- 4 files changed, 34 insertions(+), 20 deletions(-)
+BUG: unable to handle kernel NULL pointer derference at 00000041
+IP: [<c019faef>] invalidate_bdev+0x4/0x26
+*pde = 00000000
+Ooops: 0000 I#11 PREEMNT SMP
+Modules linked in: vfat fat i915 drm_kms_helper drm intel_agp i2c_algo_bit intel_gtt agpgart video backlight e1000e usb_storage
 
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index b3341e9..016448c 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -47,6 +47,7 @@ struct threshold_bank {
- };
- 
- struct amd_northbridge {
-+	u32 node;
- 	struct pci_dev *misc;
- 	struct pci_dev *link;
- 	struct amd_l3_cache l3_cache;
-@@ -76,15 +77,27 @@ static inline bool amd_nb_has_feature(unsigned feature)
- 	return ((amd_northbridges.flags & feature) == feature);
- }
- 
--static inline struct amd_northbridge *node_to_amd_nb(int node)
-+static inline int node_to_amd_index(u32 node)
- {
--	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
-+	int i;
-+
-+	for (i = 0; i < amd_northbridges.num; i++)
-+		if (amd_northbridges.nb[i].node == node)
-+			return i;
-+
-+	return 0;
-+}
-+
-+static inline struct amd_northbridge *node_to_amd_nb(u32 node)
-+{
-+	return &amd_northbridges.nb[node_to_amd_index(node)];
- }
- 
- #else
- 
- #define amd_nb_num(x)		0
- #define amd_nb_has_feature(x)	false
-+#define node_to_amd_index(x)	0
- #define node_to_amd_nb(x)	NULL
- 
- #endif
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index aadf335..011eca1 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -75,10 +75,9 @@ int amd_cache_northbridges(void)
- 
- 	link = misc = NULL;
- 	for (i = 0; i != amd_nb_num(); i++) {
--		node_to_amd_nb(i)->misc = misc =
--			next_northbridge(misc, amd_nb_misc_ids);
--		node_to_amd_nb(i)->link = link =
--			next_northbridge(link, amd_nb_link_ids);
-+		nb->misc = misc = next_northbridge(misc, amd_nb_misc_ids);
-+		nb->link = link = next_northbridge(link, amd_nb_link_ids);
-+		nb++;
-         }
- 
- 	/* some CPU families (e.g. family 0x11) do not support GART */
-@@ -212,6 +211,7 @@ int amd_set_subcaches(int cpu, int mask)
- static int amd_cache_gart(void)
- {
- 	u16 i;
-+	struct amd_northbridge *nb = amd_northbridges.nb;
- 
-        if (!amd_nb_has_feature(AMD_NB_GART))
-                return 0;
-@@ -222,9 +222,10 @@ static int amd_cache_gart(void)
-                return -ENOMEM;
-        }
- 
--       for (i = 0; i != amd_nb_num(); i++)
--               pci_read_config_dword(node_to_amd_nb(i)->misc, 0x9c,
--                                     &flush_words[i]);
-+	for (i = 0; i != amd_nb_num(); i++) {
-+		pci_read_config_dword(nb->misc, 0x9c, &flush_words[i]);
-+		nb++;
-+	}
- 
-        return 0;
- }
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 5a297a2..9c35565 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -2549,7 +2549,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
- 	struct mem_ctl_info *mci = NULL;
- 	struct edac_mc_layer layers[2];
- 	int err = 0, ret;
--	u8 nid = get_node_id(F2);
-+	u32 nid = get_node_id(F2);
- 
- 	ret = -ENOMEM;
- 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
-@@ -2640,7 +2640,7 @@ err_ret:
- static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
- 					     const struct pci_device_id *mc_type)
- {
--	u8 nid = get_node_id(pdev);
-+	u32 nid = get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
- 	struct ecc_settings *s;
- 	int ret = 0;
-@@ -2656,7 +2656,7 @@ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
- 	if (!s)
- 		goto err_out;
- 
--	ecc_stngs[nid] = s;
-+	ecc_stngs[node_to_amd_index(nid)] = s;
- 
- 	if (!ecc_enabled(F3, nid)) {
- 		ret = -ENODEV;
-@@ -2680,7 +2680,7 @@ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
- 
- err_enable:
- 	kfree(s);
--	ecc_stngs[nid] = NULL;
-+	ecc_stngs[node_to_amd_index(nid)] = NULL;
- 
- err_out:
- 	return ret;
-@@ -2690,9 +2690,9 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 	struct amd64_pvt *pvt;
--	u8 nid = get_node_id(pdev);
-+	u32 nid = get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
--	struct ecc_settings *s = ecc_stngs[nid];
-+	struct ecc_settings *s = ecc_stngs[node_to_amd_index(nid)];
- 
- 	mci = find_mci_by_dev(&pdev->dev);
- 	del_mc_sysfs_attrs(mci);
-@@ -2711,12 +2711,12 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
- 	amd_report_gart_errors(false);
- 	amd_unregister_ecc_decoder(amd64_decode_bus_error);
- 
--	kfree(ecc_stngs[nid]);
--	ecc_stngs[nid] = NULL;
-+	kfree(ecc_stngs[node_to_amd_index(nid)]);
-+	ecc_stngs[node_to_amd_index(nid)] = NULL;
- 
- 	/* Free the EDAC CORE resources */
- 	mci->pvt_info = NULL;
--	mcis[nid] = NULL;
-+	mcis[node_to_amd_index(nid)] = NULL;
- 
- 	kfree(pvt);
- 	edac_mc_free(mci);
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 8d48047..2a7189b 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -291,9 +291,9 @@
- #define MSR_MCGCTL_NBE			BIT(4)
- 
- /* AMD sets the first MC device at device ID 0x18. */
--static inline u8 get_node_id(struct pci_dev *pdev)
-+static inline u32 get_node_id(struct pci_dev *pdev)
- {
--	return PCI_SLOT(pdev->devfn) - 0x18;
-+	return (pci_domain_nr(pdev->bus) << 8) | (PCI_SLOT(pdev->devfn) - 0x18);
- }
- 
- enum amd_families {
--- 
-1.7.9.5
+Pid: 869, comm: losetup Tainted G            8.3.4
+EIP: 0060:[<c0194aef>] EFLAGS: 00010282 CPU: 1
+EIP is at invalidate_bdev+0x4/0x26
+EAX: 00000029 EBX: f63c1c00 ECX: 00000000 EDX: f63c1e20
+ESI: f5c6bc80 EDI: f63c1c60 EBP: f596e500 ESP: f5053e54
+ DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+CR0: 8005003b CR2: 00000041 CR3: 324ae000 CR4: 000407d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process losetup (pid: 869, ti=f5052000 task=f616c0c0 task.ti=f5052000)
+Stack:
+ f63c1c00 c0277449 000200da f63c1c00 ffffffe7 00004c01 f5c39900 c02784d0
+ f5d750a4 00000000 f5053efc f5d750a4 f5269900 c017dda6 0000001d 00008000
+ f63c1cfc c027897b ffffffe7 00004c01 f5053f10 c0202021 00000000 f5c39900
+Call Trace:
+ [<c0277449>] ? loop_clr_fd+0x11/0x1d6
+ [<c02784d0>] ? lo_ioctl+0x455/0x62b
+ [<c017dda6>] ? do_last.clone.32+0x55b/0x5d5
+ [<c027807b>] ? loop_switch.clone.13+0x67/0x67
+ [<c0202021>] ? __blkdev_driver_ioctl+0x1d/0x25
+ [<c0202905>] ? blkdev_ioctl+0x6a3/0x6c2
+ [<c016800d>] ? handle_pte_fault+0x21d/0x7ad
+ [<c017e19b>] ? do_file_open+0x21/0x5d
+ [<c019425b>] ? block_ioctl+0x2f/0x34
+ [<c019425b>] ? block_ioctl+0x2f/0x34
+ [<c019422c>] ? bd_set_size+0x60/0x60
+ [<c017fe00>] ? do_vfs_ioctl+0x455/0x492
+ [<c01181d3>] ? do_page_fault+0x30f/0x32c
+ [<c017293a>] ? fd_install+0x1e/0x3d
+ [<c0173865>] ? do_sys_open+0x17e/0x188
+ [<c017feea>] ? sys_ioctl+0x2d/0x47
+ [<c033f7c1>] ? syscall+0x7/0xb
+Code: 00 89 f0 5b 5e 5f c3 53 8b 40 08 8b 58 18 83 7b 3c 00 74 11 e8 3f b9 ff ff 89 d8 31 d2 31 c9 5b e9 ba 8e fc ff 5b c3 53 8b 40 08 (8b) 58 18 83 7b 3c 00 74 17 e8  1f b9 ff ff e8 4e 88 fc ff 89 d8
+EIP: [<c019eaef>] invalidate_bdev+0x4/0x26 SS:ESP 0068:f5053e54
+CR2: 0000000000000041
+
+This dump was copied by hand from a smart phone screenshot, i hope there
+are no typos.
+
+It is not possible to write a demo program which reproduce this bug due
+the complexity, so i will explain what going on.
+
+First mount a kernel which include a initramfs doing the following:
+
+/bin/mount -t proc none /proc
+/bin/mount -o rw,data=journal,barrier=1,errors=remount-ro /dev/sda3 /mnt
+/bin/mount -o loop /mnt/rootfs.squashfs /rootfs
+/bin/mount -o loop modules.squashfs /rootfs/lib/modules
+/bin/mount -o move /mnt /rootfs/rw
+/bin/umount /proc
+exec /rootfs/bin/sh -c 'exec /sbin/switch_root -c /dev/console /rootfs /sbin/init'
+exec /bin/sh
+
+The Squashfs-Image will be mounted and will be the new root filesystem,
+the file system of /dev/sda3 will be then mounted under /rw.
+
+The reason to do this is, that is is very easy to exchange the root
+filesystem, since it it only a plain image file. And there is no extra
+partition necessary which can be to small in the future.
+
+Also the kernel modules will be a squashfs image as a part of the
+initramfs. This make it safe to exchange the kernel, because it will
+change togehter with the modules.
+
+After starting the new init process of the rootfs.squashfs the firmware
+image opfs.squashfs will be mounted also via loopback block device
+at /opt.
+
+When the user decide to do an update, a new rootfs.squashf will be
+copied into a ramdisk and the following script (snippet) will be
+executed:
+
+cat <<EOF >/tmp/init
+#!/bin/sh
+exec </dev/console
+exec >/dev/console
+exec 2>/dev/console
+umount /init/opt
+umount -l -r /init/rw
+umount -l -r /init
+umount /etc 
+rm -rf /tmp/etc
+sync
+for i in /dev/loop*
+do
+	losetup -d $i 2>/dev/null
+done
+rm \$0
+exec /tmp/update.sh "$1" "$2"
+reboot -f
+EOF
+	chmod a+x /tmp/init
+	
+	echo "::restart:/tmp/init" >/tmp/etc/inittab
+
+	mount -o ro /dev/ramdisk /mnt
+	cd /mnt
+	/sbin/pivot_root . init
+
+	mount -o move /init/tmp /tmp
+	mount -o move /init/proc /proc
+	mount -o move /init/sys /sys
+	mount -o move /init/dev/pts /dev/pts
+	mount -o move /init/dev/shm /dev/shm
+	mount -o bind /tmp/etc /etc
+
+	init -q	
+	sleep 1
+	kill -SIGQUIT 1
+	exit
+
+Now the update.sh script has the control over the system, no more
+application or daemons will running and all mass storages should be
+unmounted.
+
+Till this everything is working fine, than the update.sh will execute
+the following code:
+
+rm -f /rw/optfs.squashfs
+
+for i in /dev/loop*
+do
+	losetup -d $i 2>/dev/null
+done
+
+This will remove the old firmware and all possible loopback devices.
+Executing the losetup will crash the kernel and will produce the Oops
+above.
+
+This is independent to the underlying file system or the processor
+architecture, it will happen on x86 or ppc and ext3fs and yaffs2 as
+well.
+
+Any idea?
+
+- Stefani
+
 
