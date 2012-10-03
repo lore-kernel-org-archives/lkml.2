@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab2JCVTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:19:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43651 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab2JCVTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:19:15 -0400
-Date: Wed, 3 Oct 2012 23:19:04 +0200
+	id S1756254Ab2JCVWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:22:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7959 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755577Ab2JCVWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 17:22:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,529,1344236400"; 
+   d="scan'208";a="152093231"
 From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>, Johannes Stezenbach <js@sig21.net>
-Subject: Re: [GIT PULL v2] Update LZO compression
-Message-ID: <20121003211904.GJ16230@one.firstfloor.org>
-References: <5033A78E.3080703@oberhumer.com> <506C14BA.70006@oberhumer.com> <CAFLxGvw3OqOb0UVhjtwC+CD+wtubH-O1FM7=fYFT8ztWPVPd6w@mail.gmail.com> <20121003140136.f2b071df.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003140136.f2b071df.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+To: acme@redhat.com
+Cc: jolsa@redhat.com, eranian@google.com, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org
+Subject: Tie lose "perf, tools" ends in Haswell PMU patchkit
+Date: Wed,  3 Oct 2012 14:22:40 -0700
+Message-Id: <1349299363-30714-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, lib/lzo has no identifiable maintainer.  I suggest you proceed as
-> follows:
-> 
-> - Post the entire patch series to lkml for review (I'd like a cc please)
+This fixes some left over issues in my Haswell PMU patchkit yesterday:
+Ideally applied on top, although there should be no direct dependencies.
 
-Already happened, multiple people reviewed and tested.
-
-This was just the patch ping.
+- Now the kernel supplied sysfs aliases can be directly used for cpu.
+This means I can use "tx-aborts" instead of "cpu/tx-aborts/
+- List the kernel events
+- Support using the same names as generic events for kernel events.
+This allows to use cpu/instructions,intx=1/ which was not possible
+before because instructions clashed with the generic name.
 
 -Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+
