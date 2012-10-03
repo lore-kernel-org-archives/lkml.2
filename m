@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab2JCSVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:21:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33267 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab2JCSVW (ORCPT
+	id S932824Ab2JCSWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:22:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48759 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932658Ab2JCSWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:21:22 -0400
-Date: Wed, 3 Oct 2012 11:21:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Fengguang Wu <fengguang.wu@intel.com>, Pekka Enberg <penberg@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH] slub: init_kmem_cache_cpus() and put_cpu_partial() can
- be static
-In-Reply-To: <0000013a26fc13cf-2a85d946-fe2b-4180-a5a0-fbe6781a2934-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.00.1210031119290.2412@chino.kir.corp.google.com>
-References: <20120928083405.GA23740@localhost> <alpine.DEB.2.00.1210022154520.8723@chino.kir.corp.google.com> <0000013a26fc13cf-2a85d946-fe2b-4180-a5a0-fbe6781a2934-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Oct 2012 14:22:10 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] rcu: Remove rcu_switch()
+Date: Wed,  3 Oct 2012 20:21:52 +0200
+Message-Id: <1349288512-2635-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Christoph Lameter wrote:
+It's only there to call rcu_user_hooks_switch(). Let's
+just call rcu_user_hooks_switch() directly, we don't need this
+function in the middle.
 
-> > > Acked-by: Glauber Costa <glommer@parallels.com>
-> > > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> >
-> > Acked-by: David Rientjes <rientjes@google.com>
-> >
-> > I think init_kmem_cache_cpus() would also benefit from just being inlined
-> > into alloc_kmem_cache_cpus().
-> 
-> The compiler will do that if it is advantageous.
-> 
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/rcupdate.h |    2 ++
+ include/linux/sched.h    |    8 --------
+ kernel/sched/core.c      |    2 +-
+ 3 files changed, 3 insertions(+), 9 deletions(-)
 
-Which it obviously does with -O2, but I think it would be advantageous to 
-do this at the source code level as well since we have a function with a 
-single caller, which happens to be marked inline itself, but we're not 
-inline.  It seems cleaner to me, but it's only a suggestion.  Thanks.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7c968e4..5d009de 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -204,6 +204,8 @@ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+ static inline void rcu_user_enter_after_irq(void) { }
+ static inline void rcu_user_exit_after_irq(void) { }
++static inline void rcu_user_hooks_switch(struct task_struct *prev,
++					 struct task_struct *next) { }
+ #endif /* CONFIG_RCU_USER_QS */
+ 
+ extern void exit_rcu(void);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 9d51e26..65e2694 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1886,14 +1886,6 @@ static inline void rcu_copy_process(struct task_struct *p)
+ 
+ #endif
+ 
+-static inline void rcu_switch(struct task_struct *prev,
+-			      struct task_struct *next)
+-{
+-#ifdef CONFIG_RCU_USER_QS
+-	rcu_user_hooks_switch(prev, next);
+-#endif
+-}
+-
+ static inline void tsk_restore_flags(struct task_struct *task,
+ 				unsigned long orig_flags, unsigned long flags)
+ {
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c177472..a48bef7 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1887,7 +1887,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
+ 
+ 	/* Here we just switch the register state and the stack. */
+-	rcu_switch(prev, next);
++	rcu_user_hooks_switch(prev, next);
+ 	switch_to(prev, next, prev);
+ 
+ 	barrier();
+-- 
+1.7.5.4
+
