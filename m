@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965245Ab2JCQWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:22:23 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43168 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964882Ab2JCQWT (ORCPT
+	id S965258Ab2JCQWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:22:35 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:56583 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965046Ab2JCQWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:22:19 -0400
-To: Kent Overstreet <koverstreet@google.com>
-Cc: NeilBrown <neilb@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Shaohua Li <shli@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        martin.petersen@oracle.com
-Subject: Re: [PATCH] block: makes bio_split support bio without data
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20120924145639.3b65fd8b@notabene.brown>
-	<20120928162343.GF22647@google.com>
-	<20121002162201.2f5d0f91@notabene.brown>
-	<20121002210923.GU26488@google.com>
-	<20121003133045.272dd564@notabene.brown>
-	<20121003034159.GA24174@moria.home.lan>
-Date: Wed, 03 Oct 2012 12:22:07 -0400
-In-Reply-To: <20121003034159.GA24174@moria.home.lan> (Kent Overstreet's
-	message of "Tue, 2 Oct 2012 20:42:00 -0700")
-Message-ID: <yq1zk43zftc.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.0.97 (gnu/linux)
+	Wed, 3 Oct 2012 12:22:21 -0400
+Date: Wed, 3 Oct 2012 16:24:12 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] proc: don't show nonexistent capabilities
+Message-ID: <20121003162410.GA6692@mail.hallyn.com>
+References: <1349209832-279922-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349209832-279922-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Kent" == Kent Overstreet <koverstreet@google.com> writes:
+Quoting Andrew Vagin (avagin@openvz.org):
+> Without this patch it is really hard to interpret a bounding set,
+> if CAP_LAST_CAP is unknown for a current kernel.
+> 
+> Non-existant capabilities can not be deleted from a bounding set
+> with help of prctl.
+> 
+> E.g.: Here are two examples without/with this patch.
+> CapBnd:	ffffffe0fdecffff
+> CapBnd:	00000000fdecffff
+> 
+> I suggest to hide non-existent capabilities. Here is two reasons.
+> * It's logically and easier for using.
+> * It helps to checkpoint-restore capabilities of tasks, because tasks
+> can be restored on another kernel, where CAP_LAST_CAP is bigger.
+> 
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-Kent> I think we should be able to split REQ_DISCARD bios that have a
-Kent> payload or REQ_WRITE_SAME bios just fine though - for both of
-Kent> those cases, the payload doesn't correspond to a particular
-Kent> sector, so just copy the original bvec to the two splits and don't
-Kent> do anything else to it.
+Hm, I don't object to this patch.  Sounds useful indeed.  I can't
+help shake the feeling though that something somewhere will get
+confused by this (though it shouldn't), so I'd like to do some
+testing.  Have you run ltp against this?  Are you running this
+daily with your distro?
 
-DISCARD bios come down with a single bvec that is later used in the SCSI
-disk driver to describe a memory page that can then be mapped into a
-scatter-gather list. The reason for this is that both ATA TRIM and SCSI
-UNMAP put the block range descriptors in the payload rather than in the
-command itself. By the time MD calls bio_split there will be an empty
-bvec in the bio.
-
-For WRITE SAME the parent payload contains a bvec describing a single
-logical block of data (i.e. typically 512 bytes). The same bvec is used
-for both bios in the pair.
-
-For neither DISCARD, nor WRITE SAME do we need to muck with bv_offset
-and bv_len. As a result, my patch uses the bio_is_rw() conditional to
-wrap the the bvec munging code.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  include/linux/capability.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/capability.h b/include/linux/capability.h
+> index d10b7ed..1642778 100644
+> --- a/include/linux/capability.h
+> +++ b/include/linux/capability.h
+> @@ -420,7 +420,8 @@ extern const kernel_cap_t __cap_init_eff_set;
+>  #else /* HAND-CODED capability initializers */
+>  
+>  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+> -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
+> +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, \
+> +					CAP_TO_MASK(CAP_LAST_CAP + 1) - 1 } })
+>  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+>  				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+>  				    CAP_FS_MASK_B1 } })
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
