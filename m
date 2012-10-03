@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab2JCVnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:43:45 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50161 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2JCVno (ORCPT
+	id S1756538Ab2JCVpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:45:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34437 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab2JCVpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:43:44 -0400
-Date: Wed, 3 Oct 2012 23:43:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121003214325.GE637@somewhere>
-References: <20121002195042.GA16087@www.outflux.net>
- <20121003132538.GE13192@linux.vnet.ibm.com>
- <20121003161702.GA22008@kroah.com>
- <20121003164712.GF2527@linux.vnet.ibm.com>
- <20121003172142.GA5061@kroah.com>
- <20121003174606.GB637@somewhere>
- <20121003193653.GB30477@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003193653.GB30477@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Oct 2012 17:45:13 -0400
+Date: Wed, 3 Oct 2012 14:45:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: shuah.khan@hp.com
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, stern@rowland.harvard.edu,
+        joerg.roedel@amd.com, bhelgaas@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH v3] dma-debug: New interfaces to debug dma mapping
+ errors
+Message-Id: <20121003144511.bdacbc8a.akpm@linux-foundation.org>
+In-Reply-To: <1349276159.3192.4.camel@lorien2>
+References: <1347843171.4370.13.camel@lorien2>
+	<1348621517.3091.6.camel@lorien2>
+	<1349276159.3192.4.camel@lorien2>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 03:36:53PM -0400, Dave Jones wrote:
-> On Wed, Oct 03, 2012 at 07:46:18PM +0200, Frederic Weisbecker wrote:
->  > > it in the kernel tree, unless we wanted people to use the option?
->  > 
->  > A solution could be to add that option under CONFIG_DEBUG_KERNEL and specify
->  > that it must only be enabled by developers for specific reasons (overhead,
->  > security). CONFIG_PROVE_LOCKING falls into that category, right?
->  > 
->  > We have CONFIG_RCU_USER_QS that is a specific case. It's an intermediate state
->  > before we implement a true CONFIG_NO_HZ_FULL. But the option is useless on its
->  > own for users. Worse, it introduces a real overhead. OTOH we want it to be upstream
->  > to make the development of full tickless feature more incremental.
->  > 
->  > Perhaps we should put that under CONFIG_DEBUG_KERNEL.
+On Wed, 03 Oct 2012 08:55:59 -0600
+Shuah Khan <shuah.khan@hp.com> wrote:
+
+> A recent dma mapping error analysis effort showed that a large percentage
+> of dma_map_single() and dma_map_page() returns are not checked for mapping
+> errors.
 > 
-> Overloading an existing config option for something unrelated seems unpleasant to me.
-> It will only take a few people to start doing this, before it turns into a landslide
-> where everyone ends up with DEBUG_KERNEL set.
-> And what of people who already have DEBUG_KERNEL set ?
-
-Sorry, by wording wasn't clear. I didn't mean overloading CONFIG_DEBUG_KERNEL but
-rather depend on it.
-
+> Reference:
+> http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
 > 
-> Just state what you wrote above in the kconfig.
-> Currently, RCU_USER_QS says nothing about the fact that it's work in progress.
+> Adding support for tracking dma mapping and unmapping errors to help assess
+> the following:
+> 
+> When do dma mapping errors get detected?
+> How often do these errors occur?
+> Why don't we see failures related to missing dma mapping error checks?
+> Are they silent failures?
 
-Yeah I much prefer that. I'll add some details on the Kconfig.
+This seems to be a strange way of addressing kernel programming errors.
+Instead of fixing them up, we generate lots of statistics about how
+often they happen!
 
-> The missing part that I don't have an answer for however, is what happens
-> when you deem this production ready? Distro maintainers won't notice the
-> kconfig text changing. But perhaps that's a good thing, and will lead to things
-> only being enabled when people explicitly ask for them in distros.
+Would it not be better to find and fix the buggy code sites?  A
+coccinelle script wold probably help here.
 
-That Kconfig option is likely going to disappear inside a new CONFIG_NO_HZ_FULL that
-will enables individual features like RCU user mode and stuffs.
+And let's also look at *why* we keep doing this.  Partly it's because
+these things are self-propagating - people copy-n-paste bad code so we
+get more bad code.
 
-And if it stays, it will be enabled by CONFIG_NO_HZ_FULL. So it's not an option
-anybody will ever have to deal with directly.
 
-> Alternatively, if you really do want to go the path of a new config option,
-> perhaps CONFIG_NOT_DISTRO_READY would spell things out more clearly.
-> EXPERIMENTAL is such a wasteland it would take too much manpower to audit
-> every case, and update accordingly, but scorching the earth and starting
-> afresh might be feasible.
+Another reason surely is the poor documentation.  Suppose our diligent
+programmer goes to the dma_map_single() definition site:
 
-CONFIG_STAGING already does that kind of thing I guess. Although I suspect people
-are reluctant with core features in -staging.
+#define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
+
+No documentation at all.  Because it's a stupid macro it doesn't even
+give the types and names of the arguments or the type of the return
+value.
+
+So he goes to dma_map_single_attrs() and finds that is altogether
+undocmented.
+
+So he goes into Documentation/DMA-API-HOWTO.txt, searches for
+"dma_map_single" and finds
+
+: To map a single region, you do:
+: 
+: 	struct device *dev = &my_dev->dev;
+: 	dma_addr_t dma_handle;
+: 	void *addr = buffer->ptr;
+: 	size_t size = buffer->len;
+: 
+: 	dma_handle = dma_map_single(dev, addr, size, direction);
+: 
+: and to unmap it:
+: 
+: 	dma_unmap_single(dev, dma_handle, size, direction);
+
+
+So it is hardly surprising that we keep screwing this up!
