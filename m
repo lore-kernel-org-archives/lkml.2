@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2JCGh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 02:37:58 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:1754 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2JCGh4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 02:37:56 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: davinci: vpfe: fix build error
-Date: Wed, 3 Oct 2012 08:37:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1349095968-14257-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1349095968-14257-1-git-send-email-prabhakar.lad@ti.com>
+	id S1754878Ab2JCGi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 02:38:59 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:37805 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab2JCGi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 02:38:57 -0400
+Message-ID: <506BDD5E.9060302@compulab.co.il>
+Date: Wed, 03 Oct 2012 08:38:22 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120711 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mike Rapoport <mike@compulab.co.il>
+Subject: Re: [PATCH 06/17] ARM: pxa: work around duplicate definition of GPIO24_SSP1_SFRM
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-7-git-send-email-arnd@arndb.de>
+In-Reply-To: <1349195816-2225-7-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210030837.14378.hverkuil@xs4all.nl>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon October 1 2012 14:52:48 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> recent patch with commit id 4f996594ceaf6c3f9bc42b40c40b0f7f87b79c86
-> which makes vidioc_s_crop const, was causing a following build error.
-> 
-> vpfe_capture.c: In function 'vpfe_s_crop':
-> vpfe_capture.c:1695: error: assignment of read-only location '*crop'
-> vpfe_capture.c:1706: warning: passing argument 1 of
-> 'ccdc_dev->hw_ops.set_image_window' discards qualifiers from pointer target type
-> vpfe_capture.c:1706: note: expected 'struct v4l2_rect *' but argument is of
-> type 'const struct v4l2_rect *'
-> make[4]: *** [drivers/media/platform/davinci/vpfe_capture.o] Error 1
+On 10/02/12 18:36, Arnd Bergmann wrote:
+> The symbol "GPIO24_SSP1_SFRM" is defined in both mfp-pxa27x.h and
+> mfp-pxa25x.h. Since the macro is not actually used in the cm-x2xx.c
+> file, but it includes both headers, a safe workaround should be
+> to just undefine it from the .c file. This is a bit hacky and
+> the headers should be fixed to not both define it, but for now
+> it gets us around an annoying warning.
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Yep, agreed...
 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> 
+> Without this patch, building cm_x2xx_defconfig results in:
+> 
+> In file included from arch/arm/mach-pxa/include/mach-pxa/pxa27x.h:7:0,
+>                  from arch/arm/mach-pxa/cm-x2xx.c:25:
+> arch/arm/mach-pxa/include/mach-pxa/mfp-pxa27x.h:215:0: warning: "GPIO24_SSP1_SFRM" redefined [enabled by default]
+> arch/arm/mach-pxa/include/mach-pxa/mfp-pxa25x.h:111:0: note: this is the location of the previous definition
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+> Cc: Mike Rapoport <mike@compulab.co.il>
+
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+
+Thanks for the patch.
+
 > ---
->  drivers/media/platform/davinci/vpfe_capture.c |   17 +++++++++--------
->  1 files changed, 9 insertions(+), 8 deletions(-)
+>  arch/arm/mach-pxa/cm-x2xx.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/media/platform/davinci/vpfe_capture.c b/drivers/media/platform/davinci/vpfe_capture.c
-> index 48052cb..8be492c 100644
-> --- a/drivers/media/platform/davinci/vpfe_capture.c
-> +++ b/drivers/media/platform/davinci/vpfe_capture.c
-> @@ -1669,6 +1669,7 @@ static int vpfe_s_crop(struct file *file, void *priv,
->  			     const struct v4l2_crop *crop)
->  {
->  	struct vpfe_device *vpfe_dev = video_drvdata(file);
-> +	struct v4l2_rect rect = crop->c;
->  	int ret = 0;
+> diff --git a/arch/arm/mach-pxa/cm-x2xx.c b/arch/arm/mach-pxa/cm-x2xx.c
+> index 8fa4ad2..ae5e74a 100644
+> --- a/arch/arm/mach-pxa/cm-x2xx.c
+> +++ b/arch/arm/mach-pxa/cm-x2xx.c
+> @@ -22,6 +22,7 @@
+>  #include <asm/mach/map.h>
 >  
->  	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_s_crop\n");
-> @@ -1684,7 +1685,7 @@ static int vpfe_s_crop(struct file *file, void *priv,
->  	if (ret)
->  		return ret;
->  
-> -	if (crop->c.top < 0 || crop->c.left < 0) {
-> +	if (rect.top < 0 || rect.left < 0) {
->  		v4l2_err(&vpfe_dev->v4l2_dev,
->  			"doesn't support negative values for top & left\n");
->  		ret = -EINVAL;
-> @@ -1692,26 +1693,26 @@ static int vpfe_s_crop(struct file *file, void *priv,
->  	}
->  
->  	/* adjust the width to 16 pixel boundary */
-> -	crop->c.width = ((crop->c.width + 15) & ~0xf);
-> +	rect.width = ((rect.width + 15) & ~0xf);
->  
->  	/* make sure parameters are valid */
-> -	if ((crop->c.left + crop->c.width >
-> +	if ((rect.left + rect.width >
->  		vpfe_dev->std_info.active_pixels) ||
-> -	    (crop->c.top + crop->c.height >
-> +	    (rect.top + rect.height >
->  		vpfe_dev->std_info.active_lines)) {
->  		v4l2_err(&vpfe_dev->v4l2_dev, "Error in S_CROP params\n");
->  		ret = -EINVAL;
->  		goto unlock_out;
->  	}
-> -	ccdc_dev->hw_ops.set_image_window(&crop->c);
-> -	vpfe_dev->fmt.fmt.pix.width = crop->c.width;
-> -	vpfe_dev->fmt.fmt.pix.height = crop->c.height;
-> +	ccdc_dev->hw_ops.set_image_window(&rect);
-> +	vpfe_dev->fmt.fmt.pix.width = rect.width;
-> +	vpfe_dev->fmt.fmt.pix.height = rect.height;
->  	vpfe_dev->fmt.fmt.pix.bytesperline =
->  		ccdc_dev->hw_ops.get_line_length();
->  	vpfe_dev->fmt.fmt.pix.sizeimage =
->  		vpfe_dev->fmt.fmt.pix.bytesperline *
->  		vpfe_dev->fmt.fmt.pix.height;
-> -	vpfe_dev->crop = crop->c;
-> +	vpfe_dev->crop = rect;
->  unlock_out:
->  	mutex_unlock(&vpfe_dev->lock);
->  	return ret;
-> 
+>  #include <mach/pxa25x.h>
+> +#undef GPIO24_SSP1_SFRM
+>  #include <mach/pxa27x.h>
+>  #include <mach/audio.h>
+>  #include <mach/pxafb.h>
+
+-- 
+Regards,
+Igor.
