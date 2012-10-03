@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab2JCVlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:41:19 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54142 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab2JCVlS (ORCPT
+	id S1756531Ab2JCVnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:43:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50161 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab2JCVno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:41:18 -0400
-Date: Wed, 3 Oct 2012 22:45:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
- request_firmware_nowait()
-Message-ID: <20121003224554.23fca4af@pyramind.ukuu.org.uk>
-In-Reply-To: <CAPXgP13h+7+WoZ2jVjroLWU495wDPwzbhefX8ziuQMznKBWyLQ@mail.gmail.com>
-References: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
-	<20121002221239.GA30990@kroah.com>
-	<20121002222333.GA32207@kroah.com>
-	<CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
-	<506C562E.5090909@redhat.com>
-	<CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
-	<20121003170907.GA23473@ZenIV.linux.org.uk>
-	<CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
-	<20121003195059.GA13541@kroah.com>
-	<CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
-	<20121003210532.GA10941@kroah.com>
-	<CAPXgP13h+7+WoZ2jVjroLWU495wDPwzbhefX8ziuQMznKBWyLQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 17:43:44 -0400
+Date: Wed, 3 Oct 2012 23:43:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121003214325.GE637@somewhere>
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
+ <20121003161702.GA22008@kroah.com>
+ <20121003164712.GF2527@linux.vnet.ibm.com>
+ <20121003172142.GA5061@kroah.com>
+ <20121003174606.GB637@somewhere>
+ <20121003193653.GB30477@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003193653.GB30477@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012 23:18:06 +0200
-Kay Sievers <kay@vrfy.org> wrote:
-
-> On Wed, Oct 3, 2012 at 11:05 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+On Wed, Oct 03, 2012 at 03:36:53PM -0400, Dave Jones wrote:
+> On Wed, Oct 03, 2012 at 07:46:18PM +0200, Frederic Weisbecker wrote:
+>  > > it in the kernel tree, unless we wanted people to use the option?
+>  > 
+>  > A solution could be to add that option under CONFIG_DEBUG_KERNEL and specify
+>  > that it must only be enabled by developers for specific reasons (overhead,
+>  > security). CONFIG_PROVE_LOCKING falls into that category, right?
+>  > 
+>  > We have CONFIG_RCU_USER_QS that is a specific case. It's an intermediate state
+>  > before we implement a true CONFIG_NO_HZ_FULL. But the option is useless on its
+>  > own for users. Worse, it introduces a real overhead. OTOH we want it to be upstream
+>  > to make the development of full tickless feature more incremental.
+>  > 
+>  > Perhaps we should put that under CONFIG_DEBUG_KERNEL.
 > 
-> > As for the firmware path, maybe we should
-> > change that to be modified by userspace (much like /sbin/hotplug was) in
-> > a proc file so that distros can override the location if they need to.
+> Overloading an existing config option for something unrelated seems unpleasant to me.
+> It will only take a few people to start doing this, before it turns into a landslide
+> where everyone ends up with DEBUG_KERNEL set.
+> And what of people who already have DEBUG_KERNEL set ?
+
+Sorry, by wording wasn't clear. I didn't mean overloading CONFIG_DEBUG_KERNEL but
+rather depend on it.
+
 > 
-> If that's needed, a CONFIG_FIRMWARE_PATH= with the array of locations
-> would probably be sufficient.
+> Just state what you wrote above in the kconfig.
+> Currently, RCU_USER_QS says nothing about the fact that it's work in progress.
 
-The current system permits firmware to be served by a daemon, or even
-assembled on the fly from parts. You break that for one.
+Yeah I much prefer that. I'll add some details on the Kconfig.
 
-Just fix udev, and if you can't fix it someone please just fork the last
-working one.
+> The missing part that I don't have an answer for however, is what happens
+> when you deem this production ready? Distro maintainers won't notice the
+> kconfig text changing. But perhaps that's a good thing, and will lead to things
+> only being enabled when people explicitly ask for them in distros.
 
-Alan
+That Kconfig option is likely going to disappear inside a new CONFIG_NO_HZ_FULL that
+will enables individual features like RCU user mode and stuffs.
+
+And if it stays, it will be enabled by CONFIG_NO_HZ_FULL. So it's not an option
+anybody will ever have to deal with directly.
+
+> Alternatively, if you really do want to go the path of a new config option,
+> perhaps CONFIG_NOT_DISTRO_READY would spell things out more clearly.
+> EXPERIMENTAL is such a wasteland it would take too much manpower to audit
+> every case, and update accordingly, but scorching the earth and starting
+> afresh might be feasible.
+
+CONFIG_STAGING already does that kind of thing I guess. Although I suspect people
+are reluctant with core features in -staging.
