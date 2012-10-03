@@ -1,169 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2JCWg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 18:36:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34746 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab2JCWg1 (ORCPT
+	id S1756789Ab2JCWkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 18:40:19 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36384 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756629Ab2JCWkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 18:36:27 -0400
-Date: Wed, 3 Oct 2012 15:36:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: Re: [PATCH 5/5] rapidio: add destination ID allocation mechanism
-Message-Id: <20121003153625.39fd5af7.akpm@linux-foundation.org>
-In-Reply-To: <1349291923-22860-6-git-send-email-alexandre.bounine@idt.com>
-References: <1349291923-22860-1-git-send-email-alexandre.bounine@idt.com>
-	<1349291923-22860-6-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 18:40:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+Date: Wed, 3 Oct 2012 15:40:16 -0700
+X-Google-Sender-Auth: 4TRB5yVMsz6WPBP69XTUhk8xZGc
+Message-ID: <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Oct 2012 15:18:43 -0400
-Alexandre Bounine <alexandre.bounine@idt.com> wrote:
-
-> Replace the single global destination ID counter with per-net allocation
-> mechanism to allow independent destID management for each available RapidIO
-> network. Using bitmap based mechanism instead of counters allows
-> destination ID release and reuse in systems that support hot-swap.
-> 
+On Thu, Sep 20, 2012 at 3:14 PM, Kees Cook <keescook@chromium.org> wrote:
+> As part of the effort to create a stronger boundary between root and
+> kernel, Chrome OS wants to be able to enforce that kernel modules are
+> being loaded only from our read-only crypto-hash verified (dm_verity)
+> root filesystem. Since the init_module syscall hands the kernel a module
+> as a memory blob, no reasoning about the origin of the blob can be made.
 >
-> ...
+> Earlier proposals for appending signatures to kernel modules would not be
+> useful in Chrome OS, since it would involve adding an additional set of
+> keys to our kernel and builds for no good reason: we already trust the
+> contents of our root filesystem. We don't need to verify those kernel
+> modules a second time. Having to do signature checking on module loading
+> would slow us down and be redundant. All we need to know is where a
+> module is coming from so we can say yes/no to loading it.
 >
-> +static u16 rio_destid_alloc(struct rio_net *net)
-> +{
-> +	int destid;
-> +	struct rio_id_table *idtab = &net->destid_table;
-> +
-> +	spin_lock(&idtab->lock);
-> +	destid = find_next_zero_bit(idtab->table, idtab->max, idtab->next);
-> +	if (destid >= idtab->max)
-> +		destid = find_first_zero_bit(idtab->table, idtab->max);
-> +
-> +	if (destid < idtab->max) {
-> +		idtab->next = destid + 1;
-> +		if (idtab->next >= idtab->max)
-> +			idtab->next = 0;
-> +		set_bit(destid, idtab->table);
-> +		destid += idtab->start;
-> +	} else
-> +		destid = RIO_INVALID_DESTID;
-> +
-> +	spin_unlock(&idtab->lock);
-> +	return (u16)destid;
-> +}
-
-This is round-robin rather than the simpler first-fit, and this reader
-doesn't know why.  Suggest the addition of a code comment explaining
-this decision.
-
-> +/*
-> + * rio_destid_reserve - Reserve the specivied destID
-> + * net: RIO network
-> + * destid: destID to reserve
-> + *
-> + * Tries to reserve the specified destID.
-> + * Returns 0 if successfull.
-> + */
-> +static int rio_destid_reserve(struct rio_net *net, u16 destid)
-> +{
-> +	int oldbit;
-> +	struct rio_id_table *idtab = &net->destid_table;
-> +
-> +	destid -= idtab->start;
-> +	spin_lock(&idtab->lock);
-> +	oldbit = test_and_set_bit(destid, idtab->table);
-> +	spin_unlock(&idtab->lock);
-> +	return oldbit;
-> +}
-> +
-> +/*
-> + * rio_destid_free - free a previously allocated destID
-> + * net: RIO network
-> + * destid: destID to free
-> + *
-> + * Makes the specified destID available for use.
-> + */
-> +static void rio_destid_free(struct rio_net *net, u16 destid)
-> +{
-> +	struct rio_id_table *idtab = &net->destid_table;
-> +
-> +	destid -= idtab->start;
-> +	spin_lock(&idtab->lock);
-> +	clear_bit(destid, idtab->table);
-> +	spin_unlock(&idtab->lock);
-> +}
-> +
-> +/*
-> + * rio_destid_first - return first destID in use
-> + * net: RIO network
-> + */
-> +static u16 rio_destid_first(struct rio_net *net)
-> +{
-> +	int destid;
-> +	struct rio_id_table *idtab = &net->destid_table;
-> +
-> +	spin_lock(&idtab->lock);
-> +	destid = find_first_bit(idtab->table, idtab->max);
-> +	if (destid >= idtab->max)
-> +		destid = RIO_INVALID_DESTID;
-> +	else
-> +		destid += idtab->start;
-> +	spin_unlock(&idtab->lock);
-> +	return (u16)destid;
-> +}
-> +
-> +/*
-> + * rio_destid_next - return next destID in use
-> + * net: RIO network
-> + * from: destination ID from which search shall continue
-> + */
-
-All these code comments look like kerneldoc, but they aren't.  kerneldoc
-uses /** and identifiers have a leading `@'.  And that's OK - one
-doesn't *have* to use kerneldoc.  But a lot of
-drivers/rapidio/rio-scan.c is already using kerneldoc so the
-inconsistency is odd.
-
+> If a file descriptor is used as the source of a kernel module, many more
+> things can be reasoned about. In Chrome OS's case, we could enforce that
+> the module lives on the filesystem we expect it to live on.  In the case
+> of IMA (or other LSMs), it would be possible, for example, to examine
+> extended attributes that may contain signatures over the contents of
+> the module.
 >
-> ...
->
-> -static struct rio_net __devinit *rio_alloc_net(struct rio_mport *port)
-> +static struct rio_net __devinit *rio_alloc_net(struct rio_mport *port,
-> +					       int do_enum, u16 start)
->  {
->  	struct rio_net *net;
->  
->  	net = kzalloc(sizeof(struct rio_net), GFP_KERNEL);
-> +	if (net && do_enum) {
-> +		net->destid_table.table = kzalloc(
-> +			BITS_TO_LONGS(RIO_MAX_ROUTE_ENTRIES(port->sys_size)) *
-> +			sizeof(long),
-> +			GFP_KERNEL);
+> This introduces a new syscall (on x86), similar to init_module, that has
+> only two arguments. The first argument is used as a file descriptor to
+> the module and the second argument is a pointer to the NULL terminated
+> string of module arguments.
 
-kcalloc() would be idiomatic here.
+Hi Rusty,
 
-> +		if (net->destid_table.table == NULL) {
-> +			pr_err("RIO: failed to allocate destID table\n");
-> +			kfree(net);
-> +			net = NULL;
-> +		} else {
-> +			net->destid_table.start = start;
-> +			net->destid_table.next = 0;
-> +			net->destid_table.max =
-> +					RIO_MAX_ROUTE_ENTRIES(port->sys_size);
-> +			spin_lock_init(&net->destid_table.lock);
-> +		}
-> +	}
-> +
->
-> ...
->
+Is this likely to land in the 3.7 change window? I'd really like to
+get the syscall number assigned so I can start sending patches to
+glibc, kmod, etc. My tree is here, FWIW:
 
+http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/module-fd-syscall
+
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
