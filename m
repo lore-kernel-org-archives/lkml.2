@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2JCKL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 06:11:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50628 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab2JCKLz (ORCPT
+	id S1755111Ab2JCKWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 06:22:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60009 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2JCKWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 06:11:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506C0F53.5030500@jp.fujitsu.com>
-Date: Wed, 3 Oct 2012 19:11:31 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [PATCH 4/4] acpi,memory-hotplug : store the node id in acpi_memory_device
-References: <506C0AE8.40702@jp.fujitsu.com>
-In-Reply-To: <506C0AE8.40702@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Wed, 3 Oct 2012 06:22:17 -0400
+Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
+ ttwu_queue()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rick Jones <rick.jones2@hp.com>, Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20121003094732.GQ29125@suse.de>
+References: <20121002065143.GK29125@suse.de>
+	 <1349164176.7086.43.camel@marge.simpson.net>
+	 <20121002084501.GL29125@suse.de> <506B6F59.8060800@hp.com>
+	 <20121003094732.GQ29125@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Oct 2012 12:22:11 +0200
+Message-ID: <1349259731.12401.1842.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Wed, 2012-10-03 at 10:47 +0100, Mel Gorman wrote:
+> On Tue, Oct 02, 2012 at 03:48:57PM -0700, Rick Jones wrote:
 
-The memory device has only one node id. Store the node id when
-enable the memory device, and we can reuse it when removing the
-memory device.
+> > PS - I trust it is the receive-side throughput being reported/used
+> > with UDP_STREAM :)
+> 
+> Good question. Now that I examine the scripts, it is in fact the sending
+> side that is being reported which is flawed. Granted I'm not expecting any
+> UDP loss on loopback and looking through a range of results, the
+> difference is marginal. It's still wrong to report just the sending side
+> for UDP_STREAM and I'll correct the scripts for it in the future.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- drivers/acpi/acpi_memhotplug.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+You can have drops even on loopback if the receiver doesnt drain its
+socket receive queue fast enough.
 
-Index: linux-3.6/drivers/acpi/acpi_memhotplug.c
-===================================================================
---- linux-3.6.orig/drivers/acpi/acpi_memhotplug.c	2012-10-03 19:03:26.818401966 +0900
-+++ linux-3.6/drivers/acpi/acpi_memhotplug.c	2012-10-03 19:08:38.804604700 +0900
-@@ -83,6 +83,7 @@ struct acpi_memory_info {
- struct acpi_memory_device {
- 	struct acpi_device * device;
- 	unsigned int state;	/* State of the memory device */
-+	int nid;
- 	struct list_head res_list;
- };
- 
-@@ -256,6 +257,9 @@ static int acpi_memory_enable_device(str
- 		info->enabled = 1;
- 		num_enabled++;
- 	}
-+
-+	mem_device->nid = node;
-+
- 	if (!num_enabled) {
- 		printk(KERN_ERR PREFIX "add_memory failed\n");
- 		mem_device->state = MEMORY_INVALID_STATE;
-@@ -310,9 +314,7 @@ static int acpi_memory_remove_memory(str
- {
- 	int result;
- 	struct acpi_memory_info *info, *n;
--	int node;
--
--	node = acpi_get_node(mem_device->device->handle);
-+	int node = mem_device->nid;
- 
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (!info->enabled)
-@@ -322,9 +324,6 @@ static int acpi_memory_remove_memory(str
- 		if (result)
- 			return result;
- 
--		if (node < 0)
--			node = memory_add_physaddr_to_nid(info->start_addr);
--
- 		result = remove_memory(node, info->start_addr, info->length);
- 		if (result)
- 			return result;
+
 
