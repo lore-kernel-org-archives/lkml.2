@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab2JCNtS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:49:18 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:42090 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2JCNtR (ORCPT
+	id S1755558Ab2JCNtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:49:47 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:60901 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357Ab2JCNtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:49:17 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] drbd-8.3 updates
-Date: Wed, 03 Oct 2012 15:49:13 +0200
-Message-ID: <1646250.CkOtqoMF8x@fat-tyre>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <506C343E.60203@kernel.dk>
-References: <8391701.3EY4hQfmFv@fat-tyre> <10403443.3yRLLBkj5b@fat-tyre> <506C343E.60203@kernel.dk>
+	Wed, 3 Oct 2012 09:49:46 -0400
+X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
+   d="scan'208";a="14916789"
+Message-ID: <1349272182.650.150.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
+ for PV on HVM guests
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 3 Oct 2012 14:49:42 +0100
+In-Reply-To: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Thanks, one question before this is pulled in:
-> > Philipp Reisner (6):
-> >       drbd: Add a drbd directory to sysfs
-> >       drbd: expose the data generation identifiers via sysfs
+On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
+> PV on HVM guests don't have a start_info page mapped by Xen, so
+> xen_start_info is just NULL for them.
+> That is problem because other parts of the code expect xen_start_info to
+> point to something valid, for example xen_initial_domain() is defined as
+> follow:
 > 
-> What are these? It's sitting in /sys/block/<dev>/drbd/, I don't see any
-> documentation or justification for that.
+> #define xen_initial_domain()    (xen_domain() && \
+>                  xen_start_info->flags & SIF_INITDOMAIN)
+
+But anyone who calls this before xen_start_info is setup is going to get
+a bogus result, specifically in this case they will think they are domU
+when in reality they are dom0 -- wouldn't it be better to fix those
+callsites?
+
+Perhaps turn this into a static inline with a BUG_ON(!xen_start_info) to
+make catching these cases easier?
+
 > 
-> Why isn't it off in debugfs or similar instead?
+> 
+> Allocate a dummy start_info struct and point xen_start_info to it, as we
+> do on ARM.
+> This is not going to change things for PV guests because
+> xen_start_info is set by arch/x86/xen/xen-head.S:startup_xen.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index bf788d3..5f242cb 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -96,7 +96,8 @@ EXPORT_SYMBOL(machine_to_phys_mapping);
+>  unsigned long  machine_to_phys_nr;
+>  EXPORT_SYMBOL(machine_to_phys_nr);
+>  
+> -struct start_info *xen_start_info;
+> +static struct start_info _xen_start_info;
+> +struct start_info *xen_start_info = &_xen_start_info;
+>  EXPORT_SYMBOL_GPL(xen_start_info);
+>  
+>  struct shared_info xen_dummy_shared_info;
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-The long-time goal is to get rid of the /proc/drbd virtual file, and
-present the information that was there in a more structured way in /sys.
 
-This patch adds a very first step into that direction. Later we intend to
-have here things like the connections state, device roles, statistics
-counters there.
-
-When coming up with the layout we used the sysfs presence of software raid 
-as example.
-
-I have removed it from this pull-request, so that there is more time for
-consideration before the next merge window.
-
-The following changes since commit fab74e7a8f0f8d0af2356c28aa60d55f9e6f5f8b:
-
-  loop: Make explicit loop device destruction lazy (2012-09-28 10:42:23 +0200)
-
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens
-
-for you to fetch changes up to 56a2dabd4d953b70c4630387368d79d6d1625c1d:
-
-  drbd: log request sector offset and size for IO errors (2012-10-03 15:46:04 +0200)
-
-----------------------------------------------------------------
-Lars Ellenberg (8):
-      drbd: introduce stop-sector to online verify
-      drbd: panic on delayed completion of aborted requests
-      drbd: fix potential deadlock during bitmap (re-)allocation
-      drbd: a few more GFP_KERNEL -> GFP_NOIO
-      drbd: wait for meta data IO completion even with failed disk, unless force-detached
-      drbd: prepare for more than 32 bit flags
-      drbd: always write bitmap on detach
-      drbd: log request sector offset and size for IO errors
-
-Philipp Reisner (4):
-      drbd: Protect accesses to the uuid set with a spinlock
-      drbd: Fix a potential issue with the DISCARD_CONCURRENT flag
-      drbd: Avoid NetworkFailure state during disconnect
-      drbd: Remove dead code
-
- drivers/block/drbd/drbd_actlog.c   |   19 ++--
- drivers/block/drbd/drbd_bitmap.c   |   24 ++---
- drivers/block/drbd/drbd_int.h      |  108 +++++++++++++++++------
- drivers/block/drbd/drbd_main.c     |  170 ++++++++++++++++++++++++------------
- drivers/block/drbd/drbd_nl.c       |   74 +++++++++-------
- drivers/block/drbd/drbd_proc.c     |   14 ++-
- drivers/block/drbd/drbd_receiver.c |  147 ++++++++++++++++---------------
- drivers/block/drbd/drbd_req.c      |   43 ++++++---
- drivers/block/drbd/drbd_worker.c   |   87 ++++++++++++++----
- include/linux/drbd.h               |    4 +-
- include/linux/drbd_nl.h            |    1 +
- 11 files changed, 451 insertions(+), 240 deletions(-)
-
-Best,
- Phil
