@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268Ab2JCTCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 15:02:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57305 "EHLO
+	id S1751115Ab2JCTHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 15:07:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54316 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab2JCTCr (ORCPT
+	with ESMTP id S1750698Ab2JCTHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 15:02:47 -0400
+	Wed, 3 Oct 2012 15:07:19 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: footbridge: remove RTC_IRQ definition
-Date: Wed, 3 Oct 2012 19:02:15 +0000
+To: Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH] ARM: mv78xx0: correct addr_map_cfg __initdata annotation
+Date: Wed, 3 Oct 2012 19:06:34 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Russell King <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210031902.16200.arnd@arndb.de>
-X-Provags-ID: V02:K0:CGElv38qc04Mt+cj3dL0BedqC7R9aOHuX41J7uduMjI
- lk1hhSKtIzTLQaYejPe1YEvojOeU2s+dEYyimUAAVolZ6vfIR6
- si2t2wqHlcpO9dS3OGYXYu4FiKvyN7+QrTU0fj+ftMuyMwtUf6
- Djz5kqmADHhPfATvbwrrZ6MqYptGUvIYq5HNZkfRh32dbFWrCL
- 4sduTekaa3b0A+UGOIZWuElotPPG6ydO6v6wNATp/e5Q14yJBS
- 9Bc3TvS/AST1ub9JAlrfFg9LAGHKAzzK3a9b4zYFa5UmfFk1bD
- YewIsnqm5ntmPOLOIEPajcYk9EDLX7si1oLWAojlSQLXFSjs0W
- 8UEo7sYZPmUIu2EujlF0=
+Message-Id: <201210031906.35123.arnd@arndb.de>
+X-Provags-ID: V02:K0:fDTer3LnzWYjre++m8jL0desTL3t/7KqVPwvMV0uW7B
+ b7Gaw7+GA+Eurh7bjWcKJW1BmvR38CElxROnCqwEHJ3+1A+MMv
+ yINqrQ+3rOGhZVLdF4GSKpOVqL25b6ZL4LZmVWlRp0btLf66Cl
+ yTiNBhVR201tlO/2cmAL9u0kwA2XN33HT5b15LOLBw1AXluU05
+ bdSrWzxBCyRD3ieVX62/4zJcNqlmU9yy4sBeoFIU8AeQU4Bfp3
+ vliP+bTj3K5HNtiy+igF43sjt7Cg3qeRtsATrIW4CUEk+1Aj81
+ byRDi1pLyf6Fg4mJzlSHt//cW+pzW1KHfFo4aeTgaaLAtjfIGu
+ I89EQEc3JEYy8BNn37Ys=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit bd8abc9a32c "ARM: mc146818rtc: remove unnecessary include of
-mach/irqs.h", building footbridge_defconfig results in this warning:
+The annotation on the addr_map_cfg variable is in the wrong place.
 
-In file included from include/linux/mc146818rtc.h:16:0,
-                 from arch/arm/mach-footbridge/isa-rtc.c:21:
-arch/arm/include/asm/mc146818rtc.h:10:0: warning: "RTC_IRQ" redefined [enabled by default]
-arch/arm/mach-footbridge/include/mach/irqs.h:93:0: note: this is the location of the previous definition
+Without this patch, building mv78xx0_defconfig results in:
 
-The above commit was intentionally made to catch errors like this,
-where code relies on the RTC_IRQ definition. The only driver using
-it is the legacy PC-style drivers/char/rtc.c driver.
-However, the ARM architecture has been using the RTC_LIB framework
-since at least 2006, and that doesn't use it.
+/home/arnd/linux-arm/arch/arm/mach-mv78xx0/addr-map.c:59:2: warning: initialization from incompatible pointer type [enabled by default]
+/home/arnd/linux-arm/arch/arm/mach-mv78xx0/addr-map.c:59:2: warning: (near initialization for 'addr_map_cfg.win_cfg_base') [enabled by default]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com
-Cc: Russell King <linux@arm.linux.org.uk>
-
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
 ---
-I've queued this in late/fixes for the current merge window. Will
-send later unless someone objects.
+Queued in the late/fixes branch
 
-diff --git a/arch/arm/mach-footbridge/include/mach/irqs.h b/arch/arm/mach-footbridge/include/mach/irqs.h
-index 400551e..61c714c 100644
---- a/arch/arm/mach-footbridge/include/mach/irqs.h
-+++ b/arch/arm/mach-footbridge/include/mach/irqs.h
-@@ -89,8 +89,6 @@
- #define IRQ_NETWINDER_VGA	_ISA_IRQ(11)
- #define IRQ_NETWINDER_SOUND	_ISA_IRQ(12)
- 
--#undef RTC_IRQ
--#define RTC_IRQ		IRQ_ISA_RTC_ALARM
- #define I8042_KBD_IRQ	IRQ_ISA_KEYBOARD
- #define I8042_AUX_IRQ	(machine_is_netwinder() ? IRQ_NETWINDER_PS2MOUSE : IRQ_ISA_PS2MOUSE)
- #define IRQ_FLOPPYDISK	IRQ_ISA_FLOPPY
+diff --git a/arch/arm/mach-mv78xx0/addr-map.c b/arch/arm/mach-mv78xx0/addr-map.c
+index a9bc841..03f7486 100644
+--- a/arch/arm/mach-mv78xx0/addr-map.c
++++ b/arch/arm/mach-mv78xx0/addr-map.c
+@@ -53,7 +53,7 @@ static void __init __iomem *win_cfg_base(const struct orion_addr_map_cfg *cfg, i
+ /*
+  * Description of the windows needed by the platform code
+  */
+-static struct __initdata orion_addr_map_cfg addr_map_cfg = {
++static struct orion_addr_map_cfg addr_map_cfg __initdata = {
+ 	.num_wins = 14,
+ 	.remappable_wins = 8,
+ 	.win_cfg_base = win_cfg_base,
