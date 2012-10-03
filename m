@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2JCArN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 20:47:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52595 "EHLO
+	id S1756890Ab2JCAxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 20:53:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52625 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754382Ab2JCArL (ORCPT
+	with ESMTP id S1756771Ab2JCAxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 20:47:11 -0400
-Date: Tue, 02 Oct 2012 20:47:07 -0400 (EDT)
-Message-Id: <20121002.204707.1362047307474271560.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: mjt@tls.msk.ru, wferi@niif.hu, mchan@broadcom.com, netdev@vger.kernel.org,
-        mcarlson@broadcom.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: tg3 driver upgrade (Linux 2.6.32 -> 3.2) breaks IBM
- Bladecenter SoL
+	Tue, 2 Oct 2012 20:53:20 -0400
+Date: Tue, 02 Oct 2012 20:53:18 -0400 (EDT)
+Message-Id: <20121002.205318.1484512119234167322.davem@davemloft.net>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        aarcange@redhat.com, hannes@cmpxchg.org, gerald.schaefer@de.ibm.com
+Subject: Re: [PATCH 0/8] THP support for Sparc64
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1349223432.16173.10.camel@deadeye.wl.decadent.org.uk>
-References: <87626sd80j.fsf@lant.ki.iif.hu>
-	<506B3B52.7080001@msgid.tls.msk.ru>
-	<1349223432.16173.10.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <20121002155544.2c67b1e8.akpm@linux-foundation.org>
+References: <20121002.182601.845433592794197720.davem@davemloft.net>
+	<20121002155544.2c67b1e8.akpm@linux-foundation.org>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -29,23 +26,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Wed, 03 Oct 2012 01:17:12 +0100
+From: Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 2 Oct 2012 15:55:44 -0700
 
-> On Tue, 2012-10-02 at 23:06 +0400, Michael Tokarev wrote:
->> On 02.10.2012 22:49, Ferenc Wagner wrote:
->> > "Michael Chan" <mchan@broadcom.com> writes:
->> >> These are the likely fixes:
->> >>
->> >> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db 
->> >> Author: Matt Carlson <mcarlson@broadcom.com>
->> >> Date: Mon Nov 28 09:41:03 2011 +0000
->> >>
->> >> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
- ...
-> The fix went into 3.3, so only 3.0 and 3.2 need it.
-> 
-> David, please can you include the above commit in your next batches for
-> these stable series?
+> I had a shot at integrating all this onto the pending stuff in linux-next. 
+> "mm: Add and use update_mmu_cache_pmd() in transparent huge page code."
+> needed minor massaging in huge_memory.c.  But as Andrea mentioned, we
+> ran aground on Gerald's
+> http://ozlabs.org/~akpm/mmotm/broken-out/thp-remove-assumptions-on-pgtable_t-type.patch,
+> part of the thp-for-s390 work.
 
-Done.
+I'll rebase my work against that stuff, looks fine to me.
