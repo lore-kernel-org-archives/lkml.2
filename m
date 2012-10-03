@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab2JCKxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 06:53:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62763 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755084Ab2JCKxo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 06:53:44 -0400
-Message-ID: <506C192E.5060700@redhat.com>
-Date: Wed, 03 Oct 2012 12:53:34 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1755935Ab2JCKyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 06:54:20 -0400
+Received: from mail.servus.at ([193.170.194.20]:43022 "EHLO mail.servus.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754750Ab2JCKyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 06:54:18 -0400
+X-Greylist: delayed 1178 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 06:54:17 EDT
+Message-ID: <506C14BA.70006@oberhumer.com>
+Date: Wed, 03 Oct 2012 12:34:34 +0200
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.7) Gecko/20120824 Thunderbird/10.0.7
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, avi@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au>
-In-Reply-To: <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au>
+To: linux-kernel@vger.kernel.org
+CC: Andi Kleen <andi@firstfloor.org>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Johannes Stezenbach <js@sig21.net>
+Subject: Re: [GIT PULL v2] Update LZO compression
+References: <5033A78E.3080703@oberhumer.com>
+In-Reply-To: <5033A78E.3080703@oberhumer.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 03/10/2012 08:44, Rusty Russell ha scritto:
-> There's a reason I haven't done this.  I really, really dislike "my
-> implemention isn't broken" feature bits.  We could have an infinite
-> number of them, for each bug in each device.
+Hi all,
 
-However, this bug affects (almost) all implementations and (almost) all
-devices.  It even makes sense to reserve a transport feature bit for it
-instead of a device feature bit.
+is there some official maintainer who feels responsible for
+pushing the LZO update to Linus?
 
-Paolo
+Otherwise I also could issue a pull-request on github, but somehow I
+don't think that this is the preferred workflow.
+
+Cheers,
+Markus
+
+On 2012-08-21 17:21, Markus F.X.J. Oberhumer wrote:
+> Hi all,
+> 
+> as suggested on the mailing list I have converted the updated LZO
+> code into git, so please pull my "lzo-update" branch from
+> 
+>   git://github.com/markus-oberhumer/linux.git lzo-update
+> 
+> You can browse the branch at
+> 
+>   https://github.com/markus-oberhumer/linux/compare/lzo-update
+> 
+> I'd ask some official kernel maintainer for review and to push this into
+> linux-next so that it will hopefully land in the 3.7 release.
+> 
+> Share and enjoy,
+> Markus
+> 
+> Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
+> 
+> 
+> [ Changes in v2: Optimize code for CPUs with inefficient unaligned
+>   access => significant speed increase on ARM ]
+> 
+> 
+> On 2012-07-16 20:30, Markus F.X.J. Oberhumer wrote:
+>> Hi all,
+>>
+>> I finally have prepared a small package that updates the LZO version
+>> in the Linux kernel. Please get it from:
+>>
+>> http://www.oberhumer.com/opensource/lzo/download/Testing/linux-kernel-lzo-20120716.tar.gz
+>>
+>> As stated in the README this version is significantly faster (typically more
+>> than 2 times faster!) than the current version, has been thoroughly tested on
+>> x86_64/i386/powerpc platforms and is intended to get included into the
+>> official Linux 3.6 or 3.7 release.
+>>
+>> I encourage all compression users to test and benchmark this new version,
+>> and I also would ask some official LZO maintainer to convert the updated
+>> source files into a GIT commit and possibly push it to Linus or linux-next.
+>>
+>> Share and enjoy,
+>> Markus
+>>
+>> Signed-off-by: Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+
+-- 
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
