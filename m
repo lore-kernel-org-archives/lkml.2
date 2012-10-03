@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab2JCNyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:54:46 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18757 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644Ab2JCNyo (ORCPT
+	id S1756103Ab2JCOB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:01:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13292 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab2JCOB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:54:44 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14916920"
-Message-ID: <1349272482.650.151.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
- for PV on HVM guests
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 3 Oct 2012 14:54:42 +0100
-In-Reply-To: <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
-	 <1349272182.650.150.camel@zakaz.uk.xensource.com>
-	 <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 3 Oct 2012 10:01:56 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=G3BEk8p8RQsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=aoqRPjQY2hgA:10 a=D19gQVrFAAAA:8 a=rkHj0rLWfqlQ7V6cfNQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349272914.22822.169.camel@gandalf.local.home>
+Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
+ attribute
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed, 03 Oct 2012 10:01:54 -0400
+In-Reply-To: <506C1F8B.1070307@att.net>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
+	 <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
+	 <20120929002626.GD13907@jtriplet-mobl1> <50664308.6020601@att.net>
+	 <20120929005043.GD14293@jtriplet-mobl1>
+	 <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com>
+	 <20121003065959.GA4963@leaf>
+	 <alpine.DEB.2.00.1210030052040.16922@chino.kir.corp.google.com>
+	 <506C1F8B.1070307@att.net>
+Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.3-1 
-MIME-Version: 1.0
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-03 at 14:51 +0100, Stefano Stabellini wrote:
-> On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
-> > > PV on HVM guests don't have a start_info page mapped by Xen, so
-> > > xen_start_info is just NULL for them.
-> > > That is problem because other parts of the code expect xen_start_info to
-> > > point to something valid, for example xen_initial_domain() is defined as
-> > > follow:
-> > > 
-> > > #define xen_initial_domain()    (xen_domain() && \
-> > >                  xen_start_info->flags & SIF_INITDOMAIN)
-> > 
-> > But anyone who calls this before xen_start_info is setup is going to get
-> > a bogus result, specifically in this case they will think they are domU
-> > when in reality they are dom0 -- wouldn't it be better to fix those
-> > callsites?
-> 
-> That cannot be the case because setting up xen_start_info is the very
-> first thing that is done, before even calling to C.
+On Wed, 2012-10-03 at 06:20 -0500, Daniel Santos wrote:
 
-On PV, yes, but you are trying to fix PVHVM here, no?
+> > Daniel, please introduce __flatten in the patch series that uses it, 
+> > thanks.
+> That isn't going to work. I split my patches out into three sets
+> because, otherwise, the list of maintainers that must be CCed exceeds
+> the allowable size of the LKML server and my messages get tagged as
+> spam, causing untold confusion as messages reach maintainers, but not
+> the LKML.  Please note from the summary of this patch set
+> (https://lkml.org/lkml/2012/9/28/1136)
 
-Otherwise if this is always set before calling into C then what is the
-purpose of this patch?
+That's not a valid reason to not included it with the other patch
+series.
 
-> 
-> 
-> > Perhaps turn this into a static inline with a BUG_ON(!xen_start_info) to
-> > make catching these cases easier?
-> 
+> > This patch set is a dependency of the generic red-black tree patch set, which
+> > I have now split up into three smaller sets.
+> And the patch set this depends upon was submitted 9/28 as well
+> (https://lkml.org/lkml/2012/9/28/1183) and the summary starts with this
+> text:
+> > This patch set depends upon the following:
+> > * Cleanup & new features for compiler*.h and bug.h
+> > * kernel-doc bug fixes (for generating docs)
+> If I move this patch to the other patch set,
+> scripts/get_maintainers.pl will give me a list longer than the LKML
+> administrator will allow for recipients (1024 bytes max)
+
+You don't need to use get_maintainers. It's more of a help tool to find
+maintainers and not something that is mandatory. Not everyone that has
+ever touched one of these files needs to be Cc'd.
+
+Please move the patch to the patch series where it is used. Otherwise it
+confuses reviewers as it did here.
+
+-- Steve
 
 
