@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab2JCCcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 22:32:21 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43949 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab2JCCcU (ORCPT
+	id S1752336Ab2JCCfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 22:35:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53106 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2JCCfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 22:32:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121003013936.GN13973@ZenIV.linux.org.uk>
-References: <20121003013936.GN13973@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 2 Oct 2012 19:31:58 -0700
-X-Google-Sender-Auth: t7ELEf_gX9yxzq34pCAF4FOcZao
-Message-ID: <CA+55aFwot+bbm_L93kqCfLDEuQUSdWK=cRdDG-W7=O4zEh96RQ@mail.gmail.com>
-Subject: Re: [git pull] vfs, part 1
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Oct 2012 22:35:18 -0400
+Date: Tue, 02 Oct 2012 22:35:17 -0400 (EDT)
+Message-Id: <20121002.223517.307096403144373535.davem@davemloft.net>
+To: hotforest@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: ethernet: davinci_cpdma: decrease the desc count
+ when cleaning up the remaining packets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1349145763-6292-1-git-send-email-hotforest@gmail.com>
+References: <1349145763-6292-1-git-send-email-hotforest@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 6:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         This is *not* all; fs/dcache.c bits will go separately, for one
-> thing - that's just the first pile.  Please, pull from the usual place -
+From: Tao Hou <hotforest@gmail.com>
+Date: Tue,  2 Oct 2012 10:42:43 +0800
 
-Al, *please* describe what is going on. Your description is negative
-(what *doesn't* happen in this pull) and does not at all describe what
-is going on.
+> chan->count is used by rx channel. If the desc count is not updated by
+> the clean up loop in cpdma_chan_stop, the value written to the rxfree
+> register in cpdma_chan_start will be incorrect.
+> 
+> Signed-off-by: Tao Hou <hotforest@gmail.com>
 
-            Linus
+Applied, thanks.
