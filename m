@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939Ab2JCPzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:55:46 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:38743 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932516Ab2JCPzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:55:45 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14920189"
-Date: Wed, 3 Oct 2012 16:54:44 +0100
-From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH v2] xen: point xen_start_info to a dummy struct for PV on
- HVM guests
-Message-ID: <alpine.DEB.2.02.1210031651430.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S964952Ab2JCPz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:55:59 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:58141 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932516Ab2JCPz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:55:57 -0400
+Date: Wed, 3 Oct 2012 06:25:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121003132538.GE13192@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121002195042.GA16087@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002195042.GA16087@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12100315-5112-0000-0000-00000D0A31E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PV on HVM guests don't have a start_info page mapped by Xen, so
-xen_start_info is just NULL for them.
-That is problem because other parts of the code expect xen_start_info to
-point to something valid, for example xen_initial_domain() is defined as
-follow since commit 4c071ee5268f7234c3d084b6093bebccc28cdcba ("arm:
-initial Xen support"):
+On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, it should be removed. As a first step, remove it from being
+> listed, and default it to on. Once it has been removed from all
+> subsystem Kconfigs, it will be dropped entirely.
+> 
+> CC: Greg KH <gregkh@linuxfoundation.org>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> CC: Serge Hallyn <serge.hallyn@canonical.com>
+> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> 
+> This is the first of a series of 202 patches removing EXPERIMENTAL from
+> all the Kconfigs in the tree. Should I send them all to lkml (with all
+> the associated CCs), or do people want to cherry-pick changes from my
+> tree? I don't want to needlessly flood the list.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
+> 
+> I figure this patch can stand alone to at least make EXPERIMENTAL go
+> away from the menus, and give us a taste of what the removal would do
+> to builds.
 
+OK, I will bite...  How should I flag an option that is initially only
+intended for those willing to take some level of risk?
 
-#define xen_initial_domain()    (xen_domain() && \
-                 xen_start_info->flags & SIF_INITDOMAIN)
+							Thanx, Paul
 
+> Thanks,
+> 
+> -Kees
+> 
+> ---
+>  init/Kconfig |   31 ++-----------------------------
+>  1 file changed, 2 insertions(+), 29 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index cb003a3..f6f8146 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -33,35 +33,8 @@ config BUILDTIME_EXTABLE_SORT
+>  menu "General setup"
+> 
+>  config EXPERIMENTAL
+> -	bool "Prompt for development and/or incomplete code/drivers"
+> -	---help---
+> -	  Some of the various things that Linux supports (such as network
+> -	  drivers, file systems, network protocols, etc.) can be in a state
+> -	  of development where the functionality, stability, or the level of
+> -	  testing is not yet high enough for general use. This is usually
+> -	  known as the "alpha-test" phase among developers. If a feature is
+> -	  currently in alpha-test, then the developers usually discourage
+> -	  uninformed widespread use of this feature by the general public to
+> -	  avoid "Why doesn't this work?" type mail messages. However, active
+> -	  testing and use of these systems is welcomed. Just be aware that it
+> -	  may not meet the normal level of reliability or it may fail to work
+> -	  in some special cases. Detailed bug reports from people familiar
+> -	  with the kernel internals are usually welcomed by the developers
+> -	  (before submitting bug reports, please read the documents
+> -	  <file:README>, <file:MAINTAINERS>, <file:REPORTING-BUGS>,
+> -	  <file:Documentation/BUG-HUNTING>, and
+> -	  <file:Documentation/oops-tracing.txt> in the kernel source).
+> -
+> -	  This option will also make obsoleted drivers available. These are
+> -	  drivers that have been replaced by something else, and/or are
+> -	  scheduled to be removed in a future kernel release.
+> -
+> -	  Unless you intend to help test and develop a feature or driver that
+> -	  falls into this category, or you have a situation that requires
+> -	  using these features, you should probably say N here, which will
+> -	  cause the configurator to present you with fewer choices. If
+> -	  you say Y here, you will be offered the choice of using features or
+> -	  drivers that are currently considered to be in the alpha-test phase.
+> +	bool
+> +	default y
+> 
+>  config BROKEN
+>  	bool
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> 
 
-Allocate a dummy start_info struct and point xen_start_info to it, as we
-do on ARM.
-This is not going to change things for PV guests because
-xen_start_info is set by arch/x86/xen/xen-head.S:startup_xen.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index bf788d3..b73e6ed 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -96,7 +96,14 @@ EXPORT_SYMBOL(machine_to_phys_mapping);
- unsigned long  machine_to_phys_nr;
- EXPORT_SYMBOL(machine_to_phys_nr);
- 
--struct start_info *xen_start_info;
-+/*
-+ * Since 'xen_initial_domain' dereferences xen_start_info we need
-+ * a dummy structure filled with zeros (for PVHVM guests which don't
-+ * have one). For PV guests we do not have to worry about this as the first
-+ * few instructions (startup_xen) set it properly.
-+ */
-+static struct start_info xen_dummy_start_info;
-+struct start_info *xen_start_info = &xen_dummy_start_info;
- EXPORT_SYMBOL_GPL(xen_start_info);
- 
- struct shared_info xen_dummy_shared_info;
