@@ -1,91 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965217Ab2JCSne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:43:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57302 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965182Ab2JCSnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:43:33 -0400
+	id S932922Ab2JCSol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:44:41 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:51393 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755645Ab2JCSoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 14:44:39 -0400
+Date: Wed, 3 Oct 2012 12:44:38 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
+ program headers
+Message-ID: <20121003184437.GB12231@obsidianresearch.com>
+References: <20120930232116.GC30637@obsidianresearch.com>
+ <20121001153952.GB2100@linaro.org>
+ <20121001160639.GA31620@obsidianresearch.com>
+ <20121001175647.GD2100@linaro.org>
+ <20121001183543.GC22342@obsidianresearch.com>
+ <20121002102346.GB2108@linaro.org>
+ <20121002174759.GC23733@obsidianresearch.com>
+ <20121003104335.GA2254@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20121003164712.GF2527@linux.vnet.ibm.com>
-References: <20121002195042.GA16087@www.outflux.net>
-	<20121003132538.GE13192@linux.vnet.ibm.com>
-	<20121003161702.GA22008@kroah.com>
-	<20121003164712.GF2527@linux.vnet.ibm.com>
-Date: Wed, 3 Oct 2012 11:43:32 -0700
-X-Google-Sender-Auth: q688tsTzrv-oUpN7bz8RplwuVZk
-Message-ID: <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-From: Kees Cook <keescook@chromium.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003104335.GA2254@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 9:47 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Oct 03, 2012 at 09:17:02AM -0700, Greg Kroah-Hartman wrote:
->> On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
->> > On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
->> > > This config item has not carried much meaning for a while now and is
->> > > almost always enabled by default. As agreed during the Linux kernel
->> > > summit, it should be removed. As a first step, remove it from being
->> > > listed, and default it to on. Once it has been removed from all
->> > > subsystem Kconfigs, it will be dropped entirely.
->> > >
->> > > CC: Greg KH <gregkh@linuxfoundation.org>
->> > > CC: "Eric W. Biederman" <ebiederm@xmission.com>
->> > > CC: Serge Hallyn <serge.hallyn@canonical.com>
->> > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->> > > CC: Andrew Morton <akpm@linux-foundation.org>
->> > > CC: Frederic Weisbecker <fweisbec@gmail.com>
->> > > Signed-off-by: Kees Cook <keescook@chromium.org>
->> > > ---
->> > >
->> > > This is the first of a series of 202 patches removing EXPERIMENTAL from
->> > > all the Kconfigs in the tree. Should I send them all to lkml (with all
->> > > the associated CCs), or do people want to cherry-pick changes from my
->> > > tree? I don't want to needlessly flood the list.
->> > >
->> > > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
->> > >
->> > > I figure this patch can stand alone to at least make EXPERIMENTAL go
->> > > away from the menus, and give us a taste of what the removal would do
->> > > to builds.
->> >
->> > OK, I will bite...  How should I flag an option that is initially only
->> > intended for those willing to take some level of risk?
->>
->> In the text say "You really don't want to enable this option, use at
->> your own risk!"  Or something like that :)
->
-> OK, so the only real hope for experimental features is to refrain from
-> creating a config option for them, so that people wishing to use them
-> must modify the code?  Or is the philosophy that we keep things out of
-> tree until we are comfortable with distros turning them on?
+On Wed, Oct 03, 2012 at 11:43:35AM +0100, Dave Martin wrote:
 
-I would expect a simple addition of "this is dangerous/buggy" to the
-description and "default n" is likely the way to go for that kind of
-thing. I think the history of CONFIG_EXPERIMENTAL has proven there
-isn't a sensible way to create a global flag for this kind of thing.
-To paraphrase Serge: my experimental options are not your experimental
-options.
+> I'm not sure exactly what you mean by linking the DTB into vmlinux.
+> I don't think this is supported upstream, at least for ARM.  It could
+> be done externally by post-processing vmlinux to add extra sections
+> and some boot shim code which initialises the registers appropriately
+> for kernel entry ... but you're really inventing a bootloader if you
+> start to do that.
 
-For example, some of the things that already had the experimental
-config removed, they left the "(EXPERIMENTAL)" in their config title.
+We use the existing build infrastructure (see cmd_dt_S_dtb) and add a
+4 line patch to head.S to put the dtb address into the right
+register. I think it would be great to have a CONFIG_ARM_BUILT_IN_DTB
+for applications like mine, but it is really no problem to carry the
+head.S patch. The normal build process produces a vmlinux that is self
+contained, no post processing required.
 
--Kees
+> Making a simple bootloader DT-aware is not actually that hard: libfdt
+> is intentionally pretty straightforward to integrate.
 
--- 
-Kees Cook
-Chrome OS Security
+Sure, but we have several major issues with that entire idea:
+ 1) Our bootloader (on PPC and ARM) is in redundant NOR flash and
+    is limited to 16K. That is just enough to do gzip, elf, cramfs
+    and tftpv6 - there is no space left for dtb or fdt code.
+ 2) Experience using DT with PPC has shown that the vmlinux is very
+    sensitive to the DTB. Every DTB/vmlinux combination must be tested
+    to ensure it works. By far the best way to manage this *for us* is
+    to guarentee that the vmlinux sees only the DTB it was designed
+    for by including it in vmlinux.
+ 3) The DTB *changes*. We change it because we've changed things in the
+    programmable part of our environment and we change it because the
+    kernel has shifted. Planning for this inevitable change is
+    necessary.
+ 4) On our ARM platforms updating the boot loader in the field is more
+    challenging than updating the vmlinux, not impossible, but not
+    something we want to do every day. Our PPC boot loader has
+    survived without change since 2007, and has booted kernels from
+    2.6.12 to 3.6 with and without DT. This is a time tested,
+    field proven approach.
+
+Fundamentally we treat the DTB like the .config - an integral,
+internal, part of vmlinux.
+
+As far as I can see, the *only* argument to put the DT in the boot
+loader is to support standard, distribution kernels.
+
+> It's more than 100 lines, but not _that_ much more, and contains
+> some implementation features you probably don't need.
+
+But that is not enough, variations of our platforms use bit bang I2C,
+SPI and NOR FLASH to store things like the MAC address and other
+DT-relevant information. So, swaths of that code would need to go into
+the boot loader/zImage as well.
+
+At that point we may as well take our chances with uBoot. :)
+
+> From my side, I think that the fact this takes arch/arm/vmlinux.lds.S
+> closer to some other common arches means that this is low risk and should
+> be mostly harmless, but I will take another look at the patch first.
+
+This matches my opinion..
+
+> > > You store vmlinux.gz in a cramfs?  Is that a typo, or have you already
+> > > compressed the kernel twice?
+> > 
+> > The compression can either be intrisic to cramfs or a raw elf that has
+> > been gzip'd.
+> 
+> If you can have files with intrinsic compression such that they don't
+> get double-compressed, why can you not do this for zImage?
+> 
+> Am I still misunderstanding something?
+
+We have two boot modes, one boots ELF.gz (for development), the other
+boots ELF in CRAMFS (for deployment). Both are compressed, one is
+compressed using gzip and one is compressed using zlib in CRAMFS. It
+is hard to see how to store a zImage in CRAMFS and avoid double
+de-compression. We never store an ELF.gz in CRAMFS.
+
+Since the entire point of zImage is to introduce compression it is
+hard to see *why* we'd want to store a zImage in a CRAMFS.
+
+Jason
