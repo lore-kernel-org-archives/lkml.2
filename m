@@ -1,463 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2JCFpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 01:45:45 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:59614 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab2JCFpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 01:45:43 -0400
-Date: Wed, 3 Oct 2012 01:45:42 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: linux-crypto@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Subject: [PATCH v0] Add SHA-3 hash algorithm
-Message-ID: <20121003054542.GA2416@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1755562Ab2JCFuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 01:50:09 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:40284 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab2JCFuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 01:50:07 -0400
+From: masaki.kimura.kz@hitachi.com
+X-AuditID: b753bd60-96850ba000002f78-54-506bd188cbc7
+Message-Type: Multiple Part
+MIME-Version: 1.0
+Message-ID: <XNM7$8$0$0$$7$1$1$A$9012439U506bd160@hitachi.com>
+Content-Type: multipart/mixed; boundary="GMAILSMTPBOUND01121003144741"
+To: <linux-kernel@vger.kernel.org>
+Cc: <rusty@rustcorp.com.au>
+Date: Wed, 3 Oct 2012 14:47:32 +0900
+Importance: normal
+Subject: =?UTF-8?B?W1BBVENIXSBtb2R1bGU6IEZpeCBrYWxsc3ltcyB0byBzaG93IHQ=?=
+	=?UTF-8?B?aGUgbGFzdCBzeW1ib2wgcHJvcGVybHk=?=
+X400-Content-Identifier: X506BD16000000M
+X400-MTS-Identifier: [/C=JP/ADMD=HITNET/PRMD=HITACHI/;gmml06121003144712751]
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Whee -- SHA-3 is out!   I wanted to explore the new toy a bit, and
-so, here is a blatantly untested rough draft of SHA-3 kernel support.
+--GMAILSMTPBOUND01121003144741
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: base64
 
-Why rough draft?  Because answers to the questions below will inform a
-more polished version.
+VGhpcyBwYXRjaCBmaXhlcyBhIGJ1ZyB0aGF0IHRoZSBsYXN0IHN5bWJvbCBpbiB0aGUgLnN5
+bXRhYiBzZWN0aW9uIG9mDQprZXJuZWwgbW9kdWxlcyBpcyBub3QgZGlzcGxheWVkIHdpdGgg
+L3Byb2Mva2FsbHN5bXMuIFRoaXMgaGFwcGVucw0KYmVjYXVzZSB0aGUgZmlyc3Qgc3ltYm9s
+IGlzIHByb2Nlc3NlZCB0d2ljZSBiZWZvcmUgYW5kIGluc2lkZSB0aGUgbG9vcA0Kd2l0aG91
+dCBpbmNyZW1lbnRpbmcgInNyYyIuDQoNClRoaXMgYnVnIGV4aXN0cyBzaW5jZSB0aGUgZm9s
+bG93aW5nIGNvbW1pdCB3YXMgaW50cm9kdWNlZC4NCiAgIG1vZHVsZTogcmVkdWNlIHN5bWJv
+bCB0YWJsZSBmb3IgbG9hZGVkIG1vZHVsZXMgKHYyKQ0KICAgY29tbWl0OiA0YTQ5NjIyNjNm
+MDdkMTQ2NjA4NDllYzEzNGVlNDJiNjNlOTVlYTlhDQoNClRoaXMgcGF0Y2ggaXMgdGVzdGVk
+IG9uIDMuNi4wLXJjNiBrZXJuZWwgd2l0aCB0aGUgc2ltcGxlIHRlc3QgbW9kdWxlIGJ5IHRo
+ZSANCmJlbG93IHN0ZXBzLCB0byBjaGVjayBpZiBhbGwgdGhlIGNvcmUgc3ltYm9scyBhcHBl
+YXIgaW4gL3Byb2Mva2FsbHN5bXMuDQoNCltUZXN0IHN0ZXBzXQ0KMS4gQ29tcGlsZSB0aGUg
+dGVzdCBtb2R1bGUsIGxpa2UgYmVsb3cuDQogICAoTXkgY29tcGlsZXIgdGVuZHMgdG8gcHV0
+IGEgZnVuY3Rpb24gbmFtZWQgd2l0aCAxOCBjaGFyYWN0b3JzLCANCiAgICBsaWtlIHp6enp6
+enp6enp6enp6enp6eiwgYXQgdGhlIGVuZCBvZiAuc3ltdGFiIHNlY3Rpb24uIA0KICAgIEkg
+ZG9uJ3Qga25vdyB3aHksIHRob3VnaC4pDQoNCiMgY2F0IHRwLmMNCiNpbmNsdWRlIDxsaW51
+eC9tb2R1bGUuaD4NCiNpbmNsdWRlIDxsaW51eC9rZXJuZWwuaD4NCg0Kdm9pZCB6enp6enp6
+enp6enp6enp6enoodm9pZCkge30NCg0Kc3RhdGljIGludCBpbml0X3RwKHZvaWQpDQp7DQog
+ICAgICAgIHJldHVybiAwOw0KfQ0KDQpzdGF0aWMgdm9pZCBleGl0X3RwKHZvaWQpIHt9DQoN
+Cm1vZHVsZV9pbml0KGluaXRfdHApOw0KbW9kdWxlX2V4aXQoZXhpdF90cCk7DQpNT0RVTEVf
+TElDRU5TRSgiR1BMIik7DQoNCiMgY2F0IE1ha2VmaWxlDQpLRVJORUxfUkVMRUFTRT0kKHNo
+ZWxsIHVuYW1lIC1yKQ0KQlVJTERESVIgOj0gL2xpYi9tb2R1bGVzLyQoS0VSTkVMX1JFTEVB
+U0UpL3NvdXJjZQ0KDQpvYmotbSA6PSB0cC5vDQoNCmFsbDoNCiAgICAgICAgJChNQUtFKSAt
+QyAkKEJVSUxERElSKSBNPSQoUFdEKSBWPTEgbW9kdWxlcw0KY2xlYW46DQogICAgICAgICQo
+TUFLRSkgLUMgJChCVUlMRERJUikgTT0kKFBXRCkgVj0xIGNsZWFuDQoNCiMgbWFrZQ0KDQoy
+LiBDaGVjayBpZiB0aGUgdGFyZ2V0IHN5bWJvbCwgenp6enp6enp6enp6enp6enp6IGluIHRo
+aXMgY2FzZSwgDQogICBpcyBsb2NhdGVkIGF0IHRoZSBsYXN0IGVudHJ5Lg0KDQojIHJlYWRl
+bGYgLXMgdHAua28gfCB0YWlsDQogICAgMTg6IDAwMDAwMDAwMDAwMDAwMjAgICAgMTEgRlVO
+QyAgICBMT0NBTCAgREVGQVVMVCAgICAyIGV4aXRfdHANCiAgICAxOTogMDAwMDAwMDAwMDAw
+MDAwMCAgICAxMiBPQkpFQ1QgIExPQ0FMICBERUZBVUxUICAgIDQgX19tb2RfbGljZW5zZTE1
+DQogICAgMjA6IDAwMDAwMDAwMDAwMDAwMDAgICAgIDAgRklMRSAgICBMT0NBTCAgREVGQVVM
+VCAgQUJTIHRwLm1vZC5jDQogICAgMjE6IDAwMDAwMDAwMDAwMDAwMGMgICAgIDkgT0JKRUNU
+ICBMT0NBTCAgREVGQVVMVCAgICA0IF9fbW9kdWxlX2RlcGVuZHMNCiAgICAyMjogMDAwMDAw
+MDAwMDAwMDAxNSAgICA0NSBPQkpFQ1QgIExPQ0FMICBERUZBVUxUICAgIDQgX19tb2RfdmVy
+bWFnaWM1DQogICAgMjM6IDAwMDAwMDAwMDAwMDAwMDAgICA2MDAgT0JKRUNUICBHTE9CQUwg
+REVGQVVMVCAgICA4IF9fdGhpc19tb2R1bGUNCiAgICAyNDogMDAwMDAwMDAwMDAwMDAyMCAg
+ICAxMSBGVU5DICAgIEdMT0JBTCBERUZBVUxUICAgIDIgY2xlYW51cF9tb2R1bGUNCiAgICAy
+NTogMDAwMDAwMDAwMDAwMDAxMCAgICAxMyBGVU5DICAgIEdMT0JBTCBERUZBVUxUICAgIDIg
+aW5pdF9tb2R1bGUNCiAgICAyNjogMDAwMDAwMDAwMDAwMDAwMCAgICAgMCBOT1RZUEUgIEdM
+T0JBTCBERUZBVUxUICBVTkQgbWNvdW50DQogICAgMjc6IDAwMDAwMDAwMDAwMDAwMDAgICAg
+MTEgRlVOQyAgICBHTE9CQUwgREVGQVVMVCAgICAyIHp6enp6enp6enp6enp6enp6eg0KDQoz
+LiBMb2FkIHRoZSBtb2R1bGUuDQojIGluc21vZCB0cC5rbw0KDQo0LiBDaGVjayBpZiBhbGwg
+dGhlIGNvcmUgc3ltYm9scyBhcmUgc2hvd24gL3Byb2Mva2FsbHN5bXMgcHJvcGVybHkuDQoN
+CltCZWZvcmUgbXkgcGF0Y2ggYXBwbGllZF0NCiMgZ3JlcCAiXFt0cFxdIiAvcHJvYy9rYWxs
+c3ltcw0KZmZmZmZmZmZhMDEzNTAxMCB0IGluaXRfdHAgICAgICBbdHBdDQpmZmZmZmZmZmEw
+MTM1MDIwIHQgZXhpdF90cCAgICAgIFt0cF0NCmZmZmZmZmZmYTAxMzcwMDAgZCBfX3RoaXNf
+bW9kdWxlICAgICAgICBbdHBdDQpmZmZmZmZmZmEwMTM1MDIwIHQgY2xlYW51cF9tb2R1bGUg
+ICAgICAgW3RwXQ0KZmZmZmZmZmZhMDEzNTAxMCB0IGluaXRfbW9kdWxlICBbdHBdDQoNCihU
+aGUgbGFzdCBlbnRyeSwgb3Igenp6enp6enp6enp6enp6enp6LCBpcyBub3Qgc2hvd24uKQ0K
+DQpbQWZ0ZXIgbXkgcGF0Y2ggYXBwbGllZF0NCiMgZ3JlcCAiXFt0cFxdIiAvcHJvYy9rYWxs
+c3ltcw0KZmZmZmZmZmZhMDEzNTAxMCB0IGluaXRfdHAgICAgICBbdHBdDQpmZmZmZmZmZmEw
+MTM1MDIwIHQgZXhpdF90cCAgICAgIFt0cF0NCmZmZmZmZmZmYTAxMzcwMDAgZCBfX3RoaXNf
+bW9kdWxlICAgICAgICBbdHBdDQpmZmZmZmZmZmEwMTM1MDIwIHQgY2xlYW51cF9tb2R1bGUg
+ICAgICAgW3RwXQ0KZmZmZmZmZmZhMDEzNTAxMCB0IGluaXRfbW9kdWxlICBbdHBdDQpmZmZm
+ZmZmZmEwMTM1MDAwIHQgenp6enp6enp6enp6enp6enp6ICAgW3RwXQ0KDQooVGhlIGxhc3Qg
+ZW50cnksIG9yIHp6enp6enp6enp6enp6enp6eiwgaXMgc2hvd24gcHJvcGVybHkuKQ0KDQoN
+ClNpZ25lZC1vZmYtYnk6IE1hc2FraSBLaW11cmEgPG1hc2FraS5raW11cmEua3pAaGl0YWNo
+aS5jb20+DQotLS0NCiBrZXJuZWwvbW9kdWxlLmMgfCAgICA2ICsrKysrLQ0KIDEgZmlsZSBj
+aGFuZ2VkLCA1IGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkNCg0KZGlmZiAtLWdpdCBh
+L2tlcm5lbC9tb2R1bGUuYyBiL2tlcm5lbC9tb2R1bGUuYw0KaW5kZXggNGVkYmQ5Yy4uZDQz
+MmMyMSAxMDA2NDQNCi0tLSBhL2tlcm5lbC9tb2R1bGUuYw0KKysrIGIva2VybmVsL21vZHVs
+ZS5jDQpAQCAtMjI3Myw3ICsyMjczLDkgQEAgc3RhdGljIHZvaWQgbGF5b3V0X3N5bXRhYihz
+dHJ1Y3QgbW9kdWxlICptb2QsIHN0cnVjdCBsb2FkX2luZm8gKmluZm8pDQogCXNyYyA9ICh2
+b2lkICopaW5mby0+aGRyICsgc3ltc2VjdC0+c2hfb2Zmc2V0Ow0KIAluc3JjID0gc3ltc2Vj
+dC0+c2hfc2l6ZSAvIHNpemVvZigqc3JjKTsNCiANCi0JLyogQ29tcHV0ZSB0b3RhbCBzcGFj
+ZSByZXF1aXJlZCBmb3IgdGhlIGNvcmUgc3ltYm9scycgc3RydGFiLiAqLw0KKwkvKiBDb21w
+dXRlIHRvdGFsIHNwYWNlIHJlcXVpcmVkIGZvciB0aGUgY29yZSBzeW1ib2xzJyBzdHJ0YWIu
+DQorCSAgIFdlIHN0YXJ0IHNlYXJjaGluZyBjb3JlIHN5bWJvbHMgZnJvbSB0aGUgc2Vjb25k
+IGVudHJ5LiAgICAgKi8NCisJc3JjKys7DQogCWZvciAobmRzdCA9IGkgPSBzdHJ0YWJfc2l6
+ZSA9IDE7IGkgPCBuc3JjOyArK2ksICsrc3JjKQ0KIAkJaWYgKGlzX2NvcmVfc3ltYm9sKHNy
+YywgaW5mby0+c2VjaGRycywgaW5mby0+aGRyLT5lX3NobnVtKSkgew0KIAkJCXN0cnRhYl9z
+aXplICs9IHN0cmxlbigmaW5mby0+c3RydGFiW3NyYy0+c3RfbmFtZV0pICsgMTsNCkBAIC0y
+MzE0LDYgKzIzMTYsOCBAQCBzdGF0aWMgdm9pZCBhZGRfa2FsbHN5bXMoc3RydWN0IG1vZHVs
+ZSAqbW9kLCBjb25zdCBzdHJ1Y3QgbG9hZF9pbmZvICppbmZvKQ0KIAlzcmMgPSBtb2QtPnN5
+bXRhYjsNCiAJKmRzdCA9ICpzcmM7DQogCSpzKysgPSAwOw0KKwkvKiBXZSBzdGFydCBzZWFy
+Y2hpbmcgY29yZSBzeW1ib2xzIGZyb20gdGhlIHNlY29uZCBlbnRyeS4gKi8NCisJc3JjKys7
+DQogCWZvciAobmRzdCA9IGkgPSAxOyBpIDwgbW9kLT5udW1fc3ltdGFiOyArK2ksICsrc3Jj
+KSB7DQogCQlpZiAoIWlzX2NvcmVfc3ltYm9sKHNyYywgaW5mby0+c2VjaGRycywgaW5mby0+
+aGRyLT5lX3NobnVtKSkNCiAJCQljb250aW51ZTsNCi0tIA0KMS43LjEwLjENCg0K
 
-Code notes and questions:
-
-1) tcrypt setup blatantly wrong.  What is the best setup here?  Define a
-separate entry for each digest length?  Is there some special string
-descriptor format that is desired, like "sha3-256" or "sha3(256)"?
-
-2) Digest and block size are easily variable, as shown below...
-do we want hand-craft individual versions for each -- sha3_256.c,
-sha3_512.c, etc.?
-
-3) Is it even feasible for struct shash_alg to have a dynamic (filled in
-at context init time, not driver registration time) digestsize and
-cra_blocksize?  That would permit a single shash_alg for all sha3.
-
-4) Original implementation from readable_keccak.tgz (link below).  The
-official sources have a bazillion different flavors for various
-architectures and bit sizes, and the code is not pretty.  I wanted to
-start small and readable, and _then_ branch out into x86[-64]-specific
-versions, etc. as users and use cases appear.
-
-
-
-Commit e52113b7b4ace50ab586b426098c6d69d75c263a
-Branch sha3
-Repo git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/linux.git
-
-References:
-	http://keccak.noekeon.org/
-	http://www.mjos.fi/dist/readable_keccak.tgz
-	http://www.nist.gov/itl/csd/sha-100212.cfm
-
-Not-signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-
- crypto/Kconfig        |    6 +
- crypto/Makefile       |    1 
- crypto/sha3_generic.c |  280 ++++++++++++++++++++++++++++++++++++++++++++++++++
- crypto/tcrypt.c       |   14 ++
- include/crypto/sha3.h |   26 ++++
- 5 files changed, 326 insertions(+), 1 deletion(-)
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index a323805..97f5e75 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -457,6 +457,12 @@ config CRYPTO_SHA512
- 	  This code also includes SHA-384, a 384 bit hash with 192 bits
- 	  of security against collision attacks.
- 
-+config CRYPTO_SHA3
-+	tristate "SHA3 digest algorithm"
-+	select CRYPTO_HASH
-+	help
-+	  SHA-3 secure hash standard.
-+
- config CRYPTO_TGR192
- 	tristate "Tiger digest algorithms"
- 	select CRYPTO_HASH
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 30f33d6..65150d1 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -45,6 +45,7 @@ obj-$(CONFIG_CRYPTO_RMD320) += rmd320.o
- obj-$(CONFIG_CRYPTO_SHA1) += sha1_generic.o
- obj-$(CONFIG_CRYPTO_SHA256) += sha256_generic.o
- obj-$(CONFIG_CRYPTO_SHA512) += sha512_generic.o
-+obj-$(CONFIG_CRYPTO_SHA3) += sha3_generic.o
- obj-$(CONFIG_CRYPTO_WP512) += wp512.o
- obj-$(CONFIG_CRYPTO_TGR192) += tgr192.o
- obj-$(CONFIG_CRYPTO_GF128MUL) += gf128mul.o
-diff --git a/crypto/sha3_generic.c b/crypto/sha3_generic.c
-new file mode 100644
-index 0000000..9255ea1
---- /dev/null
-+++ b/crypto/sha3_generic.c
-@@ -0,0 +1,280 @@
-+
-+#include <crypto/internal/hash.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <crypto/sha3.h>
-+#include <asm/byteorder.h>
-+
-+#define KECCAK_ROUNDS 24
-+
-+#define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
-+
-+static const u64 keccakf_rndc[24] = 
-+{
-+	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
-+	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
-+	0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
-+	0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
-+	0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
-+	0x8000000000008003, 0x8000000000008002, 0x8000000000000080, 
-+	0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
-+	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
-+};
-+
-+static const int keccakf_rotc[24] = 
-+{
-+	1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14, 
-+	27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
-+};
-+
-+static const int keccakf_piln[24] = 
-+{
-+	10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4, 
-+	15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1 
-+};
-+
-+// update the state with given number of rounds
-+
-+static void keccakf(u64 st[25], int rounds)
-+{
-+	int i, j, round;
-+	u64 t, bc[5];
-+
-+	for (round = 0; round < rounds; round++) {
-+
-+		// Theta
-+		for (i = 0; i < 5; i++)	 
-+			bc[i] = st[i] ^ st[i + 5] ^ st[i + 10] ^ st[i + 15] ^ st[i + 20];
-+
-+		for (i = 0; i < 5; i++) {
-+			t = bc[(i + 4) % 5] ^ ROTL64(bc[(i + 1) % 5], 1);
-+			for (j = 0; j < 25; j += 5)
-+				st[j + i] ^= t;
-+		}
-+
-+		// Rho Pi
-+		t = st[1];
-+		for (i = 0; i < 24; i++) {
-+			j = keccakf_piln[i];
-+			bc[0] = st[j];
-+			st[j] = ROTL64(t, keccakf_rotc[i]);
-+			t = bc[0];
-+		}
-+
-+		//  Chi
-+		for (j = 0; j < 25; j += 5) {
-+			for (i = 0; i < 5; i++)
-+				bc[i] = st[j + i];
-+			for (i = 0; i < 5; i++)
-+				st[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-+		}
-+
-+		//  Iota
-+		st[0] ^= keccakf_rndc[round];
-+	}
-+}
-+
-+static void sha3_init(struct sha3_state *sctx, unsigned int digest_sz)
-+{
-+	memset(sctx, 0, sizeof(*sctx));
-+	sctx->md_len = digest_sz;
-+	sctx->rsiz = 200 - 2 * digest_sz;
-+	sctx->rsizw = sctx->rsiz / 8;
-+}
-+
-+static int sha3_224_init(struct shash_desc *desc)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	sha3_init(sctx, SHA3_224_DIGEST_SIZE);
-+	return 0;
-+}
-+
-+static int sha3_256_init(struct shash_desc *desc)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	sha3_init(sctx, SHA3_256_DIGEST_SIZE);
-+	return 0;
-+}
-+
-+static int sha3_384_init(struct shash_desc *desc)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	sha3_init(sctx, SHA3_384_DIGEST_SIZE);
-+	return 0;
-+}
-+
-+static int sha3_512_init(struct shash_desc *desc)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	sha3_init(sctx, SHA3_512_DIGEST_SIZE);
-+	return 0;
-+}
-+
-+static int sha3_update(struct shash_desc *desc, const u8 *data,
-+		       unsigned int len)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	unsigned int done;
-+	const u8 *src;
-+
-+	done = 0;
-+	src = data;
-+
-+	if ((sctx->partial + len) > (sctx->rsiz - 1)) {
-+		if (sctx->partial) {
-+			done = -sctx->partial;
-+			memcpy(sctx->buf + sctx->partial, data,
-+			       done + sctx->rsiz);
-+			src = sctx->buf;
-+		}
-+
-+		do {
-+			unsigned int i;
-+
-+			for (i = 0; i < sctx->rsizw; i++)
-+				sctx->st[i] ^= ((u64 *) src)[i];
-+			keccakf(sctx->st, KECCAK_ROUNDS);
-+
-+			done += sctx->rsiz;
-+			src = data + done;
-+		} while (done + (sctx->rsiz - 1) < len);
-+
-+		sctx->partial = 0;
-+	}
-+	memcpy(sctx->buf + sctx->partial, src, len - done);
-+	sctx->partial += (len - done);
-+
-+	return 0;
-+}
-+
-+static int sha3_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct sha3_state *sctx = shash_desc_ctx(desc);
-+	unsigned int i, inlen = sctx->partial;
-+
-+	sctx->buf[inlen++] = 1;
-+	memset(sctx->buf + inlen, 0, sctx->rsiz - inlen);
-+	sctx->buf[sctx->rsiz - 1] |= 0x80;
-+
-+	for (i = 0; i < sctx->rsizw; i++)
-+		sctx->st[i] ^= ((u64 *) sctx->buf)[i];
-+
-+	keccakf(sctx->st, KECCAK_ROUNDS);
-+
-+	for (i = 0; i < sctx->rsizw; i++)
-+		sctx->st[i] = cpu_to_le64(sctx->st[i]);
-+
-+	memcpy(out, sctx->st, sctx->md_len);
-+
-+	memset(sctx, 0, sizeof(*sctx));
-+	return 0;
-+}
-+
-+static struct shash_alg sha3_224 = {
-+	.digestsize	=	SHA3_224_DIGEST_SIZE,
-+	.init		=	sha3_224_init,
-+	.update		=	sha3_update,
-+	.final		=	sha3_final,
-+	.descsize	=	sizeof(struct sha3_state),
-+	.base		=	{
-+		.cra_name	=	"sha3-224",
-+		.cra_driver_name=	"sha3-224-generic",
-+		.cra_flags	=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize	=	SHA3_224_BLOCK_SIZE,
-+		.cra_module	=	THIS_MODULE,
-+	}
-+};
-+
-+static struct shash_alg sha3_256 = {
-+	.digestsize	=	SHA3_256_DIGEST_SIZE,
-+	.init		=	sha3_256_init,
-+	.update		=	sha3_update,
-+	.final		=	sha3_final,
-+	.descsize	=	sizeof(struct sha3_state),
-+	.base		=	{
-+		.cra_name	=	"sha3-256",
-+		.cra_driver_name=	"sha3-256-generic",
-+		.cra_flags	=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize	=	SHA3_256_BLOCK_SIZE,
-+		.cra_module	=	THIS_MODULE,
-+	}
-+};
-+
-+static struct shash_alg sha3_384 = {
-+	.digestsize	=	SHA3_384_DIGEST_SIZE,
-+	.init		=	sha3_384_init,
-+	.update		=	sha3_update,
-+	.final		=	sha3_final,
-+	.descsize	=	sizeof(struct sha3_state),
-+	.base		=	{
-+		.cra_name	=	"sha3-384",
-+		.cra_driver_name=	"sha3-384-generic",
-+		.cra_flags	=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize	=	SHA3_384_BLOCK_SIZE,
-+		.cra_module	=	THIS_MODULE,
-+	}
-+};
-+
-+static struct shash_alg sha3_512 = {
-+	.digestsize	=	SHA3_512_DIGEST_SIZE,
-+	.init		=	sha3_512_init,
-+	.update		=	sha3_update,
-+	.final		=	sha3_final,
-+	.descsize	=	sizeof(struct sha3_state),
-+	.base		=	{
-+		.cra_name	=	"sha3-512",
-+		.cra_driver_name=	"sha3-512-generic",
-+		.cra_flags	=	CRYPTO_ALG_TYPE_SHASH,
-+		.cra_blocksize	=	SHA3_512_BLOCK_SIZE,
-+		.cra_module	=	THIS_MODULE,
-+	}
-+};
-+
-+static int __init sha3_generic_mod_init(void)
-+{
-+	int ret;
-+
-+	ret = crypto_register_shash(&sha3_224);
-+	if (ret < 0)
-+		goto err_out;
-+	ret = crypto_register_shash(&sha3_256);
-+	if (ret < 0)
-+		goto err_out_224;
-+	ret = crypto_register_shash(&sha3_384);
-+	if (ret < 0)
-+		goto err_out_256;
-+	ret = crypto_register_shash(&sha3_512);
-+	if (ret < 0)
-+		goto err_out_384;
-+
-+	return 0;
-+
-+err_out_384:
-+	crypto_unregister_shash(&sha3_384);
-+err_out_256:
-+	crypto_unregister_shash(&sha3_256);
-+err_out_224:
-+	crypto_unregister_shash(&sha3_224);
-+err_out:
-+	return ret;
-+}
-+
-+static void __exit sha3_generic_mod_fini(void)
-+{
-+	crypto_unregister_shash(&sha3_224);
-+	crypto_unregister_shash(&sha3_256);
-+	crypto_unregister_shash(&sha3_384);
-+	crypto_unregister_shash(&sha3_512);
-+}
-+
-+module_init(sha3_generic_mod_init);
-+module_exit(sha3_generic_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("SHA-3 Secure Hash Algorithm");
-+
-+MODULE_ALIAS("sha3-224");
-+MODULE_ALIAS("sha3-256");
-+MODULE_ALIAS("sha3-384");
-+MODULE_ALIAS("sha3-512");
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 5cf2ccb..4fa2a4c 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -64,7 +64,7 @@ static char *check[] = {
- 	"cast6", "arc4", "michael_mic", "deflate", "crc32c", "tea", "xtea",
- 	"khazad", "wp512", "wp384", "wp256", "tnepres", "xeta",  "fcrypt",
- 	"camellia", "seed", "salsa20", "rmd128", "rmd160", "rmd256", "rmd320",
--	"lzo", "cts", "zlib", NULL
-+	"lzo", "cts", "zlib", "sha3", NULL
- };
- 
- static int test_cipher_jiffies(struct blkcipher_desc *desc, int enc,
-@@ -1165,6 +1165,10 @@ static int do_test(int m)
- 		ret += tcrypt_test("rfc4309(ccm(aes))");
- 		break;
- 
-+	case 46:
-+		ret += tcrypt_test("sha3");
-+		break;
-+
- 	case 100:
- 		ret += tcrypt_test("hmac(md5)");
- 		break;
-@@ -1434,6 +1438,10 @@ static int do_test(int m)
- 		test_hash_speed("ghash-generic", sec, hash_speed_template_16);
- 		if (mode > 300 && mode < 400) break;
- 
-+	case 319:
-+		test_hash_speed("sha3", sec, generic_hash_speed_template);
-+		if (mode > 300 && mode < 400) break;
-+
- 	case 399:
- 		break;
- 
-@@ -1508,6 +1516,10 @@ static int do_test(int m)
- 		test_ahash_speed("rmd320", sec, generic_hash_speed_template);
- 		if (mode > 400 && mode < 500) break;
- 
-+	case 418:
-+		test_ahash_speed("sha3", sec, generic_hash_speed_template);
-+		if (mode > 400 && mode < 500) break;
-+
- 	case 499:
- 		break;
- 
-diff --git a/include/crypto/sha3.h b/include/crypto/sha3.h
-new file mode 100644
-index 0000000..3004e94
---- /dev/null
-+++ b/include/crypto/sha3.h
-@@ -0,0 +1,26 @@
-+#ifndef __CRYPTO_SHA3_H__
-+#define __CRYPTO_SHA3_H__
-+
-+#define SHA3_224_DIGEST_SIZE	(224 / 8)
-+#define SHA3_224_BLOCK_SIZE	(200 - 2 * SHA3_224_DIGEST_SIZE)
-+
-+#define SHA3_256_DIGEST_SIZE	(256 / 8)
-+#define SHA3_256_BLOCK_SIZE	(200 - 2 * SHA3_256_DIGEST_SIZE)
-+
-+#define SHA3_384_DIGEST_SIZE	(384 / 8)
-+#define SHA3_384_BLOCK_SIZE	(200 - 2 * SHA3_384_DIGEST_SIZE)
-+
-+#define SHA3_512_DIGEST_SIZE	(512 / 8)
-+#define SHA3_512_BLOCK_SIZE	(200 - 2 * SHA3_512_DIGEST_SIZE)
-+
-+struct sha3_state {
-+	u64		st[25];
-+	unsigned int	md_len;
-+	unsigned int	rsiz;
-+	unsigned int	rsizw;
-+
-+	unsigned int	partial;
-+	u8		buf[SHA3_224_BLOCK_SIZE];
-+};
-+
-+#endif /* __CRYPTO_SHA3_H__ */
+--GMAILSMTPBOUND01121003144741--
