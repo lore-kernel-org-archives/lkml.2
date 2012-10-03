@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2JCVuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:50:55 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:39589 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756434Ab2JCVux (ORCPT
+	id S1756621Ab2JCVyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:54:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38922 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab2JCVyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:50:53 -0400
-Message-ID: <506CB331.8000101@xenotime.net>
-Date: Wed, 03 Oct 2012 14:50:41 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 3 Oct 2012 17:54:44 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] infiniband: fix ipoib build error when IPOIB_CM is
- not enabled
-References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
-In-Reply-To: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
+In-Reply-To: <20121003173603.GG4360@opensource.wolfsonmicro.com>
+References: <1349284019-31571-1-git-send-email-festevam@gmail.com>
+	<20121003173603.GG4360@opensource.wolfsonmicro.com>
+Date: Wed, 3 Oct 2012 18:54:42 -0300
+Message-ID: <CAOMZO5AaQYLhmWnSnRQhdOEcedJPng8MGK1tTNQBxSLxVccRgw@mail.gmail.com>
+Subject: Re: [RFC 1/3] mfd: da9052-core: Use regmap_irq_get_virq() and fix the probe
+From: Fabio Estevam <festevam@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        arnd@arndb.de, kernel@pengutronix.de, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, Oct 3, 2012 at 2:36 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-Fix build error when INFINIBAND_IPOIB_CM is not enabled:
+> I still don't understand what on earth this is doing, as far as I can
+> tell there's only one domain in the device so you're not distrubting
+> anything between domains and there's as many interrupts in this domain
+> as there are in the domain allocated by regmap which is even odder.
 
-ERROR: "ipoib_set_mode" [drivers/infiniband/ulp/ipoib/ib_ipoib.ko] undefined!
+Thanks for your clarification, Mark. I fixed it and managed to get
+touchscreen to work now.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	Roland Dreier <roland@kernel.org>
-Cc:	Sean Hefty <sean.hefty@intel.com>
-Cc:	Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc:	linux-rdma@vger.kernel.org
----
- drivers/infiniband/ulp/ipoib/ipoib_netlink.c |    3 +++
- 1 file changed, 3 insertions(+)
+Will submit the patches shortly.
 
---- linux-next-20121003.orig/drivers/infiniband/ulp/ipoib/ipoib_netlink.c
-+++ linux-next-20121003/drivers/infiniband/ulp/ipoib/ipoib_netlink.c
-@@ -30,6 +30,7 @@
-  * SOFTWARE.
-  */
- 
-+#include <linux/kconfig.h>
- #include <linux/netdevice.h>
- #include <linux/module.h>
- #include <net/rtnetlink.h>
-@@ -71,11 +72,13 @@ static int ipoib_changelink(struct net_d
- 
- 	if (data[IFLA_IPOIB_MODE]) {
- 		mode  = nla_get_u16(data[IFLA_IPOIB_MODE]);
-+#if IS_ENABLED(CONFIG_INFINIBAND_IPOIB_CM)
- 		if (mode == IPOIB_MODE_DATAGRAM)
- 			ret = ipoib_set_mode(dev, "datagram\n");
- 		else if (mode == IPOIB_MODE_CONNECTED)
- 			ret = ipoib_set_mode(dev, "connected\n");
- 		else
-+#endif
- 			ret = -EINVAL;
- 
- 		if (ret < 0)
+Thanks,
+
+Fabio Estevam
