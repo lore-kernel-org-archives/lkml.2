@@ -1,71 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab2JCXsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:48:13 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51421 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788Ab2JCXsM (ORCPT
+	id S964810Ab2JCXxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:53:49 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:27452 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932904Ab2JCXxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:48:12 -0400
-Date: Thu, 4 Oct 2012 00:48:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chris Zankel <chris@zankel.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] xtensa patchset for 3.7
-Message-ID: <20121003234809.GG23473@ZenIV.linux.org.uk>
-References: <506CBAFC.8010908@zankel.net>
+	Wed, 3 Oct 2012 19:53:48 -0400
+From: Randy Wright <rwright@filesys1.fc.hp.com>
+Message-Id: <201210032353.q93NrkNi018443@filesys1.fc.hp.com>
+Subject: [PATCH RFC] function probe_roms accessing improper addresses on UEFI systems
+To: linux-kernel@vger.kernel.org
+Date: Wed, 3 Oct 2012 17:53:46 -0600 (MDT)
+Reply-To: rwright@hp.com
+Organization: Hewlett-Packard/Mission Critical Open Source Development Lab
+X-Mailer: ELM [version 2.4 PL25]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506CBAFC.8010908@zankel.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 03:23:56PM -0700, Chris Zankel wrote:
-> Hi Linus,
-> 
-> Please pull the changes for the Xtensa architecture for v3.7.
-> 
-> Thanks,
-> -Chris
+The code in function probe_roms accesses the legacy adapter space (in
+the physical address range 640k-1mb) without regard to how this range is
+described in the memory map. The assumption in the code is that the
+result of an access to unpopulated space is a soft fail, returning -1.
+This assumption is not universally true; some systems may cause a hard
+error (MCE) when accessing an unpopulated physical address.
 
-	BTW, could you do an xtensa counterpart of the stuff in
-git.kernel.org/pub/scm/linux/kernel/git/viro/signal#experimental-kernel_thread?
-Basically,
-	* switch kernel_thread() away from "syscall in kernel" model;
-select GENERIC_KERNEL_THREAD in Kconfig and have copy_thread() check
-p->flags & PF_KTHREAD instead of user_mode(regs).  If it's true, set the
-child up so that it would wake up not in ret_from_fork() but in
-ret_from_kernel_thread(), the latter being
-	schedule_tail(last);
-	fn(arg);
-	sys_exit(0);
-where fn and arg would be picked from something set by copy_thread() - either
-pt_regs or callee-saved registers if your switch_to() deals with those (in
-the latter case you'll obviously have then already in place by the time your
-newborn kernel thread wakes up).  Have the same value for kernel stack pointer
-regardless of user_mode.  Use 'usp' for fn, 'unused' for arg and expect regs
-to be NULL.  Kill kernel_thread() in entry.S.
-	* add ret_from_kernel_execve() that would simply set sp to value
-normal for common_exception_return (i.e. what you used to set it when
-going into ret_from_kernel_thread()/ret_from_fork()) and branch to said
-common_exception_return().  Define __ARCH_WANT_KERNEL_EXECVE in unistd.h
-and kill kernel_execve() in entry.S.  ret_from_kernel_execve() will get as
-its argument task_pt_regs(current), which often spares us some calculations.
-	* define __ARCH_WANT_SYS_EXECVE in unistd.h, kill xtensa_execve();
-just use sys_execve instead.
-	* as an optimization, define current_pt_regs() as
-(struct pt_regs *)((unsigned long)current_thread_info() +
- KERNEL_STACK_SIZE - (XCHAL_NUM_AREGS-16)*4) - 1).  I.e. an equivalent of
-task_pt_regs(current) without useless work - task_stack_page(current) is
-expanded to task_stack_page(current_thread_info()->task), which is
-equal to current_thread_info()...
+The following proposed patch takes advantage of the fact that on EFI
+systems, the memory map provides a better description of the physical
+space than on pre-EFI legacy systems. If the efi_enabled state variable
+indicates the kernel is running on an UEFI system, the patch will use
+information from the UEFI memory map so as not to access addresses that
+should avoided according to the UEFI specification.
 
-That would probably allow more glue removal - no more syscalls from the
-kernel, for one thing.  For another, xtensa_clone() won't need to locate
-struct pt_regs * - current_pt_regs() would work just as well and be faster
-anyway.  The same goes for xtensa_rt_sigreturn() and xtensa_sigaltstack()...
+See also a discussion underway in the context of a patch to devmem_is_allowed 
+  https://lkml.org/lkml/2012/10/2/458
+which has the same overall goal of restricting access to 
+inappropriate ranges of the EFI memory map.
+
+Following is my proposed patch based on v3.6. I would appreciate input
+on the following points.  
+
+1. Is the implementation properly interpreting the UEFI specification by
+disallowing probes of addresses for which the type is EFI_RESERVED_TYPE,
+EFI_UNUSABLE_MEMORY, or otherwise unknown?
+
+2. The patch includes some simple test cases in function test_probes
+that can be customized to the testing needs of a particular target
+system.  This test code is conditionally enabled based on the
+pre-processor symbol DO_TEST_PROBES; if that is not defined, the body of
+function test_probes() is empty.  This code can be enabled and modified
+as needed to test specific addresses of interest.  Is this code useful
+to include in an upstream patch?  If not, is there a more generally
+useful testing strategy?
+
+Please CC me directly with comments or questions.
+
+Signed-off-by: Randy Wright <rwright@hp.com>
+
+---
+ arch/x86/kernel/probe_roms.c |   71 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+
+diff --git a/arch/x86/kernel/probe_roms.c b/arch/x86/kernel/probe_roms.c
+index d5f15c3..76c20c9 100644
+--- a/arch/x86/kernel/probe_roms.c
++++ b/arch/x86/kernel/probe_roms.c
+@@ -11,6 +11,7 @@
+ #include <linux/pfn.h>
+ #include <linux/pci.h>
+ #include <linux/export.h>
++#include <linux/efi.h>		/* efi_enabled, efi_mem_type */
+ 
+ #include <asm/probe_roms.h>
+ #include <asm/pci-direct.h>
+@@ -177,11 +178,46 @@ EXPORT_SYMBOL(pci_biosrom_size);
+ 
+ #define ROMSIGNATURE 0xaa55
+ 
++/*
++ * efi_paddr_valid returns 1 if the input physical address
++ * is valid in the efi memory map, 0 otherwise.
++ */
++static int __init efi_paddr_valid(phys_addr_t paddr)
++{
++	u32 type = efi_mem_type((unsigned long)paddr);
++	printk(KERN_DEBUG "efi_paddr_valid(0x%lx): type 0x%lx\n",
++			(unsigned long)paddr, (unsigned long)type);
++	if (type == EFI_RESERVED_TYPE
++	||  type == EFI_UNUSABLE_MEMORY
++	||  type >= EFI_MAX_MEMORY_TYPE)
++		return 0;
++	return 1;
++}
++
++/*
++ * efi_vaddr_valid translates itsinput va to a pa, then
++ * returns the result of efi_paddr_valid applied to that pa.
++ */
++
++static int __init efi_vaddr_valid(const unsigned char *vaddr)
++{
++	phys_addr_t paddr = virt_to_phys((volatile void *)vaddr);
++	return efi_paddr_valid(paddr);
++}
++
+ static int __init romsignature(const unsigned char *rom)
+ {
+ 	const unsigned short * const ptr = (const unsigned short *)rom;
+ 	unsigned short sig;
+ 
++	if (efi_enabled) {
++		int rv = efi_vaddr_valid(rom);
++		printk(KERN_DEBUG
++			"romsignature: efi_vaddr_valid(0x%llx) returned %d\n",
++			 (unsigned long long)rom, rv);
++		if (0 == rv)
++			return 0;
++	}
+ 	return probe_kernel_address(ptr, sig) == 0 && sig == ROMSIGNATURE;
+ }
+ 
+@@ -194,6 +230,39 @@ static int __init romchecksum(const unsigned char *rom, unsigned long length)
+ 	return !length && !sum;
+ }
+ 
++/* #define DO_TEST_PROBES "include customizable test code" */
++static void __init test_probes(void)
++{
++#ifdef	DO_TEST_PROBES
++	static struct {
++		phys_addr_t	paddr;
++		int		ptype;
++	} plist[] = {
++		{0x000000003e760000ULL,	0},	/* RESERVED		*/
++		{0x0000009ffda9f000ULL,	1},	/* LOADER CODE		*/
++		{0x000000000005e000ULL,	2},	/* LOADER DATA		*/
++		{0x0000000000060000ULL,	3},	/* BOOT CODE (why after EBS?) */
++		{0x0000000036400000ULL,	4},	/* BOOT DATA (why after EBS?) */
++		{0x0000009fffc96000ULL,	5},	/* RUNTIME CODE		*/
++		{0x0000009fffcd3000ULL,	6},	/* RUNTIME DATA		*/
++		{0x0000000000001000ULL,	7},	/* CONVENTIONAL MEM	*/
++		{0x000000003e75f000ULL,	9},	/* ACPI RECLAIM		*/
++		{0x000000000008c000ULL,	10},	/* ACPI NVS		*/
++		{0x0000000040000000ULL,	11},	/* MMIO			*/
++		{0,			-1}	/* terminate list	*/
++	};
++	int i, valid;
++	phys_addr_t paddr;
++	for (i = 0; plist[i].ptype >= 0; i++) {
++		paddr = plist[i].paddr;
++		valid = efi_paddr_valid(paddr);
++		printk(KERN_DEBUG
++		      "test_probes: efi_paddr_valid(0x%llx) returned %d\n",
++			(unsigned long long)plist[i].paddr, valid);
++	}
++#endif
++}
++
+ void __init probe_roms(void)
+ {
+ 	const unsigned char *rom;
+@@ -201,6 +270,8 @@ void __init probe_roms(void)
+ 	unsigned char c;
+ 	int i;
+ 
++	test_probes();
++
+ 	/* video rom */
+ 	upper = adapter_rom_resources[0].start;
+ 	for (start = video_rom_resource.start; start < upper; start += 2048) {
+-- 
+1.7.9.5
+
