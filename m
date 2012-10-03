@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab2JCXnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:43:11 -0400
-Received: from mail.olivetcollege.edu ([24.56.220.209]:35085 "EHLO
-	mail.olivetcollege.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932788Ab2JCXnJ convert rfc822-to-8bit (ORCPT
+	id S933028Ab2JCXsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:48:13 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51421 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932788Ab2JCXsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:43:09 -0400
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 19:43:09 EDT
-From: Alexis A Lund <ALund@Olivetcollege.edu>
-Date: Wed, 3 Oct 2012 19:31:12 -0400
-Subject: Business Proposition
-Thread-Topic: Business Proposition
-Thread-Index: AQHNob8UPxEyJgVdKkmB+P82xCiDAw==
-Message-ID: <41A93BA889E7ED44B52FC268F417E0665A3F0E72B9@OC-MAIL-SRV3.OlivetCollege.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 3 Oct 2012 19:48:12 -0400
+Date: Thu, 4 Oct 2012 00:48:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chris Zankel <chris@zankel.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] xtensa patchset for 3.7
+Message-ID: <20121003234809.GG23473@ZenIV.linux.org.uk>
+References: <506CBAFC.8010908@zankel.net>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506CBAFC.8010908@zankel.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Business Proposition
+On Wed, Oct 03, 2012 at 03:23:56PM -0700, Chris Zankel wrote:
+> Hi Linus,
+> 
+> Please pull the changes for the Xtensa architecture for v3.7.
+> 
+> Thanks,
+> -Chris
 
-Dear Friend,
+	BTW, could you do an xtensa counterpart of the stuff in
+git.kernel.org/pub/scm/linux/kernel/git/viro/signal#experimental-kernel_thread?
+Basically,
+	* switch kernel_thread() away from "syscall in kernel" model;
+select GENERIC_KERNEL_THREAD in Kconfig and have copy_thread() check
+p->flags & PF_KTHREAD instead of user_mode(regs).  If it's true, set the
+child up so that it would wake up not in ret_from_fork() but in
+ret_from_kernel_thread(), the latter being
+	schedule_tail(last);
+	fn(arg);
+	sys_exit(0);
+where fn and arg would be picked from something set by copy_thread() - either
+pt_regs or callee-saved registers if your switch_to() deals with those (in
+the latter case you'll obviously have then already in place by the time your
+newborn kernel thread wakes up).  Have the same value for kernel stack pointer
+regardless of user_mode.  Use 'usp' for fn, 'unused' for arg and expect regs
+to be NULL.  Kill kernel_thread() in entry.S.
+	* add ret_from_kernel_execve() that would simply set sp to value
+normal for common_exception_return (i.e. what you used to set it when
+going into ret_from_kernel_thread()/ret_from_fork()) and branch to said
+common_exception_return().  Define __ARCH_WANT_KERNEL_EXECVE in unistd.h
+and kill kernel_execve() in entry.S.  ret_from_kernel_execve() will get as
+its argument task_pt_regs(current), which often spares us some calculations.
+	* define __ARCH_WANT_SYS_EXECVE in unistd.h, kill xtensa_execve();
+just use sys_execve instead.
+	* as an optimization, define current_pt_regs() as
+(struct pt_regs *)((unsigned long)current_thread_info() +
+ KERNEL_STACK_SIZE - (XCHAL_NUM_AREGS-16)*4) - 1).  I.e. an equivalent of
+task_pt_regs(current) without useless work - task_stack_page(current) is
+expanded to task_stack_page(current_thread_info()->task), which is
+equal to current_thread_info()...
 
-I am Su Ning, an account manager in China Central Bank, a licensed bank incorporated in China Asia. I am getting in touch with you regarding a customer in my bank who died here in Asia without a next of kin and an investment worth millions of dollars placed in our bank some years ago,and i happened to be his accounts officer.
-
-Kindly get back to me if you are interested in partnering with me on this project. Reply to this e-mail address: ningsu159@yahoo.com.hk
-
-Sincerely,
-
-Su Ning.
+That would probably allow more glue removal - no more syscalls from the
+kernel, for one thing.  For another, xtensa_clone() won't need to locate
+struct pt_regs * - current_pt_regs() would work just as well and be faster
+anyway.  The same goes for xtensa_rt_sigreturn() and xtensa_sigaltstack()...
