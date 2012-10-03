@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab2JCANT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 20:13:19 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47658 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932810Ab2JCANR (ORCPT
+	id S932858Ab2JCAPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 20:15:42 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33402 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932810Ab2JCAPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 20:13:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1210030159440.31999@twin.jikos.cz>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
- <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
- <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
- <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
- <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
- <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com>
- <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com> <alpine.LRH.2.00.1210030159440.31999@twin.jikos.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 2 Oct 2012 17:12:55 -0700
-X-Google-Sender-Auth: F9IR-3JcpzqyBo7ssB5J4DcGskE
-Message-ID: <CA+55aFwz_7sksJRnFHZQFHD001ihF7ejkk5+-6Punc2dFtoqVQ@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+	Tue, 2 Oct 2012 20:15:41 -0400
+Date: Tue, 2 Oct 2012 17:15:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Jiri Kosina <jkosina@suse.cz>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove
+ _rcu_barrier() dependency on __stop_machine()")
+Message-ID: <20121003001530.GF2465@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
+ <20121002170149.GC2465@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+ <20121002233138.GD2465@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100300-2876-0000-0000-000000AD6AF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 2, 2012 at 5:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Tue, 2 Oct 2012, Linus Torvalds wrote:
->
->> And see this email from Kay Sievers that shows that it was all known
->> about and intentional in the udev camp:
->>
->>   http://www.spinics.net/lists/netdev/msg185742.html
->
-> This seems confusing indeed.
->
-> That e-mail referenced above is talking about loading firmware at ifup
-> time. While that might work for network device drivers (I am not sure even
-> about that), what are the udev maintainers advice for other drivers, where
-> there is no analogy to ifup?
+On Wed, Oct 03, 2012 at 01:48:21AM +0200, Jiri Kosina wrote:
+> On Tue, 2 Oct 2012, Paul E. McKenney wrote:
+> 
+> > Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug 
+> > notifier, which doesn't sit so well with rcu_barrier() trying to exclude 
+> > CPU hotplug events.  I could go back to the old approach, but it is 
+> > significantly more complex.  I cannot say that I am all that happy about 
+> > anyone calling rcu_barrier() from a CPU hotplug notifier because it 
+> > doesn't help CPU hotplug latency, but that is a separate issue.
+> > 
+> > But the thing is that rcu_barrier()'s assumptions work just fine if either
+> > (1) it excludes hotplug operations or (2) if it is called from a hotplug
+> > notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
+> > is executing.  So the right way to resolve this seems to be to do the
+> > get_online_cpus() only if rcu_barrier() is -not- executing in the context
+> > of a hotplug notifier.  Should be fixable without too much hassle...
+> 
+> Sorry, I don't think I understand what you are proposing just yet.
+> 
+> If I understand it correctly, you are proposing to introduce some magic 
+> into _rcu_barrier() such as (pseudocode of course):
+> 
+> 	if (!being_called_from_hotplug_notifier_callback)
+> 		get_online_cpus()
+> 
+> How does that protect from the scenario I've outlined before though?
+> 
+> 	CPU 0                           CPU 1
+> 	kmem_cache_destroy()
+> 	mutex_lock(slab_mutex)
+> 					_cpu_up()
+> 					cpu_hotplug_begin()
+> 					mutex_lock(cpu_hotplug.lock)
+> 	rcu_barrier()
+> 	_rcu_barrier()
+> 	get_online_cpus()
+> 	mutex_lock(cpu_hotplug.lock)
+> 	 (blocks, CPU 1 has the mutex)
+> 					__cpu_notify()
+> 					mutex_lock(slab_mutex)	
+> 
+> CPU 0 grabs both locks anyway (it's not running from notifier callback). 
+> CPU 1 grabs both locks as well, as there is no _rcu_barrier() being called 
+> from notifier callback either.
+> 
+> What did I miss?
 
-Yeah, it's an udev bug. It really is that simple.
+You didn't miss anything, I was suffering a failure to read carefully.
 
-This is why I'm complaining. There's no way in hell we're fixing this
-in kernel space, unless we call the "bypass udev entirely because the
-maintainership quality of it has taken a nose dive". Yes, I've seen
-some work-around patches, but quite frankly, I think it would be
-absolutely insane for the kernel to work around the fact that udev is
-buggy.
+So my next stupid question is "Why can't kmem_cache_destroy drop
+slab_mutex early?" like the following:
 
-The fact is, doing request_firmware() from within module_init() is
-simply the easiest approach for some devices.
+	void kmem_cache_destroy(struct kmem_cache *cachep)
+	{
+		BUG_ON(!cachep || in_interrupt());
 
-Now, at the same time, I do agree that network devices should
-generally try to delay it until ifup time, so I'm not arguing against
-that part per se. I do think that when possible, people should aim to
-delay firmware loading until as late as reasonable.
+		/* Find the cache in the chain of caches. */
+		get_online_cpus();
+		mutex_lock(&slab_mutex);
+		/*
+		 * the chain is never empty, cache_cache is never destroyed
+		 */
+		list_del(&cachep->list);
+		if (__cache_shrink(cachep)) {
+			slab_error(cachep, "Can't free all objects");
+			list_add(&cachep->list, &slab_caches);
+			mutex_unlock(&slab_mutex);
+			put_online_cpus();
+			return;
+		}
+		mutex_unlock(&slab_mutex);
 
-But as you point out, it's simply not always reasonable, and the media
-people are clearly hitting the cases where it's just painful. Now,
-those cases seem to be happily fairly *rare*, so this isn't getting a
-ton of attention, but we should fix it.
+		if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
+			rcu_barrier();
 
-Because the udev behavior is all pain, no gain. There's no *reason*
-for udev to be pissy about this. And it didn't use to be.
+		__kmem_cache_destroy(cachep);
+		put_online_cpus();
+	}
 
-                    Linus
+Or did I miss some reason why __kmem_cache_destroy() needs that lock?
+Looks to me like it is just freeing now-disconnected memory.
+
+							Thanx, Paul
+
