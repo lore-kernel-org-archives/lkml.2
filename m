@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2JCOue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:50:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46849 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751352Ab2JCOuc (ORCPT
+	id S1756246Ab2JCOvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:51:09 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:54818 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753594Ab2JCOvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:50:32 -0400
-Message-ID: <1349275814.16173.13.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 008/180] 2.6.32.x: ntp: Fix leap-second hrtimer livelock
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Date: Wed, 03 Oct 2012 15:50:14 +0100
-In-Reply-To: <20121001225157.951753597@1wt.eu>
-References: <20121001225157.951753597@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-tvjBlYCSroZxjLmd/Goq"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 3 Oct 2012 10:51:07 -0400
+Message-ID: <506C5124.3050200@ti.com>
+Date: Wed, 03 Oct 2012 17:52:20 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Tim Gardner <tim.gardner@canonical.com>
+CC: linux-kernel@vger.kernel.org, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3.7-rc1] omap zoom2.c: Fix compile error by including
+ correct header files
+References: <1349274686-45668-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1349274686-45668-1-git-send-email-tim.gardner@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/03/2012 05:31 PM, Tim Gardner wrote:
+> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+> Cc: Liam Girdwood <lrg@ti.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Jaroslav Kysela <perex@perex.cz>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Cc: linux-omap@vger.kernel.org
+> Cc: alsa-devel@alsa-project.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  sound/soc/omap/zoom2.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
+> index 23de2b2..d0a8c92 100644
+> --- a/sound/soc/omap/zoom2.c
+> +++ b/sound/soc/omap/zoom2.c
+> @@ -27,9 +27,10 @@
+>  
+>  #include <asm/mach-types.h>
+>  #include <mach/hardware.h>
+> -#include <mach/gpio.h>
+> +#include <linux/gpio.h>
+>  #include <mach/board-zoom.h>
+>  #include <linux/platform_data/asoc-ti-mcbsp.h>
+> +#include <linux/platform_data/gpio-omap.h>
+>  
+>  /* Register descriptions for twl4030 codec part */
+>  #include <linux/mfd/twl4030-audio.h>
+> 
 
---=-tvjBlYCSroZxjLmd/Goq
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I have the same patch stashed away for the same issue. Was waiting for rc1 to
+send it.
 
-On Tue, 2012-10-02 at 00:52 +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
-[...]
-
-No objection, but please remove the '2.6.32.x: ' prefix from the subject
-before committing this and the other ntp/timekeeping/hrtimer fixes.
-
-Ben.
-
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
-
---=-tvjBlYCSroZxjLmd/Goq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUGxQpue/yOyVhhEJAQqzxRAA1a7oumhhBONtZpba41x9xAQdpMFTaU1N
-feqP2JpUbqd4cp7H5F7iwA4YqJwD7FT2C5+4+WyOMwqBgpRu7OX9XPpeIxVoA2ki
-sqfST9P+jYGGtpeAS2DIwrS1l7bnWUpSdejl99/NtRzSL64Krk23hQCJSq5ONM0o
-ZvDYIblqjI7V1LfFMARH5iW2oAH6VDTNZ1PpBe0lh3zL+O8K0tcZpzKFxY70iXMl
-D7ZzUmDTINUCJus/kOmiLbMngw6UwWZxOST9wbrlAAuozOhNVoXmC2NJEEuPZh3V
-omgztwcoN1GAgKBwSXkNqdh7GaB00qaT/qNm0ImYfyWG7ruP+xjhLAPM9OiwHqYV
-uUWcQyOQbkM1v+kEnoSuGb9R0BiI6yed9jD4BH56eXj/jqbE0hfbx/TrSPu6eGyC
-brgrShtucaP46SuqMpKJZrDgp8YRW/CQ2r2VzpPWlC3gktmdOCyIZpchqBOKZTZm
-Wr9vAD45wcDFgSYIB9A5ZfY3TNiutoReErAlYwh2w5k7kpgiQWZQx8HSMaTLS4qA
-nnaMfWXXaBxaSBs5+WcV+b89FUXjjWnwB4BJAd0BGXXRIhRoiXzjYHnH2UnYPL3C
-qVlzQGGdQ2vhufeggEBmCzCFmK+q52yLru9FKYDWGeL5WFz3vf2V04gv/mZ5PJoj
-XnVV2zyD6nk=
-=5UTE
------END PGP SIGNATURE-----
-
---=-tvjBlYCSroZxjLmd/Goq--
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
