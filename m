@@ -1,132 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab2JCM7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 08:59:49 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41550 "EHLO
+	id S932247Ab2JCM7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 08:59:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:41560 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932197Ab2JCM7q (ORCPT
+	by vger.kernel.org with ESMTP id S932197Ab2JCM7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 08:59:46 -0400
+	Wed, 3 Oct 2012 08:59:50 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Matthew Garrett <mjg@redhat.com>, Jan Beulich <jbeulich@suse.com>,
         x86@kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        =?UTF-8?q?J=C3=A9r=C3=B4meCarretero?= <cJ-ko@zougloub.eu>,
-        Vasco Dias <rafa.vasco@gmail.com>
-Subject: [PATCH 2/3] x86, efi: 1:1 pagetable mapping for virtual EFI calls
-Date: Wed,  3 Oct 2012 13:59:16 +0100
-Message-Id: <1349269157-25956-3-git-send-email-matt@console-pimps.org>
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3/3] x86/kernel: remove tboot 1:1 page table creation code
+Date: Wed,  3 Oct 2012 13:59:17 +0100
+Message-Id: <1349269157-25956-4-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
 References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
 
-Some firmware still needs a 1:1 (virt->phys) mapping even after we've
-called SetVirtualAddressMap(). So install the mapping alongside our
-existing kernel mapping whenever we make EFI calls in virtual mode.
+For TXT boot, while Linux kernel trys to shutdown/S3/S4/reboot, it
+need to jump back to tboot code and do TXT teardown work. Previously
+kernel zapped all mem page identity mapping (va=pa) after booting, so
+tboot code mem address was mapped again with identity mapping. Now
+kernel didn't zap the identity mapping page table, so tboot related
+code can remove the remapping code before trapping back now.
 
-This bug was discovered on ASUS machines where the firmware
-implementation of GetTime() accesses the RTC device via physical
-addresses, even though that's bogus per the UEFI spec since we've
-informed the firmware via SetVirtualAddressMap() that the boottime
-memory map is no longer valid.
-
-This bug seems to be present in a lot of consumer devices, so there's
-not a lot we can do about this spec violation apart from workaround
-it.
-
-Cc: JérômeCarretero <cJ-ko@zougloub.eu>
-Cc: Vasco Dias <rafa.vasco@gmail.com>
+Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+Acked-by: Gang Wei <gang.wei@intel.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/include/asm/efi.h     | 28 +++++++++++++++++++++-------
- arch/x86/platform/efi/efi_64.c | 15 +++++++++++++++
- 2 files changed, 36 insertions(+), 7 deletions(-)
+ arch/x86/kernel/tboot.c | 78 ++++---------------------------------------------
+ 1 file changed, 5 insertions(+), 73 deletions(-)
 
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index c9dcc18..ae3bf3b 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -69,23 +69,37 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
- 	efi_call6((void *)(f), (u64)(a1), (u64)(a2), (u64)(a3),		\
- 		  (u64)(a4), (u64)(a5), (u64)(a6))
- 
-+extern unsigned long efi_call_virt_prelog(void);
-+extern void efi_call_virt_epilog(unsigned long);
-+
-+#define efi_callx(x, func, ...)					\
-+	({							\
-+		efi_status_t __status;				\
-+		unsigned long __pgd;				\
-+								\
-+		__pgd = efi_call_virt_prelog();			\
-+		__status = efi_call##x(func, __VA_ARGS__);	\
-+		efi_call_virt_epilog(__pgd);			\
-+		__status;					\
-+	})
-+
- #define efi_call_virt0(f)				\
--	efi_call0((void *)(efi.systab->runtime->f))
-+	efi_callx(0, (void *)(efi.systab->runtime->f))
- #define efi_call_virt1(f, a1)					\
--	efi_call1((void *)(efi.systab->runtime->f), (u64)(a1))
-+	efi_callx(1, (void *)(efi.systab->runtime->f), (u64)(a1))
- #define efi_call_virt2(f, a1, a2)					\
--	efi_call2((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2))
-+	efi_callx(2, (void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2))
- #define efi_call_virt3(f, a1, a2, a3)					\
--	efi_call3((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
-+	efi_callx(3, (void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3))
- #define efi_call_virt4(f, a1, a2, a3, a4)				\
--	efi_call4((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
-+	efi_callx(4, (void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4))
- #define efi_call_virt5(f, a1, a2, a3, a4, a5)				\
--	efi_call5((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
-+	efi_callx(5, (void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4), (u64)(a5))
- #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)			\
--	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
-+	efi_callx(6, (void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
- 
- extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index ac3aa54..ddb0174 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -58,6 +58,21 @@ static void __init early_code_mapping_set_exec(int executable)
- 	}
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index f84fe00..d4f460f 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -103,71 +103,13 @@ void __init tboot_probe(void)
+ 	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
  }
  
-+unsigned long efi_call_virt_prelog(void)
-+{
-+	unsigned long saved;
-+
-+	saved = read_cr3();
-+	write_cr3(real_mode_header->trampoline_pgd);
-+
-+	return saved;
-+}
-+
-+void efi_call_virt_epilog(unsigned long saved)
-+{
-+	write_cr3(saved);
-+}
-+
- void __init efi_call_phys_prelog(void)
+-static pgd_t *tboot_pg_dir;
+-static struct mm_struct tboot_mm = {
+-	.mm_rb          = RB_ROOT,
+-	.pgd            = swapper_pg_dir,
+-	.mm_users       = ATOMIC_INIT(2),
+-	.mm_count       = ATOMIC_INIT(1),
+-	.mmap_sem       = __RWSEM_INITIALIZER(init_mm.mmap_sem),
+-	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
+-	.mmlist         = LIST_HEAD_INIT(init_mm.mmlist),
+-};
+-
+ static inline void switch_to_tboot_pt(void)
  {
- 	unsigned long vaddress;
+-	write_cr3(virt_to_phys(tboot_pg_dir));
+-}
+-
+-static int map_tboot_page(unsigned long vaddr, unsigned long pfn,
+-			  pgprot_t prot)
+-{
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *pte;
+-
+-	pgd = pgd_offset(&tboot_mm, vaddr);
+-	pud = pud_alloc(&tboot_mm, pgd, vaddr);
+-	if (!pud)
+-		return -1;
+-	pmd = pmd_alloc(&tboot_mm, pud, vaddr);
+-	if (!pmd)
+-		return -1;
+-	pte = pte_alloc_map(&tboot_mm, NULL, pmd, vaddr);
+-	if (!pte)
+-		return -1;
+-	set_pte_at(&tboot_mm, vaddr, pte, pfn_pte(pfn, prot));
+-	pte_unmap(pte);
+-	return 0;
+-}
+-
+-static int map_tboot_pages(unsigned long vaddr, unsigned long start_pfn,
+-			   unsigned long nr)
+-{
+-	/* Reuse the original kernel mapping */
+-	tboot_pg_dir = pgd_alloc(&tboot_mm);
+-	if (!tboot_pg_dir)
+-		return -1;
+-
+-	for (; nr > 0; nr--, vaddr += PAGE_SIZE, start_pfn++) {
+-		if (map_tboot_page(vaddr, start_pfn, PAGE_KERNEL_EXEC))
+-			return -1;
+-	}
+-
+-	return 0;
+-}
+-
+-static void tboot_create_trampoline(void)
+-{
+-	u32 map_base, map_size;
+-
+-	/* Create identity map for tboot shutdown code. */
+-	map_base = PFN_DOWN(tboot->tboot_base);
+-	map_size = PFN_UP(tboot->tboot_size);
+-	if (map_tboot_pages(map_base << PAGE_SHIFT, map_base, map_size))
+-		panic("tboot: Error mapping tboot pages (mfns) @ 0x%x, 0x%x\n",
+-		      map_base, map_size);
++#ifdef CONFIG_X86_32
++	load_cr3(initial_page_table);
++#else
++	write_cr3(real_mode_header->trampoline_pgd);
++#endif
+ }
+ 
+ #ifdef CONFIG_ACPI_SLEEP
+@@ -225,14 +167,6 @@ void tboot_shutdown(u32 shutdown_type)
+ 	if (!tboot_enabled())
+ 		return;
+ 
+-	/*
+-	 * if we're being called before the 1:1 mapping is set up then just
+-	 * return and let the normal shutdown happen; this should only be
+-	 * due to very early panic()
+-	 */
+-	if (!tboot_pg_dir)
+-		return;
+-
+ 	/* if this is S3 then set regions to MAC */
+ 	if (shutdown_type == TB_SHUTDOWN_S3)
+ 		if (tboot_setup_sleep())
+@@ -343,8 +277,6 @@ static __init int tboot_late_init(void)
+ 	if (!tboot_enabled())
+ 		return 0;
+ 
+-	tboot_create_trampoline();
+-
+ 	atomic_set(&ap_wfs_count, 0);
+ 	register_hotcpu_notifier(&tboot_cpu_notifier);
+ 
 -- 
 1.7.11.4
 
