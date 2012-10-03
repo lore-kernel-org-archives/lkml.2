@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965455Ab2JCRwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:52:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34371 "EHLO
+	id S965419Ab2JCRvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:51:54 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34194 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965423Ab2JCRwH (ORCPT
+	with ESMTP id S964823Ab2JCRvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:52:07 -0400
+	Wed, 3 Oct 2012 13:51:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,117 +15,83 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         bhutchings@solarflare.com, gregory.v.rose@intel.com,
         davem@davemloft.net--no-chain-reply-to,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 4/5] PCI: Add max_vfs in sysfs per pci device where supports
-Date: Wed,  3 Oct 2012 10:51:34 -0700
-Message-Id: <1349286695-26713-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 1/5] PCI: Add pci_dev_type
+Date: Wed,  3 Oct 2012 10:51:31 -0700
+Message-Id: <1349286695-26713-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1349286695-26713-1-git-send-email-yinghai@kernel.org>
 References: <506C3B11.9010009@redhat.com>
  <1349286695-26713-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-only pci device that support sriov will have max_vfs show up in /sys
-
-when user set value in /sys, driver ops set_max_vfs will be called to enable
-VF there.
+need to use it for visiable attribute control in syfsfs for pci_dev.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/pci-sysfs.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h     |    1 +
- 2 files changed, 52 insertions(+), 0 deletions(-)
+ drivers/pci/pci-sysfs.c |   24 ++++++++++++++++++++++++
+ drivers/pci/pci.h       |    1 +
+ drivers/pci/probe.c     |    1 +
+ 3 files changed, 26 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index fbbb97f..9b6f409 100644
+index 02d107b..3d160aa 100644
 --- a/drivers/pci/pci-sysfs.c
 +++ b/drivers/pci/pci-sysfs.c
-@@ -458,6 +458,52 @@ boot_vga_show(struct device *dev, struct device_attribute *attr, char *buf)
- }
- struct device_attribute vga_attr = __ATTR_RO(boot_vga);
- 
-+static ssize_t
-+max_vfs_show(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	return sprintf(buf, "%u\n", pdev->max_vfs);
-+}
-+
-+static void max_vfs_callback(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	mutex_lock(&pci_remove_rescan_mutex);
-+	if (pdev->is_added && dev->driver) {
-+		struct pci_driver *pdrv;
-+
-+		pdrv = to_pci_driver(dev->driver);
-+		if (pdrv->set_max_vfs)
-+			pdrv->set_max_vfs(pdev);
-+
-+	}
-+	mutex_unlock(&pci_remove_rescan_mutex);
-+}
-+static ssize_t
-+max_vfs_store(struct device *dev, struct device_attribute *attr,
-+		 const char *buf, size_t count)
-+{
-+	unsigned long val;
-+	int err;
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (kstrtoul(buf, 0, &val) < 0)
-+		return -EINVAL;
-+
-+	pdev->max_vfs = val;
-+
-+	err = device_schedule_callback(dev, max_vfs_callback);
-+
-+	if (err)
-+		return err;
-+
-+	return count;
-+}
-+struct device_attribute max_vfs_attr =
-+	__ATTR(max_vfs, 0644, max_vfs_show, max_vfs_store);
-+
- static void
- pci_config_pm_runtime_get(struct pci_dev *pdev)
- {
-@@ -1405,6 +1451,7 @@ late_initcall(pci_sysfs_init);
- 
- static struct attribute *pci_dev_dev_attrs[] = {
- 	&vga_attr.attr,
-+	&max_vfs_attr.attr,
- 	NULL,
- };
- 
-@@ -1418,6 +1465,10 @@ static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
- 		if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
- 			return 0;
- 
-+	if (a == &max_vfs_attr.attr)
-+		if (!pdev->is_physfn)
-+			return 0;
-+
- 	return a->mode;
+@@ -1411,3 +1411,27 @@ static int __init pci_sysfs_init(void)
  }
  
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 7d70a5e..f7423d4 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -335,6 +335,7 @@ struct pci_dev {
- 	unsigned int	broken_intx_masking:1;
- 	unsigned int	io_window_1k:1;	/* Intel P2P bridge 1K I/O windows */
- 	pci_dev_flags_t dev_flags;
-+	unsigned int	max_vfs;
- 	atomic_t	enable_cnt;	/* pci_enable_device has been called */
- 
- 	u32		saved_config_space[16]; /* config space saved at suspend time */
+ late_initcall(pci_sysfs_init);
++
++static struct attribute *pci_dev_dev_attrs[] = {
++	NULL,
++};
++
++static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
++						struct attribute *a, int n)
++{
++	return a->mode;
++}
++
++static struct attribute_group pci_dev_attr_group = {
++	.attrs = pci_dev_dev_attrs,
++	.is_visible = pci_dev_attrs_are_visible,
++};
++
++static const struct attribute_group *pci_dev_attr_groups[] = {
++	&pci_dev_attr_group,
++	NULL,
++};
++
++struct device_type pci_dev_type = {
++	.groups = pci_dev_attr_groups,
++};
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index bacbcba..6f6cd14 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -157,6 +157,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+ }
+ extern struct device_attribute pci_dev_attrs[];
+ extern struct device_attribute pcibus_dev_attrs[];
++extern struct device_type pci_dev_type;
+ #ifdef CONFIG_HOTPLUG
+ extern struct bus_attribute pci_bus_attrs[];
+ #else
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index ec909af..0312f1c48 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -975,6 +975,7 @@ int pci_setup_device(struct pci_dev *dev)
+ 	dev->sysdata = dev->bus->sysdata;
+ 	dev->dev.parent = dev->bus->bridge;
+ 	dev->dev.bus = &pci_bus_type;
++	dev->dev.type = &pci_dev_type;
+ 	dev->hdr_type = hdr_type & 0x7f;
+ 	dev->multifunction = !!(hdr_type & 0x80);
+ 	dev->error_state = pci_channel_io_normal;
 -- 
 1.7.7
 
