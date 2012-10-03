@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2JCVNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:13:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34079 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592Ab2JCVNN (ORCPT
+	id S1756083Ab2JCVNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:13:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33100 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577Ab2JCVNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:13:13 -0400
-Date: Wed, 3 Oct 2012 14:13:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] CPU hotplug, debug: Detect imbalance between
- get_online_cpus() and put_online_cpus()
-Message-Id: <20121003141311.09fb3ffc.akpm@linux-foundation.org>
-In-Reply-To: <506C3535.3070401@linux.vnet.ibm.com>
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
-	<20121002170149.GC2465@linux.vnet.ibm.com>
-	<alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
-	<alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
-	<alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
-	<20121002233138.GD2465@linux.vnet.ibm.com>
-	<alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
-	<20121003001530.GF2465@linux.vnet.ibm.com>
-	<alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
-	<alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
-	<506C2E02.9080804@linux.vnet.ibm.com>
-	<506C3535.3070401@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 17:13:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121002212523.GA11180@beef>
+References: <1347479152-588-1-git-send-email-omar.luna@linaro.org>
+	<1347479152-588-9-git-send-email-omar.luna@linaro.org>
+	<20121002212523.GA11180@beef>
+Date: Wed, 3 Oct 2012 16:13:33 -0500
+Message-ID: <CALLhW=4oawfGqSDHAVgh_SPqB4Ugeyw6MjoaNDVkxSJcJd4Tpg@mail.gmail.com>
+Subject: Re: [PATCH v2 8/9] ARM: OMAP: iommu: add device tree support
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+To: Matt Porter <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Russell King <linux@arm.linux.org.uk>, Rajendra Nayak <rnayak@ti.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Oct 2012 18:23:09 +0530
-"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+Hi Matt,
 
-> The synchronization between CPU hotplug readers and writers is achieved by
-> means of refcounting, safe-guarded by the cpu_hotplug.lock.
-> 
-> get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
-> it. If we ever hit an imbalance between the two, we end up compromising the
-> guarantees of the hotplug synchronization i.e, for example, an extra call to
-> put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
-> a hotplug writer. So, add a BUG_ON() in put_online_cpus() to detect such cases
-> where the refcount can go negative.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/cpu.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index f560598..00d29bc 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -80,6 +80,7 @@ void put_online_cpus(void)
->  	if (cpu_hotplug.active_writer == current)
->  		return;
->  	mutex_lock(&cpu_hotplug.lock);
-> +	BUG_ON(cpu_hotplug.refcount == 0);
->  	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->  		wake_up_process(cpu_hotplug.active_writer);
->  	mutex_unlock(&cpu_hotplug.lock);
+On 2 October 2012 16:25, Matt Porter <mporter@ti.com> wrote:
+...
+> I can see why you went this path with the iommu driver as it already had
+> some integration code present here. I have some concerns going forward
+> about how this should be long-term. Take any platform booting only with
+> DT populated, we'd like to avoid having to use this approach where
+> platform private APIs are called via pdata. In fact, it's going to makes
+> thing ugly to carry any sort of pdata for a driver that's otherwise
+> driven exclusively from DT.
+>
+> For AM335x, I can implement this approach, but it means adding some
+> pruss specific integration code just to have it create the pdata for
+> reset_name and assert/deassert.
 
-I think calling BUG() here is a bit harsh.  We should only do that if
-there's a risk to proceeding: a risk of data loss, a reduced ability to
-analyse the underlying bug, etc.
+Yes I agree, it looks a bit ugly for devices that have more than one
+reset line name too, but right now there is no other way to keep the
+reset names and also provide flexibility to the driver to control them
+in a given order.
 
-But a cpu-hotplug locking imbalance is a really really really minor
-problem!  So how about we emit a warning then try to fix things up? 
-This should increase the chance that the machine will keep running and
-so will increase the chance that a user will be able to report the bug
-to us.
+> From reading all the threads on hardresets and OMAP, it seems we may not
+> be able to come up with a generic OMAP handler for these resets and
+> that's really reflected in the fact that this API exists. So given that,
+> it reasons that OMAP isn't the only one needing a reset API for drivers.
+> I'm thinking that (as trivial as it may seem), this support may need to
+> move to a reset subsystem such that drivers have a clean way to access
+> reset resources in an SoC.
 
+Well, there was a point where the OMAP hwmod code contained the reset
+code and at least for me it was working fine, with iommu and ipu
+processor, just with a minor misleading warning print... however then
+this code got stripped out and since there appeared to be people
+needing to handle their reset lines in unknown ways it was advised
+that everybody should implement their own reset functions, but in my
+case I could reuse most of the disabled code at the expense of almost
+duplicating _enable (omap_hwmod) function while waiting all the reset
+line users started asking for changes.
 
---- a/kernel/cpu.c~cpu-hotplug-debug-detect-imbalance-between-get_online_cpus-and-put_online_cpus-fix
-+++ a/kernel/cpu.c
-@@ -80,9 +80,12 @@ void put_online_cpus(void)
- 	if (cpu_hotplug.active_writer == current)
- 		return;
- 	mutex_lock(&cpu_hotplug.lock);
--	BUG_ON(cpu_hotplug.refcount == 0);
--	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
--		wake_up_process(cpu_hotplug.active_writer);
-+	if (!--cpu_hotplug.refcount) {
-+		if (WARN_ON(cpu_hotplug.refcount == -1))
-+			cpu_hotplug.refcount++;	/* try to fix things up */
-+		if (unlikely(cpu_hotplug.active_writer))
-+			wake_up_process(cpu_hotplug.active_writer);
-+	}
- 	mutex_unlock(&cpu_hotplug.lock);
- 
- }
-_
+> I'm curious if you or others have thought about where this needs to go
+> next.
 
+I haven't planned for a reset subsystem or a more generic
+implementation, although I have been looking for a way to avoid using
+the pdata function pointers.
+
+> When I first thought about a reset subsystem it seemed to trivial
+> to bother with but looking at the reasoning behind the power_seq
+> subsystem, it seems to have similar justification to get this machine
+> specific logic out of the platform code and under standardized control
+> of the driver.
+
+IMHO, the reset code even if made a subsystem or a library, would
+still need to interface with machine specific code and definitions
+(say omap_hwmod), so I don't see much difference in making the
+omap_device reset handlers as exported symbols for the time being,
+with acceptance of the owners of omap_device code.
+
+And then if power_seq makes it to mainline perhaps extending it to
+handle deassert, assert and softreset events, but then again this
+would have the same hooks to omap_hwmod which is the one with the prcm
+information.
+
+Regards,
+
+Omar
