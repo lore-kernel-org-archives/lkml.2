@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab2JCQOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:14:14 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40943 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab2JCQOK (ORCPT
+	id S1756474Ab2JCQPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:15:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56925 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab2JCQO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:14:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAN+gG=EGMs4CMsj19JBGgwgxBDiuhQFstiEvMv3FR_N2pX+9SA@mail.gmail.com>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>
-	<CAM=Q2cuVa9yLY7-nRz26OYktgM3i+dOfDa8vVznwMVrs9pH5sg@mail.gmail.com>
-	<CAN+gG=EGMs4CMsj19JBGgwgxBDiuhQFstiEvMv3FR_N2pX+9SA@mail.gmail.com>
-Date: Wed, 3 Oct 2012 21:44:09 +0530
-Message-ID: <CAM=Q2cv7Qc9Up5b_033uwaunnBz1mB4UWbb1bh9TGzX5=FxFrg@mail.gmail.com>
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification implementation
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+	Wed, 3 Oct 2012 12:14:58 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Manuel Lauss <manuel.lauss@gmail.com>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Thomas Meyer <thomas@m3y3r.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 24/25] MIPS: Alchemy: use the OHCI platform driver
+Date: Wed, 03 Oct 2012 18:13:52 +0200
+Message-ID: <1552014.pCMX6Sqj22@flexo>
+Organization: OpenWrt
+User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAOLZvyEcFePtAhcX4r32VvemWqriuyVfkE8b-AAL=xWOww+=7g@mail.gmail.com>
+References: <1349276601-8371-1-git-send-email-florian@openwrt.org> <1349276601-8371-26-git-send-email-florian@openwrt.org> <CAOLZvyEcFePtAhcX4r32VvemWqriuyVfkE8b-AAL=xWOww+=7g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 9:03 PM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> Hi,
->
-> thanks also for the review. Two in the same day! I was about to send a
-> ping on that patch.... ;-)
->
-> On Wed, Oct 3, 2012 at 8:05 AM, Shubhrajyoti Datta
-> <omaplinuxkernel@gmail.com> wrote:
->> On Fri, Sep 14, 2012 at 7:11 PM, benjamin.tissoires
->> <benjamin.tissoires@gmail.com> wrote:
->>> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->>>
->>> Microsoft published the protocol specification of HID over i2c:
->>> http://msdn.microsoft.com/en-us/library/windows/hardware/hh852380.aspx
->>>
->>> This patch introduces an implementation of this protocol.
->>>
->>> This implementation does not includes the ACPI part of the specification.
->>> This will come when ACPI 5.0 devices will be available.
->>>
->>> Once the ACPI part will be done, OEM will not have to declare HID over I2C
->>> devices in their platform specific driver.
->>>
->>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->>> ---
->>>
->>> Hi,
->>>
->>> this is finally my first implementation of HID over I2C.
->>>
->>> This has been tested on an Elan Microelectronics HID over I2C device, with
->>> a Samsung Exynos 4412 board.
->>>
->>> Any comments are welcome.
->>>
->>> Cheers,
->>> Benjamin
->>>
->>>  drivers/i2c/Kconfig         |    8 +
->>>  drivers/i2c/Makefile        |    1 +
->>>  drivers/i2c/i2c-hid.c       | 1027 +++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/i2c/i2c-hid.h |   35 ++
->>>  4 files changed, 1071 insertions(+)
->>>  create mode 100644 drivers/i2c/i2c-hid.c
->>>  create mode 100644 include/linux/i2c/i2c-hid.h
->>>
->>> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
->>
-[...]
->
-> same thing, will change it in v2.
->
->>
->>> +
->>> +       if (debug)
->>> +               dev_err(&client->dev, "resetting...\n");
->> this is a little uncustomary.
->>
->> May be consider  bdg
->
-> Sorry for that. I don't get your point here. You don't like the whole
-> "if(debug) dev_err(...)" or just the "dev_err(...)" call?
->
-Apologies for the typo dev_dbg.
+On Wednesday 03 October 2012 18:07:28 Manuel Lauss wrote:
+> On Wed, Oct 3, 2012 at 5:03 PM, Florian Fainelli <florian@openwrt.org> wrote:
+> > This also greatly simplifies the power_{on,off} callbacks and make them
+> > work on platform device id instead of checking the OHCI controller base
+> > address like what was done in ohci-au1xxx.c.
+> >
+> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> > ---
+> >  arch/mips/alchemy/common/platform.c |   31 
++++++++++++++++++++++++++++++++
+> >  1 file changed, 31 insertions(+)
+> >
+> > diff --git a/arch/mips/alchemy/common/platform.c 
+b/arch/mips/alchemy/common/platform.c
+> > index 57335a2..cd12458 100644
+> > --- a/arch/mips/alchemy/common/platform.c
+> > +++ b/arch/mips/alchemy/common/platform.c
+> > @@ -18,6 +18,7 @@
+> >  #include <linux/serial_8250.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/usb/ehci_pdriver.h>
+> > +#include <linux/usb/ohci_pdriver.h>
+> >
+> >  #include <asm/mach-au1x00/au1000.h>
+> >  #include <asm/mach-au1x00/au1xxx_dbdma.h>
+> > @@ -142,6 +143,34 @@ static struct usb_ehci_pdata alchemy_ehci_pdata = {
+> >         .power_suspend          = alchemy_ehci_power_off,
+> >  };
+> >
+> > +/* Power on callback for the ohci platform driver */
+> > +static int alchemy_ohci_power_on(struct platform_device *pdev)
+> > +{
+> > +       int unit;
+> > +
+> > +       unit = (pdev->id == 1) ?
+> > +               ALCHEMY_USB_OHCI1 : ALCHEMY_USB_OHCI0;
+> > +
+> > +       return alchemy_usb_control(unit, 1);
+> > +}
+> > +
+> > +/* Power off/suspend callback for the ohci platform driver */
+> > +static void alchemy_ohci_power_off(struct platform_device *pdev)
+> > +{
+> > +       int unit;
+> > +
+> > +       unit = (pdev->id == 1) ?
+> > +               ALCHEMY_USB_OHCI1 : ALCHEMY_USB_OHCI0;
+> > +
+> > +       alchemy_usb_control(unit, 0);
+> > +}
+> > +
+> > +static struct usb_ohci_pdata alchemy_ohci_pdata = {
+> > +       .power_on               = alchemy_ohci_power_on,
+> > +       .power_off              = alchemy_ohci_power_off,
+> > +       .power_suspend          = alchemy_ohci_power_off,
+> > +};
+> > +
+> >  static unsigned long alchemy_ohci_data[][2] __initdata = {
+> >         [ALCHEMY_CPU_AU1000] = { AU1000_USB_OHCI_PHYS_ADDR, 
+AU1000_USB_HOST_INT },
+> >         [ALCHEMY_CPU_AU1500] = { AU1000_USB_OHCI_PHYS_ADDR, 
+AU1500_USB_HOST_INT },
+> > @@ -192,6 +221,7 @@ static void __init alchemy_setup_usb(int ctype)
+> >         pdev->name = "au1xxx-ohci";
+> 
+> Should be "ohci-platform" (2x).  With this change USB works on all my
+> Alchemy boards.
+
+Yes, Hauke Merthens just pointed this issue at me.
+
+> I'd also suggest to move drivers/usb/host/alchemy-common.c to
+> arch/mips/alchemy/common/usb.c.
+> (same for octeon2-common.c)
+
+Ok, sounds good.
+--
+Florian
