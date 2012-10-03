@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288Ab2JCRuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:50:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33720 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267Ab2JCRug (ORCPT
+	id S965346Ab2JCRvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:51:48 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34551 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964823Ab2JCRvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:50:36 -0400
-Date: Wed, 3 Oct 2012 10:50:33 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Howells <dhowells@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
-cc: herbert@gondor.hengli.com.au, pjones@redhat.com, jwboyer@redhat.com,
-        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, keyrings@linux-nfs.org
-Subject: [patch] MODSIGN: Fix build error with strict typechecking
-In-Reply-To: <16088.1348736905@warthog.procyon.org.uk>
-Message-ID: <alpine.DEB.2.00.1210031045060.29765@chino.kir.corp.google.com>
-References: <87bogs492s.fsf@rustcorp.com.au> <87ehlp30pd.fsf@rustcorp.com.au> <5555.1348531649@warthog.procyon.org.uk> <8168.1348650575@warthog.procyon.org.uk> <16088.1348736905@warthog.procyon.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Oct 2012 13:51:47 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
+        bhutchings@solarflare.com, gregory.v.rose@intel.com,
+        davem@davemloft.net--no-chain-reply-to,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/5] PCI: per pci device sysfs set_max_vfs support
+Date: Wed,  3 Oct 2012 10:51:30 -0700
+Message-Id: <1349286695-26713-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <506C3B11.9010009@redhat.com>
+References: <506C3B11.9010009@redhat.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"MODSIGN: Provide module signing public keys to the kernel" causes a build 
-error when CONFIG_UIDGID_STRICT_TYPE_CHECKS is enabled:
+First two patches are old patches in my queue.
+They introduce pci_dev_type and use it with vga in sysfs.
 
-kernel/modsign_pubkey.c: In function 'module_verify_init':
-kernel/modsign_pubkey.c:47: error: incompatible type for argument 3 of 'key_alloc'
-include/linux/key.h:195: note: expected 'kuid_t' but argument is of type 'int'
-kernel/modsign_pubkey.c:47: error: incompatible type for argument 4 of 'key_alloc'
-include/linux/key.h:195: note: expected 'kgid_t' but argument is of type 'int'
+other two will add set_max_vfs in sysfs for device that support siov.
 
-Cast the parameters accordingly.
+last one is draft version for ixgbe, still need ixgbe guys to sort it
+out.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- kernel/modsign_pubkey.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Thanks
 
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -41,7 +41,8 @@ static __init int module_verify_init(void)
- 	pr_notice("Initialise module verification\n");
- 
- 	modsign_keyring = key_alloc(&key_type_keyring, ".module_sign",
--				    0, 0, current_cred(),
-+				    KUIDT_INIT(0), KGIDT_INIT(0),
-+				    current_cred(),
- 				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
- 				    KEY_USR_VIEW | KEY_USR_READ,
- 				    KEY_ALLOC_NOT_IN_QUOTA);
+Yinghai
+
+
+Yinghai Lu (5):
+  PCI: Add pci_dev_type
+  PCI, sys: Use is_visable() with boot_vga attribute for pci_dev
+  PCI: add set_max_vfs in pci_driver ops
+  PCI: Add max_vfs in sysfs per pci device where supports
+  ixgbe: add driver set_max_vfs support
+
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h      |    2 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   44 +++++++++---
+ drivers/pci/pci-sysfs.c                       |   96 ++++++++++++++++++++++---
+ drivers/pci/pci.h                             |    1 +
+ drivers/pci/probe.c                           |    1 +
+ include/linux/pci.h                           |    2 +
+ 6 files changed, 126 insertions(+), 20 deletions(-)
+
+-- 
+1.7.7
+
