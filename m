@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964833Ab2JCQQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:16:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51453 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932984Ab2JCQQZ (ORCPT
+	id S965024Ab2JCQQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:16:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48190 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964854Ab2JCQQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:16:25 -0400
-Date: Wed, 3 Oct 2012 12:16:24 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Fainelli <florian@openwrt.org>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/25] USB: ehci: remove CNS3xxx EHCI platform driver
-In-Reply-To: <1349276601-8371-13-git-send-email-florian@openwrt.org>
-Message-ID: <Pine.LNX.4.44L0.1210031215280.1441-100000@iolanthe.rowland.org>
+	Wed, 3 Oct 2012 12:16:50 -0400
+Date: Wed, 3 Oct 2012 11:16:41 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121003161641.GA17709@sergelap>
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003132538.GE13192@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Florian Fainelli wrote:
-
-> The users have been converted to use the ehci platform driver instead.
+Quoting Paul E. McKenney (paulmck@linux.vnet.ibm.com):
+> On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
+> > This config item has not carried much meaning for a while now and is
+> > almost always enabled by default. As agreed during the Linux kernel
+> > summit, it should be removed. As a first step, remove it from being
+> > listed, and default it to on. Once it has been removed from all
+> > subsystem Kconfigs, it will be dropped entirely.
+> > 
+> > CC: Greg KH <gregkh@linuxfoundation.org>
+> > CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> > CC: Serge Hallyn <serge.hallyn@canonical.com>
+> > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> > CC: Frederic Weisbecker <fweisbec@gmail.com>
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > ---
+> > 
+> > This is the first of a series of 202 patches removing EXPERIMENTAL from
+> > all the Kconfigs in the tree. Should I send them all to lkml (with all
+> > the associated CCs), or do people want to cherry-pick changes from my
+> > tree? I don't want to needlessly flood the list.
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
+> > 
+> > I figure this patch can stand alone to at least make EXPERIMENTAL go
+> > away from the menus, and give us a taste of what the removal would do
+> > to builds.
 > 
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> OK, I will bite...  How should I flag an option that is initially only
+> intended for those willing to take some level of risk?
 
-> --- a/drivers/usb/host/ehci-hcd.c
-> +++ b/drivers/usb/host/ehci-hcd.c
-> @@ -1254,16 +1254,6 @@ MODULE_LICENSE ("GPL");
->  #define	PLATFORM_DRIVER		ehci_atmel_driver
->  #endif
->  
-> -#ifdef CONFIG_USB_OCTEON_EHCI
-> -#include "ehci-octeon.c"
-> -#define PLATFORM_DRIVER		ehci_octeon_driver
-> -#endif
+Sadly, the point is that EXPERIMENTAL is enabled in all distros and by
+most users, so you *could* flag your feature CONFIG_EXPERIMENTAL, but
+the only thing taht might accomplish is making you feel ok to be less
+careful.
 
-Looks like this crept in here by mistake.  It belong in patch 10/25.
+Of course, an alternative to this patch would be a purging - pull
+the CONFIG_EXPERIMENTAL tag from all options which anyone might be
+wanting to use by default.  Then let CONFIG_EXPERIMENTAL serve its
+original purpose.
 
-Alan Stern
-
+-serge
