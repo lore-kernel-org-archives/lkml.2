@@ -1,130 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956Ab2JCQbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:31:10 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:19994 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932530Ab2JCQbI (ORCPT
+	id S964983Ab2JCQbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:31:49 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43070 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab2JCQbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:31:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/oDrZH5tff6k2yE8KpqWU8
-Date: Wed, 3 Oct 2012 09:31:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 3.7-rc1] omap zoom2.c: Fix compile error by including
- correct header files
-Message-ID: <20121003163102.GB4840@atomide.com>
-References: <1349274686-45668-1-git-send-email-tim.gardner@canonical.com>
- <506C5124.3050200@ti.com>
- <20121003155900.GA4840@atomide.com>
+	Wed, 3 Oct 2012 12:31:47 -0400
+Message-ID: <506C686E.1050609@gmail.com>
+Date: Wed, 03 Oct 2012 11:31:42 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003155900.GA4840@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: [GIT PULL] Devicetree updates for 3.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [121003 09:00]:
-> * Peter Ujfalusi <peter.ujfalusi@ti.com> [121003 07:52]:
-> > On 10/03/2012 05:31 PM, Tim Gardner wrote:
-> > > Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > > Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
-> > > Cc: Liam Girdwood <lrg@ti.com>
-> > > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > > Cc: Jaroslav Kysela <perex@perex.cz>
-> > > Cc: Takashi Iwai <tiwai@suse.de>
-> > > Cc: linux-omap@vger.kernel.org
-> > > Cc: alsa-devel@alsa-project.org
-> > > Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> > > ---
-> > >  sound/soc/omap/zoom2.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
-> > > index 23de2b2..d0a8c92 100644
-> > > --- a/sound/soc/omap/zoom2.c
-> > > +++ b/sound/soc/omap/zoom2.c
-> > > @@ -27,9 +27,10 @@
-> > >  
-> > >  #include <asm/mach-types.h>
-> > >  #include <mach/hardware.h>
-> > > -#include <mach/gpio.h>
-> > > +#include <linux/gpio.h>
-> > >  #include <mach/board-zoom.h>
-> > >  #include <linux/platform_data/asoc-ti-mcbsp.h>
-> > > +#include <linux/platform_data/gpio-omap.h>
-> > >  
-> > >  /* Register descriptions for twl4030 codec part */
-> > >  #include <linux/mfd/twl4030-audio.h>
-> > > 
-> > 
-> > I have the same patch stashed away for the same issue. Was waiting for rc1 to
-> > send it.
-> 
-> Can you please update the patch to also to remove the
-> "#include <mach/board-zoom.h>" while at it?
-> 
-> AFAIK it's not needed at all and just adds a dependency to asoc with
-> my upcoming plat header cleanup patches.
+Linus,
 
-Actually we can also drop "#include <mach/hardware.h>" too,
-it's now empty for mach-omap2. I've updated Tim's patch below
-for you guys to queue via the ASoC fixes. It's against the
-current linux next.
+Please pull Devicetree updates for 3.7. I'm filling in for Grant again
+this cycle.
 
-Regards,
+The biggest change here is the import of the current upstream dtc
+scripts. Other than that, it's the typical small set of changes.
 
-Tony
+There's one conflict with commit 3296193d1421c2d6f9 (dt: introduce
+for_each_available_child_of_node, of_get_next_available_child), but it
+is just context differences.
 
+Rob
 
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Wed, 3 Oct 2012 08:31:26 -0600
-Subject: [PATCH] omap zoom2.c: Fix compile error by including correct header files
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-Also drop the includes that are no longer needed and just
-cause problems for the ARM common zImage.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: linux-omap@vger.kernel.org
-Cc: alsa-devel@alsa-project.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-[tony@atomide.com: updated to drop unneeded headers]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+are available in the git repository at:
 
-diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
-index 677b567..1ff6bb9 100644
---- a/sound/soc/omap/zoom2.c
-+++ b/sound/soc/omap/zoom2.c
-@@ -21,15 +21,14 @@
- 
- #include <linux/clk.h>
- #include <linux/platform_device.h>
-+#include <linux/gpio.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/soc.h>
- 
- #include <asm/mach-types.h>
--#include <mach/hardware.h>
--#include <mach/gpio.h>
--#include <mach/board-zoom.h>
- #include <linux/platform_data/asoc-ti-mcbsp.h>
-+#include <linux/platform_data/gpio-omap.h>
- 
- /* Register descriptions for twl4030 codec part */
- #include <linux/mfd/twl4030-audio.h>
+  git://sources.calxeda.com/kernel/linux.git tags/dt-for-3.7
+
+for you to fetch changes up to 36165f55055781a0e4bf32d775241796414504b0:
+
+  MAINTAINERS: add scripts/dtc under Devicetree maintainers (2012-10-01
+20:09:23 -0500)
+
+----------------------------------------------------------------
+Devicetree updates for 3.7
+
+- Import of latest upstream device tree compiler (dtc)
+- New function of_get_child_by_name
+- Support for #size-cells of 0 and #addr-cells of >2
+- Couple of DT binding documentation updates
+
+----------------------------------------------------------------
+Fabio Estevam (2):
+      devicetree: pwm: mxs-pwm.txt: Fix reg field annotation
+      devicetree: serial: Add documentation for imx serial
+
+John Crispin (1):
+      DT: export of_irq_to_resource_table()
+
+Olof Johansson (1):
+      of: i2c: add support for wakeup-source property
+
+Rob Herring (1):
+      MAINTAINERS: add scripts/dtc under Devicetree maintainers
+
+Srinivas Kandagatla (2):
+      dt: introduce of_get_child_by_name to get child node by name
+      dt/s3c64xx/spi: Use of_get_child_by_name to get a named child
+
+Stephen Warren (2):
+      of: Allow busses with #size-cells=0
+      dtc: import latest upstream dtc
+
+Thierry Reding (2):
+      of/address: Handle #address-cells > 2 specially
+      dt: Document general interrupt controller bindings
+
+ .../bindings/interrupt-controller/interrupts.txt   |   95 +++
+ Documentation/devicetree/bindings/pwm/mxs-pwm.txt  |    2 +-
+ .../devicetree/bindings/serial/fsl-imx-uart.txt    |   35 +
+ MAINTAINERS                                        |    1 +
+ drivers/of/address.c                               |   35 +-
+ drivers/of/base.c                                  |   23 +
+ drivers/of/irq.c                                   |    1 +
+ drivers/of/of_i2c.c                                |    3 +
+ drivers/of/platform.c                              |   16 +-
+ drivers/spi/spi-s3c64xx.c                          |    7 +-
+ include/linux/of.h                                 |    2 +
+ include/linux/of_address.h                         |    1 +
+ scripts/dtc/Makefile.dtc                           |   13 +-
+ scripts/dtc/checks.c                               |  203 +++--
+ scripts/dtc/data.c                                 |  124 +---
+ scripts/dtc/dtc-lexer.l                            |   65 +-
+ scripts/dtc/dtc-lexer.lex.c_shipped                |  503 +++++++++----
+ scripts/dtc/dtc-parser.tab.c_shipped               |  780
+++++++++++++++++----
+ scripts/dtc/dtc-parser.tab.h_shipped               |   47 +-
+ scripts/dtc/dtc-parser.y                           |  255 ++++++-
+ scripts/dtc/dtc.c                                  |   21 +-
+ scripts/dtc/dtc.h                                  |   51 +-
+ scripts/dtc/fdtdump.c                              |  162 ++++
+ scripts/dtc/fdtget.c                               |  366 +++++++++
+ scripts/dtc/fdtput.c                               |  362 +++++++++
+ scripts/dtc/flattree.c                             |    3 +
+ scripts/dtc/libfdt/Makefile.libfdt                 |    6 +-
+ scripts/dtc/libfdt/fdt.c                           |   61 +-
+ scripts/dtc/libfdt/fdt_empty_tree.c                |   84 +++
+ scripts/dtc/libfdt/fdt_ro.c                        |  275 ++++---
+ scripts/dtc/libfdt/fdt_rw.c                        |   29 +
+ scripts/dtc/libfdt/fdt_sw.c                        |   11 +-
+ scripts/dtc/libfdt/fdt_wip.c                       |   41 +-
+ scripts/dtc/libfdt/libfdt.h                        |  440 ++++++++++-
+ scripts/dtc/libfdt/libfdt_env.h                    |   16 +-
+ scripts/dtc/libfdt/libfdt_internal.h               |    2 +-
+ scripts/dtc/livetree.c                             |  128 +++-
+ scripts/dtc/srcpos.c                               |   98 ++-
+ scripts/dtc/srcpos.h                               |   31 +
+ scripts/dtc/treesource.c                           |    2 +
+ scripts/dtc/util.c                                 |  272 +++++++
+ scripts/dtc/util.h                                 |   97 +++
+ 42 files changed, 4057 insertions(+), 712 deletions(-)
+ create mode 100644
+Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
+ create mode 100644
+Documentation/devicetree/bindings/serial/fsl-imx-uart.txt
+ create mode 100644 scripts/dtc/fdtdump.c
+ create mode 100644 scripts/dtc/fdtget.c
+ create mode 100644 scripts/dtc/fdtput.c
+ create mode 100644 scripts/dtc/libfdt/fdt_empty_tree.c
