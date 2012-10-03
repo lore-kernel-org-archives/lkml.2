@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2JCXFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:05:05 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:42851 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932265Ab2JCXFD (ORCPT
+	id S932620Ab2JCXHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:07:20 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:47086 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab2JCXHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:05:03 -0400
-Message-ID: <506CC48E.2020303@xenotime.net>
-Date: Wed, 03 Oct 2012 16:04:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] asymmetric keys: fix printk format warning
-References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
-In-Reply-To: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 3 Oct 2012 19:07:16 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 7586182077
+From: Andrea Righi <andrea@betterlinux.com>
+To: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC 0/3] per cpuset load average
+Date: Thu,  4 Oct 2012 01:05:09 +0200
+Message-Id: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+[ Premise: I'm not considering this patch suitable for inclusion, mostly
+because I'm not convinced at all of the interface and I don't even know if
+cpuset is the right place for this feature. However, I just wrote it for a
+project and I would like to improve it, better integrate it in the kernel and
+share the code in general, in case someone else is also interested to use this
+feature. ]
 
-Fix printk format warning in x509_cert_parser.c:
+Overview
+~~~~~~~~
+The cpusets subsystem allows to assign a different set of CPUs to a cgroup. A
+typical use case is to split large systems in small CPU/memory partitions and
+isolate certain users/applications in these subsets of the system.
 
-crypto/asymmetric_keys/x509_cert_parser.c: In function 'x509_note_OID':
-crypto/asymmetric_keys/x509_cert_parser.c:113:3: warning: format '%zu' expects type 'size_t', but argument 2 has type 'long unsigned int'
+Sometimes, to have a quick overview of each partition's state, we may be
+interested to get the load average of the CPUs assigned to a particular cpuset,
+rather than the global load average of the system.
 
-Builds cleanly on i386 and x86_64.
+Proposed solution
+~~~~~~~~~~~~~~~~~
+The proposal is to add a new file in the cpuset subsystem to report the load
+average of the CPUs assinged to a particular cpuset cgroup.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-crypto@vger.kernel.org
----
- crypto/asymmetric_keys/x509_cert_parser.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Example:
 
---- linux-next-20121003.orig/crypto/asymmetric_keys/x509_cert_parser.c
-+++ linux-next-20121003/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -110,7 +110,7 @@ int x509_note_OID(void *context, size_t
- 	if (ctx->last_oid == OID__NR) {
- 		char buffer[50];
- 		sprint_oid(value, vlen, buffer, sizeof(buffer));
--		pr_debug("Unknown OID: [%zu] %s\n",
-+		pr_debug("Unknown OID: [%lu] %s\n",
- 			 (unsigned long)value - ctx->data, buffer);
- 	}
- 	return 0;
+ # echo 0-1 > /sys/fs/cgroup/cpuset/foo/cpuset.cpus
+ # echo 2-3 > /sys/fs/cgroup/cpuset/bar/cpuset.cpus
+
+ # echo $$ > /sys/fs/cgroup/cpuset/foo/tasks
+ # for i in `seq 4`; do yes > /dev/null & done
+
+ ... after ~5mins ...
+
+ # cat /proc/loadavg /sys/fs/cgroup/cpuset/{foo,bar}/cpuset.loadavg
+ 3.99 2.66 1.24 6/377 2855
+ 3.98 2.64 1.20
+ 0.01 0.02 0.04
+
+In this case we can easily find that the cpuset "foo" is the most busy in the
+system.
+
+[PATCH RFC 1/3] sched: introduce distinct per-cpu load average
+[PATCH RFC 2/3] cpusets: add load avgerage interface
+[PATCH RFC 3/3] cpusets: add documentation of the loadavg file
+
+ include/linux/sched.h |    7 +++++
+ kernel/cpuset.c       |   58 ++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c   |   78 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 139 insertions(+), 4 deletions(-)
