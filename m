@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2JCUls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 16:41:48 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53653 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab2JCUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 16:41:46 -0400
-Date: Wed, 3 Oct 2012 16:41:41 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <kees@outflux.net>, Nick Bowler <nbowler@elliptictech.com>,
+	id S1754264Ab2JCUow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 16:44:52 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54063 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab2JCUov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 16:44:51 -0400
+Date: Wed, 3 Oct 2012 21:49:29 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <kees@outflux.net>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Linux 3.6
-Message-ID: <20121003204141.GB6026@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Kees Cook <kees@outflux.net>,
-	Nick Bowler <nbowler@elliptictech.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20121003214929.107b3b48@pyramind.ukuu.org.uk>
+In-Reply-To: <20121003200515.GZ9092@outflux.net>
 References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
- <20121003194614.GA2893@elliptictech.com>
- <20121003200515.GZ9092@outflux.net>
- <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	<20121003194614.GA2893@elliptictech.com>
+	<20121003200515.GZ9092@outflux.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 01:29:15PM -0700, Linus Torvalds wrote:
-> On Wed, Oct 3, 2012 at 1:05 PM, Kees Cook <kees@outflux.net> wrote:
-> >
-> > 3.6 introduced link restrictions:
+On Wed, 3 Oct 2012 13:05:15 -0700
+Kees Cook <kees@outflux.net> wrote:
+
+> Hi Nick,
 > 
-> Hmm. If this causes problems for others, I suspect we need to turn it
-> off by default.
+> 3.6 introduced link restrictions:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=800179c9b8a1e796e441674776d11cd4c05d61d7
 > 
-> It's a nice security thing, but considering how quickly people started
-> complaining after 3.6 was out, I suspect we'll see more of these, and
-> we may not have any choice.
+> It sounds like you've got symlinks in a world-writable directory, and
+> you're following those symlinks across mis-matched uids. You can either
+> have the symlinks be owned by the directory owner, or you can turn off
+> symlink restrictions in sysctl:
+> 
+> # echo 0 > /proc/sys/fs/protected_symlinks
 
-True, although I'm not sure we should be encouraging kernel developers
-to have world-writeable directories.  I suppose if it's a single-user
-workstation it wouldn't matter, but you could imagine a daemon running
-has "nobody" which has a stack overflow bug, and then if the user has
-been careless and uses umasks so that directories in their home
-directory are world writeable, well.....
+Quite honestly that should be pushed for 3.6.1 as a default - ASAP.
 
-Regardless of whether or not we turn this security feature off by
-default, I think it's worthwhile to look at how and why did Nick's
-directories become world-writeable, and whether there is so distro
-default which is causing or encouraging this.
-
-					 - Ted
+Alan
