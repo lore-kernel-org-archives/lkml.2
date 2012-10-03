@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835Ab2JCPYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:24:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46343 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab2JCPX4 convert rfc822-to-8bit (ORCPT
+	id S933193Ab2JCP1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:27:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55931 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932435Ab2JCP1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:23:56 -0400
-Message-ID: <1349277795.7780.50.camel@twins>
-Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
- attribute
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>
-Date: Wed, 03 Oct 2012 17:23:15 +0200
-In-Reply-To: <1349277241.22822.176.camel@gandalf.local.home>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
-	 <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
-	 <20120929002626.GD13907@jtriplet-mobl1> <50664308.6020601@att.net>
-	 <20120929005043.GD14293@jtriplet-mobl1>
-	 <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com>
-	 <20121003065959.GA4963@leaf>
-	 <alpine.DEB.2.00.1210030052040.16922@chino.kir.corp.google.com>
-	 <506C1F8B.1070307@att.net> <1349272914.22822.169.camel@gandalf.local.home>
-	 <506C4FD0.4040307@att.net> <1349277241.22822.176.camel@gandalf.local.home>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 3 Oct 2012 11:27:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <2608261.j829MQZAuC@flexo>
+References: <1349276601-8371-1-git-send-email-florian@openwrt.org>
+ <1349276601-8371-26-git-send-email-florian@openwrt.org> <CAOLZvyHyQGZ=Rs1=k07Saq16aZcntUe8N0Fc5iMoeOTeMpjcSw@mail.gmail.com>
+ <2608261.j829MQZAuC@flexo>
+From: Manuel Lauss <manuel.lauss@gmail.com>
+Date: Wed, 3 Oct 2012 17:26:52 +0200
+Message-ID: <CAOLZvyGSbqN-wMDYJcoB_6GPXvZo3wKPMn1oCWxyFETOerMLSA@mail.gmail.com>
+Subject: Re: [PATCH 24/25] MIPS: Alchemy: use the OHCI platform driver
+To: Florian Fainelli <florian@openwrt.org>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Thomas Meyer <thomas@m3y3r.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-03 at 11:14 -0400, Steven Rostedt wrote:
-> 
-> Yep. I personally never use the get_maintainers script. I first check
-> the MAINTAINERS file. If the subsystem I'm working on exists there, I
-> only email those that are listed there, including any mailing lists that
-> are mentioned (as well as LKML). If it's not listed, I then do a git log
-> and see who does the most sign offs to changes there, and to what kind
-> of changes. I usually ignore the trivial stuff. 
+On Wed, Oct 3, 2012 at 5:24 PM, Florian Fainelli <florian@openwrt.org> wrote:
+> On Wednesday 03 October 2012 17:21:37 Manuel Lauss wrote:
+>> On Wed, Oct 3, 2012 at 5:03 PM, Florian Fainelli <florian@openwrt.org> wrote:
+>> > This also greatly simplifies the power_{on,off} callbacks and make them
+>> > work on platform device id instead of checking the OHCI controller base
+>> > address like what was done in ohci-au1xxx.c.
+>>
+>> That was by design -- the base address is far more reliable in identifying
+> the
+>> correct controller instance than the platform device id.   There are systems
+>> in the field which don't use the alchemy/common/platform.c file at all.
+>
+> Fair enough, but the way it was done previously was very error-prone if the
+> base address changed for any reason in the platform code, and you did not
+> notice it had to be changed in the OHCI driver too, then it simply did not
 
-I also tend to suggest doing git-blame to see who touched the code being
-changed last.
+Since the Alchemy line is dead this point is moot.
 
-As a maintainer I frequently get to fwd/bounce patches because of
-missing CCs like that.
+
+> work. By systems in the field you mean out of tree users? If so, I'd say that
+> it's up to you to get them maintained or merged.
+
+I'm not against the patch at all, quite the contrary.
+
+Manuel
