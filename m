@@ -1,184 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab2JCTCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 15:02:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab2JCTCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 15:02:36 -0400
-Message-ID: <506C8BCB.4080402@redhat.com>
-Date: Wed, 03 Oct 2012 15:02:35 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	id S1752268Ab2JCTCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 15:02:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57305 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab2JCTCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 15:02:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: footbridge: remove RTC_IRQ definition
+Date: Wed, 3 Oct 2012 19:02:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Russell King <linux@arm.linux.org.uk>
 MIME-Version: 1.0
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuvalmin@broadcom.com, bhutchings@solarflare.com,
-        gregory.v.rose@intel.com, davem@davemloft.net--no-chain-reply-to,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH 5/5] ixgbe: add driver set_max_vfs support
-References: <506C3B11.9010009@redhat.com> <1349286695-26713-1-git-send-email-yinghai@kernel.org> <1349286695-26713-6-git-send-email-yinghai@kernel.org> <506C8837.5070902@intel.com>
-In-Reply-To: <506C8837.5070902@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210031902.16200.arnd@arndb.de>
+X-Provags-ID: V02:K0:CGElv38qc04Mt+cj3dL0BedqC7R9aOHuX41J7uduMjI
+ lk1hhSKtIzTLQaYejPe1YEvojOeU2s+dEYyimUAAVolZ6vfIR6
+ si2t2wqHlcpO9dS3OGYXYu4FiKvyN7+QrTU0fj+ftMuyMwtUf6
+ Djz5kqmADHhPfATvbwrrZ6MqYptGUvIYq5HNZkfRh32dbFWrCL
+ 4sduTekaa3b0A+UGOIZWuElotPPG6ydO6v6wNATp/e5Q14yJBS
+ 9Bc3TvS/AST1ub9JAlrfFg9LAGHKAzzK3a9b4zYFa5UmfFk1bD
+ YewIsnqm5ntmPOLOIEPajcYk9EDLX7si1oLWAojlSQLXFSjs0W
+ 8UEo7sYZPmUIu2EujlF0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 02:47 PM, Alexander Duyck wrote:
-> On 10/03/2012 10:51 AM, Yinghai Lu wrote:
->> Need ixgbe guys to close the loop to use set_max_vfs instead
->> kernel parameters.
->>
->> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
->> Cc: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
->> Cc: Jesse Brandeburg<jesse.brandeburg@intel.com>
->> Cc: Greg Rose<gregory.v.rose@intel.com>
->> Cc: "David S. Miller"<davem@davemloft.net>
->> Cc: John Fastabend<john.r.fastabend@intel.com>
->> Cc: e1000-devel@lists.sourceforge.net
->> Cc: netdev@vger.kernel.org
->> ---
->>   drivers/net/ethernet/intel/ixgbe/ixgbe.h      |    2 +
->>   drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   44 +++++++++++++++++++-----
->>   2 files changed, 37 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
->> index b9623e9..d39d975 100644
->> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
->> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
->> @@ -558,6 +558,8 @@ struct ixgbe_adapter {
->>   	u32 interrupt_event;
->>   	u32 led_reg;
->>
->> +	struct ixgbe_info *ixgbe_info;
->> +
->>   #ifdef CONFIG_IXGBE_PTP
->>   	struct ptp_clock *ptp_clock;
->>   	struct ptp_clock_info ptp_caps;
->> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> index ee61819..1c097c7 100644
->> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
->> @@ -129,13 +129,6 @@ static struct notifier_block dca_notifier = {
->>   };
->>   #endif
->>
->> -#ifdef CONFIG_PCI_IOV
->> -static unsigned int max_vfs;
->> -module_param(max_vfs, uint, 0);
->> -MODULE_PARM_DESC(max_vfs,
->> -		 "Maximum number of virtual functions to allocate per physical function - default is zero and maximum value is 63");
->> -#endif /* CONFIG_PCI_IOV */
->> -
->>   static unsigned int allow_unsupported_sfp;
->>   module_param(allow_unsupported_sfp, uint, 0);
->>   MODULE_PARM_DESC(allow_unsupported_sfp,
->> @@ -4496,7 +4489,7 @@ static int __devinit ixgbe_sw_init(struct ixgbe_adapter *adapter)
->>   #ifdef CONFIG_PCI_IOV
->>   	/* assign number of SR-IOV VFs */
->>   	if (hw->mac.type != ixgbe_mac_82598EB)
->> -		adapter->num_vfs = (max_vfs>  63) ? 0 : max_vfs;
->> +		adapter->num_vfs = min_t(int, pdev->max_vfs, 63);
->>
->>   #endif
->>   	/* enable itr by default in dynamic mode */
->> @@ -7220,8 +7213,9 @@ static int __devinit ixgbe_probe(struct pci_dev *pdev,
->>
->>   #ifdef CONFIG_PCI_IOV
->>   	ixgbe_enable_sriov(adapter, ii);
->> -
->>   #endif
->> +	adapter->ixgbe_info = ii;
->> +
->>   	netdev->features = NETIF_F_SG |
->>   			   NETIF_F_IP_CSUM |
->>   			   NETIF_F_IPV6_CSUM |
->> @@ -7683,11 +7677,43 @@ static const struct pci_error_handlers ixgbe_err_handler = {
->>   	.resume = ixgbe_io_resume,
->>   };
->>
->> +static void ixgbe_set_max_vfs(struct pci_dev *pdev)
->> +{
->> +#ifdef CONFIG_PCI_IOV
->> +	struct ixgbe_adapter *adapter = pci_get_drvdata(pdev);
->> +	struct ixgbe_hw *hw =&adapter->hw;
->> +	int num_vfs = 0;
->> +
->> +	/* assign number of SR-IOV VFs */
->> +	if (hw->mac.type != ixgbe_mac_82598EB)
->> +		num_vfs = min_t(int, pdev->max_vfs, 63);
->> +
->> +	/* no change */
->> +	if (adapter->num_vfs == num_vfs)
->> +		return;
->> +
->> +	if (!num_vfs) {
->> +		/* disable sriov */
->> +		ixgbe_disable_sriov(adapter);
->> +		adapter->num_vfs = 0;
->> +	} else if (!adapter->num_vfs&&  num_vfs) {
->> +		/* enable sriov */
->> +		adapter->num_vfs = num_vfs;
->> +		ixgbe_enable_sriov(adapter, adapter->ixgbe_info);
->> +	} else {
->> +		/* increase or decrease */
->> +	}
->> +
->> +	pdev->max_vfs = adapter->num_vfs;
->> +#endif
->> +}
->> +
->>   static struct pci_driver ixgbe_driver = {
->>   	.name     = ixgbe_driver_name,
->>   	.id_table = ixgbe_pci_tbl,
->>   	.probe    = ixgbe_probe,
->>   	.remove   = __devexit_p(ixgbe_remove),
->> +	.set_max_vfs = ixgbe_set_max_vfs,
->>   #ifdef CONFIG_PM
->>   	.suspend  = ixgbe_suspend,
->>   	.resume   = ixgbe_resume,
->
-> The ixgbe_set_max_vfs function has several issues.  The two big ones are
-> that this function assumes it can just enable/disable SR-IOV without any
-> other changes being necessary which is not the case.  I would recommend
-> looking at ixgbe_setup_tc for how to do this properly.  Secondly is the
-> fact that this code will change the PF network device and as such
-> sections of the code should be called with the RTNL lock held.  In
-> addition I believe you have to disable SR-IOV before enabling it again
-> with a different number of VFs.
->
-> Below is a link to one of the early patches for igb when we were first
-> introducing SR-IOV, and the in-driver sysfs value had been rejected.  I
-> figure it might be useful as it was also using sysfs to enable/disable
-> VFs.  It however doesn't have the correct locking on changing the queues
-> and as such will likely throw an error if you were to implement it the
-> same way now:
-> http://lists.openwall.net/netdev/2009/04/08/34
->
-> Thanks,
->
-> Alex
+Since commit bd8abc9a32c "ARM: mc146818rtc: remove unnecessary include of
+mach/irqs.h", building footbridge_defconfig results in this warning:
 
-Alex,
-Thanks for patch set pointer.
-When I started to work on the ixgbe example use based on the RFC set I posted,
-I ran into the problem you outlined -- the PF uses/consumes all the queues &
-MSI intrs when sriov not enabled at driver load time, which required
-more network shutdown logic that I'm not familiar with... So, I was going
-to defer to Greg to work that magic. :)
-Greg: assume the 2 callback function interface in the RFC patch set I sent,
-       (primarily, just the include/linux/pci.h changes), and you can make the
-       necessary drivers mods from there.  In the meantime, I'll make the changes
-       to my original/v1 RFC to reflect the changes that GKH & Yinghai recommended/implemented
-       for sysfs attribute creation & removal in a v2 posting.
-       The end result is that the current module parameter setting for max_vfs should
-       continue to work, and the sysfs interface will work when those pieces are provided.
+In file included from include/linux/mc146818rtc.h:16:0,
+                 from arch/arm/mach-footbridge/isa-rtc.c:21:
+arch/arm/include/asm/mc146818rtc.h:10:0: warning: "RTC_IRQ" redefined [enabled by default]
+arch/arm/mach-footbridge/include/mach/irqs.h:93:0: note: this is the location of the previous definition
 
--Don
+The above commit was intentionally made to catch errors like this,
+where code relies on the RTC_IRQ definition. The only driver using
+it is the legacy PC-style drivers/char/rtc.c driver.
+However, the ARM architecture has been using the RTC_LIB framework
+since at least 2006, and that doesn't use it.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com
+Cc: Russell King <linux@arm.linux.org.uk>
+
+---
+I've queued this in late/fixes for the current merge window. Will
+send later unless someone objects.
+
+diff --git a/arch/arm/mach-footbridge/include/mach/irqs.h b/arch/arm/mach-footbridge/include/mach/irqs.h
+index 400551e..61c714c 100644
+--- a/arch/arm/mach-footbridge/include/mach/irqs.h
++++ b/arch/arm/mach-footbridge/include/mach/irqs.h
+@@ -89,8 +89,6 @@
+ #define IRQ_NETWINDER_VGA	_ISA_IRQ(11)
+ #define IRQ_NETWINDER_SOUND	_ISA_IRQ(12)
+ 
+-#undef RTC_IRQ
+-#define RTC_IRQ		IRQ_ISA_RTC_ALARM
+ #define I8042_KBD_IRQ	IRQ_ISA_KEYBOARD
+ #define I8042_AUX_IRQ	(machine_is_netwinder() ? IRQ_NETWINDER_PS2MOUSE : IRQ_ISA_PS2MOUSE)
+ #define IRQ_FLOPPYDISK	IRQ_ISA_FLOPPY
