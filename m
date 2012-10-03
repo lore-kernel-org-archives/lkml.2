@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2JCQNe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:13:34 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36388 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab2JCQNb (ORCPT
+	id S1756328Ab2JCQNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:13:48 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40943 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756291Ab2JCQNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:13:31 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gabor Juhos <juhosg@openwrt.org>, Hauke Mehrtens <hauke@hauke-m.de>,
-        Kelvin Cheung <keguang.zhang@gmail.com>,
-        Jayachandran C <jayachandranc@netlogicmicro.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/25] USB: ehci: allow need_io_watchdog to be passed to ehci-platform driver
-Date: Wed, 03 Oct 2012 18:12:29 +0200
-Message-ID: <16671283.xyEuvTui2M@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1210031154400.1441-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1210031154400.1441-100000@iolanthe.rowland.org>
+	Wed, 3 Oct 2012 12:13:46 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <alpine.DEB.2.00.1210022236370.10573@chino.kir.corp.google.com>
+References: <20121002234934.GA9194@www.outflux.net>
+	<alpine.DEB.2.00.1210022209070.9523@chino.kir.corp.google.com>
+	<CAGXu5j+ZU_wrqeEYE7GCE6ArFo8z4AO=OW7mOSn0-fp1E9B6+Q@mail.gmail.com>
+	<alpine.DEB.2.00.1210022236370.10573@chino.kir.corp.google.com>
+Date: Wed, 3 Oct 2012 09:13:45 -0700
+X-Google-Sender-Auth: DhcUXnIaA8LTVJNqrhufojaADmA
+Message-ID: <CAGXu5jL4Dd3jCusr+Du4q7tOhcsKaSQbW6u_ZN8ZSBry2AQARg@mail.gmail.com>
+Subject: Re: [PATCH] mm: use %pK for /proc/vmallocinfo
+From: Kees Cook <keescook@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Joe Perches <joe@perches.com>,
+        Kautuk Consul <consul.kautuk@gmail.com>, linux-mm@kvack.org,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 October 2012 12:01:22 Alan Stern wrote:
-> On Wed, 3 Oct 2012, Florian Fainelli wrote:
-> 
-> > And convert all the existing users of ehci-platform to specify a correct
-> > need_io_watchdog value.
-> 
-> IMO (and I realize that not everybody agrees), the patch description 
-> should not be considered an extension of the patch title, as though the 
-> title were the first sentence and the description the remainder of the 
-> same paragraph.  Descriptions should stand on their own and be 
-> comprehensible even to somebody who hasn't read the title.
-> 
-> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> > ---
-> >  arch/mips/ath79/dev-usb.c             |    2 ++
-> >  arch/mips/loongson1/common/platform.c |    1 +
-> >  arch/mips/netlogic/xlr/platform.c     |    1 +
-> >  drivers/usb/host/bcma-hcd.c           |    1 +
-> >  drivers/usb/host/ehci-platform.c      |    1 +
-> >  drivers/usb/host/ssb-hcd.c            |    1 +
-> >  include/linux/usb/ehci_pdriver.h      |    3 +++
-> >  7 files changed, 10 insertions(+)
-> 
-> More importantly...  Nearly every driver will have need_io_watchdog
-> set.  Only a few of them explicitly turn it off.  The approach you're 
-> using puts an extra burden on most of the drivers.
-> 
-> > diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-
-platform.c
-> > index 764e010..08d5dec 100644
-> > --- a/drivers/usb/host/ehci-platform.c
-> > +++ b/drivers/usb/host/ehci-platform.c
-> > @@ -32,6 +32,7 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
-> >  	ehci->has_synopsys_hc_bug = pdata->has_synopsys_hc_bug;
-> >  	ehci->big_endian_desc = pdata->big_endian_desc;
-> >  	ehci->big_endian_mmio = pdata->big_endian_mmio;
-> > +	ehci->need_io_watchdog = pdata->need_io_watchdog;
-> 
-> > --- a/include/linux/usb/ehci_pdriver.h
-> > +++ b/include/linux/usb/ehci_pdriver.h
-> > @@ -29,6 +29,8 @@
-> >   *			initialization.
-> >   * @port_power_off:	set to 1 if the controller needs to be powered down
-> >   *			after initialization.
-> > + * @need_io_watchdog:	set to 1 if the controller needs the I/O 
-watchdog to
-> > + *			run.
-> 
-> Instead, how about adding a no_io_watchdog flag?  Then after 
-> ehci-platform.c calls ehci_setup(), it can see whether to turn off 
-> ehci->need_io_watchdog.
+On Tue, Oct 2, 2012 at 10:37 PM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 2 Oct 2012, Kees Cook wrote:
+>
+>> >> In the paranoid case of sysctl kernel.kptr_restrict=2, mask the kernel
+>> >> virtual addresses in /proc/vmallocinfo too.
+>> >>
+>> >> Reported-by: Brad Spengler <spender@grsecurity.net>
+>> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> >
+>> > /proc/vmallocinfo is S_IRUSR, not S_IRUGO, so exactly what are you trying
+>> > to protect?
+>>
+>> Trying to block the root user from seeing virtual memory addresses
+>> (mode 2 of kptr_restrict).
+>>
+>> Documentation/sysctl/kernel.txt:
+>> "This toggle indicates whether restrictions are placed on
+>> exposing kernel addresses via /proc and other interfaces.  When
+>> kptr_restrict is set to (0), there are no restrictions.  When
+>> kptr_restrict is set to (1), the default, kernel pointers
+>> printed using the %pK format specifier will be replaced with 0's
+>> unless the user has CAP_SYSLOG.  When kptr_restrict is set to
+>> (2), kernel pointers printed using %pK will be replaced with 0's
+>> regardless of privileges."
+>>
+>> Even though it's S_IRUSR, it still needs %pK for the paranoid case.
+>
+> So root does echo 0 > /proc/sys/kernel/kptr_restrict first.  Again: what
+> are you trying to protect?
 
-Sounds good, you are right,  this also greatly reduces the chances to miss one 
-user of this "feature".
+Only CAP_SYS_ADMIN can change the setting. This is, for example, for
+containers, or other situations where a uid 0 process lacking
+CAP_SYS_ADMIN cannot see virtual addresses. It's a very paranoid case,
+yes, but it's part of how this feature was designed. Think of it as
+supporting the recent uid 0 vs ring 0 boundary. :)
 
-> 
-> This way, most of this patch would become unnecessary.
-> 
-> Alan Stern
-> 
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
