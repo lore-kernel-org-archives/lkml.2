@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab2JCNrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:47:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13880 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755132Ab2JCNrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:47:09 -0400
-Date: Wed, 3 Oct 2012 15:46:54 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
-To: Douglas Gilbert <dgilbert@interlog.com>
-cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-scsi@vger.kernel.org,
-        JBottomley@parallels.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
-In-Reply-To: <5047AAD9.90106@interlog.com>
-Message-ID: <alpine.LFD.2.00.1210031544080.20211@dhcp-1-104.brq.redhat.com>
-References: <1345127925-32042-1-git-send-email-lczerner@redhat.com> <yq1d32ph515.fsf@sermon.lab.mkp.net> <5047AAD9.90106@interlog.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756048Ab2JCNsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:48:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37179 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538Ab2JCNsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 09:48:07 -0400
+Date: Wed, 3 Oct 2012 06:47:57 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCHv2 00/14] perf diff: Factor diff command
+Message-ID: <20121003134757.GA18700@ghostprotocols.net>
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+ <20120927213102.GO16230@one.firstfloor.org>
+ <20121001081631.GB991@krava.brq.redhat.com>
+ <20121002163002.GD16230@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121002163002.GD16230@one.firstfloor.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Sep 2012, Douglas Gilbert wrote:
+Em Tue, Oct 02, 2012 at 06:30:02PM +0200, Andi Kleen escreveu:
+> The other problem I ran into is that perf archive doesn't seem to work very
+> well with kernels, so it's hard to move profiles from different kernels
+> around to diff them (e.g. for a performance regression) One way around this
+> would be options to diff to specify the vmlinux etc.  manually
 
-> Date: Wed, 05 Sep 2012 15:41:13 -0400
-> From: Douglas Gilbert <dgilbert@interlog.com>
-> To: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Lukas Czerner <lczerner@redhat.com>, linux-scsi@vger.kernel.org,
->     JBottomley@parallels.com, tytso@mit.edu, pbonzini@redhat.com,
->     linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] scsi_debug: Fix off-by-one bug when unmapping region
-> 
-> On 12-08-17 12:11 PM, Martin K. Petersen wrote:
-> > > > > > > "Lukas" == Lukas Czerner <lczerner@redhat.com> writes:
-> > 
-> > Lukas> Currently it is possible to unmap one more block than user
-> > Lukas> requested to due to the off-by-one error in unmap_region(). This
-> > Lukas> is probably due to the fact that the end variable despite its
-> > Lukas> name actually points to the last block to unmap + 1. However in
-> > Lukas> the condition it is handled as the last block of the region to
-> > Lukas> unmap.
-> > 
-> > Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-> 
-> Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+Can you describe more precisely what is not working well with 'archive'
+and build ids?
 
-James, could you please pick this one ?
+When you do a 'perf record', at the end of the session, it traverses the
+samples looking for DSOs with hits, and then stashes a copy (or a
+hardlink, if possible) of these DSOs in your ~/.cache/, keyed by its
+build id.
 
-Thanks!
--Lukas
+Later, when you do a perf archive, it will look again at your perf.data
+files, look again for DSOs with hits and pass them on a tar command
+line, you transfer those tarballs to your analysis machine and it should
+just work.
+
+To debug you may follow some of these steps:
+
+[root@sandy linux]# perf record -a usleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.447 MB perf.data (~19534 samples) ]
+[root@sandy linux]# perf buildid-list 
+62b97af6897371571caef35fd5ae88e29bde5e89 [kernel.kallsyms]
+[root@sandy linux]# ls -la ~/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 
+lrwxrwxrwx. 1 root root 64 Oct  3 10:41 /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 -> ../../[kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
+[root@sandy linux]# perf buildid-list --hell
+  Error: unknown option `hell'
+
+ usage: perf buildid-list [<options>]
+
+    -H, --with-hits       Show only DSOs with hits
+    -i, --input <file>    input file name
+    -f, --force           don't complain, do it
+    -k, --kernel          Show current kernel build id
+    -v, --verbose         be more verbose
+
+[root@sandy linux]# perf buildid-list -k
+62b97af6897371571caef35fd5ae88e29bde5e89
+[root@sandy linux]# perf archive
+Now please run:
+
+$ tar xvf perf.data.tar.bz2 -C ~/.debug
+
+wherever you need to run 'perf report' on.
+[root@sandy linux]# tar tvf perf.data.tar.bz2
+lrwxrwxrwx root/root         0 2012-10-03 10:41 .build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 -> ../../[kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
+-rw-r--r-- root/root   4115683 2012-10-03 10:41 [kernel.kallsyms]/62b97af6897371571caef35fd5ae88e29bde5e89
+[root@sandy linux]# 
+
+[root@sandy linux]# sha256sum /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89 /proc/kallsyms 
+43724edebe7f144d43a8664e237fa14df96bb79943002f1f17f45379a16418bf  /root/.debug/.build-id/62/b97af6897371571caef35fd5ae88e29bde5e89
+43724edebe7f144d43a8664e237fa14df96bb79943002f1f17f45379a16418bf  /proc/kallsyms
+[root@sandy linux]# 
+
+- Arnaldo
