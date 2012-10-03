@@ -1,118 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2JCTMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 15:12:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60104 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab2JCTMX (ORCPT
+	id S1751528Ab2JCTQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 15:16:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38851 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab2JCTQf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 15:12:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] ARM: footbridge: nw_gpio_lock is raw_spin_lock
-Date: Wed, 3 Oct 2012 19:12:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
+	Wed, 3 Oct 2012 15:16:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,528,1344236400"; 
+   d="scan'208";a="219329307"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: Don Dutile <ddutile@redhat.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yuvalmin@broadcom.com" <yuvalmin@broadcom.com>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "davem@davemloft.net--no-chain-reply-to" 
+	<davem@davemloft.net--no-chain-reply-to>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 5/5] ixgbe: add driver set_max_vfs support
+Thread-Topic: [PATCH 5/5] ixgbe: add driver set_max_vfs support
+Thread-Index: AQHNoY/cWavrxT5G1UuLgBO/bl1adZeoYUCAgAAERID//44coA==
+Date: Wed, 3 Oct 2012 19:16:23 +0000
+Message-ID: <C5551D9AAB213A418B7FD5E4A6F30A0715327581@ORSMSX106.amr.corp.intel.com>
+References: <506C3B11.9010009@redhat.com>
+ <1349286695-26713-1-git-send-email-yinghai@kernel.org>
+ <1349286695-26713-6-git-send-email-yinghai@kernel.org>
+ <506C8837.5070902@intel.com> <506C8BCB.4080402@redhat.com>
+In-Reply-To: <506C8BCB.4080402@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210031912.07343.arnd@arndb.de>
-X-Provags-ID: V02:K0:L6TQJmJnZqFVjFHcCKvtoacQm9d9hyWyKk0SuUrc7da
- e9oBpaPk0P7FEjEahZoMKxKFLcFDzX4GdhqvG6EYE42C5qhWzm
- VKN0p6ramkc8DRnraWXsclW0yuyp3eyrhuF2C+W85t8LYPUfSm
- xticYuDakcEDZ5SMo0I6ukv/u6neFgeBjlTeXHxivIXhIwETDR
- Az8XyICsn+t70pnKBcngwVJU2eYEAl86RO2//Zjg7xBK1ErY7h
- LluDl9nZe8Jj6XvWbNUKq2/ofgpRR0gUwdmCFNTCy+yM303Dzr
- iQawEjVNTBVjbsiIhGQw+6u7B0ppcPQG9rtKAhqmJkKquq3KMg
- 1XZvWkaTHUC8+QC4Uqzo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bd31b85960a "locking, ARM: Annotate low level hw locks as raw"
-made nw_gpio_lock a raw spinlock, but did not change all the
-users in device drivers. This fixes the remaining ones.
+> -----Original Message-----
+> From: Don Dutile [mailto:ddutile@redhat.com]
+> Sent: Wednesday, October 03, 2012 12:03 PM
+> To: Duyck, Alexander H
+> Cc: Yinghai Lu; Bjorn Helgaas; Greg Kroah-Hartman; linux-
+> pci@vger.kernel.org; linux-kernel@vger.kernel.org; yuvalmin@broadcom.com;
+> bhutchings@solarflare.com; Rose, Gregory V; davem@davemloft.net--no-chain-
+> reply-to; Kirsher, Jeffrey T; Brandeburg, Jesse; David S. Miller;
+> Fastabend, John R; e1000-devel@lists.sourceforge.net;
+> netdev@vger.kernel.org
+> Subject: Re: [PATCH 5/5] ixgbe: add driver set_max_vfs support
+> 
+> On 10/03/2012 02:47 PM, Alexander Duyck wrote:
 
-sound/oss/waveartist.c: In function 'vnc_mute_spkr':
-sound/oss/waveartist.c:1485:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
-drivers/char/ds1620.c: In function 'netwinder_lock':
-drivers/char/ds1620.c:77:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
-drivers/char/nwflash.c: In function 'kick_open':
-drivers/char/nwflash.c:620:2: warning: passing argument 1 of 'spinlock_check' from incompatible pointer type [enabled by default]
-include/linux/spinlock.h:272:102: note: expected 'struct spinlock_t *' but argument is of type 'struct raw_spinlock_t *'
+[snip]
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
----
+> >
+> > The ixgbe_set_max_vfs function has several issues.  The two big ones
+> > are that this function assumes it can just enable/disable SR-IOV
+> > without any other changes being necessary which is not the case.  I
+> > would recommend looking at ixgbe_setup_tc for how to do this properly.
+> > Secondly is the fact that this code will change the PF network device
+> > and as such sections of the code should be called with the RTNL lock
+> > held.  In addition I believe you have to disable SR-IOV before
+> > enabling it again with a different number of VFs.
+> >
+> > Below is a link to one of the early patches for igb when we were first
+> > introducing SR-IOV, and the in-driver sysfs value had been rejected.
+> > I figure it might be useful as it was also using sysfs to
+> > enable/disable VFs.  It however doesn't have the correct locking on
+> > changing the queues and as such will likely throw an error if you were
+> > to implement it the same way now:
+> > http://lists.openwall.net/netdev/2009/04/08/34
+> >
+> > Thanks,
+> >
+> > Alex
+> 
+> Alex,
+> Thanks for patch set pointer.
+> When I started to work on the ixgbe example use based on the RFC set I
+> posted, I ran into the problem you outlined -- the PF uses/consumes all
+> the queues & MSI intrs when sriov not enabled at driver load time, which
+> required more network shutdown logic that I'm not familiar with... So, I
+> was going to defer to Greg to work that magic. :)
+> Greg: assume the 2 callback function interface in the RFC patch set I
+> sent,
+>        (primarily, just the include/linux/pci.h changes), and you can make
+> the
+>        necessary drivers mods from there.  In the meantime, I'll make the
+> changes
+>        to my original/v1 RFC to reflect the changes that GKH & Yinghai
+> recommended/implemented
+>        for sysfs attribute creation & removal in a v2 posting.
+>        The end result is that the current module parameter setting for
+> max_vfs should
+>        continue to work, and the sysfs interface will work when those
+> pieces are provided.
 
-queued in the late/fixes branch, will submit later in the merge window
-unless I hear objections.
+OK, I'll start work on it.
 
-diff --git a/drivers/char/ds1620.c b/drivers/char/ds1620.c
-index aab9605..24ffd8c 100644
---- a/drivers/char/ds1620.c
-+++ b/drivers/char/ds1620.c
-@@ -74,21 +74,21 @@ static inline void netwinder_ds1620_reset(void)
- 
- static inline void netwinder_lock(unsigned long *flags)
- {
--	spin_lock_irqsave(&nw_gpio_lock, *flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, *flags);
- }
- 
- static inline void netwinder_unlock(unsigned long *flags)
- {
--	spin_unlock_irqrestore(&nw_gpio_lock, *flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, *flags);
- }
- 
- static inline void netwinder_set_fan(int i)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_gpio_modify_op(GPIO_FAN, i ? GPIO_FAN : 0);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- static inline int netwinder_get_fan(void)
-diff --git a/drivers/char/nwflash.c b/drivers/char/nwflash.c
-index d45c334..04e2a94 100644
---- a/drivers/char/nwflash.c
-+++ b/drivers/char/nwflash.c
-@@ -617,9 +617,9 @@ static void kick_open(void)
- 	 * we want to write a bit pattern XXX1 to Xilinx to enable
- 	 * the write gate, which will be open for about the next 2ms.
- 	 */
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_FLASH_WR_ENABLE, CPLD_FLASH_WR_ENABLE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 
- 	/*
- 	 * let the ISA bus to catch on...
-diff --git a/sound/oss/waveartist.c b/sound/oss/waveartist.c
-index 24c430f..672af8b 100644
---- a/sound/oss/waveartist.c
-+++ b/sound/oss/waveartist.c
-@@ -1482,9 +1482,9 @@ vnc_mute_spkr(wavnc_info *devc)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_UNMUTE, devc->spkr_mute_state ? 0 : CPLD_UNMUTE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- }
- 
- static void
+Thanks Don,
+
+- Greg
+
+> 
+> -Don
