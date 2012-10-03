@@ -1,138 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab2JCIbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 04:31:07 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43198 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab2JCIa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 04:30:59 -0400
-Message-ID: <506BF795.7000604@linux.vnet.ibm.com>
-Date: Wed, 03 Oct 2012 14:00:13 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: paulmck@linux.vnet.ibm.com, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove _rcu_barrier()
- dependency on __stop_machine()")
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <506B50F1.8070907@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030008590.23544@pobox.suse.cz> <506BB283.4010800@linux.vnet.ibm.com> <20121003034405.GB13192@linux.vnet.ibm.com> <506BB950.3000102@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030937490.23544@pobox.suse.cz> <506BF339.6020201@linux.vnet.ibm.com> <alpine.LNX.2.00.1210031013110.23544@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1210031013110.23544@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756179Ab2JCIbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 04:31:40 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756023Ab2JCIbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 04:31:35 -0400
+Date: Wed, 3 Oct 2012 10:30:45 +0200
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ubi tree
+Message-ID: <20121003103045.140f3a7a@spider.haslach.nod.at>
+In-Reply-To: <1349248843.2017.108.camel@sauron.fi.intel.com>
+References: <20121003122735.692388e2f68dd85e43052c70@canb.auug.org.au>
+	<1349248843.2017.108.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100308-0260-0000-0000-000001EDDD27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 01:49 PM, Jiri Kosina wrote:
-> On Wed, 3 Oct 2012, Srivatsa S. Bhat wrote:
-> 
->> On 10/03/2012 01:13 PM, Jiri Kosina wrote:
->>> On Wed, 3 Oct 2012, Srivatsa S. Bhat wrote:
->>>
->>>>>>> 	CPU 0				CPU 1
->>>>>>> 	kmem_cache_destroy()
->>>>>>
->>>>>> What about the get_online_cpus() right here at CPU0 before
->>>>>> calling mutex_lock(slab_mutex)? How can the cpu_up() proceed
->>>>>> on CPU1?? I still don't get it... :(
->>>>>>
->>>>>> (kmem_cache_destroy() uses get/put_online_cpus() around acquiring
->>>>>> and releasing slab_mutex).
->>>>>
->>>>> The problem is that there is a CPU-hotplug notifier for slab, which
->>>>> establishes hotplug->slab.
->>>>
->>>> Agreed.
->>>>
->>>>>  Then having kmem_cache_destroy() call
->>>>> rcu_barrier() under the lock
->>>>
->>>> Ah, that's where I disagree. kmem_cache_destroy() *cannot* proceed at
->>>> this point in time, because it has invoked get_online_cpus()! It simply
->>>> cannot be running past that point in the presence of a running hotplug
->>>> notifier! So, kmem_cache_destroy() should have been sleeping on the
->>>> hotplug lock, waiting for the notifier to release it, no?
->>>
->>> Please look carefully at the scenario again. kmem_cache_destroy() calls 
->>> get_online_cpus() before the hotplug notifier even starts. Hence it has no 
->>> reason to block there (noone is holding hotplug lock).
->>>
->>
->> Agreed.
->>
->>> *Then* hotplug notifier fires up, succeeds obtaining hotplug lock, 
->>
->> Ah, that's the problem! The hotplug reader-writer synchronization is not just
->> via a simple mutex. Its a refcount underneath. If kmem_cache_destroy() incremented
->> the refcount, the hotplug-writer (cpu_up) will release the hotplug lock immediately
->> and try again. IOW, a hotplug-reader (kmem_cache_destroy()) and a hotplug-writer
->> (cpu_up) can *NEVER* run concurrently. If they do, we are totally screwed!
->>
->>
->> Take a look at the hotplug lock acquire function at the writer side:
->>
->> static void cpu_hotplug_begin(void)
->> {
->>         cpu_hotplug.active_writer = current;
->>
->>         for (;;) {
->>                 mutex_lock(&cpu_hotplug.lock);
->>                 if (likely(!cpu_hotplug.refcount))   <================ This one!
->>                         break;
->>                 __set_current_state(TASK_UNINTERRUPTIBLE);
->>                 mutex_unlock(&cpu_hotplug.lock);
->>                 schedule();
->>         }   
->> }
-> 
-> I acutally just came to the same conclusion (7 hours of sleep later, the 
-> mind indeed seems to be brighter ... what a poet I am).
-> 
-> Lockdep doesn't know about this semantics of cpu_hotplug_begin(), and 
-> therefore gets confused by the fact that mutual exclusion is actually 
-> achieved through the refcount instead of mutex (and the same apparently 
-> happened to me).
+Artem, Stephen,
 
-No, that's not the problem. Lockdep is fine. The calltrace clearly shows that
-our refcounting has messed up somewhere. As a result, we really *are* running
-a hotplug-reader and a hotplug-writer at the same time! We really need to fix
-*that*! So please try the second debug patch I sent just now (with the BUG_ON()
-in put_online_cpus()). We need to know who is calling put_online_cpus() twice
-and fix that culprit!
+Am Wed, 03 Oct 2012 10:20:43 +0300
+schrieb Artem Bityutskiy <dedekind1@gmail.com>:
 
+> On Wed, 2012-10-03 at 12:27 +1000, Stephen Rothwell wrote:
+> > Hi Artem,
+> > 
+> > After merging the ubi tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > ERROR: "ubi_update_fastmap" [drivers/mtd/ubi/ubi.ko] undefined!
+> > ERROR: "ubi_scan_fastmap" [drivers/mtd/ubi/ubi.ko] undefined!
+> > ERROR: "ubi_calc_fm_size" [drivers/mtd/ubi/ubi.ko] undefined!
 > 
-> So right, now I agree that the deadlock scenario I have come up with is 
-> indeed bogus (*), and we just have to annotate this fact to lockdep 
-> somehow.
+> I've added Richard's fastmap work there. I'll look at these failures.
 
-Yes, the deadlock scenario is bogus, but the refcounting leak is for real
-and needs fixing.
+Thanks for reporting this.
+I'm not sure why this happens with allmodconfig.
+If I set CONFIG_MTD=m and CONFIG_MTD_UBI=m it builds fine,
+that's how I did most build tests.
 
-> 
-> And I actually believe that moving the slab_mutex around in 
-> kmem_cache_destroy() is a good anotation (maybe worth a separate comment 
-> in the code), as it not only makes the lockdep false positive go away, but 
-> it also reduces the mutex hold time.
->
+The following patch fixes the issue for me.
+Artem, are you fine with it?
 
-I'm fine with this, but the real problem is elsewhere, like I mentioned above.
-This one is only a good-to-have, not a fix.
+Thanks,
+//richard
+
+---
+diff --git a/drivers/mtd/ubi/Makefile b/drivers/mtd/ubi/Makefile
+index 7ab19ac..b46b0c97 100644
+--- a/drivers/mtd/ubi/Makefile
++++ b/drivers/mtd/ubi/Makefile
+@@ -2,6 +2,6 @@ obj-$(CONFIG_MTD_UBI) += ubi.o
  
-> (*) I have seen machine locking hard reproducibly, but that was only with 
-> additional Paul's patch, so I guess the lock order there actually was 
-> wrong
-
-If refcounting was working fine, Paul's patch wouldn't have caused *any* issues.
-With that patch in place, the 2 places where rcu_barrier() get invoked (ie.,
-kmem_cache_destroy() and deactivate_locked_super()) both start waiting on
-get_online_cpus() until the slab cpu hotplug notifier as well as the entire
-cpu_up operation completes. Absolutely no problem in that! So the fact that
-you are seeing lock-ups here is another indication that the problem is really
-elsewhere!
-
-Regards,
-Srivatsa S. Bhat
-
+ ubi-y += vtbl.o vmt.o upd.o build.o cdev.o kapi.o eba.o io.o wl.o
+attach.o ubi-y += misc.o debug.o
++ubi-$(CONFIG_MTD_UBI_FASTMAP) += fastmap.o
+ 
+ obj-$(CONFIG_MTD_UBI_GLUEBI) += gluebi.o
+-obj-$(CONFIG_MTD_UBI_FASTMAP) += fastmap.o
