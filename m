@@ -1,205 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab2JCDmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 23:42:16 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52093 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab2JCDmP (ORCPT
+	id S1753409Ab2JCDmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 23:42:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46038 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab2JCDmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 23:42:15 -0400
-Date: Tue, 2 Oct 2012 20:41:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm, slab: release slab_mutex earlier in
- kmem_cache_destroy() (was Re: Lockdep complains about commit 1331e7a1bb
- ("rcu: Remove _rcu_barrier() dependency on __stop_machine()"))
-Message-ID: <20121003034138.GA13192@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
- <20121002170149.GC2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
- <20121002233138.GD2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
- <20121003001530.GF2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
+	Tue, 2 Oct 2012 23:42:33 -0400
+Date: Tue, 2 Oct 2012 20:42:00 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@fusionio.com>,
+        lkml <linux-kernel@vger.kernel.org>, martin.petersen@oracle.com
+Subject: Re: [PATCH] block: makes bio_split support bio without data
+Message-ID: <20121003034159.GA24174@moria.home.lan>
+References: <20120924145639.3b65fd8b@notabene.brown>
+ <20120928162343.GF22647@google.com>
+ <20121002162201.2f5d0f91@notabene.brown>
+ <20121002210923.GU26488@google.com>
+ <20121003133045.272dd564@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
+In-Reply-To: <20121003133045.272dd564@notabene.brown>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100303-5518-0000-0000-000008188250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 02:45:30AM +0200, Jiri Kosina wrote:
-> On Tue, 2 Oct 2012, Paul E. McKenney wrote:
+Adding Martin to the cc, so he can chime in on WRITE_SAME if I got it
+wrong
+
+On Wed, Oct 03, 2012 at 01:30:45PM +1000, NeilBrown wrote:
+> On Tue, 2 Oct 2012 14:09:23 -0700 Kent Overstreet <koverstreet@google.com>
+> wrote:
 > 
-> > On Wed, Oct 03, 2012 at 01:48:21AM +0200, Jiri Kosina wrote:
-> > > On Tue, 2 Oct 2012, Paul E. McKenney wrote:
+> > On Tue, Oct 02, 2012 at 04:22:01PM +1000, NeilBrown wrote:
+> > > On Fri, 28 Sep 2012 09:23:43 -0700 Kent Overstreet <koverstreet@google.com>
+> > > wrote:
 > > > 
-> > > > Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug 
-> > > > notifier, which doesn't sit so well with rcu_barrier() trying to exclude 
-> > > > CPU hotplug events.  I could go back to the old approach, but it is 
-> > > > significantly more complex.  I cannot say that I am all that happy about 
-> > > > anyone calling rcu_barrier() from a CPU hotplug notifier because it 
-> > > > doesn't help CPU hotplug latency, but that is a separate issue.
+> > > > On Mon, Sep 24, 2012 at 02:56:39PM +1000, NeilBrown wrote:
+> > > > > 
+> > > > > Hi Jens,
+> > > > >  this patch has been sitting in my -next tree for a little while and I was
+> > > > >  hoping for it to go in for the next merge window.
+> > > > >  It simply allows bio_split() to be used on bios without a payload, such as
+> > > > >  'discard'.
 > > > > 
-> > > > But the thing is that rcu_barrier()'s assumptions work just fine if either
-> > > > (1) it excludes hotplug operations or (2) if it is called from a hotplug
-> > > > notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
-> > > > is executing.  So the right way to resolve this seems to be to do the
-> > > > get_online_cpus() only if rcu_barrier() is -not- executing in the context
-> > > > of a hotplug notifier.  Should be fixable without too much hassle...
+> > > > Thing is, at some point in the stack a discard bio is going to have data
+> > > > - see blk_add_rquest_payload(), and it used to be the single page was
+> > > > added to discard bios above generic_make_request(), in
+> > > > blkdev_issue_discard() or whatever it's called.
+> > > > 
+> > > > So while I'm sure your code works, it's just a fragile way of doing it.
+> > > > 
+> > > > There's also other types of bios where bi_size has nothing to do with
+> > > > the amount of data in the bi_io_vec - actually I think this is a new
+> > > > thing, since Martin Petersen just added REQ_WRITE_SAME and I don't think
+> > > > there were any other instances besides REQ_DISCARD before.
+> > > > 
+> > > > So my preference would be defining a mask (REQ_DISCARD|REQ_WRITE_SAME),
+> > > > and if bio->bi_rw & that mask is true, just duplicate the bvec or
+> > > > whatever.
 > > > 
-> > > Sorry, I don't think I understand what you are proposing just yet.
+> > > Hi Kent,
+> > >  I'm afraid I don't see the relevance of your comments to the patch.
 > > > 
-> > > If I understand it correctly, you are proposing to introduce some magic 
-> > > into _rcu_barrier() such as (pseudocode of course):
+> > > The current bio_split code can successfully split a bio with zero or one
+> > > bi_vec entry.  If there are more than that, we cannot split.
 > > > 
-> > > 	if (!being_called_from_hotplug_notifier_callback)
-> > > 		get_online_cpus()
-> > > 
-> > > How does that protect from the scenario I've outlined before though?
-> > > 
-> > > 	CPU 0                           CPU 1
-> > > 	kmem_cache_destroy()
-> > > 	mutex_lock(slab_mutex)
-> > > 					_cpu_up()
-> > > 					cpu_hotplug_begin()
-> > > 					mutex_lock(cpu_hotplug.lock)
-> > > 	rcu_barrier()
-> > > 	_rcu_barrier()
-> > > 	get_online_cpus()
-> > > 	mutex_lock(cpu_hotplug.lock)
-> > > 	 (blocks, CPU 1 has the mutex)
-> > > 					__cpu_notify()
-> > > 					mutex_lock(slab_mutex)	
-> > > 
-> > > CPU 0 grabs both locks anyway (it's not running from notifier callback). 
-> > > CPU 1 grabs both locks as well, as there is no _rcu_barrier() being called 
-> > > from notifier callback either.
-> > > 
-> > > What did I miss?
+> > > How does it matter whether the bio is a DISCARD or a WRITE_SAME or a DATA or
+> > > whatever?
 > > 
-> > You didn't miss anything, I was suffering a failure to read carefully.
+> > Hrm, I think I didn't explain very well.
 > > 
-> > So my next stupid question is "Why can't kmem_cache_destroy drop
-> > slab_mutex early?" like the following:
+> > After your change, if bio->bi_vcnt != 0, then it splits the bvec.
 > > 
-> > 	void kmem_cache_destroy(struct kmem_cache *cachep)
-> > 	{
-> > 		BUG_ON(!cachep || in_interrupt());
+> > The trouble is that discard bios do under certain circumstances have
+> > bio->bi_vcnt != 0, in which case splitting the bvec is the wrong thing
+> > to do - first_sectors will quite likely be bigger than the bvec.
 > > 
-> > 		/* Find the cache in the chain of caches. */
-> > 		get_online_cpus();
-> > 		mutex_lock(&slab_mutex);
-> > 		/*
-> > 		 * the chain is never empty, cache_cache is never destroyed
-> > 		 */
-> > 		list_del(&cachep->list);
-> > 		if (__cache_shrink(cachep)) {
-> > 			slab_error(cachep, "Can't free all objects");
-> > 			list_add(&cachep->list, &slab_caches);
-> > 			mutex_unlock(&slab_mutex);
-> > 			put_online_cpus();
-> > 			return;
-> > 		}
-> > 		mutex_unlock(&slab_mutex);
+> > In practice this isn't currently a problem for discard bios, because
+> > since Christoph added blk_add_request_payload(), discard bios won't have
+> > that bvec added until they hit the scsi layer which will be after any
+> > splitting. But this is a fairly recent and unrelated change, and IMO not
+> > the kind of behaviour I'd want to rely on.
 > > 
-> > 		if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
-> > 			rcu_barrier();
+> > WRITE_SAME is a problem for the same reason - bio_sectors(bio) may be
+> > large, but the bio will always have a single bvec and splitting the bvec
+> > is always the wrong thing to do for WRITE_SAME.
 > > 
-> > 		__kmem_cache_destroy(cachep);
-> > 		put_online_cpus();
-> > 	}
+> > So, I think it makes more sense to make the splitting conditional on
+> > !(bio->bi_rw & (REQ_DISCARD|REQ_WRITE_SAME)), in addition to
+> > bio->bi_vcnt == 1.
 > > 
-> > Or did I miss some reason why __kmem_cache_destroy() needs that lock?
-> > Looks to me like it is just freeing now-disconnected memory.
+> > ..That make more sense?
 > 
-> Good question. I believe it should be safe to drop slab_mutex earlier, as 
-> cachep has already been unlinked. I am adding slab people and linux-mm to 
-> CC (the whole thread on LKML can be found at 
-> https://lkml.org/lkml/2012/10/2/296 for reference).
+> Yes, that does make some more sense, thanks.  However it doesn't convince me
+> that we need to change the patch.
 > 
-> How about the patch below? Pekka, Christoph, please?
+> I guess my position is that once we get to this code, we absolutely have to
+> split the bio - it maps to two separate devices in a RAID0 or similar so
+> not-splitting is not an option.
 > 
-> It makes the lockdep happy again, and obviously removes the deadlock (I 
-> tested it).
+> Maybe various md devices need to detect and reject REQ_DISCARD requests that
+> have a payload and REQ_WRITE_SAME requests?  Or would they need to explicitly
+> set a flag to say they accept them?
 
-You can certainly add my Reviewed-by, for whatever that is worth.  ;-)
+I think we should be able to split REQ_DISCARD bios that have a payload
+or REQ_WRITE_SAME bios just fine though - for both of those cases, the
+payload doesn't correspond to a particular sector, so just copy the
+original bvec to the two splits and don't do anything else to it.
 
-BTW, with this patch, are you able to dispense with my earlier patch,
-or is it still needed?
+This gets so much cleaner with immutable bvecs :p
 
-							Thanx, Paul
-
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: mm, slab: release slab_mutex earlier in kmem_cache_destroy()
-> 
-> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
-> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
-> dependency through kmem_cache_destroy() -> rcu_barrier() ->
-> _rcu_barrier() -> get_online_cpus().
-> 
-> This opens a possibilty for deadlock:
-> 
->         CPU 0                           CPU 1
-> 	        kmem_cache_destroy()
-> 	        mutex_lock(slab_mutex)
-> 	                                        _cpu_up()
-> 	                                        cpu_hotplug_begin()
-> 	                                        mutex_lock(cpu_hotplug.lock)
-> 	        rcu_barrier()
-> 	        _rcu_barrier()
-> 	        get_online_cpus()
-> 	        mutex_lock(cpu_hotplug.lock)
-> 	         (blocks, CPU 1 has the mutex)
-> 	                                        __cpu_notify()
-> 	                                        mutex_lock(slab_mutex)
-> 
-> It turns out that slab's kmem_cache_destroy() might release slab_mutex
-> earlier before calling out to rcu_barrier(), as cachep has already been
-> unlinked.
-> 
-> This patch removes the AB-BA dependency by calling rcu_barrier() with 
-> slab_mutex already unlocked.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  mm/slab.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 1133911..693c7cb 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2801,12 +2801,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
->  		put_online_cpus();
->  		return;
->  	}
-> +	mutex_unlock(&slab_mutex);
-> 
->  	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
->  		rcu_barrier();
-> 
->  	__kmem_cache_destroy(cachep);
-> -	mutex_unlock(&slab_mutex);
->  	put_online_cpus();
->  }
->  EXPORT_SYMBOL(kmem_cache_destroy);
-> 
-> -- 
-> Jiri Kosina
-> SUSE Labs
-> 
-
+Actually that might be wrong for REQ_DISCARD bios if they had a payload,
+I have no idea what that payload is actually for. But that should never
+happen anymore, could make do WARN_ON((bio->bi_rw & REQ_DISCARD) &&
+bio->bi_vcnt)
