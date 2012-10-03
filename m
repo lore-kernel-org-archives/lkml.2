@@ -1,201 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab2JCMTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 08:19:10 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:40739 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab2JCMTH (ORCPT
+	id S1754350Ab2JCMXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 08:23:19 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51273 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab2JCMXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 08:19:07 -0400
-X-AuditID: b753bd60-963e4ba000004744-82-506c2d3797be
-X-AuditID: b753bd60-963e4ba000004744-82-506c2d3797be
-Subject: [PATCH -tip ] [BUGFIX] perf probe: Add a workaround for GCC -mfentry
-To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        systemtap@sourceware.org, yrl.pp-manager.tt@hitachi.com
-Date: Wed, 03 Oct 2012 21:17:07 +0900
-Message-ID: <20121003121707.4186.28696.stgit@ltc138.sdl.hitachi.co.jp>
-User-Agent: StGit/0.16-38-g167d
+	Wed, 3 Oct 2012 08:23:17 -0400
+Message-ID: <506C2E02.9080804@linux.vnet.ibm.com>
+Date: Wed, 03 Oct 2012 17:52:26 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2] [RFC] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+x-cbid: 12100312-2000-0000-0000-00000954846C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a workaround for GCC -mfentry option. This enables perf
-probe to find function parameters(arguments) at given function
-entry point again.
+On 10/03/2012 03:16 PM, Jiri Kosina wrote:
+> On Wed, 3 Oct 2012, Jiri Kosina wrote:
+> 
+>> Good question. I believe it should be safe to drop slab_mutex earlier, as 
+>> cachep has already been unlinked. I am adding slab people and linux-mm to 
+>> CC (the whole thread on LKML can be found at 
+>> https://lkml.org/lkml/2012/10/2/296 for reference).
+>>
+>> How about the patch below? Pekka, Christoph, please?
+> 
+> It turns out that lockdep is actually getting this wrong, so the changelog 
+> in the previous version wasn't accurate.
+> 
+> Please find patch with updated changelog below. Pekka, Christoph, could 
+> you please check whether it makes sense to you as well? Thanks.
+> 
+> 
+> 
+> 
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
+> 
+> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
+> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
+> dependency through kmem_cache_destroy() -> rcu_barrier() ->
+> _rcu_barrier() -> get_online_cpus().
+> 
+> Lockdep thinks that this might actually result in ABBA deadlock,
+> and reports it as below:
+> 
+> === [ cut here ] ===
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
+>  -------------------------------------------------------
+>  kworker/u:2/40 is trying to acquire lock:
+>   (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+> 
+>  but task is already holding lock:
+>   (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
+> 
+>  which lock already depends on the new lock.
+> 
+>  the existing dependency chain (in reverse order) is:
+> 
+>  -> #2 (slab_mutex){+.+.+.}:
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
+>         [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
+>         [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
+>         [<ffffffff8155719d>] _cpu_up+0xba/0x14e
+>         [<ffffffff815572ed>] cpu_up+0xbc/0x117
+>         [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
+>         [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
+>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+> 
+>  -> #1 (cpu_hotplug.lock){+.+.+.}:
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff81049197>] get_online_cpus+0x37/0x50
+>         [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
+>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+>         [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
+>         [<ffffffff8118cc01>] deactivate_super+0x61/0x70
+>         [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
+>         [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
+>         [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
+> 
+>  -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
+>         [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+>         [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
+>         [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
+>         [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
+>         [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
+>         [<ffffffff81454b79>] ops_exit_list+0x39/0x60
+>         [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
+>         [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
+>         [<ffffffff81069f3e>] worker_thread+0x12e/0x320
+>         [<ffffffff8106f73e>] kthread+0x9e/0xb0
+>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+> 
+>  other info that might help us debug this:
+> 
+>  Chain exists of:
+>    rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
+> 
+>   Possible unsafe locking scenario:
+> 
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(slab_mutex);
+>                                 lock(cpu_hotplug.lock);
+>                                 lock(slab_mutex);
+>    lock(rcu_sched_state.barrier_mutex);
+> 
+>   *** DEADLOCK ***
+> === [ cut here ] ===
+> 
+> This is actually a false positive. Lockdep has no way of knowing the fact
+> that the ABBA can actually never happen, because of special semantics of
+> cpu_hotplug.refcount and itss handling in cpu_hotplug_begin(); the mutual
+> exclusion there is not achieved through mutex, but through
+> cpu_hotplug.refcount.
+> 
+> The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
+> until everyone who called get_online_cpus() will call put_online_cpus()"
+> semantics is totally invisible to lockdep.
+> 
+> This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
+> is being called with it unlocked. It has two advantages:
+> 
+> - it slightly reduces hold time of slab_mutex; as it's used to protect
+>   the cachep list, it's not necessary to hold it over __kmem_cache_destroy()
+>   call any more
+> - it silences the lockdep false positive warning, as it avoids lockdep ever
+>   learning about slab_mutex -> cpu_hotplug.lock dependency
+> 
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-With -mfentry, GCC (I've found this with Red Hat 4.7.0-5 and
-Red Hat 4.7.2-2 on Fedora 17) generates odd debuginfo about
-variable locations.
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Here are examples:
------
- <1><9a58>: Abbrev Number: 86 (DW_TAG_subprogram)
-    <9a59>   DW_AT_external    : 1
-    <9a59>   DW_AT_name        : (indirect string, offset: 0xd82): unregister_di
-e_notifier
-    <9a5d>   DW_AT_decl_file   : 1
-    <9a5e>   DW_AT_decl_line   : 551
-    <9a60>   DW_AT_prototyped  : 1
-    <9a60>   DW_AT_type        : <0x7c>
-    <9a64>   DW_AT_low_pc      : 0x740
-    <9a6c>   DW_AT_high_pc     : 0x75a
-    <9a74>   DW_AT_frame_base  : 1 byte block: 9c       (DW_OP_call_frame_cfa)
-    <9a76>   DW_AT_GNU_all_call_sites: 1
-    <9a76>   DW_AT_sibling     : <0x9aac>
- <2><9a7a>: Abbrev Number: 87 (DW_TAG_formal_parameter)
-    <9a7b>   DW_AT_name        : nb
-    <9a7e>   DW_AT_decl_file   : 1
-    <9a7f>   DW_AT_decl_line   : 551
-    <9a81>   DW_AT_type        : <0x2a96>
-    <9a85>   DW_AT_location    : 0x172f (location list)
-...
-    0000172f 0000000000000745 0000000000000750 (DW_OP_reg5 (rdi))
-    0000172f 0000000000000750 0000000000000757 (DW_OP_reg4 (rsi))
-    0000172f 0000000000000757 000000000000075a (DW_OP_GNU_entry_value: (DW_OP_reg5 (rdi)); DW_OP_stack_value)
-    0000172f <End of list>
------
+Earlier I was under the wrong impression that all the calltraces that lockdep
+spewed were reflecting the same point in time. So, sorry about that noise! :-)
+It is indeed a false-positive and there is no real bug here, and the fix looks
+good, provided __kmem_cache_destroy() doesn't expect slab_mutex to be held.
 
-As you can see, the location of the parameter "nb", starts from 0x745
-but unregister_die_notifier() function itself starts from 0x740.
+But, I'm also quite surprised that the put_online_cpus() code as it stands today
+doesn't have any checks for the refcount going negative. I believe that such a
+check would be valuable to help catch cases where we might end up inadvertently
+causing an imbalance between get_online_cpus() and put_online_cpus(). I'll post
+that as a separate patch.
 
------
- <1><9aac>: Abbrev Number: 86 (DW_TAG_subprogram)
-    <9aad>   DW_AT_external    : 1
-    <9aad>   DW_AT_name        : (indirect string, offset: 0x321f): notify_die
-    <9ab1>   DW_AT_decl_file   : 1
-    <9ab2>   DW_AT_decl_line   : 530
-    <9ab4>   DW_AT_prototyped  : 1
-    <9ab4>   DW_AT_type        : <0x7c>
-    <9ab8>   DW_AT_low_pc      : 0xb0
-    <9ac0>   DW_AT_high_pc     : 0xe0
-    <9ac8>   DW_AT_frame_base  : 1 byte block: 9c       (DW_OP_call_frame_cfa)
-    <9aca>   DW_AT_GNU_all_call_sites: 1
-    <9aca>   DW_AT_sibling     : <0x9b6c>
- <2><9ace>: Abbrev Number: 87 (DW_TAG_formal_parameter)
-    <9acf>   DW_AT_name        : val
-    <9ad3>   DW_AT_decl_file   : 1
-    <9ad4>   DW_AT_decl_line   : 530
-    <9ad6>   DW_AT_type        : <0x2b36>
-    <9ada>   DW_AT_location    : 0x177b (location list)
-...
-    0000177b 00000000000000b0 00000000000000cd (DW_OP_reg5 (rdi))
-    0000177b 00000000000000cd 00000000000000dd (DW_OP_reg4 (rsi))
-    0000177b 00000000000000dd 00000000000000e0 (DW_OP_GNU_entry_value: (DW_OP_reg5 (rdi)); DW_OP_stack_value)
-    0000177b <End of list>
------
+Regards,
+Srivatsa S. Bhat
 
-However, without fentry call (notifiy_die is marked notrace),
-the parameter "val" location start with 0xb0, which is same as
-notify_die start address.
-
-To avoid failing variable search at the function entry point,
-this add a workaround which adjusts var-search address +5
-only if all the below conditions are true;
-
-- given variable is a formal_parameter
-- the searching address is a function entry point
-- the formal_parameter has no location at the function entry point
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/perf/util/probe-finder.c |   40 +++++++++++++++++++++++++++++++++-------
- 1 file changed, 33 insertions(+), 7 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 1daf5c1..84b3b5f 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -276,7 +276,7 @@ static struct probe_trace_arg_ref *alloc_trace_arg_ref(long offs)
-  * If tvar == NULL, this just checks variable can be converted.
-  */
- static int convert_variable_location(Dwarf_Die *vr_die, Dwarf_Addr addr,
--				     Dwarf_Op *fb_ops,
-+				     Dwarf_Op *fb_ops, bool fentry,
- 				     struct probe_trace_arg *tvar)
- {
- 	Dwarf_Attribute attr;
-@@ -291,13 +291,31 @@ static int convert_variable_location(Dwarf_Die *vr_die, Dwarf_Addr addr,
- 	if (dwarf_attr(vr_die, DW_AT_external, &attr) != NULL)
- 		goto static_var;
- 
-+	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL)
-+		return -ENOENT;
-+
-+	if (fentry && (dwarf_tag(vr_die) == DW_TAG_formal_parameter) &&
-+	    (dwarf_getlocation_addr(&attr, addr, &op, &nops, 1) == 0))
-+		/*
-+		 * Workaround: GCC -mfentry option generates odd
-+		 * variable location entries which start from a
-+		 * function entry+5, even if it is a formal_parameter.
-+		 * On the other hand, for functions without fentry call
-+		 * (e.g. notrace function), the formal_parameter location
-+		 * starts from the function entry address.
-+		 * Here, if we find a formal_parameter which doesn't
-+		 * start from the function entry, but from function
-+		 * entry+5, it should be a buggy entry.
-+		 * We forcibly get the variable(parameter) location
-+		 * information from entry+5.
-+		 */
-+		addr += 5;
-+
- 	/* TODO: handle more than 1 exprs */
--	if (dwarf_attr(vr_die, DW_AT_location, &attr) == NULL ||
--	    dwarf_getlocation_addr(&attr, addr, &op, &nops, 1) <= 0 ||
--	    nops == 0) {
-+	if (dwarf_getlocation_addr(&attr, addr, &op, &nops, 1) <= 0 ||
-+	    nops == 0)
- 		/* TODO: Support const_value */
- 		return -ENOENT;
--	}
- 
- 	if (op->atom == DW_OP_addr) {
- static_var:
-@@ -595,13 +613,19 @@ next:
- static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- {
- 	Dwarf_Die die_mem;
-+	Dwarf_Addr eaddr;
-+	bool fentry;
- 	int ret;
- 
- 	pr_debug("Converting variable %s into trace event.\n",
- 		 dwarf_diename(vr_die));
- 
-+	/* GCC -mfentry workaround */
-+	fentry = (dwarf_entrypc(&pf->sp_die, &eaddr) == 0) &&
-+		 (eaddr == pf->addr);
-+
- 	ret = convert_variable_location(vr_die, pf->addr, pf->fb_ops,
--					pf->tvar);
-+					fentry, pf->tvar);
- 	if (ret == -ENOENT)
- 		pr_err("Failed to find the location of %s at this address.\n"
- 		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
-@@ -1220,7 +1244,9 @@ static int collect_variables_cb(Dwarf_Die *die_mem, void *data)
- 	if (tag == DW_TAG_formal_parameter ||
- 	    tag == DW_TAG_variable) {
- 		ret = convert_variable_location(die_mem, af->pf.addr,
--						af->pf.fb_ops, NULL);
-+						af->pf.fb_ops,
-+						vl->point.offset == 0,
-+						NULL);
- 		if (ret == 0) {
- 			ret = die_get_varname(die_mem, buf, MAX_VAR_LEN);
- 			pr_debug2("Add new var: %s\n", buf);
+> ---
+>  mm/slab.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 1133911..693c7cb 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2801,12 +2801,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
+>  		put_online_cpus();
+>  		return;
+>  	}
+> +	mutex_unlock(&slab_mutex);
+> 
+>  	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
+>  		rcu_barrier();
+> 
+>  	__kmem_cache_destroy(cachep);
+> -	mutex_unlock(&slab_mutex);
+>  	put_online_cpus();
+>  }
+>  EXPORT_SYMBOL(kmem_cache_destroy);
+> 
 
