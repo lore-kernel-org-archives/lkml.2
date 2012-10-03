@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab2JCW7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 18:59:14 -0400
+	id S932343Ab2JCW7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 18:59:41 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56389 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab2JCW7M (ORCPT
+	with ESMTP id S932111Ab2JCW7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 18:59:12 -0400
-Message-ID: <506CC33F.4090308@zankel.net>
-Date: Wed, 03 Oct 2012 15:59:11 -0700
-From: Chris Zankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 3 Oct 2012 18:59:39 -0400
+Date: Thu, 4 Oct 2012 07:59:30 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
+Message-ID: <20121003225930.GF19248@localhost>
+References: <20120927142822.GG3429@suse.de>
+ <20120927144942.GB4251@mtj.dyndns.org>
+ <50646977.40300@parallels.com>
+ <20120927174605.GA2713@localhost>
+ <50649EAD.2050306@parallels.com>
+ <20120930075700.GE10383@mtj.dyndns.org>
+ <20120930080249.GF10383@mtj.dyndns.org>
+ <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
+ <20120930103732.GK10383@mtj.dyndns.org>
+ <5069584A.8090809@parallels.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] xtensa patchset for 3.7
-References: <506CBAFC.8010908@zankel.net> <CA+55aFyva3aWXBOBwERPJMyX+2LqydYs4Bq4ZBUPXZFMtPqZOg@mail.gmail.com>
-In-Reply-To: <CA+55aFyva3aWXBOBwERPJMyX+2LqydYs4Bq4ZBUPXZFMtPqZOg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5069584A.8090809@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello, Glauber.
 
-On 10/03/2012 03:41 PM, Linus Torvalds wrote:
-> That should be
->
->     git://github.com/czankel/xtensa-linux tags/xtensa-next-20121003
->
-> which is the public git address of that server.
-Sorry about that. I mistakenly used 'origin' instead of the actual address.
+On Mon, Oct 01, 2012 at 12:46:02PM +0400, Glauber Costa wrote:
+> > Yeah, it will need some hooks.  For dentry and inode, I think it would
+> > be pretty well isolated tho.  Wasn't it?
+> 
+> We would still need something for the stack. For open files, and for
+> everything that becomes a potential problem. We then end up with 35
+> different knobs instead of one. One of the perceived advantages of this
+> approach, is that it condenses as much data as a single knob as
+> possible, reducing complexity and over flexibility.
 
-> However, you now do have a signed tag, but the key you have used for
-> it is not available on any of the regular keyservers. Neither
-> pgp.mit.edu nor keys.gnupg.net know about that key A1F191F0, which I
-> assume also means that it's not actually signed by anybody else
-> either.
->
-> I see that you're based in St Petersburg, is there anybody around you
-> can get your key signed with?
-I'm actually located in the Bay Area (Max, who's helping out, is in St. 
-Petersburg), and could stop by anywhere around here. I'll also try ask 
-some old friends if they are still in the position to certify the signature.
+Oh, I didn't mean to use object-specific counting for all of them.
+Most resources don't have such common misaccounting problem.  I mean,
+for stack, it doesn't exist by definition (other than cgroup
+migration).  There's no reason to use anything other than first-use
+kmem based accounting for them.  My point was that for particularly
+problematic ones like dentry/inode, it might be better to treat them
+differently.
 
-Thanks,
--Chris
+Thanks.
 
+-- 
+tejun
