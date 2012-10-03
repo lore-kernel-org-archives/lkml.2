@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab2JCPVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:21:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44775 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932515Ab2JCPVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:21:13 -0400
+	id S932989Ab2JCPS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:18:57 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:36941 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932551Ab2JCPNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:13:55 -0400
 From: Florian Fainelli <florian@openwrt.org>
-To: Manuel Lauss <manuel.lauss@gmail.com>
-Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/25] MIPS: Alchemy: use the ehci platform driver
-Date: Wed, 03 Oct 2012 17:20:10 +0200
-Message-ID: <5730774.qPbnpD5QP3@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAOLZvyEfagtJSQyL7MHkw+40NYbmFtT35Y4b8pGNUNc6dTzS=Q@mail.gmail.com>
-References: <1349276601-8371-1-git-send-email-florian@openwrt.org> <1349276601-8371-8-git-send-email-florian@openwrt.org> <CAOLZvyEfagtJSQyL7MHkw+40NYbmFtT35Y4b8pGNUNc6dTzS=Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Subject: [PATCH 14/25] MIPS: PNX8550: useOHCI platform driver
+Date: Wed,  3 Oct 2012 17:03:10 +0200
+Message-Id: <1349276601-8371-16-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349276601-8371-1-git-send-email-florian@openwrt.org>
+References: <1349276601-8371-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 October 2012 17:14:21 Manuel Lauss wrote:
-> On Wed, Oct 3, 2012 at 5:03 PM, Florian Fainelli <florian@openwrt.org> wrote:
-> > Use the ehci platform driver power_{on,suspend,off} callbacks to perform 
-the
-> > USB block gate enabling/disabling as what the ehci-au1xxx.c driver does.
-> >
-> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> > ---
-> >  arch/mips/alchemy/common/platform.c |   23 ++++++++++++++++++++++-
-> >  1 file changed, 22 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/arch/mips/alchemy/common/platform.c 
-b/arch/mips/alchemy/common/platform.c
-> > index c0f3ce6..57335a2 100644
-> > --- a/arch/mips/alchemy/common/platform.c
-> > +++ b/arch/mips/alchemy/common/platform.c
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/platform_device.h>
-> >  #include <linux/serial_8250.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/usb/ehci_pdriver.h>
-> >
-> >  #include <asm/mach-au1x00/au1000.h>
-> >  #include <asm/mach-au1x00/au1xxx_dbdma.h>
-> > @@ -122,6 +123,25 @@ static void __init alchemy_setup_uarts(int ctype)
-> >  static u64 alchemy_ohci_dmamask = DMA_BIT_MASK(32);
-> >  static u64 __maybe_unused alchemy_ehci_dmamask = DMA_BIT_MASK(32);
-> >
-> > +/* Power on callback for the ehci platform driver */
-> > +static int alchemy_ehci_power_on(struct platform_device *pdev)
-> > +{
-> > +       return alchemy_usb_control(ALCHEMY_USB_EHCI0, 1);
-> > +}
-> > +
-> > +/* Power off/suspend callback for the ehci platform driver */
-> > +static void alchemy_ehci_power_off(struct platform_device *pdev)
-> > +{
-> > +       alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
-> > +}
-> > +
-> > +static struct usb_ehci_pdata alchemy_ehci_pdata = {
-> > +       .need_io_watchdog       = 0,
-> 
-> This member doesn't exist.
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ arch/mips/pnx8550/common/platform.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
-Thanks to get_maintainers.pl you did not get the patch that adds it, and it 
-seems like the mailing-list archives did not get it everywhere too, I can 
-ensure you that's is there, it's actually PATCH 6/25 of this serie.
---
-Florian
+diff --git a/arch/mips/pnx8550/common/platform.c b/arch/mips/pnx8550/common/platform.c
+index 5264cc0..0a8faea 100644
+--- a/arch/mips/pnx8550/common/platform.c
++++ b/arch/mips/pnx8550/common/platform.c
+@@ -20,6 +20,7 @@
+ #include <linux/serial.h>
+ #include <linux/serial_pnx8xxx.h>
+ #include <linux/platform_device.h>
++#include <linux/usb/ohci_pdriver.h>
+ 
+ #include <int.h>
+ #include <usb.h>
+@@ -96,12 +97,40 @@ static u64 ohci_dmamask = DMA_BIT_MASK(32);
+ 
+ static u64 uart_dmamask = DMA_BIT_MASK(32);
+ 
++static int pnx8550_usb_ohci_power_on(struct platform_device *pdev)
++{
++	/*
++	 * Set register CLK48CTL to enable and 48MHz
++	 */
++	outl(0x00000003, PCI_BASE | 0x0004770c);
++
++	/*
++	 * Set register CLK12CTL to enable and 48MHz
++	 */
++	outl(0x00000003, PCI_BASE | 0x00047710);
++
++	udelay(100);
++
++	return 0;
++}
++
++static void pnx8550_usb_ohci_power_off(struct platform_device *pdev)
++{
++	udelay(10);
++}
++
++static struct usb_ohci_pdata pnx8550_usb_ohci_pdata = {
++	.power_on	= pnx8550_usb_ohci_power_on,
++	.power_off	= pnx8550_usb_ohci_power_off,
++};
++
+ static struct platform_device pnx8550_usb_ohci_device = {
+-	.name		= "pnx8550-ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &ohci_dmamask,
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= &pnx8550_usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(pnx8550_usb_ohci_resources),
+ 	.resource	= pnx8550_usb_ohci_resources,
+-- 
+1.7.9.5
+
