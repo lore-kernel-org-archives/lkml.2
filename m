@@ -1,68 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172Ab2JCEMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 00:12:30 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42117 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2JCEM2 (ORCPT
+	id S1751069Ab2JCEPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 00:15:49 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59911 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2JCEPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 00:12:28 -0400
-Date: Wed, 3 Oct 2012 14:12:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20121003141219.529f565dc7950ea12257026b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Oct_2012_14_12_19_+1000_7pA/HCtkW0jxEAhJ"
+	Wed, 3 Oct 2012 00:15:47 -0400
+Message-ID: <506BBBC4.9040606@linux.vnet.ibm.com>
+Date: Wed, 03 Oct 2012 09:45:00 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Jiri Kosina <jkosina@suse.cz>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
+Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove _rcu_barrier()
+ dependency on __stop_machine()")
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <506BB805.3000707@linux.vnet.ibm.com> <20121003040701.GD13192@linux.vnet.ibm.com>
+In-Reply-To: <20121003040701.GD13192@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100304-1618-0000-0000-000002946486
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Oct_2012_14_12_19_+1000_7pA/HCtkW0jxEAhJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/03/2012 09:37 AM, Paul E. McKenney wrote:
+> On Wed, Oct 03, 2012 at 09:29:01AM +0530, Srivatsa S. Bhat wrote:
+>> On 10/03/2012 05:01 AM, Paul E. McKenney wrote:
+>>> On Tue, Oct 02, 2012 at 11:58:36PM +0200, Jiri Kosina wrote:
+>>>> On Tue, 2 Oct 2012, Jiri Kosina wrote:
+>>>>
+>>>>>>>> 1331e7a1bbe1f11b19c4327ba0853bee2a606543 is the first bad commit
+>>>>>>>> commit 1331e7a1bbe1f11b19c4327ba0853bee2a606543
+>>>>>>>> Author: Paul E. McKenney <paul.mckenney@linaro.org>
+>>>>>>>> Date:   Thu Aug 2 17:43:50 2012 -0700
+>>>>>>>>
+>>>>>>>>     rcu: Remove _rcu_barrier() dependency on __stop_machine()
+>>>>>>>>     
+>>>>>>>>     Currently, _rcu_barrier() relies on preempt_disable() to prevent
+>>>>>>>>     any CPU from going offline, which in turn depends on CPU hotplug's
+>>>>>>>>     use of __stop_machine().
+>>>>>>>>     
+>>>>>>>>     This patch therefore makes _rcu_barrier() use get_online_cpus() to
+>>>>>>>>     block CPU-hotplug operations.  This has the added benefit of removing
+>>>>>>>>     the need for _rcu_barrier() to adopt callbacks:  Because CPU-hotplug
+>>>>>>>>     operations are excluded, there can be no callbacks to adopt.  This
+>>>>>>>>     commit simplifies the code accordingly.
+>>>>>>>>     
+>>>>>>>>     Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+>>>>>>>>     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>>>>>>>     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>>>>>>>> ==
+>>>>>>>>
+>>>>>>>> is causing lockdep to complain (see the full trace below). I haven't yet 
+>>>>>>>> had time to analyze what exactly is happening, and probably will not have 
+>>>>>>>> time to do so until tomorrow, so just sending this as a heads-up in case 
+>>>>>>>> anyone sees the culprit immediately.
+>>>>>>>
+>>>>>>> Hmmm...  Does the following patch help?  It swaps the order in which
+>>>>>>> rcu_barrier() acquires the hotplug and rcu_barrier locks.
+>>>>>>
+>>>>>> It changed the report slightly (see for example the change in possible 
+>>>>>> unsafe locking scenario, rcu_sched_state.barrier_mutex vanished and it's 
+>>>>>> now directly about cpu_hotplug.lock). With the patch applied I get
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> ======================================================
+>>>>>> [ INFO: possible circular locking dependency detected ]
+>>>>>> 3.6.0-03888-g3f99f3b #145 Not tainted
+>>>>>
+>>>>> And it really seems valid. 
+>>>
+>>> Yep, it sure is.  I wasn't getting the full picture earlier, so please
+>>> accept my apologies for the bogus patch.
+>>>
+>>>>> kmem_cache_destroy() calls rcu_barrier() with slab_mutex locked, which 
+>>>>> introduces slab_mutex -> cpu_hotplug.lock dependency (through 
+>>>>> rcu_barrier() -> _rcu_barrier() -> get_online_cpus()).
+>>>>>
+>>>>> On the other hand, _cpu_up() acquires cpu_hotplug.lock through 
+>>>>> cpu_hotplug_begin(), and with this lock held cpuup_callback() notifier 
+>>>>> gets called, which acquires slab_mutex. This gives the reverse dependency, 
+>>>>> i.e. deadlock scenario is valid one.
+>>>>>
+>>>>> 1331e7a1bbe1f11b19c4327ba0853bee2a606543 is triggering this, because 
+>>>>> before that, there was no slab_mutex -> cpu_hotplug.lock dependency.
+>>>>>
+>>>>> Simply put, the commit causes get_online_cpus() to be called with 
+>>>>> slab_mutex held, which is invalid.
+>>>>
+>>>> Oh, and it seems to be actually triggering in real.
+>>>>
+>>>> With HEAD being 974a847e00c, machine suspends nicely. With 974a847e00c + 
+>>>> your patch, changing the order in which rcu_barrier() acquires hotplug and 
+>>>> rcu_barrier locks, the machine hangs 100% reliably during suspend, which 
+>>>> very likely actually is the deadlock described above.
+>>>
+>>> Indeed.  Slab seems to be doing an rcu_barrier() in a CPU hotplug
+>>> notifier, which doesn't sit so well with rcu_barrier() trying to exclude
+>>> CPU hotplug events.
+>>
+>> Why not? IMHO it should have been perfectly fine! See below...
+>>
+>>>  I could go back to the old approach, but it is
+>>> significantly more complex.  I cannot say that I am all that happy
+>>> about anyone calling rcu_barrier() from a CPU hotplug notifier because
+>>> it doesn't help CPU hotplug latency, but that is a separate issue.
+>>>
+>>> But the thing is that rcu_barrier()'s assumptions work just fine if either
+>>> (1) it excludes hotplug operations or (2) if it is called from a hotplug
+>>> notifier.  You see, either way, the CPU cannot go away while rcu_barrier()
+>>> is executing.  So the right way to resolve this seems to be to do the
+>>> get_online_cpus() only if rcu_barrier() is -not- executing in the context
+>>> of a hotplug notifier.  Should be fixable without too much hassle...
+>>>
+>>
+>> The thing is, get_online_cpus() is smart: it *knows* when you are calling
+>> it in a hotplug-writer, IOW, when you are in a hotplug notifier.
+>>
+>> The relevant code is:
+>>
+>> void get_online_cpus(void)
+>> {
+>>         might_sleep();
+>>         if (cpu_hotplug.active_writer == current)
+>>                 return;
+>> 	....
+>> }
+>>
+>> So calling rcu_barrier() (and hence get_online_cpus()) from within a hotplug
+>> notifier should pose no problem at all!
+> 
+> Indeed, that was my confusion.  The deadlock can happen with
+> the slab CPU-hotplug notifier (without calling rcu_barrier()!), which
+> establishes hotplug->slab.  The some other unrelated thread calls
+> kmem_cache_destroy(), which acquires slab and then calls rcu_barrier(),
+> which acquires hotplug.  So the deadlock can happen independently of
+> rcu_barrier() being called from a CPU-hotplug notifier.
+> 
 
-Hi Samuel,
+Right, this is exactly what I thought yesterday. I had drafted a mail explaining
+why the length of the circular locking dependency is really 2 but not 3 and
+why the rcu_barrier() (barrier_mutex) is only aggravating a problem that is
+there even without using rcu_barrier() at all. But then I stopped short of posting
+it when I noticed the get/put_online_cpus() in kmem_cache_destroy() which really
+looked puzzling to me. I (still) can't get myself to believe that kmem_cache_destroy()
+could go beyond its get_online_cpus() and call rcu_barrier() at all, in the
+presence of a concurrent CPU hotplug notifier!
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/video/backlight/88pm860x_bl.c between commit e1c9ac420ef1
-("Revert "backlight: fix memory leak on obscure error path"") from Linus'
-tree and commit a6ccdcd98c39 ("mfd: 88pm860x: Use REG resource for
-backlight") from the mfd tree.
+Regards,
+Srivatsa S. Bhat
 
-I used the mfd tree version and can carry the fix as necessary (no action
-is required).
+> Making kmem_cache_destroy() release slab before calling rcu_barrier()
+> seems to clear things up for Jiri, but we need Pekka's or Christoph
+> Lameter's view on whether this is really safe.  (It looks safe to
+> both Jiri and I, but...)
+> 
+> 							Thanx, Paul
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__3_Oct_2012_14_12_19_+1000_7pA/HCtkW0jxEAhJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQa7sjAAoJEECxmPOUX5FEhpIP/0jltKkL1yIPFULcr2lxdNTk
-RYeBru9/7dKH4ltH4UdeB6l7fUkv7K9WRMw1/uKzG1fgr5VvHFyJlZqSwY72pfm6
-4OSTcP9kQHmlK5G3h5rjI4du542tl9xo/RmMFUGsVJ+IKd4j/DOC/LCmQ0SO3TeM
-C/o/KkHNe3iYJtCwEHioBZy86E7KjiCi1AoGvy9g0XGb3gnVjcsnoWVSEA/MKIuz
-Tnx3PAgzmLY6TQTTTy0w+KCQdjGE/0tFQx245/fuo3nVo0pzyUDDTOY9IzsyLHDi
-KRxAi80mIE6WJac668Dqsm9qJ12FieNPbppqky4i/GT0KRuPIikpcfX9Cyai2qWZ
-gKt7/h53fKRpaVfAkwI/anz3vQcydeDtpfqAYi6adEQD5nmj1ATgm8CwMD7k0UYH
-EtlML3cYlGLZOJRsvDvL3gVaY6mqXGIW60h6jXU4YLELUn7l58LK4UxiEr/c7gUD
-Z2+Y5+nLpzTOpeJPNslDR74EQNnY8mEgm1JyAGcx2JIErOs4gfVB/fDD1SncswVS
-Hr3AvKPVy74f4fqNWBwbYrpZk4thVNT4+j7VxJO2A+Qyr6axKzp6Xd9LvZO9NYlm
-eltOKlm5dNPV/XBRY6l+wN4kZ8FRLiwTmdBqGrqbvbqFKcfLb8riIhacs44TJ9X8
-a7Z3zkAqDXbuL6SXX02w
-=XwA9
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Oct_2012_14_12_19_+1000_7pA/HCtkW0jxEAhJ--
