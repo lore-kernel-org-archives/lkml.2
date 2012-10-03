@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965139Ab2JCQSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:18:40 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48406 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965057Ab2JCQSd (ORCPT
+	id S965153Ab2JCQSm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:18:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58499 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965075Ab2JCQSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:33 -0400
+	Wed, 3 Oct 2012 12:18:35 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: davem@davemloft.net
-Cc: kernel-janitors@vger.kernel.org, mcarlson@broadcom.com,
-        eric.dumazet@gmail.com, mchan@broadcom.com, shuah.khan@hp.com,
+Cc: kernel-janitors@vger.kernel.org, danny.kukawka@bisect.de,
+        mcuos.com@gmail.com, joe@perches.com, florian@openwrt.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 17/20] drivers/net/ethernet/sun/niu.c: fix error return code
-Date: Wed,  3 Oct 2012 18:18:04 +0200
-Message-Id: <1349281090-10013-14-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 14/20] drivers/net/ethernet/amd/au1000_eth.c: fix error return code
+Date: Wed,  3 Oct 2012 18:18:07 +0200
+Message-Id: <1349281090-10013-17-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,19 +48,50 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/ethernet/sun/niu.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/amd/au1000_eth.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
-index 8419bf3..275b430 100644
---- a/drivers/net/ethernet/sun/niu.c
-+++ b/drivers/net/ethernet/sun/niu.c
-@@ -9788,6 +9788,7 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
+index 397596b..f195acf 100644
+--- a/drivers/net/ethernet/amd/au1000_eth.c
++++ b/drivers/net/ethernet/amd/au1000_eth.c
+@@ -1174,8 +1174,10 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
+ 		pdev->name, aup->mac_id);
+ 	aup->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+-	if (aup->mii_bus->irq == NULL)
++	if (aup->mii_bus->irq == NULL) {
++		err = -ENOMEM;
+ 		goto err_out;
++	}
  
- 	if (!pci_is_pcie(pdev)) {
- 		dev_err(&pdev->dev, "Cannot find PCI Express capability, aborting\n");
-+		err = -ENODEV;
- 		goto err_out_free_res;
+ 	for (i = 0; i < PHY_MAX_ADDR; ++i)
+ 		aup->mii_bus->irq[i] = PHY_POLL;
+@@ -1190,7 +1192,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 		goto err_mdiobus_reg;
  	}
  
+-	if (au1000_mii_probe(dev) != 0)
++	err = au1000_mii_probe(dev);
++	if (err != 0)
+ 		goto err_out;
+ 
+ 	pDBfree = NULL;
+@@ -1205,6 +1208,7 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 	}
+ 	aup->pDBfree = pDBfree;
+ 
++	err = -ENODEV;
+ 	for (i = 0; i < NUM_RX_DMA; i++) {
+ 		pDB = au1000_GetFreeDB(aup);
+ 		if (!pDB)
+@@ -1213,6 +1217,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 		aup->rx_dma_ring[i]->buff_stat = (unsigned)pDB->dma_addr;
+ 		aup->rx_db_inuse[i] = pDB;
+ 	}
++
++	err = -ENODEV;
+ 	for (i = 0; i < NUM_TX_DMA; i++) {
+ 		pDB = au1000_GetFreeDB(aup);
+ 		if (!pDB)
 
