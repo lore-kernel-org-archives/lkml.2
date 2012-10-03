@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab2JCPFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:05:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756442Ab2JCPFs convert rfc822-to-8bit (ORCPT
+	id S932355Ab2JCPIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:08:15 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38231 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756489Ab2JCPIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:05:48 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: Dave Chinner <dchinner@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
-References: <1348767205-17230-1-git-send-email-lczerner@redhat.com>
-	<x49ipaukud8.fsf@segfault.boston.devel.redhat.com>
-	<alpine.LFD.2.00.1210021042580.21903@localhost>
-	<20121002195934.GA2657@devil.redhat.com>
-	<x49txubvd9d.fsf@segfault.boston.devel.redhat.com>
-	<alpine.LFD.2.00.1210031659480.18540@localhost>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 03 Oct 2012 11:05:44 -0400
-In-Reply-To: <alpine.LFD.2.00.1210031659480.18540@localhost>
- (=?utf-8?B?Ikx1a8OhxaE=?=
-	Czerner"'s message of "Wed, 3 Oct 2012 17:01:17 +0200 (CEST)")
-Message-ID: <x49haqbvbnb.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	Wed, 3 Oct 2012 11:08:14 -0400
+X-Sasl-enc: ULyVR8H13MDjq3iiuudfRs4pS0WLIXQ9b/vpnnXQ5v9o 1349276893
+Date: Wed, 3 Oct 2012 08:08:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 6/7] usb: core: reuse kbasename()
+Message-ID: <20121003150812.GC8460@kroah.com>
+References: <1349190062-13107-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1349190062-13107-6-git-send-email-andriy.shevchenko@linux.intel.com>
+ <CAHp75VeFNVnKiggLLtKnkpiLpTStQh45Ws+DOq+AZq0FOhp4Cg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75VeFNVnKiggLLtKnkpiLpTStQh45Ws+DOq+AZq0FOhp4Cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukáš Czerner <lczerner@redhat.com> writes:
+On Wed, Oct 03, 2012 at 11:27:27AM +0300, Andy Shevchenko wrote:
+> On Tue, Oct 2, 2012 at 6:00 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> 
+> > --- a/drivers/usb/core/file.c
+> > +++ b/drivers/usb/core/file.c
+> 
+> > @@ -200,14 +200,9 @@ int usb_register_dev(struct usb_interface *intf,
+> >
+> >         /* create a usb class device for this usb interface */
+> >         snprintf(name, sizeof(name), class_driver->name, minor - minor_base);
+> > -       temp = strrchr(name, '/');
+> > -       if (temp && (temp[1] != '\0'))
+> I have checked current linux-next, the drivers define .name in the
+> usb_class_driver structure as '...%d'.
+> So, what is the reason to check for trailing '/' here? Historical
+> reasons or there is a (broken/3rd party/etc) driver with it?
 
->> Did you look at system time?
->> 
->> -Jeff
->
-> Hi, none of the times showed any significant difference, there was
-> not any pattern suggesting a problem. Also the system time is included
-> in the real time, so it would show anyway I guess.
+I really do not remember why it was done this way, sorry.  I have no
+problem not doing it anymore, as long as you are willing to fix any
+potential bugs that might pop up :)
 
-Only if you're cpu bound.  If you aren't, elevated system time may not
-increase overall runtime.
+And no, I don't worry about 3rd party drivers, that shouldn't be an
+issue at all here.
 
-Cheers,
-Jeff
+greg k-h
