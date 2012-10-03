@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab2JCOiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:38:01 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47427 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab2JCOh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:37:59 -0400
-Date: Wed, 3 Oct 2012 19:59:42 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
- in PLE handler
-Message-ID: <20121003142942.GB15253@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <1348486479.11847.46.camel@twins>
- <50604988.2030506@linux.vnet.ibm.com>
- <1348490165.11847.58.camel@twins>
- <50606050.309@linux.vnet.ibm.com>
- <1348494895.11847.64.camel@twins>
- <50606B33.1040102@linux.vnet.ibm.com>
- <5061B437.8070300@linux.vnet.ibm.com>
- <5064101A.5070902@redhat.com>
- <50643745.6010202@linux.vnet.ibm.com>
- <506440AF.9080202@redhat.com>
+	id S1754754Ab2JCOoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:44:54 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40458 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2JCOow (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:44:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <506440AF.9080202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12100314-5112-0000-0000-00000D097D1D
+In-Reply-To: <CAPXgP11UQUHyCAo=GbAigQMqKWta12L19EsVaocU0ia6JKmd1Q@mail.gmail.com>
+References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
+ <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
+ <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
+ <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+ <20121002221239.GA30990@kroah.com> <CAPXgP11UQUHyCAo=GbAigQMqKWta12L19EsVaocU0ia6JKmd1Q@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Oct 2012 07:44:30 -0700
+X-Google-Sender-Auth: BZ7rWJQxjuj3LACHM-rTdMn-d_c
+Message-ID: <CA+55aFwDWE0RHuDVwUyCSf5aaEVuKzV1cSiSw-FAEapb59YCxA@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+To: Kay Sievers <kay@vrfy.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2012-09-27 14:03:59]:
+On Wed, Oct 3, 2012 at 7:36 AM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> If that unfortunate module_init() lockup can't be solved properly in
+> the kernel
 
-> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
-> >>
-[...]
-> > 2) looking at the result (comparing A & C) , I do feel we have
-> > significant in iterating over vcpus (when compared to even vmexit)
-> > so We still would need undercommit fix sugested by PeterZ (improving by
-> > 140%). ?
-> 
-> Looking only at the current runqueue?  My worry is that it misses a lot
-> of cases.  Maybe try the current runqueue first and then others.
-> 
+Stop this idiocy.
 
-Okay. Do you mean we can have something like
+The kernel doesn't have a lockup problem. udev does.
 
-+       if (rq->nr_running == 1 && p_rq->nr_running == 1) {
-+               yielded = -ESRCH;
-+               goto out_irq;
-+       }
+As even  you admit, it is *udev* that has the whole serialization
+issue, and does excessive (and incorrect) serialization between
+events. Resulting in the kernel timing out a udev event that takes too
+long.
 
-in the Peter's patch ?
+The fact that you then continually try to make this a "kernel issue"
+is just disgusting. Talking about the kernel solving it "properly" is
+pretty dishonest, when the kernel wasn't the problem in the first
+place. The kernel not only does things right, but this all used to
+work fine.
 
-( I thought lot about && or || . Both seem to have their own cons ).
-But that should be only when we have short term imbalance, as PeterZ
-told.
-
-I am experimenting all these for V2 patch. Will come back with analysis
-and patch.
-
-> Or were you referring to something else?
-> 
-
+                   Linus
