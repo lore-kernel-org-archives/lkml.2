@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab2JCNty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:49:54 -0400
-Received: from bishop.asidev.net ([95.141.38.214]:56055 "EHLO
-	bishop.asidev.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab2JCNtw (ORCPT
+	id S1756092Ab2JCNxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:53:03 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:48525 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2JCNxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:49:52 -0400
-X-Greylist: delayed 453 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 09:49:52 EDT
-Message-ID: <506C40B7.7050102@evidence.eu.com>
-Date: Wed, 03 Oct 2012 15:42:15 +0200
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
+	Wed, 3 Oct 2012 09:53:00 -0400
+X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
+   d="scan'208";a="14916885"
+Date: Wed, 3 Oct 2012 14:51:59 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
+ for PV on HVM guests
+In-Reply-To: <1349272182.650.150.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com> <1349272182.650.150.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: linux-usb@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH] umc-bus.c: fix usage of device_trylock
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all.
+On Wed, 3 Oct 2012, Ian Campbell wrote:
+> On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
+> > PV on HVM guests don't have a start_info page mapped by Xen, so
+> > xen_start_info is just NULL for them.
+> > That is problem because other parts of the code expect xen_start_info to
+> > point to something valid, for example xen_initial_domain() is defined as
+> > follow:
+> > 
+> > #define xen_initial_domain()    (xen_domain() && \
+> >                  xen_start_info->flags & SIF_INITDOMAIN)
+> 
+> But anyone who calls this before xen_start_info is setup is going to get
+> a bogus result, specifically in this case they will think they are domU
+> when in reality they are dom0 -- wouldn't it be better to fix those
+> callsites?
 
-I've probably found a wrong usage of device_trylock inside the driver
-umc-bus.c: device_trylock has the same semantics of mutex_trylock, so it
-returns 1 if the lock has been acquired successfully.
-
-Please, find below a patch.
-
-Best regards,
-
-	Claudio
+That cannot be the case because setting up xen_start_info is the very
+first thing that is done, before even calling to C.
 
 
-Subject: umc-bus.c: fix usage of device_trylock
-From: Claudio Scordino <claudio@evidence.eu.com>
-
-device_trylock has the same semantics of mutex_trylock, so it returns 1
-if the lock has been acquired successfully.
-
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
----
-  drivers/uwb/umc-bus.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/uwb/umc-bus.c b/drivers/uwb/umc-bus.c
-index 82a84d5..5c5b3fc 100644
---- a/drivers/uwb/umc-bus.c
-+++ b/drivers/uwb/umc-bus.c
-@@ -63,7 +63,7 @@ int umc_controller_reset(struct umc_dev *umc)
-  	struct device *parent = umc->dev.parent;
-  	int ret = 0;
-  
--	if (device_trylock(parent))
-+	if (!device_trylock(parent))
-  		return -EAGAIN;
-  	ret = device_for_each_child(parent, parent, umc_bus_pre_reset_helper);
-  	if (ret >= 0)
--- 
-1.7.1
+> Perhaps turn this into a static inline with a BUG_ON(!xen_start_info) to
+> make catching these cases easier?
 
