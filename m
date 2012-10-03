@@ -1,239 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab2JCOwC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:52:02 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52370 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab2JCOwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:52:00 -0400
-Date: Wed, 3 Oct 2012 07:50:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] [RFC] mm, slab: release slab_mutex earlier in
- kmem_cache_destroy()
-Message-ID: <20121003145047.GA2527@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121002170149.GC2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
- <20121002233138.GD2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
- <20121003001530.GF2465@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
- <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
- <506C2E02.9080804@linux.vnet.ibm.com>
+	id S1756302Ab2JCOxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:53:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41339 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab2JCOxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:53:51 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <tony@atomide.com>
+CC: <afzal@ti.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <ivan.djelic@parrot.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
+Date: Wed, 3 Oct 2012 19:59:48 +0530
+Message-ID: <1349274589-11389-4-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
+References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506C2E02.9080804@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100314-2876-0000-0000-000000B1180C
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 05:52:26PM +0530, Srivatsa S. Bhat wrote:
-> On 10/03/2012 03:16 PM, Jiri Kosina wrote:
-> > On Wed, 3 Oct 2012, Jiri Kosina wrote:
-> > 
-> >> Good question. I believe it should be safe to drop slab_mutex earlier, as 
-> >> cachep has already been unlinked. I am adding slab people and linux-mm to 
-> >> CC (the whole thread on LKML can be found at 
-> >> https://lkml.org/lkml/2012/10/2/296 for reference).
-> >>
-> >> How about the patch below? Pekka, Christoph, please?
-> > 
-> > It turns out that lockdep is actually getting this wrong, so the changelog 
-> > in the previous version wasn't accurate.
-> > 
-> > Please find patch with updated changelog below. Pekka, Christoph, could 
-> > you please check whether it makes sense to you as well? Thanks.
-> > 
-> > 
-> > 
-> > 
-> > From: Jiri Kosina <jkosina@suse.cz>
-> > Subject: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
-> > 
-> > Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
-> > __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
-> > dependency through kmem_cache_destroy() -> rcu_barrier() ->
-> > _rcu_barrier() -> get_online_cpus().
-> > 
-> > Lockdep thinks that this might actually result in ABBA deadlock,
-> > and reports it as below:
-> > 
-> > === [ cut here ] ===
-> >  ======================================================
-> >  [ INFO: possible circular locking dependency detected ]
-> >  3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
-> >  -------------------------------------------------------
-> >  kworker/u:2/40 is trying to acquire lock:
-> >   (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-> > 
-> >  but task is already holding lock:
-> >   (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
-> > 
-> >  which lock already depends on the new lock.
-> > 
-> >  the existing dependency chain (in reverse order) is:
-> > 
-> >  -> #2 (slab_mutex){+.+.+.}:
-> >         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-> >         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-> >         [<ffffffff810ae921>] lock_acquire+0x121/0x190
-> >         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-> >         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-> >         [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
-> >         [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
-> >         [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
-> >         [<ffffffff8155719d>] _cpu_up+0xba/0x14e
-> >         [<ffffffff815572ed>] cpu_up+0xbc/0x117
-> >         [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
-> >         [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
-> >         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
-> > 
-> >  -> #1 (cpu_hotplug.lock){+.+.+.}:
-> >         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-> >         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-> >         [<ffffffff810ae921>] lock_acquire+0x121/0x190
-> >         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-> >         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-> >         [<ffffffff81049197>] get_online_cpus+0x37/0x50
-> >         [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
-> >         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-> >         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-> >         [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
-> >         [<ffffffff8118cc01>] deactivate_super+0x61/0x70
-> >         [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
-> >         [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
-> >         [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
-> > 
-> >  -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
-> >         [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
-> >         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
-> >         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
-> >         [<ffffffff810ae921>] lock_acquire+0x121/0x190
-> >         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
-> >         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
-> >         [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
-> >         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
-> >         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
-> >         [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
-> >         [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
-> >         [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
-> >         [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
-> >         [<ffffffff81454b79>] ops_exit_list+0x39/0x60
-> >         [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
-> >         [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
-> >         [<ffffffff81069f3e>] worker_thread+0x12e/0x320
-> >         [<ffffffff8106f73e>] kthread+0x9e/0xb0
-> >         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
-> > 
-> >  other info that might help us debug this:
-> > 
-> >  Chain exists of:
-> >    rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
-> > 
-> >   Possible unsafe locking scenario:
-> > 
-> >         CPU0                    CPU1
-> >         ----                    ----
-> >    lock(slab_mutex);
-> >                                 lock(cpu_hotplug.lock);
-> >                                 lock(slab_mutex);
-> >    lock(rcu_sched_state.barrier_mutex);
-> > 
-> >   *** DEADLOCK ***
-> > === [ cut here ] ===
-> > 
-> > This is actually a false positive. Lockdep has no way of knowing the fact
-> > that the ABBA can actually never happen, because of special semantics of
-> > cpu_hotplug.refcount and itss handling in cpu_hotplug_begin(); the mutual
-> > exclusion there is not achieved through mutex, but through
-> > cpu_hotplug.refcount.
-> > 
-> > The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
-> > until everyone who called get_online_cpus() will call put_online_cpus()"
-> > semantics is totally invisible to lockdep.
-> > 
-> > This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
-> > is being called with it unlocked. It has two advantages:
-> > 
-> > - it slightly reduces hold time of slab_mutex; as it's used to protect
-> >   the cachep list, it's not necessary to hold it over __kmem_cache_destroy()
-> >   call any more
-> > - it silences the lockdep false positive warning, as it avoids lockdep ever
-> >   learning about slab_mutex -> cpu_hotplug.lock dependency
-> > 
-> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> Earlier I was under the wrong impression that all the calltraces that lockdep
-> spewed were reflecting the same point in time. So, sorry about that noise! :-)
-> It is indeed a false-positive and there is no real bug here, and the fix looks
-> good, provided __kmem_cache_destroy() doesn't expect slab_mutex to be held.
+Add support for BCH ECC scheme to gpmc driver and also enabling multi
+sector read/write. This helps in doing single shot NAND page read and
+write.
 
-I am not so sure about it being a false positive.  Consider the following
-sequence of events:
+ECC engine configurations
+BCH 4 bit support
+1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+13 and ecc_size1 as 1.
 
-o	Thread A starts a CPU-hotplug operation, acquiring the
-	hotplug mutex.
+BCH 8 bit support
+1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+26 and ecc_size1 as 2.
 
-o	Thread B does a kmem_cache_destroy(), acquiring the slab mutex.
+Note: For BCH8 ECC bytes set to 14 to make compatible with RBL.
 
-o	Thread A reaches the slab CPU-hotplug notifier, but cannot acquire
-	the slab mutex because Thread B hold it.
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+---
+:100644 100644 72428bd... c9bc3cf... M	arch/arm/mach-omap2/gpmc.c
+:100644 100644 2e6e259... c916510... M	arch/arm/plat-omap/include/plat/gpmc.h
+ arch/arm/mach-omap2/gpmc.c             |  120 +++++++++++++++++++++++++++++---
+ arch/arm/plat-omap/include/plat/gpmc.h |    1 +
+ 2 files changed, 112 insertions(+), 9 deletions(-)
 
-o	Thread B enters rcu_barrier(), but cannot acquire the hotplug
-	mutex because Thread A holds it.
-
-So I would argue that lockdep's output was a bit confusing, but that
-the deadlock it flagged is real.  Or am I still missing something?
-
-							Thanx, Paul
-
-> But, I'm also quite surprised that the put_online_cpus() code as it stands today
-> doesn't have any checks for the refcount going negative. I believe that such a
-> check would be valuable to help catch cases where we might end up inadvertently
-> causing an imbalance between get_online_cpus() and put_online_cpus(). I'll post
-> that as a separate patch.
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
-> > ---
-> >  mm/slab.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/mm/slab.c b/mm/slab.c
-> > index 1133911..693c7cb 100644
-> > --- a/mm/slab.c
-> > +++ b/mm/slab.c
-> > @@ -2801,12 +2801,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
-> >  		put_online_cpus();
-> >  		return;
-> >  	}
-> > +	mutex_unlock(&slab_mutex);
-> > 
-> >  	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
-> >  		rcu_barrier();
-> > 
-> >  	__kmem_cache_destroy(cachep);
-> > -	mutex_unlock(&slab_mutex);
-> >  	put_online_cpus();
-> >  }
-> >  EXPORT_SYMBOL(kmem_cache_destroy);
-> > 
-> 
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index 72428bd..c9bc3cf 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -24,6 +24,7 @@
+ #include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
++#include <linux/mtd/nand.h>
+ 
+ #include <asm/mach-types.h>
+ #include <plat/gpmc.h>
+@@ -83,6 +84,18 @@
+ #define ENABLE_PREFETCH		(0x1 << 7)
+ #define DMA_MPU_MODE		2
+ 
++/* GPMC ecc engine settings for read */
++#define BCH_WRAPMODE_1		1	/* BCH wrap mode 6 */
++#define BCH8R_ECC_SIZE0		0x1a	/* ecc_size0 = 26 */
++#define BCH8R_ECC_SIZE1		0x2	/* ecc_size1 = 2 */
++#define BCH4R_ECC_SIZE0		0xd	/* ecc_size0 = 13 */
++#define BCH4R_ECC_SIZE1		0x1	/* ecc_size1 = 1 4bit padding in BCH4 */
++
++/* GPMC ecc engine settings for write */
++#define BCH_WRAPMODE_6		6	/* BCH wrap mode 6 */
++#define BCH_ECC_SIZE0		0x0	/* ecc_size0 = 0, no oob protection */
++#define BCH_ECC_SIZE1		0x20	/* ecc_size1 = 32 */
++
+ /* XXX: Only NAND irq has been considered,currently these are the only ones used
+  */
+ #define	GPMC_NR_IRQ		2
+@@ -1119,7 +1132,8 @@ EXPORT_SYMBOL_GPL(gpmc_init_hwecc_bch);
+ int gpmc_enable_hwecc_bch(int cs, int mode, int dev_width, int nsectors,
+ 			  int nerrors)
+ {
+-	unsigned int val;
++	unsigned int val, wr_mode;
++	unsigned int ecc_size1, ecc_size0;
+ 
+ 	/* check if ecc module is in use */
+ 	if (gpmc_ecc_used != -EINVAL)
+@@ -1130,18 +1144,35 @@ int gpmc_enable_hwecc_bch(int cs, int mode, int dev_width, int nsectors,
+ 	/* clear ecc and enable bits */
+ 	gpmc_write_reg(GPMC_ECC_CONTROL, 0x1);
+ 
+-	/*
+-	 * When using BCH, sector size is hardcoded to 512 bytes.
+-	 * Here we are using wrapping mode 6 both for reading and writing, with:
+-	 *  size0 = 0  (no additional protected byte in spare area)
+-	 *  size1 = 32 (skip 32 nibbles = 16 bytes per sector in spare area)
+-	 */
+-	gpmc_write_reg(GPMC_ECC_SIZE_CONFIG, (32 << 22) | (0 << 12));
++	/*  When using BCH, sector size is hard coded to 512 bytes. */
++	if ((mode == NAND_ECC_READ) && (nsectors != 1)) {
++		/*
++		 * Here we are using wrapping mode 1 for reading, for
++		 * supporting multi sector reading.
++		 * Read mode, ECC engine enabled for valid ecc_size0 nibbles
++		 * & disabled for ecc_size1 nibbles.
++		 */
++		ecc_size0 = (nerrors == 8) ? BCH8R_ECC_SIZE0 : BCH4R_ECC_SIZE0;
++		ecc_size1 = (nerrors == 8) ? BCH8R_ECC_SIZE1 : BCH4R_ECC_SIZE1;
++		wr_mode = BCH_WRAPMODE_1;
++	} else {
++		/*
++		 * Here we are using wrapping mode 6 for writing,
++		 * ECC engine enabled for valid ecc_size0 nibbles
++		 * & disabled for ecc_size1 nibbles.
++		 */
++		ecc_size0 = BCH_ECC_SIZE0;
++		ecc_size1 = BCH_ECC_SIZE1;
++		wr_mode = BCH_WRAPMODE_6;
++	}
++
++	gpmc_write_reg(GPMC_ECC_SIZE_CONFIG, (ecc_size1 << 22) |
++			(ecc_size0 << 12));
+ 
+ 	/* BCH configuration */
+ 	val = ((1                        << 16) | /* enable BCH */
+ 	       (((nerrors == 8) ? 1 : 0) << 12) | /* 8 or 4 bits */
+-	       (0x06                     <<  8) | /* wrap mode = 6 */
++	       (wr_mode                  <<  8) | /* wrap mode = 6 or 1 */
+ 	       (dev_width                <<  7) | /* bus width */
+ 	       (((nsectors-1) & 0x7)     <<  4) | /* number of sectors */
+ 	       (cs                       <<  1) | /* ECC CS */
+@@ -1154,6 +1185,77 @@ int gpmc_enable_hwecc_bch(int cs, int mode, int dev_width, int nsectors,
+ EXPORT_SYMBOL_GPL(gpmc_enable_hwecc_bch);
+ 
+ /**
++ * gpmc_calculate_ecc_bch	- Generate ecc bytes per block of 512 data bytes for entire page
++ * @cs:  chip select number
++ * @dat: The pointer to data on which ECC is computed
++ * @ecc: The ECC output buffer
++ */
++int gpmc_calculate_ecc_bch(int cs, const u_char *dat, u_char *ecc)
++{
++	int i, eccbchtsel;
++	u32 nsectors, reg, bch_val1, bch_val2, bch_val3, bch_val4;
++
++	if (gpmc_ecc_used != cs)
++		return -EINVAL;
++
++	/* read number of sectors for ecc to be calculated */
++	nsectors = ((gpmc_read_reg(GPMC_ECC_CONFIG) >> 4) & 0x7) + 1;
++	/*
++	 * find BCH scheme used
++	 * 0 -> BCH4
++	 * 1 -> BCH8
++	 */
++	eccbchtsel = ((gpmc_read_reg(GPMC_ECC_CONFIG) >> 12) & 0x3);
++
++	/* update ecc bytes for entire page */
++	for (i = 0; i < nsectors; i++) {
++
++		reg = GPMC_ECC_BCH_RESULT_0 + 16 * i;
++
++		/* Read hw-computed remainder */
++		bch_val1 = gpmc_read_reg(reg + 0);
++		bch_val2 = gpmc_read_reg(reg + 4);
++		if (eccbchtsel) {
++			bch_val3 = gpmc_read_reg(reg + 8);
++			bch_val4 = gpmc_read_reg(reg + 12);
++		}
++
++		if (eccbchtsel) {
++			/* BCH8 ecc scheme */
++			*ecc++ = (bch_val4 & 0xFF);
++			*ecc++ = ((bch_val3 >> 24) & 0xFF);
++			*ecc++ = ((bch_val3 >> 16) & 0xFF);
++			*ecc++ = ((bch_val3 >> 8) & 0xFF);
++			*ecc++ = (bch_val3 & 0xFF);
++			*ecc++ = ((bch_val2 >> 24) & 0xFF);
++			*ecc++ = ((bch_val2 >> 16) & 0xFF);
++			*ecc++ = ((bch_val2 >> 8) & 0xFF);
++			*ecc++ = (bch_val2 & 0xFF);
++			*ecc++ = ((bch_val1 >> 24) & 0xFF);
++			*ecc++ = ((bch_val1 >> 16) & 0xFF);
++			*ecc++ = ((bch_val1 >> 8) & 0xFF);
++			*ecc++ = (bch_val1 & 0xFF);
++			/* 14th byte of ecc not used */
++			*ecc++ = 0;
++		} else {
++			/* BCH4 ecc scheme */
++			*ecc++ = ((bch_val2 >> 12) & 0xFF);
++			*ecc++ = ((bch_val2 >> 4) & 0xFF);
++			*ecc++ = (((bch_val2 & 0xF) << 4) |
++					((bch_val1 >> 28) & 0xF));
++			*ecc++ = ((bch_val1 >> 20) & 0xFF);
++			*ecc++ = ((bch_val1 >> 12) & 0xFF);
++			*ecc++ = ((bch_val1 >> 4) & 0xFF);
++			*ecc++ = ((bch_val1 & 0xF) << 4);
++		}
++	}
++
++	gpmc_ecc_used = -EINVAL;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(gpmc_calculate_ecc_bch);
++
++/**
+  * gpmc_calculate_ecc_bch4 - Generate 7 ecc bytes per sector of 512 data bytes
+  * @cs:  chip select number
+  * @dat: The pointer to data on which ecc is computed
+diff --git a/arch/arm/plat-omap/include/plat/gpmc.h b/arch/arm/plat-omap/include/plat/gpmc.h
+index 2e6e259..c916510 100644
+--- a/arch/arm/plat-omap/include/plat/gpmc.h
++++ b/arch/arm/plat-omap/include/plat/gpmc.h
+@@ -185,6 +185,7 @@ int gpmc_enable_hwecc_bch(int cs, int mode, int dev_width, int nsectors,
+ 			  int nerrors);
+ int gpmc_calculate_ecc_bch4(int cs, const u_char *dat, u_char *ecc);
+ int gpmc_calculate_ecc_bch8(int cs, const u_char *dat, u_char *ecc);
++int gpmc_calculate_ecc_bch(int cs, const u_char *dat, u_char *ecc);
+ #endif /* CONFIG_ARCH_OMAP3 */
+ 
+ #endif
+-- 
+1.7.0.4
 
