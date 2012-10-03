@@ -1,240 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2JCO4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:56:18 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54595 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932374Ab2JCO4P (ORCPT
+	id S932527Ab2JCO4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:56:32 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:19753 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932376Ab2JCO4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:56:15 -0400
-Message-ID: <506C51E0.1000602@linux.vnet.ibm.com>
-Date: Wed, 03 Oct 2012 20:25:28 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2] [RFC] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
-References: <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz> <506C2E02.9080804@linux.vnet.ibm.com> <20121003145047.GA2527@linux.vnet.ibm.com>
-In-Reply-To: <20121003145047.GA2527@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Oct 2012 10:56:03 -0400
+Message-ID: <1349276159.3192.4.camel@lorien2>
+Subject: [PATCH v3] dma-debug: New interfaces to debug dma mapping errors
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        stern@rowland.harvard.edu, joerg.roedel@amd.com, bhelgaas@google.com
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
+Date: Wed, 03 Oct 2012 08:55:59 -0600
+In-Reply-To: <1348621517.3091.6.camel@lorien2>
+References: <1347843171.4370.13.camel@lorien2>
+	 <1348621517.3091.6.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100314-5564-0000-0000-000004B74669
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 08:20 PM, Paul E. McKenney wrote:
-> On Wed, Oct 03, 2012 at 05:52:26PM +0530, Srivatsa S. Bhat wrote:
->> On 10/03/2012 03:16 PM, Jiri Kosina wrote:
->>> On Wed, 3 Oct 2012, Jiri Kosina wrote:
->>>
->>>> Good question. I believe it should be safe to drop slab_mutex earlier, as 
->>>> cachep has already been unlinked. I am adding slab people and linux-mm to 
->>>> CC (the whole thread on LKML can be found at 
->>>> https://lkml.org/lkml/2012/10/2/296 for reference).
->>>>
->>>> How about the patch below? Pekka, Christoph, please?
->>>
->>> It turns out that lockdep is actually getting this wrong, so the changelog 
->>> in the previous version wasn't accurate.
->>>
->>> Please find patch with updated changelog below. Pekka, Christoph, could 
->>> you please check whether it makes sense to you as well? Thanks.
->>>
->>>
->>>
->>>
->>> From: Jiri Kosina <jkosina@suse.cz>
->>> Subject: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
->>>
->>> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
->>> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
->>> dependency through kmem_cache_destroy() -> rcu_barrier() ->
->>> _rcu_barrier() -> get_online_cpus().
->>>
->>> Lockdep thinks that this might actually result in ABBA deadlock,
->>> and reports it as below:
->>>
->>> === [ cut here ] ===
->>>  ======================================================
->>>  [ INFO: possible circular locking dependency detected ]
->>>  3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
->>>  -------------------------------------------------------
->>>  kworker/u:2/40 is trying to acquire lock:
->>>   (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
->>>
->>>  but task is already holding lock:
->>>   (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
->>>
->>>  which lock already depends on the new lock.
->>>
->>>  the existing dependency chain (in reverse order) is:
->>>
->>>  -> #2 (slab_mutex){+.+.+.}:
->>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
->>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
->>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
->>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
->>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
->>>         [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
->>>         [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
->>>         [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
->>>         [<ffffffff8155719d>] _cpu_up+0xba/0x14e
->>>         [<ffffffff815572ed>] cpu_up+0xbc/0x117
->>>         [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
->>>         [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
->>>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
->>>
->>>  -> #1 (cpu_hotplug.lock){+.+.+.}:
->>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
->>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
->>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
->>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
->>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
->>>         [<ffffffff81049197>] get_online_cpus+0x37/0x50
->>>         [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
->>>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
->>>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
->>>         [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
->>>         [<ffffffff8118cc01>] deactivate_super+0x61/0x70
->>>         [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
->>>         [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
->>>         [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
->>>
->>>  -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
->>>         [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
->>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
->>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
->>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
->>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
->>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
->>>         [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
->>>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
->>>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
->>>         [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
->>>         [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
->>>         [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
->>>         [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
->>>         [<ffffffff81454b79>] ops_exit_list+0x39/0x60
->>>         [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
->>>         [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
->>>         [<ffffffff81069f3e>] worker_thread+0x12e/0x320
->>>         [<ffffffff8106f73e>] kthread+0x9e/0xb0
->>>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
->>>
->>>  other info that might help us debug this:
->>>
->>>  Chain exists of:
->>>    rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
->>>
->>>   Possible unsafe locking scenario:
->>>
->>>         CPU0                    CPU1
->>>         ----                    ----
->>>    lock(slab_mutex);
->>>                                 lock(cpu_hotplug.lock);
->>>                                 lock(slab_mutex);
->>>    lock(rcu_sched_state.barrier_mutex);
->>>
->>>   *** DEADLOCK ***
->>> === [ cut here ] ===
->>>
->>> This is actually a false positive. Lockdep has no way of knowing the fact
->>> that the ABBA can actually never happen, because of special semantics of
->>> cpu_hotplug.refcount and itss handling in cpu_hotplug_begin(); the mutual
->>> exclusion there is not achieved through mutex, but through
->>> cpu_hotplug.refcount.
->>>
->>> The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
->>> until everyone who called get_online_cpus() will call put_online_cpus()"
->>> semantics is totally invisible to lockdep.
->>>
->>> This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
->>> is being called with it unlocked. It has two advantages:
->>>
->>> - it slightly reduces hold time of slab_mutex; as it's used to protect
->>>   the cachep list, it's not necessary to hold it over __kmem_cache_destroy()
->>>   call any more
->>> - it silences the lockdep false positive warning, as it avoids lockdep ever
->>>   learning about slab_mutex -> cpu_hotplug.lock dependency
->>>
->>> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
->>
->> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>
->> Earlier I was under the wrong impression that all the calltraces that lockdep
->> spewed were reflecting the same point in time. So, sorry about that noise! :-)
->> It is indeed a false-positive and there is no real bug here, and the fix looks
->> good, provided __kmem_cache_destroy() doesn't expect slab_mutex to be held.
-> 
-> I am not so sure about it being a false positive.  Consider the following
-> sequence of events:
-> 
-> o	Thread A starts a CPU-hotplug operation, acquiring the
-> 	hotplug mutex.
-> 
-> o	Thread B does a kmem_cache_destroy(), acquiring the slab mutex.
+A recent dma mapping error analysis effort showed that a large percentage
+of dma_map_single() and dma_map_page() returns are not checked for mapping
+errors.
 
-This can't happen. Because kmem_cache_destroy() will call get_online_cpus() before
-trying to acquire slab mutex. And it sleeps waiting at get_online_cpus() because
-the hotplug lock has already been acquired by Thread A.
+Reference:
+http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
 
-> 
-> o	Thread A reaches the slab CPU-hotplug notifier, but cannot acquire
-> 	the slab mutex because Thread B hold it.
-> 
-> o	Thread B enters rcu_barrier(), but cannot acquire the hotplug
-> 	mutex because Thread A holds it.
-> 
-> So I would argue that lockdep's output was a bit confusing, but that
-> the deadlock it flagged is real.  Or am I still missing something?
->
+Adding support for tracking dma mapping and unmapping errors to help assess
+the following:
 
-So the key point is, Thread A is a hotplug writer. Thread B becomes a hotplug reader
-the moment it calls get_online_cpus(). So they can't co-exist/run together. They will
-get serialized. That is, Thread A runs to completion, releases hotplug lock. Only then
-thread B gets past get_online_cpus().
+When do dma mapping errors get detected?
+How often do these errors occur?
+Why don't we see failures related to missing dma mapping error checks?
+Are they silent failures?
 
-Regards,
-Srivatsa S. Bhat
-  
->> But, I'm also quite surprised that the put_online_cpus() code as it stands today
->> doesn't have any checks for the refcount going negative. I believe that such a
->> check would be valuable to help catch cases where we might end up inadvertently
->> causing an imbalance between get_online_cpus() and put_online_cpus(). I'll post
->> that as a separate patch.
->>
->> Regards,
->> Srivatsa S. Bhat
->>
->>> ---
->>>  mm/slab.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/mm/slab.c b/mm/slab.c
->>> index 1133911..693c7cb 100644
->>> --- a/mm/slab.c
->>> +++ b/mm/slab.c
->>> @@ -2801,12 +2801,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
->>>  		put_online_cpus();
->>>  		return;
->>>  	}
->>> +	mutex_unlock(&slab_mutex);
->>>
->>>  	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
->>>  		rcu_barrier();
->>>
->>>  	__kmem_cache_destroy(cachep);
->>> -	mutex_unlock(&slab_mutex);
->>>  	put_online_cpus();
->>>  }
->>>  EXPORT_SYMBOL(kmem_cache_destroy);
->>>
->>
+Patch v3: Addresses review and design comments from Patch v2.
+Patch v2: Addressed design issues from Patch v1.
+
+Enhance dma-debug infrastructure to track dma mapping, and unmapping errors.
+
+map_errors: (system wide counter)
+  Total number of dma mapping errors returned by the dma mapping interfaces,
+  in response to mapping requests from all devices in the system.
+map_errors_not_checked: (system wide counter)
+  Total number of dma mapping errors devices failed to check before using
+  the returned address.
+unmap_errors: (system wide counter)
+  Total number of times devices tried to unmap or free an invalid dma
+  address.
+map_err_type: (new field added to dma_debug_entry structure)
+  New field to maintain dma mapping error check status. This error type
+  is applicable to the dma map page and dma map single entries tracked by
+  dma-debug api. This status indicates whether or not a good mapping is
+  checked by the device before its use. dma_map_single() and dma_map_page()
+  could fail to create a mapping in some cases, and drivers are expected to
+  call dma_mapping_error() to check for errors. Please note that this is not
+  counter.
+
+Enhancements to dma-debug api are made to add new debugfs interfaces to
+report total dma errors, dma errors that are not checked, and unmap errors
+for the entire system. Please note that these are system wide counters for
+all devices in the system.
+
+The following new dma-debug interface is added:
+
+debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+	Sets dma map error checked status for the dma map entry if one is
+	found. Decrements the system wide dma_map_errors_not_checked counter
+	that is incremented by debug_dma_map_page() when it checks for
+	mapping error before adding it to the dma debug entry table.
+
+New dma-debug internal interface:
+check_mapping_error(struct device *dev, dma_addr_t dma_addr)
+Calling dma_mapping_error() from dma-debug api will result in dma mapping
+check when it shouldn't. This internal routine checks dma mapping error
+without any debug checks. 
+
+The following existing dma-debug api are changed to support this feature:
+debug_dma_map_page()
+	Increments dma_map_errors and dma_map_errors_not_checked errors totals
+	for the system, dma-debug api keeps track of, when dma_addr is invalid.
+	This routine now calls internal check_mapping_error() interface to
+	avoid doing dma mapping debug checks from dma-debug internal mapping
+	error checks.
+check_unmap()
+	This is an existing internal routines that checks for various mapping
+	errors. Changed to increment system wide dma_unmap_errors, when a
+	device requests an invalid address to be unmapped. This routine now
+	calls internal check_mapping_error() interface to avoid doing dma
+	mapping debug checks from dma-debug internal mapping error checks.
+
+Changed arch/x86/include/asm/dma-mapping.h to call debug_dma_mapping_error()
+to validate these new interfaces on x86_64. Other architectures will be
+changed in a subsequent patch.
+
+Tested: Intel iommu and swiotlb (iommu=soft) on x86-64 with
+        CONFIG_DMA_API_DEBUG enabled and disabled.
+
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ Documentation/DMA-API.txt          |   13 ++++
+ arch/x86/include/asm/dma-mapping.h |    1 +
+ include/linux/dma-debug.h          |    7 ++
+ lib/dma-debug.c                    |  128 ++++++++++++++++++++++++++++++++----
+ 4 files changed, 136 insertions(+), 13 deletions(-)
+
+diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
+index 66bd97a..886aaf9 100644
+--- a/Documentation/DMA-API.txt
++++ b/Documentation/DMA-API.txt
+@@ -638,6 +638,19 @@ this directory the following files can currently be found:
+ 	dma-api/error_count	This file is read-only and shows the total
+ 				numbers of errors found.
+ 
++	dma-api/map_errors	This file is read-only and shows the total
++				number of dma mapping errors detected.
++
++	dma-api/map_errors_not_checked
++				This file is read-only and shows the total
++				number of dma mapping errors, device drivers
++				failed to check prior to using the returned
++				address.
++
++	dma-api/unmap_errors
++				This file is read-only and shows the total
++				number of invalid dma unmapping attempts.
++
+ 	dma-api/num_errors	The number in this file shows how many
+ 				warnings will be printed to the kernel log
+ 				before it stops. This number is initialized to
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index f7b4c79..808dae6 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -47,6 +47,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
++	debug_dma_mapping_error(dev, dma_addr);
+ 	if (ops->mapping_error)
+ 		return ops->mapping_error(dev, dma_addr);
+ 
+diff --git a/include/linux/dma-debug.h b/include/linux/dma-debug.h
+index 171ad8a..fc0e34c 100644
+--- a/include/linux/dma-debug.h
++++ b/include/linux/dma-debug.h
+@@ -39,6 +39,8 @@ extern void debug_dma_map_page(struct device *dev, struct page *page,
+ 			       int direction, dma_addr_t dma_addr,
+ 			       bool map_single);
+ 
++extern void debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr);
++
+ extern void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 				 size_t size, int direction, bool map_single);
+ 
+@@ -105,6 +107,11 @@ static inline void debug_dma_map_page(struct device *dev, struct page *page,
+ {
+ }
+ 
++static inline void debug_dma_mapping_error(struct device *dev,
++					  dma_addr_t dma_addr)
++{
++}
++
+ static inline void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 					size_t size, int direction,
+ 					bool map_single)
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index 66ce414..1708a10 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -45,18 +45,25 @@ enum {
+ 	dma_debug_coherent,
+ };
+ 
++enum map_err_types {
++	MAP_ERR_CHECK_NOT_APPLICABLE,
++	MAP_ERR_NOT_CHECKED,
++	MAP_ERR_CHECKED,
++};
++
+ #define DMA_DEBUG_STACKTRACE_ENTRIES 5
+ 
+ struct dma_debug_entry {
+-	struct list_head list;
+-	struct device    *dev;
+-	int              type;
+-	phys_addr_t      paddr;
+-	u64              dev_addr;
+-	u64              size;
+-	int              direction;
+-	int		 sg_call_ents;
+-	int		 sg_mapped_ents;
++	struct list_head    list;
++	struct device       *dev;
++	int                 type;
++	phys_addr_t         paddr;
++	u64                 dev_addr;
++	u64                 size;
++	int                 direction;
++	int		    sg_call_ents;
++	int		    sg_mapped_ents;
++	enum map_err_types  map_err_type;
+ #ifdef CONFIG_STACKTRACE
+ 	struct		 stack_trace stacktrace;
+ 	unsigned long	 st_entries[DMA_DEBUG_STACKTRACE_ENTRIES];
+@@ -83,6 +90,11 @@ static u32 global_disable __read_mostly;
+ /* Global error count */
+ static u32 error_count;
+ 
++/* dma mapping error counts */
++static u32 map_errors;
++static u32 map_errors_not_checked;
++static u32 unmap_errors;
++
+ /* Global error show enable*/
+ static u32 show_all_errors __read_mostly;
+ /* Number of errors to show */
+@@ -104,6 +116,9 @@ static struct dentry *show_num_errors_dent  __read_mostly;
+ static struct dentry *num_free_entries_dent __read_mostly;
+ static struct dentry *min_free_entries_dent __read_mostly;
+ static struct dentry *filter_dent           __read_mostly;
++static struct dentry *map_errors_dent   __read_mostly;
++static struct dentry *map_errors_not_checked_dent   __read_mostly;
++static struct dentry *unmap_errors_dent __read_mostly;
+ 
+ /* per-driver filter related state */
+ 
+@@ -114,6 +129,12 @@ static struct device_driver *current_driver                    __read_mostly;
+ 
+ static DEFINE_RWLOCK(driver_name_lock);
+ 
++static const char *const maperr2str[] = {
++	[MAP_ERR_CHECK_NOT_APPLICABLE] = "dma map error check not applicable",
++	[MAP_ERR_NOT_CHECKED] = "dma map error not checked",
++	[MAP_ERR_CHECKED] = "dma map error checked",
++};
++
+ static const char *type2name[4] = { "single", "page",
+ 				    "scather-gather", "coherent" };
+ 
+@@ -381,11 +402,12 @@ void debug_dma_dump_mappings(struct device *dev)
+ 		list_for_each_entry(entry, &bucket->list, list) {
+ 			if (!dev || dev == entry->dev) {
+ 				dev_info(entry->dev,
+-					 "%s idx %d P=%Lx D=%Lx L=%Lx %s\n",
++					 "%s idx %d P=%Lx D=%Lx L=%Lx %s %s\n",
+ 					 type2name[entry->type], idx,
+ 					 (unsigned long long)entry->paddr,
+ 					 entry->dev_addr, entry->size,
+-					 dir2name[entry->direction]);
++					 dir2name[entry->direction],
++					 maperr2str[entry->map_err_type]);
+ 			}
+ 		}
+ 
+@@ -695,6 +717,28 @@ static int dma_debug_fs_init(void)
+ 	if (!filter_dent)
+ 		goto out_err;
+ 
++	map_errors_dent = debugfs_create_u32("map_errors", 0444,
++			dma_debug_dent,
++			&map_errors);
++
++	if (!map_errors_dent)
++		goto out_err;
++
++	map_errors_not_checked_dent = debugfs_create_u32(
++			"map_errors_not_checked",
++			0444,
++			dma_debug_dent,
++			&map_errors_not_checked);
++
++	if (!map_errors_not_checked_dent)
++		goto out_err;
++
++	unmap_errors_dent = debugfs_create_u32("unmap_errors", 0444,
++			dma_debug_dent,
++			&unmap_errors);
++	if (!unmap_errors_dent)
++		goto out_err;
++
+ 	return 0;
+ 
+ out_err:
+@@ -843,13 +887,29 @@ static __init int dma_debug_entries_cmdline(char *str)
+ __setup("dma_debug=", dma_debug_cmdline);
+ __setup("dma_debug_entries=", dma_debug_entries_cmdline);
+ 
++/* Calling dma_mapping_error() from dma-debug api will result in calling
++   debug_dma_mapping_error() - need internal mapping error routine to
++   avoid debug checks */
++#ifndef DMA_ERROR_CODE
++#define DMA_ERROR_CODE 0
++#endif
++static inline int check_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	const struct dma_map_ops *ops = get_dma_ops(dev);
++	if (ops->mapping_error)
++		return ops->mapping_error(dev, dma_addr);
++
++	return (dma_addr == DMA_ERROR_CODE);
++}
++
+ static void check_unmap(struct dma_debug_entry *ref)
+ {
+ 	struct dma_debug_entry *entry;
+ 	struct hash_bucket *bucket;
+ 	unsigned long flags;
+ 
+-	if (dma_mapping_error(ref->dev, ref->dev_addr)) {
++	if (unlikely(check_mapping_error(ref->dev, ref->dev_addr))) {
++		unmap_errors += 1;
+ 		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
+ 			   "to free an invalid DMA memory address\n");
+ 		return;
+@@ -915,6 +975,15 @@ static void check_unmap(struct dma_debug_entry *ref)
+ 			   dir2name[ref->direction]);
+ 	}
+ 
++	if (entry->map_err_type == MAP_ERR_NOT_CHECKED) {
++		err_printk(ref->dev, entry,
++			   "DMA-API: device driver failed to check map error"
++			   "[device address=0x%016llx] [size=%llu bytes] "
++			   "[mapped as %s]",
++			   ref->dev_addr, ref->size,
++			   type2name[entry->type]);
++	}
++
+ 	hash_bucket_del(entry);
+ 	dma_entry_free(entry);
+ 
+@@ -1022,8 +1091,11 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ 	if (unlikely(global_disable))
+ 		return;
+ 
+-	if (unlikely(dma_mapping_error(dev, dma_addr)))
++	if (unlikely(check_mapping_error(dev, dma_addr))) {
++		map_errors += 1;
++		map_errors_not_checked += 1;
+ 		return;
++	}
+ 
+ 	entry = dma_entry_alloc();
+ 	if (!entry)
+@@ -1035,6 +1107,7 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ 	entry->dev_addr  = dma_addr;
+ 	entry->size      = size;
+ 	entry->direction = direction;
++	entry->map_err_type = MAP_ERR_NOT_CHECKED;
+ 
+ 	if (map_single)
+ 		entry->type = dma_debug_single;
+@@ -1050,6 +1123,35 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ }
+ EXPORT_SYMBOL(debug_dma_map_page);
+ 
++void debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	struct dma_debug_entry ref;
++	struct dma_debug_entry *entry;
++	struct hash_bucket *bucket;
++	unsigned long flags;
++
++	if (unlikely(global_disable))
++		return;
++
++	ref.dev = dev;
++	ref.dev_addr = dma_addr;
++	bucket = get_hash_bucket(&ref, &flags);
++	entry = bucket_find_exact(bucket, &ref);
++
++	if (!entry) {
++		/* very likley dma-api didn't call debug_dma_map_page() or
++		   debug_dma_map_page() detected mapping error */
++		if (map_errors_not_checked)
++			map_errors_not_checked -= 1;
++		goto out;
++	}
++
++	entry->map_err_type = MAP_ERR_CHECKED;
++out:
++	put_hash_bucket(bucket, &flags);
++}
++EXPORT_SYMBOL(debug_dma_mapping_error);
++
+ void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 			  size_t size, int direction, bool map_single)
+ {
+-- 
+1.7.9.5
+
+
 
