@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab2JCO1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:27:05 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:34207 "EHLO e5.ny.us.ibm.com"
+	id S1753173Ab2JCObA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:31:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab2JCO1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:27:02 -0400
-Date: Wed, 3 Oct 2012 19:47:40 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-Message-ID: <20121003141739.GA15253@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <5060851E.1030404@redhat.com>
- <506166B4.4010207@linux.vnet.ibm.com>
- <5061713D.5060406@redhat.com>
- <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com>
- <50641356.5070008@redhat.com>
- <CAJocwcc19F+PtsQ5okGMvYeVnkEigpZRpwWY9JgeRPFqfcVoXA@mail.gmail.com>
- <506540C7.9070105@linux.vnet.ibm.com>
- <50680049.5020206@redhat.com>
- <20120930110755.GB1009@redhat.com>
- <50682945.3060309@redhat.com>
+	id S1752167Ab2JCOa6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:30:58 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Dave Chinner <dchinner@redhat.com>
+Cc: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
+References: <1348767205-17230-1-git-send-email-lczerner@redhat.com>
+	<x49ipaukud8.fsf@segfault.boston.devel.redhat.com>
+	<alpine.LFD.2.00.1210021042580.21903@localhost>
+	<20121002195934.GA2657@devil.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 03 Oct 2012 10:30:54 -0400
+In-Reply-To: <20121002195934.GA2657@devil.redhat.com> (Dave Chinner's message
+	of "Wed, 3 Oct 2012 05:59:34 +1000")
+Message-ID: <x49txubvd9d.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <50682945.3060309@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12100314-5930-0000-0000-00000CB5D172
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2012-09-30 13:13:09]:
+Dave Chinner <dchinner@redhat.com> writes:
 
-> On 09/30/2012 01:07 PM, Gleb Natapov wrote:
-> > On Sun, Sep 30, 2012 at 10:18:17AM +0200, Avi Kivity wrote:
-> >> On 09/28/2012 08:16 AM, Raghavendra K T wrote:
-> >> > 
-> >> >>
-> >> >>     +struct pv_sched_info {
-> >> >>     +       unsigned long   sched_bitmap;
-> >> > 
-> >> > Thinking, whether we need something similar to cpumask here?
-> >> > Only thing is we are representing guest (v)cpumask.
-> >> > 
-> >> 
-> >> DECLARE_BITMAP(sched_bitmap, KVM_MAX_VCPUS)
-> >> 
-> > vcpu_id can be greater than KVM_MAX_VCPUS.
-> 
-> Use the index into the vcpu table as the bitmap index then.  In fact
-> it's better because then the lookup to get the vcpu pointer is trivial.
+> On Tue, Oct 02, 2012 at 10:52:05AM +0200, Lukáš Czerner wrote:
+>> On Mon, 1 Oct 2012, Jeff Moyer wrote:
+>> > Date: Mon, 01 Oct 2012 12:52:19 -0400
+>> > From: Jeff Moyer <jmoyer@redhat.com>
+>> > To: Lukas Czerner <lczerner@redhat.com>
+>> > Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+>> >     Dave Chinner <dchinner@redhat.com>
+>> > Subject: Re: [PATCH] loop: Limit the number of requests in the bio list
+>> > 
+>> > Lukas Czerner <lczerner@redhat.com> writes:
+>> > 
+>> > > Currently there is not limitation of number of requests in the loop bio
+>> > > list. This can lead into some nasty situations when the caller spawns
+>> > > tons of bio requests taking huge amount of memory. This is even more
+>> > > obvious with discard where blkdev_issue_discard() will submit all bios
+>> > > for the range and wait for them to finish afterwards. On really big loop
+>> > > devices this can lead to OOM situation as reported by Dave Chinner.
+>> > >
+>> > > With this patch we will wait in loop_make_request() if the number of
+>> > > bios in the loop bio list would exceed 'nr_requests' number of requests.
+>> > > We'll wake up the process as we process the bios form the list.
+>> > 
+>> > I think you might want to do something similar to what is done for
+>> > request_queues by implementing a congestion on and off threshold.  As
+>> > Jens writes in this commit (predating the conversion to git):
+>> 
+>> Right, I've had the same idea. However my first proof-of-concept
+>> worked quite well without this and my simple performance testing did
+>> not show any regression.
 
-Did you mean, while setting the bitmap,
+Did you look at system time?
 
-we should do 
-for (i = 1..n)
-if (kvm->vcpus[i] == vcpu) set ith position in bitmap?
-
-I just wanted to know whether there is any easy way to convert from 
-vcpu  pointer to index in kvm vcpu table.
-
+-Jeff
