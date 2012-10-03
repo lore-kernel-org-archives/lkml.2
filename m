@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab2JCGZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 02:25:18 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58394 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2JCGZP (ORCPT
+	id S1752978Ab2JCG17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 02:27:59 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59442 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab2JCG15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 02:25:15 -0400
-Date: Tue, 2 Oct 2012 23:25:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Daniel Santos <daniel.santos@pobox.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 1/10] compiler-gcc4.h: correct verion check for
- __compiletime_error
-In-Reply-To: <1348874411-28288-2-git-send-email-daniel.santos@pobox.com>
-Message-ID: <alpine.DEB.2.00.1210022324430.12717@chino.kir.corp.google.com>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1348874411-28288-2-git-send-email-daniel.santos@pobox.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Oct 2012 02:27:57 -0400
+From: Prabhakar <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        VGER <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH] media: davinci: vpbe: fix build warning
+Date: Wed,  3 Oct 2012 11:57:38 +0530
+Message-Id: <1349245658-7125-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Sep 2012, Daniel Santos wrote:
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-> NOTE: this is has already been comitted to -mm
-> 
-> __attribute__((error(msg))) was introduced in gcc 4.3 (not 4.4) and as I
-> was unable to find any gcc bugs pertaining to it, I'm presuming that it
-> has functioned as advertised since 4.3.0.
-> 
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+recent patch with commit id 4f996594ceaf6c3f9bc42b40c40b0f7f87b79c86
+which makes vidioc_s_crop const, was causing a following build warning,
 
-Tested-by: David Rientjes <rientjes@google.com>
+vpbe_display.c: In function 'vpbe_display_s_crop':
+vpbe_display.c:640: warning: initialization discards qualifiers from pointer target type
 
-Works with 4.3.6.
+This patch fixes the above build warning.
+
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/media/platform/davinci/vpbe_display.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
+index 1b238fe..161c776 100644
+--- a/drivers/media/platform/davinci/vpbe_display.c
++++ b/drivers/media/platform/davinci/vpbe_display.c
+@@ -637,7 +637,7 @@ static int vpbe_display_s_crop(struct file *file, void *priv,
+ 	struct vpbe_device *vpbe_dev = disp_dev->vpbe_dev;
+ 	struct osd_layer_config *cfg = &layer->layer_info.config;
+ 	struct osd_state *osd_device = disp_dev->osd_device;
+-	struct v4l2_rect *rect = &crop->c;
++	struct v4l2_rect rect = crop->c;
+ 	int ret;
+ 
+ 	v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev,
+@@ -648,21 +648,21 @@ static int vpbe_display_s_crop(struct file *file, void *priv,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (rect->top < 0)
+-		rect->top = 0;
+-	if (rect->left < 0)
+-		rect->left = 0;
++	if (rect.top < 0)
++		rect.top = 0;
++	if (rect.left < 0)
++		rect.left = 0;
+ 
+-	vpbe_disp_check_window_params(disp_dev, rect);
++	vpbe_disp_check_window_params(disp_dev, &rect);
+ 
+ 	osd_device->ops.get_layer_config(osd_device,
+ 			layer->layer_info.id, cfg);
+ 
+ 	vpbe_disp_calculate_scale_factor(disp_dev, layer,
+-					rect->width,
+-					rect->height);
+-	vpbe_disp_adj_position(disp_dev, layer, rect->top,
+-					rect->left);
++					rect.width,
++					rect.height);
++	vpbe_disp_adj_position(disp_dev, layer, rect.top,
++					rect.left);
+ 	ret = osd_device->ops.set_layer_config(osd_device,
+ 				layer->layer_info.id, cfg);
+ 	if (ret < 0) {
+-- 
+1.7.4.1
+
