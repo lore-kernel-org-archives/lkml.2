@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965440Ab2JCRwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:52:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34280 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965423Ab2JCRv6 (ORCPT
+	id S1755552Ab2JCRyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:54:17 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4983 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2JCRyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:51:58 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
-        bhutchings@solarflare.com, gregory.v.rose@intel.com,
-        davem@davemloft.net--no-chain-reply-to,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 2/5] PCI, sys: Use is_visable() with boot_vga attribute for pci_dev
-Date: Wed,  3 Oct 2012 10:51:32 -0700
-Message-Id: <1349286695-26713-3-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1349286695-26713-1-git-send-email-yinghai@kernel.org>
-References: <506C3B11.9010009@redhat.com>
- <1349286695-26713-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 3 Oct 2012 13:54:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 03 Oct 2012 10:52:16 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <arm@kernel.org>, <djbw@fb.com>, <vinod.koul@intel.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <stable@kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
+Date: Wed, 3 Oct 2012 22:51:53 +0530
+Message-ID: <1349284913-22350-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That could let pci_create_sysfs_dev_files more simple.
+When watching the interrupts through /proc/interrupts,
+the name of the interrupts are blank or garbage. The
+reason is the pointer passed for devname during irq
+registration is stack and so it get changed after
+dma registration completes.
+Allocate the pointer as part of dma channel and pass
+this pointer as the devname for irq registration to
+avoid change of name.
 
-also fix possible fix memleak during removing path.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/pci/pci-sysfs.c |   21 ++++++++++-----------
- 1 files changed, 10 insertions(+), 11 deletions(-)
+Resending as mail was not delivered to arm@kernel.org.
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index 3d160aa..fbbb97f 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -1303,29 +1303,20 @@ int __must_check pci_create_sysfs_dev_files (struct pci_dev *pdev)
- 		pdev->rom_attr = attr;
- 	}
+ drivers/dma/tegra20-apb-dma.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 24a6512..528c62d 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -169,6 +169,7 @@ typedef void (*dma_isr_handler)(struct tegra_dma_channel *tdc,
+ /* tegra_dma_channel: Channel specific information */
+ struct tegra_dma_channel {
+ 	struct dma_chan		dma_chan;
++	char			name[30];
+ 	bool			config_init;
+ 	int			id;
+ 	int			irq;
+@@ -1282,7 +1283,6 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&tdma->dma_dev.channels);
+ 	for (i = 0; i < cdata->nr_channels; i++) {
+ 		struct tegra_dma_channel *tdc = &tdma->channels[i];
+-		char irq_name[30];
  
--	if ((pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA) {
--		retval = device_create_file(&pdev->dev, &vga_attr);
--		if (retval)
--			goto err_rom_file;
--	}
--
- 	/* add platform-specific attributes */
- 	retval = pcibios_add_platform_entries(pdev);
- 	if (retval)
--		goto err_vga_file;
-+		goto err_rom_file;
- 
- 	/* add sysfs entries for various capabilities */
- 	retval = pci_create_capabilities_sysfs(pdev);
- 	if (retval)
--		goto err_vga_file;
-+		goto err_rom_file;
- 
- 	pci_create_firmware_label_files(pdev);
- 
- 	return 0;
- 
--err_vga_file:
--	if ((pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA)
--		device_remove_file(&pdev->dev, &vga_attr);
- err_rom_file:
- 	if (rom_size) {
- 		sysfs_remove_bin_file(&pdev->dev.kobj, pdev->rom_attr);
-@@ -1413,12 +1404,20 @@ static int __init pci_sysfs_init(void)
- late_initcall(pci_sysfs_init);
- 
- static struct attribute *pci_dev_dev_attrs[] = {
-+	&vga_attr.attr,
- 	NULL,
- };
- 
- static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
- 						struct attribute *a, int n)
- {
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (a == &vga_attr.attr)
-+		if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+			return 0;
-+
- 	return a->mode;
- }
- 
+ 		tdc->chan_base_offset = TEGRA_APBDMA_CHANNEL_BASE_ADD_OFFSET +
+ 					i * TEGRA_APBDMA_CHANNEL_REGISTER_SIZE;
+@@ -1294,9 +1294,9 @@ static int __devinit tegra_dma_probe(struct platform_device *pdev)
+ 			goto err_irq;
+ 		}
+ 		tdc->irq = res->start;
+-		snprintf(irq_name, sizeof(irq_name), "apbdma.%d", i);
++		snprintf(tdc->name, sizeof(tdc->name), "apbdma.%d", i);
+ 		ret = devm_request_irq(&pdev->dev, tdc->irq,
+-				tegra_dma_isr, 0, irq_name, tdc);
++				tegra_dma_isr, 0, tdc->name, tdc);
+ 		if (ret) {
+ 			dev_err(&pdev->dev,
+ 				"request_irq failed with err %d channel %d\n",
 -- 
-1.7.7
+1.7.1.1
 
