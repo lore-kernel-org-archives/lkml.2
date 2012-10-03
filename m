@@ -1,105 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965069Ab2JCQvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:51:22 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:18767
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965019Ab2JCQvU (ORCPT
+	id S965132Ab2JCQwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:52:35 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50924 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965019Ab2JCQwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:51:20 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VPS-8(zz98dI1e84M1dbaI1432Izz1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-X-WSS-ID: 0MBBTHC-01-476-02
-X-M-MSG: 
-Date: Wed, 3 Oct 2012 11:51:06 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
-Message-ID: <20121003165105.GA30214@jshin-Toonie>
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
- <1348991844-12285-5-git-send-email-yinghai@kernel.org>
- <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+	Wed, 3 Oct 2012 12:52:33 -0400
+Date: Wed, 3 Oct 2012 09:00:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2] [RFC] mm, slab: release slab_mutex earlier in
+ kmem_cache_destroy()
+Message-ID: <20121003160045.GD2527@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+ <20121002233138.GD2465@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
+ <20121003001530.GF2465@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
+ <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
+ <506C2E02.9080804@linux.vnet.ibm.com>
+ <20121003145047.GA2527@linux.vnet.ibm.com>
+ <506C51E0.1000602@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+In-Reply-To: <506C51E0.1000602@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100316-5406-0000-0000-000000C8DA14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 01, 2012 at 12:00:26PM +0100, Stefano Stabellini wrote:
-> On Sun, 30 Sep 2012, Yinghai Lu wrote:
-> > After
+On Wed, Oct 03, 2012 at 08:25:28PM +0530, Srivatsa S. Bhat wrote:
+> On 10/03/2012 08:20 PM, Paul E. McKenney wrote:
+> > On Wed, Oct 03, 2012 at 05:52:26PM +0530, Srivatsa S. Bhat wrote:
+> >> On 10/03/2012 03:16 PM, Jiri Kosina wrote:
+> >>> On Wed, 3 Oct 2012, Jiri Kosina wrote:
+> >>>
+> >>>> Good question. I believe it should be safe to drop slab_mutex earlier, as 
+> >>>> cachep has already been unlinked. I am adding slab people and linux-mm to 
+> >>>> CC (the whole thread on LKML can be found at 
+> >>>> https://lkml.org/lkml/2012/10/2/296 for reference).
+> >>>>
+> >>>> How about the patch below? Pekka, Christoph, please?
+> >>>
+> >>> It turns out that lockdep is actually getting this wrong, so the changelog 
+> >>> in the previous version wasn't accurate.
+> >>>
+> >>> Please find patch with updated changelog below. Pekka, Christoph, could 
+> >>> you please check whether it makes sense to you as well? Thanks.
+> >>>
+> >>>
+> >>>
+> >>>
+> >>> From: Jiri Kosina <jkosina@suse.cz>
+> >>> Subject: [PATCH] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
+> >>>
+> >>> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
+> >>> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock
+> >>> dependency through kmem_cache_destroy() -> rcu_barrier() ->
+> >>> _rcu_barrier() -> get_online_cpus().
+> >>>
+> >>> Lockdep thinks that this might actually result in ABBA deadlock,
+> >>> and reports it as below:
+> >>>
+> >>> === [ cut here ] ===
+> >>>  ======================================================
+> >>>  [ INFO: possible circular locking dependency detected ]
+> >>>  3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
+> >>>  -------------------------------------------------------
+> >>>  kworker/u:2/40 is trying to acquire lock:
+> >>>   (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+> >>>
+> >>>  but task is already holding lock:
+> >>>   (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
+> >>>
+> >>>  which lock already depends on the new lock.
+> >>>
+> >>>  the existing dependency chain (in reverse order) is:
+> >>>
+> >>>  -> #2 (slab_mutex){+.+.+.}:
+> >>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+> >>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+> >>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+> >>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+> >>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+> >>>         [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
+> >>>         [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
+> >>>         [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
+> >>>         [<ffffffff8155719d>] _cpu_up+0xba/0x14e
+> >>>         [<ffffffff815572ed>] cpu_up+0xbc/0x117
+> >>>         [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
+> >>>         [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
+> >>>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+> >>>
+> >>>  -> #1 (cpu_hotplug.lock){+.+.+.}:
+> >>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+> >>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+> >>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+> >>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+> >>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+> >>>         [<ffffffff81049197>] get_online_cpus+0x37/0x50
+> >>>         [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
+> >>>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+> >>>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+> >>>         [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
+> >>>         [<ffffffff8118cc01>] deactivate_super+0x61/0x70
+> >>>         [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
+> >>>         [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
+> >>>         [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
+> >>>
+> >>>  -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
+> >>>         [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
+> >>>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+> >>>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+> >>>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+> >>>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+> >>>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+> >>>         [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+> >>>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+> >>>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+> >>>         [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
+> >>>         [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
+> >>>         [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
+> >>>         [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
+> >>>         [<ffffffff81454b79>] ops_exit_list+0x39/0x60
+> >>>         [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
+> >>>         [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
+> >>>         [<ffffffff81069f3e>] worker_thread+0x12e/0x320
+> >>>         [<ffffffff8106f73e>] kthread+0x9e/0xb0
+> >>>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+> >>>
+> >>>  other info that might help us debug this:
+> >>>
+> >>>  Chain exists of:
+> >>>    rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
+> >>>
+> >>>   Possible unsafe locking scenario:
+> >>>
+> >>>         CPU0                    CPU1
+> >>>         ----                    ----
+> >>>    lock(slab_mutex);
+> >>>                                 lock(cpu_hotplug.lock);
+> >>>                                 lock(slab_mutex);
+> >>>    lock(rcu_sched_state.barrier_mutex);
+> >>>
+> >>>   *** DEADLOCK ***
+> >>> === [ cut here ] ===
+> >>>
+> >>> This is actually a false positive. Lockdep has no way of knowing the fact
+> >>> that the ABBA can actually never happen, because of special semantics of
+> >>> cpu_hotplug.refcount and itss handling in cpu_hotplug_begin(); the mutual
+> >>> exclusion there is not achieved through mutex, but through
+> >>> cpu_hotplug.refcount.
+> >>>
+> >>> The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
+> >>> until everyone who called get_online_cpus() will call put_online_cpus()"
+> >>> semantics is totally invisible to lockdep.
+> >>>
+> >>> This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
+> >>> is being called with it unlocked. It has two advantages:
+> >>>
+> >>> - it slightly reduces hold time of slab_mutex; as it's used to protect
+> >>>   the cachep list, it's not necessary to hold it over __kmem_cache_destroy()
+> >>>   call any more
+> >>> - it silences the lockdep false positive warning, as it avoids lockdep ever
+> >>>   learning about slab_mutex -> cpu_hotplug.lock dependency
+> >>>
+> >>> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> >>
+> >> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >>
+> >> Earlier I was under the wrong impression that all the calltraces that lockdep
+> >> spewed were reflecting the same point in time. So, sorry about that noise! :-)
+> >> It is indeed a false-positive and there is no real bug here, and the fix looks
+> >> good, provided __kmem_cache_destroy() doesn't expect slab_mutex to be held.
 > > 
-> > | commit 8548c84da2f47e71bbbe300f55edb768492575f7
-> > | Author: Takashi Iwai <tiwai@suse.de>
-> > | Date:   Sun Oct 23 23:19:12 2011 +0200
-> > |
-> > |    x86: Fix S4 regression
-> > |
-> > |    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
-> > |    regression since 2.6.39, namely the machine reboots occasionally at S4
-> > |    resume.  It doesn't happen always, overall rate is about 1/20.  But,
-> > |    like other bugs, once when this happens, it continues to happen.
-> > |
-> > |    This patch fixes the problem by essentially reverting the memory
-> > |    assignment in the older way.
+> > I am not so sure about it being a false positive.  Consider the following
+> > sequence of events:
 > > 
-> > Have some page table around 512M again, that will prevent kdump to find 512M
-> > under 768M.
+> > o	Thread A starts a CPU-hotplug operation, acquiring the
+> > 	hotplug mutex.
 > > 
-> > We need revert that reverting, so we could put page table high again for 64bit.
-> > 
-> > Takashi agreed that S4 regression could be something else.
-> > 
-> > 	https://lkml.org/lkml/2012/6/15/182
-> > 
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > ---
-> >  arch/x86/mm/init.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> > index 9f69180..aadb154 100644
-> > --- a/arch/x86/mm/init.c
-> > +++ b/arch/x86/mm/init.c
-> > @@ -76,8 +76,8 @@ static void __init find_early_table_space(struct map_range *mr,
-> >  #ifdef CONFIG_X86_32
-> >  	/* for fixmap */
-> >  	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
-> > -#endif
-> >  	good_end = max_pfn_mapped << PAGE_SHIFT;
-> > +#endif
-> >  
-> >  	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
-> >  	if (!base)
+> > o	Thread B does a kmem_cache_destroy(), acquiring the slab mutex.
 > 
-> Isn't this going to cause init_memory_mapping to allocate pagetable
-> pages from memory not yet mapped?
-> Last time I spoke with HPA and Thomas about this, they seem to agree
-> that it isn't a very good idea.
-> Also, it is proven to cause a certain amount of headaches on Xen,
-> see commit d8aa5ec3382e6a545b8f25178d1e0992d4927f19.
+> This can't happen. Because kmem_cache_destroy() will call get_online_cpus() before
+> trying to acquire slab mutex. And it sleeps waiting at get_online_cpus() because
+> the hotplug lock has already been acquired by Thread A.
+
+Good point!!!  False positive it is!
+
+							Thanx, Paul
+
+> > o	Thread A reaches the slab CPU-hotplug notifier, but cannot acquire
+> > 	the slab mutex because Thread B hold it.
+> > 
+> > o	Thread B enters rcu_barrier(), but cannot acquire the hotplug
+> > 	mutex because Thread A holds it.
+> > 
+> > So I would argue that lockdep's output was a bit confusing, but that
+> > the deadlock it flagged is real.  Or am I still missing something?
+> >
 > 
-
-Any comments, thoughts? hpa? Yinghai?
-
-So it seems that during init_memory_mapping Xen needs to modify page table 
-bits and the memory where the page tables live needs to be direct mapped at
-that time.
-
-Since we now call init_memory_mapping for every E820_RAM range sequencially,
-the only way to satisfy Xen is to find_early_page_table_space (good_end needs
-to be within memory already mapped at the time) for every init_memory_mapping
-call.
-
-What do you think Yinghai?
+> So the key point is, Thread A is a hotplug writer. Thread B becomes a hotplug reader
+> the moment it calls get_online_cpus(). So they can't co-exist/run together. They will
+> get serialized. That is, Thread A runs to completion, releases hotplug lock. Only then
+> thread B gets past get_online_cpus().
+> 
+> Regards,
+> Srivatsa S. Bhat
+>   
+> >> But, I'm also quite surprised that the put_online_cpus() code as it stands today
+> >> doesn't have any checks for the refcount going negative. I believe that such a
+> >> check would be valuable to help catch cases where we might end up inadvertently
+> >> causing an imbalance between get_online_cpus() and put_online_cpus(). I'll post
+> >> that as a separate patch.
+> >>
+> >> Regards,
+> >> Srivatsa S. Bhat
+> >>
+> >>> ---
+> >>>  mm/slab.c |    2 +-
+> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/mm/slab.c b/mm/slab.c
+> >>> index 1133911..693c7cb 100644
+> >>> --- a/mm/slab.c
+> >>> +++ b/mm/slab.c
+> >>> @@ -2801,12 +2801,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
+> >>>  		put_online_cpus();
+> >>>  		return;
+> >>>  	}
+> >>> +	mutex_unlock(&slab_mutex);
+> >>>
+> >>>  	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU))
+> >>>  		rcu_barrier();
+> >>>
+> >>>  	__kmem_cache_destroy(cachep);
+> >>> -	mutex_unlock(&slab_mutex);
+> >>>  	put_online_cpus();
+> >>>  }
+> >>>  EXPORT_SYMBOL(kmem_cache_destroy);
+> >>>
+> >>
+> 
 
