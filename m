@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab2JCNxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 09:53:03 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:48525 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab2JCNxA (ORCPT
+	id S1756160Ab2JCNyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 09:54:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31402 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016Ab2JCNx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 09:53:00 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14916885"
-Date: Wed, 3 Oct 2012 14:51:59 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
- for PV on HVM guests
-In-Reply-To: <1349272182.650.150.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com> <1349272182.650.150.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 3 Oct 2012 09:53:59 -0400
+X-Authority-Analysis: v=2.0 cv=Hsb06jvS c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UaAUr2XLl5QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=K-l3MIClUOAA:10 a=8pif782wAAAA:8 a=p4yhxsxNAAAA:8 a=Ceotw3OPAAAA:8 a=qDPcfrqXXuL-uzIVUqEA:9 a=PUjeQqilurYA:10 a=skilWyurgcAA:10 a=D23JKBVSs9wQaRZ5:21 a=6V0mJQlhKpyIoCPT:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349272435.22822.165.camel@gandalf.local.home>
+Subject: Re: [PATCH -tip ] [BUGFIX] perf probe: Add a workaround for GCC
+ -mfentry
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        systemtap@sourceware.org, yrl.pp-manager.tt@hitachi.com
+Date: Wed, 03 Oct 2012 09:53:55 -0400
+In-Reply-To: <20121003121707.4186.28696.stgit@ltc138.sdl.hitachi.co.jp>
+References: <20121003121707.4186.28696.stgit@ltc138.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Ian Campbell wrote:
-> On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
-> > PV on HVM guests don't have a start_info page mapped by Xen, so
-> > xen_start_info is just NULL for them.
-> > That is problem because other parts of the code expect xen_start_info to
-> > point to something valid, for example xen_initial_domain() is defined as
-> > follow:
-> > 
-> > #define xen_initial_domain()    (xen_domain() && \
-> >                  xen_start_info->flags & SIF_INITDOMAIN)
+On Wed, 2012-10-03 at 21:17 +0900, Masami Hiramatsu wrote:
+
+> Here are examples:
+> -----
+>  <1><9a58>: Abbrev Number: 86 (DW_TAG_subprogram)
+>     <9a59>   DW_AT_external    : 1
+>     <9a59>   DW_AT_name        : (indirect string, offset: 0xd82): unregister_di
+> e_notifier
+>     <9a5d>   DW_AT_decl_file   : 1
+>     <9a5e>   DW_AT_decl_line   : 551
+>     <9a60>   DW_AT_prototyped  : 1
+>     <9a60>   DW_AT_type        : <0x7c>
+>     <9a64>   DW_AT_low_pc      : 0x740
+>     <9a6c>   DW_AT_high_pc     : 0x75a
+>     <9a74>   DW_AT_frame_base  : 1 byte block: 9c       (DW_OP_call_frame_cfa)
+>     <9a76>   DW_AT_GNU_all_call_sites: 1
+>     <9a76>   DW_AT_sibling     : <0x9aac>
+>  <2><9a7a>: Abbrev Number: 87 (DW_TAG_formal_parameter)
+>     <9a7b>   DW_AT_name        : nb
+>     <9a7e>   DW_AT_decl_file   : 1
+>     <9a7f>   DW_AT_decl_line   : 551
+>     <9a81>   DW_AT_type        : <0x2a96>
+>     <9a85>   DW_AT_location    : 0x172f (location list)
+> ...
+>     0000172f 0000000000000745 0000000000000750 (DW_OP_reg5 (rdi))
+>     0000172f 0000000000000750 0000000000000757 (DW_OP_reg4 (rsi))
+>     0000172f 0000000000000757 000000000000075a (DW_OP_GNU_entry_value: (DW_OP_reg5 (rdi)); DW_OP_stack_value)
+>     0000172f <End of list>
+> -----
 > 
-> But anyone who calls this before xen_start_info is setup is going to get
-> a bogus result, specifically in this case they will think they are domU
-> when in reality they are dom0 -- wouldn't it be better to fix those
-> callsites?
+> As you can see, the location of the parameter "nb", starts from 0x745
+> but unregister_die_notifier() function itself starts from 0x740.
 
-That cannot be the case because setting up xen_start_info is the very
-first thing that is done, before even calling to C.
+Um, no I can't see. I guess I need to go and read up on DWARF formats.
+Any good recommended links?
 
+A quick google gives me:
 
-> Perhaps turn this into a static inline with a BUG_ON(!xen_start_info) to
-> make catching these cases easier?
+http://en.wikipedia.org/wiki/DWARF
+http://wiki.dwarfstd.org/index.php?title=Dwarf_FAQ
+http://www.eagercon.com/dwarf/dwarf-2.0.0.pdf
+
+Is this what you recommend reading? Or is there better documentation?
+
+-- Steve
+
 
