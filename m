@@ -1,93 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2JCDoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 23:44:12 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43412 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab2JCDoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 23:44:10 -0400
-Date: Tue, 2 Oct 2012 20:44:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org
-Subject: Re: Lockdep complains about commit 1331e7a1bb ("rcu: Remove
- _rcu_barrier() dependency on __stop_machine()")
-Message-ID: <20121003034405.GB13192@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
- <506B50F1.8070907@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1210030008590.23544@pobox.suse.cz>
- <506BB283.4010800@linux.vnet.ibm.com>
+	id S1753485Ab2JCDqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 23:46:34 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:58762 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265Ab2JCDqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 23:46:33 -0400
+Message-ID: <506BB50E.7090707@cs.wisc.edu>
+Date: Tue, 02 Oct 2012 22:46:22 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506BB283.4010800@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100303-2398-0000-0000-00000BCB65ED
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00179343; UDB=6.00040616; UTC=2012-10-03
- 03:44:09
+To: Jonathan McDowell <noodles@earth.li>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Soft lockup in scsi_remove_target under 3.6 (regression from
+ 3.5)
+References: <20121003004309.GA2289@earth.li>
+In-Reply-To: <20121003004309.GA2289@earth.li>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 09:05:31AM +0530, Srivatsa S. Bhat wrote:
-> On 10/03/2012 03:47 AM, Jiri Kosina wrote:
-> > On Wed, 3 Oct 2012, Srivatsa S. Bhat wrote:
-> > 
-> >> I don't see how this circular locking dependency can occur.. If you are using SLUB,
-> >> kmem_cache_destroy() releases slab_mutex before it calls rcu_barrier(). If you are
-> >> using SLAB, kmem_cache_destroy() wraps its whole operation inside get/put_online_cpus(),
-> >> which means, it cannot run concurrently with a hotplug operation such as cpu_up(). So, I'm
-> >> rather puzzled at this lockdep splat..
-> > 
-> > I am using SLAB here.
-> > 
-> > The scenario I think is very well possible:
-> > 
-> > 
-> > 	CPU 0				CPU 1
-> > 	kmem_cache_destroy()
+On 10/02/2012 07:43 PM, Jonathan McDowell wrote:
+> Upgraded to 3.6 today on my dev box and after seeing an FC attached SAN
+> go down and come back up (due to an expected reboot) I started getting
+> the following in my logs. It continues even after the array is back and
+> functioning - I'm seeing:
 > 
-> What about the get_online_cpus() right here at CPU0 before
-> calling mutex_lock(slab_mutex)? How can the cpu_up() proceed
-> on CPU1?? I still don't get it... :(
+>  kernel:[109104.348034] BUG: soft lockup - CPU#6 stuck for 23s!
+> [kworker/6:0:30692]
 > 
-> (kmem_cache_destroy() uses get/put_online_cpus() around acquiring
-> and releasing slab_mutex).
-
-The problem is that there is a CPU-hotplug notifier for slab, which
-establishes hotplug->slab.  Then having kmem_cache_destroy() call
-rcu_barrier() under the lock establishes slab->hotplug, which results
-in deadlock.  Jiri really did explain this in an earlier email
-message, but both of us managed to miss it.  ;-)
-
-							Thanx, Paul
-
-> Regards,
-> Srivatsa S. Bhat
-> 
-> > 	mutex_lock(slab_mutex)
-> > 	 				_cpu_up()
-> > 					cpu_hotplug_begin()
-> > 					mutex_lock(cpu_hotplug.lock)
-> > 	rcu_barrier()
-> > 	_rcu_barrier()
-> > 	get_online_cpus()
-> > 	mutex_lock(cpu_hotplug.lock)
-> > 	 (blocks, CPU 1 has the mutex)
-> > 					__cpu_notify()
-> > 					mutex_lock(slab_mutex)
-> > 
-> > Deadlock.
-> > 
-> > Right?
-> > 
-> 
+> repeated on logged in sessions and backtraces like the following (this
+> is the first). I don't see the same problem under 3.5.
 > 
 
+
+I think you need this patch
+http://marc.info/?l=linux-scsi&m=134621716223056&w=2
