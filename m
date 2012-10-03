@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2JCLWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 07:22:05 -0400
-Received: from mout.web.de ([212.227.17.12]:56169 "EHLO mout.web.de"
+	id S1753654Ab2JCLWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 07:22:11 -0400
+Received: from mout.web.de ([212.227.15.3]:53934 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735Ab2JCLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 07:22:00 -0400
+	id S1753338Ab2JCLWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 07:22:08 -0400
 From: Jan Kiszka <jan.kiszka@web.de>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 13/13] scripts/gdb: Add lx_current convenience function
-Date: Wed,  3 Oct 2012 13:21:44 +0200
-Message-Id: <84526625a883517733e6d5f856ac87b2b86842fb.1349263293.git.jan.kiszka@web.de>
+Subject: [PATCH 04/13] scripts/gdb: Add get_target_endianness helper
+Date: Wed,  3 Oct 2012 13:21:35 +0200
+Message-Id: <4f794cfb44b8c19fe97333677d89018b023be341.1349263293.git.jan.kiszka@web.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
 In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
 References: <cover.1349263293.git.jan.kiszka@web.de>
-X-Provags-ID: V02:K0:N36Prhcvm6VVvj3cbwg/+oGd94sMwtwX5KWtvt7GSWt
- iNx/E6Ra0PPcKSS5BzsbAvdK90IaVG/dy94rGNArSRay/p1gm4
- k5hNwGGr4Y3Ue3r1zJS6jRzihTj/+Ru6sTC0k/unDwvjoiq5Ml
- 7jMgiA8s9ALZAVdUKwZfg36Jfz9gQHWNk9zTSP6UNrFjxTh+9R
- XPDxKXTiuYEte/HeAlkuQ==
+X-Provags-ID: V02:K0:ChTdLexWJBCUIQeU0eVXELKz2t2+CItysxU1FQqkkSu
+ iMdoDnryLVNNJg5Y+m758XDg8ndR0pxMt+Tc7kx2w4DKiEniHL
+ dy8uBE8IsUYwyksZSV3m/KZrgoOQoMRppfRa2KHXq8Ux9ynnov
+ wzWGYPYERjliHG3l2ZM6Q03PxYxjIBUCO3eBfzL1QuJlYC3J4J
+ +XvVQkp0RQs/4syqbYI8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kiszka <jan.kiszka@siemens.com>
 
-This is a shorthand for *$lx_per_cpu("current_task"), i.e. a convenience
-function to retrieve the currently running task of the active context.
+Parse the target endianness from the output of "show endian" and cache
+the result to return it via the new helper get_target_endiannes. We will
+need it for reading integers from buffers that contain target memory.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/percpu.py |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ scripts/gdb/utils.py |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
-index 6e24400..ecf72b6 100644
---- a/scripts/gdb/percpu.py
-+++ b/scripts/gdb/percpu.py
-@@ -59,3 +59,18 @@ class PerCpu(gdb.Function):
- 		return per_cpu(var_name.string(), cpu)
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+index f770c5c..40356d9 100644
+--- a/scripts/gdb/utils.py
++++ b/scripts/gdb/utils.py
+@@ -53,3 +53,20 @@ class ContainerOf(gdb.Function):
+ 				    elementname.string())
  
- PerCpu()
+ ContainerOf()
 +
 +
-+class LxCurrentFunc(gdb.Function):
-+	__doc__ = "Return current task.\n" \
-+		  "\n" \
-+		  "$lx_current([CPU]): Return the per-cpu task variable for the given CPU\n" \
-+		  "number. If CPU is omitted, the CPU of the current context is used."
++BIG_ENDIAN = 0
++LITTLE_ENDIAN = 1
++target_endianness = None
 +
-+	def __init__(self):
-+		super(LxCurrentFunc, self).__init__("lx_current")
-+
-+	def invoke(self, cpu = -1):
-+		return per_cpu("current_task", cpu).dereference()
-+
-+LxCurrentFunc()
++def get_target_endianness():
++	global target_endianness
++	if target_endianness == None:
++		endian = gdb.execute("show endian", False, True)
++		if endian.find("little endian") >= 0:
++			target_endianness = LITTLE_ENDIAN
++		elif endian.find("big endian") >= 0:
++			target_endianness = BIG_ENDIAN
++		else:
++			raise gdb.GdgError("unknown endianness '%s'" % endian)
++	return target_endianness
 -- 
 1.7.3.4
 
