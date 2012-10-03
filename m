@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab2JCJ2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:28:39 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:59363 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152Ab2JCJ2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 05:28:37 -0400
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] asus-nb-wmi: add all video switch keys
-Date: Wed,  3 Oct 2012 11:26:30 +0200
-Message-Id: <1349256392-20320-8-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1349256392-20320-1-git-send-email-corentin.chary@gmail.com>
-References: <1349256392-20320-1-git-send-email-corentin.chary@gmail.com>
+	id S1756005Ab2JCJax (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:30:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3514 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754871Ab2JCJaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 05:30:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,527,1344236400"; 
+   d="asc'?scan'208";a="229935861"
+Message-ID: <1349256659.2017.128.camel@sauron.fi.intel.com>
+Subject: Re: UBI: Fastmap request for inclusion (v19)
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Richard Weinberger <richard@nod.at>
+Cc: Heinz.Egger@linutronix.de, tglx@linutronix.de,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tim.bird@am.sony.com
+Date: Wed, 03 Oct 2012 12:30:59 +0300
+In-Reply-To: <506BFF58.4060106@nod.at>
+References: <1348674710-102885-1-git-send-email-richard@nod.at>
+	  <1349252745.2017.120.camel@sauron.fi.intel.com>
+	  <20121003103625.0bbff63c@spider.haslach.nod.at>
+	 <1349253885.2017.125.camel@sauron.fi.intel.com> <506BFF58.4060106@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-aU+rnHgRHL/dGShmrNMe"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: AceLan Kao <acelan.kao@canonical.com>
 
-Fill up all the video switch keys in the map.
+--=-aU+rnHgRHL/dGShmrNMe
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
----
- drivers/platform/x86/asus-nb-wmi.c |   22 +++++++++++++++++++---
- 1 files changed, 19 insertions(+), 3 deletions(-)
+On Wed, 2012-10-03 at 11:03 +0200, Richard Weinberger wrote:
+> Yeah, it looks like all issues reported by aiaiai are caused by the missi=
+ng goto.
+> Can you deal with the patch below or do you want me to send it using git =
+send-email?
 
-diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
-index 75ce18c..87d45e0 100644
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -181,9 +181,13 @@ static const struct key_entry asus_nb_wmi_keymap[] = {
- 	{ KE_KEY, 0x5E, { KEY_WLAN } }, /* Wireless console Enable */
- 	{ KE_KEY, 0x5F, { KEY_WLAN } }, /* Wireless console Disable */
- 	{ KE_KEY, 0x60, { KEY_TOUCHPAD_ON } },
--	{ KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* LCD Only */
--	{ KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* CRT Only */
--	{ KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* LCD + CRT */
-+	{ KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD only */
-+	{ KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT only */
-+	{ KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT */
-+	{ KE_KEY, 0x64, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV */
-+	{ KE_KEY, 0x65, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV */
-+	{ KE_KEY, 0x66, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV */
-+	{ KE_KEY, 0x67, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV */
- 	{ KE_KEY, 0x6B, { KEY_TOUCHPAD_TOGGLE } },
- 	{ KE_IGNORE, 0x6E, },  /* Low Battery notification */
- 	{ KE_KEY, 0x7D, { KEY_BLUETOOTH } }, /* Bluetooth Enable */
-@@ -191,12 +195,24 @@ static const struct key_entry asus_nb_wmi_keymap[] = {
- 	{ KE_KEY, 0x82, { KEY_CAMERA } },
- 	{ KE_KEY, 0x88, { KEY_RFKILL  } }, /* Radio Toggle Key */
- 	{ KE_KEY, 0x8A, { KEY_PROG1 } }, /* Color enhancement mode */
-+	{ KE_KEY, 0x8C, { KEY_SWITCHVIDEOMODE } }, /* SDSP DVI only */
-+	{ KE_KEY, 0x8D, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + DVI */
-+	{ KE_KEY, 0x8E, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + DVI */
-+	{ KE_KEY, 0x8F, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + DVI */
-+	{ KE_KEY, 0x90, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + DVI */
-+	{ KE_KEY, 0x91, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + DVI */
-+	{ KE_KEY, 0x92, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + DVI */
-+	{ KE_KEY, 0x93, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + DVI */
- 	{ KE_KEY, 0x95, { KEY_MEDIA } },
- 	{ KE_KEY, 0x99, { KEY_PHONE } },
- 	{ KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
- 	{ KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
- 	{ KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
- 	{ KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
-+	{ KE_KEY, 0xA4, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + HDMI */
-+	{ KE_KEY, 0xA5, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + HDMI */
-+	{ KE_KEY, 0xA6, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + HDMI */
-+	{ KE_KEY, 0xA7, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + HDMI */
- 	{ KE_KEY, 0xB5, { KEY_CALC } },
- 	{ KE_KEY, 0xC4, { KEY_KBDILLUMUP } },
- 	{ KE_KEY, 0xC5, { KEY_KBDILLUMDOWN } },
--- 
-1.7.8.6
+I'll apply it. But please, re-work the error handling in that function
+separately.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-aU+rnHgRHL/dGShmrNMe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQbAXTAAoJECmIfjd9wqK0oTYP/26+PBm9PMNfKA7mmbpKwhaF
+DNaEhZy3XhgDo5fobbkKNRI45hIYCiJu01LMN2qMJ6QaQCg4akjvXO/k2hM8j5pE
+RJwrrUjO0awkOHsJ+l2M77FgWqOyJlFVIRbN3g9nvV2ygs+rjCRR/qYItb3kfvc8
+FzC7WQzZyDn3jBOgvoBrIqI8o64rlJxgyGwy2jHujI3sEOEXf0O2KX+U0jTPIjzL
+KE9odHB37+V9EN2eI09i6Ij8ReCPkQiv3xzohHd6WfxR5EfR+68WHsv6jY0007o2
+cJ3wc4KI0U4fZTR6yaCdsq4YzvA4LP/7MbDKuHZVb+/cYfBvh9ygZpa8LAH9jGQK
+MTCcPcbbzCWz4lp3qabubgYodzFx5+HSgULwS9qEQ/tlu6vNy3sab6Xn420CaC8S
+5qj3UreOuv6PB87luIbQ5F1vl2VMs1vI5IdxX1h0TjXC/CQXSVH2X5bQtkHgkhey
+n7cf3yg1vIkUaqcXotKNUQMmp+pP4oyxx81myiimD0Xo+E6X4J3/lMMQu/A8EGwY
+60JKCg/2Oj+q+Gy1GEH3KSqOwQtTucVK26K7GGl57RlaNGs6YijnQNPjw6tLYJ7M
+8IzrOcPuLBh9ILLtT3HHf9g578XGSkTKxbxhZhyM2ugV+o6FGP+D9ZzPxUTDMFFn
+LeBbV86Ed0BaOYCfzQFV
+=t4MI
+-----END PGP SIGNATURE-----
+
+--=-aU+rnHgRHL/dGShmrNMe--
 
