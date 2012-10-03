@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965080Ab2JCQSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:18:34 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62261 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018Ab2JCQSZ (ORCPT
+	id S964956Ab2JCQbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:31:10 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:19994 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932530Ab2JCQbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:25 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: davem@davemloft.net
-Cc: kernel-janitors@vger.kernel.org, romieu@fr.zoreil.com, rick.jones2@hp.com,
-        netdev@pradeepdalvi.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/20] drivers/net/ethernet/natsemi/natsemi.c: fix error return code
-Date: Wed,  3 Oct 2012 18:17:52 +0200
-Message-Id: <1349281090-10013-2-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Wed, 3 Oct 2012 12:31:08 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/oDrZH5tff6k2yE8KpqWU8
+Date: Wed, 3 Oct 2012 09:31:02 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3.7-rc1] omap zoom2.c: Fix compile error by including
+ correct header files
+Message-ID: <20121003163102.GB4840@atomide.com>
+References: <1349274686-45668-1-git-send-email-tim.gardner@canonical.com>
+ <506C5124.3050200@ti.com>
+ <20121003155900.GA4840@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003155900.GA4840@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+* Tony Lindgren <tony@atomide.com> [121003 09:00]:
+> * Peter Ujfalusi <peter.ujfalusi@ti.com> [121003 07:52]:
+> > On 10/03/2012 05:31 PM, Tim Gardner wrote:
+> > > Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > > Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+> > > Cc: Liam Girdwood <lrg@ti.com>
+> > > Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > > Cc: Jaroslav Kysela <perex@perex.cz>
+> > > Cc: Takashi Iwai <tiwai@suse.de>
+> > > Cc: linux-omap@vger.kernel.org
+> > > Cc: alsa-devel@alsa-project.org
+> > > Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> > > ---
+> > >  sound/soc/omap/zoom2.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
+> > > index 23de2b2..d0a8c92 100644
+> > > --- a/sound/soc/omap/zoom2.c
+> > > +++ b/sound/soc/omap/zoom2.c
+> > > @@ -27,9 +27,10 @@
+> > >  
+> > >  #include <asm/mach-types.h>
+> > >  #include <mach/hardware.h>
+> > > -#include <mach/gpio.h>
+> > > +#include <linux/gpio.h>
+> > >  #include <mach/board-zoom.h>
+> > >  #include <linux/platform_data/asoc-ti-mcbsp.h>
+> > > +#include <linux/platform_data/gpio-omap.h>
+> > >  
+> > >  /* Register descriptions for twl4030 codec part */
+> > >  #include <linux/mfd/twl4030-audio.h>
+> > > 
+> > 
+> > I have the same patch stashed away for the same issue. Was waiting for rc1 to
+> > send it.
+> 
+> Can you please update the patch to also to remove the
+> "#include <mach/board-zoom.h>" while at it?
+> 
+> AFAIK it's not needed at all and just adds a dependency to asoc with
+> my upcoming plat header cleanup patches.
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.
+Actually we can also drop "#include <mach/hardware.h>" too,
+it's now empty for mach-omap2. I've updated Tim's patch below
+for you guys to queue via the ASoC fixes. It's against the
+current linux next.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Regards,
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
+Tony
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
----
- drivers/net/ethernet/natsemi/natsemi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Wed, 3 Oct 2012 08:31:26 -0600
+Subject: [PATCH] omap zoom2.c: Fix compile error by including correct header files
 
-diff --git a/drivers/net/ethernet/natsemi/natsemi.c b/drivers/net/ethernet/natsemi/natsemi.c
-index 5b61d12..dbaaa99 100644
---- a/drivers/net/ethernet/natsemi/natsemi.c
-+++ b/drivers/net/ethernet/natsemi/natsemi.c
-@@ -947,8 +947,8 @@ static int __devinit natsemi_probe1 (struct pci_dev *pdev,
- 	i = register_netdev(dev);
- 	if (i)
- 		goto err_register_netdev;
--
--	if (NATSEMI_CREATE_FILE(pdev, dspcfg_workaround))
-+	i = NATSEMI_CREATE_FILE(pdev, dspcfg_workaround);
-+	if (i)
- 		goto err_create_file;
+Also drop the includes that are no longer needed and just
+cause problems for the ARM common zImage.
+
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: linux-omap@vger.kernel.org
+Cc: alsa-devel@alsa-project.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+[tony@atomide.com: updated to drop unneeded headers]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+
+diff --git a/sound/soc/omap/zoom2.c b/sound/soc/omap/zoom2.c
+index 677b567..1ff6bb9 100644
+--- a/sound/soc/omap/zoom2.c
++++ b/sound/soc/omap/zoom2.c
+@@ -21,15 +21,14 @@
  
- 	if (netif_msg_drv(np)) {
-
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
++#include <linux/gpio.h>
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/soc.h>
+ 
+ #include <asm/mach-types.h>
+-#include <mach/hardware.h>
+-#include <mach/gpio.h>
+-#include <mach/board-zoom.h>
+ #include <linux/platform_data/asoc-ti-mcbsp.h>
++#include <linux/platform_data/gpio-omap.h>
+ 
+ /* Register descriptions for twl4030 codec part */
+ #include <linux/mfd/twl4030-audio.h>
