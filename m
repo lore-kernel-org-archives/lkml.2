@@ -1,125 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2JCBV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 21:21:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44996 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab2JCBV5 (ORCPT
+	id S1754057Ab2JCB2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 21:28:33 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:46718 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752712Ab2JCB2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 21:21:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506B930C.2080000@jp.fujitsu.com>
-Date: Wed, 3 Oct 2012 10:21:16 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Tue, 2 Oct 2012 21:28:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmcJAEqTa1B5LF5G/2dsb2JhbABFhSK4OASBDoEJgiABAQU6HCMQCAMOCi4UJQMhE4gEDLgZBBSLD0CFegOVaJAsgnk
+Date: Wed, 3 Oct 2012 11:28:25 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tytso@google.com, tj@kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Dmitry Monakhov <dmonakhov@openvz.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com, pjt@google.com
+Subject: Re: [RFC, PATCH] Extensible AIO interface
+Message-ID: <20121003012825.GX23520@dastard>
+References: <20121001222341.GF26488@google.com>
+ <x49zk44ojpe.fsf@segfault.boston.devel.redhat.com>
+ <20121003002029.GY26488@google.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <len.brown@intel.com>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        <wency@cn.fujitsu.com>
-Subject: Re: [PATCH 0/2] memory-hotplug : notification of memoty block's state
-References: <506AA4E2.7070302@jp.fujitsu.com> <20121002144211.b60881a8.akpm@linux-foundation.org>
-In-Reply-To: <20121002144211.b60881a8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003002029.GY26488@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, Oct 02, 2012 at 05:20:29PM -0700, Kent Overstreet wrote:
+> On Tue, Oct 02, 2012 at 01:41:17PM -0400, Jeff Moyer wrote:
+> > Kent Overstreet <koverstreet@google.com> writes:
+> > 
+> > > So, I and other people keep running into things where we really need to
+> > > add an interface to pass some auxiliary... stuff along with a pread() or
+> > > pwrite().
+> > >
+> > > A few examples:
+> > >
+> > > * IO scheduler hints. Some userspace program wants to, per IO, specify
+> > > either priorities or a cgroup - by specifying a cgroup you can have a
+> > > fileserver in userspace that makes use of cfq's per cgroup bandwidth
+> > > quotas.
+> > 
+> > You can do this today by splitting I/O between processes and placing
+> > those processes in different cgroups.  For io priority, there is
+> > ioprio_set, which incurs an extra system call, but can be used.  Not
+> > elegant, but possible.
+> 
+> Yes - those are things I'm trying to replace. Doing it that way is a
+> real pain, both as it's a lousy interface for this and it does impact
+> performance (ioprio_set doesn't really work too well with aio, too).
+> 
+> > > * Cache hints. For bcache and other things, userspace may want to specify
+> > > "this data should be cached", "this data should bypass the cache", etc.
+> > 
+> > Please explain how you will differentiate this from posix_fadvise.
+> 
+> Oh sorry, I think about SSD caching so much I forget to say that's what
+> I'm talking about. posix_fadvise is for the page cache, we want
+> something different for an SSD cache (IMO it'd be really ugly to use it
+> for both, and posix_fadvise() can't really specifify everything we'd
+> want to for an SSD cache).
 
-2012/10/03 6:42, Andrew Morton wrote:
-> On Tue, 2 Oct 2012 17:25:06 +0900
-> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
->
->> remove_memory() offlines memory. And it is called by following two cases:
->>
->> 1. echo offline >/sys/devices/system/memory/memoryXX/state
->> 2. hot remove a memory device
->>
->> In the 1st case, the memory block's state is changed and the notification
->> that memory block's state changed is sent to userland after calling
->> offline_memory(). So user can notice memory block is changed.
->>
->> But in the 2nd case, the memory block's state is not changed and the
->> notification is not also sent to userspcae even if calling offline_memory().
->> So user cannot notice memory block is changed.
->>
->> We should also notify to userspace at 2nd case.
->
-> These two little patches look reasonable to me.
->
-> There's a lot of recent activity with memory hotplug!  We're in the 3.7
-> merge window now so it is not a good time to be merging new material.
+Similar discussions about posix_fadvise() are being had for marking
+ranges of files as volatile (i.e. useful for determining what can be
+evicted from a cache when space reclaim is required).
 
-> Also there appear to be two teams working on it and it's unclear to me
-> how well coordinated this work is?
+https://lkml.org/lkml/2012/10/2/501
 
-As you know, there are two teams for developing the memory hotplug.
-   - Wen's patch-set
-     https://lkml.org/lkml/2012/9/5/201
+If you have requirements for specific cache management, then it
+might be worth seeing if you can steer an existing interface
+proposal for some form of cache management in the direction you
+need.
 
-   - Lai's patch-set
-     https://lkml.org/lkml/2012/9/10/180
+Cheers,
 
-Wen's patch-set is for removing physical memory. Now, I'm splitting the
-patch-set for reviewing more easy. If the patch-set is merged into
-linux kernel, I believe that linux on x86 can hot remove a physical
-memory device.
-
-But it is not enough since we cannot remove a memory which has kernel
-memory. If we guarantee the memory hot remove, the memory must belong
-to ZONE_MOVABLE.
-
-So Lai's patch-set tries to create a movable node that the all memory
-belongs to ZONE_MOVABLE.
-
-I think there are two chances for creating the movable node.
-   - boot time
-   - after hot add memory
-
-- boot time
-
-For creating a movable memory, linux has two kernel parameters
-(kernelcore and movablecore). But it is not enough, since even if we
-set the kernel paramter, the movable memory is distributed evenly in
-each node. So we introduce the kernelcore_max_addr boot parameter.
-The parameter limits the range of the memory used as a kernel memory.
-
-For example, the system has following nodes.
-
-     node0 : 0x40000000 - 0x80000000
-     node1 : 0x80000000 - 0xc0000000
-
-And when I want to hot remove a node1, we set "kernelcore_max_addr=0x80000000".
-In doing so, kernel memory is limited within 0x80000000 and node1's
-memory belongs to ZONE_MOEVALBE. As a result, we can guarantee that
-node1 is a movable node and we always hot remove node1.
-
-- after hot add memory
-
-When hot adding memory, the memory belongs to ZONE_NORMAL and is offline.
-If we online the memory, the memory may have kernel memory. In this case,
-we cannot hot remove the memory. So we introduce the online_movable
-function. If we use the function as follow, the memory belongs to
-ZONE_MOVABLE.
-
-echo online_movable > /sys/devices/system/node/nodeX/memoryX/state
-
-So when new node is hot added and I echo "online_movale" to all hot added
-memory, the node's memory belongs to ZONE_MOVABLE. As a result, we can
-guarantee that the node is a movable node and we always hot remove node.
-
-# I hope to help your understanding about our works by the information.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> However these two patches are pretty simple and do fix a problem, so I
-> added them to the 3.7 MM queue.
->
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
