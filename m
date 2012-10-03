@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024Ab2JCQQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:16:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48190 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964854Ab2JCQQu (ORCPT
+	id S965040Ab2JCQRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:17:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44306 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964854Ab2JCQRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:16:50 -0400
-Date: Wed, 3 Oct 2012 11:16:41 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
+	Wed, 3 Oct 2012 12:17:04 -0400
+X-Sasl-enc: g27z7PN5kbN+ipIGvk5uIf4We96XBcQHrU07PhdY93RP 1349281023
+Date: Wed, 3 Oct 2012 09:17:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
         "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+        Frederic Weisbecker <fweisbec@gmail.com>
 Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121003161641.GA17709@sergelap>
+Message-ID: <20121003161702.GA22008@kroah.com>
 References: <20121002195042.GA16087@www.outflux.net>
  <20121003132538.GE13192@linux.vnet.ibm.com>
 MIME-Version: 1.0
@@ -29,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Paul E. McKenney (paulmck@linux.vnet.ibm.com):
+On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
 > On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
 > > This config item has not carried much meaning for a while now and is
 > > almost always enabled by default. As agreed during the Linux kernel
@@ -60,14 +61,7 @@ Quoting Paul E. McKenney (paulmck@linux.vnet.ibm.com):
 > OK, I will bite...  How should I flag an option that is initially only
 > intended for those willing to take some level of risk?
 
-Sadly, the point is that EXPERIMENTAL is enabled in all distros and by
-most users, so you *could* flag your feature CONFIG_EXPERIMENTAL, but
-the only thing taht might accomplish is making you feel ok to be less
-careful.
+In the text say "You really don't want to enable this option, use at
+your own risk!"  Or something like that :)
 
-Of course, an alternative to this patch would be a purging - pull
-the CONFIG_EXPERIMENTAL tag from all options which anyone might be
-wanting to use by default.  Then let CONFIG_EXPERIMENTAL serve its
-original purpose.
-
--serge
+greg k-h
