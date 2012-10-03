@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab2JCUhW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 16:37:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42115 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab2JCUhU (ORCPT
+	id S1754217Ab2JCUjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 16:39:46 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62788 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753722Ab2JCUjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 16:37:20 -0400
+	Wed, 3 Oct 2012 16:39:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <506C8837.5070902@intel.com>
-References: <506C3B11.9010009@redhat.com>
-	<1349286695-26713-1-git-send-email-yinghai@kernel.org>
-	<1349286695-26713-6-git-send-email-yinghai@kernel.org>
-	<506C8837.5070902@intel.com>
-Date: Wed, 3 Oct 2012 13:37:18 -0700
-X-Google-Sender-Auth: tAJzbrlAtnMyuGa2MQDmK2pzbJA
-Message-ID: <CAE9FiQXG1MGitFzv94CW+EUugntQR4C+8i4946K7ycHJA5WpGA@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ixgbe: add driver set_max_vfs support
-From: Yinghai Lu <yinghai@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
-        bhutchings@solarflare.com, gregory.v.rose@intel.com,
-        davem@davemloft.net, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+In-Reply-To: <20121003195059.GA13541@kroah.com>
+References: <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
+ <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+ <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com>
+ <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
+ <506C562E.5090909@redhat.com> <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
+ <20121003170907.GA23473@ZenIV.linux.org.uk> <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+ <20121003195059.GA13541@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Oct 2012 13:39:23 -0700
+X-Google-Sender-Auth: 17X-Nk6letcuwJyf3ji9HjnFy-U
+Message-ID: <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 11:47 AM, Alexander Duyck
-<alexander.h.duyck@intel.com> wrote:
-> The ixgbe_set_max_vfs function has several issues.  The two big ones are
-> that this function assumes it can just enable/disable SR-IOV without any
-> other changes being necessary which is not the case.  I would recommend
-> looking at ixgbe_setup_tc for how to do this properly.  Secondly is the
-> fact that this code will change the PF network device and as such
-> sections of the code should be called with the RTNL lock held.  In
-> addition I believe you have to disable SR-IOV before enabling it again
-> with a different number of VFs.
-
-yes, agreed.
-
+On Wed, Oct 3, 2012 at 12:50 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>
+>> Ok, like this?
 >
-> Below is a link to one of the early patches for igb when we were first
-> introducing SR-IOV, and the in-driver sysfs value had been rejected.  I
-> figure it might be useful as it was also using sysfs to enable/disable
-> VFs.  It however doesn't have the correct locking on changing the queues
-> and as such will likely throw an error if you were to implement it the
-> same way now:
-> http://lists.openwall.net/netdev/2009/04/08/34
+> This looks good to me.  Having udev do firmware loading and tieing it to
+> the driver model may have not been such a good idea so many years ago.
+> Doing it this way makes more sense.
 
-yes, that is almost there if put that in-driver value to per device
-value and ops.
+Ok, I wish this had been getting more testing in Linux-next or
+something, but I suspect that what I'll do is to commit this patch
+asap, and then commit another patch that turns off udev firmware
+loading entirely for the synchronous firmware loading case.
 
-Thanks
+Why? Just to get more testing, and seeing if there are reports of
+breakage. Maybe some udev out there has a different search path (or
+because udev runs in a different filesystem namespace or whatever), in
+which case running udev as a fallback would otherwise hide the fact
+that he direct kernel firmware loading isn't working.
 
-Yinghai
+We can (and will) revert things if that turns out to break things, but
+I'd like to make any failures of the firmware direct-load path be fast
+and hard, so that we can see when/what it breaks.
+
+Ok? Comments?
+
+              Linus
