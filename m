@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106Ab2JCRqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:46:25 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:48389 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965075Ab2JCRqX (ORCPT
+	id S965171Ab2JCRrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:47:11 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52068 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964889Ab2JCRrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:46:23 -0400
-Date: Wed, 3 Oct 2012 19:46:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	Wed, 3 Oct 2012 13:47:10 -0400
+Date: Wed, 3 Oct 2012 10:46:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Serge Hallyn <serge.hallyn@canonical.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121003174606.GB637@somewhere>
+Message-ID: <20121003174621.GJ2527@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <20121002195042.GA16087@www.outflux.net>
  <20121003132538.GE13192@linux.vnet.ibm.com>
  <20121003161702.GA22008@kroah.com>
@@ -28,6 +29,8 @@ Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20121003172142.GA5061@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100317-2876-0000-0000-000000B2C637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -75,17 +78,11 @@ On Wed, Oct 03, 2012 at 10:21:42AM -0700, Greg Kroah-Hartman wrote:
 > > tree until we are comfortable with distros turning them on?
 > 
 > I think that should have been your philosophy for a long time, as they
-> turn on everything, and I don't blame them.
-> Why would we have included
+> turn on everything, and I don't blame them.  Why would we have included
 > it in the kernel tree, unless we wanted people to use the option?
 
-A solution could be to add that option under CONFIG_DEBUG_KERNEL and specify
-that it must only be enabled by developers for specific reasons (overhead,
-security). CONFIG_PROVE_LOCKING falls into that category, right?
+Because some sizeable group of people would like to use the option,
+but it is not helpful to many others?
 
-We have CONFIG_RCU_USER_QS that is a specific case. It's an intermediate state
-before we implement a true CONFIG_NO_HZ_FULL. But the option is useless on its
-own for users. Worse, it introduces a real overhead. OTOH we want it to be upstream
-to make the development of full tickless feature more incremental.
+							Thanx, Paul
 
-Perhaps we should put that under CONFIG_DEBUG_KERNEL.
