@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab2JCLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 07:19:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43674 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2JCLT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 07:19:57 -0400
-Date: Wed, 3 Oct 2012 13:19:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] MAINTAINERS: Add EFI maintainer entry
-Message-ID: <20121003111951.GA17760@gmail.com>
-References: <1349255042-20971-1-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349255042-20971-1-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753018Ab2JCLV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 07:21:58 -0400
+Received: from mout.web.de ([212.227.15.3]:57709 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735Ab2JCLV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 07:21:57 -0400
+From: Jan Kiszka <jan.kiszka@web.de>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 02/13] scripts/gdb: Add container_of helper and convenience function
+Date: Wed,  3 Oct 2012 13:21:33 +0200
+Message-Id: <8a52d25593769303ffce78c3c252a733ff44ce3a.1349263293.git.jan.kiszka@web.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
+References: <cover.1349263293.git.jan.kiszka@web.de>
+In-Reply-To: <cover.1349263293.git.jan.kiszka@web.de>
+References: <cover.1349263293.git.jan.kiszka@web.de>
+X-Provags-ID: V02:K0:/I3caDTFhG7QoZKuCsTDNP9TA42POQelzX92Qt10rC7
+ hJFCxOEAfaYbJK/8iawtUI6+Y0mDAsf/OZ3Ud+RygfOC0po6bs
+ rbCep1uqJYLx35Nn3gqmc133Wqt9Q2cQuNlKXrdOAxMuz0mVox
+ RduFoALmislPXgD9rRymzvQ/gwIbyhTkn7je0CXXsXRdvn9jP/
+ g6O5OR/xqdaWr9jSWWBxg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+Provide an internal helper with container_of semantics. As type lookups
+are very slow in gdb-python and we need a type "long" for this, cache
+the reference to this type object. Then export the helper also as a
+convenience function form use at the gdb command line.
 
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> We're starting to need a channel through which we can funnel EFI
-> patches to make sure they get merged in a timely fashion. Matthew and
-> Peter seem happy enough for me to take that bullet.
-> 
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
-> ---
->  MAINTAINERS | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 8c22b7f..a2a2756 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2632,6 +2632,18 @@ T:	git git://git.alsa-project.org/alsa-kernel.git
->  S:	Maintained
->  F:	sound/usb/misc/ua101.c
->  
-> +EXTENSIBLE FIRMWARE INTERFACE (EFI)
-> +M:	Matt Fleming <matt.fleming@intel.com>
-> +L:	linux-efi@vger.kernel.org
-> +S:	Maintained
-> +F:	Documentation/x86/efi-stub.txt
-> +F:	arch/ia64/kernel/efi.c
-> +F:	arch/x86/boot/compressed/eboot.[ch]
-> +F:	arch/x86/include/asm/efi.h
-> +F:	arch/x86/platform/efi/*
-> +F:	drivers/firmware/efivars.c
-> +F:	include/linux/efi*.h
-> +
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/utils.py       |   55 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    2 +
+ 2 files changed, 57 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/utils.py
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
+new file mode 100644
+index 0000000..f770c5c
+--- /dev/null
++++ b/scripts/gdb/utils.py
+@@ -0,0 +1,55 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  common utilities
++#
++# Copyright (c) 2011, 2012 Siemens AG
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
++
++import gdb
++
++long_type = None
++
++def get_type(type_name):
++	t = gdb.lookup_type(type_name)
++	if t == None:
++		raise gdb.GdbError("cannot resolve type '%s'" % type_name)
++	return t
++
++def get_long_type():
++	global long_type
++	if long_type == None:
++		long_type = get_type("long")
++	return long_type
++
++
++def offset_of(typeobj, field):
++	element = gdb.Value(0).cast(typeobj)
++	return int(str(element[field].address), 16)
++
++def container_of(ptr, typeobj, member):
++	return (ptr.cast(get_long_type()) -
++		offset_of(typeobj, member)).cast(typeobj)
++
++
++class ContainerOf(gdb.Function):
++	__doc__ = "Return pointer to containing data structure.\n" \
++		  "\n" \
++		  "$container_of(PTR, \"TYPE\", \"ELEMENT\"): Given PTR, return a pointer to the\n" \
++		  "data structure of the type TYPE in which PTR is the address of ELEMENT.\n" \
++		  "Note that TYPE and ELEMENT have to be quoted as strings."
++
++	def __init__(self):
++		super(ContainerOf, self).__init__("container_of")
++
++	def invoke(self, ptr, typename, elementname):
++		return container_of(ptr,
++				    gdb.lookup_type(typename.string()).pointer(),
++				    elementname.string())
++
++ContainerOf()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 00df617..62c30b8 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -18,3 +18,5 @@ sys.path = [ os.path.dirname(__file__) + "/scripts/gdb" ] + sys.path
+ if not gdb.VERSION >= "7.1":
+ 	print "NOTE: gdb 7.1 or later required for Linux helper scripts " \
+ 	      "to work."
++else:
++	import utils
+-- 
+1.7.3.4
 
-Thanks,
-
-	Ingo
