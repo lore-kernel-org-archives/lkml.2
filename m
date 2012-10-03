@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2JCVpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:45:32 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:56558 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756347Ab2JCVpO (ORCPT
+	id S1756545Ab2JCVro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:47:44 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:64108 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827Ab2JCVrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:45:14 -0400
-Message-ID: <1349300710.2763.8.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
- dependency.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>
-CC: <haicheng.li@linux.intel.com>, <netdev@vger.kernel.org>,
-        <tshimizu818@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <haicheng.lee@gmail.com>
-Date: Wed, 3 Oct 2012 22:45:10 +0100
-In-Reply-To: <20121002.222238.1580734803370802133.davem@davemloft.net>
-References: <506546A7.7030500@linux.intel.com>
-	 <20120928.024621.1635385815700269914.davem@davemloft.net>
-	 <50654A62.5090003@linux.intel.com>
-	 <20121002.222238.1580734803370802133.davem@davemloft.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Oct 2012 17:47:42 -0400
+Date: Wed, 3 Oct 2012 14:46:59 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch -mm] mm, thp: fix mlock statistics fix
+In-Reply-To: <20121003142519.93375e01.akpm@linux-foundation.org>
+Message-ID: <alpine.LSU.2.00.1210031430190.14479@eggly.anvils>
+References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com> <alpine.LSU.2.00.1209192021270.28543@eggly.anvils> <alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com> <alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
+ <alpine.LSU.2.00.1209271814340.2107@eggly.anvils> <20121003131012.f88b0d66.akpm@linux-foundation.org> <alpine.DEB.2.00.1210031403270.4352@chino.kir.corp.google.com> <20121003142519.93375e01.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 22:22 -0400, David Miller wrote:
-> From: Haicheng Li <haicheng.li@linux.intel.com>
-> Date: Fri, 28 Sep 2012 14:57:38 +0800
+On Wed, 3 Oct 2012, Andrew Morton wrote:
+> On Wed, 3 Oct 2012 14:10:41 -0700 (PDT)
+> David Rientjes <rientjes@google.com> wrote:
 > 
-> > On 09/28/2012 02:46 PM, David Miller wrote:
-> >> From: Haicheng Li<haicheng.li@linux.intel.com>
-> >> Date: Fri, 28 Sep 2012 14:41:43 +0800
-> >>
-> >>> On 09/28/2012 06:09 AM, David Miller wrote:
-> >>>> Look at how other people submit patches, do any other patch
-> >>>> submissions
-> >>>> look like your's having all of this metadata in the message body:
-> >>> I'm sorry for it.
-> >>>
-> >>>> As for this specific patch:
-> >>>>
-> >>>>> -	depends on PTP_1588_CLOCK_PCH
-> >>>>> +	depends on PTP_1588_CLOCK_PCH = PCH_GBE
-> >>>>
-> >>>> This is not the correct way to ensure that the module'ness of one
-> >>>> config option meets the module'ness requirements of another.
-> >>>> The correct way is to say something like "&&   (PCH_GBE || PCH_GBE=n)"
-> >>>
-> >>> This case is a little bit tricky than usual, with PCH_PTP selected,
-> >>> the valid config would be either "PTP_1588_CLOCK_PCH=PCH_GBE=m" or
-> >>> "PTP_1588_CLOCK_PCH=PCH_GBE=y", and PTP_1588_CLOCK_PCH depends on
-> >>> PCH_GBE.
-> >>
-> >> And a simple "&&  PCH_GBE" should accomplish this, no?
-> > No sir. it's actually same with the original Kconfig (by a if
-> > PCH_GBE"), it just failed with this config:
+> > > The free_page_mlock() hunk gets dropped because free_page_mlock() is
+> > > removed.  And clear_page_mlock() doesn't need this treatment.  But
+> > > please check my handiwork.
+> > > 
 > > 
-> >         CONFIG_PCH_GBE=y
-> >         CONFIG_PCH_PTP=y
-> >         CONFIG_PTP_1588_CLOCK=m
+> > I reviewed what was merged into -mm and clear_page_mlock() does need this 
+> > fix as well.
 > 
-> The correct fix is to make the Kconfig entry for PCH_PTP use
-> a "select PTP_1588_CLOCK" instead of "depends PTP_1588_CLOCK"
-> 
-> I'll apply this fix.
-> 
-> The is another, extremely convoluted, way to do this, which is
-> what the SFC driver does which is:
-> 
-> depends on SFC && PTP_1588_CLOCK && !(SFC=y && PTP_1588_CLOCK=m)
-> 
-> but that looks horrible to me.
+> argh, it got me *again*.  grr.
 
-I thought of it as being a peripheral feature (which most Solarflare
-hardware doesn't implement) so it made sense for SFC_PTP to be optional
-like SFC_MTD and so on.  But I'm quite happy to use a select instead, if
-you want that to be the convention for all drivers implementing PHC.
+I've no objection to more documentation on PageHuge, but neither you nor
+it were to blame for that "oversight".  It's simply that David's original
+patch clearly did not need such a change in clear_page_mlock(), because
+it could never be necessary from where it was then called; but I changed
+where it's called, whereupon it becomes evident that the extra is needed.
 
-Ben.
+"evident" puts it rather too strongly.  Most munlocking happens through
+munlock_vma_page() instead, but the clear_page_mlock() path covers
+truncation.  THPages cannot be file pages at present, but perhaps they
+could be anonymous pages COWed from file pages (I've not checked the
+exact criteria THP applies)?  In which case, subject to truncation too.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Hugh
 
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm: document PageHuge somewhat
+> 
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/hugetlb.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff -puN mm/hugetlb.c~mm-document-pagehuge-somewhat mm/hugetlb.c
+> --- a/mm/hugetlb.c~mm-document-pagehuge-somewhat
+> +++ a/mm/hugetlb.c
+> @@ -671,6 +671,11 @@ static void prep_compound_gigantic_page(
+>  	}
+>  }
+>  
+> +/*
+> + * PageHuge() only returns true for hugetlbfs pages, but not for normal or
+> + * transparent huge pages.  See the PageTransHuge() documentation for more
+> + * details.
+> + */
+>  int PageHuge(struct page *page)
+>  {
+>  	compound_page_dtor *dtor;
+> _
