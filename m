@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab2JCPQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:16:21 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:36963 "EHLO zmc.proxad.net"
+	id S932796Ab2JCPQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:16:23 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:36962 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932512Ab2JCPN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932606Ab2JCPN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Oct 2012 11:13:58 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gabor Juhos <juhosg@openwrt.org>, Hauke Mehrtens <hauke@hauke-m.de>,
+        Kelvin Cheung <keguang.zhang@gmail.com>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/25] USB: ehci: remove IXP4xx EHCI driver
-Date: Wed,  3 Oct 2012 17:02:56 +0200
-Message-Id: <1349276601-8371-2-git-send-email-florian@openwrt.org>
+Subject: [PATCH 06/25] USB: ehci: allow need_io_watchdog to be passed to ehci-platform driver
+Date: Wed,  3 Oct 2012 17:03:01 +0200
+Message-Id: <1349276601-8371-7-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349276601-8371-1-git-send-email-florian@openwrt.org>
 References: <1349276601-8371-1-git-send-email-florian@openwrt.org>
@@ -21,177 +27,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is not registered by any in-tree user. If needed it can easily
-be registered using the ehci-platform driver with caps_offset set to 0x100.
+And convert all the existing users of ehci-platform to specify a correct
+need_io_watchdog value.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
- drivers/usb/host/ehci-hcd.c    |    5 --
- drivers/usb/host/ehci-ixp4xx.c |  139 ----------------------------------------
- 2 files changed, 144 deletions(-)
- delete mode 100644 drivers/usb/host/ehci-ixp4xx.c
+ arch/mips/ath79/dev-usb.c             |    2 ++
+ arch/mips/loongson1/common/platform.c |    1 +
+ arch/mips/netlogic/xlr/platform.c     |    1 +
+ drivers/usb/host/bcma-hcd.c           |    1 +
+ drivers/usb/host/ehci-platform.c      |    1 +
+ drivers/usb/host/ssb-hcd.c            |    1 +
+ include/linux/usb/ehci_pdriver.h      |    3 +++
+ 7 files changed, 10 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 6bf6c42..442f774 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
- #define	PLATFORM_DRIVER		ehci_orion_driver
- #endif
+diff --git a/arch/mips/ath79/dev-usb.c b/arch/mips/ath79/dev-usb.c
+index b2a2311..42b259b 100644
+--- a/arch/mips/ath79/dev-usb.c
++++ b/arch/mips/ath79/dev-usb.c
+@@ -71,12 +71,14 @@ static u64 ath79_ehci_dmamask = DMA_BIT_MASK(32);
+ static struct usb_ehci_pdata ath79_ehci_pdata_v1 = {
+ 	.has_synopsys_hc_bug	= 1,
+ 	.port_power_off		= 1,
++	.need_io_watchdog	= 1,
+ };
  
--#ifdef CONFIG_ARCH_IXP4XX
--#include "ehci-ixp4xx.c"
--#define	PLATFORM_DRIVER		ixp4xx_ehci_driver
--#endif
--
- #ifdef CONFIG_USB_W90X900_EHCI
- #include "ehci-w90x900.c"
- #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
-diff --git a/drivers/usb/host/ehci-ixp4xx.c b/drivers/usb/host/ehci-ixp4xx.c
-deleted file mode 100644
-index f224c0a..0000000
---- a/drivers/usb/host/ehci-ixp4xx.c
-+++ /dev/null
-@@ -1,139 +0,0 @@
--/*
-- * IXP4XX EHCI Host Controller Driver
-- *
-- * Author: Vladimir Barinov <vbarinov@embeddedalley.com>
-- *
-- * Based on "ehci-fsl.c" by Randy Vinson <rvinson@mvista.com>
-- *
-- * 2007 (c) MontaVista Software, Inc. This file is licensed under
-- * the terms of the GNU General Public License version 2. This program
-- * is licensed "as is" without any warranty of any kind, whether express
-- * or implied.
-- */
--
--#include <linux/platform_device.h>
--
--static int ixp4xx_ehci_init(struct usb_hcd *hcd)
--{
--	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--	int retval = 0;
--
--	ehci->big_endian_desc = 1;
--	ehci->big_endian_mmio = 1;
--
--	ehci->caps = hcd->regs + 0x100;
--
--	hcd->has_tt = 1;
--
--	retval = ehci_setup(hcd);
--	if (retval)
--		return retval;
--
--	ehci_port_power(ehci, 0);
--
--	return retval;
--}
--
--static const struct hc_driver ixp4xx_ehci_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "IXP4XX EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--	.reset			= ixp4xx_ehci_init,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
--	.get_frame_number	= ehci_get_frame,
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--#if defined(CONFIG_PM)
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
--};
--
--static int ixp4xx_ehci_probe(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd;
--	const struct hc_driver *driver = &ixp4xx_ehci_hc_driver;
--	struct resource *res;
--	int irq;
--	int retval;
--
--	if (usb_disabled())
--		return -ENODEV;
--
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no IRQ. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--	irq = res->start;
--
--	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
--	if (!hcd) {
--		retval = -ENOMEM;
--		goto fail_create_hcd;
--	}
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no register addr. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		retval = -ENODEV;
--		goto fail_request_resource;
--	}
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		retval = -EFAULT;
--		goto fail_request_resource;
--	}
--
--	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval)
--		goto fail_request_resource;
--
--	return retval;
--
--fail_request_resource:
--	usb_put_hcd(hcd);
--fail_create_hcd:
--	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev), retval);
--	return retval;
--}
--
--static int ixp4xx_ehci_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	usb_put_hcd(hcd);
--
--	return 0;
--}
--
--MODULE_ALIAS("platform:ixp4xx-ehci");
--
--static struct platform_driver ixp4xx_ehci_driver = {
--	.probe = ixp4xx_ehci_probe,
--	.remove = ixp4xx_ehci_remove,
--	.driver = {
--		.name = "ixp4xx-ehci",
--	},
--};
+ static struct usb_ehci_pdata ath79_ehci_pdata_v2 = {
+ 	.caps_offset		= 0x100,
+ 	.has_tt			= 1,
+ 	.port_power_off		= 1,
++	.need_io_watchdog	= 1,
+ };
+ 
+ static struct platform_device ath79_ehci_device = {
+diff --git a/arch/mips/loongson1/common/platform.c b/arch/mips/loongson1/common/platform.c
+index 2874bf2..fa6b5d6 100644
+--- a/arch/mips/loongson1/common/platform.c
++++ b/arch/mips/loongson1/common/platform.c
+@@ -110,6 +110,7 @@ static struct resource ls1x_ehci_resources[] = {
+ 
+ static struct usb_ehci_pdata ls1x_ehci_pdata = {
+ 	.port_power_off	= 1,
++	.need_io_watchdog = 1,
+ };
+ 
+ struct platform_device ls1x_ehci_device = {
+diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+index 1731dfd..320b7ef 100644
+--- a/arch/mips/netlogic/xlr/platform.c
++++ b/arch/mips/netlogic/xlr/platform.c
+@@ -126,6 +126,7 @@ static u64 xls_usb_dmamask = ~(u32)0;
+ 
+ static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+ 	.caps_offset	= 0,
++	.need_io_watchdog = 1,
+ };
+ 
+ static struct platform_device xls_usb_ehci_device =
+diff --git a/drivers/usb/host/bcma-hcd.c b/drivers/usb/host/bcma-hcd.c
+index 443da21..e404f5c 100644
+--- a/drivers/usb/host/bcma-hcd.c
++++ b/drivers/usb/host/bcma-hcd.c
+@@ -160,6 +160,7 @@ static void __devinit bcma_hcd_init_chip(struct bcma_device *dev)
+ }
+ 
+ static const struct usb_ehci_pdata ehci_pdata = {
++	.need_io_watchdog	= 1,
+ };
+ 
+ static const struct usb_ohci_pdata ohci_pdata = {
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 764e010..08d5dec 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -32,6 +32,7 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
+ 	ehci->has_synopsys_hc_bug = pdata->has_synopsys_hc_bug;
+ 	ehci->big_endian_desc = pdata->big_endian_desc;
+ 	ehci->big_endian_mmio = pdata->big_endian_mmio;
++	ehci->need_io_watchdog = pdata->need_io_watchdog;
+ 
+ 	ehci->caps = hcd->regs + pdata->caps_offset;
+ 	retval = ehci_setup(hcd);
+diff --git a/drivers/usb/host/ssb-hcd.c b/drivers/usb/host/ssb-hcd.c
+index c2a29fa..77e2851 100644
+--- a/drivers/usb/host/ssb-hcd.c
++++ b/drivers/usb/host/ssb-hcd.c
+@@ -96,6 +96,7 @@ static u32 __devinit ssb_hcd_init_chip(struct ssb_device *dev)
+ }
+ 
+ static const struct usb_ehci_pdata ehci_pdata = {
++	.need_io_watchdog	 = 1,
+ };
+ 
+ static const struct usb_ohci_pdata ohci_pdata = {
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index c9d09f8..988504d 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -29,6 +29,8 @@
+  *			initialization.
+  * @port_power_off:	set to 1 if the controller needs to be powered down
+  *			after initialization.
++ * @need_io_watchdog:	set to 1 if the controller needs the I/O watchdog to
++ *			run.
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -41,6 +43,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	port_power_on:1;
+ 	unsigned	port_power_off:1;
++	unsigned	need_io_watchdog:1;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
 -- 
 1.7.9.5
 
