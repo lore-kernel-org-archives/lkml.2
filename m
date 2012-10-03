@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab2JCPZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:25:28 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48347 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab2JCPZ1 (ORCPT
+	id S933151Ab2JCPXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:23:14 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46411 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932577Ab2JCPXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:25:27 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Manuel Lauss <manuel.lauss@gmail.com>
-Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 24/25] MIPS: Alchemy: use the OHCI platform driver
-Date: Wed, 03 Oct 2012 17:24:25 +0200
-Message-ID: <2608261.j829MQZAuC@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAOLZvyHyQGZ=Rs1=k07Saq16aZcntUe8N0Fc5iMoeOTeMpjcSw@mail.gmail.com>
-References: <1349276601-8371-1-git-send-email-florian@openwrt.org> <1349276601-8371-26-git-send-email-florian@openwrt.org> <CAOLZvyHyQGZ=Rs1=k07Saq16aZcntUe8N0Fc5iMoeOTeMpjcSw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 3 Oct 2012 11:23:10 -0400
+Message-ID: <1349277786.2404.24.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [Bug 48241] New: oops when setting up LVM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: bugzilla-daemon@bugzilla.kernel.org
+Cc: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 03 Oct 2012 16:23:06 +0100
+In-Reply-To: <bug-48241-11613@https.bugzilla.kernel.org/>
+References: <bug-48241-11613@https.bugzilla.kernel.org/>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 October 2012 17:21:37 Manuel Lauss wrote:
-> On Wed, Oct 3, 2012 at 5:03 PM, Florian Fainelli <florian@openwrt.org> wrote:
-> > This also greatly simplifies the power_{on,off} callbacks and make them
-> > work on platform device id instead of checking the OHCI controller base
-> > address like what was done in ohci-au1xxx.c.
+On Wed, 2012-10-03 at 15:04 +0000, bugzilla-daemon@bugzilla.kernel.org
+wrote:
+> https://bugzilla.kernel.org/show_bug.cgi?id=48241
 > 
-> That was by design -- the base address is far more reliable in identifying 
-the
-> correct controller instance than the platform device id.   There are systems
-> in the field which don't use the alchemy/common/platform.c file at all.
+>            Summary: oops when setting up LVM
+>            Product: IO/Storage
+>            Version: 2.5
+>     Kernel Version: 3.6.0-next-20121003
+>           Platform: All
+>         OS/Version: Linux
+>               Tree: Mainline
+>             Status: NEW
+>           Severity: normal
+>           Priority: P1
+>          Component: SCSI
+>         AssignedTo: linux-scsi@vger.kernel.org
+>         ReportedBy: daniel.santos@pobox.com
+>         Regression: No
+> 
+> 
+> Created an attachment (id=81921)
+>  --> (https://bugzilla.kernel.org/attachment.cgi?id=81921)
+> image of oops
 
-Fair enough, but the way it was done previously was very error-prone if the 
-base address changed for any reason in the platform code, and you did not 
-notice it had to be changed in the OHCI driver too, then it simply did not 
-work. By systems in the field you mean out of tree users? If so, I'd say that 
-it's up to you to get them maintained or merged.
---
-Florian
+The image says the RIP is at kthread_data + 0xb
+
+That implies something went wrong within the workqueue or kthread
+systems, I've cc'd linux-kernel, but it's a bit of a vague thing to go
+on and could conceivably be a hardware issue (or some weird thread
+interaction in linux-next).
+
+The first question would be "does it happen in vanilla 3.6"?
+
+James
+
+
