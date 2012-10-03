@@ -1,126 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab2JCQjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:39:15 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64905 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2JCQjO (ORCPT
+	id S1755213Ab2JCQlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:41:36 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:19963 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab2JCQlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:39:14 -0400
+	Wed, 3 Oct 2012 12:41:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
+   d="scan'208";a="14921334"
+Message-ID: <1349282492.650.185.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
+ for PV on HVM guests
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Date: Wed, 3 Oct 2012 17:41:32 +0100
+In-Reply-To: <1349280814.650.178.camel@zakaz.uk.xensource.com>
+References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
+	 <1349272182.650.150.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
+	 <1349272482.650.151.camel@zakaz.uk.xensource.com>
+	 <20121003141116.GA10633@phenom.dumpdata.com>
+	 <1349276431.650.156.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>
+	 <1349279862.650.171.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1210031658120.29232@kaball.uk.xensource.com>
+	 <1349280814.650.178.camel@zakaz.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <506C562E.5090909@redhat.com>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
- <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com>
- <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com>
- <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
- <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
- <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com>
- <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com> <506C562E.5090909@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 3 Oct 2012 09:38:52 -0700
-X-Google-Sender-Auth: h89a_UDBDuPgQv7_DeMKdH4FpfU
-Message-ID: <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>
-Content-Type: multipart/mixed; boundary=e89a8f838ed95d852104cb2a47f8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f838ed95d852104cb2a47f8
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, 2012-10-03 at 17:13 +0100, Ian Campbell wrote:
+> On Wed, 2012-10-03 at 17:05 +0100, Stefano Stabellini wrote:
+> > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > On Wed, 2012-10-03 at 16:48 +0100, Stefano Stabellini wrote:
+> > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > > > On Wed, 2012-10-03 at 15:11 +0100, Konrad Rzeszutek Wilk wrote:
+> > > > > > On Wed, Oct 03, 2012 at 02:54:42PM +0100, Ian Campbell wrote:
+> > > > > > > On Wed, 2012-10-03 at 14:51 +0100, Stefano Stabellini wrote:
+> > > > > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > > > > > > > On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
+> > > > > > > > > > PV on HVM guests don't have a start_info page mapped by Xen, so
+> > > > > > > > > > xen_start_info is just NULL for them.
+> > > > > > > > > > That is problem because other parts of the code expect xen_start_info to
+> > > > > > > > > > point to something valid, for example xen_initial_domain() is defined as
+> > > > > > > > > > follow:
+> > > > > > > > > > 
+> > > > > > > > > > #define xen_initial_domain()    (xen_domain() && \
+> > > > > > > > > >                  xen_start_info->flags & SIF_INITDOMAIN)
+> > > > > > > > > 
+> > > > > > > > > But anyone who calls this before xen_start_info is setup is going to get
+> > > > > > > > > a bogus result, specifically in this case they will think they are domU
+> > > > > > > > > when in reality they are dom0 -- wouldn't it be better to fix those
+> > > > > > > > > callsites?
+> > > > > > > > 
+> > > > > > > > That cannot be the case because setting up xen_start_info is the very
+> > > > > > > > first thing that is done, before even calling to C.
+> > > > > > > 
+> > > > > > > On PV, yes, but you are trying to fix PVHVM here, no?
+> > > > > > > 
+> > > > > > > Otherwise if this is always set before calling into C then what is the
+> > > > > > > purpose of this patch?
+> > > > > > 
+> > > > > > to fix this - as PVHVM has it set to NULL and we end up de-referencing
+> > > > > > the xen_start_info and crashing. As so::
+> > > > > > 
+> > > > > 
+> > > > > Right, so returning to my original point: The caller here is calling
+> > > > > xen_initial_domain() *before* start info is setup. This is bogus and is
+> > > > > your actual bug, all this patch does is hide that real issue.
+> > > > 
+> > > > That is because xen_start_info wasn't setup at all for PV on HVM guests.
+> > > > 
+> > > > The real reason is that PV on HVM guests don't have one, but that is
+> > > > another matter. Until we get rid of all the references to xen_start_info
+> > > > outside of PV specific code, we should just assume that there is one,
+> > > > and that is already setup.
+> > > > 
+> > > > One day not too far from now, we might refactor the code to never
+> > > > reference xen_start_info directly, but I don't think that now is the
+> > > > time for that. Also consider that this is the same thing we do on ARM.
+> > > 
+> > > We actual fill in the dummy start info with valid information on ARM
+> > > though, we don't just leave it full of zeroes.
+> > > 
+> > > If we do start out with start_info pointing to an uninitialised
+> > > start_info on ARM too then I would argue that this is also a mistake.
+> > 
+> > Yes, we do point xen_start_info to an uninitialised start_info on ARM
+> > too (I don't think is a mistake). Then when and if we have more
+> > information we write them to start_info.
+> 
+> So callers of xen_initial_domain in dom0 before xen_guest_init is called
+> get the wrong result?
+> 
+> That sounds like a mistake to me.
 
-On Wed, Oct 3, 2012 at 8:13 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
->
-> Yes. The issue was noticed with media drivers when people started using the
-> drivers on Fedora 17, witch came with udev-182. There's an open
-> bugzilla there:
->         https://bugzilla.redhat.com/show_bug.cgi?id=827538
+How about (modulo my not having looked up the actual names of the
+constants etc):
 
-Yeah, that bugzilla shows the problem with Kay as a maintainer too,
-not willing to own up to problems he caused.
+	#define xen_initial_domain() (xen_domain() && arch_is_initial_domain())
 
-Can you actually see the problem? I did add the attached patch as an
-attachment to the bugzilla, so the reporter there may be able to test
-it, but it's been open for a long while..
+on x86:
+	int arch_is_initial_domain(void)
+	{
+		/* The initial domain is always PV and
+		 * therefore start_info is always set for it.
+		 */
+		return start_info && start_info->flags & SIF_INITDOMAIN;
+	}
+on ARM:
+	int arch_is_initial_domain(void)
+	{
+		static is_initial = -1;
+		if (is_initial == -1)
+			is_initial = HVM_param_get(HVMPARAM_DOM0)
+		return is_initial;
+	}
 
-Anyway. Attached is a really stupid patch that tries to do the "direct
-firmware load" as suggested by Ivan. It has not been tested very
-extensively at all (but I did test that it loaded the brcmsmac
-firmware images on my laptop so it has the *potential* to work).
 
-It has a few extra printk's sprinkled in (to show whether it does
-anything or not), and it has a few other issues, but it might be worth
-testing as a starting point.
-
-We are apparently better off trying to avoid udev like the plague.
-Doing something very similar to this for module loading is probably a
-good idea too.
-
-I'm adding Ming Lei to the participants too, because hooking into the
-firmware loader like this means that the image doesn't get cached.
-Which is sad. I'm hoping Ming Lei might be open to trying to fix that.
-
-Hmm?
-
-                   Linus
-
---e89a8f838ed95d852104cb2a47f8
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h7unmexf0
-
-IGRyaXZlcnMvYmFzZS9maXJtd2FyZV9jbGFzcy5jIHwgNTkgKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrLQogMSBmaWxlIGNoYW5nZWQsIDU4IGluc2VydGlvbnMoKyks
-IDEgZGVsZXRpb24oLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2Jhc2UvZmlybXdhcmVfY2xhc3Mu
-YyBiL2RyaXZlcnMvYmFzZS9maXJtd2FyZV9jbGFzcy5jCmluZGV4IDZlMjEwODAyYzM3Yi4uMmZm
-Y2I0MDMwMDY1IDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jhc2UvZmlybXdhcmVfY2xhc3MuYworKysg
-Yi9kcml2ZXJzL2Jhc2UvZmlybXdhcmVfY2xhc3MuYwpAQCAtNTUsNiArNTUsNTQgQEAgc3RhdGlj
-IGJvb2wgZndfZ2V0X2J1aWx0aW5fZmlybXdhcmUoc3RydWN0IGZpcm13YXJlICpmdywgY29uc3Qg
-Y2hhciAqbmFtZSkKIAlyZXR1cm4gZmFsc2U7CiB9CiAKK3N0YXRpYyBib29sIGZ3X3JlYWRfZmls
-ZV9jb250ZW50cyhzdHJ1Y3QgZmlsZSAqZmlsZSwgc3RydWN0IGZpcm13YXJlICpmdykKK3sKKwls
-b2ZmX3Qgc2l6ZSwgcG9zOworCXN0cnVjdCBpbm9kZSAqaW5vZGUgPSBmaWxlLT5mX2RlbnRyeS0+
-ZF9pbm9kZTsKKwljaGFyICpidWY7CisKKwlpZiAoIVNfSVNSRUcoaW5vZGUtPmlfbW9kZSkpCisJ
-CXJldHVybiBmYWxzZTsKKwlzaXplID0gaV9zaXplX3JlYWQoaW5vZGUpOworCWJ1ZiA9IHZtYWxs
-b2Moc2l6ZSk7CisJaWYgKCFidWYpCisJCXJldHVybiBmYWxzZTsKKwlwb3MgPSAwOworCWlmICh2
-ZnNfcmVhZChmaWxlLCBidWYsIHNpemUsICZwb3MpICE9IHNpemUpIHsKKwkJdmZyZWUoYnVmKTsK
-KwkJcmV0dXJuIGZhbHNlOworCX0KKwlmdy0+ZGF0YSA9IGJ1ZjsKKwlmdy0+c2l6ZSA9IHNpemU7
-CisJcmV0dXJuIHRydWU7Cit9CisKK3N0YXRpYyBib29sIGZ3X2dldF9maWxlc3lzdGVtX2Zpcm13
-YXJlKHN0cnVjdCBmaXJtd2FyZSAqZncsIGNvbnN0IGNoYXIgKm5hbWUpCit7CisJaW50IGk7CisJ
-Ym9vbCBzdWNjZXNzID0gZmFsc2U7CisJY29uc3QgY2hhciAqZndfcGF0aFtdID0geyAiL2xpYi9m
-aXJtd2FyZS91cGRhdGUiLCAiL2Zpcm13YXJlIiwgIi9saWIvZmlybXdhcmUiIH07CisJY2hhciAq
-cGF0aCA9IF9fZ2V0bmFtZSgpOworCitwcmludGsoIlRyeWluZyB0byBsb2FkIGZ3ICclcycgIiwg
-bmFtZSk7CisJZm9yIChpID0gMDsgaSA8IEFSUkFZX1NJWkUoZndfcGF0aCk7IGkrKykgeworCQlz
-dHJ1Y3QgZmlsZSAqZmlsZTsKKwkJc25wcmludGYocGF0aCwgUEFUSF9NQVgsICIlcy8lcyIsIGZ3
-X3BhdGhbaV0sIG5hbWUpOworCisJCWZpbGUgPSBmaWxwX29wZW4ocGF0aCwgT19SRE9OTFksIDAp
-OworCQlpZiAoSVNfRVJSKGZpbGUpKQorCQkJY29udGludWU7CitwcmludGsoImZyb20gZmlsZSAn
-JXMnICIsIHBhdGgpOworCQlzdWNjZXNzID0gZndfcmVhZF9maWxlX2NvbnRlbnRzKGZpbGUsIGZ3
-KTsKKwkJZmlscF9jbG9zZShmaWxlLCBOVUxMKTsKKwkJaWYgKHN1Y2Nlc3MpCisJCQlicmVhazsK
-Kwl9CitwcmludGsoIiAlcy5cbiIsIHN1Y2Nlc3MgPyAiT2siIDogImZhaWxlZCIpOworCV9fcHV0
-bmFtZShwYXRoKTsKKwlyZXR1cm4gc3VjY2VzczsKK30KKwogc3RhdGljIGJvb2wgZndfaXNfYnVp
-bHRpbl9maXJtd2FyZShjb25zdCBzdHJ1Y3QgZmlybXdhcmUgKmZ3KQogewogCXN0cnVjdCBidWls
-dGluX2Z3ICpiX2Z3OwpAQCAtMzQ2LDcgKzM5NCwxMSBAQCBzdGF0aWMgc3NpemVfdCBmaXJtd2Fy
-ZV9sb2FkaW5nX3Nob3coc3RydWN0IGRldmljZSAqZGV2LAogLyogZmlybXdhcmUgaG9sZHMgdGhl
-IG93bmVyc2hpcCBvZiBwYWdlcyAqLwogc3RhdGljIHZvaWQgZmlybXdhcmVfZnJlZV9kYXRhKGNv
-bnN0IHN0cnVjdCBmaXJtd2FyZSAqZncpCiB7Ci0JV0FSTl9PTighZnctPnByaXYpOworCS8qIExv
-YWRlZCBkaXJlY3RseT8gKi8KKwlpZiAoIWZ3LT5wcml2KSB7CisJCXZmcmVlKGZ3LT5kYXRhKTsK
-KwkJcmV0dXJuOworCX0KIAlmd19mcmVlX2J1Zihmdy0+cHJpdik7CiB9CiAKQEAgLTcwOSw2ICs3
-NjEsMTEgQEAgX3JlcXVlc3RfZmlybXdhcmVfcHJlcGFyZShjb25zdCBzdHJ1Y3QgZmlybXdhcmUg
-KipmaXJtd2FyZV9wLCBjb25zdCBjaGFyICpuYW1lLAogCQlyZXR1cm4gTlVMTDsKIAl9CiAKKwlp
-ZiAoZndfZ2V0X2ZpbGVzeXN0ZW1fZmlybXdhcmUoZmlybXdhcmUsIG5hbWUpKSB7CisJCWRldl9k
-YmcoZGV2aWNlLCAiZmlybXdhcmU6IGRpcmVjdC1sb2FkaW5nIGZpcm13YXJlICVzXG4iLCBuYW1l
-KTsKKwkJcmV0dXJuIE5VTEw7CisJfQorCiAJcmV0ID0gZndfbG9va3VwX2FuZF9hbGxvY2F0ZV9i
-dWYobmFtZSwgJmZ3X2NhY2hlLCAmYnVmKTsKIAlpZiAoIXJldCkKIAkJZndfcHJpdiA9IGZ3X2Ny
-ZWF0ZV9pbnN0YW5jZShmaXJtd2FyZSwgbmFtZSwgZGV2aWNlLAo=
---e89a8f838ed95d852104cb2a47f8--
