@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab2JCW7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 18:59:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56389 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab2JCW7j (ORCPT
+	id S932372Ab2JCXAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:00:21 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31145 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab2JCXAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 18:59:39 -0400
-Date: Thu, 4 Oct 2012 07:59:30 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20121003225930.GF19248@localhost>
-References: <20120927142822.GG3429@suse.de>
- <20120927144942.GB4251@mtj.dyndns.org>
- <50646977.40300@parallels.com>
- <20120927174605.GA2713@localhost>
- <50649EAD.2050306@parallels.com>
- <20120930075700.GE10383@mtj.dyndns.org>
- <20120930080249.GF10383@mtj.dyndns.org>
- <1348995388.2458.8.camel@dabdike.int.hansenpartnership.com>
- <20120930103732.GK10383@mtj.dyndns.org>
- <5069584A.8090809@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5069584A.8090809@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 3 Oct 2012 19:00:18 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/4] ACPI: kill acpi_pci_root_start
+Date: Wed,  3 Oct 2012 16:00:10 -0700
+Message-Id: <1349305214-3241-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
+References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
+Now acpi_pci_root_driver has two ops: .add and .start, aka acpi_pci_root_add
+and acpi_pci_root_start.
 
-On Mon, Oct 01, 2012 at 12:46:02PM +0400, Glauber Costa wrote:
-> > Yeah, it will need some hooks.  For dentry and inode, I think it would
-> > be pretty well isolated tho.  Wasn't it?
-> 
-> We would still need something for the stack. For open files, and for
-> everything that becomes a potential problem. We then end up with 35
-> different knobs instead of one. One of the perceived advantages of this
-> approach, is that it condenses as much data as a single knob as
-> possible, reducing complexity and over flexibility.
+That is for hotplug handling: .add need to return early to make sure all
+acpi device could be created and added early. So .start could device_add
+pci device that are found in acpi_pci_root_add/pci_acpi_scan_root().
 
-Oh, I didn't mean to use object-specific counting for all of them.
-Most resources don't have such common misaccounting problem.  I mean,
-for stack, it doesn't exist by definition (other than cgroup
-migration).  There's no reason to use anything other than first-use
-kmem based accounting for them.  My point was that for particularly
-problematic ones like dentry/inode, it might be better to treat them
-differently.
+That is holding pci devics to be out of devices for while.
 
-Thanks.
+We could use bus notifier to handle hotplug case.
+	CONFIG_HOTPLUG is enabled always now.
+Need to add drivers_autoprobe bit in acpi_device to hold attaching drivers
+for acpi_devices, so could make sure all acpi_devices get created at first.
+Then acpi_bus_attach() that is called from acpi_bus_add will attach driver
+for all acpi_devices that are just created.
+
+That make the logic more simple: hotplug path handling just like booting path
+that drivers are attached after all acpi device get created.
+
+At last we could remove all acpi_bus_start workaround.
+
+Thanks
+
+Yinghai
+
+Yinghai Lu (4):
+  ACPI: add drivers_autoprobe in struct acpi_device
+  ACPI: use device drivers_autoprobe to delay loading acpi drivers
+  PCI, ACPI: Remove not used acpi_pci_root_start()
+  ACPI: remove acpi_op_start workaround
+
+ drivers/acpi/pci_root.c |   27 +++------
+ drivers/acpi/scan.c     |  145 ++++++++++++++++++++++-------------------------
+ include/acpi/acpi_bus.h |    9 +---
+ 3 files changed, 77 insertions(+), 104 deletions(-)
 
 -- 
-tejun
+1.7.7
+
