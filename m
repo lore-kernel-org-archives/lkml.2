@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab2JCO4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:56:43 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47417 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932354Ab2JCOzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:55:11 -0400
-From: Matt Porter <mporter@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: [PATCH v3 1/6] ARM: davinci: sram: ioremap the davinci_soc_info specified sram regions
-Date: Wed,  3 Oct 2012 10:55:28 -0400
-Message-Id: <1349276133-26408-2-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349276133-26408-1-git-send-email-mporter@ti.com>
-References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+	id S932549Ab2JCO5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:57:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932354Ab2JCO5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:57:44 -0400
+Message-ID: <506C5239.4080209@redhat.com>
+Date: Wed, 03 Oct 2012 16:56:57 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Gleb Natapov <gleb@redhat.com>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <5060851E.1030404@redhat.com> <506166B4.4010207@linux.vnet.ibm.com> <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <CAJocwcc19F+PtsQ5okGMvYeVnkEigpZRpwWY9JgeRPFqfcVoXA@mail.gmail.com> <506540C7.9070105@linux.vnet.ibm.com> <50680049.5020206@redhat.com> <20120930110755.GB1009@redhat.com> <50682945.3060309@redhat.com> <20121003141739.GA15253@linux.vnet.ibm.com>
+In-Reply-To: <20121003141739.GA15253@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Gardiner <bengardiner@nanometrics.ca>
+On 10/03/2012 04:17 PM, Raghavendra K T wrote:
+> * Avi Kivity <avi@redhat.com> [2012-09-30 13:13:09]:
+> 
+>> On 09/30/2012 01:07 PM, Gleb Natapov wrote:
+>> > On Sun, Sep 30, 2012 at 10:18:17AM +0200, Avi Kivity wrote:
+>> >> On 09/28/2012 08:16 AM, Raghavendra K T wrote:
+>> >> > 
+>> >> >>
+>> >> >>     +struct pv_sched_info {
+>> >> >>     +       unsigned long   sched_bitmap;
+>> >> > 
+>> >> > Thinking, whether we need something similar to cpumask here?
+>> >> > Only thing is we are representing guest (v)cpumask.
+>> >> > 
+>> >> 
+>> >> DECLARE_BITMAP(sched_bitmap, KVM_MAX_VCPUS)
+>> >> 
+>> > vcpu_id can be greater than KVM_MAX_VCPUS.
+>> 
+>> Use the index into the vcpu table as the bitmap index then.  In fact
+>> it's better because then the lookup to get the vcpu pointer is trivial.
+> 
+> Did you mean, while setting the bitmap,
+> 
+> we should do 
+> for (i = 1..n)
+> if (kvm->vcpus[i] == vcpu) set ith position in bitmap?
 
-The current davinci init sets up SRAM in iotables. There has been an observed
-failure to boot a da850 with 128K specified in the iotable.
+You can store i in the vcpu itself:
 
-Make the davinci sram allocator -- now based on RMK's consolidated SRAM
-support -- do an ioremap of the region specified by the entries in
-davinci_soc_info before registering with gen_pool_add_virt().
+  set_bit(vcpu->index, &kvm->preempted);
 
-This commit breaks runtime of davinci boards since the regions that
-the sram init is now trying to ioremap have been iomapped by their
-iotable entries. The iotable entries will be removed in the patches
-to come.
+> 
+> I just wanted to know whether there is any easy way to convert from 
+> vcpu  pointer to index in kvm vcpu table.
+> 
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-[rebased to mainline as the consolidated SRAM support was dropped]
-Signed-off-by: Matt Porter <mporter@ti.com>
----
- arch/arm/mach-davinci/sram.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/sram.c b/arch/arm/mach-davinci/sram.c
-index db0f778..0e8ca4f 100644
---- a/arch/arm/mach-davinci/sram.c
-+++ b/arch/arm/mach-davinci/sram.c
-@@ -10,6 +10,7 @@
-  */
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/io.h>
- #include <linux/genalloc.h>
- 
- #include <mach/common.h>
-@@ -32,7 +33,7 @@ void *sram_alloc(size_t len, dma_addr_t *dma)
- 		return NULL;
- 
- 	if (dma)
--		*dma = dma_base + (vaddr - SRAM_VIRT);
-+		*dma = gen_pool_virt_to_phys(sram_pool, vaddr);
- 	return (void *)vaddr;
- 
- }
-@@ -53,8 +54,10 @@ EXPORT_SYMBOL(sram_free);
-  */
- static int __init sram_init(void)
- {
-+	phys_addr_t phys = davinci_soc_info.sram_dma;
- 	unsigned len = davinci_soc_info.sram_len;
- 	int status = 0;
-+	void *addr;
- 
- 	if (len) {
- 		len = min_t(unsigned, len, SRAM_SIZE);
-@@ -62,8 +65,16 @@ static int __init sram_init(void)
- 		if (!sram_pool)
- 			status = -ENOMEM;
- 	}
--	if (sram_pool)
--		status = gen_pool_add(sram_pool, SRAM_VIRT, len, -1);
-+
-+	if (sram_pool) {
-+		addr = ioremap(phys, len);
-+		if (!addr)
-+			return -ENOMEM;
-+		if((status = gen_pool_add_virt(sram_pool, (unsigned)addr,
-+					       phys, len, -1)))
-+			iounmap(addr);
-+	}
-+
- 	WARN_ON(status < 0);
- 	return status;
- }
+
 -- 
-1.7.9.5
-
+error compiling committee.c: too many arguments to function
