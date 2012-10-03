@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab2JCPP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 11:15:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42278 "EHLO mx1.redhat.com"
+	id S933009Ab2JCPTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 11:19:40 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:36932 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932624Ab2JCPOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 11:14:02 -0400
-Message-ID: <506C562E.5090909@redhat.com>
-Date: Wed, 03 Oct 2012 12:13:50 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
- request_firmware_nowait()
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com> <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com> <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com> <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com> <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com> <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
-In-Reply-To: <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932556Ab2JCPNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 11:13:54 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 09/25] MIPS: Octeon: use ehci-platform driver
+Date: Wed,  3 Oct 2012 17:03:04 +0200
+Message-Id: <1349276601-8371-10-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349276601-8371-1-git-send-email-florian@openwrt.org>
+References: <1349276601-8371-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 02-10-2012 19:47, Linus Torvalds escreveu:
-> On Tue, Oct 2, 2012 at 3:23 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>
->> which went into udev release 187 which I think corresponds to the place
->> when people started having problems, right Mauro?
-> 
-> According to what I've seen, people started complaining in 182, not 187.
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ arch/mips/cavium-octeon/octeon-platform.c |   43 ++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
-Yes. The issue was noticed with media drivers when people started using the
-drivers on Fedora 17, witch came with udev-182. There's an open
-bugzilla there:
-	https://bugzilla.redhat.com/show_bug.cgi?id=827538
+diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
+index 0938df1..539e1bc 100644
+--- a/arch/mips/cavium-octeon/octeon-platform.c
++++ b/arch/mips/cavium-octeon/octeon-platform.c
+@@ -18,9 +18,11 @@
+ #include <linux/of_platform.h>
+ #include <linux/of_fdt.h>
+ #include <linux/libfdt.h>
++#include <linux/usb/ehci_pdriver.h>
+ 
+ #include <asm/octeon/octeon.h>
+ #include <asm/octeon/cvmx-rnm-defs.h>
++#include <asm/octeon/cvmx-uctlx-defs.h>
+ #include <asm/octeon/cvmx-helper.h>
+ #include <asm/octeon/cvmx-helper-board.h>
+ 
+@@ -169,6 +171,41 @@ out:
+ device_initcall(octeon_rng_device_init);
+ 
+ #ifdef CONFIG_USB
++void octeon2_usb_clocks_start(void);
++void octeon2_usb_clocks_stop(void);
++
++static int octeon_ehci_power_on(struct platform_device *pdev)
++{
++	union cvmx_uctlx_ehci_ctl ehci_ctl;
++
++	octeon2_usb_clocks_start();
++
++	ehci_ctl.u64 = cvmx_read_csr(CVMX_UCTLX_EHCI_CTL(0));
++	/* Use 64-bit addressing. */
++	ehci_ctl.s.ehci_64b_addr_en = 1;
++	ehci_ctl.s.l2c_addr_msb = 0;
++	ehci_ctl.s.l2c_buff_emod = 1; /* Byte swapped. */
++	ehci_ctl.s.l2c_desc_emod = 1; /* Byte swapped. */
++	cvmx_write_csr(CVMX_UCTLX_EHCI_CTL(0), ehci_ctl.u64);
++
++	return 0;
++}
++
++static void octeon_ehci_power_off(struct platform_device *pdev)
++{
++	octeon2_usb_clocks_stop();
++}
++
++static struct usb_ehci_pdata octeon_ehci_pdata = {
++#ifdef __BIG_ENDIAN
++	.big_endian_mmio = 1,
++#endif
++	.port_power_on	= 1,
++	.power_on	= octeon_ehci_power_on,
++	.power_off	= octeon_ehci_power_off,
++};
++
++static u64 octeon_ehci_dma_mask = DMA_BIT_MASK(64);
+ 
+ static int __init octeon_ehci_device_init(void)
+ {
+@@ -190,7 +227,7 @@ static int __init octeon_ehci_device_init(void)
+ 	if (octeon_is_simulation() || usb_disabled())
+ 		return 0; /* No USB in the simulator. */
+ 
+-	pd = platform_device_alloc("octeon-ehci", 0);
++	pd = platform_device_alloc("ehci-platform", 0);
+ 	if (!pd) {
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -207,6 +244,10 @@ static int __init octeon_ehci_device_init(void)
+ 	if (ret)
+ 		goto fail;
+ 
++	pd.dev.platform_data = &octeon_ehci_pdata;
++	pd.dev.coherent_dma_mask = DMA_BIT_MASK(32);
++	pd.dev.dma_mask = &octeon_ehci_dma_mask;
++
+ 	ret = platform_device_add(pd);
+ 	if (ret)
+ 		goto fail;
+-- 
+1.7.9.5
 
-> See for example
-> 
->   http://patchwork.linuxtv.org/patch/13085/
-> 
-> which is a thread where you were involved too..
-> 
-> See also the arch linux thread:
-> 
->   https://bbs.archlinux.org/viewtopic.php?id=134012&p=1
-> 
-> And see this email from Kay Sievers that shows that it was all known
-> about and intentional in the udev camp:
-> 
->   http://www.spinics.net/lists/netdev/msg185742.html
-> 
-> There's a possible patch suggested here:
-> 
->   http://lists.freedesktop.org/archives/systemd-devel/2012-August/006357.html
-> 
-> but quite frankly, I am leery of the fact that the udev maintenance
-> seems to have gone into some "crazy mode" where they have made changes
-> that were known to be problematic, and are pure and utter stupidity.
-> 
-> Having the module init path load the firmware IS THE SENSIBLE AND
-> OBVIOUS THING TO DO for many cases. 
-
-Yes, that is the case for most media devices. Some devices can only be
-detected as a supported device after the firmware load, as we need the
-firmware for the USB (or PCI) bridge to be there, in order to talk with
-the media components under the board's internal I2C bus, as sometimes
-the same USB/PCI ID is used by boards with different internal components.
-
-> The fact that udev people have
-> apparently unilaterally decided that it's somehow wrong is scary.
->
-
-Thanks,
-Mauro
