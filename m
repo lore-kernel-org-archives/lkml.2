@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab2JCSIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:08:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50557 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751247Ab2JCSIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:08:12 -0400
-Date: Wed, 3 Oct 2012 19:08:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, sameo@linux.intel.com,
-        Marek Vasut <marex@denx.de>, ashish.jangam@kpitcummins.com,
-        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mfd: da9052-core: Use regmap_irq_get_virq() and fix
- the probe
-Message-ID: <20121003180808.GH4360@opensource.wolfsonmicro.com>
-References: <1348797458-2562-1-git-send-email-festevam@gmail.com>
- <20120928104944.GB30869@opensource.wolfsonmicro.com>
- <5065B534.7040602@freescale.com>
- <20120928142924.GA22101@opensource.wolfsonmicro.com>
- <CAOMZO5DgOjs06BJZWsEay-jP5pjzMNTZTZnvAvzAd-JD9kqs1g@mail.gmail.com>
- <20120928155121.GA22510@opensource.wolfsonmicro.com>
- <CAOMZO5CZ68vozBi4CZwLqFZreb9-Egnx6vi9RBGxgKJB+B2qwg@mail.gmail.com>
- <20121001102246.GE4360@opensource.wolfsonmicro.com>
- <CAOMZO5AKf0uL9p-cSd7D5XeB6Q9s5EPHDjAgwfkXGGXVLPreMw@mail.gmail.com>
+	id S1753318Ab2JCSJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:09:12 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:34169 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab2JCSJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 14:09:10 -0400
+Date: Wed, 3 Oct 2012 20:08:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Daniel Blueman <daniel@numascale-asia.com>, Ingo Molnar <mingo@redhat.com>,
+        Steffen Persvold <sp@numascale.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@amd64.org>, x86@kernel.org
+Subject: Re: [PATCH] RFC: Fix AMD Northbridge-ID contiguity assumptions
+Message-ID: <20121003180859.GB15939@aftab.osrc.amd.com>
+References: <1349256029-14851-1-git-send-email-daniel@numascale-asia.com>
+ <506C56B2.50505@zytor.com>
+ <CAP-4_fVhkjb=0YdYz37PEg3Or-hbRO8F40tHqEsRCC-pYY_HOg@mail.gmail.com>
+ <506C5EDB.9000107@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOMZO5AKf0uL9p-cSd7D5XeB6Q9s5EPHDjAgwfkXGGXVLPreMw@mail.gmail.com>
-X-Cookie: You look tired.
+In-Reply-To: <506C5EDB.9000107@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 01:04:33PM -0300, Fabio Estevam wrote:
-> On Mon, Oct 1, 2012 at 7:22 AM, Mark Brown
+On Wed, Oct 03, 2012 at 08:50:51AM -0700, H. Peter Anvin wrote:
+> On 10/03/2012 08:30 AM, Daniel Blueman wrote:
+> > >
+> > > Is that "on NumaScale systems"?  If so, please say so rather than trying
+> > > to make it sound generic; if it is not, can you give some other examples?
+> >
+> >It is for Numascale (NumaChip) systems for our purposes.
+> >
+> >Any other systems which interconnect Opterons via address space routing
+> >(needed for >8 HT nodes) will get this benefit. I can't put my hand to
+> >exactly what is out there, but can find out.
+> >
+> 
+> The reason I'm asking is because it is an important bit of the
+> record of the code to know if this is a specific need or a general
+> need.  This may be obvious now, but 5-10 years from now someone will
+> need to know why or what.
+> 
+> The two paragraphs above is exactly what is needed, i.e. "NumaChip
+> or any other design which shares these specific design features:
+> ..."
 
-> > I don't understand what this irq_chip or the custom domain you're adding
-> > are for?
+Absolutely!
 
-> I declared da9052_irq_chip because I do the following:
+And it would be best to put that explanation in the code somewhere
+around node_to_amd_index() so that it is there at a first glance.
 
-> irq_set_chip_and_handler(virq, &da9052_irq_chip, handle_level_irq);
+Btw, I'll review the patch tomorrow since it is a holiday today here.
 
-> I am following the arizona-irq approach.
+I have only two nits for now:
 
-> If this is not suitable, can you please point me to some driver that
-> does not define irq_chip and can still do setup
-> "irq_set_chip_and_handler()"?
+* node is u32, do you really have such big systems with 2^32-1 nodes? Or
+can the max node number fit into a, say, u16 or u8?
 
-Any other regmap-irq user.  The reason the Arizona driver is doing this
-is that it has two interrupt controllers in it, one for the main chip
-and one for the always on domain, which is why it registers two
-regmap-irq domains.  Notice that there's only two subinterrupts in the
-primary domain.
+* node_to_amd_index returns 0 in the unsuccessful case but node index 0
+seems ok to me, i.e. the first element in the array of northbridges. It
+probably should return a negative value rather to signal a failure...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
