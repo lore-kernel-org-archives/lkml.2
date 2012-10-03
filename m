@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2JCXAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 19:00:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31232 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab2JCXAe (ORCPT
+	id S932595Ab2JCXAs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 19:00:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50223 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab2JCXAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 19:00:34 -0400
+	Wed, 3 Oct 2012 19:00:45 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -14,127 +14,94 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 2/4] ACPI: use device drivers_autoprobe to delay loading acpi drivers
-Date: Wed,  3 Oct 2012 16:00:12 -0700
-Message-Id: <1349305214-3241-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 3/4] PCI, ACPI: Remove not used acpi_pci_root_start()
+Date: Wed,  3 Oct 2012 16:00:13 -0700
+Message-Id: <1349305214-3241-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1349305214-3241-1-git-send-email-yinghai@kernel.org>
 References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
  <1349305214-3241-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current acpi driver for pci_root is working like this way for hotplug:
+Now with new acpi_bus_add, we could move code in acpi_pci_root_start into
+acpi_pci_root_add.
 
-	acpi try to enumberate acpi device and create acpi_device for pci_root
-	and loading driver for it, and that drivers .add aka acpi_pci_root_add
-	calls pci_acpi_scan_root to enumerate pci devices but not add those pci
-	devices into device tree to prevent drivers for pci devices get probed.
-
-	Later .start aka acpi_pci_root_start will call pci_bus_add_devices to
-	add pci devices into the tree to make drivers for pci devices get
-	attached or probed.
-
-The reason for that .add must get back for pci_root, so could create acpi_device
-for other pci_devices. otherwise adding the pci device tree early than
-acpi_device will cause binding for acpi/pci failing becuse pci_device can not
-find acpi_dev that is not created yet.
-
-booting path is working becasue driver for acpi driver is registered later,
-that means all acpi_device get created at first, and later when acpi_driver
-get registered, and .add get called, that probe pci devices, when pci devices
-is found, it could find acpi_device and binding will be ok, even
-pci_add_bus_devices in done in acpi_pci_root_add.
-
-That .start design is broken, and it will leave pci devices out of device tree
-for a while.
-
-We could use device drivers_autoprobe and acpi_bus_type notifier to control
-the process to make sure for hot adding path, will have all acpi_device get
-created, then attach acpi driver for acpi_device for pci_root.
-That will make the path more like booting path.
-
-After that we could remove the workaround .start in acpi driver ops.
+After that we could remove acpi_pci_root_start.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/acpi/scan.c |   46 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 45 insertions(+), 1 deletions(-)
+ drivers/acpi/pci_root.c |   27 +++++++++------------------
+ 1 files changed, 9 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index cbb3ed1..1bafa2d 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1474,6 +1474,19 @@ static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
- 		return -ENODEV;
- }
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index bce469c..8d85287 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -47,7 +47,6 @@ ACPI_MODULE_NAME("pci_root");
+ #define ACPI_PCI_ROOT_DEVICE_NAME	"PCI Root Bridge"
+ static int acpi_pci_root_add(struct acpi_device *device);
+ static int acpi_pci_root_remove(struct acpi_device *device, int type);
+-static int acpi_pci_root_start(struct acpi_device *device);
  
-+static void acpi_bus_attach(struct acpi_device *dev)
-+{
-+	struct acpi_device *child;
-+	int ret;
-+
-+	dev->drivers_autoprobe = true;
-+	ret = device_attach(&dev->dev);
-+	WARN_ON(ret < 0);
-+
-+	list_for_each_entry(child, &dev->children, node)
-+		acpi_bus_attach(child);
-+}
-+
- /*
-  * acpi_bus_add and acpi_bus_start
-  *
-@@ -1491,11 +1504,17 @@ acpi_bus_add(struct acpi_device **child,
- 	     struct acpi_device *parent, acpi_handle handle, int type)
- {
- 	struct acpi_bus_ops ops;
-+	int result;
+ #define ACPI_PCIE_REQ_SUPPORT (OSC_EXT_PCI_CONFIG_SUPPORT \
+ 				| OSC_ACTIVE_STATE_PWR_SUPPORT \
+@@ -67,7 +66,6 @@ static struct acpi_driver acpi_pci_root_driver = {
+ 	.ops = {
+ 		.add = acpi_pci_root_add,
+ 		.remove = acpi_pci_root_remove,
+-		.start = acpi_pci_root_start,
+ 		},
+ };
  
- 	memset(&ops, 0, sizeof(ops));
- 	ops.acpi_op_add = 1;
+@@ -451,6 +449,7 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+ 	acpi_status status;
+ 	int result;
+ 	struct acpi_pci_root *root;
++	struct acpi_pci_driver *driver;
+ 	acpi_handle handle;
+ 	struct acpi_device *child;
+ 	u32 flags, base_flags;
+@@ -628,22 +627,6 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+ 	if (device->wakeup.flags.run_wake)
+ 		device_set_run_wake(root->bus->bridge, true);
  
--	return acpi_bus_scan(handle, &ops, child);
-+	result = acpi_bus_scan(handle, &ops, child);
+-	return 0;
+-
+-out_del_root:
+-	mutex_lock(&acpi_pci_root_lock);
+-	list_del(&root->node);
+-	mutex_unlock(&acpi_pci_root_lock);
+-end:
+-	kfree(root);
+-	return result;
+-}
+-
+-static int acpi_pci_root_start(struct acpi_device *device)
+-{
+-	struct acpi_pci_root *root = acpi_driver_data(device);
+-	struct acpi_pci_driver *driver;
+-
+ 	mutex_lock(&acpi_pci_root_lock);
+ 	list_for_each_entry(driver, &acpi_pci_drivers, node)
+ 		if (driver->add)
+@@ -653,6 +636,14 @@ static int acpi_pci_root_start(struct acpi_device *device)
+ 	pci_bus_add_devices(root->bus);
+ 
+ 	return 0;
 +
-+	if (*child)
-+		acpi_bus_attach(*child);
-+
++out_del_root:
++	mutex_lock(&acpi_pci_root_lock);
++	list_del(&root->node);
++	mutex_unlock(&acpi_pci_root_lock);
++end:
++	kfree(root);
 +	return result;
  }
- EXPORT_SYMBOL(acpi_bus_add);
  
-@@ -1636,3 +1655,28 @@ int __init acpi_scan_init(void)
- 
- 	return result;
- }
-+
-+static int acpi_hp_notifier(struct notifier_block *nb,
-+				 unsigned long event, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (event) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		to_acpi_device(dev)->drivers_autoprobe = false;
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block acpi_hp_nb = {
-+	.notifier_call = &acpi_hp_notifier,
-+};
-+
-+static int __init acpi_hp_init(void)
-+{
-+	return bus_register_notifier(&acpi_bus_type, &acpi_hp_nb);
-+}
-+
-+fs_initcall(acpi_hp_init);
+ static int acpi_pci_root_remove(struct acpi_device *device, int type)
 -- 
 1.7.7
 
