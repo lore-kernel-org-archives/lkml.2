@@ -1,65 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab2JCHAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 03:00:12 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50858 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab2JCHAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 03:00:08 -0400
-X-Originating-IP: 217.70.178.148
-X-Originating-IP: 50.43.46.74
-Date: Tue, 2 Oct 2012 23:59:59 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 7/10] compiler{,-gcc4}.h: Introduce __flatten function
- attribute
-Message-ID: <20121003065959.GA4963@leaf>
-References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
- <1348874411-28288-8-git-send-email-daniel.santos@pobox.com>
- <20120929002626.GD13907@jtriplet-mobl1>
- <50664308.6020601@att.net>
- <20120929005043.GD14293@jtriplet-mobl1>
- <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com>
+	id S1755874Ab2JCHCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 03:02:46 -0400
+Received: from ozlabs.org ([203.10.76.45]:48702 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752906Ab2JCHCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 03:02:44 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+In-Reply-To: <cover.1348824232.git.mst@redhat.com>
+References: <cover.1348824232.git.mst@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 03 Oct 2012 16:14:17 +0930
+Message-ID: <87vces2gxq.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210022347500.12717@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 11:49:03PM -0700, David Rientjes wrote:
-> On Fri, 28 Sep 2012, Josh Triplett wrote:
-> 
-> > That issue doesn't relate to __flatten, though; it only relates to
-> > __weak.  Since __flatten (and __compiletime_object_size) will work fine
-> > on 4.1.0 and 4.1.1, don't exclude them just because the definition for
-> > __weak elsewhere in the file excludes them.  That just makes it harder
-> > for anyone who might want to work on the issue with __weak.
-> > 
-> 
-> Nack to the patch since there are no users of it; there's no need to 
-> define every possible gcc function attribute.  If anything actually needs 
-> to use __attribute__((flatten)), then it can introduce it.
+"Michael S. Tsirkin" <mst@redhat.com> writes:
 
-This patch series started out as part of another patch series by Daniel
-Santos that makes use of __flatten; I think Daniel plans to have that
-patch series depend on this one.  Thus, I think it makes sense to
-introduce __flatten at this point.
+> Thinking about Sasha's patches, we can reduce ring usage
+> for virtio net small packets dramatically if we put
+> virtio net header inline with the data.
+> This can be done for free in case guest net stack allocated
+> extra head room for the packet, and I don't see
+> why would this have any downsides.
 
-- Josh Triplett
+I've been wanting to do this for the longest time... but...
+
+> Even though with my recent patches qemu
+> no longer requires header to be the first s/g element,
+> we need a new feature bit to detect this.
+> A trivial qemu patch will be sent separately.
+
+There's a reason I haven't done this.  I really, really dislike "my
+implemention isn't broken" feature bits.  We could have an infinite
+number of them, for each bug in each device.
+
+So my plan was to tie this assumption to the new PCI layout.  And have a
+stress-testing patch like the one below in the kernel (see my virtio-wip
+branch for stuff like this).  Turn it on at boot with
+"virtio_ring.torture" on the kernel commandline.
+
+BTW, I've fixed lguest, but my kvm here (Ubuntu precise, kvm-qemu 1.0)
+is too old.  Building the latest git now...
+
+Cheers,
+Rusty.
+
+Subject: virtio: CONFIG_VIRTIO_DEVICE_TORTURE
+
+Virtio devices are not supposed to depend on the framing of the scatter-gather
+lists, but various implementations did.  Safeguard this in future by adding
+an option to deliberately create perverse descriptors.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
+index 8d5bddb..930a4ea 100644
+--- a/drivers/virtio/Kconfig
++++ b/drivers/virtio/Kconfig
+@@ -5,6 +5,15 @@ config VIRTIO
+ 	  bus, such as CONFIG_VIRTIO_PCI, CONFIG_VIRTIO_MMIO, CONFIG_LGUEST,
+ 	  CONFIG_RPMSG or CONFIG_S390_GUEST.
+ 
++config VIRTIO_DEVICE_TORTURE
++	bool "Virtio device torture tests"
++	depends on VIRTIO && DEBUG_KERNEL
++	help
++	  This makes the virtio_ring implementation creatively change
++	  the format of requests to make sure that devices are
++	  properly implemented.  This will make your virtual machine
++	  slow *and* unreliable!  Say N.
++
+ menu "Virtio drivers"
+ 
+ config VIRTIO_PCI
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index e639584..8893753 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -124,6 +124,149 @@ struct vring_virtqueue
+ 
+ #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
+ 
++#ifdef CONFIG_VIRTIO_DEVICE_TORTURE
++static bool torture;
++module_param(torture, bool, 0644);
++
++struct torture {
++	unsigned int orig_out, orig_in;
++	void *orig_data;
++	struct scatterlist sg[4];
++	struct scatterlist orig_sg[];
++};
++
++static size_t tot_len(struct scatterlist sg[], unsigned num)
++{
++	size_t len, i;
++
++	for (len = 0, i = 0; i < num; i++)
++		len += sg[i].length;
++
++	return len;
++}
++
++static void copy_sg_data(const struct scatterlist *dst, unsigned dnum,
++			 const struct scatterlist *src, unsigned snum)
++{
++	unsigned len;
++	struct scatterlist s, d;
++
++	s = *src;
++	d = *dst;
++
++	while (snum && dnum) {
++		len = min(s.length, d.length);
++		memcpy(sg_virt(&d), sg_virt(&s), len);
++		d.offset += len;
++		d.length -= len;
++		s.offset += len;
++		s.length -= len;
++		if (!s.length) {
++			BUG_ON(snum == 0);
++			src++;
++			snum--;
++			s = *src;
++		}
++		if (!d.length) {
++			BUG_ON(dnum == 0);
++			dst++;
++			dnum--;
++			d = *dst;
++		}
++	}
++}
++
++static bool torture_replace(struct scatterlist **sg,
++			     unsigned int *out,
++			     unsigned int *in,
++			     void **data,
++			     gfp_t gfp)
++{
++	static size_t seed;
++	struct torture *t;
++	size_t outlen, inlen, ourseed, len1;
++	void *buf;
++
++	if (!torture)
++		return true;
++
++	outlen = tot_len(*sg, *out);
++	inlen = tot_len(*sg + *out, *in);
++
++	/* This will break horribly on large block requests. */
++	t = kmalloc(sizeof(*t) + (*out + *in) * sizeof(t->orig_sg[1])
++		    + outlen + 1 + inlen + 1, gfp);
++	if (!t)
++		return false;
++
++	sg_init_table(t->sg, 4);
++	buf = &t->orig_sg[*out + *in];
++
++	memcpy(t->orig_sg, *sg, sizeof(**sg) * (*out + *in));
++	t->orig_out = *out;
++	t->orig_in = *in;
++	t->orig_data = *data;
++	*data = t;
++
++	ourseed = ACCESS_ONCE(seed);
++	seed++;
++
++	*sg = t->sg;
++	if (outlen) {
++		/* Split outbuf into two parts, one byte apart. */
++		*out = 2;
++		len1 = ourseed % (outlen + 1);
++		sg_set_buf(&t->sg[0], buf, len1);
++		buf += len1 + 1;
++		sg_set_buf(&t->sg[1], buf, outlen - len1);
++		buf += outlen - len1;
++		copy_sg_data(t->sg, *out, t->orig_sg, t->orig_out);
++	}
++
++	if (inlen) {
++		/* Split inbuf into two parts, one byte apart. */
++		*in = 2;
++		len1 = ourseed % (inlen + 1);
++		sg_set_buf(&t->sg[*out], buf, len1);
++		buf += len1 + 1;
++		sg_set_buf(&t->sg[*out + 1], buf, inlen - len1);
++		buf += inlen - len1;
++	}
++	return true;
++}
++
++static void *torture_done(struct torture *t)
++{
++	void *data;
++
++	if (!torture)
++		return t;
++
++	if (t->orig_in)
++		copy_sg_data(t->orig_sg + t->orig_out, t->orig_in,
++			     t->sg + (t->orig_out ? 2 : 0), 2);
++
++	data = t->orig_data;
++	kfree(t);
++	return data;
++}
++
++#else
++static bool torture_replace(struct scatterlist **sg,
++			     unsigned int *out,
++			     unsigned int *in,
++			     void **data,
++			     gfp_t gfp)
++{
++	return true;
++}
++
++static void *torture_done(void *data)
++{
++	return data;
++}
++#endif /* CONFIG_VIRTIO_DEVICE_TORTURE */
++
+ /* Set up an indirect table of descriptors and add it to the queue. */
+ static int vring_add_indirect(struct vring_virtqueue *vq,
+ 			      struct scatterlist sg[],
+@@ -213,6 +356,9 @@ int virtqueue_add_buf(struct virtqueue *_vq,
+ 
+ 	BUG_ON(data == NULL);
+ 
++	if (!torture_replace(&sg, &out, &in, &data, gfp))
++		return -ENOMEM;
++
+ #ifdef DEBUG
+ 	{
+ 		ktime_t now = ktime_get();
+@@ -246,6 +392,7 @@ int virtqueue_add_buf(struct virtqueue *_vq,
+ 		if (out)
+ 			vq->notify(&vq->vq);
+ 		END_USE(vq);
++		torture_done(data);
+ 		return -ENOSPC;
+ 	}
+ 
+@@ -476,7 +623,7 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+ #endif
+ 
+ 	END_USE(vq);
+-	return ret;
++	return torture_done(ret);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_get_buf);
+ 
