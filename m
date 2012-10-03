@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab2JCVLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:11:15 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:57759 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755369Ab2JCVLN (ORCPT
+	id S1756028Ab2JCVNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:13:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34079 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755592Ab2JCVNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:11:13 -0400
-References: <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com> <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com> <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com> <506C562E.5090909@redhat.com> <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com> <20121003170907.GA23473@ZenIV.linux.org.uk> <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com> <20121003195059.GA13541@kroah.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20121003195059.GA13541@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-From: Andy Walls <awalls@md.metrocast.net>
-Date: Wed, 03 Oct 2012 17:10:17 -0400
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>
-Message-ID: <4a5bbed4-fe95-4feb-b229-4c658f72ac17@email.android.com>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-03_02:2012-10-03,2012-10-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1203120001 definitions=main-1210030246
+	Wed, 3 Oct 2012 17:13:13 -0400
+Date: Wed, 3 Oct 2012 14:13:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] CPU hotplug, debug: Detect imbalance between
+ get_online_cpus() and put_online_cpus()
+Message-Id: <20121003141311.09fb3ffc.akpm@linux-foundation.org>
+In-Reply-To: <506C3535.3070401@linux.vnet.ibm.com>
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
+	<20121002170149.GC2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
+	<alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
+	<alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+	<20121002233138.GD2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
+	<20121003001530.GF2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
+	<alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz>
+	<506C2E02.9080804@linux.vnet.ibm.com>
+	<506C3535.3070401@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> wrote:
+On Wed, 03 Oct 2012 18:23:09 +0530
+"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
 
->On Wed, Oct 03, 2012 at 10:32:08AM -0700, Linus Torvalds wrote:
->> On Wed, Oct 3, 2012 at 10:09 AM, Al Viro <viro@zeniv.linux.org.uk>
->wrote:
->> >
->> > +       if (!S_ISREG(inode->i_mode))
->> > +               return false;
->> > +       size = i_size_read(inode);
->> >
->> > Probably better to do vfs_getattr() and check mode and size in
->kstat; if
->> > it's sufficiently hot for that to hurt, we are fucked anyway.
->> >
->> > +               file = filp_open(path, O_RDONLY, 0);
->> > +               if (IS_ERR(file))
->> > +                       continue;
->> > +printk("from file '%s' ", path);
->> > +               success = fw_read_file_contents(file, fw);
->> > +               filp_close(file, NULL);
->> >
->> > fput(file), please.  We have enough misuses of filp_close() as it
->is...
->> 
->> Ok, like this?
->
->This looks good to me.  Having udev do firmware loading and tieing it
->to
->the driver model may have not been such a good idea so many years ago.
->Doing it this way makes more sense.
->
->greg k-h
->--
->To unsubscribe from this list: send the line "unsubscribe linux-media"
->in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The synchronization between CPU hotplug readers and writers is achieved by
+> means of refcounting, safe-guarded by the cpu_hotplug.lock.
+> 
+> get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
+> it. If we ever hit an imbalance between the two, we end up compromising the
+> guarantees of the hotplug synchronization i.e, for example, an extra call to
+> put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
+> a hotplug writer. So, add a BUG_ON() in put_online_cpus() to detect such cases
+> where the refcount can go negative.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+> 
+>  kernel/cpu.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index f560598..00d29bc 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -80,6 +80,7 @@ void put_online_cpus(void)
+>  	if (cpu_hotplug.active_writer == current)
+>  		return;
+>  	mutex_lock(&cpu_hotplug.lock);
+> +	BUG_ON(cpu_hotplug.refcount == 0);
+>  	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+>  		wake_up_process(cpu_hotplug.active_writer);
+>  	mutex_unlock(&cpu_hotplug.lock);
 
-I agree that not calling out to userspace for firmware load is better.
+I think calling BUG() here is a bit harsh.  We should only do that if
+there's a risk to proceeding: a risk of data loss, a reduced ability to
+analyse the underlying bug, etc.
 
-Here is an old, unresolved bug about Oops on firmware loading race condition
+But a cpu-hotplug locking imbalance is a really really really minor
+problem!  So how about we emit a warning then try to fix things up? 
+This should increase the chance that the machine will keep running and
+so will increase the chance that a user will be able to report the bug
+to us.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15294
 
-The firmware loading timeout in the kernel was cleaning things up, just as udev what trying to say "I'm done loading the firmware" via sysfs; and then *boom*.
+--- a/kernel/cpu.c~cpu-hotplug-debug-detect-imbalance-between-get_online_cpus-and-put_online_cpus-fix
++++ a/kernel/cpu.c
+@@ -80,9 +80,12 @@ void put_online_cpus(void)
+ 	if (cpu_hotplug.active_writer == current)
+ 		return;
+ 	mutex_lock(&cpu_hotplug.lock);
+-	BUG_ON(cpu_hotplug.refcount == 0);
+-	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+-		wake_up_process(cpu_hotplug.active_writer);
++	if (!--cpu_hotplug.refcount) {
++		if (WARN_ON(cpu_hotplug.refcount == -1))
++			cpu_hotplug.refcount++;	/* try to fix things up */
++		if (unlikely(cpu_hotplug.active_writer))
++			wake_up_process(cpu_hotplug.active_writer);
++	}
+ 	mutex_unlock(&cpu_hotplug.lock);
+ 
+ }
+_
 
-Regards,
-Andy
