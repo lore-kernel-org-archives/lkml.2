@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab2JCCM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 22:12:59 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55255 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab2JCCM6 (ORCPT
+	id S1751828Ab2JCCX4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 22:23:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53043 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2JCCXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 22:12:58 -0400
-Message-ID: <506B9F1C.9050504@gmail.com>
-Date: Wed, 03 Oct 2012 10:12:44 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, wency@cn.fujitsu.com
-Subject: Re: [PATCH 0/2] memory-hotplug : notification of memoty block's state
-References: <506AA4E2.7070302@jp.fujitsu.com> <20121002144211.b60881a8.akpm@linux-foundation.org> <506B930C.2080000@jp.fujitsu.com>
-In-Reply-To: <506B930C.2080000@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 2 Oct 2012 22:23:55 -0400
+Date: Tue, 02 Oct 2012 22:22:38 -0400 (EDT)
+Message-Id: <20121002.222238.1580734803370802133.davem@davemloft.net>
+To: haicheng.li@linux.intel.com
+Cc: netdev@vger.kernel.org, tshimizu818@gmail.com,
+        linux-kernel@vger.kernel.org, haicheng.lee@gmail.com
+Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
+ dependency.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50654A62.5090003@linux.intel.com>
+References: <506546A7.7030500@linux.intel.com>
+	<20120928.024621.1635385815700269914.davem@davemloft.net>
+	<50654A62.5090003@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 09:21 AM, Yasuaki Ishimatsu wrote:
-> Hi Andrew,
->
-> 2012/10/03 6:42, Andrew Morton wrote:
->> On Tue, 2 Oct 2012 17:25:06 +0900
->> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>
->>> remove_memory() offlines memory. And it is called by following two 
->>> cases:
->>>
->>> 1. echo offline >/sys/devices/system/memory/memoryXX/state
->>> 2. hot remove a memory device
->>>
->>> In the 1st case, the memory block's state is changed and the 
->>> notification
->>> that memory block's state changed is sent to userland after calling
->>> offline_memory(). So user can notice memory block is changed.
->>>
->>> But in the 2nd case, the memory block's state is not changed and the
->>> notification is not also sent to userspcae even if calling 
->>> offline_memory().
->>> So user cannot notice memory block is changed.
->>>
->>> We should also notify to userspace at 2nd case.
->>
->> These two little patches look reasonable to me.
->>
->> There's a lot of recent activity with memory hotplug!  We're in the 3.7
->> merge window now so it is not a good time to be merging new material.
->
->> Also there appear to be two teams working on it and it's unclear to me
->> how well coordinated this work is?
->
-> As you know, there are two teams for developing the memory hotplug.
->   - Wen's patch-set
->     https://lkml.org/lkml/2012/9/5/201
->
->   - Lai's patch-set
->     https://lkml.org/lkml/2012/9/10/180
->
-> Wen's patch-set is for removing physical memory. Now, I'm splitting the
-> patch-set for reviewing more easy. If the patch-set is merged into
-> linux kernel, I believe that linux on x86 can hot remove a physical
-> memory device.
->
-> But it is not enough since we cannot remove a memory which has kernel
-> memory. If we guarantee the memory hot remove, the memory must belong
-> to ZONE_MOVABLE.
->
-> So Lai's patch-set tries to create a movable node that the all memory
-> belongs to ZONE_MOVABLE.
->
-> I think there are two chances for creating the movable node.
->   - boot time
->   - after hot add memory
->
-> - boot time
->
-> For creating a movable memory, linux has two kernel parameters
-> (kernelcore and movablecore). But it is not enough, since even if we
-> set the kernel paramter, the movable memory is distributed evenly in
-> each node. So we introduce the kernelcore_max_addr boot parameter.
-> The parameter limits the range of the memory used as a kernel memory.
->
-> For example, the system has following nodes.
->
->     node0 : 0x40000000 - 0x80000000
->     node1 : 0x80000000 - 0xc0000000
->
-> And when I want to hot remove a node1, we set 
-> "kernelcore_max_addr=0x80000000".
-> In doing so, kernel memory is limited within 0x80000000 and node1's
-> memory belongs to ZONE_MOEVALBE. As a result, we can guarantee that
-> node1 is a movable node and we always hot remove node1.
->
-> - after hot add memory
->
-> When hot adding memory, the memory belongs to ZONE_NORMAL and is offline.
-> If we online the memory, the memory may have kernel memory. In this case,
-> we cannot hot remove the memory. So we introduce the online_movable
-> function. If we use the function as follow, the memory belongs to
-> ZONE_MOVABLE.
->
-> echo online_movable > /sys/devices/system/node/nodeX/memoryX/state
->
-> So when new node is hot added and I echo "online_movale" to all hot added
-> memory, the node's memory belongs to ZONE_MOVABLE. As a result, we can Y
-> guarantee that the node is a movable node and we always hot remove node.
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Fri, 28 Sep 2012 14:57:38 +0800
 
-Hi Yasuaki,
-
-This time can kernel memory allocated from ZONE_MOVABLE ?
-
->
-> # I hope to help your understanding about our works by the information.
->
-> Thanks,
-> Yasuaki Ishimatsu
->
+> On 09/28/2012 02:46 PM, David Miller wrote:
+>> From: Haicheng Li<haicheng.li@linux.intel.com>
+>> Date: Fri, 28 Sep 2012 14:41:43 +0800
 >>
->> However these two patches are pretty simple and do fix a problem, so I
->> added them to the 3.7 MM queue.
+>>> On 09/28/2012 06:09 AM, David Miller wrote:
+>>>> Look at how other people submit patches, do any other patch
+>>>> submissions
+>>>> look like your's having all of this metadata in the message body:
+>>> I'm sorry for it.
+>>>
+>>>> As for this specific patch:
+>>>>
+>>>>> -	depends on PTP_1588_CLOCK_PCH
+>>>>> +	depends on PTP_1588_CLOCK_PCH = PCH_GBE
+>>>>
+>>>> This is not the correct way to ensure that the module'ness of one
+>>>> config option meets the module'ness requirements of another.
+>>>> The correct way is to say something like "&&   (PCH_GBE || PCH_GBE=n)"
+>>>
+>>> This case is a little bit tricky than usual, with PCH_PTP selected,
+>>> the valid config would be either "PTP_1588_CLOCK_PCH=PCH_GBE=m" or
+>>> "PTP_1588_CLOCK_PCH=PCH_GBE=y", and PTP_1588_CLOCK_PCH depends on
+>>> PCH_GBE.
 >>
->
->
-> -- 
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+>> And a simple "&&  PCH_GBE" should accomplish this, no?
+> No sir. it's actually same with the original Kconfig (by a if
+> PCH_GBE"), it just failed with this config:
+> 
+>         CONFIG_PCH_GBE=y
+>         CONFIG_PCH_PTP=y
+>         CONFIG_PTP_1588_CLOCK=m
 
+The correct fix is to make the Kconfig entry for PCH_PTP use
+a "select PTP_1588_CLOCK" instead of "depends PTP_1588_CLOCK"
+
+I'll apply this fix.
+
+The is another, extremely convoluted, way to do this, which is
+what the SFC driver does which is:
+
+depends on SFC && PTP_1588_CLOCK && !(SFC=y && PTP_1588_CLOCK=m)
+
+but that looks horrible to me.
