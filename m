@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab2JCQsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:48:03 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51476 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932851Ab2JCQr7 (ORCPT
+	id S932976Ab2JCQsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:48:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51486 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932112Ab2JCQsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:47:59 -0400
-Date: Wed, 3 Oct 2012 12:47:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Fainelli <florian@openwrt.org>
-cc: linux-usb@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Jayachandran C <jayachandranc@netlogicmicro.com>,
-        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/25] MIPS: Netlogic: use ehci-platform driver
-In-Reply-To: <1349276601-8371-5-git-send-email-florian@openwrt.org>
-Message-ID: <Pine.LNX.4.44L0.1210031151300.1441-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 3 Oct 2012 12:48:06 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 4/4] Clean up the "#if defined(arch)" list for exception-trace sysctl entry
+Date: Wed,  3 Oct 2012 17:44:26 +0100
+Message-Id: <1349282666-32100-5-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.9.111.gf3fb0
+In-Reply-To: <1349282666-32100-1-git-send-email-catalin.marinas@arm.com>
+References: <1349282666-32100-1-git-send-email-catalin.marinas@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Florian Fainelli wrote:
+This patch introduces SYSCTL_EXCEPTION_TRACE config option and selects
+it in the architectures requiring support for the "exception-trace"
+debug_table entry in kernel/sysctl.c.
 
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ arch/arm64/Kconfig   |    1 +
+ arch/powerpc/Kconfig |    1 +
+ arch/s390/Kconfig    |    1 +
+ arch/sparc/Kconfig   |    1 +
+ arch/tile/Kconfig    |    1 +
+ arch/x86/Kconfig     |    1 +
+ init/Kconfig         |    5 +++++
+ kernel/sysctl.c      |    3 +--
+ 8 files changed, 12 insertions(+), 2 deletions(-)
 
-IMO, patches should always have a non-empty changelog.  Even if it is 
-relatively trivial.  The same comment applies to several other patches 
-in this series.
-
-> ---
->  arch/mips/netlogic/xlr/platform.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-
-Does this need to enable CONFIG_USB_EHCI_HCD_PLATFORM is some 
-defconfig file, like you did with the MIPS Loongson 1B?
-
-And likewise for quite a few of the other patches in this series.
-
-> diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
-> index 71b44d8..1731dfd 100644
-> --- a/arch/mips/netlogic/xlr/platform.c
-> +++ b/arch/mips/netlogic/xlr/platform.c
-> @@ -15,6 +15,7 @@
->  #include <linux/serial_8250.h>
->  #include <linux/serial_reg.h>
->  #include <linux/i2c.h>
-> +#include <linux/usb/ehci_pdriver.h>
->  
->  #include <asm/netlogic/haldefs.h>
->  #include <asm/netlogic/xlr/iomap.h>
-> @@ -123,6 +124,10 @@ static u64 xls_usb_dmamask = ~(u32)0;
->  		},							\
->  	}
->  
-> +static struct usb_ehci_pdata xls_usb_ehci_pdata = {
-> +	.caps_offset	= 0,
-> +};
-> +
->  static struct platform_device xls_usb_ehci_device =
->  			 USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
->  static struct platform_device xls_usb_ohci_device_0 =
-> @@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
->  	memres = CPHYSADDR((unsigned long)usb_mmio);
->  	xls_usb_ehci_device.resource[0].start = memres;
->  	xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
-> +	xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
->  
->  	memres += 0x400;
->  	xls_usb_ohci_device_0.resource[0].start = memres;
-
-Don't you need to change/set the pdev name also?  Likewise for patch 
-20/25 and 24/25.
-
-Alan Stern
-
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index a308560..7ff68c9 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -28,6 +28,7 @@ config ARM64
+ 	select PERF_USE_VMALLOC
+ 	select RTC_LIB
+ 	select SPARSE_IRQ
++	select SYSCTL_EXCEPTION_TRACE
+ 	help
+ 	  ARM 64-bit (AArch64) Linux support.
+ 
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 63c640d..1ab473a 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -140,6 +140,7 @@ config PPC
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select HAVE_DEBUG_KMEMLEAK
++	select SYSCTL_EXCEPTION_TRACE
+ 
+ config EARLY_PRINTK
+ 	bool
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index d3216d7..0391630 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -134,6 +134,7 @@ config S390
+ 	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_UID16 if 32BIT
+ 	select HAVE_DEBUG_KMEMLEAK
++	select SYSCTL_EXCEPTION_TRACE
+ 
+ config SCHED_OMIT_FRAME_POINTER
+ 	def_bool y
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 2006ddc..d427993 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -38,6 +38,7 @@ config SPARC
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select HAVE_DEBUG_BUGVERBOSE
++	select SYSCTL_EXCEPTION_TRACE
+ 
+ config SPARC32
+ 	def_bool !64BIT
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index e38ae98..e4bb0ca 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -19,6 +19,7 @@ config TILE
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_DEBUG_KMEMLEAK
+ 	select HAVE_DEBUG_BUGVERBOSE
++	select SYSCTL_EXCEPTION_TRACE
+ 
+ # FIXME: investigate whether we need/want these options.
+ #	select HAVE_IOREMAP_PROT
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6995d6b..5aaa3b6 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -106,6 +106,7 @@ config X86
+ 	select HAVE_RCU_USER_QS if X86_64
+ 	select HAVE_IRQ_TIME_ACCOUNTING
+ 	select HAVE_DEBUG_KMEMLEAK
++	select SYSCTL_EXCEPTION_TRACE
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool y
+diff --git a/init/Kconfig b/init/Kconfig
+index f8de091..4d13aae 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1152,6 +1152,11 @@ config SYSCTL_SYSCALL
+ 
+ 	  If unsure say N here.
+ 
++config SYSCTL_EXCEPTION_TRACE
++	bool
++	help
++	  Enable support for /proc/sys/debug/exception-trace.
++
+ config KALLSYMS
+ 	 bool "Load all symbols for debugging/ksymoops" if EXPERT
+ 	 default y
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 84c76a3..b0eaca7 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1543,8 +1543,7 @@ static struct ctl_table fs_table[] = {
+ };
+ 
+ static struct ctl_table debug_table[] = {
+-#if defined(CONFIG_X86) || defined(CONFIG_PPC) || defined(CONFIG_SPARC) || \
+-    defined(CONFIG_S390) || defined(CONFIG_TILE) || defined(CONFIG_ARM64)
++#ifdef CONFIG_SYSCTL_EXCEPTION_TRACE
+ 	{
+ 		.procname	= "exception-trace",
+ 		.data		= &show_unhandled_signals,
