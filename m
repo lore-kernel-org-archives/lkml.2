@@ -1,156 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012Ab2JCQtS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:49:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51526 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964991Ab2JCQtQ (ORCPT
+	id S965069Ab2JCQvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:51:22 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:18767
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965019Ab2JCQvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:49:16 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/4] Clean up the long arch list for the DEBUG_BUGVERBOSE config option
-Date: Wed,  3 Oct 2012 17:44:25 +0100
-Message-Id: <1349282666-32100-4-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-In-Reply-To: <1349282666-32100-1-git-send-email-catalin.marinas@arm.com>
-References: <1349282666-32100-1-git-send-email-catalin.marinas@arm.com>
+	Wed, 3 Oct 2012 12:51:20 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VPS-8(zz98dI1e84M1dbaI1432Izz1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hd2bhf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+X-WSS-ID: 0MBBTHC-01-476-02
+X-M-MSG: 
+Date: Wed, 3 Oct 2012 11:51:06 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+Message-ID: <20121003165105.GA30214@jshin-Toonie>
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
+ <1348991844-12285-5-git-send-email-yinghai@kernel.org>
+ <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces HAVE_DEBUG_BUGVERBOSE config option and selects it
-in corresponding architecture Kconfig files. Architectures that already
-select GENERIC_BUG don't need to select HAVE_DEBUG_BUGVERBOSE.
+On Mon, Oct 01, 2012 at 12:00:26PM +0100, Stefano Stabellini wrote:
+> On Sun, 30 Sep 2012, Yinghai Lu wrote:
+> > After
+> > 
+> > | commit 8548c84da2f47e71bbbe300f55edb768492575f7
+> > | Author: Takashi Iwai <tiwai@suse.de>
+> > | Date:   Sun Oct 23 23:19:12 2011 +0200
+> > |
+> > |    x86: Fix S4 regression
+> > |
+> > |    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
+> > |    regression since 2.6.39, namely the machine reboots occasionally at S4
+> > |    resume.  It doesn't happen always, overall rate is about 1/20.  But,
+> > |    like other bugs, once when this happens, it continues to happen.
+> > |
+> > |    This patch fixes the problem by essentially reverting the memory
+> > |    assignment in the older way.
+> > 
+> > Have some page table around 512M again, that will prevent kdump to find 512M
+> > under 768M.
+> > 
+> > We need revert that reverting, so we could put page table high again for 64bit.
+> > 
+> > Takashi agreed that S4 regression could be something else.
+> > 
+> > 	https://lkml.org/lkml/2012/6/15/182
+> > 
+> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > ---
+> >  arch/x86/mm/init.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> > index 9f69180..aadb154 100644
+> > --- a/arch/x86/mm/init.c
+> > +++ b/arch/x86/mm/init.c
+> > @@ -76,8 +76,8 @@ static void __init find_early_table_space(struct map_range *mr,
+> >  #ifdef CONFIG_X86_32
+> >  	/* for fixmap */
+> >  	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+> > -#endif
+> >  	good_end = max_pfn_mapped << PAGE_SHIFT;
+> > +#endif
+> >  
+> >  	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+> >  	if (!base)
+> 
+> Isn't this going to cause init_memory_mapping to allocate pagetable
+> pages from memory not yet mapped?
+> Last time I spoke with HPA and Thomas about this, they seem to agree
+> that it isn't a very good idea.
+> Also, it is proven to cause a certain amount of headaches on Xen,
+> see commit d8aa5ec3382e6a545b8f25178d1e0992d4927f19.
+> 
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- arch/arm64/Kconfig |    1 +
- arch/frv/Kconfig   |    1 +
- arch/m32r/Kconfig  |    1 +
- arch/m68k/Kconfig  |    1 +
- arch/sh/Kconfig    |    1 +
- arch/sparc/Kconfig |    1 +
- arch/tile/Kconfig  |    1 +
- lib/Kconfig.debug  |    8 ++++----
- 8 files changed, 11 insertions(+), 4 deletions(-)
+Any comments, thoughts? hpa? Yinghai?
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 5dc9273..a308560 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -10,6 +10,7 @@ config ARM64
- 	select GENERIC_TIME_VSYSCALL
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_DEBUG_BUGVERBOSE
- 	select HAVE_DEBUG_KMEMLEAK
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index b885519..ac99638 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -11,6 +11,7 @@ config FRV
- 	select GENERIC_CPU_DEVICES
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select HAVE_UID16
-+	select HAVE_DEBUG_BUGVERBOSE
- 
- config ZONE_DMA
- 	bool
-diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
-index 49498bb..caabdb7 100644
---- a/arch/m32r/Kconfig
-+++ b/arch/m32r/Kconfig
-@@ -13,6 +13,7 @@ config M32R
- 	select GENERIC_IRQ_SHOW
- 	select GENERIC_ATOMIC64
- 	select ARCH_USES_GETTIMEOFFSET
-+	select HAVE_DEBUG_BUGVERBOSE
- 
- config SBUS
- 	bool
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 2517e4f..3b945a3 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -14,6 +14,7 @@ config M68K
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
- 	select HAVE_UID16
-+	select HAVE_DEBUG_BUGVERBOSE
- 
- config RWSEM_GENERIC_SPINLOCK
- 	bool
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index cb5a22e..076a834 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -37,6 +37,7 @@ config SUPERH
- 	select GENERIC_STRNLEN_USER
- 	select HAVE_UID16
- 	select HAVE_DEBUG_KMEMLEAK
-+	select HAVE_DEBUG_BUGVERBOSE
- 	help
- 	  The SuperH is a RISC processor targeted for use in embedded systems
- 	  and consumer electronics; it was also used in the Sega Dreamcast
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index a69bc77b..2006ddc 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -37,6 +37,7 @@ config SPARC
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select HAVE_DEBUG_BUGVERBOSE
- 
- config SPARC32
- 	def_bool !64BIT
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index afb3abd..e38ae98 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -18,6 +18,7 @@ config TILE
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_DEBUG_KMEMLEAK
-+	select HAVE_DEBUG_BUGVERBOSE
- 
- # FIXME: investigate whether we need/want these options.
- #	select HAVE_IOREMAP_PROT
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 63dfc4c..5636bfd 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -750,12 +750,12 @@ config DEBUG_HIGHMEM
- 	  This options enables addition error checking for high memory systems.
- 	  Disable for production systems.
- 
-+config HAVE_DEBUG_BUGVERBOSE
-+	bool
-+
- config DEBUG_BUGVERBOSE
- 	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
--	depends on BUG
--	depends on ARM || AVR32 || M32R || M68K || SPARC32 || SPARC64 || \
--		   FRV || SUPERH || GENERIC_BUG || BLACKFIN || MN10300 || \
--		   TILE || ARM64
-+	depends on BUG && (GENERIC_BUG || HAVE_DEBUG_BUGVERBOSE)
- 	default y
- 	help
- 	  Say Y here to make BUG() panics output the file name and line number
+So it seems that during init_memory_mapping Xen needs to modify page table 
+bits and the memory where the page tables live needs to be direct mapped at
+that time.
+
+Since we now call init_memory_mapping for every E820_RAM range sequencially,
+the only way to satisfy Xen is to find_early_page_table_space (good_end needs
+to be within memory already mapped at the time) for every init_memory_mapping
+call.
+
+What do you think Yinghai?
+
