@@ -1,152 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965255Ab2JCRIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:08:00 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:36037 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964890Ab2JCRH6 (ORCPT
+	id S965204Ab2JCRHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:07:23 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:63045 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965185Ab2JCRHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:07:58 -0400
-X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
-   d="scan'208";a="14921858"
-Date: Wed, 3 Oct 2012 18:06:56 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
- for PV on HVM guests
-In-Reply-To: <1349282492.650.185.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1210031758310.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>  <1349272182.650.150.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>  <1349272482.650.151.camel@zakaz.uk.xensource.com> 
- <20121003141116.GA10633@phenom.dumpdata.com>  <1349276431.650.156.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>  <1349279862.650.171.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031658120.29232@kaball.uk.xensource.com>
-  <1349280814.650.178.camel@zakaz.uk.xensource.com> <1349282492.650.185.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 3 Oct 2012 13:07:20 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: sameo@linux.intel.com
+Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
+        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [RFC 1/3] mfd: da9052-core: Use regmap_irq_get_virq() and fix the probe
+Date: Wed,  3 Oct 2012 14:06:57 -0300
+Message-Id: <1349284019-31571-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012, Ian Campbell wrote:
-> On Wed, 2012-10-03 at 17:13 +0100, Ian Campbell wrote:
-> > On Wed, 2012-10-03 at 17:05 +0100, Stefano Stabellini wrote:
-> > > On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > > > On Wed, 2012-10-03 at 16:48 +0100, Stefano Stabellini wrote:
-> > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > > > > > On Wed, 2012-10-03 at 15:11 +0100, Konrad Rzeszutek Wilk wrote:
-> > > > > > > On Wed, Oct 03, 2012 at 02:54:42PM +0100, Ian Campbell wrote:
-> > > > > > > > On Wed, 2012-10-03 at 14:51 +0100, Stefano Stabellini wrote:
-> > > > > > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
-> > > > > > > > > > On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
-> > > > > > > > > > > PV on HVM guests don't have a start_info page mapped by Xen, so
-> > > > > > > > > > > xen_start_info is just NULL for them.
-> > > > > > > > > > > That is problem because other parts of the code expect xen_start_info to
-> > > > > > > > > > > point to something valid, for example xen_initial_domain() is defined as
-> > > > > > > > > > > follow:
-> > > > > > > > > > > 
-> > > > > > > > > > > #define xen_initial_domain()    (xen_domain() && \
-> > > > > > > > > > >                  xen_start_info->flags & SIF_INITDOMAIN)
-> > > > > > > > > > 
-> > > > > > > > > > But anyone who calls this before xen_start_info is setup is going to get
-> > > > > > > > > > a bogus result, specifically in this case they will think they are domU
-> > > > > > > > > > when in reality they are dom0 -- wouldn't it be better to fix those
-> > > > > > > > > > callsites?
-> > > > > > > > > 
-> > > > > > > > > That cannot be the case because setting up xen_start_info is the very
-> > > > > > > > > first thing that is done, before even calling to C.
-> > > > > > > > 
-> > > > > > > > On PV, yes, but you are trying to fix PVHVM here, no?
-> > > > > > > > 
-> > > > > > > > Otherwise if this is always set before calling into C then what is the
-> > > > > > > > purpose of this patch?
-> > > > > > > 
-> > > > > > > to fix this - as PVHVM has it set to NULL and we end up de-referencing
-> > > > > > > the xen_start_info and crashing. As so::
-> > > > > > > 
-> > > > > > 
-> > > > > > Right, so returning to my original point: The caller here is calling
-> > > > > > xen_initial_domain() *before* start info is setup. This is bogus and is
-> > > > > > your actual bug, all this patch does is hide that real issue.
-> > > > > 
-> > > > > That is because xen_start_info wasn't setup at all for PV on HVM guests.
-> > > > > 
-> > > > > The real reason is that PV on HVM guests don't have one, but that is
-> > > > > another matter. Until we get rid of all the references to xen_start_info
-> > > > > outside of PV specific code, we should just assume that there is one,
-> > > > > and that is already setup.
-> > > > > 
-> > > > > One day not too far from now, we might refactor the code to never
-> > > > > reference xen_start_info directly, but I don't think that now is the
-> > > > > time for that. Also consider that this is the same thing we do on ARM.
-> > > > 
-> > > > We actual fill in the dummy start info with valid information on ARM
-> > > > though, we don't just leave it full of zeroes.
-> > > > 
-> > > > If we do start out with start_info pointing to an uninitialised
-> > > > start_info on ARM too then I would argue that this is also a mistake.
-> > > 
-> > > Yes, we do point xen_start_info to an uninitialised start_info on ARM
-> > > too (I don't think is a mistake). Then when and if we have more
-> > > information we write them to start_info.
-> > 
-> > So callers of xen_initial_domain in dom0 before xen_guest_init is called
-> > get the wrong result?
-> > 
-> > That sounds like a mistake to me.
-> 
-> How about (modulo my not having looked up the actual names of the
-> constants etc):
-> 
-> 	#define xen_initial_domain() (xen_domain() && arch_is_initial_domain())
-> 
-> on x86:
-> 	int arch_is_initial_domain(void)
-> 	{
-> 		/* The initial domain is always PV and
-> 		 * therefore start_info is always set for it.
-> 		 */
-> 		return start_info && start_info->flags & SIF_INITDOMAIN;
-> 	}
-> on ARM:
-> 	int arch_is_initial_domain(void)
-> 	{
-> 		static is_initial = -1;
-> 		if (is_initial == -1)
-> 			is_initial = HVM_param_get(HVMPARAM_DOM0)
-> 		return is_initial;
-> 	}
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-What about the appended patch as a fix for the moment, then we can do
-the refactoring that you are suggesting, that is very similar to what I
-had in mind when I said that we shouldn't access xen_start_info
-directly.
+On a mx53qsb dt-kernel the da9052-core driver fails to probe as follows:
 
+da9052 1-0048: DA9052 ADC IRQ failed ret=-22
+
+The reason for the error was due to passing only the offset as the interrupt
+number in request_threaded_irq().
+
+The recommended approach though is to use regmap_get_virq() to acquire the
+interrupt number.
+
+Fix it and allow the driver to probe successfully.
+
+Also provide a few more error logs and change the irq string to "adc-irq", so
+that it appears as a single word in 'cat /proc/inte
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
+ drivers/mfd/da9052-core.c         |   89 ++++++++++++++++++++++++++++++-------
+ include/linux/mfd/da9052/da9052.h |    1 +
+ 2 files changed, 74 insertions(+), 16 deletions(-)
 
-xen/xen_initial_domain: check that xen_start_info is initialized
-
-Since commit commit 4c071ee5268f7234c3d084b6093bebccc28cdcba ("arm:
-initial Xen support") PV on HVM guests can be xen_initial_domain.
-However PV on HVM guests might have an unitialized xen_start_info, so
-check before accessing its fields.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-diff --git a/include/xen/xen.h b/include/xen/xen.h
-index 9a39ca5..e7101bb 100644
---- a/include/xen/xen.h
-+++ b/include/xen/xen.h
-@@ -28,7 +28,7 @@ extern enum xen_domain_type xen_domain_type;
- #include <asm/xen/hypervisor.h>
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index a0a62b2..6574242 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -16,6 +16,7 @@
+ #include <linux/input.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
++#include <linux/irqdomain.h>
+ #include <linux/mfd/core.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -364,6 +365,52 @@ static const int32_t tbat_lookup[255] = {
+ 	-11823, -11903, -11982
+ };
  
- #define xen_initial_domain()	(xen_domain() && \
--				 xen_start_info->flags & SIF_INITDOMAIN)
-+				 xen_start_info && xen_start_info->flags & SIF_INITDOMAIN)
- #else  /* !CONFIG_XEN_DOM0 */
- #define xen_initial_domain()	(0)
- #endif	/* CONFIG_XEN_DOM0 */
++static void da9052_irq_enable(struct irq_data *data)
++{
++}
++
++static void da9052_irq_disable(struct irq_data *data)
++{
++}
++
++static struct irq_chip da9052_irq_chip = {
++	.name			= "da9052",
++	.irq_disable		= da9052_irq_disable,
++	.irq_enable		= da9052_irq_enable,
++};
++
++static int da9052_irq_map(struct irq_domain *h, unsigned int virq,
++			      irq_hw_number_t hw)
++{
++	struct regmap_irq_chip_data *data = h->host_data;
++
++	irq_set_chip_data(virq, data);
++	irq_set_chip_and_handler(virq, &da9052_irq_chip, handle_edge_irq);
++	irq_set_nested_thread(virq, 1);
++
++	/*
++	 * ARM needs us to explicitly flag the IRQ as valid
++	 * and will set them noprobe when we do so.
++	 */
++#ifdef CONFIG_ARM
++	set_irq_flags(virq, IRQF_VALID);
++#else
++	irq_set_noprobe(virq);
++#endif
++
++	return 0;
++}
++
++static struct irq_domain_ops da9052_domain_ops = {
++	.map	= da9052_irq_map,
++	.xlate	= irq_domain_xlate_twocell,
++};
++
++static int da9052_map_irq(struct da9052 *da9052, int irq)
++{
++	return regmap_irq_get_virq(da9052->irq_data, irq);
++}
++
+ static const u8 chan_mux[DA9052_ADC_VBBAT + 1] = {
+ 	[DA9052_ADC_VDDOUT]	= DA9052_ADC_MAN_MUXSEL_VDDOUT,
+ 	[DA9052_ADC_ICH]	= DA9052_ADC_MAN_MUXSEL_ICH,
+@@ -772,7 +819,7 @@ EXPORT_SYMBOL_GPL(da9052_regmap_config);
+ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
+ {
+ 	struct da9052_pdata *pdata = da9052->dev->platform_data;
+-	int ret;
++	int ret, i;
+ 
+ 	mutex_init(&da9052->auxadc_lock);
+ 	init_completion(&da9052->done);
+@@ -782,35 +829,44 @@ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
+ 
+ 	da9052->chip_id = chip_id;
+ 
+-	if (!pdata || !pdata->irq_base)
+-		da9052->irq_base = -1;
+-	else
+-		da9052->irq_base = pdata->irq_base;
++	/* Allocate a virtual IRQ domain to distribute to the regmap domains */
++	da9052->virq = irq_domain_add_linear(NULL, ARRAY_SIZE(da9052_irqs),
++						&da9052_domain_ops, da9052);
++	if (!da9052->virq) {
++		ret = -EINVAL;
++		goto regmap_err;
++	}
+ 
+-	ret = regmap_add_irq_chip(da9052->regmap, da9052->chip_irq,
++	ret = regmap_add_irq_chip(da9052->regmap,
++				  irq_create_mapping(da9052->virq, 0),
+ 				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				  da9052->irq_base, &da9052_regmap_irq_chip,
++				  -1, &da9052_regmap_irq_chip,
+ 				  &da9052->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(da9052->dev, "regmap_add_irq_chip failed: %d\n", ret);
+ 		goto regmap_err;
++	}
+ 
+-	da9052->irq_base = regmap_irq_chip_get_base(da9052->irq_data);
+-
+-	ret = request_threaded_irq(DA9052_IRQ_ADC_EOM, NULL, da9052_auxadc_irq,
++	i = da9052_map_irq(da9052, DA9052_IRQ_ADC_EOM);
++	ret = request_threaded_irq(i, NULL, da9052_auxadc_irq,
+ 				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				   "adc irq", da9052);
++				   "adc-irq", da9052);
+ 	if (ret != 0)
+ 		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
+ 
+ 	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
+ 			      ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
+-	if (ret)
++	if (ret) {
++		dev_err(da9052->dev, "mfd_add_devices failed: %d\n", ret);
+ 		goto err;
++	}
+ 
+ 	return 0;
+ 
+ err:
+-	free_irq(DA9052_IRQ_ADC_EOM, da9052);
++	free_irq(da9052_map_irq(da9052, DA9052_IRQ_ADC_EOM), da9052);
++	regmap_del_irq_chip(irq_create_mapping(da9052->virq, 0),
++			    da9052->irq_data);
+ 	mfd_remove_devices(da9052->dev);
+ regmap_err:
+ 	return ret;
+@@ -818,8 +874,9 @@ regmap_err:
+ 
+ void da9052_device_exit(struct da9052 *da9052)
+ {
+-	free_irq(DA9052_IRQ_ADC_EOM, da9052);
+-	regmap_del_irq_chip(da9052->chip_irq, da9052->irq_data);
++	free_irq(da9052_map_irq(da9052, DA9052_IRQ_ADC_EOM), da9052);
++	regmap_del_irq_chip(irq_create_mapping(da9052->virq, 0),
++			    da9052->irq_data);
+ 	mfd_remove_devices(da9052->dev);
+ }
+ 
+diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+index 0507c4c..7fbcb6d 100644
+--- a/include/linux/mfd/da9052/da9052.h
++++ b/include/linux/mfd/da9052/da9052.h
+@@ -99,6 +99,7 @@ struct da9052 {
+ 	u8 chip_id;
+ 
+ 	int chip_irq;
++	struct irq_domain *virq;
+ };
+ 
+ /* ADC API */
+-- 
+1.7.9.5
+
