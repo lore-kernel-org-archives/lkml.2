@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab2JCJce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 05:32:34 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1756065Ab2JCJeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:34:46 -0400
+Received: from shutemov.name ([176.9.204.213]:59696 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab2JCJcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 05:32:33 -0400
-Message-ID: <506C062D.8080608@nod.at>
-Date: Wed, 03 Oct 2012 11:32:29 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1754146Ab2JCJep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 05:34:45 -0400
+Date: Wed, 3 Oct 2012 12:35:21 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, YAMANE Toshiaki <yamanetoshi@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCHv2 3/6] staging: rts_pstor: reuse kbasename()
+Message-ID: <20121003093521.GA695@shutemov.name>
+References: <1349253783-21612-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1349253783-21612-4-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-To: artem.bityutskiy@linux.intel.com
-CC: Heinz.Egger@linutronix.de, tglx@linutronix.de,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tim.bird@am.sony.com
-Subject: Re: UBI: Fastmap request for inclusion (v19)
-References: <1348674710-102885-1-git-send-email-richard@nod.at>   <1349252745.2017.120.camel@sauron.fi.intel.com>   <20121003103625.0bbff63c@spider.haslach.nod.at>  <1349253885.2017.125.camel@sauron.fi.intel.com> <506BFF58.4060106@nod.at> <1349256659.2017.128.camel@sauron.fi.intel.com>
-In-Reply-To: <1349256659.2017.128.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349253783-21612-4-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.10.2012 11:30, Artem Bityutskiy wrote:
-> On Wed, 2012-10-03 at 11:03 +0200, Richard Weinberger wrote:
->> Yeah, it looks like all issues reported by aiaiai are caused by the missing goto.
->> Can you deal with the patch below or do you want me to send it using git send-email?
->
-> I'll apply it. But please, re-work the error handling in that function
-> separately.
->
+On Wed, Oct 03, 2012 at 11:43:00AM +0300, Andy Shevchenko wrote:
+> The custom filename function mostly repeats the kernel's kbasename. This patch
+> simplifies it. The updated filename() will not check for the '\' in the
+> filenames. It seems redundant in Linux.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/staging/rts_pstor/trace.h |   16 +++-------------
+>  1 file changed, 3 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/staging/rts_pstor/trace.h b/drivers/staging/rts_pstor/trace.h
+> index cf60a1b..59c5686 100644
+> --- a/drivers/staging/rts_pstor/trace.h
+> +++ b/drivers/staging/rts_pstor/trace.h
+> @@ -24,26 +24,16 @@
+>  #ifndef __REALTEK_RTSX_TRACE_H
+>  #define __REALTEK_RTSX_TRACE_H
+>  
+> +#include <linux/string.h>
+> +
+>  #define _MSG_TRACE
+>  
+>  #ifdef _MSG_TRACE
+>  static inline char *filename(char *path)
+>  {
+> -	char *ptr;
+> -
+>  	if (path == NULL)
+>  		return NULL;
+> -
+> -	ptr = path;
+> -
+> -	while (*ptr != '\0') {
+> -		if ((*ptr == '\\') || (*ptr == '/'))
+> -			path = ptr + 1;
+> -		
+> -		ptr++;
+> -	}
+> -
+> -	return path;
+> +	return kbasename(path);
 
-Okay, but not now during the merge window.
-Is this fine for you?
+Looks like you silentely drop const qualifier here from kbasename() return
+value.
 
-Thanks,
-//richard
+-- 
+ Kirill A. Shutemov
