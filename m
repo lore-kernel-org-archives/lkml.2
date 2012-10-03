@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2JCCsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 22:48:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43849 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab2JCCsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 22:48:13 -0400
-Date: Wed, 3 Oct 2012 03:48:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs, part 1
-Message-ID: <20121003024811.GO13973@ZenIV.linux.org.uk>
-References: <20121003013936.GN13973@ZenIV.linux.org.uk>
- <CA+55aFwot+bbm_L93kqCfLDEuQUSdWK=cRdDG-W7=O4zEh96RQ@mail.gmail.com>
+	id S1752989Ab2JCC4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 22:56:25 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:43057 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752604Ab2JCC4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Oct 2012 22:56:17 -0400
+Message-ID: <506BA94B.4030204@linux.vnet.ibm.com>
+Date: Tue, 02 Oct 2012 21:56:11 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwot+bbm_L93kqCfLDEuQUSdWK=cRdDG-W7=O4zEh96RQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: devicetree-discuss@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 2/5] Move of_drconf_cell struct definition to asm/prom.h
+References: <506B2E63.5090900@linux.vnet.ibm.com>
+In-Reply-To: <506B2E63.5090900@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100302-6078-0000-0000-0000103D9133
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 07:31:58PM -0700, Linus Torvalds wrote:
-> On Tue, Oct 2, 2012 at 6:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >         This is *not* all; fs/dcache.c bits will go separately, for one
-> > thing - that's just the first pile.  Please, pull from the usual place -
-> 
-> Al, *please* describe what is going on. Your description is negative
-> (what *doesn't* happen in this pull) and does not at all describe what
-> is going on.
+This patch moves the definition of the of_drconf_cell struct to asm/prom.h 
+to make it available for all powerpc/pseries code.
 
-Umm...  OK, but it won't be particulary pretty:
-	* big one - consolidation of descriptor-related logics; almost all
-of that is moved to fs/file.c (BTW, I'm seriously tempted to rename the
-result to fd.c.  As it is, we have a situation when file_table.c is about
-handling of struct file and file.c is about handling of descriptor tables;
-the reasons are historical - file_table.c used to be about a static array
-of struct file we used to have way back).   A lot of stray ends got cleaned
-up and converted to saner primitives, disgusting mess in android/binder.c
-is still disgusting, but at least doesn't poke so much in descriptor table
-guts anymore.  A bunch of relatively minor races got fixed in process,
-plus an ext4 struct file leak.
-	* related thing - fget_light() partially unuglified; see fdget()
-in there (and yes, it generates the code as good as we used to have).
-	* also related - bits of Cyrill's procfs stuff that got entangled
-into that work; _not_ all of it, just the initial move to fs/proc/fd.c
-and switch of fdinfo to seq_file.
-	* Alex's fs/coredump.c spiltoff - the same story, had been easier to
-take that commit than mess with conflicts.  The rest is a separate pile, this
-was just a mechanical code movement.
-	* a few misc patches all over the place.  Not all for this cycle,
-there'll be more (and quite a few currently sit in akpm's tree).
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+
+---
+ arch/powerpc/include/asm/prom.h |   16 ++++++++++++++++
+ arch/powerpc/mm/numa.c          |   12 ------------
+ 2 files changed, 16 insertions(+), 12 deletions(-)
+
+Index: dt-next/arch/powerpc/mm/numa.c
+===================================================================
+--- dt-next.orig/arch/powerpc/mm/numa.c	2012-10-02 08:30:23.000000000 -0500
++++ dt-next/arch/powerpc/mm/numa.c	2012-10-02 08:41:42.000000000 -0500
+@@ -397,18 +397,6 @@
+ 	return result;
+ }
+ 
+-struct of_drconf_cell {
+-	u64	base_addr;
+-	u32	drc_index;
+-	u32	reserved;
+-	u32	aa_index;
+-	u32	flags;
+-};
+-
+-#define DRCONF_MEM_ASSIGNED	0x00000008
+-#define DRCONF_MEM_AI_INVALID	0x00000040
+-#define DRCONF_MEM_RESERVED	0x00000080
+-
+ /*
+  * Read the next memblock list entry from the ibm,dynamic-memory property
+  * and return the information in the provided of_drconf_cell structure.
+Index: dt-next/arch/powerpc/include/asm/prom.h
+===================================================================
+--- dt-next.orig/arch/powerpc/include/asm/prom.h	2011-11-17 09:12:07.000000000 -0600
++++ dt-next/arch/powerpc/include/asm/prom.h	2012-10-02 08:41:42.000000000 -0500
+@@ -58,6 +58,22 @@
+ 
+ extern void of_instantiate_rtc(void);
+ 
++/* The of_drconf_cell struct defines the layout of the LMB array
++ * specified in the device tree property
++ * ibm,dynamic-reconfiguration-memory/ibm,dynamic-memory
++ */
++struct of_drconf_cell {
++	u64	base_addr;
++	u32	drc_index;
++	u32	reserved;
++	u32	aa_index;
++	u32	flags;
++};
++
++#define DRCONF_MEM_ASSIGNED	0x00000008
++#define DRCONF_MEM_AI_INVALID	0x00000040
++#define DRCONF_MEM_RESERVED	0x00000080
++
+ /* These includes are put at the bottom because they may contain things
+  * that are overridden by this file.  Ideally they shouldn't be included
+  * by this file, but there are a bunch of .c files that currently depend
+
