@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965192Ab2JCQTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:19:48 -0400
+	id S965097Ab2JCQSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:18:36 -0400
 Received: from mail-wi0-f178.google.com ([209.85.212.178]:39029 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965084Ab2JCQSg (ORCPT
+	with ESMTP id S933019Ab2JCQS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:36 -0400
+	Wed, 3 Oct 2012 12:18:26 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: mlindner@marvell.com
-Cc: kernel-janitors@vger.kernel.org, shemminger@vyatta.com,
+To: wg@grandegger.com
+Cc: kernel-janitors@vger.kernel.org, mkl@pengutronix.de,
+        linux@dominikbrodowski.net, linux-can@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 20/20] drivers/net/ethernet/marvell/sky2.c: fix error return code
-Date: Wed,  3 Oct 2012 18:18:09 +0200
-Message-Id: <1349281090-10013-19-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 4/20] drivers/net/can/sja1000/peak_pcmcia.c: fix error return code
+Date: Wed,  3 Oct 2012 18:17:53 +0200
+Message-Id: <1349281090-10013-3-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,31 +48,23 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/ethernet/marvell/sky2.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/can/sja1000/peak_pcmcia.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 2b0748d..78946fe 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -4924,6 +4924,7 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
+diff --git a/drivers/net/can/sja1000/peak_pcmcia.c b/drivers/net/can/sja1000/peak_pcmcia.c
+index ec6bd9d..272a85f 100644
+--- a/drivers/net/can/sja1000/peak_pcmcia.c
++++ b/drivers/net/can/sja1000/peak_pcmcia.c
+@@ -686,8 +686,10 @@ static int __devinit pcan_probe(struct pcmcia_device *pdev)
  
- 	if (~reg == 0) {
- 		dev_err(&pdev->dev, "PCI configuration read error\n");
-+		err = -EIO;
- 		goto err_out;
- 	}
- 
-@@ -4993,8 +4994,10 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
- 	hw->st_size = hw->ports * roundup_pow_of_two(3*RX_MAX_PENDING + TX_MAX_PENDING);
- 	hw->st_le = pci_alloc_consistent(pdev, hw->st_size * sizeof(struct sky2_status_le),
- 					 &hw->st_dma);
--	if (!hw->st_le)
-+	if (!hw->st_le) {
+ 	/* detect available channels */
+ 	pcan_add_channels(card);
+-	if (!card->chan_count)
++	if (!card->chan_count) {
 +		err = -ENOMEM;
- 		goto err_out_reset;
+ 		goto probe_err_4;
 +	}
  
- 	dev_info(&pdev->dev, "Yukon-2 %s chip revision %d\n",
- 		 sky2_name(hw->chip_id, buf1, sizeof(buf1)), hw->chip_rev);
+ 	/* init the timer which controls the leds */
+ 	init_timer(&card->led_timer);
 
