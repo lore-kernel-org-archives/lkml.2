@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab2JCQpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:45:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47070 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab2JCQpw (ORCPT
+	id S932840Ab2JCQru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:47:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51470 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932206Ab2JCQrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:45:52 -0400
-Message-ID: <506C6BBC.7090806@gmail.com>
-Date: Wed, 03 Oct 2012 09:45:48 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
+	Wed, 3 Oct 2012 12:47:48 -0400
+Date: Wed, 3 Oct 2012 12:47:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
 To: Florian Fainelli <florian@openwrt.org>
-CC: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/25] MIPS: Octeon: use ehci-platform driver
-References: <1349276601-8371-1-git-send-email-florian@openwrt.org> <1349276601-8371-10-git-send-email-florian@openwrt.org>
-In-Reply-To: <1349276601-8371-10-git-send-email-florian@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 25/25] USB: ohci: remove Alchemy OHCI platform driver.
+In-Reply-To: <1349276601-8371-27-git-send-email-florian@openwrt.org>
+Message-ID: <Pine.LNX.4.44L0.1210031233090.1441-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 08:03 AM, Florian Fainelli wrote:
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> ---
->   arch/mips/cavium-octeon/octeon-platform.c |   43 ++++++++++++++++++++++++++++-
->   1 file changed, 42 insertions(+), 1 deletion(-)
+On Wed, 3 Oct 2012, Florian Fainelli wrote:
 
+> All users have been converted to use the OHCI platform driver instead.
+> The driver was also doing quirky things with the internal OHCI hcd
+> structure during suspend/resume, work that is taken care of by the
+> core OHCI code in ohci-hub.c.
 
-NACK.
+This is highly questionable.  It depends on the platform's details (how
+wakeup signals are transmitted).
 
-OCTEON uses device tree now (or as soon as I send in the corresponding 
-patches), so this would just be churning the code.
+> -#ifdef CONFIG_PM
+> -static int ohci_hcd_au1xxx_drv_suspend(struct device *dev)
+> -{
+> -	struct usb_hcd *hcd = dev_get_drvdata(dev);
+> -	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
+> -	unsigned long flags;
+> -	int rc;
+> -
+> -	rc = 0;
+> -
+> -	/* Root hub was already suspended. Disable irq emission and
+> -	 * mark HW unaccessible, bail out if RH has been resumed. Use
+> -	 * the spinlock to properly synchronize with possible pending
+> -	 * RH suspend or resume activity.
+> -	 */
+> -	spin_lock_irqsave(&ohci->lock, flags);
+> -	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
+> -		rc = -EINVAL;
+> -		goto bail;
+> -	}
 
-David Daney
+This stuff about checking the root hub isn't needed.
+
+> -	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+> -	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
+> -
+> -	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+
+But this stuff _is_ needed.
+
+The right way to do this is to move the contents of ohci_pci_suspend()
+and ohci_pci_resume() into ohci-hcd.c; call them ohci_suspend() and
+ohci_resume().  The ohci_finish_controller_resume()  routine should be
+merged into ohci_resume(); there's no reason to have two separate
+functions for this.  Then the platform drivers can call these new
+routines at the appropriate times.
+
+The part about checking that the root hub is suspended can be removed.  
+That bug hasn't shown up in years.
+
+Alan Stern
 
