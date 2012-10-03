@@ -1,108 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965068Ab2JCRGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 13:06:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933093Ab2JCRG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 13:06:27 -0400
-Message-ID: <506C7057.6000102@redhat.com>
-Date: Wed, 03 Oct 2012 19:05:27 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S965255Ab2JCRIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 13:08:00 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:36037 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964890Ab2JCRH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 13:07:58 -0400
+X-IronPort-AV: E=Sophos;i="4.80,528,1344211200"; 
+   d="scan'208";a="14921858"
+Date: Wed, 3 Oct 2012 18:06:56 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] xen: point xen_start_info to a dummy struct
+ for PV on HVM guests
+In-Reply-To: <1349282492.650.185.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1210031758310.29232@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>  <1349272182.650.150.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>  <1349272482.650.151.camel@zakaz.uk.xensource.com> 
+ <20121003141116.GA10633@phenom.dumpdata.com>  <1349276431.650.156.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>  <1349279862.650.171.camel@zakaz.uk.xensource.com>  <alpine.DEB.2.02.1210031658120.29232@kaball.uk.xensource.com>
+  <1349280814.650.178.camel@zakaz.uk.xensource.com> <1349282492.650.185.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>
-In-Reply-To: <20121003122209.GA9076@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 02:22 PM, Raghavendra K T wrote:
->> So I think it's worth trying again with ple_window of 20000-40000.
->> 
+On Wed, 3 Oct 2012, Ian Campbell wrote:
+> On Wed, 2012-10-03 at 17:13 +0100, Ian Campbell wrote:
+> > On Wed, 2012-10-03 at 17:05 +0100, Stefano Stabellini wrote:
+> > > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > > On Wed, 2012-10-03 at 16:48 +0100, Stefano Stabellini wrote:
+> > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > > > > On Wed, 2012-10-03 at 15:11 +0100, Konrad Rzeszutek Wilk wrote:
+> > > > > > > On Wed, Oct 03, 2012 at 02:54:42PM +0100, Ian Campbell wrote:
+> > > > > > > > On Wed, 2012-10-03 at 14:51 +0100, Stefano Stabellini wrote:
+> > > > > > > > > On Wed, 3 Oct 2012, Ian Campbell wrote:
+> > > > > > > > > > On Wed, 2012-10-03 at 14:37 +0100, Stefano Stabellini wrote:
+> > > > > > > > > > > PV on HVM guests don't have a start_info page mapped by Xen, so
+> > > > > > > > > > > xen_start_info is just NULL for them.
+> > > > > > > > > > > That is problem because other parts of the code expect xen_start_info to
+> > > > > > > > > > > point to something valid, for example xen_initial_domain() is defined as
+> > > > > > > > > > > follow:
+> > > > > > > > > > > 
+> > > > > > > > > > > #define xen_initial_domain()    (xen_domain() && \
+> > > > > > > > > > >                  xen_start_info->flags & SIF_INITDOMAIN)
+> > > > > > > > > > 
+> > > > > > > > > > But anyone who calls this before xen_start_info is setup is going to get
+> > > > > > > > > > a bogus result, specifically in this case they will think they are domU
+> > > > > > > > > > when in reality they are dom0 -- wouldn't it be better to fix those
+> > > > > > > > > > callsites?
+> > > > > > > > > 
+> > > > > > > > > That cannot be the case because setting up xen_start_info is the very
+> > > > > > > > > first thing that is done, before even calling to C.
+> > > > > > > > 
+> > > > > > > > On PV, yes, but you are trying to fix PVHVM here, no?
+> > > > > > > > 
+> > > > > > > > Otherwise if this is always set before calling into C then what is the
+> > > > > > > > purpose of this patch?
+> > > > > > > 
+> > > > > > > to fix this - as PVHVM has it set to NULL and we end up de-referencing
+> > > > > > > the xen_start_info and crashing. As so::
+> > > > > > > 
+> > > > > > 
+> > > > > > Right, so returning to my original point: The caller here is calling
+> > > > > > xen_initial_domain() *before* start info is setup. This is bogus and is
+> > > > > > your actual bug, all this patch does is hide that real issue.
+> > > > > 
+> > > > > That is because xen_start_info wasn't setup at all for PV on HVM guests.
+> > > > > 
+> > > > > The real reason is that PV on HVM guests don't have one, but that is
+> > > > > another matter. Until we get rid of all the references to xen_start_info
+> > > > > outside of PV specific code, we should just assume that there is one,
+> > > > > and that is already setup.
+> > > > > 
+> > > > > One day not too far from now, we might refactor the code to never
+> > > > > reference xen_start_info directly, but I don't think that now is the
+> > > > > time for that. Also consider that this is the same thing we do on ARM.
+> > > > 
+> > > > We actual fill in the dummy start info with valid information on ARM
+> > > > though, we don't just leave it full of zeroes.
+> > > > 
+> > > > If we do start out with start_info pointing to an uninitialised
+> > > > start_info on ARM too then I would argue that this is also a mistake.
+> > > 
+> > > Yes, we do point xen_start_info to an uninitialised start_info on ARM
+> > > too (I don't think is a mistake). Then when and if we have more
+> > > information we write them to start_info.
+> > 
+> > So callers of xen_initial_domain in dom0 before xen_guest_init is called
+> > get the wrong result?
+> > 
+> > That sounds like a mistake to me.
 > 
-> Hi Avi,
+> How about (modulo my not having looked up the actual names of the
+> constants etc):
 > 
-> I ran different benchmarks increasing ple_window, and results does not
-> seem to be encouraging for increasing ple_window.
-
-Thanks for testing! Comments below.
-
-> Results:
-> 16 core PLE machine with 16 vcpu guest. 
+> 	#define xen_initial_domain() (xen_domain() && arch_is_initial_domain())
 > 
-> base kernel = 3.6-rc5 + ple handler optimization patch 
-> base_pleopt_8k = base kernel + ple window = 8k
-> base_pleopt_16k = base kernel + ple window = 16k
-> base_pleopt_32k = base kernel + ple window = 32k
-> 
-> 
-> Percentage improvements of benchmarks w.r.t base_pleopt with ple_window = 4096
-> 
-> 		base_pleopt_8k	base_pleopt_16k	base_pleopt_32k
-> -----------------------------------------------------------------			
-> kernbench_1x	-5.54915	-15.94529	-44.31562
-> kernbench_2x	-7.89399	-17.75039	-37.73498
+> on x86:
+> 	int arch_is_initial_domain(void)
+> 	{
+> 		/* The initial domain is always PV and
+> 		 * therefore start_info is always set for it.
+> 		 */
+> 		return start_info && start_info->flags & SIF_INITDOMAIN;
+> 	}
+> on ARM:
+> 	int arch_is_initial_domain(void)
+> 	{
+> 		static is_initial = -1;
+> 		if (is_initial == -1)
+> 			is_initial = HVM_param_get(HVMPARAM_DOM0)
+> 		return is_initial;
+> 	}
 
-So, 44% degradation even with no overcommit?  That's surprising.
+What about the appended patch as a fix for the moment, then we can do
+the refactoring that you are suggesting, that is very similar to what I
+had in mind when I said that we shouldn't access xen_start_info
+directly.
 
-> I also got perf top output to analyse the difference. Difference comes
-> because of flushtlb (and also spinlock).
+---
 
-That's in the guest, yes?
+xen/xen_initial_domain: check that xen_start_info is initialized
 
-> 
-> Ebizzy run for 4k ple_window
-> -  87.20%  [kernel]  [k] arch_local_irq_restore
->    - arch_local_irq_restore
->       - 100.00% _raw_spin_unlock_irqrestore
->          + 52.89% release_pages
->          + 47.10% pagevec_lru_move_fn
-> -   5.71%  [kernel]  [k] arch_local_irq_restore
->    - arch_local_irq_restore
->       + 86.03% default_send_IPI_mask_allbutself_phys
->       + 13.96% default_send_IPI_mask_sequence_phys
-> -   3.10%  [kernel]  [k] smp_call_function_many
->      smp_call_function_many
-> 
-> 
-> Ebizzy run for 32k ple_window
-> 
-> -  91.40%  [kernel]  [k] arch_local_irq_restore
->    - arch_local_irq_restore
->       - 100.00% _raw_spin_unlock_irqrestore
->          + 53.13% release_pages
->          + 46.86% pagevec_lru_move_fn
-> -   4.38%  [kernel]  [k] smp_call_function_many
->      smp_call_function_many
-> -   2.51%  [kernel]  [k] arch_local_irq_restore
->    - arch_local_irq_restore
->       + 90.76% default_send_IPI_mask_allbutself_phys
->       + 9.24% default_send_IPI_mask_sequence_phys
-> 
+Since commit commit 4c071ee5268f7234c3d084b6093bebccc28cdcba ("arm:
+initial Xen support") PV on HVM guests can be xen_initial_domain.
+However PV on HVM guests might have an unitialized xen_start_info, so
+check before accessing its fields.
 
-Both the 4k and the 32k results are crazy.  Why is
-arch_local_irq_restore() so prominent?  Do you have a very high
-interrupt rate in the guest?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-
-
-
--- 
-error compiling committee.c: too many arguments to function
+diff --git a/include/xen/xen.h b/include/xen/xen.h
+index 9a39ca5..e7101bb 100644
+--- a/include/xen/xen.h
++++ b/include/xen/xen.h
+@@ -28,7 +28,7 @@ extern enum xen_domain_type xen_domain_type;
+ #include <asm/xen/hypervisor.h>
+ 
+ #define xen_initial_domain()	(xen_domain() && \
+-				 xen_start_info->flags & SIF_INITDOMAIN)
++				 xen_start_info && xen_start_info->flags & SIF_INITDOMAIN)
+ #else  /* !CONFIG_XEN_DOM0 */
+ #define xen_initial_domain()	(0)
+ #endif	/* CONFIG_XEN_DOM0 */
