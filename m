@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab2JCSSB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 14:18:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46174 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754524Ab2JCSR7 (ORCPT
+	id S932149Ab2JCSVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 14:21:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33267 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab2JCSVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 14:17:59 -0400
-X-Sasl-enc: jvygHZSzh2WaUTihWOvcEv82gM6i/3E0giVPXtqdm2PA 1349288279
-Date: Wed, 3 Oct 2012 11:17:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: arm@vger.kernel.org, djbw@fb.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
-Message-ID: <20121003181757.GA24871@kroah.com>
-References: <1349284687-22311-1-git-send-email-ldewangan@nvidia.com>
+	Wed, 3 Oct 2012 14:21:22 -0400
+Date: Wed, 3 Oct 2012 11:21:19 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Fengguang Wu <fengguang.wu@intel.com>, Pekka Enberg <penberg@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH] slub: init_kmem_cache_cpus() and put_cpu_partial() can
+ be static
+In-Reply-To: <0000013a26fc13cf-2a85d946-fe2b-4180-a5a0-fbe6781a2934-000000@email.amazonses.com>
+Message-ID: <alpine.DEB.2.00.1210031119290.2412@chino.kir.corp.google.com>
+References: <20120928083405.GA23740@localhost> <alpine.DEB.2.00.1210022154520.8723@chino.kir.corp.google.com> <0000013a26fc13cf-2a85d946-fe2b-4180-a5a0-fbe6781a2934-000000@email.amazonses.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349284687-22311-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 10:48:07PM +0530, Laxman Dewangan wrote:
-> When watching the interrupts through /proc/interrupts,
-> the name of the interrupts are blank or garbage. The
-> reason is the pointer passed for devname during irq
-> registration is stack and so it get changed after
-> dma registration completes.
-> Allocate the pointer as part of dma channel and pass
-> this pointer as the devname for irq registration to
-> avoid change of name.
+On Wed, 3 Oct 2012, Christoph Lameter wrote:
+
+> > > Acked-by: Glauber Costa <glommer@parallels.com>
+> > > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+> >
+> > Acked-by: David Rientjes <rientjes@google.com>
+> >
+> > I think init_kmem_cache_cpus() would also benefit from just being inlined
+> > into alloc_kmem_cache_cpus().
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/dma/tegra20-apb-dma.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> The compiler will do that if it is advantageous.
+> 
 
-<formletter>
-
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
+Which it obviously does with -O2, but I think it would be advantageous to 
+do this at the source code level as well since we have a function with a 
+single caller, which happens to be marked inline itself, but we're not 
+inline.  It seems cleaner to me, but it's only a suggestion.  Thanks.
