@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2JCAiG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 20:38:06 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:53485 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab2JCAiD (ORCPT
+	id S1754363Ab2JCAn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 20:43:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53435 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2JCAnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 20:38:03 -0400
-Date: Wed, 3 Oct 2012 09:37:59 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 01/17] ARM: shmobile: fix memory size for kota2_defconfig
-Message-ID: <20121003003759.GD31207@verge.net.au>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
- <1349195816-2225-2-git-send-email-arnd@arndb.de>
+	Tue, 2 Oct 2012 20:43:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349195816-2225-2-git-send-email-arnd@arndb.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121002234934.GA9194@www.outflux.net>
+References: <20121002234934.GA9194@www.outflux.net>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 2 Oct 2012 20:43:04 -0400
+Message-ID: <CAHGf_=q3_EBCx+=ZL1cY7Q3=rQOiEhK3F7X-0fHd3A5_S+GUSg@mail.gmail.com>
+Subject: Re: [PATCH] mm: use %pK for /proc/vmallocinfo
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Joe Perches <joe@perches.com>, Kautuk Consul <consul.kautuk@gmail.com>,
+        linux-mm@kvack.org, Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 06:36:40PM +0200, Arnd Bergmann wrote:
-> The CONFIG_MEMORY_SIZE value is interpreted as a 32 bit integer, which
-> makes sense on a system without PAE. I'm assuming 0x10000000 (256 MB)
-> is the correct size, because that is used on most other shmobile
-> boards.
-> 
-> Without this patch, building kota2_defconfig results in:
-
-Hi Arnd,
-
-I looked through my fines and found a config that I believe
-worked with a derivative of 2.6.35.7.
-
-It has CONFIG_MEMORY_SIZE=0x1e800000.
-
-So what I suspect has happened is that an extra zero has crept into
-arch/arm/configs/kota2_defconfig and the intended value is:
-
-CONFIG_MEMORY_SIZE=0x1e000000
-
-Unfortunately I do not have access to a board to test this,
-nor am I aware of anyone who does.
-
-> /home/arnd/linux-arm/arch/arm/kernel/setup.c:790:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: linux-sh@vger.kernel.org
-> Cc: Simon Horman <horms@verge.net.au>
+On Tue, Oct 2, 2012 at 7:49 PM, Kees Cook <keescook@chromium.org> wrote:
+> In the paranoid case of sysctl kernel.kptr_restrict=2, mask the kernel
+> virtual addresses in /proc/vmallocinfo too.
+>
+> Reported-by: Brad Spengler <spender@grsecurity.net>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 > ---
->  arch/arm/configs/kota2_defconfig |    2 +-
+>  mm/vmalloc.c |    2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/configs/kota2_defconfig b/arch/arm/configs/kota2_defconfig
-> index b7735d6..0ea4c90 100644
-> --- a/arch/arm/configs/kota2_defconfig
-> +++ b/arch/arm/configs/kota2_defconfig
-> @@ -21,7 +21,7 @@ CONFIG_ARCH_SHMOBILE=y
->  CONFIG_KEYBOARD_GPIO_POLLED=y
->  CONFIG_ARCH_SH73A0=y
->  CONFIG_MACH_KOTA2=y
-> -CONFIG_MEMORY_SIZE=0x1e0000000
-> +CONFIG_MEMORY_SIZE=0x10000000
->  # CONFIG_SH_TIMER_TMU is not set
->  # CONFIG_SWP_EMULATE is not set
->  CONFIG_CPU_BPREDICT_DISABLE=y
-> -- 
-> 1.7.10
-> 
+>
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 2bb90b1..9c871db 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2572,7 +2572,7 @@ static int s_show(struct seq_file *m, void *p)
+>  {
+>         struct vm_struct *v = p;
+>
+> -       seq_printf(m, "0x%p-0x%p %7ld",
+> +       seq_printf(m, "0x%pK-0x%pK %7ld",
+>                 v->addr, v->addr + v->size, v->size);
+
+Looks good.
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
