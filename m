@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153Ab2JCQSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 12:18:42 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58499 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965075Ab2JCQSf (ORCPT
+	id S965207Ab2JCQTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 12:19:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43600 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965090Ab2JCQSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 12:18:35 -0400
+	Wed, 3 Oct 2012 12:18:37 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: davem@davemloft.net
-Cc: kernel-janitors@vger.kernel.org, danny.kukawka@bisect.de,
-        mcuos.com@gmail.com, joe@perches.com, florian@openwrt.org,
+To: mlindner@marvell.com
+Cc: kernel-janitors@vger.kernel.org, shemminger@vyatta.com,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/20] drivers/net/ethernet/amd/au1000_eth.c: fix error return code
-Date: Wed,  3 Oct 2012 18:18:07 +0200
-Message-Id: <1349281090-10013-17-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error return code
+Date: Wed,  3 Oct 2012 18:18:10 +0200
+Message-Id: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,50 +47,23 @@ ret@p1 = 0
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/ethernet/amd/au1000_eth.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/skge.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
-index 397596b..f195acf 100644
---- a/drivers/net/ethernet/amd/au1000_eth.c
-+++ b/drivers/net/ethernet/amd/au1000_eth.c
-@@ -1174,8 +1174,10 @@ static int __devinit au1000_probe(struct platform_device *pdev)
- 	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
- 		pdev->name, aup->mac_id);
- 	aup->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
--	if (aup->mii_bus->irq == NULL)
-+	if (aup->mii_bus->irq == NULL) {
+diff --git a/drivers/net/ethernet/marvell/skge.c b/drivers/net/ethernet/marvell/skge.c
+index 5a30bf8..91836b5 100644
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -3945,8 +3945,10 @@ static int __devinit skge_probe(struct pci_dev *pdev,
+ 		skge_board_name(hw), hw->chip_rev);
+ 
+ 	dev = skge_devinit(hw, 0, using_dac);
+-	if (!dev)
++	if (!dev) {
 +		err = -ENOMEM;
- 		goto err_out;
+ 		goto err_out_led_off;
 +	}
  
- 	for (i = 0; i < PHY_MAX_ADDR; ++i)
- 		aup->mii_bus->irq[i] = PHY_POLL;
-@@ -1190,7 +1192,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
- 		goto err_mdiobus_reg;
- 	}
- 
--	if (au1000_mii_probe(dev) != 0)
-+	err = au1000_mii_probe(dev);
-+	if (err != 0)
- 		goto err_out;
- 
- 	pDBfree = NULL;
-@@ -1205,6 +1208,7 @@ static int __devinit au1000_probe(struct platform_device *pdev)
- 	}
- 	aup->pDBfree = pDBfree;
- 
-+	err = -ENODEV;
- 	for (i = 0; i < NUM_RX_DMA; i++) {
- 		pDB = au1000_GetFreeDB(aup);
- 		if (!pDB)
-@@ -1213,6 +1217,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
- 		aup->rx_dma_ring[i]->buff_stat = (unsigned)pDB->dma_addr;
- 		aup->rx_db_inuse[i] = pDB;
- 	}
-+
-+	err = -ENODEV;
- 	for (i = 0; i < NUM_TX_DMA; i++) {
- 		pDB = au1000_GetFreeDB(aup);
- 		if (!pDB)
+ 	/* Some motherboards are broken and has zero in ROM. */
+ 	if (!is_valid_ether_addr(dev->dev_addr))
 
