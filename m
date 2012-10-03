@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2JCOzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 10:55:19 -0400
+	id S932460Ab2JCOzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 10:55:49 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:47417 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309Ab2JCOzN (ORCPT
+	with ESMTP id S932376Ab2JCOzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 10:55:13 -0400
+	Wed, 3 Oct 2012 10:55:18 -0400
 From: Matt Porter <mporter@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>
@@ -16,9 +16,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Linux DaVinci Kernel List 
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: [PATCH v3 2/6] ARM: davinci: da850-dm646x: remove the SRAM_VIRT iotable entry
-Date: Wed,  3 Oct 2012 10:55:29 -0400
-Message-Id: <1349276133-26408-3-git-send-email-mporter@ti.com>
+Subject: [PATCH v3 5/6] ARM: davinci: Add support for PRUSS on DA850
+Date: Wed,  3 Oct 2012 10:55:32 -0400
+Message-Id: <1349276133-26408-6-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349276133-26408-1-git-send-email-mporter@ti.com>
 References: <1349276133-26408-1-git-send-email-mporter@ti.com>
@@ -26,126 +26,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Gardiner <bengardiner@nanometrics.ca>
+Adds PRUSS clock, registers the L3RAM pool, and registers the
+platform device for uio_pruss on DA850.
 
-The sram regions defined for da850-dm646x in their iotable entries are also
-defined in their davinci_soc_info's.
-
-Remove this duplicate information which is now uneccessary since sram
-init will ioremap the regions defined by their davinci_soc_info's.
-
-Since this removal completely removes all uses of SRAM_VIRT, also remove
-the SRAM_VIRT definition.
-
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Tested-by: Matt Porter <mporter@ti.com>
+Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/arm/mach-davinci/da850.c               |    6 ------
- arch/arm/mach-davinci/dm355.c               |    6 ------
- arch/arm/mach-davinci/dm365.c               |    6 ------
- arch/arm/mach-davinci/dm644x.c              |    6 ------
- arch/arm/mach-davinci/dm646x.c              |    6 ------
- arch/arm/mach-davinci/include/mach/common.h |    2 --
- 6 files changed, 32 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c    |   12 +++++
+ arch/arm/mach-davinci/da850.c              |    7 +++
+ arch/arm/mach-davinci/devices-da8xx.c      |   66 ++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/include/mach/da8xx.h |    2 +
+ 4 files changed, 87 insertions(+)
 
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 1295e61..acc6e84 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -29,6 +29,7 @@
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/tps6507x.h>
+ #include <linux/input/tps6507x-ts.h>
++#include <linux/platform_data/uio_pruss.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/flash.h>
+ #include <linux/delay.h>
+@@ -42,6 +43,7 @@
+ #include <mach/da8xx.h>
+ #include <linux/platform_data/mtd-davinci.h>
+ #include <mach/mux.h>
++#include <mach/sram.h>
+ #include <linux/platform_data/mtd-davinci-aemif.h>
+ #include <linux/platform_data/spi-davinci.h>
+ 
+@@ -1253,6 +1255,10 @@ static __init int da850_wl12xx_init(void)
+ 
+ #endif /* CONFIG_DA850_WL12XX */
+ 
++struct uio_pruss_pdata da8xx_pruss_uio_pdata = {
++	.pintc_base	= 0x4000,
++};
++
+ #define DA850EVM_SATA_REFCLKPN_RATE	(100 * 1000 * 1000)
+ 
+ static __init void da850_evm_init(void)
+@@ -1339,6 +1345,12 @@ static __init void da850_evm_init(void)
+ 		pr_warning("da850_evm_init: lcdcntl mux setup failed: %d\n",
+ 				ret);
+ 
++	da8xx_pruss_uio_pdata.l3ram_pool = sram_get_gen_pool();
++	ret = da8xx_register_pruss_uio(&da8xx_pruss_uio_pdata);
++	if (ret)
++		pr_warning("pruss_uio initialization failed: %d\n",
++				ret);
++
+ 	/* Handle board specific muxing for LCD here */
+ 	ret = davinci_cfg_reg_list(da850_evm_lcdc_pins);
+ 	if (ret)
 diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 6676dee..b4b324f 100644
+index d8d69de..7c01d31 100644
 --- a/arch/arm/mach-davinci/da850.c
 +++ b/arch/arm/mach-davinci/da850.c
-@@ -713,12 +713,6 @@ static struct map_desc da850_io_desc[] = {
- 		.length		= DA8XX_CP_INTC_SIZE,
- 		.type		= MT_DEVICE
- 	},
--	{
--		.virtual	= SRAM_VIRT,
--		.pfn		= __phys_to_pfn(DA8XX_ARM_RAM_BASE),
--		.length		= SZ_8K,
--		.type		= MT_DEVICE
--	},
+@@ -212,6 +212,12 @@ static struct clk tptc2_clk = {
+ 	.flags		= ALWAYS_ENABLED,
  };
  
- static u32 da850_psc_bases[] = { DA8XX_PSC0_BASE, DA8XX_PSC1_BASE };
-diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index a255434..b49c3b7 100644
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@ -758,12 +758,6 @@ static struct map_desc dm355_io_desc[] = {
- 		.length		= IO_SIZE,
- 		.type		= MT_DEVICE
- 	},
--	{
--		.virtual	= SRAM_VIRT,
--		.pfn		= __phys_to_pfn(0x00010000),
--		.length		= SZ_32K,
--		.type		= MT_MEMORY_NONCACHED,
--	},
- };
++static struct clk pruss_clk = {
++	.name		= "pruss",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC0_PRUSS,
++};
++
+ static struct clk uart0_clk = {
+ 	.name		= "uart0",
+ 	.parent		= &pll0_sysclk2,
+@@ -378,6 +384,7 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"tptc1",	&tptc1_clk),
+ 	CLK(NULL,		"tpcc1",	&tpcc1_clk),
+ 	CLK(NULL,		"tptc2",	&tptc2_clk),
++	CLK(NULL,		"pruss",	&pruss_clk),
+ 	CLK(NULL,		"uart0",	&uart0_clk),
+ 	CLK(NULL,		"uart1",	&uart1_clk),
+ 	CLK(NULL,		"uart2",	&uart2_clk),
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index bd2f72b..7c2e0d2 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -518,6 +518,72 @@ void __init da8xx_register_mcasp(int id, struct snd_platform_data *pdata)
+ 	}
+ }
  
- /* Contents of JTAG ID register used to identify exact cpu type */
-diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-index b680c83..6c39805 100644
---- a/arch/arm/mach-davinci/dm365.c
-+++ b/arch/arm/mach-davinci/dm365.c
-@@ -985,12 +985,6 @@ static struct map_desc dm365_io_desc[] = {
- 		.length		= IO_SIZE,
- 		.type		= MT_DEVICE
- 	},
--	{
--		.virtual	= SRAM_VIRT,
--		.pfn		= __phys_to_pfn(0x00010000),
--		.length		= SZ_32K,
--		.type		= MT_MEMORY_NONCACHED,
--	},
- };
++#define DA8XX_PRUSS_MEM_BASE		0x01C30000
++
++static struct resource da8xx_pruss_resources[] = {
++	{
++		.start	= DA8XX_PRUSS_MEM_BASE,
++		.end	= DA8XX_PRUSS_MEM_BASE + 0xFFFF,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT0,
++		.end	= IRQ_DA8XX_EVTOUT0,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT1,
++		.end	= IRQ_DA8XX_EVTOUT1,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT2,
++		.end	= IRQ_DA8XX_EVTOUT2,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT3,
++		.end	= IRQ_DA8XX_EVTOUT3,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT4,
++		.end	= IRQ_DA8XX_EVTOUT4,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT5,
++		.end	= IRQ_DA8XX_EVTOUT5,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT6,
++		.end	= IRQ_DA8XX_EVTOUT6,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_DA8XX_EVTOUT7,
++		.end	= IRQ_DA8XX_EVTOUT7,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device da8xx_pruss_uio_dev = {
++	.name		= "pruss_uio",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(da8xx_pruss_resources),
++	.resource	= da8xx_pruss_resources,
++	.dev	 =	{
++		.coherent_dma_mask = 0xffffffff,
++	}
++};
++
++int __init da8xx_register_pruss_uio(struct uio_pruss_pdata *config)
++{
++	da8xx_pruss_uio_dev.dev.platform_data = config;
++	return platform_device_register(&da8xx_pruss_uio_dev);
++}
++
+ static const struct display_panel disp_panel = {
+ 	QVGA,
+ 	16,
+diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
+index 20553cf..138e618 100644
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@ -25,6 +25,7 @@
+ #include <linux/platform_data/mmc-davinci.h>
+ #include <linux/platform_data/usb-davinci.h>
+ #include <linux/platform_data/spi-davinci.h>
++#include <linux/platform_data/uio_pruss.h>
  
- static struct resource dm365_ks_resources[] = {
-diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
-index 0755d46..f8aaa7d 100644
---- a/arch/arm/mach-davinci/dm644x.c
-+++ b/arch/arm/mach-davinci/dm644x.c
-@@ -795,12 +795,6 @@ static struct map_desc dm644x_io_desc[] = {
- 		.length		= IO_SIZE,
- 		.type		= MT_DEVICE
- 	},
--	{
--		.virtual	= SRAM_VIRT,
--		.pfn		= __phys_to_pfn(0x00008000),
--		.length		= SZ_16K,
--		.type		= MT_MEMORY_NONCACHED,
--	},
- };
- 
- /* Contents of JTAG ID register used to identify exact cpu type */
-diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
-index 97c0f8e..ac7b431 100644
---- a/arch/arm/mach-davinci/dm646x.c
-+++ b/arch/arm/mach-davinci/dm646x.c
-@@ -756,12 +756,6 @@ static struct map_desc dm646x_io_desc[] = {
- 		.length		= IO_SIZE,
- 		.type		= MT_DEVICE
- 	},
--	{
--		.virtual	= SRAM_VIRT,
--		.pfn		= __phys_to_pfn(0x00010000),
--		.length		= SZ_32K,
--		.type		= MT_MEMORY_NONCACHED,
--	},
- };
- 
- /* Contents of JTAG ID register used to identify exact cpu type */
-diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
-index bdc4aa8..046c723 100644
---- a/arch/arm/mach-davinci/include/mach/common.h
-+++ b/arch/arm/mach-davinci/include/mach/common.h
-@@ -104,8 +104,6 @@ int davinci_pm_init(void);
- static inline int davinci_pm_init(void) { return 0; }
- #endif
- 
--/* standard place to map on-chip SRAMs; they *may* support DMA */
--#define SRAM_VIRT	0xfffe0000
- #define SRAM_SIZE	SZ_128K
- 
- #endif /* __ARCH_ARM_MACH_DAVINCI_COMMON_H */
+ extern void __iomem *da8xx_syscfg0_base;
+ extern void __iomem *da8xx_syscfg1_base;
+@@ -83,6 +84,7 @@ int da8xx_register_watchdog(void);
+ int da8xx_register_usb20(unsigned mA, unsigned potpgt);
+ int da8xx_register_usb11(struct da8xx_ohci_root_hub *pdata);
+ int da8xx_register_emac(void);
++int da8xx_register_pruss_uio(struct uio_pruss_pdata *config);
+ int da8xx_register_lcdc(struct da8xx_lcdc_platform_data *pdata);
+ int da8xx_register_mmcsd0(struct davinci_mmc_config *config);
+ int da850_register_mmcsd1(struct davinci_mmc_config *config);
 -- 
 1.7.9.5
 
