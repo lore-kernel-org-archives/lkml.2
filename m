@@ -1,81 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2JCVFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:05:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49437 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755042Ab2JCVFe (ORCPT
+	id S1755719Ab2JCVIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:08:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36818 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056Ab2JCVIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:05:34 -0400
-X-Sasl-enc: K37o0gSu2KijCPkgyZBysrcWoVRCTNhQ2M4Y0PVnanKo 1349298333
-Date: Wed, 3 Oct 2012 14:05:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
- request_firmware_nowait()
-Message-ID: <20121003210532.GA10941@kroah.com>
-References: <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
- <20121002221239.GA30990@kroah.com>
- <20121002222333.GA32207@kroah.com>
- <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
- <506C562E.5090909@redhat.com>
- <CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
- <20121003170907.GA23473@ZenIV.linux.org.uk>
- <CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
- <20121003195059.GA13541@kroah.com>
- <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+	Wed, 3 Oct 2012 17:08:41 -0400
+Date: Wed, 3 Oct 2012 14:07:41 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+In-Reply-To: <506AACAC.2010609@openvz.org>
+Message-ID: <alpine.LSU.2.00.1210031337320.1415@eggly.anvils>
+References: <50460CED.6060006@redhat.com> <20120906110836.22423.17638.stgit@zurg> <alpine.LSU.2.00.1210011418270.2940@eggly.anvils> <506AACAC.2010609@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 01:39:23PM -0700, Linus Torvalds wrote:
-> On Wed, Oct 3, 2012 at 12:50 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >>
-> >> Ok, like this?
-> >
-> > This looks good to me.  Having udev do firmware loading and tieing it to
-> > the driver model may have not been such a good idea so many years ago.
-> > Doing it this way makes more sense.
+On Tue, 2 Oct 2012, Konstantin Khlebnikov wrote:
+> Hugh Dickins wrote:
+> > 
+> > If I boot with mem=900M (and 1G swap: either on hard disk sda, or
+> > on Vertex II SSD sdb), and mmap anonymous 1000M (either MAP_PRIVATE,
+> > or MAP_SHARED for a shmem object), and either cycle sequentially round
+> > that making 5M touches (spaced a page apart), or make 5M random touches,
+> > then here are the times in centisecs that I see (but it's only elapsed
+> > that I've been worrying about).
+> > 
+> > 3.6-rc7 swapping to hard disk:
+> >      124 user    6154 system   73921 elapsed -rc7 sda seq
+> >      102 user    8862 system  895392 elapsed -rc7 sda random
+> >      130 user    6628 system   73601 elapsed -rc7 sda shmem seq
+> >      194 user    8610 system 1058375 elapsed -rc7 sda shmem random
+> > 
+> > 3.6-rc7 swapping to SSD:
+> >      116 user    5898 system   24634 elapsed -rc7 sdb seq
+> >       96 user    8166 system   43014 elapsed -rc7 sdb random
+> >      110 user    6410 system   24959 elapsed -rc7 sdb shmem seq
+> >      208 user    8024 system   45349 elapsed -rc7 sdb shmem random
+> > 
+> > 3.6-rc7 + Shaohua's patch (and FAULT_FLAG_RETRY check in do_swap_page),
+> > HDD:
+> >      116 user    6258 system   76210 elapsed shli sda seq
+> >       80 user    7716 system  831243 elapsed shli sda random
+> >      128 user    6640 system   73176 elapsed shli sda shmem seq
+> >      212 user    8522 system 1053486 elapsed shli sda shmem random
+> > 
+> > 3.6-rc7 + Shaohua's patch (and FAULT_FLAG_RETRY check in do_swap_page),
+> > SSD:
+> >      126 user    5734 system   24198 elapsed shli sdb seq
+> >       90 user    7356 system   26146 elapsed shli sdb random
+> >      128 user    6396 system   24932 elapsed shli sdb shmem seq
+> >      192 user    8006 system   45215 elapsed shli sdb shmem random
+> > 
+> > 3.6-rc7 + my patch, swapping to hard disk:
+> >      126 user    6252 system   75611 elapsed hugh sda seq
+> >       70 user    8310 system  871569 elapsed hugh sda random
+> >      130 user    6790 system   73855 elapsed hugh sda shmem seq
+> >      148 user    7734 system  827935 elapsed hugh sda shmem random
+> > 
+> > 3.6-rc7 + my patch, swapping to SSD:
+> >      116 user    5996 system   24673 elapsed hugh sdb seq
+> >       76 user    7568 system   28075 elapsed hugh sdb random
+> >      132 user    6468 system   25052 elapsed hugh sdb shmem seq
+> >      166 user    7220 system   28249 elapsed hugh sdb shmem random
+> > 
 > 
-> Ok, I wish this had been getting more testing in Linux-next or
-> something, but I suspect that what I'll do is to commit this patch
-> asap, and then commit another patch that turns off udev firmware
-> loading entirely for the synchronous firmware loading case.
-> 
-> Why? Just to get more testing, and seeing if there are reports of
-> breakage. Maybe some udev out there has a different search path (or
-> because udev runs in a different filesystem namespace or whatever), in
-> which case running udev as a fallback would otherwise hide the fact
-> that he direct kernel firmware loading isn't working.
-> 
-> We can (and will) revert things if that turns out to break things, but
-> I'd like to make any failures of the firmware direct-load path be fast
-> and hard, so that we can see when/what it breaks.
-> 
-> Ok? Comments?
+> Hmm, It would be nice to gather numbers without swapin readahead at all, just
+> to see the the worst possible case for sequential read and the best for
+> random.
 
-I have no objection to this.  As for the firmware path, maybe we should
-change that to be modified by userspace (much like /sbin/hotplug was) in
-a proc file so that distros can override the location if they need to.
-But for now, that's probably overkill.  This solves the problem that
-Mauro and others have reported and can be easily backported by any
-affected distros if needed.
+Right, and also interesting to see what happens if we raise page_cluster
+(more of an option than it was, with your or my patch scaling it down).
+Run on the same machine under the same conditions:
 
-thanks,
+3.6-rc7 + my patch, swapping to hard disk with page_cluster 0 (no readahead):
+    136 user   34038 system  121542 elapsed hugh cluster0 sda seq
+    102 user    7928 system  841680 elapsed hugh cluster0 sda random
+    130 user   34770 system  118322 elapsed hugh cluster0 sda shmem seq
+    160 user    7362 system  756489 elapsed hugh cluster0 sda shmem random
 
-greg k-h
+3.6-rc7 + my patch, swapping to SSD with page_cluster 0 (no readahead):
+    138 user   32230 system   70018 elapsed hugh cluster0 sdb seq
+     88 user    7296 system   25901 elapsed hugh cluster0 sdb random
+    154 user   33150 system   69678 elapsed hugh cluster0 sdb shmem seq
+    166 user    6936 system   24332 elapsed hugh cluster0 sdb shmem random
+
+3.6-rc7 + my patch, swapping to hard disk with page_cluster 4 (default + 1):
+    144 user    4262 system   77950 elapsed hugh cluster4 sda seq
+     74 user    8268 system  863871 elapsed hugh cluster4 sda random
+    140 user    4880 system   73534 elapsed hugh cluster4 sda shmem seq
+    160 user    7788 system  834804 elapsed hugh cluster4 sda shmem random
+
+3.6-rc7 + my patch, swapping to SSD with page_cluster 4 (default + 1):
+    124 user    4242 system   21125 elapsed hugh cluster4 sdb seq
+     72 user    7680 system   28686 elapsed hugh cluster4 sdb random
+    122 user    4622 system   21387 elapsed hugh cluster4 sdb shmem seq
+    172 user    7238 system   28226 elapsed hugh cluster4 sdb shmem random
+
+I was at first surprised to see random significantly faster than sequential
+on SSD with readahead off, thinking they ought to come out the same.  But
+no, that's a warning on the limitations of the test: with an mmap of 1000M
+on a machine with mem=900M, the page-by-page sequential is never going to
+rehit cache, whereas the random has a good chance of finding in memory.
+
+Which I presume also accounts for the lower user times throughout
+for random - but then why not the same for shmem random?
+
+I did start off measuring on the laptop with SSD, mmap 1000M mem=500M;
+but once I transferred to the desktop, I rediscovered just how slow
+swapping to hard disk can be, couldn't wait days, so made mem=900M.
+
+> I'll run some tests too, especially I want to see how it works for less
+> synthetic workloads.
+
+Thank you, that would be valuable.  I expect there to be certain midway
+tests on which Shaohao's patch would show up as significantly faster,
+where his per-vma approach would beat the global approach; then the
+global to improve with growing contention between processes.  But I
+didn't devise any such test, and hoped Shaohua might have one.
+
+Hugh
