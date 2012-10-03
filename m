@@ -1,215 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab2JCVYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 17:24:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7959 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755907Ab2JCVWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 17:22:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,529,1344236400"; 
-   d="scan'208";a="200227180"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@redhat.com
-Cc: jolsa@redhat.com, eranian@google.com, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] perf, tools: List kernel supplied event aliases in perf list
-Date: Wed,  3 Oct 2012 14:22:43 -0700
-Message-Id: <1349299363-30714-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1349299363-30714-1-git-send-email-andi@firstfloor.org>
-References: <1349299363-30714-1-git-send-email-andi@firstfloor.org>
+	id S1756323Ab2JCVZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 17:25:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34317 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989Ab2JCVZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 17:25:21 -0400
+Date: Wed, 3 Oct 2012 14:25:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch -mm] mm, thp: fix mlock statistics fix
+Message-Id: <20121003142519.93375e01.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1210031403270.4352@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1209191818490.7879@chino.kir.corp.google.com>
+	<alpine.LSU.2.00.1209192021270.28543@eggly.anvils>
+	<alpine.DEB.2.00.1209261821380.7745@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1209261929270.8567@chino.kir.corp.google.com>
+	<alpine.LSU.2.00.1209271814340.2107@eggly.anvils>
+	<20121003131012.f88b0d66.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1210031403270.4352@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wed, 3 Oct 2012 14:10:41 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-List the kernel supplied pmu event aliases in perf list
+> > The free_page_mlock() hunk gets dropped because free_page_mlock() is
+> > removed.  And clear_page_mlock() doesn't need this treatment.  But
+> > please check my handiwork.
+> > 
+> 
+> I reviewed what was merged into -mm and clear_page_mlock() does need this 
+> fix as well.
 
-It's better when the users can actually see them.
+argh, it got me *again*.  grr.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm: document PageHuge somewhat
+
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- tools/perf/Documentation/perf-list.txt |    4 +-
- tools/perf/builtin-list.c              |    3 +
- tools/perf/util/parse-events.c         |    5 ++-
- tools/perf/util/pmu.c                  |   71 ++++++++++++++++++++++++++++++++
- tools/perf/util/pmu.h                  |    3 +
- 5 files changed, 84 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index d1e39dc..826f3d6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
- SYNOPSIS
- --------
- [verse]
--'perf list' [hw|sw|cache|tracepoint|event_glob]
-+'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
- 
- DESCRIPTION
- -----------
-@@ -104,6 +104,8 @@ To limit the list use:
-   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
-   block, etc.
- 
-+. 'pmu' to print the kernel supplied PMU events.
-+
- . If none of the above is matched, it will apply the supplied glob to all
-   events, printing the ones that match.
- 
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 1948ece..e79f423 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -13,6 +13,7 @@
- 
- #include "util/parse-events.h"
- #include "util/cache.h"
-+#include "util/pmu.h"
- 
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 			else if (strcmp(argv[i], "cache") == 0 ||
- 				 strcmp(argv[i], "hwcache") == 0)
- 				print_hwcache_events(NULL, false);
-+			else if (strcmp(argv[i], "pmu") == 0)
-+				print_pmu_events(NULL, false);
- 			else if (strcmp(argv[i], "--raw-dump") == 0)
- 				print_events(NULL, true);
- 			else {
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4e7117f..0b1a4b1 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1033,6 +1033,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 		}
+ mm/hugetlb.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff -puN mm/hugetlb.c~mm-document-pagehuge-somewhat mm/hugetlb.c
+--- a/mm/hugetlb.c~mm-document-pagehuge-somewhat
++++ a/mm/hugetlb.c
+@@ -671,6 +671,11 @@ static void prep_compound_gigantic_page(
  	}
- 
-+	if (printed)
-+		printf("\n");
- 	return printed;
  }
  
-@@ -1087,11 +1089,12 @@ void print_events(const char *event_glob, bool name_only)
- 
- 	print_hwcache_events(event_glob, name_only);
- 
-+	print_pmu_events(event_glob, name_only);
-+
- 	if (event_glob != NULL)
- 		return;
- 
- 	if (!name_only) {
--		printf("\n");
- 		printf("  %-50s [%s]\n",
- 		       "rNNN",
- 		       event_type_descriptors[PERF_TYPE_RAW]);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8a2229d..c0d2fc9 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -551,6 +551,77 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 		set_bit(b, bits);
- }
- 
-+static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
-+			  struct perf_pmu__alias *alias)
-+{
-+	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
-+	return buf;		
-+}
-+
-+static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
-+			     struct perf_pmu__alias *alias)
-+{
-+	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
-+	return buf;		
-+}
-+
-+static int cmp_string(const void *a, const void *b)
-+{
-+	const char * const *as = a;
-+	const char * const *bs = b;
-+	return strcmp(*as, *bs);
-+}
-+
-+void print_pmu_events(const char *event_glob, bool name_only)
-+{
-+	struct perf_pmu *pmu;
-+	struct perf_pmu__alias *alias;
-+	char buf[1024];
-+	int printed = 0;
-+	int len, j;
-+	char **aliases;
-+
-+	pmu = NULL;
-+	len = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry (alias, &pmu->aliases, list)
-+			len++;
-+	aliases = malloc(sizeof(char *) * len);
-+	if (!aliases)
-+		return;
-+	pmu = NULL;
-+	j = 0;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+		list_for_each_entry (alias, &pmu->aliases, list) {
-+			char *name = format_alias(buf, sizeof buf, pmu, alias);
-+			bool is_cpu = !strcmp(pmu->name, "cpu");
-+
-+			if (event_glob != NULL && 
-+			    !(strglobmatch(name, event_glob) ||
-+			      (!is_cpu && strglobmatch(alias->name, event_glob))))
-+				continue;
-+			aliases[j] = name;
-+			if (is_cpu && !name_only)
-+				aliases[j] = format_alias_or(buf, sizeof buf,
-+							      pmu, alias);
-+			aliases[j] = strdup(aliases[j]);
-+			j++;
-+		}
-+	qsort(aliases, len, sizeof(char *), cmp_string);
-+	for (j = 0; j < len; j++) {
-+		if (name_only) {
-+			printf("%s ", aliases[j]);
-+			continue;
-+		}
-+		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
-+		free(aliases[j]);
-+		printed++;
-+	}
-+	if (printed)
-+		printf("\n");
-+	free(aliases);
-+}
-+
- /* Simulated format definitions. */
- static struct test_format {
- 	const char *name;
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 53c7794..b4e0203 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/bitops.h>
- #include "../../../include/linux/perf_event.h"
-+#include <stdbool.h>
- 
- enum {
- 	PERF_PMU_FORMAT_VALUE_CONFIG,
-@@ -49,5 +50,7 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to);
- 
- struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
- 
-+void print_pmu_events(const char *event_glob, bool name_only);
-+
- int perf_pmu__test(void);
- #endif /* __PMU_H */
--- 
-1.7.7.6
++/*
++ * PageHuge() only returns true for hugetlbfs pages, but not for normal or
++ * transparent huge pages.  See the PageTransHuge() documentation for more
++ * details.
++ */
+ int PageHuge(struct page *page)
+ {
+ 	compound_page_dtor *dtor;
+_
+
 
