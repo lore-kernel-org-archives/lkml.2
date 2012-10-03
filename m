@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2JCIxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 04:53:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21091 "EHLO mga01.intel.com"
+	id S1752786Ab2JCJD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 05:03:26 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369Ab2JCIx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 04:53:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,527,1344236400"; 
-   d="scan'208";a="229925733"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCHv2.5] trace: reuse kbasename() functionality
-Date: Wed,  3 Oct 2012 11:53:19 +0300
-Message-Id: <1349254399-22742-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1349253783-21612-7-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1349253783-21612-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1751198Ab2JCJDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 05:03:25 -0400
+Message-ID: <506BFF58.4060106@nod.at>
+Date: Wed, 03 Oct 2012 11:03:20 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: artem.bityutskiy@linux.intel.com
+CC: Heinz.Egger@linutronix.de, tglx@linutronix.de,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tim.bird@am.sony.com
+Subject: Re: UBI: Fastmap request for inclusion (v19)
+References: <1348674710-102885-1-git-send-email-richard@nod.at>  <1349252745.2017.120.camel@sauron.fi.intel.com>  <20121003103625.0bbff63c@spider.haslach.nod.at> <1349253885.2017.125.camel@sauron.fi.intel.com>
+In-Reply-To: <1349253885.2017.125.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/trace/trace_uprobe.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+On 03.10.2012 10:44, Artem Bityutskiy wrote:
+> On Wed, 2012-10-03 at 10:36 +0200, Richard Weinberger wrote:
+>> Am Wed, 03 Oct 2012 11:25:45 +0300
+>> schrieb Artem Bityutskiy <artem.bityutskiy@linux.intel.com>:
+>>
+>>> On Wed, 2012-09-26 at 17:51 +0200, Richard Weinberger wrote:
+>>>> UBI Fastmap is an optional feature which stores the physical to
+>>>> logical eraseblock relations in a checkpoint (called fastmap) to
+>>>> reduce the initialization time of UBI. The current init time of UBI
+>>>> is proportional to the number of physical erase blocks on the FLASH
+>>>> device. With fastmap enabled the scan time is limited to a fixed
+>>>> number of blocks.
+>>>
+>>> Aiaiai complains and linux-next build fails :-( Last time I forgot to
+>>> enable the fastmap kbuild option so aiaiai checked with that option
+>>> disabled. Now I enabled it with a simple hack (default n -> default y)
+>>> and here are aiaiai's complaints - there is a build failure for
+>>> ARCH=i386.
+>>
+>> Build fix for linux-next is on the way into your inbox.
+>> I'm currently looking at the aiaiai output.
+>
+> OK, I see, goto out is missing after line 919. Please, send a short fix
+> - I'll squash it in. But general error-path rework is needed for this
+> function, may be separately.
+>
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 03003cd..c7ba4f6 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -22,6 +22,7 @@
- #include <linux/uaccess.h>
- #include <linux/uprobes.h>
- #include <linux/namei.h>
-+#include <linux/string.h>
- 
- #include "trace_probe.h"
- 
-@@ -263,16 +264,15 @@ static int create_trace_uprobe(int argc, char **argv)
- 
- 	/* setup a probe */
- 	if (!event) {
--		char *tail = strrchr(filename, '/');
-+		char *tail;
- 		char *ptr;
- 
--		ptr = kstrdup((tail ? tail + 1 : filename), GFP_KERNEL);
--		if (!ptr) {
-+		tail = kstrdup(kbasename(filename), GFP_KERNEL);
-+		if (!tail) {
- 			ret = -ENOMEM;
- 			goto fail_address_parse;
- 		}
- 
--		tail = ptr;
- 		ptr = strpbrk(tail, ".-_");
- 		if (ptr)
- 			*ptr = '\0';
--- 
-1.7.10.4
+Yeah, it looks like all issues reported by aiaiai are caused by the missing goto.
+Can you deal with the patch below or do you want me to send it using git send-email?
+
+Thanks,
+//richard
+
+---
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index be73a1d..adcb2e4 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -917,6 +917,7 @@ int ubi_scan_fastmap(struct ubi_device *ubi, struct ubi_attach_info *ai,
+  		ret = UBI_BAD_FASTMAP;
+  		kfree(fmsb);
+  		kfree(fm);
++		goto out;
+  	}
+
+  	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
 
