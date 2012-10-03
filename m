@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2JCUyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 16:54:45 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57298 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab2JCUyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 16:54:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121003204919.GA9092@outflux.net>
-References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
- <20121003194614.GA2893@elliptictech.com> <20121003200515.GZ9092@outflux.net>
- <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
- <20121003204141.GB6026@thunk.org> <20121003204919.GA9092@outflux.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 3 Oct 2012 13:54:21 -0700
-X-Google-Sender-Auth: WOL6zgcPy7n3fd_t5W0srSHmEp0
-Message-ID: <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
-Subject: Re: Linux 3.6
-To: Kees Cook <kees@outflux.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Nick Bowler <nbowler@elliptictech.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754877Ab2JCU5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 16:57:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59654 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754423Ab2JCU5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 16:57:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: vgoyal@redhat.com, jmoyer@redhat.com, tj@kernel.org
+Subject: [PATCH 0/6] cfq-iosched: Some minor cleanups
+Date: Wed,  3 Oct 2012 16:56:55 -0400
+Message-Id: <1349297821-30078-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 1:49 PM, Kees Cook <kees@outflux.net> wrote:
->
-> I think the benefits of this being on by default outweigh glitches
-> like this. Based on Nick's email, it looks like a directory tree of his
-> own creation.
+Hi,
 
-I agree that *one* report like this doesn't necessarily mean that we
-need to turn it off, if Nick is happy to just fix up his script and
-it's all local.
+I posted CFQ changes for changing scheduling algorithm for cfq queues.
+There were few small cleanups/renaming patches. I have pulled out
+these patches from that series and posting these separately. There
+is no functionality change.
 
-However, I suspect we'll see more. And once that happens, we're not
-going to keep a default that breaks peoples old scripts, and we're
-going to have to rely on distributions (or users) explicitly setting
-it.
+Will post scheduling algorithm changes in a separate series on
+top of this series.
 
-Compatibility is just too important.
+I have taken care of comments from last posting and also included
+the ACKs.
 
-            Linus
+Thanks
+Vivek
+
+Vivek Goyal (6):
+  cfq-iosched: Properly name all references to IO class
+  cfq-iosched: More renaming to better represent wl_class and wl_type
+  cfq-iosched: Rename "service_tree" to "st" at some places
+  cfq-iosched: Rename few functions related to selecting workload
+  cfq-iosched: Get rid of unnecessary local variable
+  cfq-iosched: Print sync-noidle information in blktrace messages
+
+ block/cfq-iosched.c |  177 +++++++++++++++++++++++++--------------------------
+ 1 files changed, 88 insertions(+), 89 deletions(-)
+
+-- 
+1.7.7.6
+
