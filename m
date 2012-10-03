@@ -1,37 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab2JCDR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Oct 2012 23:17:27 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59346 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab2JCDR0 (ORCPT
+	id S1752188Ab2JCDZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Oct 2012 23:25:45 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58374 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab2JCDZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Oct 2012 23:17:26 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 2 Oct 2012 20:18:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, Steve Hardy <shardy@redhat.com>
-Subject: Re: [PATCH v3 1/2] hwmon: (ads7828) driver cleanup
-Message-ID: <20121003031804.GA7375@roeck-us.net>
-References: <20121003002840.GA7048@roeck-us.net>
- <913922496.1361970.1349231293882.JavaMail.root@mail.savoirfairelinux.com>
+	Tue, 2 Oct 2012 23:25:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <913922496.1361970.1349231293882.JavaMail.root@mail.savoirfairelinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 3 Oct 2012 08:55:43 +0530
+X-Google-Sender-Auth: oIuvbl9AzcYfwbotyz-5jD6zz7A
+Message-ID: <CAOh2x=nu8Zg3m1RGC0wGN9ejNM=5Qv+PMWe5aDre3_GLu8OszA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] dw_dmac: few cleanups to the driver
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 10:28:13PM -0400, Vivien Didelot wrote:
-> Hi Guenter,
-> 
-> Some of those changes weren't in the mainline tree a few days ago.
-> I'll cherry-pick them and send a update very soon :-)
-> 
-True, but they have been in -next for the last two months or so ...
+On Tue, Oct 2, 2012 at 5:11 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> There are few cleanups to the driver which already acked and reviewed.
+> I decide to split last series to two parts. This is first part.
 
-Guenter
+Looks good.
+
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
