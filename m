@@ -1,104 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030273Ab2JDIyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:54:53 -0400
-Received: from ams-iport-4.cisco.com ([144.254.224.147]:28324 "EHLO
-	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030257Ab2JDIyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:54:50 -0400
-X-IronPort-AV: E=Sophos;i="4.80,533,1344211200"; 
-   d="scan'208";a="8520506"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v2] media: davinci: vpif: set device capabilities
-Date: Thu, 4 Oct 2012 10:54:35 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1348582915-22878-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1348582915-22878-1-git-send-email-prabhakar.lad@ti.com>
+	id S1030247Ab2JDI6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:58:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965054Ab2JDI6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 04:58:45 -0400
+Date: Thu, 4 Oct 2012 10:57:50 +0200
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] uprobes: Fix the racy uprobe->flags manipulation
+Message-ID: <20121004085750.GA12118@bandura.brq.redhat.com>
+References: <20120930194119.GA11278@redhat.com>
+ <20120930194227.GA11350@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210041054.35565.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120930194227.GA11350@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25 September 2012 16:21:55 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Sun, Sep 30, 2012 at 09:42:27PM +0200, Oleg Nesterov wrote:
+> Multiple threads can manipulate uprobe->flags, this is obviously
+> unsafe. For example mmap can set UPROBE_COPY_INSN while register
+> tries to set UPROBE_RUN_HANDLER, the latter can also race with
+> can_skip_sstep() which clears UPROBE_SKIP_SSTEP.
 > 
-> set device_caps and also change the driver and
-> bus_info to proper values as per standard.
+> Change this code to use bitops.
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  Changes for v2:
->  1: Change the bus_info and driver to proper values,
->     pointed by Hans.
-> 
->  drivers/media/platform/davinci/vpif_capture.c |    9 ++++++---
->  drivers/media/platform/davinci/vpif_display.c |    9 ++++++---
->  2 files changed, 12 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-> index 4828888..cb70e98 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -1630,9 +1630,12 @@ static int vpif_querycap(struct file *file, void  *priv,
->  {
->  	struct vpif_capture_config *config = vpif_dev->platform_data;
->  
-> -	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
-> -	strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
-> -	strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
-> +	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
-> +			V4L2_CAP_READWRITE;
+>  kernel/events/uprobes.c |   28 ++++++++++++++--------------
+>  1 files changed, 14 insertions(+), 14 deletions(-)
 
-Why add READWRITE? There is no read/write support in these drivers.
+  Re-generating this one because of updated patch 4/7, so that it
+will apply cleanly.
 
-> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-> +	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-> +	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-> +		 dev_name(vpif_dev));
->  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
->  
->  	return 0;
-> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-> index d94b8a2..411b547 100644
-> --- a/drivers/media/platform/davinci/vpif_display.c
-> +++ b/drivers/media/platform/davinci/vpif_display.c
-> @@ -827,9 +827,12 @@ static int vpif_querycap(struct file *file, void  *priv,
->  {
->  	struct vpif_display_config *config = vpif_dev->platform_data;
->  
-> -	cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
-> -	strlcpy(cap->driver, "vpif display", sizeof(cap->driver));
-> -	strlcpy(cap->bus_info, "Platform", sizeof(cap->bus_info));
-> +	cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING |
-> +			    V4L2_CAP_READWRITE;
+Anton
+-------------------------------------------------------------------
+From: Oleg Nesterov <oleg@redhat.com>
+Date: Sun, 30 Sep 2012 21:42:27 +0200
+Subject: [PATCH] uprobes: Fix the racy uprobe->flags manipulation
 
-Ditto.
+Multiple threads can manipulate uprobe->flags, this is obviously
+unsafe. For example mmap can set UPROBE_COPY_INSN while register
+tries to set UPROBE_RUN_HANDLER, the latter can also race with
+can_skip_sstep() which clears UPROBE_SKIP_SSTEP.
 
-> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-> +	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-> +	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-> +		 dev_name(vpif_dev));
->  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
->  
->  	return 0;
-> 
+Change this code to use bitops.
 
-Regards,
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-	Hans
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 72067e6..7a8690e 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -79,11 +79,11 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+ static atomic_t uprobe_events = ATOMIC_INIT(0);
+ 
+ /* Have a copy of original instruction */
+-#define UPROBE_COPY_INSN	0x1
++#define UPROBE_COPY_INSN	0
+ /* Dont run handlers when first register/ last unregister in progress*/
+-#define UPROBE_RUN_HANDLER	0x2
++#define UPROBE_RUN_HANDLER	1
+ /* Can skip singlestep */
+-#define UPROBE_SKIP_SSTEP	0x4
++#define UPROBE_SKIP_SSTEP	2
+ 
+ struct uprobe {
+ 	struct rb_node		rb_node;	/* node in the rb tree */
+@@ -94,7 +94,7 @@ struct uprobe {
+ 	struct uprobe_consumer	*consumers;
+ 	struct inode		*inode;		/* Also hold a ref to inode */
+ 	loff_t			offset;
+-	int			flags;
++	unsigned long		flags;
+ 	struct arch_uprobe	arch;
+ };
+ 
+@@ -423,7 +423,7 @@ static struct uprobe *insert_uprobe(struct uprobe *uprobe)
+ 	spin_unlock(&uprobes_treelock);
+ 
+ 	/* For now assume that the instruction need not be single-stepped */
+-	uprobe->flags |= UPROBE_SKIP_SSTEP;
++	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+ 
+ 	return u;
+ }
+@@ -466,7 +466,7 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_consumer *uc;
+ 
+-	if (!(uprobe->flags & UPROBE_RUN_HANDLER))
++	if (!test_bit(UPROBE_RUN_HANDLER, &uprobe->flags))
+ 		return;
+ 
+ 	down_read(&uprobe->consumer_rwsem);
+@@ -577,11 +577,11 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
+ {
+ 	int ret = 0;
+ 
+-	if (uprobe->flags & UPROBE_COPY_INSN)
++	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
+ 		return ret;
+ 
+ 	mutex_lock(&uprobe->copy_mutex);
+-	if (uprobe->flags & UPROBE_COPY_INSN)
++	if (test_bit(UPROBE_COPY_INSN, &uprobe->flags))
+ 		goto out;
+ 
+ 	ret = copy_insn(uprobe, file);
+@@ -601,7 +601,7 @@ static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
+ 			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+ 
+ 	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+-	uprobe->flags |= UPROBE_COPY_INSN;
++	set_bit(UPROBE_COPY_INSN, &uprobe->flags);
+ 	ret = 0;
+  out:
+ 	mutex_unlock(&uprobe->copy_mutex);
+@@ -852,7 +852,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 			uprobe->consumers = NULL;
+ 			__uprobe_unregister(uprobe);
+ 		} else {
+-			uprobe->flags |= UPROBE_RUN_HANDLER;
++			set_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+ 		}
+ 	}
+ 
+@@ -885,7 +885,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 	if (consumer_del(uprobe, uc)) {
+ 		if (!uprobe->consumers) {
+ 			__uprobe_unregister(uprobe);
+-			uprobe->flags &= ~UPROBE_RUN_HANDLER;
++			clear_bit(UPROBE_RUN_HANDLER, &uprobe->flags);
+ 		}
+ 	}
+ 
+@@ -1346,10 +1346,10 @@ bool uprobe_deny_signal(void)
+  */
+ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+-	if (uprobe->flags & UPROBE_SKIP_SSTEP) {
++	if (test_bit(UPROBE_SKIP_SSTEP, &uprobe->flags)) {
+ 		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+ 			return true;
+-		uprobe->flags &= ~UPROBE_SKIP_SSTEP;
++		clear_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+ 	}
+ 	return false;
+ }
+@@ -1428,7 +1428,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ 	 * new and not-yet-analyzed uprobe at the same address, restart.
+ 	 */
+ 	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+-	if (uprobe && unlikely(!(uprobe->flags & UPROBE_COPY_INSN))) {
++	if (uprobe && unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags))) {
+ 		put_uprobe(uprobe);
+ 		uprobe = NULL;
+ 		*is_swbp = 0;
+-- 
+1.7.11.7
+
