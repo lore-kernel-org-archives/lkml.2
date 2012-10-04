@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab2JDWB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:01:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62166 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab2JDWBX (ORCPT
+	id S1753584Ab2JDWBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:01:53 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933746Ab2JDVVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:01:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <15022838.BvGHsiOjXu@vostro.rjw.lan>
-References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
-	<16287303.8DVGGcjq5E@vostro.rjw.lan>
-	<CAE9FiQU=h8mchDHCQ31U-UpPhqmFiO_H5yX2uonsyOh3tK9DYA@mail.gmail.com>
-	<15022838.BvGHsiOjXu@vostro.rjw.lan>
-Date: Thu, 4 Oct 2012 15:01:21 -0700
-X-Google-Sender-Auth: tFAiLnADNKTBJeqNmi8GUZtkI2g
-Message-ID: <CAE9FiQXDBaiwckKsUi4k34=O1GnkTOJf+mG33cKHDp8RGqrsnA@mail.gmail.com>
-Subject: Re: [PATCH 0/4] ACPI: kill acpi_pci_root_start
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Oct 2012 17:21:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 19/58] staging: comedi: fix memory leak for saved channel list
+Date: Thu,  4 Oct 2012 14:19:26 -0700
+Message-Id: <20121004210637.896193686@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
+References: <20121004210635.449598766@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 2:53 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday 04 of October 2012 14:31:46 Yinghai Lu wrote:
->> On Thu, Oct 4, 2012 at 2:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >>
->> >> At last we could remove all acpi_bus_start workaround.
->> >
->> > Do I understand correctly that you just want to prevent acpi_pci_root_driver
->> > from binding to the host bridge's struct acpi_device created while we're
->> > walking the ACPI namespace?
->>
->> yes, during hot add path.
->
-> Why exactly do you want to prevent that from happening?
->
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-during adding pci root bus hotplug, Bjorn found some unsafe searching
-that caused by pci_bus_add_devices.
-pci devices are created during pci scan root, but until very late
-acpi_pci_root_start call pci_bus_add_devices.
+------------------
 
-To fill the gap, we need to move pci_bus_add_devices to acpi_pci_root_add
-at first.
+From: Ian Abbott <abbotti@mev.co.uk>
 
-but after we move that there, pci device will be added to device tree, and it
-will try to bind with acpi devices that should be under acpi pci root,
-but are not
-created yet. because device_add for acpi_device for acpi pci root is done yet.
-it still calling the .add in the acpi_driver aka acpi_pci_root_add.
+commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
 
-So I want to hold the driver attach for pci root acpi devices, and
-later attach it
-until pci devices created.
+When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
+list, it frees any previously allocated channel list in
+`async->cmd.chanlist` and replaces it with the new one.  However, if the
+device is ever removed (or "detached") the cleanup code in
+`cleanup_device()` in "drivers.c" does not free this memory so it is
+lost.
 
-booting path, all acpi devices get created, and attach driver for them
-one by one.
+A sensible place to free the kernel copy of the channel list is in
+`do_become_nonbusy()` as at that point the comedi asynchronous command
+associated with the channel list is no longer valid.  Free the channel
+list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
+pointer to prevent it being freed more than once.
+
+Note that `cleanup_device()` could be called at an inappropriate time
+while the comedi device is open, but that's a separate bug not related
+to this this patch.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/comedi/comedi_fops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1377,7 +1377,6 @@ static int do_cmd_ioctl(struct comedi_de
+ 		goto cleanup;
+ 	}
+ 
+-	kfree(async->cmd.chanlist);
+ 	async->cmd = user_cmd;
+ 	async->cmd.data = NULL;
+ 	/* load channel/gain list */
+@@ -2122,6 +2121,8 @@ void do_become_nonbusy(struct comedi_dev
+ 	if (async) {
+ 		comedi_reset_async_buf(async);
+ 		async->inttrig = NULL;
++		kfree(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 	} else {
+ 		printk(KERN_ERR
+ 		       "BUG: (?) do_become_nonbusy called with async=0\n");
+
+
