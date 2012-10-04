@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2JDFdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 01:33:42 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58181 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab2JDFdl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 01:33:41 -0400
-X-AuditID: 9c930179-b7bf9ae000000e4c-03-506d1fb3b31e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tools: Complete tracepoint event names
-Date: Thu,  4 Oct 2012 14:23:54 +0900
-Message-Id: <1349328234-16995-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-X-Brightmail-Tracker: AAAAAA==
+	id S1755706Ab2JDFoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 01:44:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:40242 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751639Ab2JDFoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 01:44:13 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+In-Reply-To: <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 04 Oct 2012 15:09:04 +0930
+Message-ID: <87obki23uv.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Kees Cook <keescook@chromium.org> writes:
 
-Currently tracepoint events cannot be completed because they contain a
-colon (:) character.  The colon is considered as a word separator when
-bash completion is done - variable COMP_WORDBREAKS contains colon - so
-if a word being completed contains a colon it can be a problem.
+> On Thu, Sep 20, 2012 at 3:14 PM, Kees Cook <keescook@chromium.org> wrote:
+>> As part of the effort to create a stronger boundary between root and
+>> kernel, Chrome OS wants to be able to enforce that kernel modules are
+>> being loaded only from our read-only crypto-hash verified (dm_verity)
+>> root filesystem. Since the init_module syscall hands the kernel a module
+>> as a memory blob, no reasoning about the origin of the blob can be made.
+>>
+>> Earlier proposals for appending signatures to kernel modules would not be
+>> useful in Chrome OS, since it would involve adding an additional set of
+>> keys to our kernel and builds for no good reason: we already trust the
+>> contents of our root filesystem. We don't need to verify those kernel
+>> modules a second time. Having to do signature checking on module loading
+>> would slow us down and be redundant. All we need to know is where a
+>> module is coming from so we can say yes/no to loading it.
+>>
+>> If a file descriptor is used as the source of a kernel module, many more
+>> things can be reasoned about. In Chrome OS's case, we could enforce that
+>> the module lives on the filesystem we expect it to live on.  In the case
+>> of IMA (or other LSMs), it would be possible, for example, to examine
+>> extended attributes that may contain signatures over the contents of
+>> the module.
+>>
+>> This introduces a new syscall (on x86), similar to init_module, that has
+>> only two arguments. The first argument is used as a file descriptor to
+>> the module and the second argument is a pointer to the NULL terminated
+>> string of module arguments.
+>
+> Hi Rusty,
+>
+> Is this likely to land in the 3.7 change window? I'd really like to
+> get the syscall number assigned so I can start sending patches to
+> glibc, kmod, etc. My tree is here, FWIW:
 
-Recent versions of bash completion provide -n switch to
-_get_comp_words_by_ref and __ltrim_colon_completions functions in
-order to resolve this issue.  Copy the latter in case not exists.
+No, unfortunately it's a little late and there were issues with ARM
+signoffs and syscall numbers...
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-This patch is based on my previous completion updates set.
+> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/module-fd-syscall
 
- tools/perf/bash_completion | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+Messy merge due to the module signing stuff going in :(
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 5c355ababf80..56e6a12aab59 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -6,6 +6,19 @@ function_exists()
- 	return $?
- }
- 
-+function_exists __ltrim_colon_completions ||
-+__ltrim_colon_completions()
-+{
-+	if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
-+		# Remove colon-word prefix from COMPREPLY items
-+		local colon_word=${1%${1##*:}}
-+		local i=${#COMPREPLY[*]}
-+		while [[ $((--i)) -ge 0 ]]; do
-+			COMPREPLY[$i]=${COMPREPLY[$i]#"$colon_word"}
-+		done
-+	fi
-+}
-+
- have perf &&
- _perf()
- {
-@@ -13,9 +26,9 @@ _perf()
- 
- 	COMPREPLY=()
- 	if function_exists _get_comp_words_by_ref; then
--		_get_comp_words_by_ref cur prev
-+		_get_comp_words_by_ref -n : cur prev
- 	else
--		cur=$(_get_cword)
-+		cur=$(_get_cword :)
- 		prev=${COMP_WORDS[COMP_CWORD-1]}
- 	fi
- 
-@@ -35,6 +48,7 @@ _perf()
- 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
- 		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
-+		__ltrim_colon_completions $cur
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
- 		subcmd=${COMP_WORDS[1]}
--- 
-1.7.11.4
+Please rebase on top of my kernel.org modules-next branch, and I'll pull
+into my modules-wip branch for 3.8.
 
+Thanks,
+Rusty.
