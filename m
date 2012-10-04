@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2JDKI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:08:59 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:42683 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab2JDKI6 (ORCPT
+	id S1752926Ab2JDKMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:12:23 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35005 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab2JDKMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:08:58 -0400
-X-IronPort-AV: E=Sophos;i="4.80,533,1344211200"; 
-   d="scan'208";a="14935981"
-Date: Thu, 4 Oct 2012 11:07:46 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/xen_initial_domain: check that xen_start_info
- is initialized
-In-Reply-To: <506D5A53020000780009F8B7@nat28.tlf.novell.com>
-Message-ID: <alpine.DEB.2.02.1210041106560.29232@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com> <1349272182.650.150.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com> <1349272482.650.151.camel@zakaz.uk.xensource.com>
- <20121003141116.GA10633@phenom.dumpdata.com> <1349276431.650.156.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com> <1349279862.650.171.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1210031658120.29232@kaball.uk.xensource.com>
- <1349280814.650.178.camel@zakaz.uk.xensource.com> <1349282492.650.185.camel@zakaz.uk.xensource.com> <alpine.DEB.2.02.1210031807340.29232@kaball.uk.xensource.com> <506D5A53020000780009F8B7@nat28.tlf.novell.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 4 Oct 2012 06:12:21 -0400
+Message-ID: <506D60FC.7090801@redhat.com>
+Date: Thu, 04 Oct 2012 12:12:12 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] block: add queue-private command filter, editable
+ via sysfs
+References: <1348587009-22400-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1348587009-22400-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Jan Beulich wrote:
-> >>> On 03.10.12 at 19:08, Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-> wrote:
-> > Since commit commit 4c071ee5268f7234c3d084b6093bebccc28cdcba ("arm:
-> > initial Xen support") PV on HVM guests can be xen_initial_domain.
-> > However PV on HVM guests might have an unitialized xen_start_info, so
-> > check before accessing its fields.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-> > Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > 
-> > diff --git a/include/xen/xen.h b/include/xen/xen.h
-> > index 9a39ca5..e7101bb 100644
-> > --- a/include/xen/xen.h
-> > +++ b/include/xen/xen.h
-> > @@ -28,7 +28,7 @@ extern enum xen_domain_type xen_domain_type;
-> >  #include <asm/xen/hypervisor.h>
-> >  
-> >  #define xen_initial_domain()	(xen_domain() && \
-> > -				 xen_start_info->flags & SIF_INITDOMAIN)
-> > +				 xen_start_info && xen_start_info->flags & SIF_INITDOMAIN)
-> >  #else  /* !CONFIG_XEN_DOM0 */
-> >  #define xen_initial_domain()	(0)
-> >  #endif	/* CONFIG_XEN_DOM0 */
+Il 25/09/2012 17:30, Paolo Bonzini ha scritto:
+> The set of use cases for SG_IO is quite variable that no single filter can
+> accomodate all of them.  The current filter is tailored very much to
+> CD burning, and includes many MMC-specific commands that may have
+> other meanings in different standards.  Someone may want to remove
+> those commands; at the same time, people that trust their users may
+> want to add persistent reservations, trim/discard, or even access to
+> vendor-specific commands.
 > 
-> Didn't your other patch statically initialize it?
+> Filters used to be mutable via sysfs, but the implementation was
+> never enabled.  Add it back, and let the admin set this up per device.
+> 
+> A simple bitmap does not let you do things like enabling command A with
+> option B on a specific device for a certain block range.  However, the
+> question is really whether this is needed---in fact, neither of the known
+> uses for the filtering need it.
+> 
+> In one use case, the administrator then needs the ability to configure
+> devices easily, for example to be much more restrictive on non-MMC
+> devices.  It must be done with the same tools it uses for other aspects
+> of the policy---which will be a combination of DAC (Unix permissions and
+> ACLs) and sysfs.  Different SCSI standards may give different meanings
+> for the same byte value, but a simple bitmap is enough for this.
+> 
+> In the virtualization case, the problem is really that you want to
+> pass through everything or almost everything, while still running as
+> confined as possible (i.e. CAP_SYS_RAWIO is not a choice).  But in this
+> case a more complex filtering can be done just as easily in userspace,
+> in the virtual machine monitor.  While the userspace filter can be
+> subverted if the guest can escape the QEMU jail, the bitmap still lets
+> you block some commands at the kernel level if really necessary.
+> 
+> One alternative is a ioctl to disable the filter altogether, to be
+> used together with SCM_RIGHTS file descriptor passing.  This works in
+> the virtualization case but not for policy decisions.  So this patch
+> series provides the sysfs knob.  It is a tweaked revert of commit 018e044
+> (block: get rid of queue-private command filter, 2009-06-26).
+> 
+> Please review!
+> 
+> Paolo
+> 
+> v1->v2: add OOM and capability checks
+> 
+> Paolo Bonzini (3):
+>   block: add back queue-private command filter
+>   scsi: create an all-zero filter for scanners
+>   block: add back command filter modification via sysfs
+> 
+>  Documentation/block/queue-sysfs.txt |   16 +++++
+>  block/Kconfig                       |   10 +++
+>  block/blk-sysfs.c                   |   43 +++++++++++++
+>  block/bsg.c                         |    2 +-
+>  block/scsi_ioctl.c                  |  117 +++++++++++++++++++++++++++++++----
+>  drivers/scsi/scsi_scan.c            |    6 ++-
+>  drivers/scsi/sg.c                   |    7 +-
+>  include/linux/blkdev.h              |   31 +++++++++-
+>  8 files changed, 213 insertions(+), 19 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Yes. Even though both patches can safely coexist, I wrote this one as an
-alternative solution.
+Ping?
+
+Tejun, Jens, anyone else, any hope that this gets in 3.7?
+
+Paolo
