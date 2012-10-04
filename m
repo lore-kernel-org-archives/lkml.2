@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2JDHM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:12:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60022 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab2JDHM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:12:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH 2/6] mfd: da9052: Introduce da9052-irq.c
-Date: Thu, 4 Oct 2012 07:12:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
-        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-References: <1349320509-26930-1-git-send-email-festevam@gmail.com> <1349320509-26930-2-git-send-email-festevam@gmail.com>
-In-Reply-To: <1349320509-26930-2-git-send-email-festevam@gmail.com>
+	id S1752192Ab2JDHNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:13:44 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33154 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab2JDHNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 03:13:43 -0400
+Message-ID: <506D3704.4060102@ti.com>
+Date: Thu, 4 Oct 2012 12:43:08 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        VGER <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: Re: [PATCH] ARM: davinci: dm644x: fix out range signal for ED
+References: <1349246100-7477-1-git-send-email-prabhakar.lad@ti.com> <506C158D.4000906@ti.com> <CA+V-a8uFNXvb7bPv0dLKeSeNzZ9C3rvrXCNSWy+8HgiumR9sEw@mail.gmail.com>
+In-Reply-To: <CA+V-a8uFNXvb7bPv0dLKeSeNzZ9C3rvrXCNSWy+8HgiumR9sEw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210040712.48516.arnd@arndb.de>
-X-Provags-ID: V02:K0:onk9C9N6KGp7XWqimm3Q/mXw9uXiGx3RkV4U7O1VzTT
- LoQBNv56QN0IEQHvpsZa2Yv614EhorStrjkNxEFe8NbwdT+90G
- tdXfazotgM/FU0a3mTi+LdrutB4uQINCOwOhQIorHXelg9/LJW
- yHKu2oK3UPPHo5kZEYXd2LG9WlKrO27BU17/IGpx69amCCXKIv
- gpzaT5pQEIGwKMEhfsSBAiNnvHU0w5lswghGB3gyldKS7qU1m0
- Z8SL437MO7RnXjg0FZegtsBe93S/HLJVSnZeMVzLUrYGZtb/FK
- cNJLnbpmZXgKgd2BOArP24tAd0OVZ5QLwchBnJos97cqcUDFfg
- Vm+SyQHOoi9xR3ag8nbQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 October 2012, Fabio Estevam wrote:
-> +static int da9052_map_irq(struct da9052 *da9052, int irq)
-> +{
-> +       return regmap_irq_get_virq(da9052->irq_data, irq);
-> +}
-> +
-> +int da9052_enable_irq(struct da9052 *da9052, int irq)
-> +{
-> +       irq = da9052_map_irq(da9052, irq);
-> +       if (irq < 0)
-> +               return irq;
-> +
-> +       enable_irq(irq);
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(da9052_enable_irq);
+On 10/4/2012 10:22 AM, Prabhakar Lad wrote:
+> Hi Sekhar,
+> 
+> On Wed, Oct 3, 2012 at 4:08 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+>> On 10/3/2012 12:05 PM, Prabhakar wrote:
+>>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>>>
+>>> while testing display on dm644x, for ED out-range signals
+>>> was observed. This patch fixes appropriate clock setting
+>>> for ED.
+>>
+>> Can you please clarify what you mean by "out range signal"? Are there
+>> any user visible artifacts on the display? What was the clock being
+>> provided earlier and what is the value after this patch?
+>>
+>> Also, is the issue severe enough that this patch should be applied to
+>> stable tree as well?
+>>
+> Ideally a clock of 54Mhz is required for  enhanced definition to
+> work, which it was actually set to but while testing I noticed
+> out-of-range signal. The out-of-range signal is often caused
+> when the field rate is above the rate that the television will handle.
+> When this is the case the TV or monitor displays "Out-Of-Range Signal".
+> 
+> Reducing the clock fixed it. now the clock is set to 27Mhz.
 
-This looks correct, but I'm not sure it's actually simpler
-than letting the sub-drivers deal with calling regmap_irq_get_virq().
+So, is the requirement for ED 54MHz or lower? Still trying to explain
+myself how 27MHz is working where a 54MHz is required. I guess there is
+also a lower limit on what the frequency should be?
 
-Can't each driver just call regmap_irq_get_virq once at init time and
-then call the regular irq management functions?
+Sorry I am not familiar will all the video concepts, hence the questions.
 
-Maybe I just don't see the real purpose of these functions. If I'm
-contradicting what Mark said, listen to him instead.
-
-	Arnd
+Thanks,
+Sekhar
