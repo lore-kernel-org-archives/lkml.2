@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab2JDMxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:53:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62392 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756252Ab2JDMwE (ORCPT
+	id S1756962Ab2JDMyH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:54:07 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58823 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756652Ab2JDMv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:52:04 -0400
+	Thu, 4 Oct 2012 08:51:57 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 15/20] perf ui/hist: Add support for event group view
-Date: Thu,  4 Oct 2012 21:49:49 +0900
-Message-Id: <1349354994-17853-16-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/20] perf hists: Maintain total periods of group members in the leader
+Date: Thu,  4 Oct 2012 21:49:47 +0900
+Message-Id: <1349354994-17853-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
 References: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
@@ -25,139 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Show group members' overhead also when showing the leader's if event
-group is enabled.  At this time, only implemented overhead part in
-order to ease review and other parts can be added later once this
-patch settled down.
+Like group_stats in hist_entry, total periods information also need to
+be known to the leader.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c       |   66 ++++++++++++++++++++++++++++++++++++++++----
- tools/perf/ui/stdio/hist.c |    2 ++
- 2 files changed, 63 insertions(+), 5 deletions(-)
+ tools/perf/util/hist.c |   25 +++++++++++++++++++++++++
+ tools/perf/util/hist.h |    1 +
+ 2 files changed, 26 insertions(+)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index f5a1e4f65263..ad4efb772796 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -3,34 +3,90 @@
- #include "../util/hist.h"
- #include "../util/util.h"
- #include "../util/sort.h"
-+#include "../util/evsel.h"
- 
- 
- /* hist period print (hpp) functions */
- static int hpp__header_overhead(struct perf_hpp *hpp)
- {
--	return scnprintf(hpp->buf, hpp->size, "Overhead");
-+	int len = 8;
-+
-+	if (symbol_conf.event_group) {
-+		struct perf_evsel *evsel = hpp->ptr;
-+
-+		BUG_ON(!perf_evsel__is_group_leader(evsel));
-+
-+		len += evsel->nr_members * 8;
-+	}
-+	return scnprintf(hpp->buf, hpp->size, "%*s", len, "Overhead");
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 95415716c708..48488057c3da 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -194,6 +194,28 @@ static void hist_entry__add_group_stat(struct hist_entry *he_dest,
+ 		he_stat__add_stat(&he_dest->group_stats[evsel->group_idx], src);
  }
  
--static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
-+static int hpp__width_overhead(struct perf_hpp *hpp)
- {
--	return 8;
-+	int len = 8;
++static void hists__add_group_stat(struct hists *hists)
++{
++	struct perf_evsel *evsel = hists_2_evsel(hists);
++	struct perf_evsel *leader = evsel->leader;
++	struct hists *leader_hists;
 +
-+	if (symbol_conf.event_group) {
-+		struct perf_evsel *evsel = hpp->ptr;
++	if (perf_evsel__is_group_leader(evsel))
++		return;
 +
-+		len += evsel->nr_members * 8;
++	leader_hists = &leader->hists;
++
++	if (!leader_hists->group_stats) {
++		leader_hists->group_stats = calloc(leader->nr_members,
++						   sizeof(struct events_stats));
++		if (!leader_hists->group_stats)
++			return;
 +	}
-+	return len;
++
++	memcpy(&leader_hists->group_stats[evsel->group_idx],
++	       &hists->stats, sizeof(struct events_stats));
++}
++
+ static void hist_entry__decay(struct hist_entry *he)
+ {
+ 	he->stat.period = (he->stat.period * 7) / 8;
+@@ -561,6 +583,9 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
+ 			hists__apply_filters(hists, n);
+ 		}
+ 	}
++
++	if (symbol_conf.event_group)
++		hists__add_group_stat(hists);
  }
  
- static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- {
-+	int ret;
- 	struct hists *hists = he->hists;
- 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
- 
--	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
-+	ret = percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
-+
-+	if (symbol_conf.event_group) {
-+		int i;
-+		struct perf_evsel *evsel = hists_2_evsel(hists);
-+
-+		for (i = 0; i < evsel->nr_members; i++) {
-+			u64 period = he->group_stats[i].period;
-+			u64 total = hists->group_stats[i].total_period;
-+
-+			percent = 100.0 * period / total;
-+			ret += percent_color_snprintf(hpp->buf + ret,
-+						      hpp->size - ret,
-+						      " %6.2f%%", percent);
-+		}
-+
-+	}
-+	return ret;
- }
- 
- static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- {
-+	int ret;
- 	struct hists *hists = he->hists;
- 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-+	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
-+
-+	if (symbol_conf.event_group) {
-+		int i;
-+		struct perf_evsel *evsel = hists_2_evsel(hists);
-+
-+		for (i = 0; i < evsel->nr_members; i++) {
-+			u64 period = he->group_stats[i].period;
-+			u64 total = hists->group_stats[i].total_period;
-+
-+			if (symbol_conf.field_sep) {
-+				ret += scnprintf(hpp->buf + ret,
-+						 hpp->size - ret, " ");
-+			}
-+			percent = 100.0 * period / total;
-+			ret += scnprintf(hpp->buf + ret, hpp->size - ret,
-+					 fmt, percent);
-+		}
-+
-+	}
-+	return ret;
- }
- 
- static int hpp__header_overhead_sys(struct perf_hpp *hpp)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index fbd4e32d0743..1d4f1ddc8bf8 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -3,6 +3,7 @@
- #include "../../util/util.h"
- #include "../../util/hist.h"
- #include "../../util/sort.h"
-+#include "../../util/evsel.h"
- 
- 
- static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
-@@ -346,6 +347,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
-+		.ptr	= hists_2_evsel(hists),
- 	};
- 	bool first = true;
- 
+ void hists__collapse_resort(struct hists *hists)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 66cb31fe81d2..e150cf86b94a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -66,6 +66,7 @@ struct hists {
+ 	const char		*symbol_filter_str;
+ 	pthread_mutex_t		lock;
+ 	struct events_stats	stats;
++	struct events_stats	*group_stats;
+ 	u64			event_stream;
+ 	u16			col_len[HISTC_NR_COLS];
+ };
 -- 
 1.7.9.2
 
