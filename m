@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab2JDVtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:49:45 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934013Ab2JDVXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:39 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "Shawn J. Goff" <shawn7400@gmail.com>
-Subject: =?UTF-8?q?=5B=2006/52=5D=20USB=3A=20option=3A=20blacklist=20QMI=20interface=20on=20ZTE=20MF683?=
-Date: Thu,  4 Oct 2012 14:20:57 -0700
-Message-Id: <20121004210636.143976503@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
-References: <20121004210635.372689554@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1751536Ab2JDVuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:50:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:59812 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab2JDVuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:50:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 0/4] ACPI: kill acpi_pci_root_start
+Date: Thu, 04 Oct 2012 23:53:40 +0200
+Message-ID: <15022838.BvGHsiOjXu@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.4.6-2.10-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAE9FiQU=h8mchDHCQ31U-UpPhqmFiO_H5yX2uonsyOh3tK9DYA@mail.gmail.com>
+References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com> <16287303.8DVGGcjq5E@vostro.rjw.lan> <CAE9FiQU=h8mchDHCQ31U-UpPhqmFiO_H5yX2uonsyOh3tK9DYA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thursday 04 of October 2012 14:31:46 Yinghai Lu wrote:
+> On Thu, Oct 4, 2012 at 2:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >>
+> >> At last we could remove all acpi_bus_start workaround.
+> >
+> > Do I understand correctly that you just want to prevent acpi_pci_root_driver
+> > from binding to the host bridge's struct acpi_device created while we're
+> > walking the ACPI namespace?
+> 
+> yes, during hot add path.
 
-------------------
+Why exactly do you want to prevent that from happening?
 
-From: Bjørn Mork <bjorn@mork.no>
-
-commit 160c9425ac52cb30502be2d9c5e848cec91bb115 upstream.
-
-Interface #5 on ZTE MF683 is a QMI/wwan interface.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Shawn J. Goff <shawn7400@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -870,7 +870,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0153, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0155, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
