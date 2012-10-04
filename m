@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab2JDST3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:19:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39779 "EHLO
+	id S1754011Ab2JDST0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:19:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39778 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab2JDSJ3 (ORCPT
+	with ESMTP id S1752644Ab2JDSJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 14:09:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 18/42] perf timechart: Don't use globals where not needed to
-Date: Thu,  4 Oct 2012 15:08:18 -0300
-Message-Id: <1349374122-27806-19-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/42] perf script: Don't use globals where not needed to
+Date: Thu,  4 Oct 2012 15:08:14 -0300
+Message-Id: <1349374122-27806-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
 References: <1349374122-27806-1-git-send-email-acme@infradead.org>
@@ -42,159 +42,154 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-fapdrw3h3hz713w8h5eww596@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-eukt8bzp4t2n2z3s8ue5ofwb@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-timechart.c |  100 ++++++++++++++++-----------------------
- 1 files changed, 41 insertions(+), 59 deletions(-)
+ tools/perf/builtin-script.c |   90 ++++++++++++++++++++-----------------------
+ 1 files changed, 42 insertions(+), 48 deletions(-)
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index b1a8a3b..f251b61 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -38,9 +38,6 @@
- #define PWR_EVENT_EXIT -1
- 
- 
--static const char	*input_name;
--static const char	*output_name = "output.svg";
--
- static unsigned int	numcpus;
- static u64		min_freq;	/* Lowest CPU frequency seen */
- static u64		max_freq;	/* Highest CPU frequency seen */
-@@ -968,16 +965,15 @@ static void write_svg_file(const char *filename)
- 	svg_close();
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 1be843a..fb96250 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -24,7 +24,6 @@ static u64			last_timestamp;
+ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ static bool			no_callchain;
+-static bool			show_full_info;
+ static bool			system_wide;
+ static const char		*cpu_list;
+ static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+@@ -473,8 +472,6 @@ static int cleanup_scripting(void)
+ 	return scripting_ops->stop_script();
  }
  
--static struct perf_tool perf_timechart = {
--	.comm			= process_comm_event,
--	.fork			= process_fork_event,
--	.exit			= process_exit_event,
--	.sample			= process_sample_event,
--	.ordered_samples	= true,
--};
+-static const char *input_name;
 -
--static int __cmd_timechart(void)
-+static int __cmd_timechart(const char *input_name, const char *output_name)
- {
-+	struct perf_tool perf_timechart = {
-+		.comm		 = process_comm_event,
-+		.fork		 = process_fork_event,
-+		.exit		 = process_exit_event,
-+		.sample		 = process_sample_event,
-+		.ordered_samples = true,
-+	};
- 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
- 							 0, false, &perf_timechart);
- 	int ret = -EINVAL;
-@@ -1005,40 +1001,25 @@ out_delete:
- 	return ret;
+ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 				union perf_event *event,
+ 				struct perf_sample *sample,
+@@ -1156,20 +1153,40 @@ out:
+ 	return n_args;
  }
  
--static const char * const timechart_usage[] = {
--	"perf timechart [<options>] {record}",
+-static const char * const script_usage[] = {
+-	"perf script [<options>]",
+-	"perf script [<options>] record <script> [<record-options>] <command>",
+-	"perf script [<options>] report <script> [script-args]",
+-	"perf script [<options>] <script> [<record-options>] <command>",
+-	"perf script [<options>] <top-script> [script-args]",
 -	NULL
 -};
--
--#ifdef SUPPORT_OLD_POWER_EVENTS
--static const char * const record_old_args[] = {
--	"record",
--	"-a",
--	"-R",
--	"-f",
--	"-c", "1",
--	"-e", "power:power_start",
--	"-e", "power:power_end",
--	"-e", "power:power_frequency",
--	"-e", "sched:sched_wakeup",
--	"-e", "sched:sched_switch",
--};
--#endif
--
--static const char * const record_new_args[] = {
--	"record",
--	"-a",
--	"-R",
--	"-f",
--	"-c", "1",
--	"-e", "power:cpu_frequency",
--	"-e", "power:cpu_idle",
--	"-e", "sched:sched_wakeup",
--	"-e", "sched:sched_switch",
--};
--
- static int __cmd_record(int argc, const char **argv)
- {
-+#ifdef SUPPORT_OLD_POWER_EVENTS
-+	const char * const record_old_args[] = {
-+		"record", "-a", "-R", "-f", "-c", "1",
-+		"-e", "power:power_start",
-+		"-e", "power:power_end",
-+		"-e", "power:power_frequency",
-+		"-e", "sched:sched_wakeup",
-+		"-e", "sched:sched_switch",
-+	};
-+#endif
-+	const char * const record_new_args[] = {
-+		"record", "-a", "-R", "-f", "-c", "1",
-+		"-e", "power:cpu_frequency",
-+		"-e", "power:cpu_idle",
-+		"-e", "sched:sched_wakeup",
-+		"-e", "sched:sched_switch",
-+	};
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
- 	const char * const *record_args = record_new_args;
-@@ -1077,27 +1058,28 @@ parse_process(const struct option *opt __maybe_unused, const char *arg,
- 	return 0;
- }
++static int have_cmd(int argc, const char **argv)
++{
++	char **__argv = malloc(sizeof(const char *) * argc);
++
++	if (!__argv) {
++		pr_err("malloc failed\n");
++		return -1;
++	}
++
++	memcpy(__argv, argv, sizeof(const char *) * argc);
++	argc = parse_options(argc, (const char **)__argv, record_options,
++			     NULL, PARSE_OPT_STOP_AT_NON_OPTION);
++	free(__argv);
  
 -static const struct option options[] = {
++	system_wide = (argc == 0);
++
++	return 0;
++}
++
++int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
++{
++	bool show_full_info = false;
++	const char *input_name = NULL;
++	char *rec_script_path = NULL;
++	char *rep_script_path = NULL;
++	struct perf_session *session;
++	char *script_path = NULL;
++	const char **__argv;
++	int i, j, err;
++	const struct option options[] = {
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
+ 	OPT_INCR('v', "verbose", &verbose,
+-		    "be more verbose (show symbol address, etc)"),
++		 "be more verbose (show symbol address, etc)"),
+ 	OPT_BOOLEAN('L', "Latency", &latency_format,
+ 		    "show latency attributes (irqs/preemption disabled, etc)"),
+ 	OPT_CALLBACK_NOOPT('l', "list", NULL, NULL, "list available scripts",
+@@ -1179,8 +1196,7 @@ static const struct option options[] = {
+ 		     parse_scriptname),
+ 	OPT_STRING('g', "gen-script", &generate_script_lang, "lang",
+ 		   "generate perf-script.xx script in specified language"),
 -	OPT_STRING('i', "input", &input_name, "file",
 -		    "input file name"),
--	OPT_STRING('o', "output", &output_name, "file",
--		    "output file name"),
--	OPT_INTEGER('w', "width", &svg_page_width,
--		    "page width"),
--	OPT_BOOLEAN('P', "power-only", &power_only,
--		    "output power data only"),
-+int cmd_timechart(int argc, const char **argv,
-+		  const char *prefix __maybe_unused)
-+{
-+	const char *input_name;
-+	const char *output_name = "output.svg";
-+	const struct option options[] = {
 +	OPT_STRING('i', "input", &input_name, "file", "input file name"),
-+	OPT_STRING('o', "output", &output_name, "file", "output file name"),
-+	OPT_INTEGER('w', "width", &svg_page_width, "page width"),
-+	OPT_BOOLEAN('P', "power-only", &power_only, "output power data only"),
- 	OPT_CALLBACK('p', "process", NULL, "process",
- 		      "process selector. Pass a pid or process name.",
- 		       parse_process),
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
+ 	OPT_BOOLEAN('d', "debug-mode", &debug_mode,
+ 		   "do various checks like samples ordering and lost events"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+@@ -1195,10 +1211,9 @@ static const struct option options[] = {
+ 		     "comma separated output fields prepend with 'type:'. "
+ 		     "Valid types: hw,sw,trace,raw. "
+ 		     "Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,"
+-		     "addr,symoff",
+-		     parse_output_fields),
++		     "addr,symoff", parse_output_fields),
+ 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
+-		     "system-wide collection from all CPUs"),
++		    "system-wide collection from all CPUs"),
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+@@ -1208,37 +1223,16 @@ static const struct option options[] = {
+ 		    "display extended information from perf.data file"),
+ 	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
+ 		    "Show the path of [kernel.kallsyms]"),
+-
  	OPT_END()
 -};
 -
+-static int have_cmd(int argc, const char **argv)
+-{
+-	char **__argv = malloc(sizeof(const char *) * argc);
+-
+-	if (!__argv) {
+-		pr_err("malloc failed\n");
+-		return -1;
+-	}
+-
+-	memcpy(__argv, argv, sizeof(const char *) * argc);
+-	argc = parse_options(argc, (const char **)__argv, record_options,
+-			     NULL, PARSE_OPT_STOP_AT_NON_OPTION);
+-	free(__argv);
+-
+-	system_wide = (argc == 0);
+-
+-	return 0;
+-}
+-
+-int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+-{
+-	char *rec_script_path = NULL;
+-	char *rep_script_path = NULL;
+-	struct perf_session *session;
+-	char *script_path = NULL;
+-	const char **__argv;
+-	int i, j, err;
 +	};
-+	const char * const timechart_usage[] = {
-+		"perf timechart [<options>] {record}",
++	const char * const script_usage[] = {
++		"perf script [<options>]",
++		"perf script [<options>] record <script> [<record-options>] <command>",
++		"perf script [<options>] report <script> [script-args]",
++		"perf script [<options>] <script> [<record-options>] <command>",
++		"perf script [<options>] <top-script> [script-args]",
 +		NULL
 +	};
  
--int cmd_timechart(int argc, const char **argv,
--		  const char *prefix __maybe_unused)
--{
- 	argc = parse_options(argc, argv, options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
+ 	setup_scripting();
  
-@@ -1110,5 +1092,5 @@ int cmd_timechart(int argc, const char **argv,
- 
- 	setup_pager();
- 
--	return __cmd_timechart();
-+	return __cmd_timechart(input_name, output_name);
- }
 -- 
 1.7.1
 
