@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2JDV46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:56:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:12535 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933904Ab2JDVWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:06 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH] pidns: remove recursion from free_pid_ns
-Date: Fri,  5 Oct 2012 01:21:02 +0400
-Message-Id: <1349385662-571743-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1752566Ab2JDV53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:57:29 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933887Ab2JDVWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:22:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Paul Stewart <pstew@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 37/58] ath9k: Disable ASPM only for AR9285
+Date: Thu,  4 Oct 2012 14:19:44 -0700
+Message-Id: <20121004210640.102440215@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
+References: <20121004210635.449598766@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a stack trace of recursion:
-free_pid_ns(parent)
-  put_pid_ns(parent)
-    kref_put(&ns->kref, free_pid_ns);
-      free_pid_ns
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-This patch turns recursion into loops.
+------------------
 
-pidns can be nested many times, so in case of recursion
-a simple user space program can provoke a kernel panic
-due to exceed of a kernel stack.
+From: Sujith Manoharan <c_manoha@qualcomm.com>
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+commit 046b6802c8d3c8a57448485513bf7291633e0fa3 upstream.
+
+Currently, ASPM is disabled for all WLAN+BT combo chipsets
+when BTCOEX is enabled. This is incorrect since the workaround
+is required only for WB195, which is a AR9285+AR3011 combo
+solution. Fix this by checking for the HW version when enabling
+the workaround.
+
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Tested-by: Paul Stewart <pstew@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- include/linux/kref.h   |   12 ++++++++++++
- kernel/pid_namespace.c |   17 +++++++++++++----
- 2 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/pci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 65af688..d234199 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -124,8 +124,9 @@ static void ath_pci_aspm_init(struct ath
+ 	if (!parent)
+ 		return;
  
-+/**
-+ * kref_put - decrement refcount for object.
-+ * @kref: object.
-+ *
-+ * Decrement the refcount.
-+ * Return 1 if refcount is zero.
-+ */
-+static inline int __kref_put(struct kref *kref)
-+{
-+	return atomic_sub_and_test(1, &kref->refcount);
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index b17bf93..632eb88 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -138,11 +138,20 @@ void free_pid_ns(struct kref *kref)
- 
- 	ns = container_of(kref, struct pid_namespace, kref);
- 
--	parent = ns->parent;
--	destroy_pid_namespace(ns);
-+	while (1) {
- 
--	if (parent != NULL)
--		put_pid_ns(parent);
-+		parent = ns->parent;
-+		destroy_pid_namespace(ns);
-+
-+		if (parent == NULL || parent == &init_pid_ns)
-+			break;
-+
-+		/* kref_put cannot be used for avoiding recursion */
-+		if (__kref_put(&parent->kref) == 0)
-+			break;
-+
-+		ns = parent;
-+	}
- }
- 
- void zap_pid_ns_processes(struct pid_namespace *pid_ns)
--- 
-1.7.1
+-	if (ath9k_hw_get_btcoex_scheme(ah) != ATH_BTCOEX_CFG_NONE) {
+-		/* Bluetooth coexistance requires disabling ASPM. */
++	if ((ath9k_hw_get_btcoex_scheme(ah) != ATH_BTCOEX_CFG_NONE) &&
++	    (AR_SREV_9285(ah))) {
++		/* Bluetooth coexistance requires disabling ASPM for AR9285. */
+ 		pci_read_config_byte(pdev, pos + PCI_EXP_LNKCTL, &aspm);
+ 		aspm &= ~(PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1);
+ 		pci_write_config_byte(pdev, pos + PCI_EXP_LNKCTL, aspm);
+
 
