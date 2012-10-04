@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946339Ab2JDViL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:38:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44259 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946286Ab2JDV1C (ORCPT
+	id S1946211Ab2JDVZw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:25:52 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946192Ab2JDVZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:02 -0400
+	Thu, 4 Oct 2012 17:25:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 02/33] dm: handle requests beyond end of device instead of using BUG_ON
-Date: Thu,  4 Oct 2012 14:26:24 -0700
-Message-Id: <20121004210558.758480054@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 47/52] IB/srp: Fix use-after-free in srp_reset_req()
+Date: Thu,  4 Oct 2012 14:21:38 -0700
+Message-Id: <20121004210641.286380478@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
-References: <20121004210558.383865383@linuxfoundation.org>
+In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
+References: <20121004210635.372689554@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit ba1cbad93dd47223b1f3b8edd50dd9ef2abcb2ed upstream.
+commit 9b796d06d5d1b1e85ae2316a283ea11dd739ef96 upstream.
 
-The access beyond the end of device BUG_ON that was introduced to
-dm_request_fn via commit 29e4013de7ad950280e4b2208 ("dm: implement
-REQ_FLUSH/FUA support for request-based dm") was an overly
-drastic (but simple) response to this situation.
+srp_free_req() uses the scsi_cmnd structure contents to unmap
+buffers, so we must invoke srp_free_req() before we release
+ownership of that structure.
 
-I have received a report that this BUG_ON was hit and now think
-it would be better to use dm_kill_unmapped_request() to fail the clone
-and original request with -EIO.
-
-map_request() will assign the valid target returned by
-dm_table_find_target to tio->ti.  But when the target
-isn't valid tio->ti is never assigned (because map_request isn't
-called); so add a check for tio->ti != NULL to dm_done().
-
-Reported-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Acked-by: David Dillow <dillowda@ornl.gov>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |   56 ++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 38 insertions(+), 18 deletions(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -856,10 +856,14 @@ static void dm_done(struct request *clon
- {
- 	int r = error;
- 	struct dm_rq_target_io *tio = clone->end_io_data;
--	dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
-+	dm_request_endio_fn rq_end_io = NULL;
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -638,9 +638,9 @@ static void srp_reset_req(struct srp_tar
+ 	struct scsi_cmnd *scmnd = srp_claim_req(target, req, NULL);
  
--	if (mapped && rq_end_io)
--		r = rq_end_io(tio->ti, clone, error, &tio->info);
-+	if (tio->ti) {
-+		rq_end_io = tio->ti->type->rq_end_io;
-+
-+		if (mapped && rq_end_io)
-+			r = rq_end_io(tio->ti, clone, error, &tio->info);
-+	}
- 
- 	if (r <= 0)
- 		/* The target wants to complete the I/O */
-@@ -1562,15 +1566,6 @@ static int map_request(struct dm_target
- 	int r, requeued = 0;
- 	struct dm_rq_target_io *tio = clone->end_io_data;
- 
--	/*
--	 * Hold the md reference here for the in-flight I/O.
--	 * We can't rely on the reference count by device opener,
--	 * because the device may be closed during the request completion
--	 * when all bios are completed.
--	 * See the comment in rq_completed() too.
--	 */
--	dm_get(md);
--
- 	tio->ti = ti;
- 	r = ti->type->map_rq(ti, clone, &tio->info);
- 	switch (r) {
-@@ -1602,6 +1597,26 @@ static int map_request(struct dm_target
- 	return requeued;
+ 	if (scmnd) {
++		srp_free_req(target, req, scmnd, 0);
+ 		scmnd->result = DID_RESET << 16;
+ 		scmnd->scsi_done(scmnd);
+-		srp_free_req(target, req, scmnd, 0);
+ 	}
  }
  
-+static struct request *dm_start_request(struct mapped_device *md, struct request *orig)
-+{
-+	struct request *clone;
-+
-+	blk_start_request(orig);
-+	clone = orig->special;
-+	atomic_inc(&md->pending[rq_data_dir(clone)]);
-+
-+	/*
-+	 * Hold the md reference here for the in-flight I/O.
-+	 * We can't rely on the reference count by device opener,
-+	 * because the device may be closed during the request completion
-+	 * when all bios are completed.
-+	 * See the comment in rq_completed() too.
-+	 */
-+	dm_get(md);
-+
-+	return clone;
-+}
-+
- /*
-  * q->request_fn for request-based dm.
-  * Called with the queue lock held.
-@@ -1631,14 +1646,21 @@ static void dm_request_fn(struct request
- 			pos = blk_rq_pos(rq);
- 
- 		ti = dm_table_find_target(map, pos);
--		BUG_ON(!dm_target_is_valid(ti));
-+		if (!dm_target_is_valid(ti)) {
-+			/*
-+			 * Must perform setup, that dm_done() requires,
-+			 * before calling dm_kill_unmapped_request
-+			 */
-+			DMERR_LIMIT("request attempted access beyond the end of device");
-+			clone = dm_start_request(md, rq);
-+			dm_kill_unmapped_request(clone, -EIO);
-+			continue;
-+		}
- 
- 		if (ti->type->busy && ti->type->busy(ti))
- 			goto delay_and_out;
- 
--		blk_start_request(rq);
--		clone = rq->special;
--		atomic_inc(&md->pending[rq_data_dir(clone)]);
-+		clone = dm_start_request(md, rq);
- 
- 		spin_unlock(q->queue_lock);
- 		if (map_request(ti, clone, md))
-@@ -1658,8 +1680,6 @@ delay_and_out:
- 	blk_delay_queue(q, HZ / 10);
- out:
- 	dm_table_put(map);
--
--	return;
- }
- 
- int dm_underlying_device_busy(struct request_queue *q)
 
 
