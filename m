@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957Ab2JDOSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:18:31 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53860 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964793Ab2JDOS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:18:29 -0400
+	id S964974Ab2JDOUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:20:23 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:57275 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964793Ab2JDOUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:20:21 -0400
+Message-ID: <506D9B17.7070007@parallels.com>
+Date: Thu, 4 Oct 2012 18:20:07 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Date: Thu, 4 Oct 2012 10:18:28 -0400
-Message-ID: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
-Subject: 3.6.0+ (GIT) -- WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
- intel_disable_pipe+0xab/0x12e() -- plane B assertion failure, should be off
- on pipe B but is still active
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Eric Anholt <eric@anholt.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu callback
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-13-git-send-email-glommer@parallels.com> <20121001132711.GL8622@dhcp22.suse.cz> <506D6A99.7070800@parallels.com>
+In-Reply-To: <506D6A99.7070800@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[    4.266874] WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
-intel_disable_pipe+0xab/0x12e()
-[    4.266877] Hardware name: UL50VT
-[    4.266880] plane B assertion failure, should be off on pipe B but
-is still active
-[    4.266882] Modules linked in:
-[    4.266888] Pid: 1, comm: swapper/0 Not tainted 3.6.0+ #27
-[    4.266891] Call Trace:
-[    4.266899]  [<ffffffff8102dd26>] warn_slowpath_common+0x7e/0x97
-[    4.266905]  [<ffffffff8102ddd3>] warn_slowpath_fmt+0x41/0x43
-[    4.266911]  [<ffffffff8129404c>] intel_disable_pipe+0xab/0x12e
-[    4.266917]  [<ffffffff812945d9>] i9xx_crtc_disable+0xd1/0x144
-[    4.266923]  [<ffffffff8129c112>] intel_modeset_setup_hw_state+0x438/0x69f
-[    4.266929]  [<ffffffff8129c398>] intel_modeset_gem_init+0x1f/0x24
-[    4.266936]  [<ffffffff8127bf37>] i915_driver_load+0xada/0xcde
-[    4.266945]  [<ffffffff812628f0>] drm_get_pci_dev+0x16d/0x266
-[    4.266951]  [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
-[    4.266957]  [<ffffffff81454392>] i915_pci_probe+0x4d/0x57
-[    4.266964]  [<ffffffff811e4844>] local_pci_probe+0x5b/0xa2
-[    4.266969]  [<ffffffff811e494b>] pci_device_probe+0xc0/0xed
-[    4.266976]  [<ffffffff8133bb44>] ? driver_probe_device+0x1b5/0x1b5
-[    4.266981]  [<ffffffff8133ba29>] driver_probe_device+0x9a/0x1b5
-[    4.266987]  [<ffffffff8133bb92>] __driver_attach+0x4e/0x6f
-[    4.266992]  [<ffffffff8133a175>] bus_for_each_dev+0x52/0x84
-[    4.266998]  [<ffffffff8133b542>] driver_attach+0x19/0x1b
-[    4.267003]  [<ffffffff8133b1e3>] bus_add_driver+0xf4/0x219
-[    4.267009]  [<ffffffff8133c0ef>] driver_register+0x8e/0x114
-[    4.267014]  [<ffffffff811e3d09>] __pci_register_driver+0x5a/0x5f
-[    4.267020]  [<ffffffff81262a6a>] drm_pci_init+0x81/0xe7
-[    4.267027]  [<ffffffff81ac109d>] ? ttm_init+0x62/0x62
-[    4.267033]  [<ffffffff81ac1103>] i915_init+0x66/0x68
-[    4.267039]  [<ffffffff810001fa>] do_one_initcall+0x7a/0x130
-[    4.267045]  [<ffffffff81a97c3f>] kernel_init+0x10b/0x18f
-[    4.267051]  [<ffffffff81a9752f>] ? do_early_param+0x8c/0x8c
-[    4.267058]  [<ffffffff81471334>] kernel_thread_helper+0x4/0x10
-[    4.267065]  [<ffffffff8104f6a5>] ? finish_task_switch+0x38/0xb0
-[    4.267070]  [<ffffffff81000c71>] ? __switch_to+0x19c/0x426
-[    4.267076]  [<ffffffff8146b7a0>] ? retint_restore_args+0xe/0xe
-[    4.267082]  [<ffffffff81a97b34>] ? start_kernel+0x3b3/0x3b3
-[    4.267087]  [<ffffffff81471330>] ? gs_change+0xb/0xb
+On 10/04/2012 02:53 PM, Glauber Costa wrote:
+> On 10/01/2012 05:27 PM, Michal Hocko wrote:
+>> On Tue 18-09-12 18:04:09, Glauber Costa wrote:
+>>> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
+>>> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
+>>> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
+>>> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
+>>> means that the freeing of memcg structure must happen in a compatible context,
+>>> otherwise we'll get a deadlock.
+>>
+>> Maybe I am missing something obvious but why cannot we simply disble
+>> (soft)irqs in mem_cgroup_create rather than make the free path much more
+>> complicated. It really feels strange to defer everything (e.g. soft
+>> reclaim tree cleanup which should be a no-op at the time because there
+>> shouldn't be any user pages in the group).
+>>
+> 
+> Ok.
+> 
+> I was just able to come back to this today - I was mostly working on the
+> slab feedback over the past few days. I will answer yours and Tejun's
+> concerns at once:
+> 
+> Here is the situation: the backtrace I get is this one:
+> 
+> [  124.956725] =================================
+> [  124.957217] [ INFO: inconsistent lock state ]
+> [  124.957217] 3.5.0+ #99 Not tainted
+> [  124.957217] ---------------------------------
+> [  124.957217] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+> [  124.957217] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE1:SE0] takes:
+> [  124.957217]  (&(&ss->id_lock)->rlock){+.?...}, at:
+> [<ffffffff810aa7b2>] spin_lock+0x9/0xb
+> [  124.957217] {SOFTIRQ-ON-W} state was registered at:
+> [  124.957217]   [<ffffffff810996ed>] __lock_acquire+0x31f/0xd68
+> [  124.957217]   [<ffffffff8109a660>] lock_acquire+0x108/0x15c
+> [  124.957217]   [<ffffffff81534ec4>] _raw_spin_lock+0x40/0x4f
+> [  124.957217]   [<ffffffff810aa7b2>] spin_lock+0x9/0xb
+> [  124.957217]   [<ffffffff810ad00e>] get_new_cssid+0x69/0xf3
+> [  124.957217]   [<ffffffff810ad0da>] cgroup_init_idr+0x42/0x60
+> [  124.957217]   [<ffffffff81b20e04>] cgroup_init+0x50/0x100
+> [  124.957217]   [<ffffffff81b05b9b>] start_kernel+0x3b9/0x3ee
+> [  124.957217]   [<ffffffff81b052d6>] x86_64_start_reservations+0xb1/0xb5
+> [  124.957217]   [<ffffffff81b053d8>] x86_64_start_kernel+0xfe/0x10b
+> 
+> 
+> So what we learn from it, is: we are acquiring a specific lock (the css
+> id one) from softirq context. It was previously taken in a
+> softirq-enabled context, that seems to be coming directly from
+> get_new_cssid.
+> 
+> Tejun correctly pointed out that we should never acquire that lock from
+> a softirq context, in which he is right.
+> 
+> But the situation changes slightly with kmem. Now, the following excerpt
+> of a backtrace is possible:
+> 
+> [   48.602775]  [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
+> [   48.602775]  [<ffffffff81047f90>] free_task+0x31/0x5c
+> [   48.602775]  [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
+> [   48.602775]  [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
+> [   48.602775]  [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
+> [   48.602775]  [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
+> [   48.602775]  [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
+> [   48.602775]  [<ffffffff8105266d>] __do_softirq+0x122/0x277
+> 
+> So as you can see, free_accounted_pages (that will trigger a memcg_put()
+> -> mem_cgroup_free()) can now be called from softirq context, which is,
+> an rcu callback (and I just realized I wrote the exact opposite in the
+> subj line: man, I really suck at that!!)
+> As a matter of fact, we could not move to our rcu callback as well:
+> 
+> we need to move it to a worker thread with the rest.
+> 
+> We already have a worker thread: he reason we have it is not
+> static_branches: The reason is vfree(), that will BUG_ON(in_interrupt())
+> and could not be called from rcu callback as well. We moved static
+> branches in there as well for a similar problem, but haven't introduced it.
+> 
+> Could we move just part of it to the worker thread? Absolutely yes.
+> Moving just free_css_id() is enough to make it work. But since it is not
+> the first context related problem we had, I thought: "to hell with that,
+> let's move everything and be safe".
+> 
+> I am fine moving free_css_id() only if you would prefer.
+> 
+> Can we disable softirqs when we initialize css_id? Maybe. My machine
+> seems to boot fine and survive the simple workload that would trigger
+> that bug if I use irqsave spinlocks instead of normal spinlocks. But
+> this has to be done from cgroup core: We have no control over css
+> creation in memcg.
+> 
+> How would you guys like me to handle this ?
+
+One more thing: As I mentioned in the Changelog,
+mem_cgroup_remove_exceeded(), called from mem_cgroup_remove_from_trees()
+will lead to the same usage pattern.
+
+
+
+
