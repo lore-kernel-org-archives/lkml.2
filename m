@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab2JDTLy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:11:54 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:13186 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751572Ab2JDTLx (ORCPT
+	id S1756022Ab2JDTMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:12:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55459 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab2JDTM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:11:53 -0400
-Date: Thu, 4 Oct 2012 19:11:51 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	Thu, 4 Oct 2012 15:12:29 -0400
+Date: Thu, 4 Oct 2012 20:17:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Kay Sievers <kay@vrfy.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 29/33] autonuma: page_autonuma
-In-Reply-To: <20121004183819.GM25675@redhat.com>
-Message-ID: <0000013a2d30ebf2-1a2bb821-92a0-464b-9db0-f960b2fd074d-000000@email.amazonses.com>
-References: <20121004165008.GF25675@redhat.com> <0000013a2cff3c3d-76e00716-2869-4dc8-8717-82f0136018d0-000000@email.amazonses.com> <20121004183819.GM25675@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+        Andy Walls <awalls@md.metrocast.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
+Subject: Re: udev breakages -
+Message-ID: <20121004201704.36d35755@pyramind.ukuu.org.uk>
+In-Reply-To: <20121004174254.GA14301@kroah.com>
+References: <506C562E.5090909@redhat.com>
+	<CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
+	<20121003170907.GA23473@ZenIV.linux.org.uk>
+	<CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+	<20121003195059.GA13541@kroah.com>
+	<CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+	<3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
+	<CA+55aFwVFtUU4TCjz4EDgGDaeR_QwLjmBAJA0kijHkQQ+jxLCw@mail.gmail.com>
+	<CAPXgP1189dn=vHqWrp1JgHs7Yv=BP3dbLyT3zb31Sp8mcEhAvg@mail.gmail.com>
+	<87zk42tab4.fsf@xmission.com>
+	<20121004174254.GA14301@kroah.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Andrea Arcangeli wrote:
+> I don't know how to handle the /dev/ptmx issue properly from within
+> devtmpfs, does anyone?  Proposals are always welcome, the last time this
+> came up a week or so ago, I don't recall seeing any proposals, just a
+> general complaint.
 
-> If you mean CONFIG_AUTONUMA=y should select (not depend) on
-> CONFIG_HAVE_ALIGNED_STRUCT_PAGE, that would allow to enable it in all
-> .configs but it would have a worse cons: losing 8bytes per page
-> unconditionally (even when booting on non-NUMA hardware).
+Is it really a problem - devtmpfs is optional. It's a problem for the
+userspace folks to handle and if they made it mandatory in their code
+diddums, someone better go fork working versions.
 
-I did not say anything like that. Still not convinced that autonuma is
-worth doing and that it is beneficial given the complexity it adds to the
-kernel. Just wanted to point out that there is a case to be made for
-adding another word to the page struct.
-
+Alan
