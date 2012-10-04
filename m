@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965477Ab2JDO4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:56:09 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58780 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965200Ab2JDO4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:56:07 -0400
+	id S965574Ab2JDO5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:57:07 -0400
+Received: from intma.in ([199.191.58.34]:49286 "HELO intma.in"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S965200Ab2JDO5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:57:06 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Oct 2012 10:57:06 EDT
+Date: Thu, 4 Oct 2012 10:50:23 -0400
+From: Kurt H Maier <khm@sdf.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
+ request_firmware_nowait()
+Message-ID: <20121004145022.GA73321@intma.in>
+References: <fa.90I1W/wmSTgRFXVG67o7Pp3+rKA@ifi.uio.no>
+ <fa.Oszo+r/ZqdTxC2FHqqg+CRVMJ5Y@ifi.uio.no>
+ <fa.CoxzZZId9dJONv353c+pFG/HO8E@ifi.uio.no>
+ <fa.ixJ/7D7BnMK8xp7CwikX7jbmnKU@ifi.uio.no>
+ <fa./ubRQE7P/T+ateohnOKdDxOFhL4@ifi.uio.no>
+ <fa.lpiFTa5CtuIkUf2Z5eJ0YlsNwYI@ifi.uio.no>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
-References: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
-Date: Thu, 4 Oct 2012 16:56:06 +0200
-Message-ID: <CAKMK7uFsYUYuvWu2tWNc6+soPJpsJt6pz-A5EePc9oF7fG6uAA@mail.gmail.com>
-Subject: Re: 3.6.0+ (GIT) -- WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
- intel_disable_pipe+0xab/0x12e() -- plane B assertion failure, should be off
- on pipe B but is still active
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Eric Anholt <eric@anholt.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fa.lpiFTa5CtuIkUf2Z5eJ0YlsNwYI@ifi.uio.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should help: https://patchwork.kernel.org/patch/1436231/
+On Wed, Oct 03, 2012 at 07:27:01PM +0000, Al Viro wrote:
+> 
+> Al, that -><- close to volunteering for maintaining that FPOS kernel-side...
+> 
 
-It's not merged yet since it cause a black screen on resume on one of
-my really old machines. Issue isn't new at all, but the new modeset
-code is _much_ more anal about cross-checking the hw state with what
-we expect to be there.
+This would be fantastic.
 
-Thanks, Daniel
-
-On Thu, Oct 4, 2012 at 4:18 PM, Miles Lane <miles.lane@gmail.com> wrote:
-> [    4.266874] WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
-> intel_disable_pipe+0xab/0x12e()
-> [    4.266877] Hardware name: UL50VT
-> [    4.266880] plane B assertion failure, should be off on pipe B but
-> is still active
-> [    4.266882] Modules linked in:
-> [    4.266888] Pid: 1, comm: swapper/0 Not tainted 3.6.0+ #27
-> [    4.266891] Call Trace:
-> [    4.266899]  [<ffffffff8102dd26>] warn_slowpath_common+0x7e/0x97
-> [    4.266905]  [<ffffffff8102ddd3>] warn_slowpath_fmt+0x41/0x43
-> [    4.266911]  [<ffffffff8129404c>] intel_disable_pipe+0xab/0x12e
-> [    4.266917]  [<ffffffff812945d9>] i9xx_crtc_disable+0xd1/0x144
-> [    4.266923]  [<ffffffff8129c112>] intel_modeset_setup_hw_state+0x438/0x69f
-> [    4.266929]  [<ffffffff8129c398>] intel_modeset_gem_init+0x1f/0x24
-> [    4.266936]  [<ffffffff8127bf37>] i915_driver_load+0xada/0xcde
-> [    4.266945]  [<ffffffff812628f0>] drm_get_pci_dev+0x16d/0x266
-> [    4.266951]  [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
-> [    4.266957]  [<ffffffff81454392>] i915_pci_probe+0x4d/0x57
-> [    4.266964]  [<ffffffff811e4844>] local_pci_probe+0x5b/0xa2
-> [    4.266969]  [<ffffffff811e494b>] pci_device_probe+0xc0/0xed
-> [    4.266976]  [<ffffffff8133bb44>] ? driver_probe_device+0x1b5/0x1b5
-> [    4.266981]  [<ffffffff8133ba29>] driver_probe_device+0x9a/0x1b5
-> [    4.266987]  [<ffffffff8133bb92>] __driver_attach+0x4e/0x6f
-> [    4.266992]  [<ffffffff8133a175>] bus_for_each_dev+0x52/0x84
-> [    4.266998]  [<ffffffff8133b542>] driver_attach+0x19/0x1b
-> [    4.267003]  [<ffffffff8133b1e3>] bus_add_driver+0xf4/0x219
-> [    4.267009]  [<ffffffff8133c0ef>] driver_register+0x8e/0x114
-> [    4.267014]  [<ffffffff811e3d09>] __pci_register_driver+0x5a/0x5f
-> [    4.267020]  [<ffffffff81262a6a>] drm_pci_init+0x81/0xe7
-> [    4.267027]  [<ffffffff81ac109d>] ? ttm_init+0x62/0x62
-> [    4.267033]  [<ffffffff81ac1103>] i915_init+0x66/0x68
-> [    4.267039]  [<ffffffff810001fa>] do_one_initcall+0x7a/0x130
-> [    4.267045]  [<ffffffff81a97c3f>] kernel_init+0x10b/0x18f
-> [    4.267051]  [<ffffffff81a9752f>] ? do_early_param+0x8c/0x8c
-> [    4.267058]  [<ffffffff81471334>] kernel_thread_helper+0x4/0x10
-> [    4.267065]  [<ffffffff8104f6a5>] ? finish_task_switch+0x38/0xb0
-> [    4.267070]  [<ffffffff81000c71>] ? __switch_to+0x19c/0x426
-> [    4.267076]  [<ffffffff8146b7a0>] ? retint_restore_args+0xe/0xe
-> [    4.267082]  [<ffffffff81a97b34>] ? start_kernel+0x3b3/0x3b3
-> [    4.267087]  [<ffffffff81471330>] ? gs_change+0xb/0xb
-
-
-
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Kurt H Maier
