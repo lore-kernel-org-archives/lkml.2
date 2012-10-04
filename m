@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946410Ab2JDVd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:33:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37556 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1946401Ab2JDVdx (ORCPT
+	id S1946489Ab2JDVe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:34:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946301Ab2JDV1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:33:53 -0400
-Date: Thu, 4 Oct 2012 22:33:50 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <20121004213350.GJ13292@decadent.org.uk>
-References: <6a854f579a99b4fe2efaca1057e8ae22@local>
- <20121001225201.884628603@1wt.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121001225201.884628603@1wt.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 101/180] SCSI: libsas: continue revalidation
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Thu, 4 Oct 2012 17:27:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 09/33] staging: comedi: dont dereference user memory for INSN_INTTRIG
+Date: Thu,  4 Oct 2012 14:26:31 -0700
+Message-Id: <20121004210559.622074223@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
+References: <20121004210558.383865383@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 12:53:38AM +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Dan Williams <dan.j.williams@intel.com>
-> 
-> commit 26f2f199ff150d8876b2641c41e60d1c92d2fb81 upstream.
-> 
-> Continue running revalidation until no more broadcast devices are
-> discovered.  Fixes cases where re-discovery completes too early in a
-> domain with multiple expanders with pending re-discovery events.
-> Servicing BCNs can get backed up behind error recovery.
-> 
-> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> commit 2da74cd8a6bad64d02207396c76d0939f3c57aaa upstream.
-[...]
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Another 3.0 stable reference.
+------------------
 
-Ben.
+From: Ian Abbott <abbotti@mev.co.uk>
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
+
+`parse_insn()` is dereferencing the user-space pointer `insn->data`
+directly when handling the `INSN_INTTRIG` comedi instruction.  It
+shouldn't be using `insn->data` at all; it should be using the separate
+`data` pointer passed to the function.  Fix it.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/comedi/comedi_fops.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -843,7 +843,7 @@ static int parse_insn(struct comedi_devi
+ 				ret = -EAGAIN;
+ 				break;
+ 			}
+-			ret = s->async->inttrig(dev, s, insn->data[0]);
++			ret = s->async->inttrig(dev, s, data[0]);
+ 			if (ret >= 0)
+ 				ret = 1;
+ 			break;
+
+
