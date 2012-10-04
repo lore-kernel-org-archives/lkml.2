@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946302Ab2JDVn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:43:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934268Ab2JDVZF (ORCPT
+	id S1946307Ab2JDVnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:43:49 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934282Ab2JDVY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:05 -0400
+	Thu, 4 Oct 2012 17:24:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 34/52] coredump: prevent double-free on an error path in core dumper
-Date: Thu,  4 Oct 2012 14:21:25 -0700
-Message-Id: <20121004210639.611938249@linuxfoundation.org>
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 31/52] xHCI: handle command after aborting the command ring
+Date: Thu,  4 Oct 2012 14:21:22 -0700
+Message-Id: <20121004210639.249209848@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -29,65 +28,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denys Vlasenko <vda.linux@googlemail.com>
+From: Elric Fu <elricfu1@gmail.com>
 
-commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
+commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d upstream.
 
-In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
-memory for info->fields, it frees already allocated stuff and returns
-error to its caller, fill_note_info.  Which in turn returns error to its
-caller, elf_core_dump.  Which jumps to cleanup label and calls
-free_note_info, which will happily try to free all info->fields again.
-BOOM.
+According to xHCI spec section 4.6.1.1 and section 4.6.1.2,
+after aborting a command on the command ring, xHC will
+generate a command completion event with its completion
+code set to Command Ring Stopped at least. If a command is
+currently executing at the time of aborting a command, xHC
+also generate a command completion event with its completion
+code set to Command Abort. When the command ring is stopped,
+software may remove, add, or rearrage Command Descriptors.
 
-This is the fix.
+To cancel a command, software will initialize a command
+descriptor for the cancel command, and add it into a
+cancel_cmd_list of xhci. When the command ring is stopped,
+software will find the command trbs described by command
+descriptors in cancel_cmd_list and modify it to No Op
+command. If software can't find the matched trbs, we can
+think it had been finished.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
+
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_elf.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ drivers/usb/host/xhci-ring.c |  171 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 165 insertions(+), 6 deletions(-)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1698,30 +1698,19 @@ static int elf_note_info_init(struct elf
- 		return 0;
- 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
- 	if (!info->psinfo)
--		goto notes_free;
-+		return 0;
- 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
- 	if (!info->prstatus)
--		goto psinfo_free;
-+		return 0;
- 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
- 	if (!info->fpu)
--		goto prstatus_free;
-+		return 0;
- #ifdef ELF_CORE_COPY_XFPREGS
- 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
- 	if (!info->xfpu)
--		goto fpu_free;
-+		return 0;
- #endif
- 	return 1;
--#ifdef ELF_CORE_COPY_XFPREGS
-- fpu_free:
--	kfree(info->fpu);
--#endif
-- prstatus_free:
--	kfree(info->prstatus);
-- psinfo_free:
--	kfree(info->psinfo);
-- notes_free:
--	kfree(info->notes);
--	return 0;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1170,6 +1170,20 @@ static void handle_reset_ep_completion(s
+ 	}
  }
  
- static int fill_note_info(struct elfhdr *elf, int phdrs,
++/* Complete the command and detele it from the devcie's command queue.
++ */
++static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
++		struct xhci_command *command, u32 status)
++{
++	command->status = status;
++	list_del(&command->cmd_list);
++	if (command->completion)
++		complete(command->completion);
++	else
++		xhci_free_command(xhci, command);
++}
++
++
+ /* Check to see if a command in the device's command queue matches this one.
+  * Signal the completion or free the command, and return 1.  Return 0 if the
+  * completed command isn't at the head of the command list.
+@@ -1188,15 +1202,144 @@ static int handle_cmd_in_cmd_wait_list(s
+ 	if (xhci->cmd_ring->dequeue != command->command_trb)
+ 		return 0;
+ 
+-	command->status = GET_COMP_CODE(le32_to_cpu(event->status));
+-	list_del(&command->cmd_list);
+-	if (command->completion)
+-		complete(command->completion);
+-	else
+-		xhci_free_command(xhci, command);
++	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
++			GET_COMP_CODE(le32_to_cpu(event->status)));
+ 	return 1;
+ }
+ 
++/*
++ * Finding the command trb need to be cancelled and modifying it to
++ * NO OP command. And if the command is in device's command wait
++ * list, finishing and freeing it.
++ *
++ * If we can't find the command trb, we think it had already been
++ * executed.
++ */
++static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
++{
++	struct xhci_segment *cur_seg;
++	union xhci_trb *cmd_trb;
++	u32 cycle_state;
++
++	if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++		return;
++
++	/* find the current segment of command ring */
++	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
++			xhci->cmd_ring->dequeue, &cycle_state);
++
++	/* find the command trb matched by cd from command ring */
++	for (cmd_trb = xhci->cmd_ring->dequeue;
++			cmd_trb != xhci->cmd_ring->enqueue;
++			next_trb(xhci, xhci->cmd_ring, &cur_seg, &cmd_trb)) {
++		/* If the trb is link trb, continue */
++		if (TRB_TYPE_LINK_LE32(cmd_trb->generic.field[3]))
++			continue;
++
++		if (cur_cd->cmd_trb == cmd_trb) {
++
++			/* If the command in device's command list, we should
++			 * finish it and free the command structure.
++			 */
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++
++			/* get cycle state from the origin command trb */
++			cycle_state = le32_to_cpu(cmd_trb->generic.field[3])
++				& TRB_CYCLE;
++
++			/* modify the command trb to NO OP command */
++			cmd_trb->generic.field[0] = 0;
++			cmd_trb->generic.field[1] = 0;
++			cmd_trb->generic.field[2] = 0;
++			cmd_trb->generic.field[3] = cpu_to_le32(
++					TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
++			break;
++		}
++	}
++}
++
++static void xhci_cancel_cmd_in_cd_list(struct xhci_hcd *xhci)
++{
++	struct xhci_cd *cur_cd, *next_cd;
++
++	if (list_empty(&xhci->cancel_cmd_list))
++		return;
++
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		xhci_cmd_to_noop(xhci, cur_cd);
++		list_del(&cur_cd->cancel_cmd_list);
++		kfree(cur_cd);
++	}
++}
++
++/*
++ * traversing the cancel_cmd_list. If the command descriptor according
++ * to cmd_trb is found, the function free it and return 1, otherwise
++ * return 0.
++ */
++static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
++		union xhci_trb *cmd_trb)
++{
++	struct xhci_cd *cur_cd, *next_cd;
++
++	if (list_empty(&xhci->cancel_cmd_list))
++		return 0;
++
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		if (cur_cd->cmd_trb == cmd_trb) {
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++			list_del(&cur_cd->cancel_cmd_list);
++			kfree(cur_cd);
++			return 1;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
++ * trb pointed by the command ring dequeue pointer is the trb we want to
++ * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
++ * traverse the cancel_cmd_list to trun the all of the commands according
++ * to command descriptor to NO-OP trb.
++ */
++static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
++		int cmd_trb_comp_code)
++{
++	int cur_trb_is_good = 0;
++
++	/* Searching the cmd trb pointed by the command ring dequeue
++	 * pointer in command descriptor list. If it is found, free it.
++	 */
++	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
++			xhci->cmd_ring->dequeue);
++
++	if (cmd_trb_comp_code == COMP_CMD_ABORT)
++		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
++	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
++		/* traversing the cancel_cmd_list and canceling
++		 * the command according to command descriptor
++		 */
++		xhci_cancel_cmd_in_cd_list(xhci);
++
++		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
++		/*
++		 * ring command ring doorbell again to restart the
++		 * command ring
++		 */
++		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
++			xhci_ring_cmd_db(xhci);
++	}
++	return cur_trb_is_good;
++}
++
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		struct xhci_event_cmd *event)
+ {
+@@ -1222,6 +1365,22 @@ static void handle_cmd_completion(struct
+ 		xhci->error_bitmask |= 1 << 5;
+ 		return;
+ 	}
++
++	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
++		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
++		/* If the return value is 0, we think the trb pointed by
++		 * command ring dequeue pointer is a good trb. The good
++		 * trb means we don't want to cancel the trb, but it have
++		 * been stopped by host. So we should handle it normally.
++		 * Otherwise, driver should invoke inc_deq() and return.
++		 */
++		if (handle_stopped_cmd_ring(xhci,
++				GET_COMP_CODE(le32_to_cpu(event->status)))) {
++			inc_deq(xhci, xhci->cmd_ring);
++			return;
++		}
++	}
++
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+ 		& TRB_TYPE_BITMASK) {
+ 	case TRB_TYPE(TRB_ENABLE_SLOT):
 
 
