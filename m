@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab2JDWBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:01:53 -0400
+	id S1753822Ab2JDWCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:02:15 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933746Ab2JDVVH (ORCPT
+	with ESMTP id S933735Ab2JDVU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:07 -0400
+	Thu, 4 Oct 2012 17:20:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 19/58] staging: comedi: fix memory leak for saved channel list
-Date: Thu,  4 Oct 2012 14:19:26 -0700
-Message-Id: <20121004210637.896193686@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Subject: [ 16/58] staging: comedi: s626: dont dereference insn->data
+Date: Thu,  4 Oct 2012 14:19:23 -0700
+Message-Id: <20121004210637.496539693@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,50 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Abbott <abbotti@mev.co.uk>
 
-commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
+commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
 
-When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
-list, it frees any previously allocated channel list in
-`async->cmd.chanlist` and replaces it with the new one.  However, if the
-device is ever removed (or "detached") the cleanup code in
-`cleanup_device()` in "drivers.c" does not free this memory so it is
-lost.
-
-A sensible place to free the kernel copy of the channel list is in
-`do_become_nonbusy()` as at that point the comedi asynchronous command
-associated with the channel list is no longer valid.  Free the channel
-list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
-pointer to prevent it being freed more than once.
-
-Note that `cleanup_device()` could be called at an inappropriate time
-while the comedi device is open, but that's a separate bug not related
-to this this patch.
+`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
+is a pointer to user memory.  It should be dereferencing the separate
+`data` parameter that points to a copy of the data in kernel memory.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/s626.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1377,7 +1377,6 @@ static int do_cmd_ioctl(struct comedi_de
- 		goto cleanup;
- 	}
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -2311,7 +2311,7 @@ static int s626_enc_insn_config(struct c
+ 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
  
--	kfree(async->cmd.chanlist);
- 	async->cmd = user_cmd;
- 	async->cmd.data = NULL;
- 	/* load channel/gain list */
-@@ -2122,6 +2121,8 @@ void do_become_nonbusy(struct comedi_dev
- 	if (async) {
- 		comedi_reset_async_buf(async);
- 		async->inttrig = NULL;
-+		kfree(async->cmd.chanlist);
-+		async->cmd.chanlist = NULL;
- 	} else {
- 		printk(KERN_ERR
- 		       "BUG: (?) do_become_nonbusy called with async=0\n");
+ 	k->SetMode(dev, k, Setup, TRUE);
+-	Preload(dev, k, *(insn->data));
++	Preload(dev, k, data[0]);
+ 	k->PulseIndex(dev, k);
+ 	SetLatchSource(dev, k, valueSrclatch);
+ 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
 
 
