@@ -1,270 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab2JDNSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:18:16 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:39069 "EHLO mail.x86-64.org"
+	id S932644Ab2JDNS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:18:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42804 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754610Ab2JDNSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:18:15 -0400
-Date: Thu, 4 Oct 2012 15:18:02 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Fix AMD Northbridge-ID contiguity assumptions
-Message-ID: <20121004131801.GD21028@aftab.osrc.amd.com>
-References: <1349270474-28808-1-git-send-email-daniel@numascale-asia.com>
-MIME-Version: 1.0
+	id S932305Ab2JDNS0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 09:18:26 -0400
+Subject: Re: [PATCH 2/3 v2] iommu/fsl: Add iommu domain attributes required by fsl PAMU driver.
+Mime-Version: 1.0 (Apple Message framework v1278)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349270474-28808-1-git-send-email-daniel@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1349351808-7156-3-git-send-email-b16395@freescale.com>
+Date: Thu, 4 Oct 2012 08:17:24 -0500
+Cc: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <43F13A8A-BF97-427C-8736-8F2E55B7A3D1@kernel.crashing.org>
+References: <1349351808-7156-1-git-send-email-b16395@freescale.com> <1349351808-7156-3-git-send-email-b16395@freescale.com>
+To: "<b16395@freescale.com>" <b16395@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 09:21:14PM +0800, Daniel J Blueman wrote:
-> The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
-> are contiguous, which no longer holds on federated systems with multiple
-> HyperTransport fabrics and multiple PCI domains.
+
+On Oct 4, 2012, at 6:56 AM, <b16395@freescale.com> <b16395@freescale.com> wrote:
+
+> From: Varun Sethi <Varun.Sethi@freescale.com>
 > 
-> Address this assumption by searching the Northbridge ID array, rather than
-> directly indexing it, using the upper bits for the PCI domain.
+> Added the following domain attributes required by FSL PAMU driver:
+> 1. Subwindows field added to the iommu domain geometry attribute.
+> 2. Added new iommu stash attribute, which allows setting of the
+>   LIODN specific stash id parameter through IOMMU API.
+> 3. Added an attribute for enabling/disabling DMA to a particular
+>   memory window.
 > 
-> v2: Fix Northbridge entry initialisation
-> 
-> Tested on a single-socket system and 3-server federated system.
-> 
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 > ---
->  arch/x86/include/asm/amd_nb.h |   23 +++++++++++++++++++++--
->  arch/x86/kernel/amd_nb.c      |   16 +++++++++-------
->  drivers/edac/amd64_edac.c     |   18 +++++++++---------
->  drivers/edac/amd64_edac.h     |    6 ------
->  4 files changed, 39 insertions(+), 24 deletions(-)
+> include/linux/iommu.h |   35 +++++++++++++++++++++++++++++++++++
+> 1 files changed, 35 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-> index b3341e9..0fd2f0c 100644
-> --- a/arch/x86/include/asm/amd_nb.h
-> +++ b/arch/x86/include/asm/amd_nb.h
-> @@ -47,6 +47,7 @@ struct threshold_bank {
->  };
->  
->  struct amd_northbridge {
-> +	u32 node;
-
-Right, as pointed out before, are 4 bytes really needed for node index
-or smaller is still ok?
-
->  	struct pci_dev *misc;
->  	struct pci_dev *link;
->  	struct amd_l3_cache l3_cache;
-> @@ -76,15 +77,33 @@ static inline bool amd_nb_has_feature(unsigned feature)
->  	return ((amd_northbridges.flags & feature) == feature);
->  }
->  
-> -static inline struct amd_northbridge *node_to_amd_nb(int node)
-> +static inline int node_to_amd_index(u32 node)
->  {
-> -	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
-> +	int i;
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index f3b99e1..62e22f0 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -44,6 +44,33 @@ struct iommu_domain_geometry {
+> 	dma_addr_t aperture_start; /* First address that can be mapped    */
+> 	dma_addr_t aperture_end;   /* Last address that can be mapped     */
+> 	bool force_aperture;       /* DMA only allowed in mappable range? */
 > +
-> +	for (i = 0; i < amd_northbridges.num; i++)
-> +		if (amd_northbridges.nb[i].node == node)
-> +			return i;
+> +	/* The subwindows field indicates number of DMA subwindows supported
+> +	 * by the geometry. Following is the interpretation of
+> +	 * values for this field:
+> +	 * 0 : This implies that the supported geometry size is 1 MB
+> +         * with each subwindow size being 4KB. Thus number of subwindows
+> +	 * being = 1MB/4KB = 256.
+> +	 * 1 : Only one DMA window i.e. no subwindows.
+> +	 * value other than 0 or 1 would indicate actual number of subwindows.
+> +	 */
+> +	u32 subwindows;
+> +};
 > +
-> +	return 0;
+> +/* cache stash targets */
+> +#define L1_CACHE 1
+> +#define L2_CACHE 2
+> +#define L3_CACHE 3
 
-Return -1 instead, in the failure case...
+These names are way to generic for being exposed to user space
 
-> +}
 > +
-> +static inline struct amd_northbridge *node_to_amd_nb(u32 node)
-> +{
-> +	return &amd_northbridges.nb[node_to_amd_index(node)];
-
-.. which needs to be handled here.
-
-> +}
-> +
-> +/* AMD sets the first MC device at device ID 0x18 */
-> +static inline u32 get_node_id(struct pci_dev *pdev)
-> +{
-> +	return (pci_domain_nr(pdev->bus) << 8) | (PCI_SLOT(pdev->devfn) - 0x18);
->  }
->  
->  #else
->  
->  #define amd_nb_num(x)		0
->  #define amd_nb_has_feature(x)	false
-> +#define node_to_amd_index(x)	0
->  #define node_to_amd_nb(x)	NULL
-
-Those are both used in other files and thus in the global namespace, can we
-change them to
-
-amd_nb_node_index(x)
-
-and
-
-and_nb_get_desc(node)
-
-?
-
->  #endif
-> diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-> index aadf335..c29ce39 100644
-> --- a/arch/x86/kernel/amd_nb.c
-> +++ b/arch/x86/kernel/amd_nb.c
-> @@ -75,10 +75,10 @@ int amd_cache_northbridges(void)
->  
->  	link = misc = NULL;
->  	for (i = 0; i != amd_nb_num(); i++) {
-> -		node_to_amd_nb(i)->misc = misc =
-> -			next_northbridge(misc, amd_nb_misc_ids);
-> -		node_to_amd_nb(i)->link = link =
-> -			next_northbridge(link, amd_nb_link_ids);
-> +		nb->misc = misc = next_northbridge(misc, amd_nb_misc_ids);
-> +		nb->node = get_node_id(misc);
-> +		nb->link = link = next_northbridge(link, amd_nb_link_ids);
-> +		nb++;
-
-Pls reorder for better readability:
-
-		nb->misc = misc = next_northbridge(misc, amd_nb_misc_ids);
-		nb->link = link = next_northbridge(link, amd_nb_link_ids);
-		nb->node = get_node_id(misc);
-		nb++;
-
->          }
->  
->  	/* some CPU families (e.g. family 0x11) do not support GART */
-> @@ -212,6 +212,7 @@ int amd_set_subcaches(int cpu, int mask)
->  static int amd_cache_gart(void)
->  {
->  	u16 i;
-> +	struct amd_northbridge *nb = amd_northbridges.nb;
->  
->         if (!amd_nb_has_feature(AMD_NB_GART))
->                 return 0;
-> @@ -222,9 +223,10 @@ static int amd_cache_gart(void)
->                 return -ENOMEM;
->         }
->  
-> -       for (i = 0; i != amd_nb_num(); i++)
-> -               pci_read_config_dword(node_to_amd_nb(i)->misc, 0x9c,
-> -                                     &flush_words[i]);
-> +	for (i = 0; i != amd_nb_num(); i++) {
-> +		pci_read_config_dword(nb->misc, 0x9c, &flush_words[i]);
-> +		nb++;
-> +	}
->  
->         return 0;
->  }
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index 5a297a2..9c35565 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -2549,7 +2549,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
->  	struct mem_ctl_info *mci = NULL;
->  	struct edac_mc_layer layers[2];
->  	int err = 0, ret;
-> -	u8 nid = get_node_id(F2);
-> +	u32 nid = get_node_id(F2);
->  
->  	ret = -ENOMEM;
->  	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
-> @@ -2640,7 +2640,7 @@ err_ret:
->  static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
->  					     const struct pci_device_id *mc_type)
->  {
-> -	u8 nid = get_node_id(pdev);
-> +	u32 nid = get_node_id(pdev);
-
-Let's add a
-
-	node_idx = node_to_amd_index(nid);
-
-and use it below instead, ok?
-
->  	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
->  	struct ecc_settings *s;
->  	int ret = 0;
-> @@ -2656,7 +2656,7 @@ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
->  	if (!s)
->  		goto err_out;
->  
-> -	ecc_stngs[nid] = s;
-> +	ecc_stngs[node_to_amd_index(nid)] = s;
->  
->  	if (!ecc_enabled(F3, nid)) {
->  		ret = -ENODEV;
-> @@ -2680,7 +2680,7 @@ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
->  
->  err_enable:
->  	kfree(s);
-> -	ecc_stngs[nid] = NULL;
-> +	ecc_stngs[node_to_amd_index(nid)] = NULL;
->  
->  err_out:
->  	return ret;
-> @@ -2690,9 +2690,9 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
->  {
->  	struct mem_ctl_info *mci;
->  	struct amd64_pvt *pvt;
-> -	u8 nid = get_node_id(pdev);
-> +	u32 nid = get_node_id(pdev);
->  	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
-> -	struct ecc_settings *s = ecc_stngs[nid];
-> +	struct ecc_settings *s = ecc_stngs[node_to_amd_index(nid)];
->  
->  	mci = find_mci_by_dev(&pdev->dev);
->  	del_mc_sysfs_attrs(mci);
-> @@ -2711,12 +2711,12 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
->  	amd_report_gart_errors(false);
->  	amd_unregister_ecc_decoder(amd64_decode_bus_error);
->  
-> -	kfree(ecc_stngs[nid]);
-> -	ecc_stngs[nid] = NULL;
-> +	kfree(ecc_stngs[node_to_amd_index(nid)]);
-> +	ecc_stngs[node_to_amd_index(nid)] = NULL;
->  
->  	/* Free the EDAC CORE resources */
->  	mci->pvt_info = NULL;
-> -	mcis[nid] = NULL;
-> +	mcis[node_to_amd_index(nid)] = NULL;
->  
->  	kfree(pvt);
->  	edac_mc_free(mci);
-> diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-> index 8d48047..90cae61 100644
-> --- a/drivers/edac/amd64_edac.h
-> +++ b/drivers/edac/amd64_edac.h
-> @@ -290,12 +290,6 @@
->  /* MSRs */
->  #define MSR_MCGCTL_NBE			BIT(4)
->  
-> -/* AMD sets the first MC device at device ID 0x18. */
-> -static inline u8 get_node_id(struct pci_dev *pdev)
-> -{
-> -	return PCI_SLOT(pdev->devfn) - 0x18;
-> -}
-> -
->  enum amd_families {
->  	K8_CPUS = 0,
->  	F10_CPUS,
+> +/* This attribute corresponds to IOMMUs capable of generating
+> + * a stash transaction. A stash transaction is typically a
+> + * hardware initiated prefetch of data from memory to cache.
+> + * This attribute allows configuring stashig specific parameters
+> + * in the IOMMU hardware.
+> + */
+> +struct iommu_stash_attribute {
+> +	u32 	cpu;	/* cpu number */
+> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
+> };
+> 
+> struct iommu_domain {
+> @@ -60,6 +87,14 @@ struct iommu_domain {
+> enum iommu_attr {
+> 	DOMAIN_ATTR_MAX,
+> 	DOMAIN_ATTR_GEOMETRY,
+> +	/* Set the IOMMU hardware stashing
+> +	 * parameters.
+> +	 */
+> +	DOMAIN_ATTR_STASH,
+> +	/* Explicity enable/disable DMA for a
+> +         * particular memory window.
+> +         */
+> +	DOMAIN_ATTR_ENABLE,
+> };
+> 
+> #ifdef CONFIG_IOMMU_API
 > -- 
-> 1.7.9.5
+> 1.7.4.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
