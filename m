@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab2JDDQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 23:16:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54509 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab2JDDPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 23:15:53 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: sameo@linux.intel.com
-Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
-        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-input@vger.kernel.org>
-Subject: [PATCH 3/6] Input: da9052_tsi.c: Fix interrupt handling
-Date: Thu,  4 Oct 2012 00:15:06 -0300
-Message-Id: <1349320509-26930-3-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349320509-26930-1-git-send-email-festevam@gmail.com>
-References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
+	id S1752809Ab2JDDU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 23:20:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:35056 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab2JDDU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 23:20:57 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] asymmetric keys: fix printk format warning
+In-Reply-To: <20121004090806.70274213735de74211f4334d@canb.auug.org.au>
+References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au> <506CC48E.2020303@xenotime.net> <20121004090806.70274213735de74211f4334d@canb.auug.org.au>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 04 Oct 2012 12:48:27 +0930
+Message-ID: <874nma3oxo.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Currently da9062_tsi does not probe and it fails as follows:
+> [Lets also cc Rusty who committed the patch ...]
+>
+> On Wed, 03 Oct 2012 16:04:46 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>> 
+>> Fix printk format warning in x509_cert_parser.c:
+>> 
+>> crypto/asymmetric_keys/x509_cert_parser.c: In function 'x509_note_OID':
+>> crypto/asymmetric_keys/x509_cert_parser.c:113:3: warning: format '%zu' expects type 'size_t', but argument 2 has type 'long unsigned int'
+>> 
+>> Builds cleanly on i386 and x86_64.
 
-da9052 1-0048: Unable to determine device interrupts
+Thanks, applied.
 
-Use the new da9052 irq functions and allow the driver to probe and operate 
-correctly.
-
-Tested on mx53qsb board using 'evtest' tool.
-
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/input/touchscreen/da9052_tsi.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-index 71f6165..33fd3fa 100644
---- a/drivers/input/touchscreen/da9052_tsi.c
-+++ b/drivers/input/touchscreen/da9052_tsi.c
-@@ -274,16 +274,16 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
- 	/* Disable ADC */
- 	da9052_ts_adc_toggle(tsi, false);
- 
--	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN, "pendown-irq",
--			    da9052_ts_pendwn_irq, tsi);
-+	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN,
-+				"pendown-irq", da9052_ts_pendwn_irq, tsi);
- 	if (error) {
- 		dev_err(tsi->da9052->dev,
- 			"Failed to register PENDWN IRQ: %d\n", error);
- 		goto err_free_mem;
- 	}
- 
--	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_TSIREADY, "tsiready-irq",
--			    da9052_ts_datardy_irq, tsi);
-+	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_TSIREADY,
-+				"tsiready-irq", da9052_ts_datardy_irq, tsi);
- 	if (error) {
- 		dev_err(tsi->da9052->dev,
- 			"Failed to register TSIRDY IRQ :%d\n", error);
-@@ -307,9 +307,9 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_free_datardy_irq:
--	da9052_free_irq(da9052, DA9052_IRQ_TSIREADY, da9052);
-+	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
- err_free_pendwn_irq:
--	da9052_free_irq(da9052, DA9052_IRQ_PENDOWN, da9052);
-+	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
- err_free_mem:
- 	kfree(tsi);
- 	input_free_device(input_dev);
-@@ -320,12 +320,11 @@ err_free_mem:
- static int  __devexit da9052_ts_remove(struct platform_device *pdev)
- {
- 	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
--	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
- 
- 	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
- 
--	da9052_free_irq(da9052, DA9052_IRQ_TSIREADY, da9052);
--	da9052_free_irq(da9052, DA9052_IRQ_PENDOWN, da9052);
-+	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
-+	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
- 
- 	input_unregister_device(tsi->dev);
- 	kfree(tsi);
--- 
-1.7.9.5
-
+Rusty.
