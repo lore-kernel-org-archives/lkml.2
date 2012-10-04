@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab2JDSur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:50:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50961 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755191Ab2JDSuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:50:00 -0400
-Date: Thu, 4 Oct 2012 20:49:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] mm: memcontrol: handle potential crash when rmap
- races with task exit
-Message-ID: <20121004184958.GG27536@dhcp22.suse.cz>
-References: <1349374157-20604-1-git-send-email-hannes@cmpxchg.org>
- <1349374157-20604-2-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349374157-20604-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755497Ab2JDSyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:54:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44791 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab2JDSyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 14:54:23 -0400
+Date: Thu, 04 Oct 2012 14:54:19 -0400 (EDT)
+Message-Id: <20121004.145419.1859367129463136197.davem@davemloft.net>
+To: peter.senna@gmail.com
+Cc: shemminger@vyatta.com, mlindner@marvell.com,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	<20121004.142335.1467206545795435493.davem@davemloft.net>
+	<CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-10-12 14:09:16, Johannes Weiner wrote:
-> page_referenced() counts only references of mm's that are associated
-> with the memcg hierarchy that is being reclaimed.  However, if it
-> races with the owner of the mm exiting, mm->owner may be NULL.  Don't
-> crash, just ignore the reference.
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+Date: Thu, 4 Oct 2012 20:49:57 +0200
 
-This seems to be fixed by Hugh's patch 3a981f48 "memcg: fix use_hierarchy
-css_is_ancestor oops regression" which seems to be merged already.
+> On Thu, Oct 4, 2012 at 8:23 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>> Date: Thu, 4 Oct 2012 19:32:12 +0200
+>>
+>>> I can't understand the advantages of describing each patch as you are
+>>> asking. "For me" the generic commit message together with the patch
+>>> makes sense.  Can you please help me on that?
+>>
+>> Stop being so dense.
+>>
+>> We want to know the implications of the bug being fixed.
+>>
+>> Does it potentially cause an OOPS?  Bad reference counting and thus
+>> potential leaks or early frees?
+>>
+>> You have to analyze the implications and ramifications of the bug
+>> being fixed.  We need that information.
+>>
+>> Your commit messages are in fact robotic, they don't describe the
+>> salient details of what kinds of problems the bug being fixed might
+>> cause.
+>>
+>> It's just "bad error code, this is the script that fixed it, kthx,
+>> bye" which is pretty much useless for anaylsis.
+> 
+> Thank you David.
+> 
+> What about this as commit message?
+> --- // --
+> This patch fixes bug(s) related to return value of function(s). In
+> some error cases, the function is returning non-negative SUCCESS
+> value, when the correct would be negative ERROR value.
+> 
+> When on error, returning non negatives values, or SUCCESS, breaks error
+> propagation, producing unpredictable behavior that are very difficult
+> to debug.
+> --- // --
 
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: stable@kernel.org [3.5]
-> ---
->  include/linux/memcontrol.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8d9489f..8686294 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -91,7 +91,7 @@ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->  
->  	rcu_read_lock();
->  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> -	match = __mem_cgroup_same_or_subtree(cgroup, memcg);
-> +	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
->  	rcu_read_unlock();
->  	return match;
->  }
-> -- 
-> 1.7.11.4
-> 
+What does it potentially cause the caller to do?  Will it potentially
+treat an error as a success and as a result register an object
+illegally?
 
--- 
-Michal Hocko
-SUSE Labs
+Real analysis please.  The text you provided above is basically still
+robotic and could be used to describe any error code return fix.
