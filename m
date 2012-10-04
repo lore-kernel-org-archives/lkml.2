@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946403Ab2JDVgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:36:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946337Ab2JDV1X (ORCPT
+	id S1946335Ab2JDV1W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:27:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44259 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946306Ab2JDV1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:23 -0400
+	Thu, 4 Oct 2012 17:27:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 01/33] vfs: dcache: fix deadlock in tree traversal
-Date: Thu,  4 Oct 2012 14:26:23 -0700
-Message-Id: <20121004210558.643951273@linuxfoundation.org>
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: [ 04/33] USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
+Date: Thu,  4 Oct 2012 14:26:26 -0700
+Message-Id: <20121004210558.993957766@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -27,70 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <miklos@szeredi.hu>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
+commit 54575b05af36959dfb6a49a3e9ca0c2b456b7126 upstream.
 
-IBM reported a deadlock in select_parent().  This was found to be caused
-by taking rename_lock when already locked when restarting the tree
-traversal.
+TIAO/DIYGADGET USB Multi-Protocol Adapter (TUMPA) is an FTDI FT2232H
+based device which provides an easily accessible JTAG, SPI, I2C, serial
+breakout.
 
-There are two cases when the traversal needs to be restarted:
+http://www.diygadget.com/tiao-usb-multi-protocol-adapter-jtag-spi-i2c-serial.html
+http://www.tiaowiki.com/w/TIAO_USB_Multi_Protocol_Adapter_User%27s_Manual
 
- 1) concurrent d_move(); this can only happen when not already locked,
-    since taking rename_lock protects against concurrent d_move().
+FTDI FT2232H provides two serial channels (A and B), but on the TUMPA
+channel A is dedicated to JTAG/SPI while channel B can be used for
+UART/RS-232: use the ftdi_jtag_quirk to expose only channel B as
+a usb-serial interface to userspace.
 
- 2) racing with final d_put() on child just at the moment of ascending
-    to parent; rename_lock doesn't protect against this rare race, so it
-    can happen when already locked.
-
-Because of case 2, we need to be able to handle restarting the traversal
-when rename_lock is already held.  This patch fixes all three callers of
-try_to_ascend().
-
-IBM reported that the deadlock is gone with this patch.
-
-[ I rewrote the patch to be smaller and just do the "goto again" if the
-  lock was already held, but credit goes to Miklos for the real work.
-   - Linus ]
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 7 insertions(+)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1101,6 +1101,8 @@ positive:
- 	return 1;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -582,6 +582,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	/*
+ 	 * ELV devices:
+ 	 */
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -517,6 +517,11 @@
+  */
+ #define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
  
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -1203,6 +1205,8 @@ out:
- rename_retry:
- 	if (found)
- 		return found;
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -2990,6 +2994,8 @@ resume:
- 	return;
++/*
++ * TIAO product ids (FTDI_VID)
++ * http://www.tiaowiki.com/w/Main_Page
++ */
++#define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
  
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
+ 
+ /********************************/
 
 
