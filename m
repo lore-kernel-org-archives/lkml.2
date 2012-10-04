@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946553Ab2JDVc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:32:56 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39431 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946398Ab2JDV2D (ORCPT
+	id S1946490Ab2JDVdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:33:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45983 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946422Ab2JDV14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:28:03 -0400
+	Thu, 4 Oct 2012 17:27:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: =?UTF-8?q?=5B=2022/33=5D=20UBI=3A=20fix=20autoresize=20handling=20in=20R/O=20mode?=
-Date: Thu,  4 Oct 2012 14:26:44 -0700
-Message-Id: <20121004210601.217951527@linuxfoundation.org>
+        Michael Spang <spang@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 20/33] Increase XHCI suspend timeout to 16ms
+Date: Thu,  4 Oct 2012 14:26:42 -0700
+Message-Id: <20121004210600.967087722@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,35 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Michael Spang <spang@chromium.org>
 
-commit abb3e01103eb4e2ea5c15e6fedbc74e08bd4cc2b upstream.
+commit a6e097dfdfd189b6929af6efa1d289af61858386 upstream.
 
-Currently UBI fails in autoresize when it is in R/O mode (e.g., because the
-underlying MTD device is R/O). This patch fixes the issue - we just skip
-autoresize and print a warning.
+The Intel XHCI specification says that after clearing the run/stop bit
+the controller may take up to 16ms to halt. We've seen a device take
+14ms, which with the current timeout of 10ms causes the kernel to
+abort the suspend. Increasing the timeout to the recommended value
+fixes the problem.
 
-Reported-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+This patch should be backported to kernels as old as 2.6.37, that
+contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
+PCI power management implementation".
+
+Signed-off-by: Michael Spang <spang@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/build.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -816,6 +816,11 @@ static int autoresize(struct ubi_device
- 	struct ubi_volume *vol = ubi->volumes[vol_id];
- 	int err, old_reserved_pebs = vol->reserved_pebs;
- 
-+	if (ubi->ro_mode) {
-+		ubi_warn("skip auto-resize because of R/O mode");
-+		return 0;
-+	}
-+
- 	/*
- 	 * Clear the auto-resize flag in the volume in-memory copy of the
- 	 * volume table, and 'ubi_resize_volume()' will propagate this change
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -720,7 +720,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	command &= ~CMD_RUN;
+ 	xhci_writel(xhci, command, &xhci->op_regs->command);
+ 	if (handshake(xhci, &xhci->op_regs->status,
+-		      STS_HALT, STS_HALT, 100*100)) {
++		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
+ 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
+ 		spin_unlock_irq(&xhci->lock);
+ 		return -ETIMEDOUT;
 
 
