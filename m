@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946198Ab2JDVZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:47 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946179Ab2JDVZm (ORCPT
+	id S1946200Ab2JDVjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:39:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946167Ab2JDVZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:42 -0400
+	Thu, 4 Oct 2012 17:25:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 45/52] remoteproc: fix a potential NULL-dereference on cleanup
-Date: Thu,  4 Oct 2012 14:21:36 -0700
-Message-Id: <20121004210641.050166810@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 36/52] n_gsm: uplink SKBs accumulate on list
+Date: Thu,  4 Oct 2012 14:21:27 -0700
+Message-Id: <20121004210639.856899505@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -27,78 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 7168d914a782086e217214c57ddfc7cc4b738c0c upstream.
+commit 192b6041e75bb4a2aae73834037038cea139a92d upstream.
 
-We only need to allocate mapping if there is an IOMMU domain.
+gsm_dlci_data_kick will not call any output function if tx_bytes > THRESH_LO
+furthermore it will call the output function only once if tx_bytes == 0
+If the size of the IP writes are on the order of THRESH_LO
+we can get into a situation where skbs accumulate on the outbound list
+being starved for events to call the output function.
 
-Otherwise, when the mappings are released, the assumption that
-an IOMMU domain is there will crash and burn.
+gsm_dlci_data_kick now calls the sweep function when tx_bytes==0
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-[ohad: revise commit log]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/remoteproc_core.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -643,17 +643,10 @@ static int rproc_handle_carveout(struct
- 	dev_dbg(dev, "carveout rsc: da %x, pa %x, len %x, flags %x\n",
- 			rsc->da, rsc->pa, rsc->len, rsc->flags);
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -971,16 +971,19 @@ static void gsm_dlci_data_sweep(struct g
+ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
+ {
+ 	unsigned long flags;
++	int sweep;
  
--	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
--	if (!mapping) {
--		dev_err(dev, "kzalloc mapping failed\n");
--		return -ENOMEM;
--	}
--
- 	carveout = kzalloc(sizeof(*carveout), GFP_KERNEL);
- 	if (!carveout) {
- 		dev_err(dev, "kzalloc carveout failed\n");
--		ret = -ENOMEM;
--		goto free_mapping;
-+		return -ENOMEM;
- 	}
- 
- 	va = dma_alloc_coherent(dev, rsc->len, &dma, GFP_KERNEL);
-@@ -683,11 +676,18 @@ static int rproc_handle_carveout(struct
- 	 * physical address in this case.
- 	 */
- 	if (rproc->domain) {
-+		mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
-+		if (!mapping) {
-+			dev_err(dev, "kzalloc mapping failed\n");
-+			ret = -ENOMEM;
-+			goto dma_free;
-+		}
-+
- 		ret = iommu_map(rproc->domain, rsc->da, dma, rsc->len,
- 								rsc->flags);
- 		if (ret) {
- 			dev_err(dev, "iommu_map failed: %d\n", ret);
--			goto dma_free;
-+			goto free_mapping;
- 		}
- 
- 		/*
-@@ -728,12 +728,12 @@ static int rproc_handle_carveout(struct
- 
- 	return 0;
- 
-+free_mapping:
-+	kfree(mapping);
- dma_free:
- 	dma_free_coherent(dev, rsc->len, va, dma);
- free_carv:
- 	kfree(carveout);
--free_mapping:
--	kfree(mapping);
- 	return ret;
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
++	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
+ 	if (dlci->gsm->tx_bytes == 0) {
+ 		if (dlci->net)
+ 			gsm_dlci_data_output_framed(dlci->gsm, dlci);
+ 		else
+ 			gsm_dlci_data_output(dlci->gsm, dlci);
+-	} else if (dlci->gsm->tx_bytes < TX_THRESH_LO)
+-		gsm_dlci_data_sweep(dlci->gsm);
++	}
++	if (sweep)
++ 		gsm_dlci_data_sweep(dlci->gsm);
+ 	spin_unlock_irqrestore(&dlci->gsm->tx_lock, flags);
  }
  
 
