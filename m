@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab2JDXbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 19:31:07 -0400
-Received: from 1wt.eu ([62.212.114.60]:35934 "EHLO 1wt.eu"
+	id S1755677Ab2JDXpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 19:45:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755580Ab2JDXbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 19:31:05 -0400
-Date: Fri, 5 Oct 2012 01:27:37 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 133/180] cciss: fix incorrect scsi status reporting
-Message-ID: <20121004232737.GA16406@1wt.eu>
-References: <6a854f579a99b4fe2efaca1057e8ae22@local> <20121001225203.249985461@1wt.eu> <20121004224950.GL13292@decadent.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121004224950.GL13292@decadent.org.uk>
-User-Agent: Mutt/1.4.2.3i
+	id S1753382Ab2JDXpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 19:45:46 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@osdl.org
+cc: dhowells@redhat.com, arnd@arndb.de, hpa@zytor.com, catalin.marinas@arm.com,
+        davem@davemloft.net, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] UAPI disintegration fixes
+Date: Fri, 05 Oct 2012 00:45:35 +0100
+Message-ID: <20389.1349394335@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 11:49:50PM +0100, Ben Hutchings wrote:
-> On Tue, Oct 02, 2012 at 12:54:10AM +0200, Willy Tarreau wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > 
-> > commit b0cf0b118c90477d1a6811f2cd2307f6a5578362 upstream.
-> > 
-> > Delete code which sets SCSI status incorrectly as it's already been set
-> > correctly above this incorrect code.  The bug was introduced in 2009 by
-> > commit b0e15f6db111 ("cciss: fix typo that causes scsi status to be
-> > lost.")
-> 
-> That commit was in 2.6.33 and it changed the '<' to '<<'.  It hasn't
-> been backported to 2.6.32.y.
 
-But apparently the status was already incorrect before the first patch
-which tried to fix it first. I based myself on the comment from this
-patch which says "it's already been set correctly above this incorrect code".
+Hi Linus,
 
-Above we find this :
-        cmd->result = (DID_OK << 16);           /* host byte */
-        cmd->result |= (COMMAND_COMPLETE << 8); /* msg byte */
-        /* cmd->result |= (GOOD < 1); */                /* status byte */
+Could you pull this branch please?
 
-        cmd->result |= (ei->ScsiStatus);
+There are three main parts:
 
-If such a status is valid, then I conclude that both the following forms
-from the two previous versions are incorrect :
+ (1) I found I needed some more fixups in the wake of testing Arm64 (some
+     asm/unistd.h files had weird guards that caused problems - mostly in
+     arches for which I don't have a compiler) and some __KERNEL__ splitting
+     needed to take place in Arm64.
 
--       cmd->result |= (ei->ScsiStatus < 1);
-+       cmd->result |= (ei->ScsiStatus << 1);
+ (2) I found that c6x was missing some __KERNEL__ guards in its asm/signal.h.
+     Mark Salter pointed me at a tree with a patch to remove that file
+     entirely and use the asm-generic variant instead.
 
-Hence I preferred to backport the fix and have the same code as in mainline
-and newer versions which nobody has yet complained about.
+ (3) Lastly, m68k turned out to have a header installation problem due to it
+     lacking a kvm_para.h file.
 
-> > -					cmd->result |= (ei->ScsiStatus < 1);
-> [...]
-> 
-> Unless ei->ScsiStatus can be negative (it is declared as int, but
-> I don't think it's actually meant to be negative), this statement
-> is a no-op.
+     The conditional installation bits for linux/kvm_para.h, linux/kvm.h and
+     linux/a.out.h weren't very well specified - and didn't work if an arch
+     didn't have the asm/ version of that file, but there *was* an
+     asm-generic/ version.
 
-Hmmm I disagree here, the code above does exactly the same thing as :
+     It seems the "ifneq $((wildcard ...),)" for each of those three headers
+     in include/kernel/Kbuild is invoked twice during header installation, and
+     the second time it matches on the just installed asm-generic/kvm_para.h
+     file and thus incorrectly installs linux/kvm_para.h as well.
 
-        cmd->result |= !ei->ScsiStatus;
+     Most arches actually have an asm/kvm_para.h, so this wasn't detectable in
+     those.
 
-Which looks kind of strange to me after doing the exact opposite above,
-since the result is that the lowest bit of cmd->result will always be
-forced to 1 whatever ScsiStatus between 0 and 1. This might be what the
-original patch author meant with "fix typo that causes scsi status to
-be lost".
+David
+---
+The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
 
-So I'd rather keep this fix.
+  Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
 
-Regards,
-Willy
+are available in the git repository at:
 
+
+  git://git.infradead.org/users/dhowells/linux-headers.git uapi-prep
+
+for you to fetch changes up to f3dfd599af993385b40fc7a1c947afc12729bc4d:
+
+  UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k) (2012-10-04 18:16:47 +0100)
+
+----------------------------------------------------------------
+(from the branch description for uapi-prep local branch)
+
+clone of "master"
+----------------------------------------------------------------
+David Howells (4):
+      UAPI: Fix the guards on various asm/unistd.h files
+      UAPI: Split compound conditionals containing __KERNEL__ in Arm64
+      Merge remote-tracking branch 'c6x/for-linux-next' into uapi-prep
+      UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k)
+
+Mark Salter (2):
+      c6x: make dsk6455 the default config
+      c6x: remove c6x signal.h
+
+ arch/arm64/include/asm/hwcap.h      |  4 +++-
+ arch/arm64/include/asm/stat.h       |  4 +++-
+ arch/arm64/include/asm/unistd.h     |  8 +++-----
+ arch/arm64/include/asm/unistd32.h   |  4 ----
+ arch/c6x/Makefile                   |  2 ++
+ arch/c6x/include/asm/Kbuild         |  1 +
+ arch/c6x/include/asm/signal.h       | 17 -----------------
+ arch/c6x/include/asm/unistd.h       |  4 ----
+ arch/hexagon/include/asm/unistd.h   |  5 -----
+ arch/openrisc/include/asm/unistd.h  |  5 -----
+ arch/score/include/asm/unistd.h     |  5 -----
+ arch/tile/include/asm/unistd.h      |  5 -----
+ arch/unicore32/include/asm/unistd.h |  4 ----
+ include/asm-generic/unistd.h        |  4 ----
+ include/linux/Kbuild                |  9 +++------
+ 15 files changed, 15 insertions(+), 66 deletions(-)
+ delete mode 100644 arch/c6x/include/asm/signal.h
