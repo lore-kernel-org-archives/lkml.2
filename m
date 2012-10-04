@@ -1,211 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab2JDODU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:03:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933158Ab2JDODS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:03:18 -0400
-Date: Thu, 4 Oct 2012 15:03:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH] mm: compaction: Cache if a pageblock was scanned and no
- pages were isolated -fix3
-Message-ID: <20121004140314.GX29125@suse.de>
-References: <20120927112911.GA25959@avionic-0098.mockup.avionic-design.de>
- <20120927151159.4427fc8f.akpm@linux-foundation.org>
- <20120928054330.GA27594@bbox>
+	id S933411Ab2JDOGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:06:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41358 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933283Ab2JDOGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:06:23 -0400
+Date: Thu, 4 Oct 2012 16:06:09 +0200
+From: Philipp Zabel <pza@pengutronix.de>
+To: Matt Porter <mporter@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
+Message-ID: <20121004140609.GA5464@pengutronix.de>
+References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+ <20121004091145.GA3317@pengutronix.de>
+ <20121004124253.GC11149@beef>
+ <20121004133553.GA5151@pengutronix.de>
+ <20121004135433.GI11149@beef>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120928054330.GA27594@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121004135433.GI11149@beef>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:03:48 up  6:32, 11 users,  load average: 0.14, 0.07, 0.06
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: pza@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch still has not been tested but I'm reposting it
-anyway. I've sent a rebased patch on top of next-20121004 that includes
-this patch privately to Thierry for testing.
+On Thu, Oct 04, 2012 at 09:54:33AM -0400, Matt Porter wrote:
+> *sigh*, I see now. I looked at v2 and got wrapped up in the DT use case
+> and missed your platform device support. I think it will work just fine
+> for us to use in a "phase 2" of this work, replacing the backend of
+> davinci sram allocation with this as Sekhar seems to be open to. 
+> 
+> > > I do see it moving to your driver exclusively, but I wanted to make this
+> > > series focused on only getting rid of the private SRAM API using the
+> > > existing pdata framework that's already there. I think once
+> > > gen_pool_find_by_phys() goes upstream we can switch to that and get the
+> > > address from a resource in the !DT case. I guess we should see if Sekhar
+> > > would like to see this happen in two steps or just have us depend on
+> > > the gen_pool_find_by_phys() patch now.
+> > 
+> > Thanks, I'm glad you are aware of the sram driver and consider it useful.
+> > 
+> > > BTW, I was going to post a patch for your driver to allow
+> > > configurability of the allocation order, but have been busy with other
+> > > things.  We'll eventually need that when switching to it as the
+> > > hardcoded page size order isn't going to work for all cases.
+> > 
+> > Good point.
+> 
+> I think this is the only blocker to DaVinci adopting it once it goes
+> upstream. I can add a patch in your driver thread if that helps.
 
+Yes, that would be welcome.
 
-CMA requires that the PG_migrate_skip hint be skipped but it was only
-skipping it when isolating pages for migration, not for free. Ensure
-cc->isolate_skip_hint gets passed in both cases.
+regards
+Philipp
 
-This is a fix for
-mm-compaction-cache-if-a-pageblock-was-scanned-and-no-pages-were-isolated-fix.patch
-but is based on top of linux-next/akpm as of 20121004. It will cause
-minor conflicts when it is slotted into place but the resolutions should
-be straight-forward.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   16 ++++------------
- mm/internal.h   |    3 ++-
- mm/page_alloc.c |   43 ++++++++++++++++++++++---------------------
- 3 files changed, 28 insertions(+), 34 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index ed3b8f1..2c4ce17 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -373,22 +373,14 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
-  * a free page).
-  */
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn)
- {
- 	unsigned long isolated, pfn, block_end_pfn;
--	struct zone *zone = NULL;
- 	LIST_HEAD(freelist);
- 
--	/* cc needed for isolate_freepages_block to acquire zone->lock */
--	struct compact_control cc = {
--		.sync = true,
--	};
--
--	if (pfn_valid(start_pfn))
--		cc.zone = zone = page_zone(pfn_to_page(start_pfn));
--
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
--		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
-+		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
- 			break;
- 
- 		/*
-@@ -398,7 +390,7 @@ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
--		isolated = isolate_freepages_block(&cc, pfn, block_end_pfn,
-+		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
- 						   &freelist, true);
- 
- 		/*
-diff --git a/mm/internal.h b/mm/internal.h
-index 9d5d276..a3ce781 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -135,7 +135,8 @@ struct compact_control {
- };
- 
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn);
- unsigned long
- isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8e1be1c..d66efcb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5669,7 +5669,8 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
- }
- 
- /* [start, end) must belong to a single zone. */
--static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-+static int __alloc_contig_migrate_range(struct compact_control *cc,
-+					unsigned long start, unsigned long end)
- {
- 	/* This function is based on compact_zone() from compaction.c. */
- 	unsigned long nr_reclaimed;
-@@ -5677,26 +5678,17 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 	unsigned int tries = 0;
- 	int ret = 0;
- 
--	struct compact_control cc = {
--		.nr_migratepages = 0,
--		.order = -1,
--		.zone = page_zone(pfn_to_page(start)),
--		.sync = true,
--		.ignore_skip_hint = true,
--	};
--	INIT_LIST_HEAD(&cc.migratepages);
--
- 	migrate_prep_local();
- 
--	while (pfn < end || !list_empty(&cc.migratepages)) {
-+	while (pfn < end || !list_empty(&cc->migratepages)) {
- 		if (fatal_signal_pending(current)) {
- 			ret = -EINTR;
- 			break;
- 		}
- 
--		if (list_empty(&cc.migratepages)) {
--			cc.nr_migratepages = 0;
--			pfn = isolate_migratepages_range(cc.zone, &cc,
-+		if (list_empty(&cc->migratepages)) {
-+			cc->nr_migratepages = 0;
-+			pfn = isolate_migratepages_range(cc->zone, cc,
- 							 pfn, end, true);
- 			if (!pfn) {
- 				ret = -EINTR;
-@@ -5708,16 +5700,16 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 			break;
- 		}
- 
--		nr_reclaimed = reclaim_clean_pages_from_list(cc.zone,
--							&cc.migratepages);
--		cc.nr_migratepages -= nr_reclaimed;
-+		nr_reclaimed = reclaim_clean_pages_from_list(cc->zone,
-+							&cc->migratepages);
-+		cc->nr_migratepages -= nr_reclaimed;
- 
--		ret = migrate_pages(&cc.migratepages,
-+		ret = migrate_pages(&cc->migratepages,
- 				    alloc_migrate_target,
- 				    0, false, MIGRATE_SYNC);
- 	}
- 
--	putback_lru_pages(&cc.migratepages);
-+	putback_lru_pages(&cc->migratepages);
- 	return ret > 0 ? 0 : ret;
- }
- 
-@@ -5796,6 +5788,15 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	unsigned long outer_start, outer_end;
- 	int ret = 0, order;
- 
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start)),
-+		.sync = true,
-+		.ignore_skip_hint = true,
-+	};
-+	INIT_LIST_HEAD(&cc.migratepages);
-+
- 	/*
- 	 * What we do here is we mark all pageblocks in range as
- 	 * MIGRATE_ISOLATE.  Because pageblock and max order pages may
-@@ -5825,7 +5826,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	if (ret)
- 		goto done;
- 
--	ret = __alloc_contig_migrate_range(start, end);
-+	ret = __alloc_contig_migrate_range(&cc, start, end);
- 	if (ret)
- 		goto done;
- 
-@@ -5874,7 +5875,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	__reclaim_pages(zone, GFP_HIGHUSER_MOVABLE, end-start);
- 
- 	/* Grab isolated pages from freelists. */
--	outer_end = isolate_freepages_range(outer_start, end);
-+	outer_end = isolate_freepages_range(&cc, outer_start, end);
- 	if (!outer_end) {
- 		ret = -EBUSY;
- 		goto done;
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
