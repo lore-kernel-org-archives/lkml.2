@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab2JDNfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:35:14 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:54483 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756866Ab2JDNfL (ORCPT
+	id S932878Ab2JDNgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:36:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57238 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736Ab2JDNgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:35:11 -0400
-Date: Thu, 4 Oct 2012 09:35:04 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kees Cook <kees@outflux.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.6
-Message-ID: <20121004133504.GA5599@elliptictech.com>
-References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
- <20121003194614.GA2893@elliptictech.com>
- <20121003200515.GZ9092@outflux.net>
- <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
- <20121003204141.GB6026@thunk.org>
- <20121003204919.GA9092@outflux.net>
- <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
+	Thu, 4 Oct 2012 09:36:05 -0400
+Date: Thu, 4 Oct 2012 15:35:53 +0200
+From: Philipp Zabel <pza@pengutronix.de>
+To: Matt Porter <mporter@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
+Message-ID: <20121004133553.GA5151@pengutronix.de>
+References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+ <20121004091145.GA3317@pengutronix.de>
+ <20121004124253.GC11149@beef>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121004124253.GC11149@beef>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 14:52:23 up  5:21, 12 users,  load average: 0.00, 0.01, 0.05
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: pza@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-03 13:54 -0700, Linus Torvalds wrote:
-> On Wed, Oct 3, 2012 at 1:49 PM, Kees Cook <kees@outflux.net> wrote:
-> > I think the benefits of this being on by default outweigh glitches
-> > like this. Based on Nick's email, it looks like a directory tree of his
-> > own creation.
+On Thu, Oct 04, 2012 at 08:42:53AM -0400, Matt Porter wrote:
+> > I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
+> > could be useful to map the L3RAM on Davinci.
+> > With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
+> > uio_pruss driver could then use the gen_pool_find_by_phys() (or
+> > of_get_named_gen_pool() for initialization from device tree) to
+> > retrieve the struct gen_pool*.
+> > 
+> > This way you could avoid handing it over via platform data and you could
+> > get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
 > 
-> I agree that *one* report like this doesn't necessarily mean that we
-> need to turn it off, if Nick is happy to just fix up his script and
-> it's all local.
-> 
-> However, I suspect we'll see more. And once that happens, we're not
-> going to keep a default that breaks peoples old scripts, and we're
-> going to have to rely on distributions (or users) explicitly setting
-> it.
+> I did miss the gen_pool_find_by_phys() call in that series. That does
+> look useful. I actually mentioned your series in an earlier posting
+> since I like it,
 
-Yes, it is a directory of my own creation, intended as a place for users
-(read: me) to stick stuff on the local disk as opposed to on NFS.  It's
-pretty trivial for me to fixup everything to not need this symlink
-anymore (and I suspect it is the only offender); I just created the
-symlink in the first place so that I wouldn't have to change anything
-else.
+That I did miss.
 
-(While on /this/ machine I created the directory, I have used shared lab
-machines with a similar setup).
+> but since the initialization of the driver was inherently
+> tied to DT it's not usable for DaVinci that's just starting to convert
+> to DT and needs !DT support as well.
 
-The thing that bothers me most about all this is that it's basically
-impossible to see why things are failing without digging through the git
-tree or posting to the mailing list (or recalling earlier mailing list
-discussions about the restriction, as I vaguely do now).  You just
-suddenly get "permission denied" errors when all the permissions
-involved look fine.  As far as I know, the owner, group and mode of
-symlinks have always been completely meaningless.  Upgrade to 3.6, and
-they're suddenly meaningful in extremely non-obvious ways.
+There should be no dependency on DT in the sram driver. It just requests
+and remaps the first given iomem resource and creates a gen_pool from that.
+This should work just as well for the !DT case.
+Maybe it's just my choice of patch series subject gave you that
+impression? If there's a real issue for !DT, I should fix it.
 
-Cheers,
+> I do see it moving to your driver exclusively, but I wanted to make this
+> series focused on only getting rid of the private SRAM API using the
+> existing pdata framework that's already there. I think once
+> gen_pool_find_by_phys() goes upstream we can switch to that and get the
+> address from a resource in the !DT case. I guess we should see if Sekhar
+> would like to see this happen in two steps or just have us depend on
+> the gen_pool_find_by_phys() patch now.
+
+Thanks, I'm glad you are aware of the sram driver and consider it useful.
+
+> BTW, I was going to post a patch for your driver to allow
+> configurability of the allocation order, but have been busy with other
+> things.  We'll eventually need that when switching to it as the
+> hardcoded page size order isn't going to work for all cases.
+
+Good point.
+
+regards
+Philipp
+
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
