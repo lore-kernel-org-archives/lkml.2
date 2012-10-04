@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946349Ab2JDV10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:27:26 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39431 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946318Ab2JDV1R (ORCPT
+	id S1946403Ab2JDVgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:36:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946337Ab2JDV1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:17 -0400
+	Thu, 4 Oct 2012 17:27:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [ 07/33] staging: comedi: s626: dont dereference insn->data
-Date: Thu,  4 Oct 2012 14:26:29 -0700
-Message-Id: <20121004210559.369392448@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 01/33] vfs: dcache: fix deadlock in tree traversal
+Date: Thu,  4 Oct 2012 14:26:23 -0700
+Message-Id: <20121004210558.643951273@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -27,32 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Miklos Szeredi <miklos@szeredi.hu>
 
-commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
+commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
 
-`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
-is a pointer to user memory.  It should be dereferencing the separate
-`data` parameter that points to a copy of the data in kernel memory.
+IBM reported a deadlock in select_parent().  This was found to be caused
+by taking rename_lock when already locked when restarting the tree
+traversal.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+There are two cases when the traversal needs to be restarted:
+
+ 1) concurrent d_move(); this can only happen when not already locked,
+    since taking rename_lock protects against concurrent d_move().
+
+ 2) racing with final d_put() on child just at the moment of ascending
+    to parent; rename_lock doesn't protect against this rare race, so it
+    can happen when already locked.
+
+Because of case 2, we need to be able to handle restarting the traversal
+when rename_lock is already held.  This patch fixes all three callers of
+try_to_ascend().
+
+IBM reported that the deadlock is gone with this patch.
+
+[ I rewrote the patch to be smaller and just do the "goto again" if the
+  lock was already held, but credit goes to Miklos for the real work.
+   - Linus ]
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/dcache.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -2370,7 +2370,7 @@ static int s626_enc_insn_config(struct c
- 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1101,6 +1101,8 @@ positive:
+ 	return 1;
  
- 	k->SetMode(dev, k, Setup, TRUE);
--	Preload(dev, k, *(insn->data));
-+	Preload(dev, k, data[0]);
- 	k->PulseIndex(dev, k);
- 	SetLatchSource(dev, k, valueSrclatch);
- 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -1203,6 +1205,8 @@ out:
+ rename_retry:
+ 	if (found)
+ 		return found;
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -2990,6 +2994,8 @@ resume:
+ 	return;
+ 
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
 
 
