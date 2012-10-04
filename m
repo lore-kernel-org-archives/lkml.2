@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab2JDV4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:56:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab2JDVWM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933923Ab2JDVWM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 4 Oct 2012 17:22:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933881Ab2JDVV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:21:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Michael Spang <spang@chromium.org>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 30/58] xhci: Intel Panther Point BEI quirk.
-Date: Thu,  4 Oct 2012 14:19:37 -0700
-Message-Id: <20121004210639.219821005@linuxfoundation.org>
+Subject: [ 35/58] Increase XHCI suspend timeout to 16ms
+Date: Thu,  4 Oct 2012 14:19:42 -0700
+Message-Id: <20121004210639.843538789@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -26,82 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Michael Spang <spang@chromium.org>
 
-commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
+commit a6e097dfdfd189b6929af6efa1d289af61858386 upstream.
 
-When a device with an isochronous endpoint is behind a hub plugged into
-the Intel Panther Point xHCI host controller, and the driver submits
-multiple frames per URB, the xHCI driver will set the Block Event
-Interrupt (BEI) flag on all but the last TD for the URB.  This causes
-the host controller to place an event on the event ring, but not send an
-interrupt.  When the last TD for the URB completes, BEI is cleared, and
-we get an interrupt for the whole URB.
+The Intel XHCI specification says that after clearing the run/stop bit
+the controller may take up to 16ms to halt. We've seen a device take
+14ms, which with the current timeout of 10ms causes the kernel to
+abort the suspend. Increasing the timeout to the recommended value
+fixes the problem.
 
-However, under a Panther Point xHCI host controller, if the parent hub
-is unplugged when one or more events from transfers with BEI set are on
-the event ring, a port status change event is placed on the event ring,
-but no interrupt is generated.  This means URBs stop completing, and the
-USB device disconnect is not noticed.  Something like a USB headset will
-cause mplayer to hang when the device is disconnected.
+This patch should be backported to kernels as old as 2.6.37, that
+contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
+PCI power management implementation".
 
-If another transfer is sent (such as running `sudo lsusb -v`), the next
-transfer event seems to "unstick" the event ring, the xHCI driver gets
-an interrupt, and the disconnect is reported to the USB core.
-
-The fix is not to use the BEI flag under the Panther Point xHCI host.
-This will impact power consumption and system responsiveness, because
-the xHCI driver will receive an interrupt for every frame in all
-isochronous URBs instead of once per URB.
-
-Intel chipset developers confirm that this bug will be hit if the BEI
-flag is used on any endpoint, not just ones that are behind a hub.
-
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
-
+Signed-off-by: Michael Spang <spang@chromium.org>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |    4 +++-
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -103,6 +103,7 @@ static void xhci_pci_quirks(struct devic
- 		 * PPT chipsets.
- 		 */
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
-+		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3400,7 +3400,9 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				td->last_trb = ep_ring->enqueue;
- 				field |= TRB_IOC;
--				if (xhci->hci_version == 0x100) {
-+				if (xhci->hci_version == 0x100 &&
-+						!(xhci->quirks &
-+							XHCI_AVOID_BEI)) {
- 					/* Set BEI bit except for the last td */
- 					if (i < num_tds - 1)
- 						field |= TRB_BEI;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1496,6 +1496,7 @@ struct xhci_hcd {
- #define XHCI_INTEL_HOST		(1 << 12)
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
-+#define XHCI_AVOID_BEI		(1 << 15)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -890,7 +890,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	command &= ~CMD_RUN;
+ 	xhci_writel(xhci, command, &xhci->op_regs->command);
+ 	if (handshake(xhci, &xhci->op_regs->status,
+-		      STS_HALT, STS_HALT, 100*100)) {
++		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
+ 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
+ 		spin_unlock_irq(&xhci->lock);
+ 		return -ETIMEDOUT;
 
 
