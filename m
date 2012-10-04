@@ -1,67 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946189Ab2JDVmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:42:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934229Ab2JDVZI (ORCPT
+	id S1946425Ab2JDVmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:42:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46593 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946317Ab2JDVm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        xiaojin <jin.xiao@intel.com>, "Yin, Fengwei" <fengwei.yin@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 35/52] n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
-Date: Thu,  4 Oct 2012 14:21:26 -0700
-Message-Id: <20121004210639.741523886@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
-References: <20121004210635.372689554@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 17:42:28 -0400
+Date: Thu, 04 Oct 2012 17:42:25 -0400 (EDT)
+Message-Id: <20121004.174225.33515477347980421.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+The most important bit in here is the fix for input route caching
+from Eric Dumazet, it's a shame we couldn't fully analyze this
+in time for 3.6 as it's a 3.6 regression introduced by the routing
+cache removal.
 
-From: xiaojin <jin.xiao@intel.com>
+Anyways, will send quickly to -stable after you pull this in.
 
-commit 7e8ac7b23b67416700dfb8b4136a4e81ce675b48 upstream.
+Other changes of note:
 
-In 3GPP27.010 5.8.1, it defined:
-The TE multiplexer initiates the establishment of the multiplexer control channel by sending a SABM frame on DLCI 0 using the procedures of clause 5.4.1.
-Once the multiplexer channel is established other DLCs may be established using the procedures of clause 5.4.1.
-This patch implement 5.8.1 in MUX level, it make sure DLC0 is the first channel to be setup.
+1) Fix lockdep splats in team and bonding, from Eric Dumazet.
 
-[or for those not familiar with the specification: it was possible to try
- and open a data connection while the control channel was not yet fully
- open, which is a spec violation and confuses some modems]
+2) IPV6 adds link local route even when there is no link local address,
+   from Nicolas Dichtel.
 
-Signed-off-by: xiaojin <jin.xiao@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-[tweaked the order we check things and error code]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+3) Fix ixgbe PTP implementation, from Jacob Keller.
 
----
- drivers/tty/n_gsm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+4) Fix excessive stack usage in cxgb4 driver, from Vipul Pandya.
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2889,6 +2889,10 @@ static int gsmtty_open(struct tty_struct
- 	gsm = gsm_mux[mux];
- 	if (gsm->dead)
- 		return -EL2HLT;
-+	/* If DLCI 0 is not yet fully open return an error. This is ok from a locking
-+	   perspective as we don't have to worry about this if DLCI0 is lost */
-+	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
-+		return -EL2NSYNC;
- 	dlci = gsm->dlci[line];
- 	if (dlci == NULL)
- 		dlci = gsm_dlci_alloc(gsm, line);
+5) MAC length computed improperly in VLAN demux, from Antonio
+   Quartulli.
+
+Please pull, thanks a lot!
+
+The following changes since commit 7fe0b14b725d6d09a1d9e1409bd465cb88b587f9:
+
+  Merge tag 'spi-3.7' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc (2012-10-02 17:26:42 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b:
+
+  ipv6: release reference of ip6_null_entry's dst entry in __ip6_del_rt (2012-10-04 16:00:07 -0400)
+
+----------------------------------------------------------------
+Antonio Quartulli (1):
+      8021q: fix mac_len recomputation in vlan_untag()
+
+Dan Carpenter (1):
+      bnx2x: use strlcpy() to copy a string
+
+Dave Jones (2):
+      silence some noisy printks in irda
+      Remove noisy printks from llcp_sock_connect
+
+David S. Miller (4):
+      pch_gbe: Fix PTP dependencies.
+      cxgb4: Fix build error due to missing linux/vmalloc.h include.
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge branch 'fixes-for-3.7' of git://gitorious.org/linux-can/linux-can
+
+Emil Tantilov (1):
+      ixgbe: fix poll loop for FDIRCTRL.INIT_DONE bit
+
+Eric Dumazet (3):
+      ipv4: add a fib_type to fib_info
+      bonding: set qdisc_tx_busylock to avoid LOCKDEP splat
+      team: set qdisc_tx_busylock to avoid LOCKDEP splat
+
+Erik Hugne (1):
+      tipc: prevent dropped connections due to rcvbuf overflow
+
+Gao feng (1):
+      ipv6: release reference of ip6_null_entry's dst entry in __ip6_del_rt
+
+Jacob Keller (3):
+      ixgbe: Fix PTP X540 SDP alignment code for PPS signal
+      ixgbe: (PTP) Fix PPS interrupt code
+      ixgbe: fix PTP ethtool timestamping function
+
+Marc Kleine-Budde (1):
+      can: mpc5xxx_can: fix section type conflict
+
+Michael Chan (1):
+      tg3: Fix sparse warnings.
+
+Nicolas Dichtel (3):
+      ipv6: don't add link local route when there is no link local address
+      sctp: fix a typo in prototype of __sctp_rcv_lookup()
+      sctp: check src addr when processing SACK to update transport state
+
+Peter Senna Tschudin (2):
+      can: peak_pci: fix error return code
+      can: peak_pcmcia: fix error return code
+
+Vipul Pandya (1):
+      cxgb4: Dynamically allocate memory in t4_memory_rw() and get_vpd_params()
+
+Yuval Mintz (1):
+      bnx2x: fix ring size for 10G functions
+
+htbegin (1):
+      net: ethernet: davinci_cpdma: decrease the desc count when cleaning up the remaining packets
+
+joshua.a.hay@intel.com (1):
+      ixgbe: add support for X540-AT1
+
+ drivers/net/bonding/bond_main.c                  |   2 +
+ drivers/net/can/mscan/mpc5xxx_can.c              |   8 +--
+ drivers/net/can/sja1000/peak_pci.c               |   2 +
+ drivers/net/can/sja1000/peak_pcmcia.c            |   4 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c  |  17 ++++---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   5 +-
+ drivers/net/ethernet/broadcom/tg3.c              |  11 +++--
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4.h       |   1 +
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c       |  43 +++++++++++-----
+ drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c   |   2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_common.c  |   1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   5 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |  15 +++++-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ptp.c     | 202 ++++++++++++++++++++++++++++++++++++----------------------------------------
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h    |   1 +
+ drivers/net/ethernet/oki-semi/pch_gbe/Kconfig    |   2 +-
+ drivers/net/ethernet/ti/davinci_cpdma.c          |   1 +
+ drivers/net/team/team.c                          |   2 +
+ include/net/ip_fib.h                             |   1 +
+ include/net/sctp/structs.h                       |   2 +-
+ net/8021q/vlan_core.c                            |   3 +-
+ net/ipv4/fib_semantics.c                         |   2 +
+ net/ipv6/addrconf.c                              |  15 +-----
+ net/ipv6/route.c                                 |  11 +++--
+ net/irda/af_irda.c                               |   2 +-
+ net/irda/irttp.c                                 |   2 +-
+ net/nfc/llcp/sock.c                              |   8 +--
+ net/sctp/input.c                                 |   2 +-
+ net/sctp/outqueue.c                              |  15 ++++--
+ net/sctp/sm_sideeffect.c                         |   4 +-
+ net/sctp/sm_statefuns.c                          |   2 +-
+ net/tipc/socket.c                                |   1 +
+ 32 files changed, 209 insertions(+), 185 deletions(-)
