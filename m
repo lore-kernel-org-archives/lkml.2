@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2JDSNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:13:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39475 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab2JDSNv (ORCPT
+	id S1754402Ab2JDSOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:14:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39815 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab2JDSJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:13:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121004104045.4fa02775@nehalam.linuxnetplumber.net>
-References: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
-	<20121003092508.6a7da662@nehalam.linuxnetplumber.net>
-	<CA+MoWDp4W5BCA1t_HgEtLhMs1btVTOkbtBytOVtAzJriEZ-16A@mail.gmail.com>
-	<20121004074442.180d8f01@nehalam.linuxnetplumber.net>
-	<CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
-	<20121004104045.4fa02775@nehalam.linuxnetplumber.net>
-Date: Thu, 4 Oct 2012 20:13:49 +0200
-Message-ID: <CA+MoWDoOKF1NHmDbaGwpRCpHLpnHfjHngR2HrV-tWLj+8pFV7g@mail.gmail.com>
-Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
- return code
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: mlindner@marvell.com, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Oct 2012 14:09:34 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Irina Tirdea <irina.tirdea@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 29/42] perf tools: Convert to BACKTRACE_SUPPORT
+Date: Thu,  4 Oct 2012 15:08:29 -0300
+Message-Id: <1349374122-27806-30-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
+References: <1349374122-27806-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Thanks for the patience.
+For building perf without stack backtrace debug, we can set
+NO_BACKTRACE=1 as a argument of make.  It then defines NO_BACKTRACE
+macro for C code to do the proper handling.  However it usually used in
+a negative semantics - e.g. #ifndef - so we saw double negations which
+can be misleading.  Convert it to a positive form to make it more
+readable and add _SUPPORT suffix for consistency.
 
-> The purpose of the commit message is not only so other developers understand
-> the patch. It is also so that the consumers (distro's and maintainers)
-> understand the scope of the impact.  It maybe that your effort uncovers
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Irina Tirdea <irina.tirdea@intel.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349109171-1942-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile    |   10 +++++-----
+ tools/perf/util/util.c |    4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-I was not considering the scope of the impact. I'm fixing bugs found
-by Coccinelle meaning that my bug hunting is based on static program
-analysis. My evaluation of what to do is simpler: Can my change make
-the code better? If I believe that yes, I make the patch.
-
-> a really bad security hole that requires a CVE and a re-release of a
-> major enterprise product like RHEL, or it could just be a minor corner
-> case that can never realistically happen. Unless you give a more complete
-> description, someone else will have to do it for each case.
-
-This is a mix between what I do not want and what I can't do. I can't
-give that complete description for consumers and distro maintainers
-for drivers that I do not know completely. I do not know how critical
-those bugs are in real life. I was expecting that the maintainer, who
-knows the drivers details, would do that sort of things when needed.
-
-Isn't enough fixing bugs and describing it correctly in a technical perspective?
-
-Thanks,
-
-Peter
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 5216ade..f9126f8 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -45,6 +45,8 @@ include config/utilities.mak
+ #
+ # Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
+ # backtrace post unwind.
++#
++# Define NO_BACKTRACE if you do not want stack backtrace debug feature
+ 
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -749,11 +751,9 @@ ifndef NO_STRLCPY
+ 	endif
+ endif
+ 
+-ifdef NO_BACKTRACE
+-       BASIC_CFLAGS += -DNO_BACKTRACE
+-else
+-       ifneq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
+-               BASIC_CFLAGS += -DNO_BACKTRACE
++ifndef NO_BACKTRACE
++       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
++               BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+        endif
+ endif
+ 
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 2055cf3..9966459 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,7 +1,7 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include <sys/mman.h>
+-#ifndef NO_BACKTRACE
++#ifdef BACKTRACE_SUPPORT
+ #include <execinfo.h>
+ #endif
+ #include <stdio.h>
+@@ -165,7 +165,7 @@ size_t hex_width(u64 v)
+ }
+ 
+ /* Obtain a backtrace and print it to stdout. */
+-#ifndef NO_BACKTRACE
++#ifdef BACKTRACE_SUPPORT
+ void dump_stack(void)
+ {
+ 	void *array[16];
 -- 
-Peter
+1.7.1
+
