@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422682Ab2JDPTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:19:34 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34643 "EHLO zmc.proxad.net"
+	id S1422742Ab2JDPZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:25:42 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34639 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965661Ab2JDPTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:19:23 -0400
+	id S965609Ab2JDPTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:19:22 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/24 v2] USB: EHCI: remove Netlogic XLS EHCI driver
-Date: Thu,  4 Oct 2012 17:17:33 +0200
-Message-Id: <1349363872-27004-6-git-send-email-florian@openwrt.org>
+Subject: [PATCH 06/24 v2] USB: EHCI: add no_io_watchdog platform_data parameter to ehci-platform
+Date: Thu,  4 Oct 2012 17:17:34 +0200
+Message-Id: <1349363872-27004-7-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -21,183 +21,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform code has been migrated to register the ehci-platform driver, thus
-obsoleting the ehci-xls driver, which can be removed.
+Enhance the ehci-platform driver to also accept no_io_watchdog as a platform
+data parameter. When no_io_watchdog is set to 1, the ehci controller will set
+ehci->need_io_watchdog to 0. Since most EHCI controllers do need the I/O
+watchdog to be on, only let those which need it to turn the watchdog off.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes since v1:
-- reworded commit message
+- reworked patch to introduce "no_io_watchdog" instead of "need_io_watchdog"
+- reworded commit message accordingly
 
- drivers/usb/host/ehci-hcd.c |    5 --
- drivers/usb/host/ehci-xls.c |  142 -------------------------------------------
- 2 files changed, 147 deletions(-)
- delete mode 100644 drivers/usb/host/ehci-xls.c
+ drivers/usb/host/ehci-platform.c |    2 ++
+ include/linux/usb/ehci_pdriver.h |    3 +++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 2f517d9..f2a9982 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1309,11 +1309,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_grlib_driver
- #endif
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 764e010..83b486e 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -32,6 +32,8 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
+ 	ehci->has_synopsys_hc_bug = pdata->has_synopsys_hc_bug;
+ 	ehci->big_endian_desc = pdata->big_endian_desc;
+ 	ehci->big_endian_mmio = pdata->big_endian_mmio;
++	if (pdata->no_io_watchdog)
++		ehci->need_io_watchdog = 0;
  
--#ifdef CONFIG_CPU_XLR
--#include "ehci-xls.c"
--#define PLATFORM_DRIVER		ehci_xls_driver
--#endif
--
- #ifdef CONFIG_USB_EHCI_MV
- #include "ehci-mv.c"
- #define        PLATFORM_DRIVER         ehci_mv_driver
-diff --git a/drivers/usb/host/ehci-xls.c b/drivers/usb/host/ehci-xls.c
-deleted file mode 100644
-index 8dc6a22..0000000
---- a/drivers/usb/host/ehci-xls.c
-+++ /dev/null
-@@ -1,142 +0,0 @@
--/*
-- * EHCI HCD for Netlogic XLS processors.
-- *
-- * (C) Copyright 2011 Netlogic Microsystems Inc.
-- *
-- *  Based on various ehci-*.c drivers
-- *
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file COPYING in the main directory of this archive for
-- * more details.
-- */
--
--#include <linux/platform_device.h>
--
--static int ehci_xls_setup(struct usb_hcd *hcd)
--{
--	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--
--	ehci->caps = hcd->regs;
--
--	return ehci_setup(hcd);
--}
--
--int ehci_xls_probe_internal(const struct hc_driver *driver,
--	struct platform_device *pdev)
--{
--	struct usb_hcd  *hcd;
--	struct resource *res;
--	int retval, irq;
--
--	/* Get our IRQ from an earlier registered Platform Resource */
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0) {
--		dev_err(&pdev->dev, "Found HC with no IRQ. Check %s setup!\n",
--				dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--
--	/* Get our Memory Handle */
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "Error: MMIO Handle %s setup!\n",
--				dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
--	if (!hcd) {
--		retval = -ENOMEM;
--		goto err1;
--	}
--
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
--				driver->description)) {
--		dev_dbg(&pdev->dev, "controller already in use\n");
--		retval = -EBUSY;
--		goto err2;
--	}
--	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
--
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		retval = -EFAULT;
--		goto err3;
--	}
--
--	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval != 0)
--		goto err4;
--	return retval;
--
--err4:
--	iounmap(hcd->regs);
--err3:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--err2:
--	usb_put_hcd(hcd);
--err1:
--	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev),
--			retval);
--	return retval;
--}
--
--static struct hc_driver ehci_xls_hc_driver = {
--	.description	= hcd_name,
--	.product_desc	= "XLS EHCI Host Controller",
--	.hcd_priv_size	= sizeof(struct ehci_hcd),
--	.irq		= ehci_irq,
--	.flags		= HCD_USB2 | HCD_MEMORY,
--	.reset		= ehci_xls_setup,
--	.start		= ehci_run,
--	.stop		= ehci_stop,
--	.shutdown	= ehci_shutdown,
--
--	.urb_enqueue	= ehci_urb_enqueue,
--	.urb_dequeue	= ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset	= ehci_endpoint_reset,
--
--	.get_frame_number = ehci_get_frame,
--
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control	= ehci_hub_control,
--	.bus_suspend	= ehci_bus_suspend,
--	.bus_resume	= ehci_bus_resume,
--	.relinquish_port = ehci_relinquish_port,
--	.port_handed_over = ehci_port_handed_over,
--
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
--
--static int ehci_xls_probe(struct platform_device *pdev)
--{
--	if (usb_disabled())
--		return -ENODEV;
--
--	return ehci_xls_probe_internal(&ehci_xls_hc_driver, pdev);
--}
--
--static int ehci_xls_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--	usb_put_hcd(hcd);
--	return 0;
--}
--
--MODULE_ALIAS("ehci-xls");
--
--static struct platform_driver ehci_xls_driver = {
--	.probe		= ehci_xls_probe,
--	.remove		= ehci_xls_remove,
--	.shutdown	= usb_hcd_platform_shutdown,
--	.driver		= {
--		.name = "ehci-xls",
--	},
--};
+ 	ehci->caps = hcd->regs + pdata->caps_offset;
+ 	retval = ehci_setup(hcd);
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index c9d09f8..67ac74b 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -29,6 +29,8 @@
+  *			initialization.
+  * @port_power_off:	set to 1 if the controller needs to be powered down
+  *			after initialization.
++ * @no_io_watchdog:	set to 1 if the controller does not need the I/O
++ *			watchdog to run.
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -41,6 +43,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	port_power_on:1;
+ 	unsigned	port_power_off:1;
++	unsigned	no_io_watchdog:1;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
 -- 
 1.7.9.5
 
