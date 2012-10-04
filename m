@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965649Ab2JDPTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:19:11 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34570 "EHLO zmc.proxad.net"
+	id S1422648Ab2JDPTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:19:18 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34581 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965609Ab2JDPTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:19:09 -0400
+	id S965609Ab2JDPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:19:15 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Kelvin Cheung <keguang.zhang@gmail.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/24 v2] USB: EHCI: remove IXP4xx EHCI driver
-Date: Thu,  4 Oct 2012 17:17:29 +0200
-Message-Id: <1349363872-27004-2-git-send-email-florian@openwrt.org>
+Subject: [PATCH 02/24 v2] MIPS: Loongson 1B: use ehci-platform instead of ehci-ls1x.
+Date: Thu,  4 Oct 2012 17:17:30 +0200
+Message-Id: <1349363872-27004-3-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -21,181 +22,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is not registered by any in-tree user. If needed it the EHCI
-driver can be reinstatied using the ehci-platform driver with caps_offset to
-0x100.
+The Loongson 1B EHCI driver does nothing more than what the EHCI platform
+driver already does, so use the generic implementation.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes since v1:
-- slightly reworded commit message
+No changes since v1
 
- drivers/usb/host/ehci-hcd.c    |    5 --
- drivers/usb/host/ehci-ixp4xx.c |  139 ----------------------------------------
- 2 files changed, 144 deletions(-)
- delete mode 100644 drivers/usb/host/ehci-ixp4xx.c
+ arch/mips/configs/ls1b_defconfig      |    1 +
+ arch/mips/loongson1/common/platform.c |    8 +++++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 6bf6c42..442f774 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
- #define	PLATFORM_DRIVER		ehci_orion_driver
- #endif
+diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
+index 80cff8b..7eb7554 100644
+--- a/arch/mips/configs/ls1b_defconfig
++++ b/arch/mips/configs/ls1b_defconfig
+@@ -76,6 +76,7 @@ CONFIG_HID_GENERIC=m
+ CONFIG_USB=y
+ CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+ CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_HCD_PLATFORM=y
+ # CONFIG_USB_EHCI_TT_NEWSCHED is not set
+ CONFIG_USB_STORAGE=m
+ CONFIG_USB_SERIAL=m
+diff --git a/arch/mips/loongson1/common/platform.c b/arch/mips/loongson1/common/platform.c
+index e92d59c..2874bf2 100644
+--- a/arch/mips/loongson1/common/platform.c
++++ b/arch/mips/loongson1/common/platform.c
+@@ -13,6 +13,7 @@
+ #include <linux/phy.h>
+ #include <linux/serial_8250.h>
+ #include <linux/stmmac.h>
++#include <linux/usb/ehci_pdriver.h>
+ #include <asm-generic/sizes.h>
  
--#ifdef CONFIG_ARCH_IXP4XX
--#include "ehci-ixp4xx.c"
--#define	PLATFORM_DRIVER		ixp4xx_ehci_driver
--#endif
--
- #ifdef CONFIG_USB_W90X900_EHCI
- #include "ehci-w90x900.c"
- #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
-diff --git a/drivers/usb/host/ehci-ixp4xx.c b/drivers/usb/host/ehci-ixp4xx.c
-deleted file mode 100644
-index f224c0a..0000000
---- a/drivers/usb/host/ehci-ixp4xx.c
-+++ /dev/null
-@@ -1,139 +0,0 @@
--/*
-- * IXP4XX EHCI Host Controller Driver
-- *
-- * Author: Vladimir Barinov <vbarinov@embeddedalley.com>
-- *
-- * Based on "ehci-fsl.c" by Randy Vinson <rvinson@mvista.com>
-- *
-- * 2007 (c) MontaVista Software, Inc. This file is licensed under
-- * the terms of the GNU General Public License version 2. This program
-- * is licensed "as is" without any warranty of any kind, whether express
-- * or implied.
-- */
--
--#include <linux/platform_device.h>
--
--static int ixp4xx_ehci_init(struct usb_hcd *hcd)
--{
--	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--	int retval = 0;
--
--	ehci->big_endian_desc = 1;
--	ehci->big_endian_mmio = 1;
--
--	ehci->caps = hcd->regs + 0x100;
--
--	hcd->has_tt = 1;
--
--	retval = ehci_setup(hcd);
--	if (retval)
--		return retval;
--
--	ehci_port_power(ehci, 0);
--
--	return retval;
--}
--
--static const struct hc_driver ixp4xx_ehci_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "IXP4XX EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--	.reset			= ixp4xx_ehci_init,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
--	.get_frame_number	= ehci_get_frame,
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--#if defined(CONFIG_PM)
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
--};
--
--static int ixp4xx_ehci_probe(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd;
--	const struct hc_driver *driver = &ixp4xx_ehci_hc_driver;
--	struct resource *res;
--	int irq;
--	int retval;
--
--	if (usb_disabled())
--		return -ENODEV;
--
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no IRQ. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--	irq = res->start;
--
--	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
--	if (!hcd) {
--		retval = -ENOMEM;
--		goto fail_create_hcd;
--	}
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no register addr. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		retval = -ENODEV;
--		goto fail_request_resource;
--	}
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		retval = -EFAULT;
--		goto fail_request_resource;
--	}
--
--	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval)
--		goto fail_request_resource;
--
--	return retval;
--
--fail_request_resource:
--	usb_put_hcd(hcd);
--fail_create_hcd:
--	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev), retval);
--	return retval;
--}
--
--static int ixp4xx_ehci_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	usb_put_hcd(hcd);
--
--	return 0;
--}
--
--MODULE_ALIAS("platform:ixp4xx-ehci");
--
--static struct platform_driver ixp4xx_ehci_driver = {
--	.probe = ixp4xx_ehci_probe,
--	.remove = ixp4xx_ehci_remove,
--	.driver = {
--		.name = "ixp4xx-ehci",
--	},
--};
+ #include <loongson1.h>
+@@ -107,13 +108,18 @@ static struct resource ls1x_ehci_resources[] = {
+ 	},
+ };
+ 
++static struct usb_ehci_pdata ls1x_ehci_pdata = {
++	.port_power_off	= 1,
++};
++
+ struct platform_device ls1x_ehci_device = {
+-	.name		= "ls1x-ehci",
++	.name		= "ehci-platform",
+ 	.id		= -1,
+ 	.num_resources	= ARRAY_SIZE(ls1x_ehci_resources),
+ 	.resource	= ls1x_ehci_resources,
+ 	.dev		= {
+ 		.dma_mask = &ls1x_ehci_dmamask,
++		.platform_data = &ls1x_ehci_pdata,
+ 	},
+ };
+ 
 -- 
 1.7.9.5
 
