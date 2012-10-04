@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab2JDSYk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:24:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39664 "EHLO
+	id S1754124Ab2JDSYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:24:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39666 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab2JDSI6 (ORCPT
+	with ESMTP id S1751535Ab2JDSI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 14:08:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/42] perf trace: Use evsel->handler.func
-Date: Thu,  4 Oct 2012 15:08:09 -0300
-Message-Id: <1349374122-27806-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 06/42] perf tools: Convert to NEWT_SUPPORT
+Date: Thu,  4 Oct 2012 15:08:06 -0300
+Message-Id: <1349374122-27806-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
 References: <1349374122-27806-1-git-send-email-acme@infradead.org>
@@ -29,206 +26,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-I.e. we don't need to resolve the evsel via the id and then check if it
-is this or that event, just stash the right handler at evsel creation
-time, then use evsel->handler.func() straight away.
+For building perf without libnewt, we can set NO_NEWT=1 as a argument of
+make.  It then defines NO_NEWT_SUPPORT macro for C code to do the proper
+handling.  However it usually used in a negative semantics - e.g.  #ifndef -
+so we saw double negations which can be misleading.  Convert it to a
+positive form to make it more readable.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-bpz3axzr4f2cjppf4egm28wf@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1348824728-14025-7-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c |  132 +++++++++++++++++++++++++++++---------------
- 1 files changed, 87 insertions(+), 45 deletions(-)
+ tools/perf/Makefile        |    8 +++-----
+ tools/perf/ui/gtk/util.c   |    2 +-
+ tools/perf/ui/helpline.h   |   10 +++++-----
+ tools/perf/util/annotate.h |    8 ++++----
+ tools/perf/util/cache.h    |   12 ++++++------
+ tools/perf/util/debug.c    |    2 +-
+ tools/perf/util/debug.h    |    6 +++---
+ tools/perf/util/hist.h     |   18 +++++++++---------
+ 8 files changed, 32 insertions(+), 34 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 8f113da..76b1202 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -114,10 +114,85 @@ static size_t syscall__fprintf_args(struct syscall *sc, unsigned long *args, FIL
- 	return printed;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 99b2bb3..3d2181c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -554,16 +554,14 @@ ifndef NO_LIBAUDIT
+ 	endif
+ endif
+ 
+-ifdef NO_NEWT
+-	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+-else
++ifndef NO_NEWT
+ 	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
+ 	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
+ 		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
+-		BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+ 	else
+ 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+ 		BASIC_CFLAGS += -I/usr/include/slang
++		BASIC_CFLAGS += -DNEWT_SUPPORT
+ 		EXTLIBS += -lnewt -lslang
+ 		LIB_OBJS += $(OUTPUT)ui/setup.o
+ 		LIB_OBJS += $(OUTPUT)ui/browser.o
+@@ -603,7 +601,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+ 		# Make sure that it'd be included only once.
+-		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
++		ifeq ($(findstring -DNEWT_SUPPORT,$(BASIC_CFLAGS)),)
+ 			LIB_OBJS += $(OUTPUT)ui/setup.o
+ 			LIB_OBJS += $(OUTPUT)ui/util.o
+ 		endif
+diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
+index 8aada5b..ccb046a 100644
+--- a/tools/perf/ui/gtk/util.c
++++ b/tools/perf/ui/gtk/util.c
+@@ -116,7 +116,7 @@ struct perf_error_ops perf_gtk_eops = {
+  * FIXME: Functions below should be implemented properly.
+  *        For now, just add stubs for NO_NEWT=1 build.
+  */
+-#ifdef NO_NEWT_SUPPORT
++#ifndef NEWT_SUPPORT
+ void ui_progress__update(u64 curr __maybe_unused, u64 total __maybe_unused,
+ 			 const char *title __maybe_unused)
+ {
+diff --git a/tools/perf/ui/helpline.h b/tools/perf/ui/helpline.h
+index 2b667ee..e1f126b 100644
+--- a/tools/perf/ui/helpline.h
++++ b/tools/perf/ui/helpline.h
+@@ -23,16 +23,16 @@ void ui_helpline__puts(const char *msg);
+ 
+ extern char ui_helpline__current[512];
+ 
+-#ifdef NO_NEWT_SUPPORT
++#ifdef NEWT_SUPPORT
++extern char ui_helpline__last_msg[];
++int ui_helpline__show_help(const char *format, va_list ap);
++#else
+ static inline int ui_helpline__show_help(const char *format __maybe_unused,
+ 					 va_list ap __maybe_unused)
+ {
+ 	return 0;
+ }
+-#else
+-extern char ui_helpline__last_msg[];
+-int ui_helpline__show_help(const char *format, va_list ap);
+-#endif /* NO_NEWT_SUPPORT */
++#endif /* NEWT_SUPPORT */
+ 
+ #ifdef NO_GTK2_SUPPORT
+ static inline int perf_gtk__show_helpline(const char *format __maybe_unused,
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 9b5b21e..39242dc 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -138,7 +138,10 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 bool print_lines, bool full_paths, int min_pcnt,
+ 			 int max_lines);
+ 
+-#ifdef NO_NEWT_SUPPORT
++#ifdef NEWT_SUPPORT
++int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
++			 void(*timer)(void *arg), void *arg, int delay_secs);
++#else
+ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ 				       struct map *map __maybe_unused,
+ 				       int evidx __maybe_unused,
+@@ -148,9 +151,6 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ {
+ 	return 0;
+ }
+-#else
+-int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 void(*timer)(void *arg), void *arg, int delay_secs);
+ #endif
+ 
+ extern const char	*disassembler_style;
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index ab17694..70f318d 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -33,7 +33,7 @@ extern int pager_use_color;
+ 
+ extern int use_browser;
+ 
+-#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
++#if !defined(NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ static inline void setup_browser(bool fallback_to_pager)
+ {
+ 	if (fallback_to_pager)
+@@ -44,15 +44,15 @@ static inline void exit_browser(bool wait_for_ok __maybe_unused) {}
+ void setup_browser(bool fallback_to_pager);
+ void exit_browser(bool wait_for_ok);
+ 
+-#ifdef NO_NEWT_SUPPORT
++#ifdef NEWT_SUPPORT
++int ui__init(void);
++void ui__exit(bool wait_for_ok);
++#else
+ static inline int ui__init(void)
+ {
+ 	return -1;
+ }
+ static inline void ui__exit(bool wait_for_ok __maybe_unused) {}
+-#else
+-int ui__init(void);
+-void ui__exit(bool wait_for_ok);
+ #endif
+ 
+ #ifdef NO_GTK2_SUPPORT
+@@ -65,7 +65,7 @@ static inline void perf_gtk__exit(bool wait_for_ok __maybe_unused) {}
+ int perf_gtk__init(void);
+ void perf_gtk__exit(bool wait_for_ok);
+ #endif
+-#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
++#endif /* !NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+ char *alias_lookup(const char *alias);
+ int split_cmdline(char *cmdline, const char ***argv);
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 66eb382..0f6ad70 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -49,7 +49,7 @@ int dump_printf(const char *fmt, ...)
+ 	return ret;
  }
  
-+typedef int (*tracepoint_handler)(struct trace *trace, struct perf_evsel *evsel,
-+				  struct perf_sample *sample);
-+
-+static struct syscall *trace__syscall_info(struct trace *trace,
-+					   struct perf_evsel *evsel,
-+					   struct perf_sample *sample)
-+{
-+	int id = perf_evsel__intval(evsel, sample, "id");
-+
-+	if (id < 0) {
-+		printf("Invalid syscall %d id, skipping...\n", id);
-+		return NULL;
-+	}
-+
-+	if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL) &&
-+	    trace__read_syscall_info(trace, id))
-+		goto out_cant_read;
-+
-+	if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL))
-+		goto out_cant_read;
-+
-+	return &trace->syscalls.table[id];
-+
-+out_cant_read:
-+	printf("Problems reading syscall %d information\n", id);
-+	return NULL;
-+}
-+
-+static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
-+			    struct perf_sample *sample)
-+{
-+	void *args;
-+	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
-+
-+	if (sc == NULL)
-+		return -1;
-+
-+	args = perf_evsel__rawptr(evsel, sample, "args");
-+	if (args == NULL) {
-+		printf("Problems reading syscall arguments\n");
-+		return -1;
-+	}
-+
-+	printf("%s(", sc->name);
-+	syscall__fprintf_args(sc, args, stdout);
-+
-+	return 0;
-+}
-+
-+static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
-+			   struct perf_sample *sample)
-+{
-+	int ret;
-+	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
-+
-+	if (sc == NULL)
-+		return -1;
-+
-+	ret = perf_evsel__intval(evsel, sample, "ret");
-+
-+	if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
-+		char bf[256];
-+		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
-+			   *e = audit_errno_to_name(-ret);
-+
-+		printf(") = -1 %s %s", e, emsg);
-+	} else if (ret == 0 && sc->fmt && sc->fmt->timeout)
-+		printf(") = 0 Timeout");
-+	else
-+		printf(") = %d", ret);
-+
-+	putchar('\n');
-+	return 0;
-+}
-+
- static int trace__run(struct trace *trace)
+-#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
++#if !defined(NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ int ui__warning(const char *format, ...)
  {
- 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--	struct perf_evsel *evsel, *evsel_enter, *evsel_exit;
-+	struct perf_evsel *evsel;
- 	int err = -1, i, nr_events = 0, before;
+ 	va_list args;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index bb2e7d1..3fe9ade 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -15,7 +15,7 @@ void trace_event(union perf_event *event);
+ struct ui_progress;
+ struct perf_error_ops;
  
- 	if (evlist == NULL) {
-@@ -125,21 +200,23 @@ static int trace__run(struct trace *trace)
- 		goto out;
- 	}
+-#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
++#if !defined(NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ static inline void ui_progress__update(u64 curr __maybe_unused,
+ 				       u64 total __maybe_unused,
+ 				       const char *title __maybe_unused) {}
+@@ -34,13 +34,13 @@ perf_error__unregister(struct perf_error_ops *eops __maybe_unused)
+ 	return 0;
+ }
  
--	evsel_enter = perf_evsel__newtp("raw_syscalls", "sys_enter", 0);
--	if (evsel_enter == NULL) {
-+	evsel = perf_evsel__newtp("raw_syscalls", "sys_enter", 0);
-+	if (evsel == NULL) {
- 		printf("Couldn't read the raw_syscalls:sys_enter tracepoint information!\n");
- 		goto out_delete_evlist;
- 	}
+-#else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
++#else /* !NEWT_SUPPORT && NO_GTK2_SUPPORT */
  
--	perf_evlist__add(evlist, evsel_enter);
-+	evsel->handler.func = trace__sys_enter;
-+	perf_evlist__add(evlist, evsel);
+ #include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ #include "../ui/util.h"
  
--	evsel_exit = perf_evsel__newtp("raw_syscalls", "sys_exit", 1);
--	if (evsel_exit == NULL) {
-+	evsel = perf_evsel__newtp("raw_syscalls", "sys_exit", 1);
-+	if (evsel == NULL) {
- 		printf("Couldn't read the raw_syscalls:sys_exit tracepoint information!\n");
- 		goto out_delete_evlist;
- 	}
+-#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
++#endif /* !NEWT_SUPPORT && NO_GTK2_SUPPORT */
  
--	perf_evlist__add(evlist, evsel_exit);
-+	evsel->handler.func = trace__sys_exit;
-+	perf_evlist__add(evlist, evsel);
+ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int ui__error_paranoid(void);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f011ad4..843638d 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -154,7 +154,15 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
  
- 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
- 	if (err < 0) {
-@@ -170,9 +247,8 @@ again:
+ struct perf_evlist;
  
- 		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
- 			const u32 type = event->header.type;
--			struct syscall *sc;
-+			tracepoint_handler handler;
- 			struct perf_sample sample;
--			int id;
- 
- 			++nr_events;
- 
-@@ -200,45 +276,11 @@ again:
- 				continue;
- 			}
- 
--			id = perf_evsel__intval(evsel, &sample, "id");
--			if (id < 0) {
--				printf("Invalid syscall %d id, skipping...\n", id);
--				continue;
--			}
+-#ifdef NO_NEWT_SUPPORT
++#ifdef NEWT_SUPPORT
++#include "../ui/keysyms.h"
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
++			     void(*timer)(void *arg), void *arg, int delay_secs);
++
++int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
++				  void(*timer)(void *arg), void *arg,
++				  int refresh);
++#else
+ static inline
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __maybe_unused,
+ 				  const char *help __maybe_unused,
+@@ -177,14 +185,6 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self
+ }
+ #define K_LEFT -1
+ #define K_RIGHT -2
+-#else
+-#include "../ui/keysyms.h"
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+-			     void(*timer)(void *arg), void *arg, int delay_secs);
 -
--			if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL) &&
--			    trace__read_syscall_info(trace, id))
--				continue;
--
--			if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL))
--				continue;
--
--			sc = &trace->syscalls.table[id];
--
- 			if (evlist->threads->map[0] == -1 || evlist->threads->nr > 1)
- 				printf("%d ", sample.tid);
+-int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+-				  void(*timer)(void *arg), void *arg,
+-				  int refresh);
+ #endif
  
--			if (evsel == evsel_enter) {
--				void *args = perf_evsel__rawptr(evsel, &sample, "args");
--
--				printf("%s(", sc->name);
--				syscall__fprintf_args(sc, args, stdout);
--			} else if (evsel == evsel_exit) {
--				int ret = perf_evsel__intval(evsel, &sample, "ret");
--
--				if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
--					char bf[256];
--					const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
--						   *e = audit_errno_to_name(-ret);
--
--					printf(") = -1 %s %s", e, emsg);
--				} else if (ret == 0 && sc->fmt && sc->fmt->timeout)
--					printf(") = 0 Timeout");
--				else
--					printf(") = %d", ret);
--
--				putchar('\n');
--			}
-+			handler = evsel->handler.func;
-+			handler(trace, evsel, &sample);
- 		}
- 	}
- 
+ #ifdef NO_GTK2_SUPPORT
 -- 
 1.7.1
 
