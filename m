@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946487Ab2JDV21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:28:27 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45983 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946467Ab2JDV2P (ORCPT
+	id S1946518Ab2JDV2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:28:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42952 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946503Ab2JDV2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:28:15 -0400
+	Thu, 4 Oct 2012 17:28:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 17/33] xhci: Intel Panther Point BEI quirk.
-Date: Thu,  4 Oct 2012 14:26:39 -0700
-Message-Id: <20121004210600.597053912@linuxfoundation.org>
+        Tomas Racek <tracek@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Ben Jencks <ben@bjencks.net>, qemu-devel@nongnu.org
+Subject: [ 30/33] x86/alternatives: Fix p6 nops on non-modular kernels
+Date: Thu,  4 Oct 2012 14:26:52 -0700
+Message-Id: <20121004210602.236827150@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -26,82 +33,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Avi Kivity <avi@redhat.com>
 
-commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
+commit cb09cad44f07044d9810f18f6f9a6a6f3771f979 upstream.
 
-When a device with an isochronous endpoint is behind a hub plugged into
-the Intel Panther Point xHCI host controller, and the driver submits
-multiple frames per URB, the xHCI driver will set the Block Event
-Interrupt (BEI) flag on all but the last TD for the URB.  This causes
-the host controller to place an event on the event ring, but not send an
-interrupt.  When the last TD for the URB completes, BEI is cleared, and
-we get an interrupt for the whole URB.
+Probably a leftover from the early days of self-patching, p6nops
+are marked __initconst_or_module, which causes them to be
+discarded in a non-modular kernel.  If something later triggers
+patching, it will overwrite kernel code with garbage.
 
-However, under a Panther Point xHCI host controller, if the parent hub
-is unplugged when one or more events from transfers with BEI set are on
-the event ring, a port status change event is placed on the event ring,
-but no interrupt is generated.  This means URBs stop completing, and the
-USB device disconnect is not noticed.  Something like a USB headset will
-cause mplayer to hang when the device is disconnected.
-
-If another transfer is sent (such as running `sudo lsusb -v`), the next
-transfer event seems to "unstick" the event ring, the xHCI driver gets
-an interrupt, and the disconnect is reported to the USB core.
-
-The fix is not to use the BEI flag under the Panther Point xHCI host.
-This will impact power consumption and system responsiveness, because
-the xHCI driver will receive an interrupt for every frame in all
-isochronous URBs instead of once per URB.
-
-Intel chipset developers confirm that this bug will be hit if the BEI
-flag is used on any endpoint, not just ones that are behind a hub.
-
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Tomas Racek <tracek@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: qemu-devel@nongnu.org
+Cc: Anthony Liguori <anthony@codemonkey.ws>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ben Jencks <ben@bjencks.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |    4 +++-
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/alternative.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -149,6 +149,7 @@ static int xhci_pci_setup(struct usb_hcd
- 		 * PPT chipsets.
- 		 */
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
-+		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3365,7 +3365,9 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				td->last_trb = ep_ring->enqueue;
- 				field |= TRB_IOC;
--				if (xhci->hci_version == 0x100) {
-+				if (xhci->hci_version == 0x100 &&
-+						!(xhci->quirks &
-+							XHCI_AVOID_BEI)) {
- 					/* Set BEI bit except for the last td */
- 					if (i < num_tds - 1)
- 						field |= TRB_BEI;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1317,6 +1317,7 @@ struct xhci_hcd {
- #define XHCI_AMD_0x96_HOST	(1 << 9)
- #define XHCI_TRUST_TX_LENGTH	(1 << 10)
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
-+#define XHCI_AVOID_BEI		(1 << 15)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -161,7 +161,7 @@ static const unsigned char * const k7_no
+ #endif
+ 
+ #ifdef P6_NOP1
+-static const unsigned char  __initconst_or_module p6nops[] =
++static const unsigned char p6nops[] =
+ {
+ 	P6_NOP1,
+ 	P6_NOP2,
 
 
