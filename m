@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946379Ab2JDVoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:44:11 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934261Ab2JDVYu (ORCPT
+	id S934264Ab2JDVYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:24:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934248Ab2JDVYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:50 -0400
+	Thu, 4 Oct 2012 17:24:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 29/52] xHCI: add aborting command ring function
-Date: Thu,  4 Oct 2012 14:21:20 -0700
-Message-Id: <20121004210638.997023603@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 27/52] xhci: Intel Panther Point BEI quirk.
+Date: Thu,  4 Oct 2012 14:21:18 -0700
+Message-Id: <20121004210638.767587262@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,241 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit b92cc66c047ff7cf587b318fe377061a353c120f upstream.
+commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
 
-Software have to abort command ring and cancel command
-when a command is failed or hang. Otherwise, the command
-ring will hang up and can't handle the others. An example
-of a command that may hang is the Address Device Command,
-because waiting for a SET_ADDRESS request to be acknowledged
-by a USB device is outside of the xHC's ability to control.
+When a device with an isochronous endpoint is behind a hub plugged into
+the Intel Panther Point xHCI host controller, and the driver submits
+multiple frames per URB, the xHCI driver will set the Block Event
+Interrupt (BEI) flag on all but the last TD for the URB.  This causes
+the host controller to place an event on the event ring, but not send an
+interrupt.  When the last TD for the URB completes, BEI is cleared, and
+we get an interrupt for the whole URB.
 
-To cancel a command, software will initialize a command
-descriptor for the cancel command, and add it into a
-cancel_cmd_list of xhci.
+However, under a Panther Point xHCI host controller, if the parent hub
+is unplugged when one or more events from transfers with BEI set are on
+the event ring, a port status change event is placed on the event ring,
+but no interrupt is generated.  This means URBs stop completing, and the
+USB device disconnect is not noticed.  Something like a USB headset will
+cause mplayer to hang when the device is disconnected.
 
-Sarah: Fixed missing newline on "Have the command ring been stopped?"
-debugging statement.
+If another transfer is sent (such as running `sudo lsusb -v`), the next
+transfer event seems to "unstick" the event ring, the xHCI driver gets
+an interrupt, and the disconnect is reported to the USB core.
+
+The fix is not to use the BEI flag under the Panther Point xHCI host.
+This will impact power consumption and system responsiveness, because
+the xHCI driver will receive an interrupt for every frame in all
+isochronous URBs instead of once per URB.
+
+Intel chipset developers confirm that this bug will be hit if the BEI
+flag is used on any endpoint, not just ones that are behind a hub.
 
 This patch should be backported to kernels as old as 3.0, that contain
-the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
-assertion to check for virt_dev=0 bug." That commit papers over a NULL
-pointer dereference, and this patch fixes the underlying issue that
-caused the NULL pointer dereference.
+the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
 
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c  |    7 ++
- drivers/usb/host/xhci-ring.c |  108 +++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/xhci.c      |    2 
- drivers/usb/host/xhci.h      |   12 ++++
- 4 files changed, 128 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c  |    1 +
+ drivers/usb/host/xhci-ring.c |    4 +++-
+ drivers/usb/host/xhci.h      |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1772,6 +1772,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- {
- 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
- 	struct dev_info	*dev_info, *next;
-+	struct xhci_cd  *cur_cd, *next_cd;
- 	unsigned long	flags;
- 	int size;
- 	int i, j, num_ports;
-@@ -1793,6 +1794,11 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 		xhci_ring_free(xhci, xhci->cmd_ring);
- 	xhci->cmd_ring = NULL;
- 	xhci_dbg(xhci, "Freed command ring\n");
-+	list_for_each_entry_safe(cur_cd, next_cd,
-+			&xhci->cancel_cmd_list, cancel_cmd_list) {
-+		list_del(&cur_cd->cancel_cmd_list);
-+		kfree(cur_cd);
-+	}
- 
- 	for (i = 1; i < MAX_HC_SLOTS; ++i)
- 		xhci_free_virt_device(xhci, i);
-@@ -2338,6 +2344,7 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, 1, TYPE_COMMAND, flags);
- 	if (!xhci->cmd_ring)
- 		goto fail;
-+	INIT_LIST_HEAD(&xhci->cancel_cmd_list);
- 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
- 	xhci_dbg(xhci, "First segment DMA is 0x%llx\n",
- 			(unsigned long long)xhci->cmd_ring->first_seg->dma);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -99,6 +99,7 @@ static void xhci_pci_quirks(struct devic
+ 		 * PPT chipsets.
+ 		 */
+ 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
++		xhci->quirks |= XHCI_AVOID_BEI;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -289,6 +289,114 @@ void xhci_ring_cmd_db(struct xhci_hcd *x
- 	xhci_readl(xhci, &xhci->dba->doorbell[0]);
- }
- 
-+static int xhci_abort_cmd_ring(struct xhci_hcd *xhci)
-+{
-+	u64 temp_64;
-+	int ret;
-+
-+	xhci_dbg(xhci, "Abort command ring\n");
-+
-+	if (!(xhci->cmd_ring_state & CMD_RING_STATE_RUNNING)) {
-+		xhci_dbg(xhci, "The command ring isn't running, "
-+				"Have the command ring been stopped?\n");
-+		return 0;
-+	}
-+
-+	temp_64 = xhci_read_64(xhci, &xhci->op_regs->cmd_ring);
-+	if (!(temp_64 & CMD_RING_RUNNING)) {
-+		xhci_dbg(xhci, "Command ring had been stopped\n");
-+		return 0;
-+	}
-+	xhci->cmd_ring_state = CMD_RING_STATE_ABORTED;
-+	xhci_write_64(xhci, temp_64 | CMD_RING_ABORT,
-+			&xhci->op_regs->cmd_ring);
-+
-+	/* Section 4.6.1.2 of xHCI 1.0 spec says software should
-+	 * time the completion od all xHCI commands, including
-+	 * the Command Abort operation. If software doesn't see
-+	 * CRR negated in a timely manner (e.g. longer than 5
-+	 * seconds), then it should assume that the there are
-+	 * larger problems with the xHC and assert HCRST.
-+	 */
-+	ret = handshake(xhci, &xhci->op_regs->cmd_ring,
-+			CMD_RING_RUNNING, 0, 5 * 1000 * 1000);
-+	if (ret < 0) {
-+		xhci_err(xhci, "Stopped the command ring failed, "
-+				"maybe the host is dead\n");
-+		xhci->xhc_state |= XHCI_STATE_DYING;
-+		xhci_quiesce(xhci);
-+		xhci_halt(xhci);
-+		return -ESHUTDOWN;
-+	}
-+
-+	return 0;
-+}
-+
-+static int xhci_queue_cd(struct xhci_hcd *xhci,
-+		struct xhci_command *command,
-+		union xhci_trb *cmd_trb)
-+{
-+	struct xhci_cd *cd;
-+	cd = kzalloc(sizeof(struct xhci_cd), GFP_ATOMIC);
-+	if (!cd)
-+		return -ENOMEM;
-+	INIT_LIST_HEAD(&cd->cancel_cmd_list);
-+
-+	cd->command = command;
-+	cd->cmd_trb = cmd_trb;
-+	list_add_tail(&cd->cancel_cmd_list, &xhci->cancel_cmd_list);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Cancel the command which has issue.
-+ *
-+ * Some commands may hang due to waiting for acknowledgement from
-+ * usb device. It is outside of the xHC's ability to control and
-+ * will cause the command ring is blocked. When it occurs software
-+ * should intervene to recover the command ring.
-+ * See Section 4.6.1.1 and 4.6.1.2
-+ */
-+int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
-+		union xhci_trb *cmd_trb)
-+{
-+	int retval = 0;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&xhci->lock, flags);
-+
-+	if (xhci->xhc_state & XHCI_STATE_DYING) {
-+		xhci_warn(xhci, "Abort the command ring,"
-+				" but the xHCI is dead.\n");
-+		retval = -ESHUTDOWN;
-+		goto fail;
-+	}
-+
-+	/* queue the cmd desriptor to cancel_cmd_list */
-+	retval = xhci_queue_cd(xhci, command, cmd_trb);
-+	if (retval) {
-+		xhci_warn(xhci, "Queuing command descriptor failed.\n");
-+		goto fail;
-+	}
-+
-+	/* abort command ring */
-+	retval = xhci_abort_cmd_ring(xhci);
-+	if (retval) {
-+		xhci_err(xhci, "Abort command ring failed\n");
-+		if (unlikely(retval == -ESHUTDOWN)) {
-+			spin_unlock_irqrestore(&xhci->lock, flags);
-+			usb_hc_died(xhci_to_hcd(xhci)->primary_hcd);
-+			xhci_dbg(xhci, "xHCI host controller is dead.\n");
-+			return retval;
-+		}
-+	}
-+
-+fail:
-+	spin_unlock_irqrestore(&xhci->lock, flags);
-+	return retval;
-+}
-+
- void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,
- 		unsigned int slot_id,
- 		unsigned int ep_index,
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -52,7 +52,7 @@ MODULE_PARM_DESC(link_quirk, "Don't clea
-  * handshake done).  There are two failure modes:  "usec" have passed (major
-  * hardware flakeout), or the register reads as all-ones (hardware removed).
-  */
--static int handshake(struct xhci_hcd *xhci, void __iomem *ptr,
-+int handshake(struct xhci_hcd *xhci, void __iomem *ptr,
- 		      u32 mask, u32 done, int usec)
- {
- 	u32	result;
+@@ -3400,7 +3400,9 @@ static int xhci_queue_isoc_tx(struct xhc
+ 			} else {
+ 				td->last_trb = ep_ring->enqueue;
+ 				field |= TRB_IOC;
+-				if (xhci->hci_version == 0x100) {
++				if (xhci->hci_version == 0x100 &&
++						!(xhci->quirks &
++							XHCI_AVOID_BEI)) {
+ 					/* Set BEI bit except for the last td */
+ 					if (i < num_tds - 1)
+ 						field |= TRB_BEI;
 --- a/drivers/usb/host/xhci.h
 +++ b/drivers/usb/host/xhci.h
-@@ -1252,6 +1252,13 @@ struct xhci_td {
- 	union xhci_trb		*last_trb;
- };
- 
-+/* command descriptor */
-+struct xhci_cd {
-+	struct list_head	cancel_cmd_list;
-+	struct xhci_command	*command;
-+	union xhci_trb		*cmd_trb;
-+};
-+
- struct xhci_dequeue_state {
- 	struct xhci_segment *new_deq_seg;
- 	union xhci_trb *new_deq_ptr;
-@@ -1421,6 +1428,7 @@ struct xhci_hcd {
- #define CMD_RING_STATE_RUNNING         (1 << 0)
- #define CMD_RING_STATE_ABORTED         (1 << 1)
- #define CMD_RING_STATE_STOPPED         (1 << 2)
-+	struct list_head        cancel_cmd_list;
- 	unsigned int		cmd_ring_reserved_trbs;
- 	struct xhci_ring	*event_ring;
- 	struct xhci_erst	erst;
-@@ -1699,6 +1707,8 @@ static inline void xhci_unregister_plat(
- 
- /* xHCI host controller glue */
- typedef void (*xhci_get_quirks_t)(struct device *, struct xhci_hcd *);
-+int handshake(struct xhci_hcd *xhci, void __iomem *ptr,
-+		u32 mask, u32 done, int usec);
- void xhci_quiesce(struct xhci_hcd *xhci);
- int xhci_halt(struct xhci_hcd *xhci);
- int xhci_reset(struct xhci_hcd *xhci);
-@@ -1789,6 +1799,8 @@ void xhci_queue_config_ep_quirk(struct x
- 		unsigned int slot_id, unsigned int ep_index,
- 		struct xhci_dequeue_state *deq_state);
- void xhci_stop_endpoint_command_watchdog(unsigned long arg);
-+int xhci_cancel_cmd(struct xhci_hcd *xhci, struct xhci_command *command,
-+		union xhci_trb *cmd_trb);
- void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
- 		unsigned int ep_index, unsigned int stream_id);
- 
+@@ -1488,6 +1488,7 @@ struct xhci_hcd {
+ #define XHCI_TRUST_TX_LENGTH	(1 << 10)
+ #define XHCI_SPURIOUS_REBOOT	(1 << 13)
+ #define XHCI_COMP_MODE_QUIRK	(1 << 14)
++#define XHCI_AVOID_BEI		(1 << 15)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
 
 
