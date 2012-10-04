@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab2JDJHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:07:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59220 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab2JDJHs convert rfc822-to-8bit (ORCPT
+	id S1753634Ab2JDJI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:08:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51220 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab2JDJI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:07:48 -0400
-Message-ID: <1349341655.4438.7.camel@twins>
-Subject: uncore doing kfree() from CPU_{STARTING,DYING}
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>, mingo@kernel.org
-Date: Thu, 04 Oct 2012 11:07:35 +0200
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 4 Oct 2012 05:08:57 -0400
+Message-ID: <506D5220.8080307@canonical.com>
+Date: Thu, 04 Oct 2012 17:08:48 +0800
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Matt Fleming <matt.fleming@intel.com>
+CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, glin@suse.com,
+        "Lee, Chun-Yi" <jlee@suse.com>, Matthew Garrett <mjg@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Peter Jones <pjones@redhat.com>
+Subject: Re: [PATCH] efi: add efivars kobject to efi sysfs folder
+References: <1349317486-30006-1-git-send-email-jlee@suse.com> <1349340875.15966.18.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1349340875.15966.18.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zheng,
+Hi Matt,
 
-Can you have a look at 7fdba1ca and do a similar patch for uncore?
-Thomas is sad because uncore breaks -rt, the problem (as described in
-that patch) is that kfree() must schedule on -rt while
-CPU_{STARTING,DYING} really are atomic.
+> Jeremy, did you want to pick this up as part of your series?
 
-~ Peter
+I have this in my series, yes. I'm just working on the authenticated 
+delete code, then will send out the next revision.
+
+Speaking of which - Peter: I've realised that doing a GetVariable() 
+after the SetVariable is a much cleaner way of checking whether we need 
+to drop the inode after an authenticated delete.
+
+Because the inode's size may not be simply updated by the write(), we 
+should probably be doing a GetVariable() after an APPEND_WRITE, to read 
+the new size. Rather than having a separate (and quite complex) code 
+path to check for the delete case, we may as well use the same logic to 
+determine if the variable has been deleted.
+
+> Actually, shouldn't the new filesystem be called "efivarfs", or "efifs"
+> to make it more explicit that it is a filesystem?
+
+I'm not too fussed about the name, but +1 for efivarfs.
+
+> We also need something in Documentation/filesystems/ describing the old
+> EFI variable method, why it's no longer any good, and why the new
+> filesystem is favoured. Does anybody have anything to add to the
+> following?
+
+Looks good to me. We can always elaborate later, if necessary.
+
+Cheers,
 
 
----
-commit 7fdba1ca10462f42ad2246b918fe6368f5ce488e
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Fri Jul 22 13:41:54 2011 +0200
-
-    perf, x86: Avoid kfree() in CPU_STARTING
-    
-    On -rt kfree() can schedule, but CPU_STARTING is before the CPU is
-    fully up and running. These are contradictory, so avoid it. Instead
-    push the kfree() to CPU_ONLINE where we're free to schedule.
-    
-    Reported-by: Thomas Gleixner <tglx@linutronix.de>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Link: http://lkml.kernel.org/n/tip-kwd4j6ayld5thrscvaxgjquv@git.kernel.org
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..594d425 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -129,6 +129,8 @@ struct cpu_hw_events {
- 	 * AMD specific bits
- 	 */
- 	struct amd_nb		*amd_nb;
-+
-+	void			*kfree_on_online;
- };
- 
- #define __EVENT_CONSTRAINT(c, n, m, w) {\
-@@ -1466,10 +1468,12 @@ static int __cpuinit
- x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- {
- 	unsigned int cpu = (long)hcpu;
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 	int ret = NOTIFY_OK;
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
-+		cpuc->kfree_on_online = NULL;
- 		if (x86_pmu.cpu_prepare)
- 			ret = x86_pmu.cpu_prepare(cpu);
- 		break;
-@@ -1479,6 +1483,10 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- 			x86_pmu.cpu_starting(cpu);
- 		break;
- 
-+	case CPU_ONLINE:
-+		kfree(cpuc->kfree_on_online);
-+		break;
-+
- 	case CPU_DYING:
- 		if (x86_pmu.cpu_dying)
- 			x86_pmu.cpu_dying(cpu);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 941caa2..ee9436c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -350,7 +350,7 @@ static void amd_pmu_cpu_starting(int cpu)
- 			continue;
- 
- 		if (nb->nb_id == nb_id) {
--			kfree(cpuc->amd_nb);
-+			cpuc->kfree_on_online = cpuc->amd_nb;
- 			cpuc->amd_nb = nb;
- 			break;
- 		}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f88af2c..3751494 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1362,7 +1362,7 @@ static void intel_pmu_cpu_starting(int cpu)
- 
- 		pc = per_cpu(cpu_hw_events, i).shared_regs;
- 		if (pc && pc->core_id == core_id) {
--			kfree(cpuc->shared_regs);
-+			cpuc->kfree_on_online = cpuc->shared_regs;
- 			cpuc->shared_regs = pc;
- 			break;
- 		}
+Jeremy
 
