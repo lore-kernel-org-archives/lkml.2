@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422754Ab2JDPTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:19:51 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34804 "EHLO zmc.proxad.net"
+	id S1422785Ab2JDPUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:20:00 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34876 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422718Ab2JDPTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:19:44 -0400
+	id S1422772Ab2JDPTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:19:55 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/24 v2] USB: EHCI: remove CNS3xxx EHCI platform driver
-Date: Thu,  4 Oct 2012 17:17:38 +0200
-Message-Id: <1349363872-27004-11-git-send-email-florian@openwrt.org>
+Subject: [PATCH 20/24 v2] USB: OHCI: remove Netlogic XLS OHCI platform driver
+Date: Thu,  4 Oct 2012 17:17:48 +0200
+Message-Id: <1349363872-27004-21-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -22,216 +21,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The users have been converted to use the ehci platform driver instead, thus
-making the ehci-cns3xxx driver obsolete, so remove it.
+All users have been converted to use the OHCI platform driver instead, thus
+making ohci-xls obsolete, remove it.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes since v1:
-- only remove the corresponding chunk from ehci-hcd
+- reworded commit message
 
- drivers/usb/host/Kconfig        |    6 +-
- drivers/usb/host/ehci-cns3xxx.c |  155 ---------------------------------------
- drivers/usb/host/ehci-hcd.c     |    5 --
- 3 files changed, 5 insertions(+), 161 deletions(-)
- delete mode 100644 drivers/usb/host/ehci-cns3xxx.c
+ drivers/usb/host/ohci-hcd.c |    5 --
+ drivers/usb/host/ohci-xls.c |  152 -------------------------------------------
+ 2 files changed, 157 deletions(-)
+ delete mode 100644 drivers/usb/host/ohci-xls.c
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index b1deb0f..15304e7 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -215,9 +215,13 @@ config USB_W90X900_EHCI
- 		Enables support for the W90X900 USB controller
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index a6ed6c0..b0fc042 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -1169,11 +1169,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ohci_hcd_tilegx_driver
+ #endif
  
- config USB_CNS3XXX_EHCI
--	bool "Cavium CNS3XXX EHCI Module"
-+	bool "Cavium CNS3XXX EHCI Module (DEPRECATED)"
- 	depends on USB_EHCI_HCD && ARCH_CNS3XXX
-+	select USB_EHCI_HCD_PLATFORM
- 	---help---
-+	  This option is deprecated now and the driver was removed, use
-+	  USB_EHCI_HCD_PLATFORM instead.
-+
- 	  Enable support for the CNS3XXX SOC's on-chip EHCI controller.
- 	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
- 	  support.
-diff --git a/drivers/usb/host/ehci-cns3xxx.c b/drivers/usb/host/ehci-cns3xxx.c
+-#ifdef CONFIG_CPU_XLR
+-#include "ohci-xls.c"
+-#define PLATFORM_DRIVER		ohci_xls_driver
+-#endif
+-
+ #ifdef CONFIG_USB_OHCI_HCD_PLATFORM
+ #include "ohci-platform.c"
+ #define PLATFORM_DRIVER		ohci_platform_driver
+diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
 deleted file mode 100644
-index d91708d..0000000
---- a/drivers/usb/host/ehci-cns3xxx.c
+index 84201cd..0000000
+--- a/drivers/usb/host/ohci-xls.c
 +++ /dev/null
-@@ -1,155 +0,0 @@
+@@ -1,152 +0,0 @@
 -/*
-- * Copyright 2008 Cavium Networks
+- * OHCI HCD for Netlogic XLS processors.
 - *
-- * This file is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License, Version 2, as
-- * published by the Free Software Foundation.
+- * (C) Copyright 2011 Netlogic Microsystems Inc.
+- *
+- *  Based on ohci-au1xxx.c, and other Linux OHCI drivers.
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file COPYING in the main directory of this archive for
+- * more details.
 - */
 -
 -#include <linux/platform_device.h>
--#include <linux/atomic.h>
--#include <mach/cns3xxx.h>
--#include <mach/pm.h>
+-#include <linux/signal.h>
 -
--static int cns3xxx_ehci_init(struct usb_hcd *hcd)
+-static int ohci_xls_probe_internal(const struct hc_driver *driver,
+-			struct platform_device *dev)
 -{
--	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--	int retval;
--
--	/*
--	 * EHCI and OHCI share the same clock and power,
--	 * resetting twice would cause the 1st controller been reset.
--	 * Therefore only do power up  at the first up device, and
--	 * power down at the last down device.
--	 *
--	 * Set USB AHB INCR length to 16
--	 */
--	if (atomic_inc_return(&usb_pwr_ref) == 1) {
--		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
--		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
--		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
--		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
--			MISC_CHIP_CONFIG_REG);
--	}
--
--	ehci->caps = hcd->regs;
--
--	hcd->has_tt = 0;
--
--	retval = ehci_setup(hcd);
--	if (retval)
--		return retval;
--
--	ehci_port_power(ehci, 0);
--
--	return retval;
--}
--
--static const struct hc_driver cns3xxx_ehci_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "CNS3XXX EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--	.reset			= cns3xxx_ehci_init,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
--	.get_frame_number	= ehci_get_frame,
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--#ifdef CONFIG_PM
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
--};
--
--static int cns3xxx_ehci_probe(struct platform_device *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct usb_hcd *hcd;
--	const struct hc_driver *driver = &cns3xxx_ehci_hc_driver;
 -	struct resource *res;
--	int irq;
--	int retval;
+-	struct usb_hcd *hcd;
+-	int retval, irq;
 -
--	if (usb_disabled())
--		return -ENODEV;
--
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res) {
--		dev_err(dev, "Found HC with no IRQ.\n");
+-	/* Get our IRQ from an earlier registered Platform Resource */
+-	irq = platform_get_irq(dev, 0);
+-	if (irq < 0) {
+-		dev_err(&dev->dev, "Found HC with no IRQ\n");
 -		return -ENODEV;
 -	}
--	irq = res->start;
 -
--	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
--	if (!hcd)
--		return -ENOMEM;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	/* Get our Memory Handle */
+-	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(dev, "Found HC with no register addr.\n");
--		retval = -ENODEV;
+-		dev_err(&dev->dev, "MMIO Handle incorrect!\n");
+-		return -ENODEV;
+-	}
+-
+-	hcd = usb_create_hcd(driver, &dev->dev, "XLS");
+-	if (!hcd) {
+-		retval = -ENOMEM;
 -		goto err1;
 -	}
--
 -	hcd->rsrc_start = res->start;
 -	hcd->rsrc_len = resource_size(res);
 -
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+-			driver->description)) {
+-		dev_dbg(&dev->dev, "Controller already in use\n");
+-		retval = -EBUSY;
+-		goto err2;
+-	}
+-
+-	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
 -	if (hcd->regs == NULL) {
--		dev_dbg(dev, "error mapping memory\n");
+-		dev_dbg(&dev->dev, "error mapping memory\n");
 -		retval = -EFAULT;
--		goto err1;
+-		goto err3;
 -	}
 -
 -	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval == 0)
--		return retval;
+-	if (retval != 0)
+-		goto err4;
+-	return retval;
 -
--err1:
+-err4:
+-	iounmap(hcd->regs);
+-err3:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-err2:
 -	usb_put_hcd(hcd);
--
+-err1:
+-	dev_err(&dev->dev, "init fail, %d\n", retval);
 -	return retval;
 -}
 -
--static int cns3xxx_ehci_remove(struct platform_device *pdev)
+-static int ohci_xls_reset(struct usb_hcd *hcd)
 -{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
 -
--	usb_remove_hcd(hcd);
+-	ohci_hcd_init(ohci);
+-	return ohci_init(ohci);
+-}
 -
--	/*
--	 * EHCI and OHCI share the same clock and power,
--	 * resetting twice would cause the 1st controller been reset.
--	 * Therefore only do power up  at the first up device, and
--	 * power down at the last down device.
--	 */
--	if (atomic_dec_return(&usb_pwr_ref) == 0)
--		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
+-static int __devinit ohci_xls_start(struct usb_hcd *hcd)
+-{
+-	struct ohci_hcd *ohci;
+-	int ret;
 -
--	usb_put_hcd(hcd);
--
--	platform_set_drvdata(pdev, NULL);
--
+-	ohci = hcd_to_ohci(hcd);
+-	ret = ohci_run(ohci);
+-	if (ret < 0) {
+-		dev_err(hcd->self.controller, "can't start %s\n",
+-			hcd->self.bus_name);
+-		ohci_stop(hcd);
+-		return ret;
+-	}
 -	return 0;
 -}
 -
--MODULE_ALIAS("platform:cns3xxx-ehci");
+-static struct hc_driver ohci_xls_hc_driver = {
+-	.description	= hcd_name,
+-	.product_desc	= "XLS OHCI Host Controller",
+-	.hcd_priv_size	= sizeof(struct ohci_hcd),
+-	.irq		= ohci_irq,
+-	.flags		= HCD_MEMORY | HCD_USB11,
+-	.reset		= ohci_xls_reset,
+-	.start		= ohci_xls_start,
+-	.stop		= ohci_stop,
+-	.shutdown	= ohci_shutdown,
+-	.urb_enqueue	= ohci_urb_enqueue,
+-	.urb_dequeue	= ohci_urb_dequeue,
+-	.endpoint_disable = ohci_endpoint_disable,
+-	.get_frame_number = ohci_get_frame,
+-	.hub_status_data = ohci_hub_status_data,
+-	.hub_control	= ohci_hub_control,
+-#ifdef CONFIG_PM
+-	.bus_suspend	= ohci_bus_suspend,
+-	.bus_resume	= ohci_bus_resume,
+-#endif
+-	.start_port_reset = ohci_start_port_reset,
+-};
 -
--static struct platform_driver cns3xxx_ehci_driver = {
--	.probe = cns3xxx_ehci_probe,
--	.remove = cns3xxx_ehci_remove,
--	.driver = {
--		.name = "cns3xxx-ehci",
+-static int ohci_xls_probe(struct platform_device *dev)
+-{
+-	int ret;
+-
+-	pr_debug("In ohci_xls_probe");
+-	if (usb_disabled())
+-		return -ENODEV;
+-	ret = ohci_xls_probe_internal(&ohci_xls_hc_driver, dev);
+-	return ret;
+-}
+-
+-static int ohci_xls_remove(struct platform_device *dev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(dev);
+-
+-	usb_remove_hcd(hcd);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-	usb_put_hcd(hcd);
+-	return 0;
+-}
+-
+-static struct platform_driver ohci_xls_driver = {
+-	.probe		= ohci_xls_probe,
+-	.remove		= ohci_xls_remove,
+-	.shutdown	= usb_hcd_platform_shutdown,
+-	.driver		= {
+-		.name	= "ohci-xls-0",
+-		.owner	= THIS_MODULE,
 -	},
 -};
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index a954a95..830fdf3 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1259,11 +1259,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_octeon_driver
- #endif
- 
--#ifdef CONFIG_USB_CNS3XXX_EHCI
--#include "ehci-cns3xxx.c"
--#define PLATFORM_DRIVER		cns3xxx_ehci_driver
--#endif
--
- #ifdef CONFIG_ARCH_VT8500
- #include "ehci-vt8500.c"
- #define	PLATFORM_DRIVER		vt8500_ehci_driver
 -- 
 1.7.9.5
 
