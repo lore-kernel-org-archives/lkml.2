@@ -1,43 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515Ab2JDUsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 16:48:36 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45943 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757338Ab2JDUsc (ORCPT
+	id S1757514Ab2JDUxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 16:53:43 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35784 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab2JDUxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 16:48:32 -0400
-Date: Thu, 04 Oct 2012 16:48:30 -0400 (EDT)
-Message-Id: <20121004.164830.95335113175840606.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for sparc
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <17438.1349380312@warthog.procyon.org.uk>
-References: <17438.1349380312@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Oct 2012 16:53:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <506C0C53.60205@jp.fujitsu.com>
+References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 4 Oct 2012 16:53:17 -0400
+X-Google-Sender-Auth: Z-brJtr9ejgyLPFb6NuB5e5oSm4
+Message-ID: <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to acpi_memory_device_remove()
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Thu, 04 Oct 2012 20:51:52 +0100
+On Wed, Oct 3, 2012 at 5:58 AM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>
+> In the 1st case, acpi_memory_disable_device() will be called.
+> In the 2nd case, acpi_memory_device_remove() will be called.
+> acpi_memory_device_remove() will also be called when we unbind the
+> memory device from the driver acpi_memhotplug.
+>
+> acpi_memory_disable_device() has already implemented a code which
+> offlines memory and releases acpi_memory_info struct . But
+> acpi_memory_device_remove() has not implemented it yet.
+>
+> So the patch implements acpi_memory_remove_memory() for offlining
+> memory and releasing acpi_memory_info struct. And it is used by both
+> acpi_memory_device_remove() and acpi_memory_disable_device().
+>
+> Additionally, if the type is ACPI_BUS_REMOVAL_EJECT in
+> acpi_memory_device_remove() , it means that the user wants to eject
+> the memory device. In this case, acpi_memory_device_remove() calls
+> acpi_memory_remove_memory().
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |   44 +++++++++++++++++++++++++++++++----------
+>  1 file changed, 34 insertions(+), 10 deletions(-)
+>
+> Index: linux-3.6/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/acpi/acpi_memhotplug.c       2012-10-03 18:55:33.386378909 +0900
+> +++ linux-3.6/drivers/acpi/acpi_memhotplug.c    2012-10-03 18:55:58.624380688 +0900
+> @@ -306,24 +306,37 @@ static int acpi_memory_powerdown_device(
+>         return 0;
+>  }
+>
+> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>  {
+>         int result;
+>         struct acpi_memory_info *info, *n;
+>
+> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
 
-> Can you merge the following branch into the sparc tree please.
-> 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Note that there are some fixup patches which are at the base of the branch
-> aimed at you, plus all arches get the asm-generic branch merged in too.
+Which lock protect this loop?
 
-When I pull the sparc branch, I get c6x and arm64 commits too.
 
-37d11ab8b478ccb7aa2270666603ca2e5ac4c11d
-1c1e436269fe840cdbecfaf397b21778dd276f26
+> +               if (!info->enabled)
+> +                       return -EBUSY;
+> +
+> +               result = remove_memory(info->start_addr, info->length);
+> +               if (result)
+> +                       return result;
 
-I don't want that going in via the sparc tree, it really
-doesn't belong there.
+I suspect you need to implement rollback code instead of just return.
+
+
+> +
+> +               list_del(&info->list);
+> +               kfree(info);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+> +{
+> +       int result;
+>
+>         /*
+>          * Ask the VM to offline this memory range.
+>          * Note: Assume that this function returns zero on success
+>          */
+
+Write function comment instead of this silly comment.
+
+> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+> -               if (info->enabled) {
+> -                       result = remove_memory(info->start_addr, info->length);
+> -                       if (result)
+> -                               return result;
+> -               }
+> -               kfree(info);
+> -       }
+> +       result = acpi_memory_remove_memory(mem_device);
+> +       if (result)
+> +               return result;
+>
+>         /* Power-off and eject the device */
+>         result = acpi_memory_powerdown_device(mem_device);
+
+This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
+to release callback, but don't explain why.
+
+
+
+
+
+> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
+>  static int acpi_memory_device_remove(struct acpi_device *device, int type)
+>  {
+>         struct acpi_memory_device *mem_device = NULL;
+> -
+> +       int result;
+>
+>         if (!device || !acpi_driver_data(device))
+>                 return -EINVAL;
+>
+>         mem_device = acpi_driver_data(device);
+> +
+> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
+> +               /*
+> +                * offline and remove memory only when the memory device is
+> +                * ejected.
+> +                */
+
+This comment explain nothing. A comment should describe _why_ should we do.
+e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
+we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
+
+
+> +               result = acpi_memory_remove_memory(mem_device);
+> +               if (result)
+> +                       return result;
+> +       }
+> +
+>         kfree(mem_device);
+>
+>         return 0;
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
