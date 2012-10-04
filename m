@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab2JDVVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:21:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933763Ab2JDVVM (ORCPT
+	id S1753736Ab2JDWBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:01:08 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933767Ab2JDVVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:12 -0400
+	Thu, 4 Oct 2012 17:21:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Samuel Thibault <sthibault@debian.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 13/58] staging: speakup_soft: Fix reading of init string
-Date: Thu,  4 Oct 2012 14:19:20 -0700
-Message-Id: <20121004210637.116478125@linuxfoundation.org>
+        Shubhrajyoti D <shubhrajyoti@ti.com>,
+        Vikram Pandita <vikram.pandita@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 22/58] serial: omap: fix software flow control
+Date: Thu,  4 Oct 2012 14:19:29 -0700
+Message-Id: <20121004210638.227363233@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,69 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Vikram Pandita <vikram.pandita@ti.com>
 
-commit 40fe4f89671fb3c7ded94190fb267402a38b0261 upstream.
+commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6 upstream.
 
-softsynth_read() reads a character at a time from the init string;
-when it finds the null terminator it sets the initialized flag but
-then repeats the last character.
+Software flow control register bits were not defined correctly.
 
-Additionally, if the read() buffer is not big enough for the init
-string, the next read() will start reading from the beginning again.
-So the caller may never progress to reading anything else.
+Also clarify the IXON and IXOFF logic to reflect what userspace wants.
 
-Replace the simple initialized flag with the current position in
-the init string, carried over between calls.  Switch to reading
-real data once this reaches the null terminator.
-
-(This assumes that the length of the init string can't change, which
-seems to be the case.  Really, the string and position belong together
-in a per-file private struct.)
-
-Tested-by: Samuel Thibault <sthibault@debian.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/speakup/speakup_soft.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ arch/arm/plat-omap/include/plat/omap-serial.h |    4 ++--
+ drivers/tty/serial/omap-serial.c              |   12 ++++++------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -40,7 +40,7 @@ static int softsynth_is_alive(struct spk
- static unsigned char get_index(void);
+--- a/arch/arm/plat-omap/include/plat/omap-serial.h
++++ b/arch/arm/plat-omap/include/plat/omap-serial.h
+@@ -42,10 +42,10 @@
+ #define OMAP_UART_WER_MOD_WKUP	0X7F
  
- static struct miscdevice synth_device;
--static int initialized;
-+static int init_pos;
- static int misc_registered;
+ /* Enable XON/XOFF flow control on output */
+-#define OMAP_UART_SW_TX		0x04
++#define OMAP_UART_SW_TX		0x8
  
- static struct var_t vars[] = {
-@@ -194,7 +194,7 @@ static int softsynth_close(struct inode
- 	unsigned long flags;
- 	spk_lock(flags);
- 	synth_soft.alive = 0;
--	initialized = 0;
-+	init_pos = 0;
- 	spk_unlock(flags);
- 	/* Make sure we let applications go before leaving */
- 	speakup_start_ttys();
-@@ -239,13 +239,8 @@ static ssize_t softsynth_read(struct fil
- 			ch = '\x18';
- 		} else if (synth_buffer_empty()) {
- 			break;
--		} else if (!initialized) {
--			if (*init) {
--				ch = *init;
--				init++;
--			} else {
--				initialized = 1;
--			}
-+		} else if (init[init_pos]) {
-+			ch = init[init_pos++];
- 		} else {
- 			ch = synth_buffer_getc();
- 		}
+ /* Enable XON/XOFF flow control on input */
+-#define OMAP_UART_SW_RX		0x04
++#define OMAP_UART_SW_RX		0x2
+ 
+ #define OMAP_UART_SYSC_RESET	0X07
+ #define OMAP_UART_TCR_TRIG	0X0F
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -667,19 +667,19 @@ serial_omap_configure_xonxoff
+ 
+ 	/*
+ 	 * IXON Flag:
+-	 * Enable XON/XOFF flow control on output.
+-	 * Transmit XON1, XOFF1
++	 * Flow control for OMAP.TX
++	 * OMAP.RX should listen for XON/XOFF
+ 	 */
+ 	if (termios->c_iflag & IXON)
+-		up->efr |= OMAP_UART_SW_TX;
++		up->efr |= OMAP_UART_SW_RX;
+ 
+ 	/*
+ 	 * IXOFF Flag:
+-	 * Enable XON/XOFF flow control on input.
+-	 * Receiver compares XON1, XOFF1.
++	 * Flow control for OMAP.RX
++	 * OMAP.TX should send XON/XOFF
+ 	 */
+ 	if (termios->c_iflag & IXOFF)
+-		up->efr |= OMAP_UART_SW_RX;
++		up->efr |= OMAP_UART_SW_TX;
+ 
+ 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
+ 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
 
 
