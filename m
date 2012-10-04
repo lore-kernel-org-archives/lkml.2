@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565Ab2JDVTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:19:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933339Ab2JDVTO (ORCPT
+	id S933582Ab2JDVT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:19:29 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36877 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933568Ab2JDVTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:14 -0400
+	Thu, 4 Oct 2012 17:19:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 49/56] remoteproc: fix a potential NULL-dereference on cleanup
-Date: Thu,  4 Oct 2012 14:16:10 -0700
-Message-Id: <20121004211157.687062911@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 45/56] SCSI: hpsa: Use LUN reset instead of target reset
+Date: Thu,  4 Oct 2012 14:16:06 -0700
+Message-Id: <20121004211157.255280031@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,79 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 7168d914a782086e217214c57ddfc7cc4b738c0c upstream.
+commit 21e89afd325849eb38adccf382df16cc895911f9 upstream.
 
-We only need to allocate mapping if there is an IOMMU domain.
+It turns out Smart Array logical drives do not support target
+reset and when the target reset fails, the logical drive will
+be taken off line.  Symptoms look like this:
 
-Otherwise, when the mappings are released, the assumption that
-an IOMMU domain is there will crash and burn.
+hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
+hpsa 0000:03:00.0: resetting device 1:0:0:0
+hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
+hpsa 0000:03:00.0: resetting device failed.
+sd 1:0:0:0: Device offlined - not ready after error recovery
+sd 1:0:0:0: rejecting I/O to offline device
+EXT3-fs error (device sdb1): read_block_bitmap:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-[ohad: revise commit log]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+LUN reset is supported though, and is what we should be using.
+Target reset is also disruptive in shared SAS situations,
+for example, an external MSA1210m which does support target
+reset attached to Smart Arrays in multiple hosts -- a target
+reset from one host is disruptive to other hosts as all LUNs
+on the target will be reset and will abort all outstanding i/os
+back to all the attached hosts.  So we should use LUN reset,
+not target reset.
+
+Tested this with Smart Array logical drives and with tape drives.
+Not sure how this bug survived since 2009, except it must be very
+rare for a Smart Array to require more than 30s to complete a request.
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/remoteproc_core.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -545,17 +545,10 @@ static int rproc_handle_carveout(struct
- 	dev_dbg(dev, "carveout rsc: da %x, pa %x, len %x, flags %x\n",
- 			rsc->da, rsc->pa, rsc->len, rsc->flags);
- 
--	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
--	if (!mapping) {
--		dev_err(dev, "kzalloc mapping failed\n");
--		return -ENOMEM;
--	}
--
- 	carveout = kzalloc(sizeof(*carveout), GFP_KERNEL);
- 	if (!carveout) {
- 		dev_err(dev, "kzalloc carveout failed\n");
--		ret = -ENOMEM;
--		goto free_mapping;
-+		return -ENOMEM;
- 	}
- 
- 	va = dma_alloc_coherent(dev->parent, rsc->len, &dma, GFP_KERNEL);
-@@ -585,11 +578,18 @@ static int rproc_handle_carveout(struct
- 	 * physical address in this case.
- 	 */
- 	if (rproc->domain) {
-+		mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
-+		if (!mapping) {
-+			dev_err(dev, "kzalloc mapping failed\n");
-+			ret = -ENOMEM;
-+			goto dma_free;
-+		}
-+
- 		ret = iommu_map(rproc->domain, rsc->da, dma, rsc->len,
- 								rsc->flags);
- 		if (ret) {
- 			dev_err(dev, "iommu_map failed: %d\n", ret);
--			goto dma_free;
-+			goto free_mapping;
- 		}
- 
- 		/*
-@@ -634,12 +634,12 @@ static int rproc_handle_carveout(struct
- 
- 	return 0;
- 
-+free_mapping:
-+	kfree(mapping);
- dma_free:
- 	dma_free_coherent(dev->parent, rsc->len, va, dma);
- free_carv:
- 	kfree(carveout);
--free_mapping:
--	kfree(mapping);
- 	return ret;
- }
- 
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3266,7 +3266,7 @@ static void fill_cmd(struct CommandList
+ 			c->Request.Timeout = 0; /* Don't time out */
+ 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
+ 			c->Request.CDB[0] =  cmd;
+-			c->Request.CDB[1] = 0x03;  /* Reset target above */
++			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
+ 			/* If bytes 4-7 are zero, it means reset the */
+ 			/* LunID device */
+ 			c->Request.CDB[4] = 0x00;
 
 
