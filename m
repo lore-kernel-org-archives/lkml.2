@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422771Ab2JDPTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:19:54 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34876 "EHLO zmc.proxad.net"
+	id S1422801Ab2JDPUM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:20:12 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34931 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422743Ab2JDPTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:19:51 -0400
+	id S1422772Ab2JDPUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:20:05 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 18/24 v2] USB: OHCI: remove CNS3xxx OHCI platform driver
-Date: Thu,  4 Oct 2012 17:17:46 +0200
-Message-Id: <1349363872-27004-19-git-send-email-florian@openwrt.org>
+        Paul Mundt <lethal@linux-sh.org>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 21/24 v2] sh: convert boards to use the OHCI platform driver
+Date: Thu,  4 Oct 2012 17:17:49 +0200
+Message-Id: <1349363872-27004-22-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -22,227 +23,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users have been converted to use the OHCI platform driver instead, thus
-making ohci-cns3xxx, so remove it.
-
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes since v1:
-- reworded commit message
+No changes since v1
 
- drivers/usb/host/Kconfig        |    6 +-
- drivers/usb/host/ohci-cns3xxx.c |  166 ---------------------------------------
- drivers/usb/host/ohci-hcd.c     |    5 --
- 3 files changed, 5 insertions(+), 172 deletions(-)
- delete mode 100644 drivers/usb/host/ohci-cns3xxx.c
+ arch/sh/kernel/cpu/sh3/setup-sh7720.c  |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7757.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7763.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7786.c |    6 +++++-
+ 4 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 15304e7..86a7995 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -410,9 +410,13 @@ config USB_OHCI_EXYNOS
- 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
+diff --git a/arch/sh/kernel/cpu/sh3/setup-sh7720.c b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+index 0c2f1b2..42d991f 100644
+--- a/arch/sh/kernel/cpu/sh3/setup-sh7720.c
++++ b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+@@ -20,6 +20,7 @@
+ #include <linux/serial_sci.h>
+ #include <linux/sh_timer.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <asm/rtc.h>
+ #include <cpu/serial.h>
  
- config USB_CNS3XXX_OHCI
--	bool "Cavium CNS3XXX OHCI Module"
-+	bool "Cavium CNS3XXX OHCI Module (DEPRECATED)"
- 	depends on USB_OHCI_HCD && ARCH_CNS3XXX
-+	select USB_OHCI_HCD_PLATFORM
- 	---help---
-+	  This option is deprecated now and the driver was removed, use
-+	  USB_OHCI_HCD_PLATFORM instead.
+@@ -103,12 +104,15 @@ static struct resource usb_ohci_resources[] = {
+ 
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
 +
- 	  Enable support for the CNS3XXX SOC's on-chip OHCI controller.
- 	  It is needed for low-speed USB 1.0 device support.
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+index 4a2f357..9079a0f 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+@@ -19,6 +19,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <cpu/sh7757.h>
  
-diff --git a/drivers/usb/host/ohci-cns3xxx.c b/drivers/usb/host/ohci-cns3xxx.c
-deleted file mode 100644
-index 2c9f233..0000000
---- a/drivers/usb/host/ohci-cns3xxx.c
-+++ /dev/null
-@@ -1,166 +0,0 @@
--/*
-- * Copyright 2008 Cavium Networks
-- *
-- * This file is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License, Version 2, as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/platform_device.h>
--#include <linux/atomic.h>
--#include <mach/cns3xxx.h>
--#include <mach/pm.h>
--
--static int __devinit
--cns3xxx_ohci_start(struct usb_hcd *hcd)
--{
--	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
--	int ret;
--
--	/*
--	 * EHCI and OHCI share the same clock and power,
--	 * resetting twice would cause the 1st controller been reset.
--	 * Therefore only do power up  at the first up device, and
--	 * power down at the last down device.
--	 *
--	 * Set USB AHB INCR length to 16
--	 */
--	if (atomic_inc_return(&usb_pwr_ref) == 1) {
--		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
--		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
--		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
--		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
--			MISC_CHIP_CONFIG_REG);
--	}
--
--	ret = ohci_init(ohci);
--	if (ret < 0)
--		return ret;
--
--	ohci->num_ports = 1;
--
--	ret = ohci_run(ohci);
--	if (ret < 0) {
--		dev_err(hcd->self.controller, "can't start %s\n",
--			hcd->self.bus_name);
--		ohci_stop(hcd);
--		return ret;
--	}
--	return 0;
--}
--
--static const struct hc_driver cns3xxx_ohci_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "CNS3XXX OHCI Host controller",
--	.hcd_priv_size		= sizeof(struct ohci_hcd),
--	.irq			= ohci_irq,
--	.flags			= HCD_USB11 | HCD_MEMORY,
--	.start			= cns3xxx_ohci_start,
--	.stop			= ohci_stop,
--	.shutdown		= ohci_shutdown,
--	.urb_enqueue		= ohci_urb_enqueue,
--	.urb_dequeue		= ohci_urb_dequeue,
--	.endpoint_disable	= ohci_endpoint_disable,
--	.get_frame_number	= ohci_get_frame,
--	.hub_status_data	= ohci_hub_status_data,
--	.hub_control		= ohci_hub_control,
--#ifdef CONFIG_PM
--	.bus_suspend		= ohci_bus_suspend,
--	.bus_resume		= ohci_bus_resume,
--#endif
--	.start_port_reset	= ohci_start_port_reset,
--};
--
--static int cns3xxx_ohci_probe(struct platform_device *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct usb_hcd *hcd;
--	const struct hc_driver *driver = &cns3xxx_ohci_hc_driver;
--	struct resource *res;
--	int irq;
--	int retval;
--
--	if (usb_disabled())
--		return -ENODEV;
--
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res) {
--		dev_err(dev, "Found HC with no IRQ.\n");
--		return -ENODEV;
--	}
--	irq = res->start;
--
--	hcd = usb_create_hcd(driver, dev, dev_name(dev));
--	if (!hcd)
--		return -ENOMEM;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "Found HC with no register addr.\n");
--		retval = -ENODEV;
--		goto err1;
--	}
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
--			driver->description)) {
--		dev_dbg(dev, "controller already in use\n");
--		retval = -EBUSY;
--		goto err1;
--	}
--
--	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
--	if (!hcd->regs) {
--		dev_dbg(dev, "error mapping memory\n");
--		retval = -EFAULT;
--		goto err2;
--	}
--
--	ohci_hcd_init(hcd_to_ohci(hcd));
--
--	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval == 0)
--		return retval;
--
--	iounmap(hcd->regs);
--err2:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--err1:
--	usb_put_hcd(hcd);
--	return retval;
--}
--
--static int cns3xxx_ohci_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--
--	/*
--	 * EHCI and OHCI share the same clock and power,
--	 * resetting twice would cause the 1st controller been reset.
--	 * Therefore only do power up  at the first up device, and
--	 * power down at the last down device.
--	 */
--	if (atomic_dec_return(&usb_pwr_ref) == 0)
--		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
--
--	usb_put_hcd(hcd);
--
--	platform_set_drvdata(pdev, NULL);
--
--	return 0;
--}
--
--MODULE_ALIAS("platform:cns3xxx-ohci");
--
--static struct platform_driver ohci_hcd_cns3xxx_driver = {
--	.probe = cns3xxx_ohci_probe,
--	.remove = cns3xxx_ohci_remove,
--	.driver = {
--		.name = "cns3xxx-ohci",
--	},
--};
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 9453eea..a6ed6c0 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1169,11 +1169,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ohci_hcd_tilegx_driver
- #endif
+@@ -750,12 +751,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
  
--#ifdef CONFIG_USB_CNS3XXX_OHCI
--#include "ohci-cns3xxx.c"
--#define PLATFORM_DRIVER		ohci_hcd_cns3xxx_driver
--#endif
--
- #ifdef CONFIG_CPU_XLR
- #include "ohci-xls.c"
- #define PLATFORM_DRIVER		ohci_xls_driver
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask = &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask = DMA_BIT_MASK(32),
++		.platform_data	= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+index bd0a8fb..1686aca 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+@@ -16,6 +16,7 @@
+ #include <linux/sh_intc.h>
+ #include <linux/io.h>
+ #include <linux/serial_sci.h>
++#include <linux/usb/ohci_pdriver.h>
+ 
+ static struct plat_sci_port scif0_platform_data = {
+ 	.mapbase	= 0xffe00000,
+@@ -106,12 +107,15 @@ static struct resource usb_ohci_resources[] = {
+ 
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+index 2e6952f..ab52d4d 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+@@ -23,6 +23,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <asm/mmzone.h>
+ 
+@@ -583,12 +584,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
 -- 
 1.7.9.5
 
