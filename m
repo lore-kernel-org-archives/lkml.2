@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab2JDWtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:49:50 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53846 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755203Ab2JDWtt convert rfc822-to-8bit (ORCPT
+	id S1755513Ab2JDWt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:49:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38214 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755203Ab2JDWtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:49:49 -0400
-Date: Thu, 4 Oct 2012 18:49:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Christoph Anton Mitterer <calestyo@scientia.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RNG: is it possible to spoil /dev/random by seeding it from
- (evil) TRNGs
-Message-ID: <20121004224942.GA23970@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Christoph Anton Mitterer <calestyo@scientia.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1349357555.3396.15.camel@fermat.scientia.net>
+	Thu, 4 Oct 2012 18:49:55 -0400
+Date: Thu, 4 Oct 2012 23:49:50 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20121004224950.GL13292@decadent.org.uk>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+ <20121001225203.249985461@1wt.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349357555.3396.15.camel@fermat.scientia.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20121001225203.249985461@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 133/180] cciss: fix incorrect scsi status reporting
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 03:32:35PM +0200, Christoph Anton Mitterer wrote:
+On Tue, Oct 02, 2012 at 12:54:10AM +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> When seeding the kernels entropy cache (which is then ultimately used
-> for /dev/random), e.g. by (semi-)TRNGs like haveged[0],
-> audio-entropyd[1], Simtec’s Entropy Key[2] or friends... can one spoil
-> the randomness by that or is this impossible by design?
+> ------------------
+> 
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> 
+> commit b0cf0b118c90477d1a6811f2cd2307f6a5578362 upstream.
+> 
+> Delete code which sets SCSI status incorrectly as it's already been set
+> correctly above this incorrect code.  The bug was introduced in 2009 by
+> commit b0e15f6db111 ("cciss: fix typo that causes scsi status to be
+> lost.")
 
-It is impossible by design.  Or specifically, /dev/random was designed
-so that it can be world-writeable, and an attacker can feed in any
-kind of input he or she wants, and it will not allow the attacker to
-know anything more about the state of the entropy pool than he or she
-knew before they started mixing inputs in.
+That commit was in 2.6.33 and it changed the '<' to '<<'.  It hasn't
+been backported to 2.6.32.y.
+ 
+[...]
+> diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+> index 3315268..ad8e592 100644
+> --- a/drivers/block/cciss_scsi.c
+> +++ b/drivers/block/cciss_scsi.c
+> @@ -747,17 +747,7 @@ complete_scsi_command( CommandList_struct *cp, int timeout, __u32 tag)
+>  		{
+>  			case CMD_TARGET_STATUS:
+>  				/* Pass it up to the upper layers... */
+> -				if( ei->ScsiStatus)
+> -                		{
+> -#if 0
+> -                    			printk(KERN_WARNING "cciss: cmd %p "
+> -					"has SCSI Status = %x\n",
+> -                        			cp,  
+> -						ei->ScsiStatus); 
+> -#endif
+> -					cmd->result |= (ei->ScsiStatus < 1);
+[...]
 
-There are comments that go into more detail about the design in
-drivers/char/random.c.  Credit for the design goes to Colin Plumb, who
-designed RNG in the original PGP 2.x implementation, BTW.
+Unless ei->ScsiStatus can be negative (it is declared as int, but
+I don't think it's actually meant to be negative), this statement
+is a no-op.  (It was present for the entire life of this driver up
+until 2.6.33, so I suspect that is the case.)  So this backported
+patch is unnecessary cleanup, not a bug fix.
 
-	     	    	     	 	  - Ted
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
