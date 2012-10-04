@@ -1,51 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422672Ab2JDPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:31:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25666 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965609Ab2JDPbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:31:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,535,1344236400"; 
-   d="scan'208";a="201570061"
-Subject: RE: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "arm@kernel.org" <arm@kernel.org>, "djbw@fb.com" <djbw@fb.com>,
+	id S965670Ab2JDPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:42:56 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54934 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965644Ab2JDPmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:42:53 -0400
+Message-ID: <506DAE41.6040007@linux.vnet.ibm.com>
+Date: Thu, 04 Oct 2012 21:11:53 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-scsi@vger.kernel.org, James.Bottomley@hansenpartnership.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-In-Reply-To: <8D3F6266AEB6384E807C6FFC6FE195E30181BBF0@BGSMSX101.gar.corp.intel.com>
-References: <1349284913-22350-1-git-send-email-ldewangan@nvidia.com>
-	 <506CA5D8.1050201@wwwdotorg.org> <201210040816.35500.arnd@arndb.de>
-	 <8D3F6266AEB6384E807C6FFC6FE195E30181BBF0@BGSMSX101.gar.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Oct 2012 20:53:21 +0530
-Message-ID: <1349364201.1648.46.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [qla2xxx] INFO: possible irq lock inversion dependency detected
+References: <506D80C2.5040405@linux.vnet.ibm.com> <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12100415-1618-0000-0000-000002970819
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 08:26 +0000, Koul, Vinod wrote:
-> > >
-> > > (Dropping stable Cc; Olof/Arnd or Vinod, is it possible you could add
-> > > that into the patch description when applying this?)
-> > >
-> > > Reported-by: Stephen Warren <swarren@nvidia.com>
-> > > Acked-by: Stephen Warren <swarren@nvidia.com>
-> > 
-> > Should be no problem. If Vinod wants to pick it up:
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Will do it later today... am travelling so slow on email :(
-Done, applied ith Stephen's credits :) Thanks
+Hi Jiri,
 
+Thanks for taking a look!
+ 
+> This seems to be real. You should be seeing that since 3.5-rc1 already 
+> though ... ?
+> 
+> Does the patch below fix that?
+> 
 
--- 
-~Vinod
+Yes, it does, thanks! But 3.6-rc kernels were booting fine as far as I remember.
+I'll check again and get back tomorrow.
+
+> 
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] [SCSI] qla2xxx: fix potential deadlock on ha->hardware_lock
+> 
+> Lockdep reports:
+> 
+> === [ cut here ] ===
+>  =========================================================
+>  [ INFO: possible irq lock inversion dependency detected ]
+>  3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
+>  ---------------------------------------------------------
+>  qla2xxx_1_dpc/368 just changed the state of lock:
+>   (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+>  but this lock was taken by another, HARDIRQ-safe lock in the past:
+>   (&(&ha->hardware_lock)->rlock){-.....}
+> 
+> and interrupts could create inverse lock ordering between them.
+> 
+> other info that might help us debug this:
+>  Possible interrupt unsafe locking scenario:
+> 
+>        CPU0                    CPU1
+>        ----                    ----
+>   lock(&(&ha->vport_slock)->rlock);
+>                                local_irq_disable();
+>                                lock(&(&ha->hardware_lock)->rlock);
+>                                lock(&(&ha->vport_slock)->rlock);
+>   <Interrupt>
+>     lock(&(&ha->hardware_lock)->rlock);
+> === [ cut here ] ===
+> 
+> Fix the potential deadlock by disabling IRQs while holding ha->vport_slock.
+> 
+> Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Regards,
+Srivatsa S. Bhat
+
+> ---
+>  drivers/scsi/qla2xxx/qla_init.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+> index 799a58b..48fca47 100644
+> --- a/drivers/scsi/qla2xxx/qla_init.c
+> +++ b/drivers/scsi/qla2xxx/qla_init.c
+> @@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>  	uint8_t       domain;
+>  	char		connect_type[22];
+>  	struct qla_hw_data *ha = vha->hw;
+> +	unsigned long flags;
+> 
+>  	/* Get host addresses. */
+>  	rval = qla2x00_get_adapter_id(vha,
+> @@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>  	vha->d_id.b.area = area;
+>  	vha->d_id.b.al_pa = al_pa;
+> 
+> -	spin_lock(&ha->vport_slock);
+> +	spin_lock_irqsave(&ha->vport_slock, flags);
+>  	qlt_update_vp_map(vha, SET_AL_PA);
+> -	spin_unlock(&ha->vport_slock);
+> +	spin_unlock_irqrestore(&ha->vport_slock, flags);
+> 
+>  	if (!vha->flags.init_done)
+>  		ql_log(ql_log_info, vha, 0x2010,
+> 
 
