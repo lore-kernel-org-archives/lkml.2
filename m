@@ -1,87 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab2JDMxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:53:08 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:58232 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756917Ab2JDMwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:52:38 -0400
-Message-ID: <1349355032.2496.11.camel@falcor>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Date: Thu, 04 Oct 2012 08:50:32 -0400
-In-Reply-To: <87obki23uv.fsf@rustcorp.com.au>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-	 <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
-	 <87obki23uv.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12100412-1976-0000-0000-00001202ACE5
+	id S1756956Ab2JDMxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:53:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62392 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756252Ab2JDMwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 08:52:04 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 15/20] perf ui/hist: Add support for event group view
+Date: Thu,  4 Oct 2012 21:49:49 +0900
+Message-Id: <1349354994-17853-16-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
+References: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 15:09 +0930, Rusty Russell wrote:
-> Kees Cook <keescook@chromium.org> writes:
-> 
-> > On Thu, Sep 20, 2012 at 3:14 PM, Kees Cook <keescook@chromium.org> wrote:
-> >> As part of the effort to create a stronger boundary between root and
-> >> kernel, Chrome OS wants to be able to enforce that kernel modules are
-> >> being loaded only from our read-only crypto-hash verified (dm_verity)
-> >> root filesystem. Since the init_module syscall hands the kernel a module
-> >> as a memory blob, no reasoning about the origin of the blob can be made.
-> >>
-> >> Earlier proposals for appending signatures to kernel modules would not be
-> >> useful in Chrome OS, since it would involve adding an additional set of
-> >> keys to our kernel and builds for no good reason: we already trust the
-> >> contents of our root filesystem. We don't need to verify those kernel
-> >> modules a second time. Having to do signature checking on module loading
-> >> would slow us down and be redundant. All we need to know is where a
-> >> module is coming from so we can say yes/no to loading it.
-> >>
-> >> If a file descriptor is used as the source of a kernel module, many more
-> >> things can be reasoned about. In Chrome OS's case, we could enforce that
-> >> the module lives on the filesystem we expect it to live on.  In the case
-> >> of IMA (or other LSMs), it would be possible, for example, to examine
-> >> extended attributes that may contain signatures over the contents of
-> >> the module.
-> >>
-> >> This introduces a new syscall (on x86), similar to init_module, that has
-> >> only two arguments. The first argument is used as a file descriptor to
-> >> the module and the second argument is a pointer to the NULL terminated
-> >> string of module arguments.
-> >
-> > Hi Rusty,
-> >
-> > Is this likely to land in the 3.7 change window? I'd really like to
-> > get the syscall number assigned so I can start sending patches to
-> > glibc, kmod, etc. My tree is here, FWIW:
-> 
-> No, unfortunately it's a little late and there were issues with ARM
-> signoffs and syscall numbers...
-> 
-> > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/module-fd-syscall
-> 
-> Messy merge due to the module signing stuff going in :(
-> 
-> Please rebase on top of my kernel.org modules-next branch, and I'll pull
-> into my modules-wip branch for 3.8.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Why?  Not only have you had these patches sitting for a while, way
-before you had the kernel module patches, they've been acked/signed off
-by Kees, Serge, Eric, and myself.  All security subtree maintainers.
-The module patches could have easily been built on top of Kees' small
-patches.  I am really disappointed!
+Show group members' overhead also when showing the leader's if event
+group is enabled.  At this time, only implemented overhead part in
+order to ease review and other parts can be added later once this
+patch settled down.
 
-Mimi
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/hist.c       |   66 ++++++++++++++++++++++++++++++++++++++++----
+ tools/perf/ui/stdio/hist.c |    2 ++
+ 2 files changed, 63 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index f5a1e4f65263..ad4efb772796 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -3,34 +3,90 @@
+ #include "../util/hist.h"
+ #include "../util/util.h"
+ #include "../util/sort.h"
++#include "../util/evsel.h"
+ 
+ 
+ /* hist period print (hpp) functions */
+ static int hpp__header_overhead(struct perf_hpp *hpp)
+ {
+-	return scnprintf(hpp->buf, hpp->size, "Overhead");
++	int len = 8;
++
++	if (symbol_conf.event_group) {
++		struct perf_evsel *evsel = hpp->ptr;
++
++		BUG_ON(!perf_evsel__is_group_leader(evsel));
++
++		len += evsel->nr_members * 8;
++	}
++	return scnprintf(hpp->buf, hpp->size, "%*s", len, "Overhead");
+ }
+ 
+-static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
++static int hpp__width_overhead(struct perf_hpp *hpp)
+ {
+-	return 8;
++	int len = 8;
++
++	if (symbol_conf.event_group) {
++		struct perf_evsel *evsel = hpp->ptr;
++
++		len += evsel->nr_members * 8;
++	}
++	return len;
+ }
+ 
+ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ {
++	int ret;
+ 	struct hists *hists = he->hists;
+ 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
+ 
+-	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
++	ret = percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
++
++	if (symbol_conf.event_group) {
++		int i;
++		struct perf_evsel *evsel = hists_2_evsel(hists);
++
++		for (i = 0; i < evsel->nr_members; i++) {
++			u64 period = he->group_stats[i].period;
++			u64 total = hists->group_stats[i].total_period;
++
++			percent = 100.0 * period / total;
++			ret += percent_color_snprintf(hpp->buf + ret,
++						      hpp->size - ret,
++						      " %6.2f%%", percent);
++		}
++
++	}
++	return ret;
+ }
+ 
+ static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
+ {
++	int ret;
+ 	struct hists *hists = he->hists;
+ 	double percent = 100.0 * he->stat.period / hists->stats.total_period;
+ 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
+ 
+-	return scnprintf(hpp->buf, hpp->size, fmt, percent);
++	ret = scnprintf(hpp->buf, hpp->size, fmt, percent);
++
++	if (symbol_conf.event_group) {
++		int i;
++		struct perf_evsel *evsel = hists_2_evsel(hists);
++
++		for (i = 0; i < evsel->nr_members; i++) {
++			u64 period = he->group_stats[i].period;
++			u64 total = hists->group_stats[i].total_period;
++
++			if (symbol_conf.field_sep) {
++				ret += scnprintf(hpp->buf + ret,
++						 hpp->size - ret, " ");
++			}
++			percent = 100.0 * period / total;
++			ret += scnprintf(hpp->buf + ret, hpp->size - ret,
++					 fmt, percent);
++		}
++
++	}
++	return ret;
+ }
+ 
+ static int hpp__header_overhead_sys(struct perf_hpp *hpp)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index fbd4e32d0743..1d4f1ddc8bf8 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -3,6 +3,7 @@
+ #include "../../util/util.h"
+ #include "../../util/hist.h"
+ #include "../../util/sort.h"
++#include "../../util/evsel.h"
+ 
+ 
+ static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+@@ -346,6 +347,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+ 		.size	= sizeof(bf),
++		.ptr	= hists_2_evsel(hists),
+ 	};
+ 	bool first = true;
+ 
+-- 
+1.7.9.2
 
