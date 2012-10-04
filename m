@@ -1,141 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab2JDNYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:24:33 -0400
-Received: from r00tworld.com ([212.85.137.150]:43874 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932305Ab2JDNYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:24:32 -0400
-X-Greylist: delayed 1938 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Oct 2012 09:24:31 EDT
-From: "PaX Team" <pageexec@freemail.hu>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>
-Date: Thu, 04 Oct 2012 14:51:53 +0200
+	id S932783Ab2JDN37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:29:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46595 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305Ab2JDN35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 09:29:57 -0400
+Date: Thu, 4 Oct 2012 09:18:30 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org
+Subject: Re: [RFC PATCH 2/7] swiotlb: Make io_tlb_start a physical address
+ instead of a virtual address
+Message-ID: <20121004131829.GC9158@phenom.dumpdata.com>
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
+ <20121004003853.5016.86765.stgit@gitlad.jf.intel.com>
 MIME-Version: 1.0
-Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-Reply-to: pageexec@freemail.hu
-CC: Ard Biesheuvel <ard.biesheuvel@gmail.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>
-Message-ID: <506D8669.30501.3087FAA@pageexec.freemail.hu>
-In-reply-to: <CAGXu5jLY8kFaTMNetqnO_PHwkCCfqkaTxTZQdSc1AwcDiAr86g@mail.gmail.com>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu>, <20121003141804.f9896690.akpm@linux-foundation.org>, <CAGXu5jLY8kFaTMNetqnO_PHwkCCfqkaTxTZQdSc1AwcDiAr86g@mail.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Thu, 04 Oct 2012 14:51:59 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004003853.5016.86765.stgit@gitlad.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 Oct 2012 at 15:19, Kees Cook wrote:
-> On Wed, Oct 3, 2012 at 2:18 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > It sounds as though the PaX developers could provide useful review
-> > input on this proposal.  Do they know about it?  If so, what is their
-> > position?
+On Wed, Oct 03, 2012 at 05:38:53PM -0700, Alexander Duyck wrote:
+> This change makes it so that io_tlb_start contains a physical address instead
+> of a virtual address.  The advantage to this is that we can avoid costly
+> translations between virtual and physical addresses when comparing the
+> io_tlb_start against DMA addresses.
 > 
-> I'd rather not speak for them, but I understood it to be along the
-> lines of "that's nice, we'll keep ours." :) (Now added to CC.)
-
-thanks for the heads up Kees ;). i've read through the thread since
-the first post in August and i have one big lingering question before
-i can say anything about the implementation: what is the whole point
-of this exercise? in particular, what kind of threat model underlies
-the design? what do we expect from an attacker? what restrictions does
-he operate under?
-
-i'm asking these basic questions because i have the feeling that there's
-some misundertanding here. the following is my speculation based on Ard's
-first post that was quoted below already (https://lkml.org/lkml/2012/8/14/448):
-
-> >> This patch adds support for the PROT_FINAL flag to
-> >> the mmap() and mprotect() syscalls.
-> >>
-> >> The PROT_FINAL flag indicates that the requested set
-> >> of protection bits should be final, i.e., it shall
-> >> not be allowed for a subsequent mprotect call to
-> >> set protection bits that were not set already.
-> >>
-> >> This is mainly intended for the dynamic linker,
-> >> which sets up the address space on behalf of
-> >> dynamic binaries. By using this flag, it can
-> >> prevent exploited code from remapping read-only
-> >> executable code or data sections read-write.
-
-now this last paragraph/sentence seems to be the closest thing that
-describes a scenario where we have some vulnerability (i'm guessing
-of the memory corruption kind) that allows an attacker (exploit writer)
-to force the attacked vulnerable application to perform a gratuitous
-mprotect(PROT_WRITE|PROT_EXEC) on some library/etc mapping and prepare
-it for shellcode injection/execution (a.k.a. 'game over' or the 'holy
-grail' ;). so far so good. the question that arises here is that what
-prevents the same exploit technique (say, ret2libc in this case) from
-executing an open/mmap(PROT_WRITE|PROT_EXEC) of the very same library
-that PROT_FINAL would protect? or just a plain anon mmap that is just as
-good for shellcode execution? in other words, if the attacker can make
-the attacked application execute mprotect with arbitrary parameters,
-then why can't the same attacker execute open/mmap/etc as well, completely
-circumventing the proposed solution? i hope you see now why this issue
-has to be settled before anyone looks into the implementation details.
-
-now later in the thread Ard said this:
-
-> The 'interface' we use is a LSM .ko which registers handlers for
-> mmap() and mprotect() that fail the respective invocations if the
-> passed arguments do not adhere to the policy.
-
-i'm guessing again that their LSM tries to tackle the above described
-scenarios except we don't know if this LSM will ever become public,
-whether/how other LSMs will acquire the same capabilities and why it's
-not mentioned in the PROT_FINAL submission that by itself this feature
-doesn't increase security. i'm also wondering what kind of policy can
-allow ld.so to load a library but forbid it a second time, it doesn't
-seem compatible with real-life cases (think dynamically loaded and
-unloaded plugins), not to mention the control of anonymous mappings.
-
-last but not least, just saw this from Ard while not on CC:
-
-> ptrace() doesn't care whether or not the process itself can write to
-> its .text segment.
-
-ptrace cares about VM_MAYWRITE which PROT_FINAL can take away (under
-PaX MPROTECT'ed processes cannot be debugged with sw breakpoints).
-
-> Could we at least agree on the fundamental notion that the special
-> powers the loader has to modify .text and .rodata sections are hardly
-> ever needed by the programs themselves? In that sense, this is similar
-> to dropping root privileges when not required anymore, and that is
-> typically recognized as a sensible idea.
-
-the difference is that the uid is a process-wide attribute, whereas
-PROT_FINAL isn't, unlike PaX's MPROTECT. in other words, dropping root
-is irreversible but PROT_FINAL isn't, one just has to create an entirely
-new mapping to acquire the access rights that PROT_FINAL was supposed to
-prevent (again, all this modulo an LSM and policies).
-
-> > Again: has this proposal been reviewed by the glibc maintainers?  If
-> > Also, you earlier stated that "It's a more direct version of PaX's
-> > "MPROTECT" feature[1]".  This is useful information.  Please update the
-> > changelog to describe that PaX feature and to describe the difference
-> > between the two, and the reasons for that difference.
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> ---
 > 
-> AIUI, it's much more aggressive. It tries to protect all processes
-> automatically (rather than this which is at the request of the
-> process) and gets in the way of things like Java that expect to be
-> able to do w+x mappings.
+>  lib/swiotlb.c |   61 +++++++++++++++++++++++++++++----------------------------
+>  1 files changed, 31 insertions(+), 30 deletions(-)
+> 
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index 5cc4d4e..02abb72 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -57,7 +57,7 @@ int swiotlb_force;
+>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+>   * API.
+>   */
+> -static char *io_tlb_start;
+> +phys_addr_t io_tlb_start;
+>  
+>  /*
+>   * The number of IO TLB blocks (in groups of 64).
+> @@ -125,14 +125,15 @@ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+>  void swiotlb_print_info(void)
+>  {
+>  	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+> -	phys_addr_t pstart, pend;
+> +	unsigned char *vstart, *vend;
+>  
+> -	pstart = virt_to_phys(io_tlb_start);
+> -	pend = pstart + bytes;
+> +	vstart = phys_to_virt(io_tlb_start);
+> +	vend = vstart + bytes;
+>  
+>  	printk(KERN_INFO "software IO TLB [mem %#010llx-%#010llx] (%luMB) mapped at [%p-%p]\n",
+> -	       (unsigned long long)pstart, (unsigned long long)pend - 1,
+> -	       bytes >> 20, io_tlb_start, io_tlb_start + bytes - 1);
+> +	       (unsigned long long)io_tlb_start,
+> +	       (unsigned long long)io_tlb_start + bytes - 1,
+> +	       bytes >> 20, vstart, vend - 1);
+>  }
+>  
+>  void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+> @@ -142,7 +143,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+>  	bytes = nslabs << IO_TLB_SHIFT;
+>  
+>  	io_tlb_nslabs = nslabs;
+> -	io_tlb_start = tlb;
+> +	io_tlb_start = __pa(tlb);
 
-for the gory details: http://pax.grsecurity.net/docs/mprotect.txt.
-the basic idea is that you either grant a process the ability to
-generate code at runtime (in whatever form) or you take it away for
-good, as nobody has come up with a secure middle-ground so far (it's
-a very non-trivial exercise to create such a mechanism assuming the
-generic 'attacker can read/write arbitrary memory' model).
+Why not 'virt_to_phys' ?
 
-as for java/etc, PaX has a per-process control mechanism to disable
-this enforcement, but it's static (decided at process creation time,
-ideally from a MAC system), not dynamic (something an attack could
-abuse).
+>  
+>  	/*
+>  	 * Allocate and initialize the free list array.  This array is used
+> @@ -171,6 +172,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+>  static void __init
+>  swiotlb_init_with_default_size(size_t default_size, int verbose)
+>  {
+> +	unsigned char *vstart;
+>  	unsigned long bytes;
+>  
+>  	if (!io_tlb_nslabs) {
+> @@ -183,11 +185,11 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+>  	/*
+>  	 * Get IO TLB memory from the low pages
+>  	 */
+> -	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+> -	if (!io_tlb_start)
+> +	vstart = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+> +	if (!vstart)
+>  		panic("Cannot allocate SWIOTLB buffer");
+>  
+> -	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
+> +	swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose);
+>  }
+>  
+>  void __init
+> @@ -205,6 +207,7 @@ int
+>  swiotlb_late_init_with_default_size(size_t default_size)
+>  {
+>  	unsigned long bytes, req_nslabs = io_tlb_nslabs;
+> +	unsigned char *vstart = NULL;
+>  	unsigned int order;
+>  	int rc = 0;
+>  
+> @@ -221,14 +224,14 @@ swiotlb_late_init_with_default_size(size_t default_size)
+>  	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+>  
+>  	while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
+> -		io_tlb_start = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
+> -							order);
+> -		if (io_tlb_start)
+> +		vstart = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
+> +						  order);
+> +		if (vstart)
+>  			break;
+>  		order--;
+>  	}
+>  
+> -	if (!io_tlb_start) {
+> +	if (!vstart) {
+>  		io_tlb_nslabs = req_nslabs;
+>  		return -ENOMEM;
+>  	}
+> @@ -237,9 +240,9 @@ swiotlb_late_init_with_default_size(size_t default_size)
+>  		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
+>  		io_tlb_nslabs = SLABS_PER_PAGE << order;
+>  	}
+> -	rc = swiotlb_late_init_with_tbl(io_tlb_start, io_tlb_nslabs);
+> +	rc = swiotlb_late_init_with_tbl(vstart, io_tlb_nslabs);
+>  	if (rc)
+> -		free_pages((unsigned long)io_tlb_start, order);
+> +		free_pages((unsigned long)vstart, order);
+>  	return rc;
+>  }
+>  
+> @@ -251,9 +254,9 @@ swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
+>  	bytes = nslabs << IO_TLB_SHIFT;
+>  
+>  	io_tlb_nslabs = nslabs;
+> -	io_tlb_start = tlb;
+> +	io_tlb_start = virt_to_phys(tlb);
+>  
+> -	memset(io_tlb_start, 0, bytes);
+> +	memset(tlb, 0, bytes);
+>  
+>  	/*
+>  	 * Allocate and initialize the free list array.  This array is used
+> @@ -300,7 +303,7 @@ cleanup3:
+>  	                                                 sizeof(int)));
+>  	io_tlb_list = NULL;
+>  cleanup2:
+> -	io_tlb_start = NULL;
+> +	io_tlb_start = 0;
+>  	io_tlb_nslabs = 0;
+>  	return -ENOMEM;
+>  }
+> @@ -317,7 +320,7 @@ void __init swiotlb_free(void)
+>  			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
+>  								 sizeof(int)));
+> -		free_pages((unsigned long)io_tlb_start,
+> +		free_pages((unsigned long)phys_to_virt(io_tlb_start),
+>  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+>  	} else {
+>  		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> @@ -326,7 +329,7 @@ void __init swiotlb_free(void)
+>  				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  		free_bootmem_late(__pa(io_tlb_list),
+>  				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+> -		free_bootmem_late(__pa(io_tlb_start),
+> +		free_bootmem_late(io_tlb_start,
+>  				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+>  	}
+>  	io_tlb_nslabs = 0;
+> @@ -334,10 +337,8 @@ void __init swiotlb_free(void)
+>  
+>  static int is_swiotlb_buffer(phys_addr_t paddr)
+>  {
+> -	phys_addr_t swiotlb_start = virt_to_phys(io_tlb_start);
+> -
+> -	return paddr >= swiotlb_start &&
+> -		paddr < (swiotlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
+> +	return paddr >= io_tlb_start &&
+> +		paddr < (io_tlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
+>  }
+>  
+>  /*
+> @@ -450,7 +451,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
+>  				io_tlb_list[i] = 0;
+>  			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
+>  				io_tlb_list[i] = ++count;
+> -			dma_addr = io_tlb_start + (index << IO_TLB_SHIFT);
+> +			dma_addr = (char *)phys_to_virt(io_tlb_start) + (index << IO_TLB_SHIFT);
 
-cheers,
- PaX Team
+I think this is going to fall flat with the other user of
+swiotlb_tbl_map_single - Xen SWIOTLB. When it allocates the io_tlb_start
+and does it magic to make sure its under 4GB - the io_tlb_start swath
+of memory, ends up consisting of 2MB chunks of contingous spaces. But each
+chunk is not linearly in the DMA space (thought it is in the CPU space).
 
+Meaning the io_tlb_start region 0-2MB can fall within the DMA address space
+of 2048MB->2032MB, and io_tlb_start offset 2MB->4MB, can fall within 1024MB->1026MB,
+and so on (depending on the availability of memory under 4GB).
+
+There is a clear virt_to_phys(x) != virt_to_dma(x).
+
+>  
+>  			/*
+>  			 * Update the indices to avoid searching in the next
+> @@ -494,7 +495,7 @@ static void *
+>  map_single(struct device *hwdev, phys_addr_t phys, size_t size,
+>  	   enum dma_data_direction dir)
+>  {
+> -	dma_addr_t start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
+> +	dma_addr_t start_dma_addr = phys_to_dma(hwdev, io_tlb_start);
+>  
+>  	return swiotlb_tbl_map_single(hwdev, start_dma_addr, phys, size, dir);
+>  }
+> @@ -508,7 +509,7 @@ swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
+>  {
+>  	unsigned long flags;
+>  	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
+> -	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
+> +	int index = (dma_addr - (char *)phys_to_virt(io_tlb_start)) >> IO_TLB_SHIFT;
+
+Ditto with explanation above. This I think will cause issues.
+
+>  	phys_addr_t phys = io_tlb_orig_addr[index];
+>  
+>  	/*
+> @@ -549,7 +550,7 @@ swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr, size_t size,
+>  			enum dma_data_direction dir,
+>  			enum dma_sync_target target)
+>  {
+> -	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
+> +	int index = (dma_addr - (char *)phys_to_virt(io_tlb_start)) >> IO_TLB_SHIFT;
+>  	phys_addr_t phys = io_tlb_orig_addr[index];
+>  
+>  	phys += ((unsigned long)dma_addr & ((1 << IO_TLB_SHIFT) - 1));
+> @@ -937,6 +938,6 @@ swiotlb_dma_supported(struct device *hwdev, u64 mask)
+>  {
+>  	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+>  
+> -	return swiotlb_virt_to_bus(hwdev, io_tlb_start + bytes - 1) <= mask;
+> +	return phys_to_dma(hwdev, io_tlb_start + bytes - 1) <= mask;
+>  }
+>  EXPORT_SYMBOL(swiotlb_dma_supported);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
