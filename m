@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946594Ab2JDVqW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:46:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934167Ab2JDVYU (ORCPT
+	id S1946589Ab2JDVqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:46:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946116Ab2JDVYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:20 -0400
+	Thu, 4 Oct 2012 17:24:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Vikram Pandita <vikram.pandita@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 19/52] serial: omap: fix software flow control
-Date: Thu,  4 Oct 2012 14:21:10 -0700
-Message-Id: <20121004210637.747450703@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 16/52] staging: comedi: fix memory leak for saved channel list
+Date: Thu,  4 Oct 2012 14:21:07 -0700
+Message-Id: <20121004210637.357588660@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,68 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vikram Pandita <vikram.pandita@ti.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6 upstream.
+commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
 
-Software flow control register bits were not defined correctly.
+When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
+list, it frees any previously allocated channel list in
+`async->cmd.chanlist` and replaces it with the new one.  However, if the
+device is ever removed (or "detached") the cleanup code in
+`cleanup_device()` in "drivers.c" does not free this memory so it is
+lost.
 
-Also clarify the IXON and IXOFF logic to reflect what userspace wants.
+A sensible place to free the kernel copy of the channel list is in
+`do_become_nonbusy()` as at that point the comedi asynchronous command
+associated with the channel list is no longer valid.  Free the channel
+list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
+pointer to prevent it being freed more than once.
 
-Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Note that `cleanup_device()` could be called at an inappropriate time
+while the comedi device is open, but that's a separate bug not related
+to this this patch.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-omap/include/plat/omap-serial.h |    4 ++--
- drivers/tty/serial/omap-serial.c              |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -42,10 +42,10 @@
- #define OMAP_UART_WER_MOD_WKUP	0X7F
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1088,7 +1088,6 @@ static int do_cmd_ioctl(struct comedi_de
+ 		goto cleanup;
+ 	}
  
- /* Enable XON/XOFF flow control on output */
--#define OMAP_UART_SW_TX		0x04
-+#define OMAP_UART_SW_TX		0x8
- 
- /* Enable XON/XOFF flow control on input */
--#define OMAP_UART_SW_RX		0x04
-+#define OMAP_UART_SW_RX		0x2
- 
- #define OMAP_UART_SYSC_RESET	0X07
- #define OMAP_UART_TCR_TRIG	0X0F
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -649,19 +649,19 @@ serial_omap_configure_xonxoff
- 
- 	/*
- 	 * IXON Flag:
--	 * Enable XON/XOFF flow control on output.
--	 * Transmit XON1, XOFF1
-+	 * Flow control for OMAP.TX
-+	 * OMAP.RX should listen for XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXON)
--		up->efr |= OMAP_UART_SW_TX;
-+		up->efr |= OMAP_UART_SW_RX;
- 
- 	/*
- 	 * IXOFF Flag:
--	 * Enable XON/XOFF flow control on input.
--	 * Receiver compares XON1, XOFF1.
-+	 * Flow control for OMAP.RX
-+	 * OMAP.TX should send XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXOFF)
--		up->efr |= OMAP_UART_SW_RX;
-+		up->efr |= OMAP_UART_SW_TX;
- 
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
+-	kfree(async->cmd.chanlist);
+ 	async->cmd = user_cmd;
+ 	async->cmd.data = NULL;
+ 	/* load channel/gain list */
+@@ -1833,6 +1832,8 @@ void do_become_nonbusy(struct comedi_dev
+ 	if (async) {
+ 		comedi_reset_async_buf(async);
+ 		async->inttrig = NULL;
++		kfree(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 	} else {
+ 		printk(KERN_ERR
+ 		       "BUG: (?) do_become_nonbusy called with async=0\n");
 
 
