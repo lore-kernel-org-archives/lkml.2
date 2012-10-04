@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264Ab2JDVYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934248Ab2JDVYo (ORCPT
+	id S1946428Ab2JDVok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:44:40 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934236Ab2JDVYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:44 -0400
+	Thu, 4 Oct 2012 17:24:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 27/52] xhci: Intel Panther Point BEI quirk.
-Date: Thu,  4 Oct 2012 14:21:18 -0700
-Message-Id: <20121004210638.767587262@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@hp.com>, Kees Cook <keescook@chromium.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 26/52] firmware: Add missing attributes to EFI variable attribute print out from sysfs
+Date: Thu,  4 Oct 2012 14:21:17 -0700
+Message-Id: <20121004210638.647997764@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,82 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Khalid Aziz <khalid.aziz@hp.com>
 
-commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
+commit 7083909023bbe29b3176e92d2d089def1aa7aa1e upstream.
 
-When a device with an isochronous endpoint is behind a hub plugged into
-the Intel Panther Point xHCI host controller, and the driver submits
-multiple frames per URB, the xHCI driver will set the Block Event
-Interrupt (BEI) flag on all but the last TD for the URB.  This causes
-the host controller to place an event on the event ring, but not send an
-interrupt.  When the last TD for the URB completes, BEI is cleared, and
-we get an interrupt for the whole URB.
+Some of the EFI variable attributes are missing from print out from
+/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+updates code to use pre-defined constants for masking current value
+of attributes.
 
-However, under a Panther Point xHCI host controller, if the parent hub
-is unplugged when one or more events from transfers with BEI set are on
-the event ring, a port status change event is placed on the event ring,
-but no interrupt is generated.  This means URBs stop completing, and the
-USB device disconnect is not noticed.  Something like a USB headset will
-cause mplayer to hang when the device is disconnected.
-
-If another transfer is sent (such as running `sudo lsusb -v`), the next
-transfer event seems to "unstick" the event ring, the xHCI driver gets
-an interrupt, and the disconnect is reported to the USB core.
-
-The fix is not to use the BEI flag under the Panther Point xHCI host.
-This will impact power consumption and system responsiveness, because
-the xHCI driver will receive an interrupt for every frame in all
-isochronous URBs instead of once per URB.
-
-Intel chipset developers confirm that this bug will be hit if the BEI
-flag is used on any endpoint, not just ones that are behind a hub.
-
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Acked-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |    4 +++-
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/firmware/efivars.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -99,6 +99,7 @@ static void xhci_pci_quirks(struct devic
- 		 * PPT chipsets.
- 		 */
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
-+		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3400,7 +3400,9 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				td->last_trb = ep_ring->enqueue;
- 				field |= TRB_IOC;
--				if (xhci->hci_version == 0x100) {
-+				if (xhci->hci_version == 0x100 &&
-+						!(xhci->quirks &
-+							XHCI_AVOID_BEI)) {
- 					/* Set BEI bit except for the last td */
- 					if (i < num_tds - 1)
- 						field |= TRB_BEI;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1488,6 +1488,7 @@ struct xhci_hcd {
- #define XHCI_TRUST_TX_LENGTH	(1 << 10)
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
-+#define XHCI_AVOID_BEI		(1 << 15)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *en
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
+ 
+-	if (var->Attributes & 0x1)
++	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+ 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+-	if (var->Attributes & 0x2)
++	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+-	if (var->Attributes & 0x4)
++	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
++		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
++	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes &
++			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
++		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+ 	return str - buf;
+ }
+ 
 
 
