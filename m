@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946104Ab2JDVYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934167Ab2JDVX6 (ORCPT
+	id S1946122Ab2JDVYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:24:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946101Ab2JDVYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:58 -0400
+	Thu, 4 Oct 2012 17:24:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [ 12/52] staging: r8712u: Do not queue cloned skb
-Date: Thu,  4 Oct 2012 14:21:03 -0700
-Message-Id: <20121004210636.871047681@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 14/52] staging: comedi: jr3_pci: fix iomem dereference
+Date: Thu,  4 Oct 2012 14:21:05 -0700
+Message-Id: <20121004210637.128041936@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,34 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit fa16e5ea25d7dd83f663f333e70713aa2fa5dffe upstream.
+commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
 
-Some post-3.4 kernels have a problem when a cloned skb is used in the
-RX path. This patch handles one such case for r8712u.
+Correct a direct dereference of I/O memory to use an appropriate I/O
+memory access function.  Note that the pointer being dereferenced is not
+currently tagged with `__iomem` but I plan to correct that for 3.7.
 
-The patch was suggested by Eric Dumazet.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/rtl8712_recv.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/rtl8712/rtl8712_recv.c
-+++ b/drivers/staging/rtl8712/rtl8712_recv.c
-@@ -1126,6 +1126,9 @@ static void recv_tasklet(void *priv)
- 		recvbuf2recvframe(padapter, pskb);
- 		skb_reset_tail_pointer(pskb);
- 		pskb->len = 0;
--		skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
-+		if (!skb_cloned(pskb))
-+			skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
-+		else
-+			consume_skb(pskb);
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -905,7 +905,7 @@ static int jr3_pci_attach(struct comedi_
  	}
- }
+ 
+ 	/*  Reset DSP card */
+-	devpriv->iobase->channel[0].reset = 0;
++	writel(0, &devpriv->iobase->channel[0].reset);
+ 
+ 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+ 	dev_dbg(dev->hw_dev, "Firmare load %d\n", result);
 
 
