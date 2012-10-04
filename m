@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab2JDMM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:12:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33579 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab2JDMM6 convert rfc822-to-8bit (ORCPT
+	id S1756111Ab2JDMRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:17:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63536 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab2JDMRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:12:58 -0400
-Message-ID: <1349352728.4438.23.camel@twins>
-Subject: Re: [PATCH RFC 1/3] sched: introduce distinct per-cpu load average
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 04 Oct 2012 14:12:08 +0200
-In-Reply-To: <20121004094349.GA2163@thinkpad>
-References: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
-	 <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
-	 <1349341186.4438.1.camel@twins> <20121004094349.GA2163@thinkpad>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 4 Oct 2012 08:17:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 2/6] mfd: da9052: Introduce da9052-irq.c
+Date: Thu, 4 Oct 2012 12:17:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Fabio Estevam <festevam@gmail.com>, sameo@linux.intel.com,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+References: <1349320509-26930-1-git-send-email-festevam@gmail.com> <201210040712.48516.arnd@arndb.de> <20121004111412.GJ4360@opensource.wolfsonmicro.com>
+In-Reply-To: <20121004111412.GJ4360@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210041217.28343.arnd@arndb.de>
+X-Provags-ID: V02:K0:hmR8lIJjPX6Owf3zi3Z2WFcTeTHp+Tl9Wy9I65WoRm/
+ hJrTOHxvfN/fSnP4DlGtS+bZt6s3FM9VnpF9TzFvLLT6mUMDb7
+ tzHRclMjE+sqaQVGykE7DLT5hx8EFy7doBNQdw5SExgW4M8taE
+ L4CBzewkb9tPmcU94DVeb/PhscdX/3w9PH/C+76hIf5zJo4vT4
+ 6VJ5AL9r1aP+s3rNaSErIsgRYuTf26pW+NfxRMM1nQ9h4GXNrQ
+ zAI9MThmzQq2aPQ8OgzY0PsiTKRhuBYfboGyL/JQ7xtupZHaqy
+ deBVOlEBEeABjHUPynBKnWYCE7JXiECuUQlJjn6zKDjcrTdpyi
+ 2Dao6ae3m5kfo7MD7gNM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 11:43 +0200, Andrea Righi wrote:
+On Thursday 04 October 2012, Mark Brown wrote:
+> Aside from hiding the lookup of the irqdomian a bit there's a couple of
+> reasons for existing devices having them:
 > 
-> Right, the update must be atomic to have a coherent nr_uninterruptible
-> value. And AFAICS the only way to account a coherent
-> nr_uninterruptible
-> value per-cpu is to go with atomic ops... mmh... I'll think more on
-> this. 
+>  - With some devices like WM8994 the interrupts are optional so it's
+>    useful to eat errors due to the interrupts not existing.  With the
+>    ability to use linear domains this doesn't matter terribly much as we
+>    can just allocate the interrupts even if there's no way they can
+>    fire, it was more of an issue when irqdomain wasn't available.
+> 
+>  - With Arizona we've actually got a bunch of interrupt controllers the
+>    interrupts might be allocated to and these functions allow us to hide
+>    this mapping from the subdrivers.  This is pretty specialist though.
+> 
+> but if the interrupts are always requestable it really makes little
+> odds, just a matter of taste.
 
-You could stick it in the cpu controller instead of cpuset, add a
-per-cpu nr_uninterruptible counter to struct task_group and update it
-from the enqueue/dequeue paths. Those already are per-cgroup (through
-cfs_rq, which has a tg pointer).
+Ok, thanks for the explanation. Since this was my only concern on this
+version of the series:
 
-That would also give you better semantics since it would really be the
-load of the tasks of the cgroup, not whatever happened to run on a
-particular cpu regardless of groups. Then again, it might be 'fun' to
-get the hierarchical semantics right :-)
-
-OTOH it would also make calculating the load-avg O(nr_cgroups) and since
-we do this from the tick and people are known to create a shitload (on
-the order of 1e3 and upwards) of those this might not actually be a very
-good idea.
-
-Also, your patch 2 relies on the load avg function to be additive yet
-your completely fail to mention this and state whether this is so or
-not.
-
-Furthermore, please look at PER_CPU() and friends as alternatives to
-[NR_CPUS] arrays.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
