@@ -1,178 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab2JDSJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:09:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39782 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2JDSJ3 (ORCPT
+	id S1754325Ab2JDSNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:13:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39475 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab2JDSNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:29 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/42] perf kmem: Don't use globals where not needed to
-Date: Thu,  4 Oct 2012 15:08:16 -0300
-Message-Id: <1349374122-27806-17-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
-References: <1349374122-27806-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 4 Oct 2012 14:13:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121004104045.4fa02775@nehalam.linuxnetplumber.net>
+References: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
+	<20121003092508.6a7da662@nehalam.linuxnetplumber.net>
+	<CA+MoWDp4W5BCA1t_HgEtLhMs1btVTOkbtBytOVtAzJriEZ-16A@mail.gmail.com>
+	<20121004074442.180d8f01@nehalam.linuxnetplumber.net>
+	<CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	<20121004104045.4fa02775@nehalam.linuxnetplumber.net>
+Date: Thu, 4 Oct 2012 20:13:49 +0200
+Message-ID: <CA+MoWDoOKF1NHmDbaGwpRCpHLpnHfjHngR2HrV-tWLj+8pFV7g@mail.gmail.com>
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: mlindner@marvell.com, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hello Stephen,
 
-Some variables were global but used in just one function, so move it to
-where it belongs.
+Thanks for the patience.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-wu8lz0g2qg26aqgi51xgzkpp@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kmem.c |   66 +++++++++++++++++---------------------------
- 1 files changed, 26 insertions(+), 40 deletions(-)
+> The purpose of the commit message is not only so other developers understand
+> the patch. It is also so that the consumers (distro's and maintainers)
+> understand the scope of the impact.  It maybe that your effort uncovers
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index bc912c6..14bf82f 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -21,8 +21,6 @@
- struct alloc_stat;
- typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
- 
--static const char		*input_name;
--
- static int			alloc_flag;
- static int			caller_flag;
- 
-@@ -31,8 +29,6 @@ static int			caller_lines = -1;
- 
- static bool			raw_ip;
- 
--static char			default_sort_order[] = "frag,hit,bytes";
--
- static int			*cpunode_map;
- static int			max_cpu_num;
- 
-@@ -481,7 +477,7 @@ static void sort_result(void)
- 	__sort_result(&root_caller_stat, &root_caller_sorted, &caller_sort);
- }
- 
--static int __cmd_kmem(void)
-+static int __cmd_kmem(const char *input_name)
- {
- 	int err = -EINVAL;
- 	struct perf_session *session;
-@@ -520,11 +516,6 @@ out_delete:
- 	return err;
- }
- 
--static const char * const kmem_usage[] = {
--	"perf kmem [<options>] {record|stat}",
--	NULL
--};
--
- static int ptr_cmp(struct alloc_stat *l, struct alloc_stat *r)
- {
- 	if (l->ptr < r->ptr)
-@@ -720,41 +711,17 @@ static int parse_line_opt(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
--static const struct option kmem_options[] = {
--	OPT_STRING('i', "input", &input_name, "file",
--		   "input file name"),
--	OPT_CALLBACK_NOOPT(0, "caller", NULL, NULL,
--			   "show per-callsite statistics",
--			   parse_caller_opt),
--	OPT_CALLBACK_NOOPT(0, "alloc", NULL, NULL,
--			   "show per-allocation statistics",
--			   parse_alloc_opt),
--	OPT_CALLBACK('s', "sort", NULL, "key[,key2...]",
--		     "sort by keys: ptr, call_site, bytes, hit, pingpong, frag",
--		     parse_sort_opt),
--	OPT_CALLBACK('l', "line", NULL, "num",
--		     "show n lines",
--		     parse_line_opt),
--	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
--	OPT_END()
--};
--
--static const char *record_args[] = {
--	"record",
--	"-a",
--	"-R",
--	"-f",
--	"-c", "1",
-+static int __cmd_record(int argc, const char **argv)
-+{
-+	const char * const record_args[] = {
-+	"record", "-a", "-R", "-f", "-c", "1",
- 	"-e", "kmem:kmalloc",
- 	"-e", "kmem:kmalloc_node",
- 	"-e", "kmem:kfree",
- 	"-e", "kmem:kmem_cache_alloc",
- 	"-e", "kmem:kmem_cache_alloc_node",
- 	"-e", "kmem:kmem_cache_free",
--};
--
--static int __cmd_record(int argc, const char **argv)
--{
-+	};
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
- 
-@@ -775,6 +742,25 @@ static int __cmd_record(int argc, const char **argv)
- 
- int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-+	const char * const default_sort_order = "frag,hit,bytes";
-+	const char *input_name = NULL;
-+	const struct option kmem_options[] = {
-+	OPT_STRING('i', "input", &input_name, "file", "input file name"),
-+	OPT_CALLBACK_NOOPT(0, "caller", NULL, NULL,
-+			   "show per-callsite statistics", parse_caller_opt),
-+	OPT_CALLBACK_NOOPT(0, "alloc", NULL, NULL,
-+			   "show per-allocation statistics", parse_alloc_opt),
-+	OPT_CALLBACK('s', "sort", NULL, "key[,key2...]",
-+		     "sort by keys: ptr, call_site, bytes, hit, pingpong, frag",
-+		     parse_sort_opt),
-+	OPT_CALLBACK('l', "line", NULL, "num", "show n lines", parse_line_opt),
-+	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
-+	OPT_END()
-+	};
-+	const char * const kmem_usage[] = {
-+		"perf kmem [<options>] {record|stat}",
-+		NULL
-+	};
- 	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
- 
- 	if (!argc)
-@@ -793,7 +779,7 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		if (list_empty(&alloc_sort))
- 			setup_sorting(&alloc_sort, default_sort_order);
- 
--		return __cmd_kmem();
-+		return __cmd_kmem(input_name);
- 	} else
- 		usage_with_options(kmem_usage, kmem_options);
- 
+I was not considering the scope of the impact. I'm fixing bugs found
+by Coccinelle meaning that my bug hunting is based on static program
+analysis. My evaluation of what to do is simpler: Can my change make
+the code better? If I believe that yes, I make the patch.
+
+> a really bad security hole that requires a CVE and a re-release of a
+> major enterprise product like RHEL, or it could just be a minor corner
+> case that can never realistically happen. Unless you give a more complete
+> description, someone else will have to do it for each case.
+
+This is a mix between what I do not want and what I can't do. I can't
+give that complete description for consumers and distro maintainers
+for drivers that I do not know completely. I do not know how critical
+those bugs are in real life. I was expecting that the maintainer, who
+knows the drivers details, would do that sort of things when needed.
+
+Isn't enough fixing bugs and describing it correctly in a technical perspective?
+
+Thanks,
+
+Peter
 -- 
-1.7.1
-
+Peter
