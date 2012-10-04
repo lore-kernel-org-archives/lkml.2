@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab2JDVVh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:21:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	id S933845Ab2JDVVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:21:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792Ab2JDVVb (ORCPT
+	with ESMTP id S933792Ab2JDVVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:31 -0400
+	Thu, 4 Oct 2012 17:21:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [ 27/58] tools/hv: Check for read/write errors
-Date: Thu,  4 Oct 2012 14:19:34 -0700
-Message-Id: <20121004210638.848007423@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@hp.com>, Kees Cook <keescook@chromium.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 29/58] firmware: Add missing attributes to EFI variable attribute print out from sysfs
+Date: Thu,  4 Oct 2012 14:19:36 -0700
+Message-Id: <20121004210639.100019775@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,76 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Khalid Aziz <khalid.aziz@hp.com>
 
-commit 436473bc2173499ae274d0f50111d1e355006caf upstream.
+commit 7083909023bbe29b3176e92d2d089def1aa7aa1e upstream.
 
-hv_kvp_daemon currently does not check whether fread() or fwrite()
-succeed.  Add the necessary checks.  Also, remove the incorrect use of
-feof() before fread().
+Some of the EFI variable attributes are missing from print out from
+/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+updates code to use pre-defined constants for masking current value
+of attributes.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Acked-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/hv/hv_kvp_daemon.c |   22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ drivers/firmware/efivars.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -144,7 +144,12 @@ static void kvp_update_file(int pool)
- 				sizeof(struct kvp_record),
- 				kvp_file_info[pool].num_records, filep);
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *en
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
  
--	fclose(filep);
-+	if (ferror(filep) || fclose(filep)) {
-+		kvp_release_lock(pool);
-+		syslog(LOG_ERR, "Failed to write file, pool: %d", pool);
-+		exit(EXIT_FAILURE);
-+	}
-+
- 	kvp_release_lock(pool);
+-	if (var->Attributes & 0x1)
++	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+ 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+-	if (var->Attributes & 0x2)
++	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+-	if (var->Attributes & 0x4)
++	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
++		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
++	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes &
++			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
++		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+ 	return str - buf;
  }
  
-@@ -165,12 +170,17 @@ static void kvp_update_mem_state(int poo
- 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
- 		exit(EXIT_FAILURE);
- 	}
--	while (!feof(filep)) {
-+	for (;;) {
- 		readp = &record[records_read];
- 		records_read += fread(readp, sizeof(struct kvp_record),
- 					ENTRIES_PER_BLOCK * num_blocks,
- 					filep);
- 
-+		if (ferror(filep)) {
-+			syslog(LOG_ERR, "Failed to read file, pool: %d", pool);
-+			exit(EXIT_FAILURE);
-+		}
-+
- 		if (!feof(filep)) {
- 			/*
- 			 * We have more data to read.
-@@ -233,12 +243,18 @@ static int kvp_file_init(void)
- 			fclose(filep);
- 			return 1;
- 		}
--		while (!feof(filep)) {
-+		for (;;) {
- 			readp = &record[records_read];
- 			records_read += fread(readp, sizeof(struct kvp_record),
- 					ENTRIES_PER_BLOCK,
- 					filep);
- 
-+			if (ferror(filep)) {
-+				syslog(LOG_ERR, "Failed to read file, pool: %d",
-+				       i);
-+				exit(EXIT_FAILURE);
-+			}
-+
- 			if (!feof(filep)) {
- 				/*
- 				 * We have more data to read.
 
 
