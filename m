@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946450Ab2JDV2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:28:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45983 "EHLO
+	id S1946465Ab2JDV2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:28:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946409Ab2JDV2A (ORCPT
+	with ESMTP id S1946409Ab2JDV2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:28:00 -0400
+	Thu, 4 Oct 2012 17:28:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 21/33] n_gsm: memory leak in uplink error path
-Date: Thu,  4 Oct 2012 14:26:43 -0700
-Message-Id: <20121004210601.097620537@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 23/33] SCSI: ibmvscsi: Fix host config length field overflow
+Date: Thu,  4 Oct 2012 14:26:45 -0700
+Message-Id: <20121004210601.346153174@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -28,50 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Gorby <russ.gorby@intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 88ed2a60610974443335c924d7cb8e5dcf9dbdc1 upstream.
+commit 225c56960fcafeccc2b6304f96cd3f0dbf42a16a upstream.
 
-Uplink (TX) network data will go through gsm_dlci_data_output_framed
-there is a bug where if memory allocation fails, the skb which
-has already been pulled off the list will be lost.
+The length field in the host config packet is only 16-bit long, so
+passing it 0x10000 (64K which is our standard PAGE_SIZE) doesn't
+work and result in an empty config from the server.
 
-In addition TX skbs were being processed in LIFO order
-
-Fixed the memory leak, and changed to FIFO order processing
-
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/scsi/ibmvscsi/ibmvscsi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -842,7 +842,7 @@ static int gsm_dlci_data_output_framed(s
+--- a/drivers/scsi/ibmvscsi/ibmvscsi.c
++++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
+@@ -1547,6 +1547,9 @@ static int ibmvscsi_do_host_config(struc
  
- 	/* dlci->skb is locked by tx_lock */
- 	if (dlci->skb == NULL) {
--		dlci->skb = skb_dequeue(&dlci->skb_list);
-+		dlci->skb = skb_dequeue_tail(&dlci->skb_list);
- 		if (dlci->skb == NULL)
- 			return 0;
- 		first = 1;
-@@ -866,8 +866,11 @@ static int gsm_dlci_data_output_framed(s
+ 	host_config = &evt_struct->iu.mad.host_config;
  
- 	/* FIXME: need a timer or something to kick this so it can't
- 	   get stuck with no work outstanding and no buffer free */
--	if (msg == NULL)
-+	if (msg == NULL) {
-+		skb_queue_tail(&dlci->skb_list, dlci->skb);
-+		dlci->skb = NULL;
- 		return -ENOMEM;
-+	}
- 	dp = msg->data;
- 
- 	if (dlci->adaption == 4) { /* Interruptible framed (Packetised Data) */
++	/* The transport length field is only 16-bit */
++	length = min(0xffff, length);
++
+ 	/* Set up a lun reset SRP command */
+ 	memset(host_config, 0x00, sizeof(*host_config));
+ 	host_config->common.type = VIOSRP_HOST_CONFIG_TYPE;
 
 
