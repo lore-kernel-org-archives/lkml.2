@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab2JDWW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:22:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57780 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab2JDWWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:22:55 -0400
-Date: Fri, 5 Oct 2012 00:22:47 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SLAB changes for v3.7-rc0
-In-Reply-To: <alpine.LFD.2.02.1210042055190.2119@tux.localdomain>
-Message-ID: <alpine.LRH.2.00.1210050021050.31999@twin.jikos.cz>
-References: <alpine.LFD.2.02.1210042055190.2119@tux.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755020Ab2JDW2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:28:01 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56303 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab2JDW17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 18:27:59 -0400
+Date: Thu, 4 Oct 2012 15:27:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Huacai Chen <chenhc@lemote.com>, Charles Wang <muming.wq@taobao.com>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Seems like "sched: Add missing call to calc_load_exit_idle()"
+ should be reverted in 3.5 branch
+Message-ID: <20121004222755.GC3609@kroah.com>
+References: <CAAhV-H54CJdg+UekpucZ=kOgCY5r5vvYQ+v4VwAMTCv+mCedXA@mail.gmail.com>
+ <20121004174626.GB14301@kroah.com>
+ <1349375519.14388.16.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349375519.14388.16.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Pekka Enberg wrote:
-
-> Hi Linus,
+On Thu, Oct 04, 2012 at 08:31:59PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-10-04 at 10:46 -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Oct 04, 2012 at 12:11:01PM +0800, Huacai Chen wrote:
+> > > Hi, Greg
+> > > 
+> > > I found that Linux-3.5.5 accept this commit "sched: Add missing call
+> > > to calc_load_exit_idle()" but I think this isn't needed. Because
+> > > "5167e8d5417b sched/nohz: Rewrite and fix load-avg computation --
+> > > again not fully applied" is true for 3.6 branch, but not for 3.5
+> > > branch.
+> > 
+> > But 5167e8d5417b is in 3.5, so shouldn't this commit still be necessary?
+> > 
+> > > In 3.5 branch, calc_load_exit_idle() is already called in
+> > > tick_nohz_idle_exit(), it doesn't need to be called at
+> > > tick_nohz_update_jiffies() again. In 3.6 branch, some code of
+> > > tick_nohz_idle_exit() is splitted to tick_nohz_restart_sched_tick()
+> > > and calc_load_exit_idle() is missing by accident, so commit "sched:
+> > > Add missing call to calc_load_exit_idle()" is needed.
+> > 
+> > So this really should be dropped from 3.5?  Charles, Peter, Ingo, any
+> > thoughts here?
 > 
-> Please pull the latest SLAB tree from:
+> Bah, lots of code movement there recently.. let me try and untangle all
+> that afresh.. /me checks out v3.5.5.
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+> OK, assuming ->tick_stopped means what the label says, then we only want
+> to call calc_load_enter_idle() when it flips to 1 and
+> calc_load_exit_idle() when it flips back to 0, such that when an actual
+> tick happens its got correct state.
 > 
-> New and noteworthy:
+> Now the actual patch "5167e8d5417b sched/nohz: Rewrite and fix load-avg
+> computation -- again not fully applied" modifies
+> tick_nohz_restart_sched_tick() which doesn't appear to exist in v3.5.5
+> and the patch fobbed it into tick_nohz_update_jiffies() which is called
+> from interrupt entry when nohz-idle so that the interrupt (and possible
+> tailing softirq) see a valid jiffies count.
 > 
->   * More SLAB allocator unification patches from Christoph Lameter and
->     others.  This paves the way for slab memcg patches that hopefully
->     will land in v3.8.
+> However, since we don't restart the tick, we won't be sampling load muck
+> and calling calc_load_exit_idle() from there is bound to confuse state.
 > 
->   * SLAB tracing improvements from Ezequiel Garcia.
+> I hope.. damn this code ;-)
 > 
->   * Kernel tainting upon SLAB corruption from Dave Jones.
+> I can't find wtf went wrong either, the initial patch 5167e8d5417bf5c
+> contains both hunks, but in that case the fixup 749c8814f0 doesn't make
+> sense, not can I find anything in merge commits using:
 > 
->   * Miscellanous SLAB allocator bug fixes and improvements from various
->     people.
+>   git log -S calc_load_exit_idle kernel/time/tick-sched.c
+> 
+> /me puzzled
 
-Pekka,
+I'm puzzled as well.  Any ideas if I should do anything here or not?
 
-what are your plans with 
-
-	https://lkml.org/lkml/2012/10/3/285
-
-please? It'd be nice to have it in Linus' tree reasonably soon, otherwise 
-we'll be receiving false positive lockdep reports over and over again.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
-
+greg k-h
