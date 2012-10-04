@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422749Ab2JDP3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:29:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26683 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422644Ab2JDP3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:29:49 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=T5v1fc8_-g4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YIIzJC-knJ0A:10 a=VwQbUJbxAAAA:8 a=VZOVyJ9ujMy8BWwVoj4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349364584.6755.20.camel@gandalf.local.home>
-Subject: Re: [PATCH RT] softirq: Init softirq local lock after per cpu
- section is set up
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, stable-rt@vger.kernel.org
-Cc: RT <linux-rt-users@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Carsten Emde <cbe@osadl.org>, vomlehn@texas.net
-Date: Thu, 04 Oct 2012 11:29:44 -0400
-In-Reply-To: <1349362924.6755.18.camel@gandalf.local.home>
-References: <1349362924.6755.18.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	id S1422672Ab2JDPbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:31:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25666 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965609Ab2JDPbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:31:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,535,1344236400"; 
+   d="scan'208";a="201570061"
+Subject: RE: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "arm@kernel.org" <arm@kernel.org>, "djbw@fb.com" <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <8D3F6266AEB6384E807C6FFC6FE195E30181BBF0@BGSMSX101.gar.corp.intel.com>
+References: <1349284913-22350-1-git-send-email-ldewangan@nvidia.com>
+	 <506CA5D8.1050201@wwwdotorg.org> <201210040816.35500.arnd@arndb.de>
+	 <8D3F6266AEB6384E807C6FFC6FE195E30181BBF0@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Oct 2012 20:53:21 +0530
+Message-ID: <1349364201.1648.46.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 11:02 -0400, Steven Rostedt wrote:
+On Thu, 2012-10-04 at 08:26 +0000, Koul, Vinod wrote:
+> > >
+> > > (Dropping stable Cc; Olof/Arnd or Vinod, is it possible you could add
+> > > that into the patch description when applying this?)
+> > >
+> > > Reported-by: Stephen Warren <swarren@nvidia.com>
+> > > Acked-by: Stephen Warren <swarren@nvidia.com>
+> > 
+> > Should be no problem. If Vinod wants to pick it up:
+> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Will do it later today... am travelling so slow on email :(
+Done, applied ith Stephen's credits :) Thanks
 
-> By moving the softirq_early_init() right after setup_per_cpu_areas(),
-> the kernel boots fine.
->
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
 
-Bah, I forgot to Cc stable-rt.
-
-Cc: stable-rt@vger.kernel.org
-
--- Steve
-
+-- 
+~Vinod
 
