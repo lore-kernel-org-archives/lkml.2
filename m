@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2JDRhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 13:37:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40480 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253Ab2JDRhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 13:37:03 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAMuHMdUx6he0MdL5etO6pDrMgd=JZWsf1TZj5WevjSpFANCWRA@mail.gmail.com>
-References: <CAMuHMdUx6he0MdL5etO6pDrMgd=JZWsf1TZj5WevjSpFANCWRA@mail.gmail.com> <18137.1349203013@warthog.procyon.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: dhowells@redhat.com, torvalds@osdl.org, arnd@arndb.de, hpa@zytor.com,
-        alan@lxorguk.ukuu.org.uk, fengguang.wu@intel.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] User API Disintegrate: Preparatory patches
-Date: Thu, 04 Oct 2012 18:36:46 +0100
-Message-ID: <29855.1349372206@warthog.procyon.org.uk>
+	id S933142Ab2JDRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 13:40:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60386 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932214Ab2JDRkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 13:40:24 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: linux-kernel@vger.kernel.org
+Cc: Wendy Liang <wendy.liang@petalogix.com>, Michal Simek <monstr@monstr.eu>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Mike Frysinger <vapier@gentoo.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH] mtd: m25p80: Add support for Numonyx N25Q128
+Date: Thu,  4 Oct 2012 19:40:16 +0200
+Message-Id: <1349372416-16925-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+From: Wendy Liang <wendy.liang@petalogix.com>
 
-> >  include/linux/libfdt.h                           |  4 +-
-> 
-> So what happened here?
-> 
->  -#include "../../scripts/dtc/libfdt/fdt.h"
-> -#include "../../scripts/dtc/libfdt/libfdt.h"
-> +#include <>
-> +#include <>
+Add the id and sector mappings for SPI flash chips.
 
-I didn't expect 'system' header files to be outside of include/ or
-arch/*/include/, so the bit of perl I had to turn this into <...> quietly
-malfunctioned when it stripped too much off of the front.
+Signed-off-by: Wendy Liang <wendy.liang@petalogix.com>
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+CC: Mike Frysinger <vapier@gentoo.org>
+CC: linux-mtd@lists.infradead.org
+---
+ drivers/mtd/devices/m25p80.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Out of interest, why aren't these in include/?  The normal way seems to be to
-point the tool build at the kernel headers, not the kernel build at the script
-headers.
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 5d0d68c..cad89f1 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -722,6 +722,9 @@ static const struct spi_device_id m25p_ids[] = {
+ 	{ "m25px32-s1", INFO(0x206316,  0, 64 * 1024, 64, SECT_4K) },
+ 	{ "m25px64",    INFO(0x207117,  0, 64 * 1024, 128, 0) },
+ 
++	/* Numonyx -- n25q */
++	{ "n25q128",    INFO(0x20ba18,  0, 64 * 1024, 256, 0) },
++
+ 	/* Winbond -- w25x "blocks" are 64K, "sectors" are 4KiB */
+ 	{ "w25x10", INFO(0xef3011, 0, 64 * 1024,  2,  SECT_4K) },
+ 	{ "w25x20", INFO(0xef3012, 0, 64 * 1024,  4,  SECT_4K) },
+-- 
+1.7.0.4
 
-David
