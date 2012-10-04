@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2JDS6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:58:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45970 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752933Ab2JDS6K (ORCPT
+	id S1755717Ab2JDTBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:01:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:21907 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab2JDTBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:58:10 -0400
-Date: Thu, 4 Oct 2012 14:58:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Fainelli <florian@openwrt.org>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/24 v2] USB: EHCI: add no_io_watchdog platform_data
- parameter to ehci-platform
-In-Reply-To: <1349363872-27004-7-git-send-email-florian@openwrt.org>
-Message-ID: <Pine.LNX.4.44L0.1210041456310.1441-100000@iolanthe.rowland.org>
+	Thu, 4 Oct 2012 15:01:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6855"; a="243557545"
+Message-ID: <506DDD0C.4080704@codeaurora.org>
+Date: Thu, 04 Oct 2012 12:01:32 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Simon Horman <horms@verge.net.au>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH] ARM: Push selects for TWD/SCU into machine entries
+References: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org> <506D52D2.9060105@ti.com>
+In-Reply-To: <506D52D2.9060105@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Florian Fainelli wrote:
+On 10/04/12 02:11, Santosh Shilimkar wrote:
+>> @@ -75,6 +77,8 @@ config SOC_OMAP5
+>>       select CPU_V7
+>>       select ARM_GIC
+>>       select HAVE_SMP
+>> +    select HAVE_ARM_SCU if SMP
+>> +    select HAVE_ARM_TWD if LOCAL_TIMERS
+>>       select ARM_CPU_SUSPEND if PM
+>>       select SOC_HAS_REALTIME_COUNTER
+>>       select ARM_ARCH_TIMER
+> Drop this change.
+>
+> With that fixed, for OMAP changes
+>
+> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-> Enhance the ehci-platform driver to also accept no_io_watchdog as a platform
-> data parameter. When no_io_watchdog is set to 1, the ehci controller will set
-> ehci->need_io_watchdog to 0. Since most EHCI controllers do need the I/O
-> watchdog to be on, only let those which need it to turn the watchdog off.
-> 
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> ---
-> Changes since v1:
-> - reworked patch to introduce "no_io_watchdog" instead of "need_io_watchdog"
-> - reworded commit message accordingly
+Thanks. Will drop both lines in this hunk.
 
-Very good except for one thing...
-
-> --- a/drivers/usb/host/ehci-platform.c
-> +++ b/drivers/usb/host/ehci-platform.c
-> @@ -32,6 +32,8 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
->  	ehci->has_synopsys_hc_bug = pdata->has_synopsys_hc_bug;
->  	ehci->big_endian_desc = pdata->big_endian_desc;
->  	ehci->big_endian_mmio = pdata->big_endian_mmio;
-> +	if (pdata->no_io_watchdog)
-> +		ehci->need_io_watchdog = 0;
->  
->  	ehci->caps = hcd->regs + pdata->caps_offset;
->  	retval = ehci_setup(hcd);
-
-ehci_setup calls ehci_init, which unconditionally sets 
-need_io_watchdog.  Your new "if" statement has to come after this call.
-
-Alan Stern
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
