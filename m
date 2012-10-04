@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab2JDMwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:52:25 -0400
+	id S1756988Ab2JDMwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:52:42 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:58823 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab2JDMwT (ORCPT
+	with ESMTP id S1756909Ab2JDMwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:52:19 -0400
+	Thu, 4 Oct 2012 08:52:15 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 19/20] perf report: Show group description when event group is enabled
-Date: Thu,  4 Oct 2012 21:49:53 +0900
-Message-Id: <1349354994-17853-20-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 18/20] perf report: Bypass non-leader events when event group is enabled
+Date: Thu,  4 Oct 2012 21:49:52 +0900
+Message-Id: <1349354994-17853-19-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
 References: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
@@ -25,187 +25,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-When using event group viewer, it's better to show the group
-description rather than the leader information alone.
-
-If a leader did not contain any member, it's a non-group event.
+Since we have all necessary information in the leader events and
+other members don't, bypass members.  Member events will be shown
+along with the leaders if event group is enabled.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c    |   18 ++++++++++++++++++
- tools/perf/ui/browsers/hists.c |   31 +++++++++++++++++++++++++++++++
- tools/perf/ui/gtk/browser.c    |   14 +++++++++++---
- tools/perf/util/evsel.c        |   25 +++++++++++++++++++++++++
- tools/perf/util/evsel.h        |    8 ++++++++
- 5 files changed, 93 insertions(+), 3 deletions(-)
+ tools/perf/builtin-report.c    |    4 ++++
+ tools/perf/ui/browsers/hists.c |   39 +++++++++++++++++++++++++++++++++------
+ tools/perf/ui/gtk/browser.c    |    4 ++++
+ 3 files changed, 41 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index ba5cfb40818d..e9c9687e021a 100644
+index b7e250d63892..ba5cfb40818d 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -299,6 +299,24 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
- 	char unit;
- 	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
- 	u64 nr_events = self->stats.total_period;
-+	struct perf_evsel *evsel = hists_2_evsel(self);
-+	char buf[512];
-+	size_t size = sizeof(buf);
-+
-+	if (symbol_conf.event_group && evsel->nr_members) {
-+		int i;
-+		struct events_stats *stats;
-+
-+		perf_evsel__group_desc(evsel, buf, size);
-+		evname = buf;
-+
-+		for (i = 0; i < evsel->nr_members; i++) {
-+			stats = &self->group_stats[i];
-+
-+			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
-+			nr_events += stats->total_period;
-+		}
-+	}
+@@ -319,6 +319,10 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 		struct hists *hists = &pos->hists;
+ 		const char *evname = perf_evsel__name(pos);
  
- 	nr_samples = convert_unit(nr_samples, &unit);
- 	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
++		if (symbol_conf.event_group &&
++		    !perf_evsel__is_group_leader(pos))
++			continue;
++
+ 		hists__fprintf_nr_sample_events(hists, evname, stdout);
+ 		hists__fprintf(hists, true, 0, 0, stdout);
+ 		fprintf(stdout, "\n\n");
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 43eb90969799..e81773bd272e 100644
+index df0ddeeeb860..43eb90969799 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -1123,6 +1123,24 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 	const struct thread *thread = hists->thread_filter;
- 	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 	u64 nr_events = hists->stats.total_period;
-+	struct perf_evsel *evsel = hists_2_evsel(hists);
-+	char buf[512];
-+	size_t buflen = sizeof(buf);
-+
-+	if (symbol_conf.event_group && evsel->nr_members) {
-+		int i;
-+		struct events_stats *stats;
-+
-+		perf_evsel__group_desc(evsel, buf, buflen);
-+		ev_name = buf;
-+
-+		for (i = 0; i < evsel->nr_members; i++) {
-+			stats = &hists->group_stats[i];
-+
-+			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
-+			nr_events += stats->total_period;
-+		}
-+	}
+@@ -1578,8 +1578,19 @@ out:
+ 	return key;
+ }
  
- 	nr_samples = convert_unit(nr_samples, &unit);
- 	printed = scnprintf(bf, size,
-@@ -1469,6 +1487,19 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
- 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
- 						       HE_COLORSET_NORMAL);
++static bool filter_group_entries(struct ui_browser *self __maybe_unused,
++				 void *entry)
++{
++	struct perf_evsel *evsel = list_entry(entry, struct perf_evsel, node);
++
++	if (symbol_conf.event_group && !perf_evsel__is_group_leader(evsel))
++		return true;
++
++	return false;
++}
++
+ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+-					   const char *help,
++					   int nr_entries, const char *help,
+ 					   void(*timer)(void *arg), void *arg,
+ 					   int delay_secs)
+ {
+@@ -1590,7 +1601,8 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+ 			.refresh    = ui_browser__list_head_refresh,
+ 			.seek	    = ui_browser__list_head_seek,
+ 			.write	    = perf_evsel_menu__write,
+-			.nr_entries = evlist->nr_entries,
++			.filter	    = filter_group_entries,
++			.nr_entries = nr_entries,
+ 			.priv	    = evlist,
+ 		},
+ 	};
+@@ -1605,7 +1617,7 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+ 			menu.b.width = line_len;
+ 	}
  
-+	if (symbol_conf.event_group && evsel->nr_members) {
-+		int i;
-+		struct events_stats *stats;
+-	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
++	return perf_evsel_menu__run(&menu, nr_entries, help, timer,
+ 				    arg, delay_secs);
+ }
+ 
+@@ -1613,15 +1625,30 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  void(*timer)(void *arg), void *arg,
+ 				  int delay_secs)
+ {
+-	if (evlist->nr_entries == 1) {
++	int nr_entries = evlist->nr_entries;
 +
-+		ev_name = perf_evsel__group_name(evsel);
++single_entry:
++	if (nr_entries == 1) {
+ 		struct perf_evsel *first = list_entry(evlist->entries.next,
+ 						      struct perf_evsel, node);
+ 		const char *ev_name = perf_evsel__name(first);
+-		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
++		return perf_evsel__hists_browse(first, nr_entries, help,
+ 						ev_name, false, timer, arg,
+ 						delay_secs);
+ 	}
+ 
+-	return __perf_evlist__tui_browse_hists(evlist, help,
++	if (symbol_conf.event_group) {
++		struct perf_evsel *pos;
 +
-+		for (i = 0; i < evsel->nr_members; i++) {
-+			stats = &evsel->hists.group_stats[i];
++		nr_entries = 0;
++		list_for_each_entry(pos, &evlist->entries, node)
++			if (perf_evsel__is_group_leader(pos))
++				nr_entries++;
 +
-+			nr_events += stats->nr_events[PERF_RECORD_SAMPLE];
-+		}
++		if (nr_entries == 1)
++			goto single_entry;
 +	}
 +
- 	nr_events = convert_unit(nr_events, &unit);
- 	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
- 			   unit, unit == ' ' ? "" : " ", ev_name);
++	return __perf_evlist__tui_browse_hists(evlist, nr_entries, help,
+ 					       timer, arg, delay_secs);
+ }
 diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index ae6b941ef3d4..2c0e3e95dbca 100644
+index b2c8b8e69e4d..ae6b941ef3d4 100644
 --- a/tools/perf/ui/gtk/browser.c
 +++ b/tools/perf/ui/gtk/browser.c
-@@ -305,10 +305,18 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 		const char *evname = perf_evsel__name(pos);
+@@ -306,6 +306,10 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
  		GtkWidget *scrolled_window;
  		GtkWidget *tab_label;
-+		char buf[512];
-+		size_t size = sizeof(buf);
  
--		if (symbol_conf.event_group &&
--		    !perf_evsel__is_group_leader(pos))
--			continue;
-+		if (symbol_conf.event_group) {
-+			if (!perf_evsel__is_group_leader(pos))
-+				continue;
++		if (symbol_conf.event_group &&
++		    !perf_evsel__is_group_leader(pos))
++			continue;
 +
-+			if (pos->nr_members) {
-+				perf_evsel__group_desc(pos, buf, size);
-+				evname = buf;
-+			}
-+		}
- 
  		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
  
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ffdd94e9c9c3..919b4d2ea799 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -404,6 +404,31 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
- 	return evsel->name ?: "unknown";
- }
- 
-+const char *perf_evsel__group_name(struct perf_evsel *evsel)
-+{
-+	return evsel->group_name ?: "anon group";
-+}
-+
-+int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
-+{
-+	int ret;
-+	struct perf_evsel *pos;
-+	const char *group_name = perf_evsel__group_name(evsel);
-+
-+	ret = scnprintf(buf, size, "%s", group_name);
-+
-+	ret += scnprintf(buf + ret, size - ret, " { %s",
-+			 perf_evsel__name(evsel));
-+
-+	for_each_group_member(pos, evsel)
-+		ret += scnprintf(buf + ret, size - ret, ", %s",
-+				 perf_evsel__name(pos));
-+
-+	ret += scnprintf(buf + ret, size - ret, " }");
-+
-+	return ret;
-+}
-+
- void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 			struct perf_evsel *first)
- {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 039c67297388..8d5937d98887 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -114,6 +114,8 @@ extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
- int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
- 					    char *bf, size_t size);
- const char *perf_evsel__name(struct perf_evsel *evsel);
-+const char *perf_evsel__group_name(struct perf_evsel *evsel);
-+int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
- 
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
-@@ -240,4 +242,10 @@ static inline struct perf_evsel *hists_2_evsel(struct hists *hists)
- {
- 	return container_of(hists, struct perf_evsel, hists);
- }
-+
-+#define for_each_group_member(_evsel, _leader) 					\
-+for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
-+     (_evsel) && (_evsel)->leader == (_leader);					\
-+     (_evsel) = list_entry((_evsel)->node.next, struct perf_evsel, node))
-+
- #endif /* __PERF_EVSEL_H */
+ 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
 -- 
 1.7.9.2
 
