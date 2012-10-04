@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030250Ab2JDIwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:52:09 -0400
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:54558 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965535Ab2JDIwH (ORCPT
+	id S965593Ab2JDIxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:53:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61530 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965535Ab2JDIw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:52:07 -0400
-X-IronPort-AV: E=Sophos;i="4.80,533,1344211200"; 
-   d="scan'208";a="144756028"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH] media: davinci: vpif: Add return code check at vb2_queue_init()
-Date: Thu, 4 Oct 2012 10:51:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        VGER <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1349271749-24426-1-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1349271749-24426-1-git-send-email-prabhakar.lad@ti.com>
+	Thu, 4 Oct 2012 04:52:59 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210041051.51656.hverkuil@xs4all.nl>
+In-Reply-To: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org>
+References: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org>
+Date: Thu, 4 Oct 2012 14:22:58 +0530
+X-Google-Sender-Auth: uAnEqXvzffPQKLKcU9AbycqZVSA
+Message-ID: <CAOh2x=k3aX2VOsNTjgCT8r1Re5T66emvhSmA_MBfS0JmSN9Uqg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Push selects for TWD/SCU into machine entries
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Simon Horman <horms@verge.net.au>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tony Lindgren <tony@atomide.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Thu, Oct 4, 2012 at 2:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>  arch/arm/plat-spear/Kconfig    | 2 ++
 
-I think this introduces a memory leak, see my comments below.
+> diff --git a/arch/arm/plat-spear/Kconfig b/arch/arm/plat-spear/Kconfig
+> index 4404f82..a090ea3 100644
+> --- a/arch/arm/plat-spear/Kconfig
+> +++ b/arch/arm/plat-spear/Kconfig
+> @@ -14,6 +14,8 @@ config ARCH_SPEAR13XX
+>         select CPU_V7
+>         select USE_OF
+>         select HAVE_SMP
+> +       select HAVE_ARM_SCU if SMP
+> +       select HAVE_ARM_TWD if LOCAL_TIMERS
+>         select MIGHT_HAVE_CACHE_L2X0
+>         select PINCTRL
+>         help
 
-On Wed 3 October 2012 15:42:29 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> from commit with id 896f38f582730a19eb49677105b4fe4c0270b82e
-> it's mandatory to check the return code of vb2_queue_init().
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> ---
->  drivers/media/platform/davinci/vpif_capture.c |    8 ++++++--
->  drivers/media/platform/davinci/vpif_display.c |    8 ++++++--
->  2 files changed, 12 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-> index 83b80ba..3521725 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -976,6 +976,7 @@ static int vpif_reqbufs(struct file *file, void *priv,
->  	struct common_obj *common;
->  	u8 index = 0;
->  	struct vb2_queue *q;
-> +	int ret;
->  
->  	vpif_dbg(2, debug, "vpif_reqbufs\n");
->  
-> @@ -1015,8 +1016,11 @@ static int vpif_reqbufs(struct file *file, void *priv,
->  	q->mem_ops = &vb2_dma_contig_memops;
->  	q->buf_struct_size = sizeof(struct vpif_cap_buffer);
->  
-> -	vb2_queue_init(q);
-> -
-> +	ret = vb2_queue_init(q);
-> +	if (ret) {
-> +		vpif_err("vpif_capture: vb2_queue_init() failed\n");
-
-I think you need to call vb2_dma_contig_cleanup_ctx(common->alloc_ctx); here
-to prevent a memory leak.
-
-> +		return ret;
-> +	}
->  	/* Set io allowed member of file handle to TRUE */
->  	fh->io_allowed[index] = 1;
->  	/* Increment io usrs member of channel object to 1 */
-> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-> index ae8329d..84cee9d 100644
-> --- a/drivers/media/platform/davinci/vpif_display.c
-> +++ b/drivers/media/platform/davinci/vpif_display.c
-> @@ -936,6 +936,7 @@ static int vpif_reqbufs(struct file *file, void *priv,
->  	enum v4l2_field field;
->  	struct vb2_queue *q;
->  	u8 index = 0;
-> +	int ret;
->  
->  	/* This file handle has not initialized the channel,
->  	   It is not allowed to do settings */
-> @@ -981,8 +982,11 @@ static int vpif_reqbufs(struct file *file, void *priv,
->  	q->mem_ops = &vb2_dma_contig_memops;
->  	q->buf_struct_size = sizeof(struct vpif_disp_buffer);
->  
-> -	vb2_queue_init(q);
-> -
-> +	ret = vb2_queue_init(q);
-> +	if (ret) {
-> +		vpif_err("vpif_display: vb2_queue_init() failed\n");
-
-Ditto.
-
-> +		return ret;
-> +	}
->  	/* Set io allowed member of file handle to TRUE */
->  	fh->io_allowed[index] = 1;
->  	/* Increment io usrs member of channel object to 1 */
-> 
-
-Regards,
-
-	Hans
+For SPEAr:
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
