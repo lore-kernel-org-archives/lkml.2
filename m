@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946345Ab2JDVhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:37:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946315Ab2JDV1O (ORCPT
+	id S1946365Ab2JDVhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:37:34 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58025 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946251Ab2JDVha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Samuel Thibault <sthibault@debian.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 06/33] staging: speakup_soft: Fix reading of init string
-Date: Thu,  4 Oct 2012 14:26:28 -0700
-Message-Id: <20121004210559.245641710@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
-References: <20121004210558.383865383@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 17:37:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <506C0D45.3050909@jp.fujitsu.com>
+References: <506C0AE8.40702@jp.fujitsu.com> <506C0D45.3050909@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 4 Oct 2012 17:31:26 -0400
+X-Google-Sender-Auth: n6Ks7ZNoyn3evubteO6iWtkYZwM
+Message-ID: <CAHGf_=pdVLEkGDvbMC7vjd0F8Y_YFdKX85YcLwR+gCQ8Tf2Mcw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] acpi,memory-hotplug : rename remove_memory() to offline_memory()
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 3, 2012 at 6:02 AM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> add_memory() hot adds a physical memory. But remove_memory does not
+> hot remove a phsical memory. It only offlines memory. The name
+> confuse us.
+>
+> So the patch renames remove_memory() to offline_memory(). We will
+> use rename_memory() for hot removing memory.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |    2 +-
+>  include/linux/memory_hotplug.h |    2 +-
+>  mm/memory_hotplug.c            |    6 +++---
+>  3 files changed, 5 insertions(+), 5 deletions(-)
 
-------------------
+Probably, the better way is to just remove remove_memory() and use
+offline_pages().
 
-From: Ben Hutchings <ben@decadent.org.uk>
-
-commit 40fe4f89671fb3c7ded94190fb267402a38b0261 upstream.
-
-softsynth_read() reads a character at a time from the init string;
-when it finds the null terminator it sets the initialized flag but
-then repeats the last character.
-
-Additionally, if the read() buffer is not big enough for the init
-string, the next read() will start reading from the beginning again.
-So the caller may never progress to reading anything else.
-
-Replace the simple initialized flag with the current position in
-the init string, carried over between calls.  Switch to reading
-real data once this reaches the null terminator.
-
-(This assumes that the length of the init string can't change, which
-seems to be the case.  Really, the string and position belong together
-in a per-file private struct.)
-
-Tested-by: Samuel Thibault <sthibault@debian.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/speakup/speakup_soft.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -40,7 +40,7 @@ static int softsynth_is_alive(struct spk
- static unsigned char get_index(void);
- 
- static struct miscdevice synth_device;
--static int initialized;
-+static int init_pos;
- static int misc_registered;
- 
- static struct var_t vars[] = {
-@@ -194,7 +194,7 @@ static int softsynth_close(struct inode
- 	unsigned long flags;
- 	spk_lock(flags);
- 	synth_soft.alive = 0;
--	initialized = 0;
-+	init_pos = 0;
- 	spk_unlock(flags);
- 	/* Make sure we let applications go before leaving */
- 	speakup_start_ttys();
-@@ -239,13 +239,8 @@ static ssize_t softsynth_read(struct fil
- 			ch = '\x18';
- 		} else if (synth_buffer_empty()) {
- 			break;
--		} else if (!initialized) {
--			if (*init) {
--				ch = *init;
--				init++;
--			} else {
--				initialized = 1;
--			}
-+		} else if (init[init_pos]) {
-+			ch = init[init_pos++];
- 		} else {
- 			ch = synth_buffer_getc();
- 		}
+btw, current remove_memory() pfn calculation is just buggy.
 
 
+> int remove_memory(u64 start, u64 size)
+> {
+>	unsigned long start_pfn, end_pfn;
+>
+>	start_pfn = PFN_DOWN(start);
+>	end_pfn = start_pfn + PFN_DOWN(size);
+
+It should be:
+
+	start_pfn = PFN_DOWN(start);
+	end_pfn = PFN_UP(start + size)
+
+or
+
+	start_pfn = PFN_UP(start);
+	end_pfn = PFN_DOWN(start + size)
