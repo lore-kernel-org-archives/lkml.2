@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab2JDJF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:05:59 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37061 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab2JDJF5 (ORCPT
+	id S1755824Ab2JDJHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:07:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59220 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2JDJHs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:05:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121003092508.6a7da662@nehalam.linuxnetplumber.net>
-References: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
-	<20121003092508.6a7da662@nehalam.linuxnetplumber.net>
-Date: Thu, 4 Oct 2012 11:05:55 +0200
-Message-ID: <CA+MoWDp4W5BCA1t_HgEtLhMs1btVTOkbtBytOVtAzJriEZ-16A@mail.gmail.com>
-Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
- return code
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: mlindner@marvell.com, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Oct 2012 05:07:48 -0400
+Message-ID: <1349341655.4438.7.camel@twins>
+Subject: uncore doing kfree() from CPU_{STARTING,DYING}
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>, mingo@kernel.org
+Date: Thu, 04 Oct 2012 11:07:35 +0200
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Thanks for looking into these kind of problems. The contents
-> of the patch are correct, but the automated commit message is useless.
-> You shouldn't just blindly say what the automated
-> script was looking for, you should describe what the bug is so that evaluators
-> can decide what the impact is and if it should be backported to stable
-> and vendor kernels.
->
-> Please resubmit the patchs with a reasonable analysis in the commit message.
-> Something like:
->
->   There is a bug in skge driver. If alloc_etherdev() fails, then
->   skge_devinit() will return NULL, and the skge_probe function incorrectly
->   returns success 0. It should return -ENOMEM instead.
->
->
+Hi Zheng,
 
-Stephen, I do not want to include function names on the commit
-message. What do you think about this updated message, is it
-acceptable?
+Can you have a look at 7fdba1ca and do a similar patch for uncore?
+Thomas is sad because uncore breaks -rt, the problem (as described in
+that patch) is that kfree() must schedule on -rt while
+CPU_{STARTING,DYING} really are atomic.
 
---- --- ---
-This patch fixes a bug related to the return value of the function. In some
-error cases, the function return non-negative SUCCESS values, when the
-correct would be a negative ERROR value.
-
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-
-// </smpl>
---- --- ---
+~ Peter
 
 
-Thanks,
+---
+commit 7fdba1ca10462f42ad2246b918fe6368f5ce488e
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Fri Jul 22 13:41:54 2011 +0200
 
-Peter
+    perf, x86: Avoid kfree() in CPU_STARTING
+    
+    On -rt kfree() can schedule, but CPU_STARTING is before the CPU is
+    fully up and running. These are contradictory, so avoid it. Instead
+    push the kfree() to CPU_ONLINE where we're free to schedule.
+    
+    Reported-by: Thomas Gleixner <tglx@linutronix.de>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/n/tip-kwd4j6ayld5thrscvaxgjquv@git.kernel.org
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
--- 
-Peter
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4ee3abf..594d425 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -129,6 +129,8 @@ struct cpu_hw_events {
+ 	 * AMD specific bits
+ 	 */
+ 	struct amd_nb		*amd_nb;
++
++	void			*kfree_on_online;
+ };
+ 
+ #define __EVENT_CONSTRAINT(c, n, m, w) {\
+@@ -1466,10 +1468,12 @@ static int __cpuinit
+ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+ 	unsigned int cpu = (long)hcpu;
++	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+ 	int ret = NOTIFY_OK;
+ 
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
++		cpuc->kfree_on_online = NULL;
+ 		if (x86_pmu.cpu_prepare)
+ 			ret = x86_pmu.cpu_prepare(cpu);
+ 		break;
+@@ -1479,6 +1483,10 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ 			x86_pmu.cpu_starting(cpu);
+ 		break;
+ 
++	case CPU_ONLINE:
++		kfree(cpuc->kfree_on_online);
++		break;
++
+ 	case CPU_DYING:
+ 		if (x86_pmu.cpu_dying)
+ 			x86_pmu.cpu_dying(cpu);
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 941caa2..ee9436c 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -350,7 +350,7 @@ static void amd_pmu_cpu_starting(int cpu)
+ 			continue;
+ 
+ 		if (nb->nb_id == nb_id) {
+-			kfree(cpuc->amd_nb);
++			cpuc->kfree_on_online = cpuc->amd_nb;
+ 			cpuc->amd_nb = nb;
+ 			break;
+ 		}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f88af2c..3751494 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1362,7 +1362,7 @@ static void intel_pmu_cpu_starting(int cpu)
+ 
+ 		pc = per_cpu(cpu_hw_events, i).shared_regs;
+ 		if (pc && pc->core_id == core_id) {
+-			kfree(cpuc->shared_regs);
++			cpuc->kfree_on_online = cpuc->shared_regs;
+ 			cpuc->shared_regs = pc;
+ 			break;
+ 		}
+
