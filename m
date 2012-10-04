@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002Ab2JDVWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:22:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933974Ab2JDVWe (ORCPT
+	id S933960Ab2JDVWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933991Ab2JDVWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:34 -0400
+	Thu, 4 Oct 2012 17:22:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>,
-        John Johansen <john.johansen@canonical.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 46/58] Yama: handle 32-bit userspace prctl
-Date: Thu,  4 Oct 2012 14:19:53 -0700
-Message-Id: <20121004210641.287991017@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 49/58] can: mscan-mpc5xxx: fix return value check in mpc512x_can_get_clock()
+Date: Thu,  4 Oct 2012 14:19:56 -0700
+Message-Id: <20121004210641.669752114@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,36 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 2e4930eb7c8fb20a39dfb5f8a8f80402710dcea8 upstream.
+commit f61bd0585dfc7d99db4936d7467de4ca8e2f7ea0 upstream.
 
-When running a 64-bit kernel and receiving prctls from a 32-bit
-userspace, the "-1" used as an unsigned long will end up being
-misdetected. The kernel is looking for 0xffffffffffffffff instead of
-0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
-to handle this translation itself. As such, support either value as
-meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
+In case of error, the function clk_get() returns ERR_PTR()
+and never returns NULL pointer. The NULL test in the error
+handling should be replaced with IS_ERR().
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: John Johansen <john.johansen@canonical.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+dpatch engine is used to auto generated this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/yama/yama_lsm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/can/mscan/mpc5xxx_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -143,7 +143,7 @@ static int yama_task_prctl(int option, u
- 		if (arg2 == 0) {
- 			yama_ptracer_del(NULL, myself);
- 			rc = 0;
--		} else if (arg2 == PR_SET_PTRACER_ANY) {
-+		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
- 			rc = yama_ptracer_add(NULL, myself);
- 		} else {
- 			struct task_struct *tracer;
+--- a/drivers/net/can/mscan/mpc5xxx_can.c
++++ b/drivers/net/can/mscan/mpc5xxx_can.c
+@@ -181,7 +181,7 @@ static u32 __devinit mpc512x_can_get_clo
+ 
+ 		if (!clock_name || !strcmp(clock_name, "sys")) {
+ 			sys_clk = clk_get(&ofdev->dev, "sys_clk");
+-			if (!sys_clk) {
++			if (IS_ERR(sys_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get sys_clk\n");
+ 				goto exit_unmap;
+ 			}
+@@ -204,7 +204,7 @@ static u32 __devinit mpc512x_can_get_clo
+ 
+ 		if (clocksrc < 0) {
+ 			ref_clk = clk_get(&ofdev->dev, "ref_clk");
+-			if (!ref_clk) {
++			if (IS_ERR(ref_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get ref_clk\n");
+ 				goto exit_unmap;
+ 			}
 
 
