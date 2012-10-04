@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2JDWJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:09:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36877 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933055Ab2JDVS5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:57 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 44/56] SCSI: ibmvscsi: Fix host config length field overflow
-Date: Thu,  4 Oct 2012 14:16:05 -0700
-Message-Id: <20121004211157.134940545@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
-References: <20121004211152.101901246@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754309Ab2JDWKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:10:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56495 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab2JDWJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 18:09:58 -0400
+Message-ID: <506E092A.6050405@zytor.com>
+Date: Thu, 04 Oct 2012 15:09:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: David Howells <dhowells@redhat.com>
+CC: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for x86
+References: <17459.1349380319@warthog.procyon.org.uk>
+In-Reply-To: <17459.1349380319@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 10/04/2012 12:51 PM, David Howells wrote:
+> Can you merge the following branch into the x86 tree please.
+>
+> This is to complete part of the UAPI disintegration for which the preparatory
+> patches were pulled recently.
+>
+> Note that there are some fixup patches which are at the base of the branch
+> aimed at you, plus all arches get the asm-generic branch merged in too.
+>
+> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
+>
+>    Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
+>
+> are available in the git repository at:
+>
+>
+>    git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-x86
+>
+> for you to fetch changes up to c64630429a9d37a248c6b06a738fad838f2f5e37:
+>
+>    UAPI: (Scripted) Disintegrate arch/x86/include/asm (2012-10-04 18:21:45 +0100)
+>
 
-------------------
+That branch does have generic patches which are not yet in upstream.  I 
+presume that is intentional.
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	-hpa
 
-commit 225c56960fcafeccc2b6304f96cd3f0dbf42a16a upstream.
 
-The length field in the host config packet is only 16-bit long, so
-passing it 0x10000 (64K which is our standard PAGE_SIZE) doesn't
-work and result in an empty config from the server.
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/ibmvscsi/ibmvscsi.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/scsi/ibmvscsi/ibmvscsi.c
-+++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -1541,6 +1541,9 @@ static int ibmvscsi_do_host_config(struc
- 
- 	host_config = &evt_struct->iu.mad.host_config;
- 
-+	/* The transport length field is only 16-bit */
-+	length = min(0xffff, length);
-+
- 	/* Set up a lun reset SRP command */
- 	memset(host_config, 0x00, sizeof(*host_config));
- 	host_config->common.type = VIOSRP_HOST_CONFIG_TYPE;
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
