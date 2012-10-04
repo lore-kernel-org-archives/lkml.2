@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2JDH3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:29:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab2JDH3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:29:14 -0400
-Date: Thu, 4 Oct 2012 09:29:00 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-Message-ID: <20121004072900.GU23096@redhat.com>
-References: <5061713D.5060406@redhat.com>
- <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com>
- <50641356.5070008@redhat.com>
- <CAJocwcc19F+PtsQ5okGMvYeVnkEigpZRpwWY9JgeRPFqfcVoXA@mail.gmail.com>
- <506540C7.9070105@linux.vnet.ibm.com>
- <50680049.5020206@redhat.com>
- <20120930110755.GB1009@redhat.com>
- <50682945.3060309@redhat.com>
- <20121003141739.GA15253@linux.vnet.ibm.com>
- <506C5239.4080209@redhat.com>
+	id S1754314Ab2JDHe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:34:56 -0400
+Received: from nm20-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.218]:35850 "HELO
+	nm20-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753648Ab2JDHez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 03:34:55 -0400
+X-Yahoo-Newman-Id: 884108.62530.bm@omp1016.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: xki1pg8VM1kBtBq8Bh2kKpF.YCCMzhRH_n2iSMJGtRSFm5x
+ GWEVd8MLeJip3c2ASiCK4wEvVoq3IyVBz63rYYUwBiioI.1iHHpF8jhftqi5
+ _U9tJ9irq3RWxi8HXa2uXgIn2YkcMAi5djdq3th0JhIHboMJN6Ipqtew0jYL
+ kJogQip_D0B9uvc_NbGGgjDfgfdih4WOpCj8G2qtE_x7q6wtgbu4PskwgKtl
+ gJucbFfB7MpcraQ0jOA1SZIPaFuZ4nZ9ttwgE4rhyVTQMGze6vPQjnGjqlim
+ FXsAKSeRneIOQqjN65mX.EcSsFM1tMCLJslPgc3.mOM4yfpjmF_N_93aYL7P
+ K6lNAwsrGrfcD9JWL_0GPBbT_.WlzCbwm0lqFh.TmUNvTlKSsZoi3iUC8RIC
+ E.6HY1WOUTERB.qfi8M.qAMxoiZRAmKbYHYGDhT73m9BVHOp0Mg--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <506D3C1E.4050704@att.net>
+Date: Thu, 04 Oct 2012 02:34:54 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506C5239.4080209@redhat.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: bugzilla-daemon@bugzilla.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug 48241] New: oops when setting up LVM (3.6.0-next-20121003)
+References: <bug-48241-11613@https.bugzilla.kernel.org/> <1349277786.2404.24.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1349277786.2404.24.camel@dabdike.int.hansenpartnership.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:56:57PM +0200, Avi Kivity wrote:
-> On 10/03/2012 04:17 PM, Raghavendra K T wrote:
-> > * Avi Kivity <avi@redhat.com> [2012-09-30 13:13:09]:
-> > 
-> >> On 09/30/2012 01:07 PM, Gleb Natapov wrote:
-> >> > On Sun, Sep 30, 2012 at 10:18:17AM +0200, Avi Kivity wrote:
-> >> >> On 09/28/2012 08:16 AM, Raghavendra K T wrote:
-> >> >> > 
-> >> >> >>
-> >> >> >>     +struct pv_sched_info {
-> >> >> >>     +       unsigned long   sched_bitmap;
-> >> >> > 
-> >> >> > Thinking, whether we need something similar to cpumask here?
-> >> >> > Only thing is we are representing guest (v)cpumask.
-> >> >> > 
-> >> >> 
-> >> >> DECLARE_BITMAP(sched_bitmap, KVM_MAX_VCPUS)
-> >> >> 
-> >> > vcpu_id can be greater than KVM_MAX_VCPUS.
-> >> 
-> >> Use the index into the vcpu table as the bitmap index then.  In fact
-> >> it's better because then the lookup to get the vcpu pointer is trivial.
-> > 
-> > Did you mean, while setting the bitmap,
-> > 
-> > we should do 
-> > for (i = 1..n)
-> > if (kvm->vcpus[i] == vcpu) set ith position in bitmap?
-> 
-> You can store i in the vcpu itself:
-> 
->   set_bit(vcpu->index, &kvm->preempted);
-> 
-This will make the fact that vcpus are stored in an array into API
-instead of implementation detail :( There were patches for vcpu
-destruction that changed the array to rculist. Well, it will be still
-possible to make the array rcu protected and copy it every time vcpu is
-deleted/added I guess.
+On 10/03/2012 10:23 AM, James Bottomley wrote:
+> On Wed, 2012-10-03 at 15:04 +0000, bugzilla-daemon@bugzilla.kernel.org
+> wrote:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=48241
+>>
+>>            Summary: oops when setting up LVM
+>>            Product: IO/Storage
+>>            Version: 2.5
+>>     Kernel Version: 3.6.0-next-20121003
+>>           Platform: All
+>>         OS/Version: Linux
+>>               Tree: Mainline
+>>             Status: NEW
+>>           Severity: normal
+>>           Priority: P1
+>>          Component: SCSI
+>>         AssignedTo: linux-scsi@vger.kernel.org
+>>         ReportedBy: daniel.santos@pobox.com
+>>         Regression: No
+>>
+>>
+>> Created an attachment (id=81921)
+>>  --> (https://bugzilla.kernel.org/attachment.cgi?id=81921)
+>> image of oops
+>
+> The image says the RIP is at kthread_data + 0xb
+>
+> That implies something went wrong within the workqueue or kthread
+> systems, I've cc'd linux-kernel, but it's a bit of a vague thing to go
+> on and could conceivably be a hardware issue (or some weird thread
+> interaction in linux-next).
+>
+> The first question would be "does it happen in vanilla 3.6"?
+>
+> James
+So just to CC LKML, works in vanilla 3.6.0, happens in both -next & -mm,
+tried compiling with both gcc 4.6.3 & 4.7.1.
 
---
-			Gleb.
+Daniel
