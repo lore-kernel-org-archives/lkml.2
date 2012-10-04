@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2JDVSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:18:10 -0400
+	id S932748Ab2JDVSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:18:24 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab2JDVSG (ORCPT
+	with ESMTP id S932619Ab2JDVSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:06 -0400
+	Thu, 4 Oct 2012 17:18:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 27/56] xhci: Intel Panther Point BEI quirk.
-Date: Thu,  4 Oct 2012 14:15:48 -0700
-Message-Id: <20121004211155.184675735@linuxfoundation.org>
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 31/56] xHCI: handle command after aborting the command ring
+Date: Thu,  4 Oct 2012 14:15:52 -0700
+Message-Id: <20121004211155.658684100@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,82 +28,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Elric Fu <elricfu1@gmail.com>
 
-commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
+commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d upstream.
 
-When a device with an isochronous endpoint is behind a hub plugged into
-the Intel Panther Point xHCI host controller, and the driver submits
-multiple frames per URB, the xHCI driver will set the Block Event
-Interrupt (BEI) flag on all but the last TD for the URB.  This causes
-the host controller to place an event on the event ring, but not send an
-interrupt.  When the last TD for the URB completes, BEI is cleared, and
-we get an interrupt for the whole URB.
+According to xHCI spec section 4.6.1.1 and section 4.6.1.2,
+after aborting a command on the command ring, xHC will
+generate a command completion event with its completion
+code set to Command Ring Stopped at least. If a command is
+currently executing at the time of aborting a command, xHC
+also generate a command completion event with its completion
+code set to Command Abort. When the command ring is stopped,
+software may remove, add, or rearrage Command Descriptors.
 
-However, under a Panther Point xHCI host controller, if the parent hub
-is unplugged when one or more events from transfers with BEI set are on
-the event ring, a port status change event is placed on the event ring,
-but no interrupt is generated.  This means URBs stop completing, and the
-USB device disconnect is not noticed.  Something like a USB headset will
-cause mplayer to hang when the device is disconnected.
-
-If another transfer is sent (such as running `sudo lsusb -v`), the next
-transfer event seems to "unstick" the event ring, the xHCI driver gets
-an interrupt, and the disconnect is reported to the USB core.
-
-The fix is not to use the BEI flag under the Panther Point xHCI host.
-This will impact power consumption and system responsiveness, because
-the xHCI driver will receive an interrupt for every frame in all
-isochronous URBs instead of once per URB.
-
-Intel chipset developers confirm that this bug will be hit if the BEI
-flag is used on any endpoint, not just ones that are behind a hub.
+To cancel a command, software will initialize a command
+descriptor for the cancel command, and add it into a
+cancel_cmd_list of xhci. When the command ring is stopped,
+software will find the command trbs described by command
+descriptors in cancel_cmd_list and modify it to No Op
+command. If software can't find the matched trbs, we can
+think it had been finished.
 
 This patch should be backported to kernels as old as 3.0, that contain
-the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
-EHCI/xHCI port switching."
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
 
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |    4 +++-
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |  171 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 165 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -103,6 +103,7 @@ static void xhci_pci_quirks(struct devic
- 		 * PPT chipsets.
- 		 */
- 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
-+		xhci->quirks |= XHCI_AVOID_BEI;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -3400,7 +3400,9 @@ static int xhci_queue_isoc_tx(struct xhc
- 			} else {
- 				td->last_trb = ep_ring->enqueue;
- 				field |= TRB_IOC;
--				if (xhci->hci_version == 0x100) {
-+				if (xhci->hci_version == 0x100 &&
-+						!(xhci->quirks &
-+							XHCI_AVOID_BEI)) {
- 					/* Set BEI bit except for the last td */
- 					if (i < num_tds - 1)
- 						field |= TRB_BEI;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1496,6 +1496,7 @@ struct xhci_hcd {
- #define XHCI_INTEL_HOST		(1 << 12)
- #define XHCI_SPURIOUS_REBOOT	(1 << 13)
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
-+#define XHCI_AVOID_BEI		(1 << 15)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+@@ -1170,6 +1170,20 @@ static void handle_reset_ep_completion(s
+ 	}
+ }
+ 
++/* Complete the command and detele it from the devcie's command queue.
++ */
++static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
++		struct xhci_command *command, u32 status)
++{
++	command->status = status;
++	list_del(&command->cmd_list);
++	if (command->completion)
++		complete(command->completion);
++	else
++		xhci_free_command(xhci, command);
++}
++
++
+ /* Check to see if a command in the device's command queue matches this one.
+  * Signal the completion or free the command, and return 1.  Return 0 if the
+  * completed command isn't at the head of the command list.
+@@ -1188,15 +1202,144 @@ static int handle_cmd_in_cmd_wait_list(s
+ 	if (xhci->cmd_ring->dequeue != command->command_trb)
+ 		return 0;
+ 
+-	command->status = GET_COMP_CODE(le32_to_cpu(event->status));
+-	list_del(&command->cmd_list);
+-	if (command->completion)
+-		complete(command->completion);
+-	else
+-		xhci_free_command(xhci, command);
++	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
++			GET_COMP_CODE(le32_to_cpu(event->status)));
+ 	return 1;
+ }
+ 
++/*
++ * Finding the command trb need to be cancelled and modifying it to
++ * NO OP command. And if the command is in device's command wait
++ * list, finishing and freeing it.
++ *
++ * If we can't find the command trb, we think it had already been
++ * executed.
++ */
++static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
++{
++	struct xhci_segment *cur_seg;
++	union xhci_trb *cmd_trb;
++	u32 cycle_state;
++
++	if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++		return;
++
++	/* find the current segment of command ring */
++	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
++			xhci->cmd_ring->dequeue, &cycle_state);
++
++	/* find the command trb matched by cd from command ring */
++	for (cmd_trb = xhci->cmd_ring->dequeue;
++			cmd_trb != xhci->cmd_ring->enqueue;
++			next_trb(xhci, xhci->cmd_ring, &cur_seg, &cmd_trb)) {
++		/* If the trb is link trb, continue */
++		if (TRB_TYPE_LINK_LE32(cmd_trb->generic.field[3]))
++			continue;
++
++		if (cur_cd->cmd_trb == cmd_trb) {
++
++			/* If the command in device's command list, we should
++			 * finish it and free the command structure.
++			 */
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++
++			/* get cycle state from the origin command trb */
++			cycle_state = le32_to_cpu(cmd_trb->generic.field[3])
++				& TRB_CYCLE;
++
++			/* modify the command trb to NO OP command */
++			cmd_trb->generic.field[0] = 0;
++			cmd_trb->generic.field[1] = 0;
++			cmd_trb->generic.field[2] = 0;
++			cmd_trb->generic.field[3] = cpu_to_le32(
++					TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
++			break;
++		}
++	}
++}
++
++static void xhci_cancel_cmd_in_cd_list(struct xhci_hcd *xhci)
++{
++	struct xhci_cd *cur_cd, *next_cd;
++
++	if (list_empty(&xhci->cancel_cmd_list))
++		return;
++
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		xhci_cmd_to_noop(xhci, cur_cd);
++		list_del(&cur_cd->cancel_cmd_list);
++		kfree(cur_cd);
++	}
++}
++
++/*
++ * traversing the cancel_cmd_list. If the command descriptor according
++ * to cmd_trb is found, the function free it and return 1, otherwise
++ * return 0.
++ */
++static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
++		union xhci_trb *cmd_trb)
++{
++	struct xhci_cd *cur_cd, *next_cd;
++
++	if (list_empty(&xhci->cancel_cmd_list))
++		return 0;
++
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		if (cur_cd->cmd_trb == cmd_trb) {
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++			list_del(&cur_cd->cancel_cmd_list);
++			kfree(cur_cd);
++			return 1;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
++ * trb pointed by the command ring dequeue pointer is the trb we want to
++ * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
++ * traverse the cancel_cmd_list to trun the all of the commands according
++ * to command descriptor to NO-OP trb.
++ */
++static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
++		int cmd_trb_comp_code)
++{
++	int cur_trb_is_good = 0;
++
++	/* Searching the cmd trb pointed by the command ring dequeue
++	 * pointer in command descriptor list. If it is found, free it.
++	 */
++	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
++			xhci->cmd_ring->dequeue);
++
++	if (cmd_trb_comp_code == COMP_CMD_ABORT)
++		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
++	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
++		/* traversing the cancel_cmd_list and canceling
++		 * the command according to command descriptor
++		 */
++		xhci_cancel_cmd_in_cd_list(xhci);
++
++		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
++		/*
++		 * ring command ring doorbell again to restart the
++		 * command ring
++		 */
++		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
++			xhci_ring_cmd_db(xhci);
++	}
++	return cur_trb_is_good;
++}
++
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		struct xhci_event_cmd *event)
+ {
+@@ -1222,6 +1365,22 @@ static void handle_cmd_completion(struct
+ 		xhci->error_bitmask |= 1 << 5;
+ 		return;
+ 	}
++
++	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
++		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
++		/* If the return value is 0, we think the trb pointed by
++		 * command ring dequeue pointer is a good trb. The good
++		 * trb means we don't want to cancel the trb, but it have
++		 * been stopped by host. So we should handle it normally.
++		 * Otherwise, driver should invoke inc_deq() and return.
++		 */
++		if (handle_stopped_cmd_ring(xhci,
++				GET_COMP_CODE(le32_to_cpu(event->status)))) {
++			inc_deq(xhci, xhci->cmd_ring);
++			return;
++		}
++	}
++
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+ 		& TRB_TYPE_BITMASK) {
+ 	case TRB_TYPE(TRB_ENABLE_SLOT):
 
 
