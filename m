@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab2JDUO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 16:14:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46888 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750883Ab2JDUO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 16:14:27 -0400
-Message-ID: <1349381658.4260.53.camel@pasglop>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Fri, 05 Oct 2012 06:14:18 +1000
-In-Reply-To: <CA+55aFwf3XcC-SW5D6PouGCKqDRg7k7xbFHaPf-BBqRLa_-FBg@mail.gmail.com>
-References: <1349339900.4260.10.camel@pasglop>
-	 <CA+55aFwf3XcC-SW5D6PouGCKqDRg7k7xbFHaPf-BBqRLa_-FBg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755369Ab2JDUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 16:14:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35993 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab2JDUOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 16:14:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo48XLzLvziACEi+0nWuRXurHCLnw+iwgqu8-BRutjNtWw@mail.gmail.com>
+References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
+	<1349305214-3241-1-git-send-email-yinghai@kernel.org>
+	<20121004174746.GA24119@google.com>
+	<CAE9FiQWDnrk7VccFLLHucCVSxN5RRS0-8pwYazLy2aw3oqmPLQ@mail.gmail.com>
+	<CAErSpo48XLzLvziACEi+0nWuRXurHCLnw+iwgqu8-BRutjNtWw@mail.gmail.com>
+Date: Thu, 4 Oct 2012 13:14:52 -0700
+X-Google-Sender-Auth: v75NB6GqSTJKxp2sloMYM3Py5_k
+Message-ID: <CAE9FiQVyx5EL8RCuHF5rOoT5Zj7ksnAFJgg09hGE_sHfRJJXpw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] ACPI: kill acpi_pci_root_start
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 09:02 -0700, Linus Torvalds wrote:
-> Hmm. There's nothing there.
-> 
-> Did you mean for me to pull some branch/tag you didn't mention?
+On Thu, Oct 4, 2012 at 12:44 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> To answer your specific question, yes, I do think drivers that are
+> statically built in probably should be registered before devices are
+> enumerated.  That way, the boot-time case is more similar to the
+> hot-add case.
+>
+> Obviously, for drivers that can be modules, the reverse must work as
+> well (enumerate devices, then load and register the driver).  And then
+> the other order (register driver, then enumerate device) must also
+> work so future hot-adds of the same device type work.
 
-Heh, yeah, the mirrors hadn't updated yet so git request-pull didn't put
-the branch name in. It's common but I usually fix it up by hand. Since I
-was probably too tired for thinking straight, I forgot that and forgot
-to put the proper branch name in the email subject as well... argh :-)
+so you will have to handle two paths instead one.
 
-It's in my next branch. Mirrors should be good by now, it's at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
-
-Sorry for the misshap.
-
-Cheers,
-Ben.
-
-
-
+current booting path sequence are tested more than hot add path.
