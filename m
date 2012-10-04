@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946090Ab2JDQfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 12:35:18 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51440 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945961Ab2JDQfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 12:35:16 -0400
-Date: Thu, 4 Oct 2012 12:35:46 -0400
-From: Matt Porter <mporter@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/6] ARM: davinci: Add support for PRUSS on DA850
-Message-ID: <20121004163546.GK11149@beef>
-References: <1349276133-26408-1-git-send-email-mporter@ti.com>
- <1349276133-26408-6-git-send-email-mporter@ti.com>
- <506D7F95.2030401@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506D7F95.2030401@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933458Ab2JDQhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 12:37:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50692 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933434Ab2JDQho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 12:37:44 -0400
+Message-ID: <1349368662.2008.20.camel@joe-AO722>
+Subject: Re: [PATCH] revert "PCI: log vendor/device ID always"
+From: Joe Perches <joe@perches.com>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Thu, 04 Oct 2012 09:37:42 -0700
+In-Reply-To: <506DB30F.2000704@sgi.com>
+References: <1349187780-25692-1-git-send-email-nzimmer@sgi.com>
+	 <CAErSpo7ZQEm9==nsGiH2c_ZG8LPP8MAA8M9xSPyWPtCW2EHUUQ@mail.gmail.com>
+	 <506DB30F.2000704@sgi.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 05:52:45PM +0530, Sekhar Nori wrote:
-> On 10/3/2012 8:25 PM, Matt Porter wrote:
-> > +static struct clk pruss_clk = {
-> > +	.name		= "pruss",
-> > +	.parent		= &pll0_sysclk2,
-> > +	.lpsc		= DA8XX_LPSC0_PRUSS,
-> > +};
-> > +
-> >  static struct clk uart0_clk = {
-> >  	.name		= "uart0",
-> >  	.parent		= &pll0_sysclk2,
-> > @@ -378,6 +384,7 @@ static struct clk_lookup da850_clks[] = {
-> >  	CLK(NULL,		"tptc1",	&tptc1_clk),
-> >  	CLK(NULL,		"tpcc1",	&tpcc1_clk),
-> >  	CLK(NULL,		"tptc2",	&tptc2_clk),
-> > +	CLK(NULL,		"pruss",	&pruss_clk),
-> 
-> This is actually incorrect since we should use device name rather than
-> con_id for matching the clock. If there is just one clock that the
-> driver needs, connection id should be NULL. Looking at the driver now,
-> the clk_get() call seems to pass a valid device pointer. So, I wonder
-> how you are able to look up the clock even with a NULL device name.
+On Thu, 2012-10-04 at 11:02 -0500, Nathan Zimmer wrote:
+> At many of our customer sites the log level is set to KERN_DEBUG. It 
+> helps avoid reboots due to operator impatience.  Machines this large 
+> take significantly longer then typical to boot and seeing the extra 
+> messages reassures them that the kernel isn't hung.
 
-I doublechecked the clk_get() find implentation to confirm that I indeed
-did get lucky here. Since pruss has only one instance and the clk_find()
-implementation looks for the best found match, it's able to find the
-clock just by the con_id, though it's not the "best possible" match in
-the find implementation...it's the "best found" match.. As you noted,
-this is incorrect though for a clock expected to be used from a driver
-context so I will address this in the update.
+That argues for adding some KERN_INFO "still booting" messages
+not logging unnecessary KERN_DEBUG messages.
 
--Matt
+
