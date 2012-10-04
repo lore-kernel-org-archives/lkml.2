@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2JDGH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 02:07:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47191 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab2JDGHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 02:07:23 -0400
-Message-ID: <506D2798.7060001@suse.de>
-Date: Thu, 04 Oct 2012 08:07:20 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	id S1756173Ab2JDGQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 02:16:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49612 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab2JDGQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 02:16:29 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-83-506d29bb9f20
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 14/14] perf diff: Display empty space for non paired samples
+References: <1348744175-11115-1-git-send-email-jolsa@redhat.com>
+	<1348744175-11115-15-git-send-email-jolsa@redhat.com>
+Date: Thu, 04 Oct 2012 15:06:56 +0900
+In-Reply-To: <1348744175-11115-15-git-send-email-jolsa@redhat.com> (Jiri
+	Olsa's message of "Thu, 27 Sep 2012 13:09:35 +0200")
+Message-ID: <87lifmkby7.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Kent Overstreet <koverstreet@google.com>, Vivek Goyal <vgoyal@redhat.com>,
-        tj@kernel.org, axboe@kernel.dk, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH v3 11/26] block: Add submit_bio_wait(), remove
- from md
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com> <1348526106-17074-12-git-send-email-koverstreet@google.com> <20121002194132.GF3283@redhat.com> <20121002201105.GL26488@google.com>
-In-Reply-To: <20121002201105.GL26488@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 10:11 PM, Kent Overstreet wrote:
-> On Tue, Oct 02, 2012 at 03:41:32PM -0400, Vivek Goyal wrote:
->> On Mon, Sep 24, 2012 at 03:34:51PM -0700, Kent Overstreet wrote:
->>> Random cleanup - this code was duplicated and it's not really specific
->>> to md.
->>>
->>> Also added the ability to return the actual error code.
->>
->> Who is going to make use of actual error code and why checking
->> BIO_UPTODATE is not sufficient (as existing code is doing)?
->
-> Some things do, though it's not common and I forget where I saw it -
-> checking for -ENOTSUPPORTED vs. other stuff
->
-There are also additional error codes like -ENOLINK when the nexus 
-is dropped. Quite useful in multipathed or clustered environs.
+On Thu, 27 Sep 2012 13:09:35 +0200, Jiri Olsa wrote:
+> Currently in 'Baseline' and 'Period Base' columns zero values are
+> displayed in case no pair is found for the sample. This might be
+> confusing, using empty space instead.
+[snip]
+> @@ -246,8 +249,12 @@ static int hpp__entry_period_baseline(struct perf_hpp *hpp, struct hist_entry *h
+>  	u64 period = pair ? pair->period : 0;
+>  	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
+>  
+> -	return scnprintf(hpp->buf, hpp->size, fmt, period);
+> +	if (pair)
+> +		return scnprintf(hpp->buf, hpp->size, fmt, period);
+> +	else
+> +		return scnprintf(hpp->buf, hpp->size, "            ");
 
-Cheers,
+It seems that it's not needed when -t (field separator) switch is given.
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Thanks,
+Namhyung
