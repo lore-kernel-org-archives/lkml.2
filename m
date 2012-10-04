@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2JDWCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:02:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933695Ab2JDVVD (ORCPT
+	id S1753901Ab2JDWCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:02:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65209 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933718Ab2JDVUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 18/58] staging: comedi: dont dereference user memory for INSN_INTTRIG
-Date: Thu,  4 Oct 2012 14:19:25 -0700
-Message-Id: <20121004210637.735523742@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
-References: <20121004210635.449598766@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 17:20:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [GIT PULL] Disintegrate UAPI for asm-generic
+Date: Thu, 4 Oct 2012 21:20:48 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>
+References: <17336.1349380256@warthog.procyon.org.uk>
+In-Reply-To: <17336.1349380256@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210042120.48955.arnd@arndb.de>
+X-Provags-ID: V02:K0:ftCkwSMxB53O4NVbrWMQWFCUqpLu8FZL/8+WLYpT1aD
+ gTA+7llHJFCTfVK3TTWX++WNH2iclfhmBMpgxfvSDUWroasB8J
+ Z8JivnY2AV8DH7T0K9YV3Ot2m79VTQKygVRLUgdAI5LIsNxSAq
+ c6YvcGinbjmNRCIQst/A9T1O6r2ANUCA5DntyFSScWRjSnfjqj
+ wiY4SOSrcxoGCjc+YJUZVrY2shicpDcPdiBVEMy9zrMTp1caUW
+ zTCvkXnYY8JR4538pB3L/QUKm8faHRC8O/NkB7RLhTump5j24t
+ h/0GebHq7hcKLAAKWfR/hlU7xYloqqa+wUv+/9xdxSuC2B3pqE
+ O4DcIc7D3RNzrJwnhK4k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+On Thursday 04 October 2012, David Howells wrote:
+> Can you merge the following branch into the asm-generic tree please.
+> 
+> This is to complete part of the UAPI disintegration for which the preparatory
+> patches were pulled recently.
+> 
+> Note that there are some fixup patches which are at the base of the branch
+> aimed at you, plus all arches get the asm-generic branch merged in too.
+> 
+> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
+> 
+>   Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
+> 
+> are available in the git repository at:
 
-------------------
+Ok, I've pulled it into the asm-generic branch and added it to the arm-soc
+for-next branch, because that is convenient for me to get it into linux-next.
 
-From: Ian Abbott <abbotti@mev.co.uk>
+Olof, I'll send this to Linus in a couple of days, separate from the other arm-soc
+stuff that I assume you are handling. I could also send everything in one go
+if you prefer.
 
-commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
-
-`parse_insn()` is dereferencing the user-space pointer `insn->data`
-directly when handling the `INSN_INTTRIG` comedi instruction.  It
-shouldn't be using `insn->data` at all; it should be using the separate
-`data` pointer passed to the function.  Fix it.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/comedi/comedi_fops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1132,7 +1132,7 @@ static int parse_insn(struct comedi_devi
- 				ret = -EAGAIN;
- 				break;
- 			}
--			ret = s->async->inttrig(dev, s, insn->data[0]);
-+			ret = s->async->inttrig(dev, s, data[0]);
- 			if (ret >= 0)
- 				ret = 1;
- 			break;
-
-
+	Arnd
