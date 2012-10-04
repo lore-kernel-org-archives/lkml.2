@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab2JDWOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:14:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426Ab2JDVR4 (ORCPT
+	id S1754422Ab2JDWPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:15:20 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49290 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab2JDVRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:56 -0400
+	Thu, 4 Oct 2012 17:17:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 25/56] b43legacy: Fix crash on unload when firmware not available
-Date: Thu,  4 Oct 2012 14:15:46 -0700
-Message-Id: <20121004211154.964297779@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 14/56] staging: comedi: jr3_pci: fix iomem dereference
+Date: Thu,  4 Oct 2012 14:15:35 -0700
+Message-Id: <20121004211153.732557065@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,75 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 2d838bb608e2d1f6cb4280e76748cb812dc822e7 upstream.
+commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
 
-When b43legacy is loaded without the firmware being available, a following
-unload generates a kernel NULL pointer dereference BUG as follows:
+Correct a direct dereference of I/O memory to use an appropriate I/O
+memory access function.  Note that the pointer being dereferenced is not
+currently tagged with `__iomem` but I plan to correct that for 3.7.
 
-[  214.330789] BUG: unable to handle kernel NULL pointer dereference at 0000004c
-[  214.330997] IP: [<c104c395>] drain_workqueue+0x15/0x170
-[  214.331179] *pde = 00000000
-[  214.331311] Oops: 0000 [#1] SMP
-[  214.331471] Modules linked in: b43legacy(-) ssb pcmcia mac80211 cfg80211 af_packet mperf arc4 ppdev sr_mod cdrom sg shpchp yenta_socket pcmcia_rsrc pci_hotplug pcmcia_core battery parport_pc parport floppy container ac button edd autofs4 ohci_hcd ehci_hcd usbcore usb_common thermal processor scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua scsi_dh fan thermal_sys hwmon ata_generic pata_ali libata [last unloaded: cfg80211]
-[  214.333421] Pid: 3639, comm: modprobe Not tainted 3.6.0-rc6-wl+ #163 Source Technology VIC 9921/ALI Based Notebook
-[  214.333580] EIP: 0060:[<c104c395>] EFLAGS: 00010246 CPU: 0
-[  214.333687] EIP is at drain_workqueue+0x15/0x170
-[  214.333788] EAX: c162ac40 EBX: cdfb8360 ECX: 0000002a EDX: 00002a2a
-[  214.333890] ESI: 00000000 EDI: 00000000 EBP: cd767e7c ESP: cd767e5c
-[  214.333957]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[  214.333957] CR0: 8005003b CR2: 0000004c CR3: 0c96a000 CR4: 00000090
-[  214.333957] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[  214.333957] DR6: ffff0ff0 DR7: 00000400
-[  214.333957] Process modprobe (pid: 3639, ti=cd766000 task=cf802e90 task.ti=cd766000)
-[  214.333957] Stack:
-[  214.333957]  00000292 cd767e74 c12c5e09 00000296 00000296 cdfb8360 cdfb9220 00000000
-[  214.333957]  cd767e90 c104c4fd cdfb8360 cdfb9220 cd682800 cd767ea4 d0c10184 cd682800
-[  214.333957]  cd767ea4 cba31064 cd767eb8 d0867908 cba31064 d087e09c cd96f034 cd767ec4
-[  214.333957] Call Trace:
-[  214.333957]  [<c12c5e09>] ? skb_dequeue+0x49/0x60
-[  214.333957]  [<c104c4fd>] destroy_workqueue+0xd/0x150
-[  214.333957]  [<d0c10184>] ieee80211_unregister_hw+0xc4/0x100 [mac80211]
-[  214.333957]  [<d0867908>] b43legacy_remove+0x78/0x80 [b43legacy]
-[  214.333957]  [<d083654d>] ssb_device_remove+0x1d/0x30 [ssb]
-[  214.333957]  [<c126f15a>] __device_release_driver+0x5a/0xb0
-[  214.333957]  [<c126fb07>] driver_detach+0x87/0x90
-[  214.333957]  [<c126ef4c>] bus_remove_driver+0x6c/0xe0
-[  214.333957]  [<c1270120>] driver_unregister+0x40/0x70
-[  214.333957]  [<d083686b>] ssb_driver_unregister+0xb/0x10 [ssb]
-[  214.333957]  [<d087c488>] b43legacy_exit+0xd/0xf [b43legacy]
-[  214.333957]  [<c1089dde>] sys_delete_module+0x14e/0x2b0
-[  214.333957]  [<c110a4a7>] ? vfs_write+0xf7/0x150
-[  214.333957]  [<c1240050>] ? tty_write_lock+0x50/0x50
-[  214.333957]  [<c110a6f8>] ? sys_write+0x38/0x70
-[  214.333957]  [<c1397c55>] syscall_call+0x7/0xb
-[  214.333957] Code: bc 27 00 00 00 00 a1 74 61 56 c1 55 89 e5 e8 a3 fc ff ff 5d c3 90 55 89 e5 57 56 89 c6 53 b8 40 ac 62 c1 83 ec 14 e8 bb b7 34 00 <8b> 46 4c 8d 50 01 85 c0 89 56 4c 75 03 83 0e 40 80 05 40 ac 62
-[  214.333957] EIP: [<c104c395>] drain_workqueue+0x15/0x170 SS:ESP 0068:cd767e5c
-[  214.333957] CR2: 000000000000004c
-[  214.341110] ---[ end trace c7e90ec026d875a6 ]---Index: wireless-testing/drivers/net/wireless/b43legacy/main.c
-
-The problem is fixed by making certain that the ucode pointer is not NULL
-before deregistering the driver in mac80211.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43legacy/main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/b43legacy/main.c
-+++ b/drivers/net/wireless/b43legacy/main.c
-@@ -3894,6 +3894,8 @@ static void b43legacy_remove(struct ssb_
- 	cancel_work_sync(&wl->firmware_load);
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -884,7 +884,7 @@ static int jr3_pci_attach(struct comedi_
+ 	}
  
- 	B43legacy_WARN_ON(!wl);
-+	if (!wldev->fw.ucode)
-+		return;			/* NULL if fw never loaded */
- 	if (wl->current_dev == wldev)
- 		ieee80211_unregister_hw(wl->hw);
+ 	/*  Reset DSP card */
+-	devpriv->iobase->channel[0].reset = 0;
++	writel(0, &devpriv->iobase->channel[0].reset);
  
+ 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+ 	dev_dbg(dev->class_dev, "Firmare load %d\n", result);
 
 
