@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab2JDIPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:15:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51556 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932554Ab2JDIPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:15:39 -0400
-Message-ID: <506D459B.3070504@ti.com>
-Date: Thu, 4 Oct 2012 13:45:23 +0530
-From: Sourav <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S965427Ab2JDIQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:16:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59495 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932554Ab2JDIQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 04:16:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH] dma: tegra: fix interrupt name issue with apb dma.
+Date: Thu, 4 Oct 2012 08:16:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, arm@kernel.org, djbw@fb.com,
+        vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+References: <1349284913-22350-1-git-send-email-ldewangan@nvidia.com> <506CA5D8.1050201@wwwdotorg.org>
+In-Reply-To: <506CA5D8.1050201@wwwdotorg.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <b-cousson@ti.com>, <balbi@ti.com>, <santosh.shilimkar@ti.com>
-Subject: Re: [PATCHv3 2/4] Input: keypad: Add smsc ece1099 keypad driver
-References: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com> <20121002061829.GA3853@core.coreip.homeip.net> <CAKdam55BEQi9tJb1yzKJWNhO7sHrW5NFHfsZjicw2NGYDEFovQ@mail.gmail.com> <20121004072426.GB14217@core.coreip.homeip.net>
-In-Reply-To: <20121004072426.GB14217@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210040816.35500.arnd@arndb.de>
+X-Provags-ID: V02:K0:m0ymirX87NxjfF6L77M25wGQd6b/HK9Uf26lUdmPwTS
+ 6JhIDG6WxgWNJVvt82blpEnTFZffYjw8gmQZBMUa++OnFxJf8y
+ s+4u3ZWxeoa7cFk8zmXNBJ1nNIv+OewBbt0FRbWimh1r9B+CD5
+ wWHMuNvkRgvT4si9GCJWBZGm1zVwQ+FFYF+Gytnu7HkxV0MYTR
+ TD7FkeNaUjskfChkKwMuxp+qH9PzXPDIoFDjh0Kr0zzly349lS
+ CSw7ZoM20bkwooTVRkm6xecfjKa53plSEEFWvW+b1d3z+PwrgO
+ umb1TOacFH0kEd4HNvjg9IFJpGOE8vwG9dN2ahArQ4rS5CjkXE
+ TFoqpMB4Jdm+vnC60T8I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-On Thursday 04 October 2012 12:54 PM, Dmitry Torokhov wrote:
-> On Wed, Oct 03, 2012 at 11:26:46AM +0530, Poddar, Sourav wrote:
->> Hi Dmitry,
->>
->> On Tue, Oct 2, 2012 at 11:48 AM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->>> Hi Sourav,
->>>
->>> On Mon, Oct 01, 2012 at 04:31:50PM +0530, Sourav Poddar wrote:
->>>> From: G, Manjunath Kondaiah <manjugk@ti.com>
->>>>
->>>> +
->>>> +     /* Enable smsc keypad interrupts */
->>>> +     ret = smsc_write(dev, SMSC_KP_INT_MASK, 0xff);
->>>> +     if (ret < 0)
->>>> +             goto err2;
->>>> +
->>>> +     return 0;
->>>> +
->>>> +err2:
->>>> +     input_unregister_device(input);
->>>> +err1:
->>>> +     input_free_device(input);
->>> Double free.
->>>
->> I believe what you are trying to say here is that we dont really
->> need a " input_unregister_device" (as also I checked in other keypad
->> implementations) and do a "unregister_device" in the remove api ??
-> What I was trying to say is that if input device has been registered
-> then you need to call input_unregister_device() to unregister and free
-> it, otherwise you need to call input_free_device(), but not both.
->
-> Thanks.
-Ok. Thanks for the clarification. Will update and post a new version.
+On Wednesday 03 October 2012, Stephen Warren wrote:
+> On 10/03/2012 11:21 AM, Laxman Dewangan wrote:
+> > When watching the interrupts through /proc/interrupts,
+> > the name of the interrupts are blank or garbage. The
+> > reason is the pointer passed for devname during irq
+> > registration is stack and so it get changed after
+> > dma registration completes.
+> > Allocate the pointer as part of dma channel and pass
+> > this pointer as the devname for irq registration to
+> > avoid change of name.
+> 
+> (Dropping stable Cc; Olof/Arnd or Vinod, is it possible you could add
+> that into the patch description when applying this?)
+> 
+> Reported-by: Stephen Warren <swarren@nvidia.com>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-~Sourav
+Should be no problem. If Vinod wants to pick it up:
 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Note that you can configure git send-email to automatically drop
+Cc's to stable@vger.kernel.org, and that the correct address
+is the one with vger in it, not just stable@kernel.org.
