@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946530Ab2JDV2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:28:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946519Ab2JDV2i (ORCPT
+	id S1946547Ab2JDV3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:29:20 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39431 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946507Ab2JDV2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:28:38 -0400
+	Thu, 4 Oct 2012 17:28:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jack Wang <jack_wang@usish.com>, John Drescher <drescherjm@gmail.com>,
-        Dan Williams <djbw@fb.com>, James Bottomley <JBottomley@Parallels.com>
-Subject: [ 32/33] SCSI: scsi_remove_target: fix softlockup regression on hot remove
-Date: Thu,  4 Oct 2012 14:26:54 -0700
-Message-Id: <20121004210602.465725208@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Andrew Worsley <amworsley@gmail.com>
+Subject: [ 31/33] PCI: honor child buses add_size in hot plug configuration
+Date: Thu,  4 Oct 2012 14:26:53 -0700
+Message-Id: <20121004210602.349918561@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -27,89 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <djbw@fb.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit bc3f02a795d3b4faa99d37390174be2a75d091bd upstream.
+commit be768912a49b10b68e96fbd8fa3cab0adfbd3091 upstream.
 
-John reports:
- BUG: soft lockup - CPU#2 stuck for 23s! [kworker/u:8:2202]
- [..]
- Call Trace:
-  [<ffffffff8141782a>] scsi_remove_target+0xda/0x1f0
-  [<ffffffff81421de5>] sas_rphy_remove+0x55/0x60
-  [<ffffffff81421e01>] sas_rphy_delete+0x11/0x20
-  [<ffffffff81421e35>] sas_port_delete+0x25/0x160
-  [<ffffffff814549a3>] mptsas_del_end_device+0x183/0x270
+git commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+    "PCI: pre-allocate additional resources to devices only after
+	successful allocation of essential resources."
 
-...introduced by commit 3b661a9 "[SCSI] fix hot unplug vs async scan race".
+fails to take into consideration the optional-resources needed by children
+devices while calculating the optional-resource needed by the bridge.
 
-Don't restart lookup of more stargets in the multi-target case, just
-arrange to traverse the list once, on the assumption that new targets
-are always added at the end.  There is no guarantee that the target will
-change state in scsi_target_reap() so we can end up spinning if we
-restart.
+This can be a problem on some setup. For example, if a hotplug bridge has 8
+children hotplug bridges, the bridge should have enough resources to accomodate
+the hotplug requirements for each of its children hotplug bridges.  Currently
+this is not the case.
 
-Acked-by: Jack Wang <jack_wang@usish.com>
-LKML-Reference: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
-Reported-by: John Drescher <drescherjm@gmail.com>
-Tested-by: John Drescher <drescherjm@gmail.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This patch fixes the problem.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Ram Pai <linuxram@us.ibm.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Andrew Worsley <amworsley@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_sysfs.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -988,33 +988,31 @@ static void __scsi_remove_target(struct
- void scsi_remove_target(struct device *dev)
- {
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
--	struct scsi_target *starget, *found;
-+	struct scsi_target *starget, *last = NULL;
- 	unsigned long flags;
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -543,6 +543,20 @@ static resource_size_t calculate_memsize
+ 	return size;
+ }
  
-- restart:
--	found = NULL;
-+	/* remove targets being careful to lookup next entry before
-+	 * deleting the last
-+	 */
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_for_each_entry(starget, &shost->__targets, siblings) {
- 		if (starget->state == STARGET_DEL)
- 			continue;
- 		if (starget->dev.parent == dev || &starget->dev == dev) {
--			found = starget;
--			found->reap_ref++;
--			break;
-+			/* assuming new targets arrive at the end */
-+			starget->reap_ref++;
-+			spin_unlock_irqrestore(shost->host_lock, flags);
-+			if (last)
-+				scsi_target_reap(last);
-+			last = starget;
-+			__scsi_remove_target(starget);
-+			spin_lock_irqsave(shost->host_lock, flags);
++static resource_size_t get_res_add_size(struct resource_list_x *add_head,
++					struct resource *res)
++{
++	struct resource_list_x *list;
++
++	/* check if it is in add_head list */
++	for (list = add_head->next; list && list->res != res;
++			list = list->next);
++	if (list)
++		return list->add_size;
++
++	return 0;
++}
++
+ /**
+  * pbus_size_io() - size the io window of a given bus
+  *
+@@ -562,6 +576,7 @@ static void pbus_size_io(struct pci_bus
+ 	struct pci_dev *dev;
+ 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
+ 	unsigned long size = 0, size0 = 0, size1 = 0;
++	resource_size_t children_add_size = 0;
+ 
+ 	if (!b_res)
+  		return;
+@@ -582,10 +597,15 @@ static void pbus_size_io(struct pci_bus
+ 				size += r_size;
+ 			else
+ 				size1 += r_size;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
  		}
  	}
- 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 	size0 = calculate_iosize(size, min_size, size1,
+ 			resource_size(b_res), 4096);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
+ 		calculate_iosize(size, min_size+add_size, size1,
+ 			resource_size(b_res), 4096);
+@@ -627,6 +647,7 @@ static int pbus_size_mem(struct pci_bus
+ 	int order, max_order;
+ 	struct resource *b_res = find_free_bus_resource(bus, type);
+ 	unsigned int mem64_mask = 0;
++	resource_size_t children_add_size = 0;
  
--	if (found) {
--		__scsi_remove_target(found);
--		scsi_target_reap(found);
--		/* in the case where @dev has multiple starget children,
--		 * continue removing.
--		 *
--		 * FIXME: does such a case exist?
--		 */
--		goto restart;
--	}
-+	if (last)
-+		scsi_target_reap(last);
- }
- EXPORT_SYMBOL(scsi_remove_target);
- 
+ 	if (!b_res)
+ 		return 0;
+@@ -668,6 +689,9 @@ static int pbus_size_mem(struct pci_bus
+ 			if (order > max_order)
+ 				max_order = order;
+ 			mem64_mask &= r->flags & IORESOURCE_MEM_64;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
+ 		}
+ 	}
+ 	align = 0;
+@@ -684,6 +708,8 @@ static int pbus_size_mem(struct pci_bus
+ 		align += aligns[order];
+ 	}
+ 	size0 = calculate_memsize(size, min_size, 0, resource_size(b_res), min_align);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
+ 		calculate_memsize(size, min_size+add_size, 0,
+ 				resource_size(b_res), min_align);
 
 
