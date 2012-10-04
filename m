@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab2JDWBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:01:08 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933767Ab2JDVVQ (ORCPT
+	id S1752991Ab2JDWB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:01:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62166 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab2JDWBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Vikram Pandita <vikram.pandita@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 22/58] serial: omap: fix software flow control
-Date: Thu,  4 Oct 2012 14:19:29 -0700
-Message-Id: <20121004210638.227363233@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
-References: <20121004210635.449598766@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 18:01:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <15022838.BvGHsiOjXu@vostro.rjw.lan>
+References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
+	<16287303.8DVGGcjq5E@vostro.rjw.lan>
+	<CAE9FiQU=h8mchDHCQ31U-UpPhqmFiO_H5yX2uonsyOh3tK9DYA@mail.gmail.com>
+	<15022838.BvGHsiOjXu@vostro.rjw.lan>
+Date: Thu, 4 Oct 2012 15:01:21 -0700
+X-Google-Sender-Auth: tFAiLnADNKTBJeqNmi8GUZtkI2g
+Message-ID: <CAE9FiQXDBaiwckKsUi4k34=O1GnkTOJf+mG33cKHDp8RGqrsnA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] ACPI: kill acpi_pci_root_start
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 4, 2012 at 2:53 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday 04 of October 2012 14:31:46 Yinghai Lu wrote:
+>> On Thu, Oct 4, 2012 at 2:23 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >>
+>> >> At last we could remove all acpi_bus_start workaround.
+>> >
+>> > Do I understand correctly that you just want to prevent acpi_pci_root_driver
+>> > from binding to the host bridge's struct acpi_device created while we're
+>> > walking the ACPI namespace?
+>>
+>> yes, during hot add path.
+>
+> Why exactly do you want to prevent that from happening?
+>
 
-------------------
+during adding pci root bus hotplug, Bjorn found some unsafe searching
+that caused by pci_bus_add_devices.
+pci devices are created during pci scan root, but until very late
+acpi_pci_root_start call pci_bus_add_devices.
 
-From: Vikram Pandita <vikram.pandita@ti.com>
+To fill the gap, we need to move pci_bus_add_devices to acpi_pci_root_add
+at first.
 
-commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6 upstream.
+but after we move that there, pci device will be added to device tree, and it
+will try to bind with acpi devices that should be under acpi pci root,
+but are not
+created yet. because device_add for acpi_device for acpi pci root is done yet.
+it still calling the .add in the acpi_driver aka acpi_pci_root_add.
 
-Software flow control register bits were not defined correctly.
+So I want to hold the driver attach for pci root acpi devices, and
+later attach it
+until pci devices created.
 
-Also clarify the IXON and IXOFF logic to reflect what userspace wants.
-
-Tested-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/plat-omap/include/plat/omap-serial.h |    4 ++--
- drivers/tty/serial/omap-serial.c              |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
-
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -42,10 +42,10 @@
- #define OMAP_UART_WER_MOD_WKUP	0X7F
- 
- /* Enable XON/XOFF flow control on output */
--#define OMAP_UART_SW_TX		0x04
-+#define OMAP_UART_SW_TX		0x8
- 
- /* Enable XON/XOFF flow control on input */
--#define OMAP_UART_SW_RX		0x04
-+#define OMAP_UART_SW_RX		0x2
- 
- #define OMAP_UART_SYSC_RESET	0X07
- #define OMAP_UART_TCR_TRIG	0X0F
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -667,19 +667,19 @@ serial_omap_configure_xonxoff
- 
- 	/*
- 	 * IXON Flag:
--	 * Enable XON/XOFF flow control on output.
--	 * Transmit XON1, XOFF1
-+	 * Flow control for OMAP.TX
-+	 * OMAP.RX should listen for XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXON)
--		up->efr |= OMAP_UART_SW_TX;
-+		up->efr |= OMAP_UART_SW_RX;
- 
- 	/*
- 	 * IXOFF Flag:
--	 * Enable XON/XOFF flow control on input.
--	 * Receiver compares XON1, XOFF1.
-+	 * Flow control for OMAP.RX
-+	 * OMAP.TX should send XON/XOFF
- 	 */
- 	if (termios->c_iflag & IXOFF)
--		up->efr |= OMAP_UART_SW_RX;
-+		up->efr |= OMAP_UART_SW_TX;
- 
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
-
-
+booting path, all acpi devices get created, and attach driver for them
+one by one.
