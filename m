@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933987Ab2JDVWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:22:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933969Ab2JDVWb (ORCPT
+	id S934002Ab2JDVWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:41 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933974Ab2JDVWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:31 -0400
+	Thu, 4 Oct 2012 17:22:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthieu Castet <matthieu.castet@parrot.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 45/58] UBI: erase free PEB with bitflip in EC header
-Date: Thu,  4 Oct 2012 14:19:52 -0700
-Message-Id: <20121004210641.147222378@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        John Johansen <john.johansen@canonical.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [ 46/58] Yama: handle 32-bit userspace prctl
+Date: Thu,  4 Oct 2012 14:19:53 -0700
+Message-Id: <20121004210641.287991017@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,32 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthieu CASTET <matthieu.castet@parrot.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 193819cf2e6e395b1e1be2d36785dc5563a6edca upstream.
+commit 2e4930eb7c8fb20a39dfb5f8a8f80402710dcea8 upstream.
 
-Without this patch, these PEB are not scrubbed until we put data in them.
-Bitflip can accumulate latter and we can loose the EC header (but VID header
-should be intact and allow to recover data).
+When running a 64-bit kernel and receiving prctls from a 32-bit
+userspace, the "-1" used as an unsigned long will end up being
+misdetected. The kernel is looking for 0xffffffffffffffff instead of
+0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
+to handle this translation itself. As such, support either value as
+meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
 
-Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/attach.c |    2 +-
+ security/yama/yama_lsm.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -975,7 +975,7 @@ static int scan_peb(struct ubi_device *u
- 			return err;
- 		goto adjust_mean_ec;
- 	case UBI_IO_FF:
--		if (ec_err)
-+		if (ec_err || bitflips)
- 			err = add_to_list(ai, pnum, UBI_UNKNOWN,
- 					  UBI_UNKNOWN, ec, 1, &ai->erase);
- 		else
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -143,7 +143,7 @@ static int yama_task_prctl(int option, u
+ 		if (arg2 == 0) {
+ 			yama_ptracer_del(NULL, myself);
+ 			rc = 0;
+-		} else if (arg2 == PR_SET_PTRACER_ANY) {
++		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
+ 			rc = yama_ptracer_add(NULL, myself);
+ 		} else {
+ 			struct task_struct *tracer;
 
 
