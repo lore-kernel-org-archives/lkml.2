@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2JDMbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:31:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33795 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756057Ab2JDMbE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:31:04 -0400
-Message-ID: <1349353849.14388.2.camel@twins>
-Subject: Re: [PATCH v2 2/2] Update sched_domains_numa_masks when new cpus
- are onlined.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: srivatsa.bhat@linux.vnet.ibm.com, mingo@kernel.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        linux-numa@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
-Date: Thu, 04 Oct 2012 14:30:49 +0200
-In-Reply-To: <1348578751-16904-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1348578751-16904-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1348578751-16904-3-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756264Ab2JDMem (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:34:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34081 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756093Ab2JDMek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 08:34:40 -0400
+Date: Thu, 4 Oct 2012 14:34:29 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: [PULL REQUEST] ext3 & udf fixes for 3.7-rc1
+Message-ID: <20121004123429.GE4641@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-09-25 at 21:12 +0800, Tang Chen wrote:
-> +static int sched_domains_numa_masks_update(struct notifier_block
-> *nfb,
-> +                                          unsigned long action,
-> +                                          void *hcpu)
-> +{
-> +       int cpu = (int)hcpu; 
+  Hello Linus,
 
-kernel/sched/core.c: In function ‘sched_domains_numa_masks_update’:
-kernel/sched/core.c:6299:12: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  could you please pull from
 
-I've changed it to:
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-	int cpu = (long)hcpu;
+Shortlog pretty much says it all. Interesting bits are UDF support for
+direct IO and ext3 fix for a long standing oops in data=journal mode.
 
+Top of the tree is 09e05d4. The full shortlog is:
 
+Eric Sandeen (1):
+      ext3: don't clear orphan list on ro mount with errors
 
+Ian Abbott (1):
+      UDF: Add support for O_DIRECT
+
+Jan Kara (2):
+      Merge branch 'fast_track' into for_next
+      jbd: Fix assertion failure in commit code due to lacking transaction credits
+
+Namjae Jeon (1):
+      udf: add writepages support for udf
+
+Sachin Kamat (2):
+      reiserfs: Make reiserfs_xattr_handlers static
+      ext3: Replace 0 with NULL for pointer in super.c file
+
+The diffstat is
+
+ arch/um/os-Linux/time.c |    2 +-
+ fs/ext3/super.c         |    8 +++--
+ fs/jbd/commit.c         |   45 +++++++++++++++++++++++++--------
+ fs/jbd/transaction.c    |   64 ++++++++++++++++++++++++++++++++--------------
+ fs/reiserfs/xattr.c     |    2 +-
+ fs/udf/file.c           |    9 ++++++
+ fs/udf/inode.c          |   59 +++++++++++++++++++++++++++++++-----------
+ 7 files changed, 137 insertions(+), 52 deletions(-)
+
+							Thanks
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
