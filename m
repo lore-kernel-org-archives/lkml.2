@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2JDVRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:17:51 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49290 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932375Ab2JDVRo (ORCPT
+	id S932576Ab2JDVSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:18:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932478Ab2JDVSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:44 -0400
+	Thu, 4 Oct 2012 17:18:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Flavio Leitner <fbl@redhat.com>
-Subject: [ 21/56] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
-Date: Thu,  4 Oct 2012 14:15:42 -0700
-Message-Id: <20121004211154.515781949@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 22/56] tools/hv: Fix file handle leak
+Date: Thu,  4 Oct 2012 14:15:43 -0700
+Message-Id: <20121004211154.625496576@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,56 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Flavio Leitner <fbl@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 26e8220adb0aec43b7acafa0f1431760eee28522 upstream.
+commit d5ab482799e7c4c4b7c0aa67e8710dce28115d03 upstream.
 
-Apparently the same card model has two IDs, so this patch
-complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
-adding the missing one.
+Match up each fopen() with an fclose().
 
-Signed-off-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    9 +++++++--
- include/linux/pci_ids.h            |    1 -
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ tools/hv/hv_kvp_daemon.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1164,6 +1164,8 @@ pci_xr17c154_setup(struct serial_private
- #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
- #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
- #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
- #define PCI_VENDOR_ID_ADVANTECH		0x13fe
- #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
- #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
-@@ -3232,8 +3234,11 @@ static struct pci_device_id serial_pci_t
- 		 * For now just used the hex ID 0x950a.
- 		 */
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
--		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
--		pbn_b0_2_115200 },
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
-+		0, 0, pbn_b0_2_115200 },
-+	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
-+		0, 0, pbn_b0_2_115200 },
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_2_1130000 },
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1847,7 +1847,6 @@
- #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
- #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
- #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
--#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -144,7 +144,7 @@ static void kvp_update_file(int pool)
+ 				sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
  
- #define PCI_VENDOR_ID_RADISYS		0x1331
+-	fflush(filep);
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
  
+@@ -191,6 +191,7 @@ static void kvp_update_mem_state(int poo
+ 	kvp_file_info[pool].records = record;
+ 	kvp_file_info[pool].num_records = records_read;
+ 
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ static int kvp_file_init(void)
 
 
