@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab2JDVRE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:17:04 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab2JDVRA (ORCPT
+	id S1757734Ab2JDVRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:17:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757712Ab2JDVRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:00 -0400
+	Thu, 4 Oct 2012 17:17:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 06/56] USB: EHCI: convert warning messages to debug-level
-Date: Thu,  4 Oct 2012 14:15:27 -0700
-Message-Id: <20121004211152.826968041@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [ 09/56] USB: serial: fix up bug with missing {}
+Date: Thu,  4 Oct 2012 14:15:30 -0700
+Message-Id: <20121004211153.166994917@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,48 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit d16ba48774913d244c7eb894d28d8ae2c019a827 upstream.
+commit 44b0f0836b62171617d56c6528c821ceaa6ea506 upstream.
 
-This patch (as1606) converts two warning messages in the ehci-hcd
-driver to debug messages, and adds a little extra information to each.
+As reported by Fengguang:
 
-The log messages occur when an EHCI controller takes too long (more
-than 20 ms) to turn its async or periodic schedule on or off.  If this
-happens at all, it's liable to happen quite often and there's no point
-spamming the system log with these warnings.  Furthermore, there's
-nothing much we can do about it when the problem happens.
+FYI, coccinelle warns about
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Thomas Voegtle <tv@lio96.de>
+drivers/usb/serial/usb-serial.c:1415:3-51: code aligned with following code on line 1416
+
+vim +1415 drivers/usb/serial/usb-serial.c
+
+  1412          /* we only set the reset_resume field if the serial_driver has one */
+  1413          for (sd = serial_drivers; *sd; ++sd) {
+  1414                  if ((*sd)->reset_resume)
+> 1415                          udriver->reset_resume = usb_serial_reset_resume;
+> 1416                          break;
+  1417          }
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-timer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/serial/usb-serial.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-timer.c
-+++ b/drivers/usb/host/ehci-timer.c
-@@ -118,7 +118,8 @@ static void ehci_poll_ASS(struct ehci_hc
- 			ehci_enable_event(ehci, EHCI_HRTIMER_POLL_ASS, true);
- 			return;
- 		}
--		ehci_warn(ehci, "Waited too long for the async schedule status, giving up\n");
-+		ehci_dbg(ehci, "Waited too long for the async schedule status (%x/%x), giving up\n",
-+				want, actual);
- 	}
- 	ehci->ASS_poll_count = 0;
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1426,9 +1426,10 @@ int usb_serial_register_drivers(struct u
  
-@@ -163,7 +164,8 @@ static void ehci_poll_PSS(struct ehci_hc
- 			ehci_enable_event(ehci, EHCI_HRTIMER_POLL_PSS, true);
- 			return;
- 		}
--		ehci_warn(ehci, "Waited too long for the periodic schedule status, giving up\n");
-+		ehci_dbg(ehci, "Waited too long for the periodic schedule status (%x/%x), giving up\n",
-+				want, actual);
+ 	/* we only set the reset_resume field if the serial_driver has one */
+ 	for (sd = serial_drivers; *sd; ++sd) {
+-		if ((*sd)->reset_resume)
++		if ((*sd)->reset_resume) {
+ 			udriver->reset_resume = usb_serial_reset_resume;
+ 			break;
++		}
  	}
- 	ehci->PSS_poll_count = 0;
  
+ 	rc = usb_register(udriver);
 
 
