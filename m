@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933891Ab2JDVV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933877Ab2JDVVv (ORCPT
+	id S1757691Ab2JDVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:16 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933909Ab2JDVWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:51 -0400
+	Thu, 4 Oct 2012 17:22:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 33/58] xHCI: cancel command after command timeout
-Date: Thu,  4 Oct 2012 14:19:40 -0700
-Message-Id: <20121004210639.593175634@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 38/58] xen/pciback: Restore the PCI config space after an FLR.
+Date: Thu,  4 Oct 2012 14:19:45 -0700
+Message-Id: <20121004210640.231825790@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,142 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
+commit c341ca45ce56143804ef5a8f4db753e554e640b4 upstream.
 
-The patch is used to cancel command when the command isn't
-acknowledged and a timeout occurs.
+When we do an FLR, or D0->D3_hot we may lose the BARs as the
+device has turned itself off (and on). This means the device cannot
+function unless the pci_restore_state is called - which it is
+when the PCI device is unbound from the Xen PCI backend driver.
+For PV guests it ends up calling pci_enable_device / pci_enable_msi[x]
+which does the proper steps
 
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
-assertion to check for virt_dev=0 bug." That commit papers over a NULL
-pointer dereference, and this patch fixes the underlying issue that
-caused the NULL pointer dereference.
+That however is not happening if a HVM guest is run as QEMU
+deals with PCI configuration space. QEMU also requires that the
+device be "parked"  under the ownership of a pci-stub driver to
+guarantee that the PCI device is not being used. Hence we
+follow the same incantation as pci_reset_function does - by
+doing an FLR, then restoring the PCI configuration space.
 
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+The result of this patch is that when you run lspci, you get
+now this:
+
+-       Region 0: [virtual] Memory at fe8c0000 (32-bit, non-prefetchable) [size=128K]
+-       Region 1: [virtual] Memory at fe800000 (32-bit, non-prefetchable) [size=512K]
++       Region 0: Memory at fe8c0000 (32-bit, non-prefetchable) [size=128K]
++       Region 1: Memory at fe800000 (32-bit, non-prefetchable) [size=512K]
+        Region 2: I/O ports at c000 [size=32]
+-       Region 3: [virtual] Memory at fe8e0000 (32-bit, non-prefetchable) [size=16K]
++       Region 3: Memory at fe8e0000 (32-bit, non-prefetchable) [size=16K]
+
+The [virtual] means that lspci read those entries from SysFS but when
+it read them from the device it got a different value (0xfffffff).
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
- drivers/usb/host/xhci.h |    3 +++
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ drivers/xen/xen-pciback/pci_stub.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2525,6 +2525,7 @@ static int xhci_configure_endpoint(struc
- 	struct completion *cmd_completion;
- 	u32 *cmd_status;
- 	struct xhci_virt_device *virt_dev;
-+	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	virt_dev = xhci->devs[udev->slot_id];
-@@ -2570,6 +2571,7 @@ static int xhci_configure_endpoint(struc
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -362,6 +362,7 @@ static int __devinit pcistub_init_device
+ 	else {
+ 		dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
+ 		__pci_reset_function_locked(dev);
++		pci_restore_state(dev);
  	}
- 	init_completion(cmd_completion);
- 
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -2591,14 +2593,17 @@ static int xhci_configure_endpoint(struc
- 	/* Wait for the configure endpoint command to complete */
- 	timeleft = wait_for_completion_interruptible_timeout(
- 			cmd_completion,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for %s command\n",
- 				timeleft == 0 ? "Timeout" : "Signal",
- 				ctx_change == 0 ?
- 					"configure endpoint" :
- 					"evaluate context");
--		/* FIXME cancel the configure endpoint command */
-+		/* cancel the configure endpoint command */
-+		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
-@@ -3547,8 +3552,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-+	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3560,12 +3567,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 
- 	/* XXX: how much time for xHC slot assignment? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for a slot\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the enable slot request */
--		return 0;
-+		/* cancel the enable slot request */
-+		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
- 	}
- 
- 	if (!xhci->slot_id) {
-@@ -3626,6 +3633,7 @@ int xhci_address_device(struct usb_hcd *
- 	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u64 temp_64;
-+	union xhci_trb *cmd_trb;
- 
- 	if (!udev->slot_id) {
- 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
-@@ -3664,6 +3672,7 @@ int xhci_address_device(struct usb_hcd *
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
-@@ -3676,7 +3685,7 @@ int xhci_address_device(struct usb_hcd *
- 
- 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
- 	 * the SetAddress() "recovery interval" required by USB and aborting the
- 	 * command on a timeout.
-@@ -3684,7 +3693,10 @@ int xhci_address_device(struct usb_hcd *
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for address device command\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the address device command */
-+		/* cancel the address device command */
-+		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1256,6 +1256,9 @@ struct xhci_td {
- 	union xhci_trb		*last_trb;
- };
- 
-+/* xHCI command default timeout value */
-+#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
-+
- /* command descriptor */
- struct xhci_cd {
- 	struct list_head	cancel_cmd_list;
+ 	/* Now disable the device (this also ensures some private device
+ 	 * data is setup before we export)
 
 
