@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750932Ab2JDRzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 13:55:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49219 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2JDRzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 13:55:51 -0400
-Date: Thu, 4 Oct 2012 20:55:39 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.7-rc0
-Message-ID: <alpine.LFD.2.02.1210042055190.2119@tux.localdomain>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1751198Ab2JDR45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 13:56:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53468 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab2JDR44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 13:56:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,537,1344236400"; 
+   d="scan'208";a="201651240"
+Message-ID: <506DCDED.4060207@intel.com>
+Date: Thu, 04 Oct 2012 10:57:01 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org
+Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
+ addresses
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <20121004133319.GD9158@phenom.dumpdata.com>
+In-Reply-To: <20121004133319.GD9158@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 10/04/2012 06:33 AM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Oct 03, 2012 at 05:38:41PM -0700, Alexander Duyck wrote:
+>> While working on 10Gb/s routing performance I found a significant amount of
+>> time was being spent in the swiotlb DMA handler.  Further digging found that a
+>> significant amount of this was due to the fact that virtual to physical
+>> address translation and calling the function that did it.  It accounted for
+>> nearly 60% of the total overhead.
+>>
+>> This patch set works to resolve that by changing the io_tlb_start address and
+>> io_tlb_overflow_buffer address from virtual addresses to physical addresses.
+> The assertion in your patches is that the DMA addresses (bus address)
+> are linear is not applicable (unfortunatly). Meaning virt_to_phys() !=
+> virt_to_dma().
 
-Please pull the latest SLAB tree from:
+That isn't my assertion.  My assertion is that virt_to_phys(x + y) ==
+(virt_to_phys(x) + y).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
+> Now, on x86 and ia64 it is true - but one of the users of swiotlb
+> library is the Xen swiotlb - which cannot guarantee that the physical
+> address are 1-1 with the bus addresses. Hence the bulk of dealing with
+> figuring out the right physical to bus address is done in Xen-SWIOTLB
+> and the basics of finding an entry in the bounce buffer (if needed),
+> mapping it, unmapping ,etc is carried out by the generic library.
+>
+> This is sad - b/c your patches are a good move forward.
 
-New and noteworthy:
+I think if you take a second look you will find you might be taking
+things one logical step too far.  From what I can tell my assertion is
+correct.  I believe the bits you are talking about don't apply until you
+use the xen_virt _to_bus/xen_phys_to_bus call, and the only difference
+between those two calls is a virt_to_phys which is what I am eliminating.
 
-  * More SLAB allocator unification patches from Christoph Lameter and
-    others.  This paves the way for slab memcg patches that hopefully
-    will land in v3.8.
+> Perhaps another way to do this is by having your patches split the
+> lookups in "chunks". Wherein we validate in swiotlb_init_*tbl that the
+> 'tbl' (so the bounce buffer) is linear - if not, we split it up in
+> chunks. Perhaps the various backends can be responsible for this since
+> they would know which of their memory regions are linear or not. But
+> that sounds complicated and we don't want to complicate this library.
+>
+> Or another way would be to provide 'phys_to_virt' and 'virt_to_phys'
+> functions for the swiotlb_tbl_{map|unmap}_single and the main library
+> (lib/swiotlb.c) can decide to use them. If they are NULL, then it
+> would do what your patches suggested. If they are defined, then
+> carry out those lookups on the 'empty-to-be-used' bounce buffer
+> address. Hm, that sounds like a better way of doing it.
+>
 
-  * SLAB tracing improvements from Ezequiel Garcia.
+I don't see any special phys_to_virt or virt_to_phys calls available for
+Xen.  The only calls I do see are phys_to_machine and machine_to_phys
+which seem to be translating between physical addresses and those used
+for DMA.  If that is the case I should be fine because I am not going as
+far as translating the io_tlb_start into a DMA address I am only taking
+it to a physical one.
 
-  * Kernel tainting upon SLAB corruption from Dave Jones.
+I am not asserting that the DMA memory is contiguous.  I am asserting
+that from the CPU perspective the physical memory is contiguous which I 
+believe you already agreed with.  From what I can tell this should be
+fine since almost all of the virt_to_phys calls out there are just doing
+offset manipulation and not breaking the memory up into discreet
+chunks.  The sectioning up of the segments in Xen should happen after we
+have taken care of the virt_to_phys work so the bounce buffer case
+should work out correctly.
 
-  * Miscellanous SLAB allocator bug fixes and improvements from various
-    people.
+Thanks,
 
-			Pekka
-
------------------->
-The following changes since commit 56d92aa5cf7c96c70f81d0350c94faf46a9fb76d:
-
-  Merge tag 'stable/for-linus-3.7-x86-tag' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2012-10-02 22:09:10 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-
-Andrew Morton (1):
-      mm/slab_common.c: cleanup
-
-Christoph Lameter (17):
-      slub: Take node lock during object free checks
-      mm/slub: Add debugging to verify correct cache use on kmem_cache_free()
-      mm/slub: Use kmem_cache for the kmem_cache structure
-      mm/slab_common: Improve error handling in kmem_cache_create
-      mm/sl[aou]b: Move list_add() to slab_common.c
-      mm/sl[aou]b: Extract a common function for kmem_cache_destroy
-      mm/sl[aou]b: Use "kmem_cache" name for slab cache with kmem_cache struct
-      mm/sl[aou]b: Move freeing of kmem_cache structure to common code
-      mm/sl[aou]b: Get rid of __kmem_cache_destroy
-      mm/sl[aou]b: Move duping of slab name to slab_common.c
-      mm/sl[aou]b: Do slab aliasing call from common code
-      mm/sl[aou]b: Move sysfs_slab_add to common
-      mm/sl[aou]b: Move kmem_cache allocations into common code
-      mm/sl[aou]b: Shrink __kmem_cache_create() parameter lists
-      mm/sl[aou]b: Move kmem_cache refcounting to common code
-      slub: Zero initial memory segment for kmem_cache and kmem_cache_node
-      slab: Only define slab_error for DEBUG
-
-Dave Jones (1):
-      mm, sl[au]b: Taint kernel when we detect a corrupted slab
-
-David Rientjes (3):
-      mm, slab: remove dflags
-      mm, slab: remove page_get_cache
-      mm, slob: fix build breakage in __kmalloc_node_track_caller
-
-Ezequiel Garcia (11):
-      mm: Use __do_krealloc to do the krealloc job
-      mm, slob: Use NUMA_NO_NODE instead of -1
-      mm, slab: Remove silly function slab_buffer_size()
-      mm, slob: Add support for kmalloc_track_caller()
-      mm, slab: Replace 'caller' type, void* -> unsigned long
-      mm, slab: Match SLAB and SLUB kmem_cache_alloc_xxx_trace() prototype
-      mm, slab: Rename __cache_alloc() -> slab_alloc()
-      mm, slub: Rename slab_alloc() -> slab_alloc_node() to match SLAB
-      mm/slab: Fix typo _RET_IP -> _RET_IP_
-      mm/slab: Fix kmem_cache_alloc_node_trace() declaration
-      mm/slab: Fix kmem_cache_alloc_node_trace() declaration
-
-Fengguang Wu (1):
-      slub: init_kmem_cache_cpus() and put_cpu_partial() can be static
-
-Glauber Costa (1):
-      slub: use free_page instead of put_page for freeing kmalloc allocation
-
-Joonsoo Kim (1):
-      slub: reduce failure of this_cpu_cmpxchg in put_cpu_partial() after unfreezing
-
-Michael Wang (1):
-      slab: fix the DEADLOCK issue on l3 alien lock
-
-Michel Lespinasse (1):
-      slab: do not call compound_head() in page_get_cache()
-
-Pekka Enberg (6):
-      Revert "mm/slab_common.c: cleanup"
-      Revert "mm/sl[aou]b: Move sysfs_slab_add to common"
-      Revert "mm/slab: Fix kmem_cache_alloc_node_trace() declaration"
-      Merge branch 'slab/next' into slab/for-linus
-      Merge branch 'slab/common-for-cgroups' into slab/for-linus
-      Merge branch 'slab/tracing' into slab/for-linus
-
-Shuah Khan (1):
-      mm/slab: restructure kmem_cache_create() debug checks
-
-Tetsuo Handa (1):
-      slab: Fix build failure in __kmem_cache_create()
-
- include/linux/slab.h     |    6 +-
- include/linux/slab_def.h |   27 ++---
- include/linux/slob_def.h |    6 +-
- mm/slab.c                |  348 +++++++++++++++++++---------------------------
- mm/slab.h                |   19 +++-
- mm/slab_common.c         |  159 +++++++++++++++------
- mm/slob.c                |   91 +++++++-----
- mm/slub.c                |  208 +++++++++++++---------------
- mm/util.c                |   35 +++--
- 9 files changed, 463 insertions(+), 436 deletions(-)
+Alex
