@@ -1,88 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab2JDICV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:02:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:51463 "EHLO ozlabs.org"
+	id S932789Ab2JDIFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:05:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51020 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379Ab2JDICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:02:17 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Anthony Liguori <anthony@codemonkey.ws>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-In-Reply-To: <87wqz6kgg4.fsf@codemonkey.ws>
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf@rustcorp.com.au> <87mx033u74.fsf@codemonkey.ws> <87391u3o67.fsf@rustcorp.com.au> <87wqz6kgg4.fsf@codemonkey.ws>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 04 Oct 2012 17:14:36 +0930
-Message-ID: <87lifm1y1n.fsf@rustcorp.com.au>
+	id S932089Ab2JDIE6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 04:04:58 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Ivan Djelic <ivan.djelic@parrot.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: RE: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
+Thread-Topic: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
+Thread-Index: AQHNoXbfIgW0XH8glUaeL6a0DcGNGJenkgkAgAEzgcA=
+Date: Thu, 4 Oct 2012 08:03:42 +0000
+Deferred-Delivery: Thu, 4 Oct 2012 08:03:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9B4902@DBDE01.ent.ti.com>
+References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
+ <1349274589-11389-4-git-send-email-avinashphilip@ti.com>
+ <20121003185458.GA27502@parrot.com>
+In-Reply-To: <20121003185458.GA27502@parrot.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anthony Liguori <anthony@codemonkey.ws> writes:
->> lguest fix is pending in my queue.  lkvm and qemu are broken; lkvm isn't
->> ever going to be merged, so I'm not sure what its status is?  But I'm
->> determined to fix qemu, and hence my torture patch to make sure this
->> doesn't creep in again.
->
-> There are even more implementations out there and I'd wager they all
-> rely on framing.
+On Thu, Oct 04, 2012 at 00:24:58, Ivan Djelic wrote:
+> On Wed, Oct 03, 2012 at 03:29:48PM +0100, Philip, Avinash wrote:
+> > Add support for BCH ECC scheme to gpmc driver and also enabling multi
+> > sector read/write. This helps in doing single shot NAND page read and
+> > write.
+> > 
+> > ECC engine configurations
+> > BCH 4 bit support
+> > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+> > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+> > 13 and ecc_size1 as 1.
+> > 
+> > BCH 8 bit support
+> > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+> > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+> > 26 and ecc_size1 as 2.
+> > 
+> > Note: For BCH8 ECC bytes set to 14 to make compatible with RBL.
+> > 
+> 
+> Hi Philip,
+> 
+> I have a few comments/questions below,
+> 
+> (...)
+> > diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+> > index 72428bd..c9bc3cf 100644
+> > --- a/arch/arm/mach-omap2/gpmc.c
+> > +++ b/arch/arm/mach-omap2/gpmc.c
+> > @@ -24,6 +24,7 @@
+> >  #include <linux/io.h>
+> >  #include <linux/module.h>
+> >  #include <linux/interrupt.h>
+> > +#include <linux/mtd/nand.h>
+> >  
+> >  #include <asm/mach-types.h>
+> >  #include <plat/gpmc.h>
+> > @@ -83,6 +84,18 @@
+> >  #define ENABLE_PREFETCH		(0x1 << 7)
+> >  #define DMA_MPU_MODE		2
+> >  
+> > +/* GPMC ecc engine settings for read */
+> > +#define BCH_WRAPMODE_1		1	/* BCH wrap mode 6 */
+> 
+> Comment should say "mode 1".
 
-Worse, both virtio_blk (for scsi commands) and virtio_scsi explicitly
-and inescapably rely on framing.  The spec conflicts clearly with
-itself.
+Ok I will correct it.
 
-Such layering violations are always a mistake, but I can't blame anyone
-else for my lack of attention :(
+> 
+> (...)
+> >  /**
+> > + * gpmc_calculate_ecc_bch	- Generate ecc bytes per block of 512 data bytes for entire page
+> > + * @cs:  chip select number
+> > + * @dat: The pointer to data on which ECC is computed
+> > + * @ecc: The ECC output buffer
+> > + */
+> > +int gpmc_calculate_ecc_bch(int cs, const u_char *dat, u_char *ecc)
+> > +{
+> > +	int i, eccbchtsel;
+> > +	u32 nsectors, reg, bch_val1, bch_val2, bch_val3, bch_val4;
+> > +
+> > +	if (gpmc_ecc_used != cs)
+> > +		return -EINVAL;
+> > +
+> > +	/* read number of sectors for ecc to be calculated */
+> > +	nsectors = ((gpmc_read_reg(GPMC_ECC_CONFIG) >> 4) & 0x7) + 1;
+> > +	/*
+> > +	 * find BCH scheme used
+> > +	 * 0 -> BCH4
+> > +	 * 1 -> BCH8
+> > +	 */
+> > +	eccbchtsel = ((gpmc_read_reg(GPMC_ECC_CONFIG) >> 12) & 0x3);
+> > +
+> > +	/* update ecc bytes for entire page */
+> > +	for (i = 0; i < nsectors; i++) {
+> > +
+> > +		reg = GPMC_ECC_BCH_RESULT_0 + 16 * i;
+> > +
+> > +		/* Read hw-computed remainder */
+> > +		bch_val1 = gpmc_read_reg(reg + 0);
+> > +		bch_val2 = gpmc_read_reg(reg + 4);
+> > +		if (eccbchtsel) {
+> > +			bch_val3 = gpmc_read_reg(reg + 8);
+> > +			bch_val4 = gpmc_read_reg(reg + 12);
+> > +		}
+> > +
+> > +		if (eccbchtsel) {
+> > +			/* BCH8 ecc scheme */
+> > +			*ecc++ = (bch_val4 & 0xFF);
+> > +			*ecc++ = ((bch_val3 >> 24) & 0xFF);
+> > +			*ecc++ = ((bch_val3 >> 16) & 0xFF);
+> > +			*ecc++ = ((bch_val3 >> 8) & 0xFF);
+> > +			*ecc++ = (bch_val3 & 0xFF);
+> > +			*ecc++ = ((bch_val2 >> 24) & 0xFF);
+> > +			*ecc++ = ((bch_val2 >> 16) & 0xFF);
+> > +			*ecc++ = ((bch_val2 >> 8) & 0xFF);
+> > +			*ecc++ = (bch_val2 & 0xFF);
+> > +			*ecc++ = ((bch_val1 >> 24) & 0xFF);
+> > +			*ecc++ = ((bch_val1 >> 16) & 0xFF);
+> > +			*ecc++ = ((bch_val1 >> 8) & 0xFF);
+> > +			*ecc++ = (bch_val1 & 0xFF);
+> > +			/* 14th byte of ecc not used */
+> > +			*ecc++ = 0;
+> > +		} else {
+> > +			/* BCH4 ecc scheme */
+> > +			*ecc++ = ((bch_val2 >> 12) & 0xFF);
+> > +			*ecc++ = ((bch_val2 >> 4) & 0xFF);
+> > +			*ecc++ = (((bch_val2 & 0xF) << 4) |
+> > +					((bch_val1 >> 28) & 0xF));
+> > +			*ecc++ = ((bch_val1 >> 20) & 0xFF);
+> > +			*ecc++ = ((bch_val1 >> 12) & 0xFF);
+> > +			*ecc++ = ((bch_val1 >> 4) & 0xFF);
+> > +			*ecc++ = ((bch_val1 & 0xF) << 4);
+> > +		}
+> > +	}
+> > +
+> > +	gpmc_ecc_used = -EINVAL;
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(gpmc_calculate_ecc_bch);
+> 
+> Here you introduce a function very similar to gpmc_calculate_ecc_bch4 and
+> gpmc_calculate_ecc_bch8, but without the added benefit (IMHO) of the constant
+> polynomial that allows to get an ecc sequence of 0xFFs for a buffer filled with
+> 0xFFs. Why ?
 
-Here's the spec change:
-commit 7e74459bb966ccbaad9e4bf361d1178b7f400b79
-Author: Rusty Russell <rusty@rustcorp.com.au>
-Date:   Thu Oct 4 17:11:27 2012 +0930
+I don't exactly understand what we benefitted/achieve. In my observation,
+this API does spare area also written with 0xFF if data area is 0xFFs.
+So the area looks like erased page again.
 
-No longer assume framing is independent of messages.  *sniff*
+> If using the ELM prevents you from reusing gpmc_calculate_ecc_bch[48], could you explain in which way ?
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+When using gpmc_calculate_ecc_bch[48], calculated ecc values modified.
+The read sequence we following is
+Read 512 byte -> read ECC bytes from spare area
+Now the calculated ECC will be zero if no error is reported. In case of error, a syndrome
+Polynomial is reported. In either case modifying will corrupt the data.
 
---- virtio-spec.txt	2012-10-04 17:13:04.988259234 +0930
-+++ virtio-spec.txt.new	2012-10-04 17:12:54.624258969 +0930
-@@ -880,19 +880,19 @@
- 
-   Message Framing
- 
--The descriptors used for a buffer should not effect the semantics
--of the message, except for the total length of the buffer. For
--example, a network buffer consists of a 10 byte header followed
--by the network packet. Whether this is presented in the ring
--descriptor chain as (say) a 10 byte buffer and a 1514 byte
--buffer, or a single 1524 byte buffer, or even three buffers,
--should have no effect.
-+Unless stated otherwise, it is expected that headers within a
-+message are contained within their own descriptors. For example,
-+a network buffer consists of a 10 or 12 byte header followed by
-+the network packet. An implementation should expect that this
-+header will be within the first descriptor, and that the
-+remainder of the data will begin on the second descriptor.
- 
--In particular, no implementation should use the descriptor
--boundaries to determine the size of any header in a request.[footnote:
--The current qemu device implementations mistakenly insist that
--the first descriptor cover the header in these cases exactly, so
--a cautious driver should arrange it so.
-+[footnote:
-+It was previously asserted that framing should be independent of
-+message contents, yet invariably drivers layed out messages in
-+reliable ways and devices assumed it. In addition, the
-+specifications for virtio_blk and virtio_scsi require intuiting
-+field lengths from frame boundaries.
- ]
- 
-   Device Improvements
+This is valid if we are writing a page with 0xFF also. But this time we were filling a valid
+ecc in spare area not 0xFF as in gpmc_calculate_ecc_bch[48].
+
+Additionally to make compatible with RBL ECC layout (14 byte), we were setting ecc[13] as zero.
+
+Thanks
+Avinash  
+
+> 
+> Best regards,
+> --
+> Ivan
+> 
 
