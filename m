@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2JDDQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 23:16:40 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:34134 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab2JDDQB (ORCPT
+	id S1755035Ab2JDDQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 23:16:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54509 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab2JDDPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 23:16:01 -0400
+	Wed, 3 Oct 2012 23:15:53 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: sameo@linux.intel.com
 Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
         dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
         linux-kernel@vger.kernel.org,
         Fabio Estevam <fabio.estevam@freescale.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 6/6] gpio: gpio-da9052: Convert to the new da9052 interrupt functions
-Date: Thu,  4 Oct 2012 00:15:09 -0300
-Message-Id: <1349320509-26930-6-git-send-email-festevam@gmail.com>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-input@vger.kernel.org>
+Subject: [PATCH 3/6] Input: da9052_tsi.c: Fix interrupt handling
+Date: Thu,  4 Oct 2012 00:15:06 -0300
+Message-Id: <1349320509-26930-3-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349320509-26930-1-git-send-email-festevam@gmail.com>
 References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
@@ -27,34 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Convert to the new da9052 interrupt functions, so that we can get rid of 
-irq_base references.
+Currently da9062_tsi does not probe and it fails as follows:
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
+da9052 1-0048: Unable to determine device interrupts
+
+Use the new da9052 irq functions and allow the driver to probe and operate 
+correctly.
+
+Tested on mx53qsb board using 'evtest' tool.
+
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: <linux-input@vger.kernel.org>
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
-Build tested only.
- drivers/gpio/gpio-da9052.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/input/touchscreen/da9052_tsi.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpio/gpio-da9052.c b/drivers/gpio/gpio-da9052.c
-index 24b8c29..3837072 100644
---- a/drivers/gpio/gpio-da9052.c
-+++ b/drivers/gpio/gpio-da9052.c
-@@ -185,7 +185,11 @@ static int da9052_gpio_to_irq(struct gpio_chip *gc, u32 offset)
- 	struct da9052_gpio *gpio = to_da9052_gpio(gc);
- 	struct da9052 *da9052 = gpio->da9052;
+diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
+index 71f6165..33fd3fa 100644
+--- a/drivers/input/touchscreen/da9052_tsi.c
++++ b/drivers/input/touchscreen/da9052_tsi.c
+@@ -274,16 +274,16 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 	/* Disable ADC */
+ 	da9052_ts_adc_toggle(tsi, false);
  
--	return da9052->irq_base + DA9052_IRQ_GPI0 + offset;
-+	int irq;
-+
-+	irq = regmap_irq_get_virq(da9052->irq_data, DA9052_IRQ_GPI0 + offset);
-+
-+	return irq;
- }
+-	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN, "pendown-irq",
+-			    da9052_ts_pendwn_irq, tsi);
++	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN,
++				"pendown-irq", da9052_ts_pendwn_irq, tsi);
+ 	if (error) {
+ 		dev_err(tsi->da9052->dev,
+ 			"Failed to register PENDWN IRQ: %d\n", error);
+ 		goto err_free_mem;
+ 	}
  
- static struct gpio_chip reference_gp __devinitdata = {
+-	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_TSIREADY, "tsiready-irq",
+-			    da9052_ts_datardy_irq, tsi);
++	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_TSIREADY,
++				"tsiready-irq", da9052_ts_datardy_irq, tsi);
+ 	if (error) {
+ 		dev_err(tsi->da9052->dev,
+ 			"Failed to register TSIRDY IRQ :%d\n", error);
+@@ -307,9 +307,9 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_free_datardy_irq:
+-	da9052_free_irq(da9052, DA9052_IRQ_TSIREADY, da9052);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
+ err_free_pendwn_irq:
+-	da9052_free_irq(da9052, DA9052_IRQ_PENDOWN, da9052);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
+ err_free_mem:
+ 	kfree(tsi);
+ 	input_free_device(input_dev);
+@@ -320,12 +320,11 @@ err_free_mem:
+ static int  __devexit da9052_ts_remove(struct platform_device *pdev)
+ {
+ 	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
+-	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
+ 
+ 	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
+ 
+-	da9052_free_irq(da9052, DA9052_IRQ_TSIREADY, da9052);
+-	da9052_free_irq(da9052, DA9052_IRQ_PENDOWN, da9052);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
+ 
+ 	input_unregister_device(tsi->dev);
+ 	kfree(tsi);
 -- 
 1.7.9.5
 
