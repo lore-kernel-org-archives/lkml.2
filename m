@@ -1,148 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2JDGQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 02:16:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52231 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab2JDGQy (ORCPT
+	id S1756332Ab2JDGSh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 02:18:37 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52472 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017Ab2JDGSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 02:16:54 -0400
-Message-ID: <506D29A7.1000805@linux.vnet.ibm.com>
-Date: Thu, 04 Oct 2012 11:46:07 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 4 Oct 2012 02:18:35 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] CPU hotplug, debug: Detect imbalance between get_online_cpus()
- and put_online_cpus()
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz> <506C2E02.9080804@linux.vnet.ibm.com>	<506C3535.3070401@linux.vnet.ibm.com> <20121003141311.09fb3ffc.akpm@linux-foundation.org>
-In-Reply-To: <20121003141311.09fb3ffc.akpm@linux-foundation.org>
+In-Reply-To: <1348252345-5642-4-git-send-email-morten.rasmussen@arm.com>
+References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+	<1348252345-5642-4-git-send-email-morten.rasmussen@arm.com>
+Date: Thu, 4 Oct 2012 11:48:35 +0530
+Message-ID: <CAKohpomytrzUz9YFaf59-1ZJ-XYv2mXSaQk2JXEt86wh=5X12A@mail.gmail.com>
+Subject: Re: [RFC PATCH 03/10] sched: Forced task migration on heterogeneous systems
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: morten.rasmussen@arm.com
+Cc: paulmck@linux.vnet.ibm.com, pjt@google.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com, linaro-sched-sig@lists.linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Robin Randhawa <robin.randhawa@arm.com>, Arvind.Chauhan@arm.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12100406-8256-0000-0000-0000046ED0EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 02:43 AM, Andrew Morton wrote:
-> On Wed, 03 Oct 2012 18:23:09 +0530
-> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> 
->> The synchronization between CPU hotplug readers and writers is achieved by
->> means of refcounting, safe-guarded by the cpu_hotplug.lock.
->>
->> get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
->> it. If we ever hit an imbalance between the two, we end up compromising the
->> guarantees of the hotplug synchronization i.e, for example, an extra call to
->> put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
->> a hotplug writer. So, add a BUG_ON() in put_online_cpus() to detect such cases
->> where the refcount can go negative.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  kernel/cpu.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/kernel/cpu.c b/kernel/cpu.c
->> index f560598..00d29bc 100644
->> --- a/kernel/cpu.c
->> +++ b/kernel/cpu.c
->> @@ -80,6 +80,7 @@ void put_online_cpus(void)
->>  	if (cpu_hotplug.active_writer == current)
->>  		return;
->>  	mutex_lock(&cpu_hotplug.lock);
->> +	BUG_ON(cpu_hotplug.refcount == 0);
->>  	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->>  		wake_up_process(cpu_hotplug.active_writer);
->>  	mutex_unlock(&cpu_hotplug.lock);
-> 
-> I think calling BUG() here is a bit harsh.  We should only do that if
-> there's a risk to proceeding: a risk of data loss, a reduced ability to
-> analyse the underlying bug, etc.
-> 
-> But a cpu-hotplug locking imbalance is a really really really minor
-> problem!  So how about we emit a warning then try to fix things up? 
+Minor comments here :)
 
-That would be better indeed, thanks!
+On 22 September 2012 00:02,  <morten.rasmussen@arm.com> wrote:
 
-> This should increase the chance that the machine will keep running and
-> so will increase the chance that a user will be able to report the bug
-> to us.
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index d80de46..490f1f0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3744,7 +3744,6 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+>          * 1) task is cache cold, or
+>          * 2) too many balance attempts have failed.
+>          */
+> -
+
+:(
+
+>         tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
+>         if (!tsk_cache_hot ||
+>                 env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+> @@ -5516,6 +5515,199 @@ static unsigned int hmp_down_migration(int cpu, struct sched_entity *se)
+>         return 0;
+>  }
 >
 
-Yep, sounds good.
- 
-> 
-> --- a/kernel/cpu.c~cpu-hotplug-debug-detect-imbalance-between-get_online_cpus-and-put_online_cpus-fix
-> +++ a/kernel/cpu.c
-> @@ -80,9 +80,12 @@ void put_online_cpus(void)
->  	if (cpu_hotplug.active_writer == current)
->  		return;
->  	mutex_lock(&cpu_hotplug.lock);
-> -	BUG_ON(cpu_hotplug.refcount == 0);
-> -	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
-> -		wake_up_process(cpu_hotplug.active_writer);
-> +	if (!--cpu_hotplug.refcount) {
+> +static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
+> +{
 
-This won't catch it. We'll enter this 'if' condition only when cpu_hotplug.refcount was
-decremented to zero. We'll miss out the case when it went negative (which we intended to detect).
+<...>
 
-> +		if (WARN_ON(cpu_hotplug.refcount == -1))
-> +			cpu_hotplug.refcount++;	/* try to fix things up */
-> +		if (unlikely(cpu_hotplug.active_writer))
-> +			wake_up_process(cpu_hotplug.active_writer);
-> +	}
->  	mutex_unlock(&cpu_hotplug.lock);
-> 
->  }
+> +static int move_specific_task(struct lb_env *env, struct task_struct *pm)
+> +{
+> +       struct task_struct *p, *n;
+> +
+> +       list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
+> +       if (throttled_lb_pair(task_group(p), env->src_rq->cpu,
+> +                               env->dst_cpu))
+> +               continue;
 
-So how about something like below:
+Please fix indentation of above if statement.
 
------------------------------------------------------->
+<...>
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] CPU hotplug, debug: Detect imbalance between get_online_cpus() and put_online_cpus()
+> +#else
+> +static void hmp_force_up_migration(int this_cpu) { }
 
-The synchronization between CPU hotplug readers and writers is achieved by
-means of refcounting, safe-guarded by the cpu_hotplug.lock.
+inline?
 
-get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
-it. If we ever hit an imbalance between the two, we end up compromising the
-guarantees of the hotplug synchronization i.e, for example, an extra call to
-put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
-a hotplug writer. So, add a WARN_ON() in put_online_cpus() to detect such cases
-where the refcount can go negative, and also attempt to fix it up, so that we can
-continue to run.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/cpu.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index f560598..42bd331 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -80,6 +80,10 @@ void put_online_cpus(void)
- 	if (cpu_hotplug.active_writer == current)
- 		return;
- 	mutex_lock(&cpu_hotplug.lock);
-+
-+	if (WARN_ON(!cpu_hotplug.refcount))
-+		cpu_hotplug.refcount++; /* try to fix things up */
-+
- 	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
- 		wake_up_process(cpu_hotplug.active_writer);
- 	mutex_unlock(&cpu_hotplug.lock);
-
-
+--
+viresh
