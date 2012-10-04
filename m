@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab2JDJaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:30:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47702 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab2JDJaT (ORCPT
+	id S1755902Ab2JDJan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:30:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53615 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab2JDJal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:30:19 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH v2] media: davinci: vpif: Add return code check at vb2_queue_init()
-Date: Thu,  4 Oct 2012 14:59:57 +0530
-Message-Id: <1349342998-31804-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 4 Oct 2012 05:30:41 -0400
+Message-ID: <506D5736.7040402@pengutronix.de>
+Date: Thu, 04 Oct 2012 11:30:30 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: wg@grandegger.com, kernel-janitors@vger.kernel.org,
+        linux@dominikbrodowski.net, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/20] drivers/net/can/sja1000/peak_pcmcia.c: fix error
+ return code
+References: <1349281090-10013-3-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1349281090-10013-3-git-send-email-peter.senna@gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig7B4637FB16C5DFEA20C6B149"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig7B4637FB16C5DFEA20C6B149
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-from commit with id 896f38f582730a19eb49677105b4fe4c0270b82e
-it's mandatory to check the return code of vb2_queue_init().
+On 10/03/2012 06:17 PM, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>=20
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>=20
+> A simplified version of the semantic match that finds this problem is a=
+s
+> follows: (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret !=3D 0\))
+>  { ... return ret; }
+> |
+> ret@p1 =3D 0
+> )
+> ... when !=3D ret =3D e1
+>     when !=3D &ret
+> *if(...)
+> {
+>   ... when !=3D ret =3D e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+>=20
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
----
- Changes for v2:
- 1: Added vb2_dma_contig_cleanup_ctx() on failure of
-    vb2_queue_init() to avoid memory leak, pointed by Hans.
+Applied to can.
+tnx, Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
- drivers/media/platform/davinci/vpif_capture.c |    9 +++++++--
- drivers/media/platform/davinci/vpif_display.c |    9 +++++++--
- 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 83b80ba..cabd5a2 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -976,6 +976,7 @@ static int vpif_reqbufs(struct file *file, void *priv,
- 	struct common_obj *common;
- 	u8 index = 0;
- 	struct vb2_queue *q;
-+	int ret;
- 
- 	vpif_dbg(2, debug, "vpif_reqbufs\n");
- 
-@@ -1015,8 +1016,12 @@ static int vpif_reqbufs(struct file *file, void *priv,
- 	q->mem_ops = &vb2_dma_contig_memops;
- 	q->buf_struct_size = sizeof(struct vpif_cap_buffer);
- 
--	vb2_queue_init(q);
--
-+	ret = vb2_queue_init(q);
-+	if (ret) {
-+		vpif_err("vpif_capture: vb2_queue_init() failed\n");
-+		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
-+		return ret;
-+	}
- 	/* Set io allowed member of file handle to TRUE */
- 	fh->io_allowed[index] = 1;
- 	/* Increment io usrs member of channel object to 1 */
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index ae8329d..7f20ca5 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -936,6 +936,7 @@ static int vpif_reqbufs(struct file *file, void *priv,
- 	enum v4l2_field field;
- 	struct vb2_queue *q;
- 	u8 index = 0;
-+	int ret;
- 
- 	/* This file handle has not initialized the channel,
- 	   It is not allowed to do settings */
-@@ -981,8 +982,12 @@ static int vpif_reqbufs(struct file *file, void *priv,
- 	q->mem_ops = &vb2_dma_contig_memops;
- 	q->buf_struct_size = sizeof(struct vpif_disp_buffer);
- 
--	vb2_queue_init(q);
--
-+	ret = vb2_queue_init(q);
-+	if (ret) {
-+		vpif_err("vpif_display: vb2_queue_init() failed\n");
-+		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
-+		return ret;
-+	}
- 	/* Set io allowed member of file handle to TRUE */
- 	fh->io_allowed[index] = 1;
- 	/* Increment io usrs member of channel object to 1 */
--- 
-1.7.4.1
+--------------enig7B4637FB16C5DFEA20C6B149
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iEYEARECAAYFAlBtVzsACgkQjTAFq1RaXHNpJQCfWJ+um+x/TY9S8z6q2C6BJxfk
+0D0AnRZe4rev5vLW10iV5qO4WQc+Iwlw
+=KBwg
+-----END PGP SIGNATURE-----
+
+--------------enig7B4637FB16C5DFEA20C6B149--
