@@ -1,52 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965613Ab2JDPBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:01:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24909 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965200Ab2JDPBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:01:05 -0400
-Message-ID: <506DA48C.8050200@redhat.com>
-Date: Thu, 04 Oct 2012 17:00:28 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue>  <20120921120000.27611.71321.sendpatchset@codeblue>  <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>  <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>  <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com>  <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins>
-In-Reply-To: <1349356038.14388.3.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965621Ab2JDPCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:02:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9179 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965330Ab2JDPCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:02:07 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=soGHpUprkIUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=jx0P7QH68GoA:10 a=BrdBRmpAAAAA:8 a=Wo35i7Zp99RQVvP9T0EA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ybmXRfCilm1fNBpN:21 a=YPl-yvy6tKt4QC4B:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349362924.6755.18.camel@gandalf.local.home>
+Subject: [PATCH RT] softirq: Init softirq local lock after per cpu section
+ is set up
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@redhat.com>, Carsten Emde <cbe@osadl.org>,
+        vomlehn@texas.net
+Date: Thu, 04 Oct 2012 11:02:04 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 03:07 PM, Peter Zijlstra wrote:
-> On Thu, 2012-10-04 at 14:41 +0200, Avi Kivity wrote:
->> 
->> Again the numbers are ridiculously high for arch_local_irq_restore.
->> Maybe there's a bad perf/kvm interaction when we're injecting an
->> interrupt, I can't believe we're spending 84% of the time running the
->> popf instruction. 
-> 
-> Smells like a software fallback that doesn't do NMI, hrtimer based
-> sampling typically hits popf where we re-enable interrupts.
+I discovered this bug when booting 3.4-rt on my powerpc box. It crashed
+with the following report:
 
-Good nose, that's probably it.  Raghavendra, can you ensure that the PMU
-is properly exposed?  'dmesg' in the guest will tell.  If it isn't, -cpu
-host will expose it (and a good idea anyway to get best performance).
+------------[ cut here ]------------
+kernel BUG at /work/rt/stable-rt.git/kernel/rtmutex_common.h:75!
+Oops: Exception in kernel mode, sig: 5 [#1]
+PREEMPT SMP NR_CPUS=64 NUMA PA Semi PWRficient
+Modules linked in:
+NIP: c0000000004aa03c LR: c0000000004aa01c CTR: c00000000009b2ac
+REGS: c00000003e8d7950 TRAP: 0700   Not tainted  (3.4.11-test-rt19)
+MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 24000082  XER: 20000000
+SOFTE: 0
+TASK = c00000003e8fdcd0[11] 'ksoftirqd/1' THREAD: c00000003e8d4000 CPU: 1
+GPR00: 0000000000000001 c00000003e8d7bd0 c000000000d6cbb0 0000000000000000 
+GPR04: c00000003e8fdcd0 0000000000000000 0000000024004082 c000000000011454 
+GPR08: 0000000000000000 0000000080000001 c00000003e8fdcd1 0000000000000000 
+GPR12: 0000000024000084 c00000000fff0280 ffffffffffffffff 000000003ffffad8 
+GPR16: ffffffffffffffff 000000000072c798 0000000000000060 0000000000000000 
+GPR20: 0000000000642741 000000000072c858 000000003ffffaf0 0000000000000417 
+GPR24: 000000000072dcd0 c00000003e7ff990 0000000000000000 0000000000000001 
+GPR28: 0000000000000000 c000000000792340 c000000000ccec78 c000000001182338 
+NIP [c0000000004aa03c] .wakeup_next_waiter+0x44/0xb8
+LR [c0000000004aa01c] .wakeup_next_waiter+0x24/0xb8
+Call Trace:
+[c00000003e8d7bd0] [c0000000004aa01c] .wakeup_next_waiter+0x24/0xb8 (unreliable)
+[c00000003e8d7c60] [c0000000004a0320] .rt_spin_lock_slowunlock+0x8c/0xe4
+[c00000003e8d7ce0] [c0000000004a07cc] .rt_spin_unlock+0x54/0x64
+[c00000003e8d7d60] [c0000000000636bc] .__thread_do_softirq+0x130/0x174
+[c00000003e8d7df0] [c00000000006379c] .run_ksoftirqd+0x9c/0x1a4
+[c00000003e8d7ea0] [c000000000080b68] .kthread+0xa8/0xb4
+[c00000003e8d7f90] [c00000000001c2f8] .kernel_thread+0x54/0x70
+Instruction dump:
+60000000 e86d01c8 38630730 4bff7061 60000000 ebbf0008 7c7c1b78 e81d0040 
+7fe00278 7c000074 7800d182 68000001 <0b000000> e88d01c8 387d0010 38840738 
 
--- 
-error compiling committee.c: too many arguments to function
+The rtmutex_common.h:75 is:
+
+rt_mutex_top_waiter(struct rt_mutex *lock)
+{
+	struct rt_mutex_waiter *w;
+
+	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
+			       list_entry);
+	BUG_ON(w->lock != lock);
+
+	return w;
+}
+
+Where the waiter->lock is corrupted. I saw various other random bugs
+that all had to with the softirq lock and plist. As plist needs to be
+initialized before it is used I investigated how this lock is
+initialized. It's initialized with:
+
+void __init softirq_early_init(void)
+{
+	local_irq_lock_init(local_softirq_lock);
+}
+
+Where:
+
+#define local_irq_lock_init(lvar)					\
+	do {								\
+		int __cpu;						\
+		for_each_possible_cpu(__cpu)				\
+			spin_lock_init(&per_cpu(lvar, __cpu).lock);	\
+	} while (0)
+
+As the softirq lock is a local_irq_lock, which is a per_cpu lock, the
+initialization is done to all per_cpu versions of the lock. But lets
+look at where the softirq_early_init() is called from.
+
+In init/main.c: start_kernel()
+
+/*
+ * Interrupts are still disabled. Do necessary setups, then
+ * enable them
+ */
+	softirq_early_init();
+	tick_init();
+	boot_cpu_init();
+	page_address_init();
+	printk(KERN_NOTICE "%s", linux_banner);
+	setup_arch(&command_line);
+	mm_init_owner(&init_mm, &init_task);
+	mm_init_cpumask(&init_mm);
+	setup_command_line(command_line);
+	setup_nr_cpu_ids();
+	setup_per_cpu_areas();
+	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
+
+One of the first things that is called is the initialization of the
+softirq lock. But if you look further down, we see the per_cpu areas
+have not been set up yet. Thus initializing a local_irq_lock() before
+the per_cpu section is set up, may not work as it is initializing the
+per cpu locks before the per cpu exists.
+
+By moving the softirq_early_init() right after setup_per_cpu_areas(),
+the kernel boots fine.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/init/main.c b/init/main.c
+index f07f2b0..cee1a91 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -490,7 +490,6 @@ asmlinkage void __init start_kernel(void)
+  * Interrupts are still disabled. Do necessary setups, then
+  * enable them
+  */
+-	softirq_early_init();
+ 	tick_init();
+ 	boot_cpu_init();
+ 	page_address_init();
+@@ -501,6 +500,7 @@ asmlinkage void __init start_kernel(void)
+ 	setup_command_line(command_line);
+ 	setup_nr_cpu_ids();
+ 	setup_per_cpu_areas();
++	softirq_early_init();
+ 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
+ 
+ 	build_all_zonelists(NULL);
+
+
