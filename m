@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab2JDWCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:02:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65209 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933718Ab2JDVUy (ORCPT
+	id S933713Ab2JDVUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:20:52 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933607Ab2JDVUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:20:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [GIT PULL] Disintegrate UAPI for asm-generic
-Date: Thu, 4 Oct 2012 21:20:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-References: <17336.1349380256@warthog.procyon.org.uk>
-In-Reply-To: <17336.1349380256@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210042120.48955.arnd@arndb.de>
-X-Provags-ID: V02:K0:ftCkwSMxB53O4NVbrWMQWFCUqpLu8FZL/8+WLYpT1aD
- gTA+7llHJFCTfVK3TTWX++WNH2iclfhmBMpgxfvSDUWroasB8J
- Z8JivnY2AV8DH7T0K9YV3Ot2m79VTQKygVRLUgdAI5LIsNxSAq
- c6YvcGinbjmNRCIQst/A9T1O6r2ANUCA5DntyFSScWRjSnfjqj
- wiY4SOSrcxoGCjc+YJUZVrY2shicpDcPdiBVEMy9zrMTp1caUW
- zTCvkXnYY8JR4538pB3L/QUKm8faHRC8O/NkB7RLhTump5j24t
- h/0GebHq7hcKLAAKWfR/hlU7xYloqqa+wUv+/9xdxSuC2B3pqE
- O4DcIc7D3RNzrJwnhK4k=
+	Thu, 4 Oct 2012 17:20:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 05/58] dm verity: fix overflow check
+Date: Thu,  4 Oct 2012 14:19:12 -0700
+Message-Id: <20121004210636.115714807@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
+References: <20121004210635.449598766@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 October 2012, David Howells wrote:
-> Can you merge the following branch into the asm-generic tree please.
-> 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Note that there are some fixup patches which are at the base of the branch
-> aimed at you, plus all arches get the asm-generic branch merged in too.
-> 
-> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
-> 
->   Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
-> 
-> are available in the git repository at:
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Ok, I've pulled it into the asm-generic branch and added it to the arm-soc
-for-next branch, because that is convenient for me to get it into linux-next.
+------------------
 
-Olof, I'll send this to Linus in a couple of days, separate from the other arm-soc
-stuff that I assume you are handling. I could also send everything in one go
-if you prefer.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-	Arnd
+commit 1d55f6bcc0331d744cd5b56c4ee79e3809438161 upstream.
+
+This patch fixes sector_t overflow checking in dm-verity.
+
+Without this patch, the code checks for overflow only if sector_t is
+smaller than long long, not if sector_t and long long have the same size.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/dm-verity.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -718,8 +718,8 @@ static int verity_ctr(struct dm_target *
+ 	v->hash_dev_block_bits = ffs(num) - 1;
+ 
+ 	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) != 1 ||
+-	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=
+-	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) {
++	    (sector_t)(num_ll << (v->data_dev_block_bits - SECTOR_SHIFT))
++	    >> (v->data_dev_block_bits - SECTOR_SHIFT) != num_ll) {
+ 		ti->error = "Invalid data blocks";
+ 		r = -EINVAL;
+ 		goto bad;
+@@ -733,8 +733,8 @@ static int verity_ctr(struct dm_target *
+ 	}
+ 
+ 	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) != 1 ||
+-	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=
+-	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) {
++	    (sector_t)(num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT))
++	    >> (v->hash_dev_block_bits - SECTOR_SHIFT) != num_ll) {
+ 		ti->error = "Invalid hash start";
+ 		r = -EINVAL;
+ 		goto bad;
+
+
