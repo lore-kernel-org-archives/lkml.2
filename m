@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946335Ab2JDV1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:27:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44259 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946306Ab2JDV1I (ORCPT
+	id S1946381Ab2JDVgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:36:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45983 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946249Ab2JDV1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:08 -0400
+	Thu, 4 Oct 2012 17:27:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Antonio Ospite <ospite@studenti.unina.it>
-Subject: [ 04/33] USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
-Date: Thu,  4 Oct 2012 14:26:26 -0700
-Message-Id: <20121004210558.993957766@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 08/33] staging: comedi: jr3_pci: fix iomem dereference
+Date: Thu,  4 Oct 2012 14:26:30 -0700
+Message-Id: <20121004210559.484144284@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -26,54 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 54575b05af36959dfb6a49a3e9ca0c2b456b7126 upstream.
+commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
 
-TIAO/DIYGADGET USB Multi-Protocol Adapter (TUMPA) is an FTDI FT2232H
-based device which provides an easily accessible JTAG, SPI, I2C, serial
-breakout.
+Correct a direct dereference of I/O memory to use an appropriate I/O
+memory access function.  Note that the pointer being dereferenced is not
+currently tagged with `__iomem` but I plan to correct that for 3.7.
 
-http://www.diygadget.com/tiao-usb-multi-protocol-adapter-jtag-spi-i2c-serial.html
-http://www.tiaowiki.com/w/TIAO_USB_Multi_Protocol_Adapter_User%27s_Manual
-
-FTDI FT2232H provides two serial channels (A and B), but on the TUMPA
-channel A is dedicated to JTAG/SPI while channel B can be used for
-UART/RS-232: use the ftdi_jtag_quirk to expose only channel B as
-a usb-serial interface to userspace.
-
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 7 insertions(+)
+ drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -582,6 +582,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -517,6 +517,11 @@
-  */
- #define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -913,7 +913,7 @@ static int jr3_pci_attach(struct comedi_
+ 	}
  
-+/*
-+ * TIAO product ids (FTDI_VID)
-+ * http://www.tiaowiki.com/w/Main_Page
-+ */
-+#define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+ 	/*  Reset DSP card */
+-	devpriv->iobase->channel[0].reset = 0;
++	writel(0, &devpriv->iobase->channel[0].reset);
  
- 
- /********************************/
+ 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+ 	printk("Firmare load %d\n", result);
 
 
