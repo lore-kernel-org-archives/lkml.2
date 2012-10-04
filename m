@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2JDDQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 23:16:03 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:44594 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab2JDDP4 (ORCPT
+	id S1754852Ab2JDDQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 23:16:40 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:34134 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab2JDDQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 23:15:56 -0400
+	Wed, 3 Oct 2012 23:16:01 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: sameo@linux.intel.com
 Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
         dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
         linux-kernel@vger.kernel.org,
         Fabio Estevam <fabio.estevam@freescale.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-input@vger.kernel.org>
-Subject: [PATCH 4/6] Input: da9052_onkey.c: Convert to the new da9052 interrupt functions.
-Date: Thu,  4 Oct 2012 00:15:07 -0300
-Message-Id: <1349320509-26930-4-git-send-email-festevam@gmail.com>
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 6/6] gpio: gpio-da9052: Convert to the new da9052 interrupt functions
+Date: Thu,  4 Oct 2012 00:15:09 -0300
+Message-Id: <1349320509-26930-6-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349320509-26930-1-git-send-email-festevam@gmail.com>
 References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
@@ -27,92 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Use the new da9052 irq functions and allow the driver to probe successfully.
+Convert to the new da9052 interrupt functions, so that we can get rid of 
+irq_base references.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/input/misc/da9052_onkey.c |   22 +++++-----------------
- 1 file changed, 5 insertions(+), 17 deletions(-)
+Build tested only.
+ drivers/gpio/gpio-da9052.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/misc/da9052_onkey.c b/drivers/input/misc/da9052_onkey.c
-index 3c843cd..3be3acc 100644
---- a/drivers/input/misc/da9052_onkey.c
-+++ b/drivers/input/misc/da9052_onkey.c
-@@ -24,7 +24,6 @@ struct da9052_onkey {
- 	struct da9052 *da9052;
- 	struct input_dev *input;
- 	struct delayed_work work;
--	unsigned int irq;
- };
+diff --git a/drivers/gpio/gpio-da9052.c b/drivers/gpio/gpio-da9052.c
+index 24b8c29..3837072 100644
+--- a/drivers/gpio/gpio-da9052.c
++++ b/drivers/gpio/gpio-da9052.c
+@@ -185,7 +185,11 @@ static int da9052_gpio_to_irq(struct gpio_chip *gc, u32 offset)
+ 	struct da9052_gpio *gpio = to_da9052_gpio(gc);
+ 	struct da9052 *da9052 = gpio->da9052;
  
- static void da9052_onkey_query(struct da9052_onkey *onkey)
-@@ -76,7 +75,6 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
- 	struct da9052 *da9052 = dev_get_drvdata(pdev->dev.parent);
- 	struct da9052_onkey *onkey;
- 	struct input_dev *input_dev;
--	int irq;
- 	int error;
+-	return da9052->irq_base + DA9052_IRQ_GPI0 + offset;
++	int irq;
++
++	irq = regmap_irq_get_virq(da9052->irq_data, DA9052_IRQ_GPI0 + offset);
++
++	return irq;
+ }
  
- 	if (!da9052) {
-@@ -84,13 +82,6 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	irq = platform_get_irq_byname(pdev, "ONKEY");
--	if (irq < 0) {
--		dev_err(&pdev->dev,
--			"Failed to get an IRQ for input device, %d\n", irq);
--		return -EINVAL;
--	}
--
- 	onkey = kzalloc(sizeof(*onkey), GFP_KERNEL);
- 	input_dev = input_allocate_device();
- 	if (!onkey || !input_dev) {
-@@ -101,7 +92,6 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
- 
- 	onkey->input = input_dev;
- 	onkey->da9052 = da9052;
--	onkey->irq = irq;
- 	INIT_DELAYED_WORK(&onkey->work, da9052_onkey_work);
- 
- 	input_dev->name = "da9052-onkey";
-@@ -111,13 +101,11 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
- 	input_dev->evbit[0] = BIT_MASK(EV_KEY);
- 	__set_bit(KEY_POWER, input_dev->keybit);
- 
--	error = request_threaded_irq(onkey->irq, NULL, da9052_onkey_irq,
--				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
--				     "ONKEY", onkey);
-+	error = da9052_request_irq(onkey->da9052, DA9052_IRQ_NONKEY, "ONKEY",
-+			    da9052_onkey_irq, onkey);
- 	if (error < 0) {
- 		dev_err(onkey->da9052->dev,
--			"Failed to register ONKEY IRQ %d, error = %d\n",
--			onkey->irq, error);
-+			"Failed to register ONKEY IRQ: %d\n", error);
- 		goto err_free_mem;
- 	}
- 
-@@ -132,7 +120,7 @@ static int __devinit da9052_onkey_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_free_irq:
--	free_irq(onkey->irq, onkey);
-+	da9052_free_irq(onkey->da9052, DA9052_IRQ_NONKEY, onkey);
- 	cancel_delayed_work_sync(&onkey->work);
- err_free_mem:
- 	input_free_device(input_dev);
-@@ -145,7 +133,7 @@ static int __devexit da9052_onkey_remove(struct platform_device *pdev)
- {
- 	struct da9052_onkey *onkey = platform_get_drvdata(pdev);
- 
--	free_irq(onkey->irq, onkey);
-+	da9052_free_irq(onkey->da9052, DA9052_IRQ_NONKEY, onkey);
- 	cancel_delayed_work_sync(&onkey->work);
- 
- 	input_unregister_device(onkey->input);
+ static struct gpio_chip reference_gp __devinitdata = {
 -- 
 1.7.9.5
 
