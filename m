@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946147Ab2JDVZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946131Ab2JDVZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1946128Ab2JDVZY (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 4 Oct 2012 17:25:24 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934340Ab2JDVZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:25:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>,
-        John Johansen <john.johansen@canonical.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 40/52] Yama: handle 32-bit userspace prctl
-Date: Thu,  4 Oct 2012 14:21:31 -0700
-Message-Id: <20121004210640.344582685@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 38/52] n_gsm: memory leak in uplink error path
+Date: Thu,  4 Oct 2012 14:21:29 -0700
+Message-Id: <20121004210640.108874085@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,36 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 2e4930eb7c8fb20a39dfb5f8a8f80402710dcea8 upstream.
+commit 88ed2a60610974443335c924d7cb8e5dcf9dbdc1 upstream.
 
-When running a 64-bit kernel and receiving prctls from a 32-bit
-userspace, the "-1" used as an unsigned long will end up being
-misdetected. The kernel is looking for 0xffffffffffffffff instead of
-0xffffffff. Since prctl lacks a distinct compat interface, Yama needs
-to handle this translation itself. As such, support either value as
-meaning PR_SET_PTRACER_ANY, to avoid breaking the ABI for 64-bit.
+Uplink (TX) network data will go through gsm_dlci_data_output_framed
+there is a bug where if memory allocation fails, the skb which
+has already been pulled off the list will be lost.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: John Johansen <john.johansen@canonical.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+In addition TX skbs were being processed in LIFO order
+
+Fixed the memory leak, and changed to FIFO order processing
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/yama/yama_lsm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -138,7 +138,7 @@ static int yama_task_prctl(int option, u
- 		if (arg2 == 0) {
- 			yama_ptracer_del(NULL, myself);
- 			rc = 0;
--		} else if (arg2 == PR_SET_PTRACER_ANY) {
-+		} else if (arg2 == PR_SET_PTRACER_ANY || (int)arg2 == -1) {
- 			rc = yama_ptracer_add(NULL, myself);
- 		} else {
- 			struct task_struct *tracer;
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -875,7 +875,7 @@ static int gsm_dlci_data_output_framed(s
+ 
+ 	/* dlci->skb is locked by tx_lock */
+ 	if (dlci->skb == NULL) {
+-		dlci->skb = skb_dequeue(&dlci->skb_list);
++		dlci->skb = skb_dequeue_tail(&dlci->skb_list);
+ 		if (dlci->skb == NULL)
+ 			return 0;
+ 		first = 1;
+@@ -899,8 +899,11 @@ static int gsm_dlci_data_output_framed(s
+ 
+ 	/* FIXME: need a timer or something to kick this so it can't
+ 	   get stuck with no work outstanding and no buffer free */
+-	if (msg == NULL)
++	if (msg == NULL) {
++		skb_queue_tail(&dlci->skb_list, dlci->skb);
++		dlci->skb = NULL;
+ 		return -ENOMEM;
++	}
+ 	dp = msg->data;
+ 
+ 	if (dlci->adaption == 4) { /* Interruptible framed (Packetised Data) */
 
 
