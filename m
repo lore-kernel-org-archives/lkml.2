@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2JDRUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 13:20:40 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:44689 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab2JDRUj convert rfc822-to-8bit (ORCPT
+	id S1756900Ab2JDRU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 13:20:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35744 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756516Ab2JDRU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 13:20:39 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: RE: [PATCH 1/5] rapidio: fix blocking wait for discovery ready
-Thread-Topic: [PATCH 1/5] rapidio: fix blocking wait for discovery ready
-Thread-Index: AQHNoZwokif3unOZVUCZNF1fP82YypeonJWAgADIfiA=
-Date: Thu, 4 Oct 2012 17:20:09 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D1499FC794@corpmail2.na.ads.idt.com>
-References: <1349291923-22860-1-git-send-email-alexandre.bounine@idt.com>
-	<1349291923-22860-2-git-send-email-alexandre.bounine@idt.com>
- <20121003152001.665c9373.akpm@linux-foundation.org>
-In-Reply-To: <20121003152001.665c9373.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Oct 2012 13:20:56 -0400
+Date: Thu, 4 Oct 2012 18:20:54 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Message-ID: <20121004172054.GB13292@decadent.org.uk>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+ <20121001225159.352867398@1wt.eu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001225159.352867398@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 041/180] KVM: x86: fix missing checks in syscall emulation
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, October 03, 2012 6:20 PM
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, Oct 02, 2012 at 12:52:38AM +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 > 
-> On Wed,  3 Oct 2012 15:18:39 -0400
-> Alexandre Bounine <alexandre.bounine@idt.com> wrote:
+> ------------------
 > 
-> > Fix blocking wait loop in the RapidIO discovery routine to avoid
-> > warning dumps about stalled CPU on x86 platforms.
-> >
-> > ...
-> >
-> > +		to_end = jiffies + CONFIG_RAPIDIO_DISC_TIMEOUT * HZ;
-> > +		while (time_before(jiffies, to_end)) {
-> > +			if (rio_enum_complete(mport))
-> > +				goto enum_done;
-> > +
-> 	schedule_timeout_uninterruptible(msecs_to_jiffies(10));
+> From: =?latin1?q?Stephan=20B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
 > 
-> I think a simple msleep(10) would suffice here?
-> 
-Agree, same thing but looks simpler. Will update.
+> commit bdb42f5afebe208eae90406959383856ae2caf2b upstream
+[...]
+
+This is also wrong; it's the upstream commit hash for the previous
+fix!  The correct hash is c2226fc9e87ba3da060e47333657cd6616652b84.
+
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
