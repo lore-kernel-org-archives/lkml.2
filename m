@@ -1,308 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab2JDSMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:12:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39822 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab2JDSJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:36 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 35/42] perf diff: Refactor diff displacement possition info
-Date: Thu,  4 Oct 2012 15:08:35 -0300
-Message-Id: <1349374122-27806-36-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
-References: <1349374122-27806-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753574Ab2JDSM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:12:28 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:46826 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752893Ab2JDSMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 14:12:24 -0400
+Date: Thu, 4 Oct 2012 12:12:22 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Subject: RE: [PATCH v2] PPC: Do not make the entire heap executable
+Message-ID: <20121004181222.GD2994@obsidianresearch.com>
+References: <20120930232619.GE30637@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120930232619.GE30637@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+On PPC the ELF PLT sections look like this:
 
-Moving the position calculation into the diff command, so the position
-as prepared inside struct hist_entry data and there's no need to compute
-in the output display path.
+  [17] .sbss             NOBITS          0002aff8 01aff8 000014 00  WA  0   0  4
+  [18] .plt              NOBITS          0002b00c 01aff8 000084 00 WAX  0   0  4
+  [19] .bss              NOBITS          0002b090 01aff8 0000a4 00  WA  0   0  4
 
-Removing 'displacement' from struct perf_hpp as it is no longer needed.
+Which results in an ELF load header:
+  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+  LOAD           0x019c70 0x00029c70 0x00029c70 0x01388 0x014c4 RWE 0x10000
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1349354994-17853-3-git-send-email-namhyung@kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This is all correct, the load region containing the PLT is marked as
+executable. Note that the PLT starts at 0002b00c but the file mapping ends at
+0002aff8, so the PLT falls in the 0 fill section described by the load header,
+and after a page boundary.
+
+Unfortunately the generic ELF loader ignores the X bit in the load headers
+when it creates the 0 filled non-file backed mappings. It assumes all of these
+mappings are RW BSS sections, which is not the case for PPC.
+
+Teach the ELF loader to check the X bit in the relevant load header and
+create 0 filled anonymous mappings that are executable if the load header
+requests that.
+
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 ---
- tools/perf/builtin-diff.c   |   49 ++++++++++++++++++++++++++++---------------
- tools/perf/builtin-report.c |    2 +-
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/ui/hist.c        |    8 ++++--
- tools/perf/ui/stdio/hist.c  |   17 ++------------
- tools/perf/util/hist.h      |    4 +--
- tools/perf/util/sort.h      |    2 +-
- 7 files changed, 44 insertions(+), 40 deletions(-)
+ arch/powerpc/include/asm/page.h    |   10 +--------
+ arch/powerpc/include/asm/page_32.h |    2 -
+ arch/powerpc/include/asm/page_64.h |    4 ---
+ fs/binfmt_elf.c                    |   41 +++++++++++++++++++++++++++++-------
+ 4 files changed, 34 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 761f419..5cb577a 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -70,8 +70,8 @@ static struct perf_tool tool = {
- 	.ordering_requires_timestamps = true,
- };
+Some more testing found a bug, updated patch incase anyone wants
+to try it.
+
+Changes in v2:
+ - In load_elf_interp last_bss can become < elf_bss when vm_brk is
+   called. In the unpatched kernel this results in something like
+   0xFFFFFF00 being passed into vm_brk as the len, which rounds up to
+   0 and does nothing, but vm_mmap returns an error.. glibc 2.19
+   triggered this case due to the ld.so layout, eglibc 2.13 didn't.
+
+diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+index f072e97..61e46fc 100644
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -215,15 +215,7 @@ extern long long virt_phys_offset;
+ #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
+ #endif
  
--static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
--						    struct hist_entry *he)
-+static void insert_hist_entry_by_name(struct rb_root *root,
-+				      struct hist_entry *he)
+-/*
+- * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
+- * and needs to be executable.  This means the whole heap ends
+- * up being executable.
+- */
+-#define VM_DATA_DEFAULT_FLAGS32	(VM_READ | VM_WRITE | VM_EXEC | \
+-				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+-
+-#define VM_DATA_DEFAULT_FLAGS64	(VM_READ | VM_WRITE | \
++#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
+ 				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+ 
+ #ifdef __powerpc64__
+diff --git a/arch/powerpc/include/asm/page_32.h b/arch/powerpc/include/asm/page_32.h
+index 68d73b2..aaae5a6 100644
+--- a/arch/powerpc/include/asm/page_32.h
++++ b/arch/powerpc/include/asm/page_32.h
+@@ -7,8 +7,6 @@
+ #endif
+ #endif
+ 
+-#define VM_DATA_DEFAULT_FLAGS	VM_DATA_DEFAULT_FLAGS32
+-
+ #ifdef CONFIG_NOT_COHERENT_CACHE
+ #define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
+ #endif
+diff --git a/arch/powerpc/include/asm/page_64.h b/arch/powerpc/include/asm/page_64.h
+index fed85e6..615d88b 100644
+--- a/arch/powerpc/include/asm/page_64.h
++++ b/arch/powerpc/include/asm/page_64.h
+@@ -136,10 +136,6 @@ do {						\
+ 
+ #endif /* !CONFIG_HUGETLB_PAGE */
+ 
+-#define VM_DATA_DEFAULT_FLAGS \
+-	(is_32bit_task() ? \
+-	 VM_DATA_DEFAULT_FLAGS32 : VM_DATA_DEFAULT_FLAGS64)
+-
+ /*
+  * This is the default if a program doesn't have a PT_GNU_STACK
+  * program header entry. The PPC64 ELF ABI has a non executable stack
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 1b52956..c26b40d 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -76,13 +76,20 @@ static struct linux_binfmt elf_format = {
+ 
+ #define BAD_ADDR(x) ((unsigned long)(x) >= TASK_SIZE)
+ 
+-static int set_brk(unsigned long start, unsigned long end)
++static int set_brk(unsigned long start, unsigned long end, int prot)
  {
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
-@@ -90,7 +90,7 @@ static void perf_session__insert_hist_entry_by_name(struct rb_root *root,
- 	rb_insert_color(&he->rb_node, root);
- }
+ 	start = ELF_PAGEALIGN(start);
+ 	end = ELF_PAGEALIGN(end);
+ 	if (end > start) {
+ 		unsigned long addr;
+-		addr = vm_brk(start, end - start);
++		/* Map the non-file portion of the last load header. If the
++		   header is requesting these pages to be executeable then
++		   we have to honour that, otherwise assume they are bss. */
++		if (prot & PROT_EXEC)
++			addr = vm_mmap(0, start, end - start, prot,
++				MAP_PRIVATE | MAP_FIXED, 0);
++		else
++			addr = vm_brk(start, end - start);
+ 		if (BAD_ADDR(addr))
+ 			return addr;
+ 	}
+@@ -381,6 +388,7 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 	unsigned long load_addr = 0;
+ 	int load_addr_set = 0;
+ 	unsigned long last_bss = 0, elf_bss = 0;
++	int bss_prot = 0;
+ 	unsigned long error = ~0UL;
+ 	unsigned long total_size;
+ 	int retval, i, size;
+@@ -489,8 +497,10 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 			 * elf_bss and last_bss is the bss section.
+ 			 */
+ 			k = load_addr + eppnt->p_memsz + eppnt->p_vaddr;
+-			if (k > last_bss)
++			if (k > last_bss) {
+ 				last_bss = k;
++				bss_prot = elf_prot;
++			}
+ 		}
+ 	}
  
--static void hists__resort_entries(struct hists *self)
-+static void hists__name_resort(struct hists *self, bool sort)
- {
- 	unsigned long position = 1;
- 	struct rb_root tmp = RB_ROOT;
-@@ -100,12 +100,16 @@ static void hists__resort_entries(struct hists *self)
- 		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
+@@ -509,8 +519,19 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 		/* What we have mapped so far */
+ 		elf_bss = ELF_PAGESTART(elf_bss + ELF_MIN_ALIGN - 1);
  
- 		next = rb_next(&n->rb_node);
--		rb_erase(&n->rb_node, &self->entries);
- 		n->position = position++;
--		perf_session__insert_hist_entry_by_name(&tmp, n);
+-		/* Map the last of the bss segment */
+-		error = vm_brk(elf_bss, last_bss - elf_bss);
++		if (last_bss > elf_bss) {
++			/* Map the non-file portion of the last load
++			   header. If the header is requesting these pages to
++			   be executeable then we have to honour that,
++			   otherwise assume they are bss. */
++			if ((bss_prot & PROT_EXEC) && last_bss > elf_bss)
++				error = vm_mmap(0, elf_bss,
++					ELF_PAGEALIGN(last_bss - elf_bss),
++					bss_prot, MAP_PRIVATE | MAP_FIXED, 0);
++			else
++				error = vm_brk(elf_bss, last_bss - elf_bss);
++		}
 +
-+		if (sort) {
-+			rb_erase(&n->rb_node, &self->entries);
-+			insert_hist_entry_by_name(&tmp, n);
+ 		if (BAD_ADDR(error))
+ 			goto out_close;
+ 	}
+@@ -560,6 +581,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	unsigned long error;
+ 	struct elf_phdr *elf_ppnt, *elf_phdata;
+ 	unsigned long elf_bss, elf_brk;
++	int bss_prot = 0;
+ 	int retval, i;
+ 	unsigned int size;
+ 	unsigned long elf_entry;
+@@ -750,7 +772,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 			   before this one. Map anonymous pages, if needed,
+ 			   and clear the area.  */
+ 			retval = set_brk(elf_bss + load_bias,
+-					 elf_brk + load_bias);
++					 elf_brk + load_bias,
++					 bss_prot);
+ 			if (retval) {
+ 				send_sig(SIGKILL, current, 0);
+ 				goto out_free_dentry;
+@@ -852,8 +875,10 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 		if (end_data < k)
+ 			end_data = k;
+ 		k = elf_ppnt->p_vaddr + elf_ppnt->p_memsz;
+-		if (k > elf_brk)
++		if (k > elf_brk) {
++			bss_prot = elf_prot;
+ 			elf_brk = k;
 +		}
  	}
  
--	self->entries = tmp;
-+	if (sort)
-+		self->entries = tmp;
- }
- 
- static struct hist_entry *hists__find_entry(struct hists *self,
-@@ -121,7 +125,7 @@ static struct hist_entry *hists__find_entry(struct hists *self,
- 			n = n->rb_left;
- 		else if (cmp > 0)
- 			n = n->rb_right;
--		else 
-+		else
- 			return iter;
- 	}
- 
-@@ -150,6 +154,24 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
- 	return NULL;
- }
- 
-+static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		struct hists *hists = &evsel->hists;
-+
-+		hists__output_resort(hists);
-+
-+		/*
-+		 * The hists__name_resort only sets possition
-+		 * if name is false.
-+		 */
-+		if (name || ((!name) && show_displacement))
-+			hists__name_resort(hists, name);
-+	}
-+}
-+
- static int __cmd_diff(void)
- {
- 	int ret, i;
-@@ -176,15 +198,8 @@ static int __cmd_diff(void)
- 	evlist_old = older->evlist;
- 	evlist_new = newer->evlist;
- 
--	list_for_each_entry(evsel, &evlist_new->entries, node)
--		hists__output_resort(&evsel->hists);
--
--	list_for_each_entry(evsel, &evlist_old->entries, node) {
--		hists__output_resort(&evsel->hists);
--
--		if (show_displacement)
--			hists__resort_entries(&evsel->hists);
--	}
-+	perf_evlist__resort_hists(evlist_old, true);
-+	perf_evlist__resort_hists(evlist_new, false);
- 
- 	list_for_each_entry(evsel, &evlist_new->entries, node) {
- 		struct perf_evsel *evsel_old;
-@@ -200,7 +215,7 @@ static int __cmd_diff(void)
- 
- 		hists__match(&evsel_old->hists, &evsel->hists);
- 		hists__fprintf(&evsel->hists, &evsel_old->hists,
--			       show_displacement, true, 0, 0, stdout);
-+			       true, 0, 0, stdout);
- 	}
- 
- out_delete:
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 1da243d..6748cac 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -320,7 +320,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		const char *evname = perf_evsel__name(pos);
- 
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
--		hists__fprintf(hists, NULL, false, true, 0, 0, stdout);
-+		hists__fprintf(hists, NULL, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
- 	}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f0c1c4f..3571158 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -316,7 +316,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 	hists__output_recalc_col_len(&top->sym_evsel->hists,
- 				     top->winsize.ws_row - 3);
- 	putchar('\n');
--	hists__fprintf(&top->sym_evsel->hists, NULL, false, false,
-+	hists__fprintf(&top->sym_evsel->hists, NULL, false,
- 		       top->winsize.ws_row - 4 - printed, win_width, stdout);
- }
- 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index e3f8cd4..55b9ca8 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -244,13 +244,15 @@ static int hpp__width_displ(struct perf_hpp *hpp __maybe_unused)
- }
- 
- static int hpp__entry_displ(struct perf_hpp *hpp,
--			    struct hist_entry *he __maybe_unused)
-+			    struct hist_entry *he)
- {
-+	struct hist_entry *pair = he->pair;
-+	long displacement = pair ? pair->position - he->position : 0;
- 	const char *fmt = symbol_conf.field_sep ? "%s" : "%6.6s";
- 	char buf[32] = " ";
- 
--	if (hpp->displacement)
--		scnprintf(buf, sizeof(buf), "%+4ld", hpp->displacement);
-+	if (displacement)
-+		scnprintf(buf, sizeof(buf), "%+4ld", displacement);
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
- }
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 882461a..d7405f0 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -308,7 +308,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- 
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 			       struct hists *hists, struct hists *pair_hists,
--			       long displacement, u64 total_period, FILE *fp)
-+			       u64 total_period, FILE *fp)
- {
- 	char bf[512];
- 	int ret;
-@@ -316,7 +316,6 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 		.total_period	= total_period,
--		.displacement	= displacement,
- 		.ptr		= pair_hists,
- 	};
- 	bool color = !symbol_conf.field_sep;
-@@ -337,15 +336,13 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- }
- 
- size_t hists__fprintf(struct hists *hists, struct hists *pair,
--		      bool show_displacement, bool show_header, int max_rows,
-+		      bool show_header, int max_rows,
- 		      int max_cols, FILE *fp)
- {
- 	struct sort_entry *se;
- 	struct rb_node *nd;
- 	size_t ret = 0;
- 	u64 total_period;
--	unsigned long position = 1;
--	long displacement = 0;
- 	unsigned int width;
- 	const char *sep = symbol_conf.field_sep;
- 	const char *col_width = symbol_conf.col_width_list_str;
-@@ -449,15 +446,7 @@ print_entries:
- 		if (h->filtered)
- 			continue;
- 
--		if (show_displacement) {
--			if (h->pair != NULL)
--				displacement = ((long)h->pair->position -
--					        (long)position);
--			else
--				displacement = 0;
--			++position;
--		}
--		ret += hist_entry__fprintf(h, max_cols, hists, pair, displacement,
-+		ret += hist_entry__fprintf(h, max_cols, hists, pair,
- 					   total_period, fp);
- 
- 		if (max_rows && ++nr_rows >= max_rows)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 6ca7407..efb8fc8 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -99,8 +99,7 @@ void hists__inc_nr_events(struct hists *self, u32 type);
- size_t hists__fprintf_nr_events(struct hists *self, FILE *fp);
- 
- size_t hists__fprintf(struct hists *self, struct hists *pair,
--		      bool show_displacement, bool show_header,
--		      int max_rows, int max_cols, FILE *fp);
-+		      bool show_header, int max_rows, int max_cols, FILE *fp);
- 
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
-@@ -120,7 +119,6 @@ struct perf_hpp {
- 	size_t size;
- 	u64 total_period;
- 	const char *sep;
--	long displacement;
- 	void *ptr;
- };
- 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index eb3959b..f070b52 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -73,8 +73,8 @@ struct hist_entry {
- 	u8			filtered;
- 	char			*srcline;
- 	struct symbol		*parent;
-+	unsigned long		position;
- 	union {
--		unsigned long	  position;
- 		struct hist_entry *pair;
- 		struct rb_root	  sorted_chain;
- 	};
+ 	loc->elf_ex.e_entry += load_bias;
+@@ -869,7 +894,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	 * mapping in the interpreter, to make sure it doesn't wind
+ 	 * up getting placed where the bss needs to go.
+ 	 */
+-	retval = set_brk(elf_bss, elf_brk);
++	retval = set_brk(elf_bss, elf_brk, bss_prot);
+ 	if (retval) {
+ 		send_sig(SIGKILL, current, 0);
+ 		goto out_free_dentry;
 -- 
-1.7.1
+1.7.5.4
 
