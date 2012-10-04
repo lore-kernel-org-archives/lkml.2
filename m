@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934086Ab2JDVX3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:23:29 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934055Ab2JDVXR (ORCPT
+	id S934072Ab2JDVX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:23:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934042Ab2JDVXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:17 -0400
+	Thu, 4 Oct 2012 17:23:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 58/58] SCSI: scsi_dh_alua: Enable STPG for unavailable ports
-Date: Thu,  4 Oct 2012 14:20:05 -0700
-Message-Id: <20121004210642.751938372@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 51/58] remoteproc: fix a potential NULL-dereference on cleanup
+Date: Thu,  4 Oct 2012 14:19:58 -0700
+Message-Id: <20121004210641.917625695@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,37 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e47f8976d8e573928824a06748f7bc82c58d747f upstream.
+commit 7168d914a782086e217214c57ddfc7cc4b738c0c upstream.
 
-A quote from SPC-4: "While in the unavailable primary target port
-asymmetric access state, the device server shall support those of
-the following commands that it supports while in the active/optimized
-state: [ ... ] d) SET TARGET PORT GROUPS; [ ... ]". Hence enable
-sending STPG to a target port group that is in the unavailable state.
+We only need to allocate mapping if there is an IOMMU domain.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Otherwise, when the mappings are released, the assumption that
+an IOMMU domain is there will crash and burn.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+[ohad: revise commit log]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/device_handler/scsi_dh_alua.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/remoteproc/remoteproc_core.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/scsi/device_handler/scsi_dh_alua.c
-+++ b/drivers/scsi/device_handler/scsi_dh_alua.c
-@@ -590,8 +590,7 @@ static int alua_rtpg(struct scsi_device
- 		h->state = TPGS_STATE_STANDBY;
- 		break;
- 	case TPGS_STATE_OFFLINE:
--	case TPGS_STATE_UNAVAILABLE:
--		/* Path unusable for unavailable/offline */
-+		/* Path unusable */
- 		err = SCSI_DH_DEV_OFFLINED;
- 		break;
- 	default:
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -643,17 +643,10 @@ static int rproc_handle_carveout(struct
+ 	dev_dbg(dev, "carveout rsc: da %x, pa %x, len %x, flags %x\n",
+ 			rsc->da, rsc->pa, rsc->len, rsc->flags);
+ 
+-	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
+-	if (!mapping) {
+-		dev_err(dev, "kzalloc mapping failed\n");
+-		return -ENOMEM;
+-	}
+-
+ 	carveout = kzalloc(sizeof(*carveout), GFP_KERNEL);
+ 	if (!carveout) {
+ 		dev_err(dev, "kzalloc carveout failed\n");
+-		ret = -ENOMEM;
+-		goto free_mapping;
++		return -ENOMEM;
+ 	}
+ 
+ 	va = dma_alloc_coherent(dev, rsc->len, &dma, GFP_KERNEL);
+@@ -683,11 +676,18 @@ static int rproc_handle_carveout(struct
+ 	 * physical address in this case.
+ 	 */
+ 	if (rproc->domain) {
++		mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
++		if (!mapping) {
++			dev_err(dev, "kzalloc mapping failed\n");
++			ret = -ENOMEM;
++			goto dma_free;
++		}
++
+ 		ret = iommu_map(rproc->domain, rsc->da, dma, rsc->len,
+ 								rsc->flags);
+ 		if (ret) {
+ 			dev_err(dev, "iommu_map failed: %d\n", ret);
+-			goto dma_free;
++			goto free_mapping;
+ 		}
+ 
+ 		/*
+@@ -728,12 +728,12 @@ static int rproc_handle_carveout(struct
+ 
+ 	return 0;
+ 
++free_mapping:
++	kfree(mapping);
+ dma_free:
+ 	dma_free_coherent(dev, rsc->len, va, dma);
+ free_carv:
+ 	kfree(carveout);
+-free_mapping:
+-	kfree(mapping);
+ 	return ret;
+ }
+ 
 
 
