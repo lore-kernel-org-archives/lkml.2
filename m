@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965421Ab2JDOvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:51:06 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40921 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965130Ab2JDOvD (ORCPT
+	id S965477Ab2JDO4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:56:09 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58780 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965200Ab2JDO4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:51:03 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Jayachandran C <jayachandranc@netlogicmicro.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/25] MIPS: Netlogic: use ehci-platform driver
-Date: Thu, 04 Oct 2012 07:51:01 -0700 (PDT)
-Message-ID: <17094030.Jd6tWHquEF@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1210031151300.1441-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1210031151300.1441-100000@iolanthe.rowland.org>
+	Thu, 4 Oct 2012 10:56:07 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
+References: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
+Date: Thu, 4 Oct 2012 16:56:06 +0200
+Message-ID: <CAKMK7uFsYUYuvWu2tWNc6+soPJpsJt6pz-A5EePc9oF7fG6uAA@mail.gmail.com>
+Subject: Re: 3.6.0+ (GIT) -- WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
+ intel_disable_pipe+0xab/0x12e() -- plane B assertion failure, should be off
+ on pipe B but is still active
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Eric Anholt <eric@anholt.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 October 2012 12:47:58 Alan Stern wrote:
-> On Wed, 3 Oct 2012, Florian Fainelli wrote:
-> 
-> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> 
-> IMO, patches should always have a non-empty changelog.  Even if it is 
-> relatively trivial.  The same comment applies to several other patches 
-> in this series.
-> 
-> > ---
-> >  arch/mips/netlogic/xlr/platform.c |    6 ++++++
-> >  1 file changed, 6 insertions(+)
-> 
-> Does this need to enable CONFIG_USB_EHCI_HCD_PLATFORM is some 
-> defconfig file, like you did with the MIPS Loongson 1B?
+This should help: https://patchwork.kernel.org/patch/1436231/
 
-Netlogic platforms have USB disabled by default in their defconfig, so I'd say 
-no, but only for them.
+It's not merged yet since it cause a black screen on resume on one of
+my really old machines. Issue isn't new at all, but the new modeset
+code is _much_ more anal about cross-checking the hw state with what
+we expect to be there.
 
-> 
-> And likewise for quite a few of the other patches in this series.
-> 
-> > diff --git a/arch/mips/netlogic/xlr/platform.c 
-b/arch/mips/netlogic/xlr/platform.c
-> > index 71b44d8..1731dfd 100644
-> > --- a/arch/mips/netlogic/xlr/platform.c
-> > +++ b/arch/mips/netlogic/xlr/platform.c
-> > @@ -15,6 +15,7 @@
-> >  #include <linux/serial_8250.h>
-> >  #include <linux/serial_reg.h>
-> >  #include <linux/i2c.h>
-> > +#include <linux/usb/ehci_pdriver.h>
-> >  
-> >  #include <asm/netlogic/haldefs.h>
-> >  #include <asm/netlogic/xlr/iomap.h>
-> > @@ -123,6 +124,10 @@ static u64 xls_usb_dmamask = ~(u32)0;
-> >  		},							\
-> >  	}
-> >  
-> > +static struct usb_ehci_pdata xls_usb_ehci_pdata = {
-> > +	.caps_offset	= 0,
-> > +};
-> > +
-> >  static struct platform_device xls_usb_ehci_device =
-> >  			 USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
-> >  static struct platform_device xls_usb_ohci_device_0 =
-> > @@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
-> >  	memres = CPHYSADDR((unsigned long)usb_mmio);
-> >  	xls_usb_ehci_device.resource[0].start = memres;
-> >  	xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
-> > +	xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
-> >  
-> >  	memres += 0x400;
-> >  	xls_usb_ohci_device_0.resource[0].start = memres;
-> 
-> Don't you need to change/set the pdev name also?  Likewise for patch 
-> 20/25 and 24/25.
-> 
-> Alan Stern
-> 
+Thanks, Daniel
+
+On Thu, Oct 4, 2012 at 4:18 PM, Miles Lane <miles.lane@gmail.com> wrote:
+> [    4.266874] WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
+> intel_disable_pipe+0xab/0x12e()
+> [    4.266877] Hardware name: UL50VT
+> [    4.266880] plane B assertion failure, should be off on pipe B but
+> is still active
+> [    4.266882] Modules linked in:
+> [    4.266888] Pid: 1, comm: swapper/0 Not tainted 3.6.0+ #27
+> [    4.266891] Call Trace:
+> [    4.266899]  [<ffffffff8102dd26>] warn_slowpath_common+0x7e/0x97
+> [    4.266905]  [<ffffffff8102ddd3>] warn_slowpath_fmt+0x41/0x43
+> [    4.266911]  [<ffffffff8129404c>] intel_disable_pipe+0xab/0x12e
+> [    4.266917]  [<ffffffff812945d9>] i9xx_crtc_disable+0xd1/0x144
+> [    4.266923]  [<ffffffff8129c112>] intel_modeset_setup_hw_state+0x438/0x69f
+> [    4.266929]  [<ffffffff8129c398>] intel_modeset_gem_init+0x1f/0x24
+> [    4.266936]  [<ffffffff8127bf37>] i915_driver_load+0xada/0xcde
+> [    4.266945]  [<ffffffff812628f0>] drm_get_pci_dev+0x16d/0x266
+> [    4.266951]  [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
+> [    4.266957]  [<ffffffff81454392>] i915_pci_probe+0x4d/0x57
+> [    4.266964]  [<ffffffff811e4844>] local_pci_probe+0x5b/0xa2
+> [    4.266969]  [<ffffffff811e494b>] pci_device_probe+0xc0/0xed
+> [    4.266976]  [<ffffffff8133bb44>] ? driver_probe_device+0x1b5/0x1b5
+> [    4.266981]  [<ffffffff8133ba29>] driver_probe_device+0x9a/0x1b5
+> [    4.266987]  [<ffffffff8133bb92>] __driver_attach+0x4e/0x6f
+> [    4.266992]  [<ffffffff8133a175>] bus_for_each_dev+0x52/0x84
+> [    4.266998]  [<ffffffff8133b542>] driver_attach+0x19/0x1b
+> [    4.267003]  [<ffffffff8133b1e3>] bus_add_driver+0xf4/0x219
+> [    4.267009]  [<ffffffff8133c0ef>] driver_register+0x8e/0x114
+> [    4.267014]  [<ffffffff811e3d09>] __pci_register_driver+0x5a/0x5f
+> [    4.267020]  [<ffffffff81262a6a>] drm_pci_init+0x81/0xe7
+> [    4.267027]  [<ffffffff81ac109d>] ? ttm_init+0x62/0x62
+> [    4.267033]  [<ffffffff81ac1103>] i915_init+0x66/0x68
+> [    4.267039]  [<ffffffff810001fa>] do_one_initcall+0x7a/0x130
+> [    4.267045]  [<ffffffff81a97c3f>] kernel_init+0x10b/0x18f
+> [    4.267051]  [<ffffffff81a9752f>] ? do_early_param+0x8c/0x8c
+> [    4.267058]  [<ffffffff81471334>] kernel_thread_helper+0x4/0x10
+> [    4.267065]  [<ffffffff8104f6a5>] ? finish_task_switch+0x38/0xb0
+> [    4.267070]  [<ffffffff81000c71>] ? __switch_to+0x19c/0x426
+> [    4.267076]  [<ffffffff8146b7a0>] ? retint_restore_args+0xe/0xe
+> [    4.267082]  [<ffffffff81a97b34>] ? start_kernel+0x3b3/0x3b3
+> [    4.267087]  [<ffffffff81471330>] ? gs_change+0xb/0xb
+
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
