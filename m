@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965565Ab2JDI0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:26:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45443 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964998Ab2JDI0k (ORCPT
+	id S965543Ab2JDI2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:28:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58846 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964998Ab2JDI2Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:26:40 -0400
+	Thu, 4 Oct 2012 04:28:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 08/17] ARM: at91: unused variable in at91_pm_verify_clocks
+Date: Thu, 4 Oct 2012 08:28:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-9-git-send-email-arnd@arndb.de> <20121002185540.GB5117@game.jcrosoft.org>
+In-Reply-To: <20121002185540.GB5117@game.jcrosoft.org>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLY8kFaTMNetqnO_PHwkCCfqkaTxTZQdSc1AwcDiAr86g@mail.gmail.com>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu>
-	<20120820180037.GV4232@outflux.net>
-	<CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
-	<CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
-	<CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
-	<CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com>
-	<20121002153841.a03ad73b.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1210021733580.1343@eggly.anvils>
-	<506C4F29.4090303@gmail.com>
-	<20121003141804.f9896690.akpm@linux-foundation.org>
-	<CAGXu5jLY8kFaTMNetqnO_PHwkCCfqkaTxTZQdSc1AwcDiAr86g@mail.gmail.com>
-Date: Thu, 4 Oct 2012 10:26:37 +0200
-Message-ID: <CAKFga-d+Fyryh6_D6Nf6vGKWs9K_GP0t86dJSBRStpfHnmnviw@mail.gmail.com>
-Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, pageexec@freemail.hu,
-        Roland McGrath <roland@hack.frob.com>, Nick Kralevich <nnk@google.com>,
-        enh <enh@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201210040828.11226.arnd@arndb.de>
+X-Provags-ID: V02:K0:f3ND7wkfkHEO0pdIZ+DZAEopXC84vR/8tckYhRmGuTq
+ bgw+mPlztZq/jdvwA870AUpUyCixQi8b9K1R8cu1IrDtzk4lwQ
+ +ZDfisolg5ug1821dUn6E8cx1U66xMJPRX7l72gTvpy1tLua0g
+ W/AP+7VF3JQ2EGWLyfidXGdgj63dWS0IqJXkSq9GDh0gSAlvu7
+ 5VAiFl6mqPa5wbOMo9Z3JHVQbuN500Rs9zgRpZr2VKDe6emLx/
+ mr9W0nSs/9aYdH/zJqBK3aGi63jaqWDwcbmrQ+StFbXk14lSep
+ Ra/TMjLt/Lg3E9ufQ4XCcyNnImsXFrD4jmVtkS+lujKltul23y
+ 5PpdNCTS6xNRxHGvjtsQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/4 Kees Cook <keescook@chromium.org>:
-> On Wed, Oct 3, 2012 at 2:18 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> Again: has this proposal been reviewed by the glibc maintainers?  If
->> so, what was their position on it?
->
-> Ard have you talked with them? I would expect it would be welcomed.
-> Roland, do you know who would be the right person to ask about this
-> for glibc? (patch: https://lkml.org/lkml/2012/10/3/262)
->
+On Tuesday 02 October 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >  	unsigned long scsr;
+> > +#ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
+> >  	int i;
+> > +#endif
+> please is if (IS_ENBLED())
+> 
+> #ifdef drop code coverage
+> 
 
-I haven't spoken to the glibc people. However, I have been in contact
-with the Android/Bionic people (on CC) to merge back some of the
-security/hardening enhancements I have been making to Android on
-behalf of my employer. This change is part of that.
+Ok, agreed. Here is the new version:
 
-I will post to the libc mailing list and once I get some feedback I
-will post the summary here.
+>From bacd47abb36104665261c84f6f85bba7aef8a521 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 30 Apr 2012 13:00:32 +0000
+Subject: [PATCH] ARM: at91: unused variable in at91_pm_verify_clocks
 
->> Also, you earlier stated that "It's a more direct version of PaX's
->> "MPROTECT" feature[1]".  This is useful information.  Please update the
->> changelog to describe that PaX feature and to describe the difference
->> between the two, and the reasons for that difference.
->
-> AIUI, it's much more aggressive. It tries to protect all processes
-> automatically (rather than this which is at the request of the
-> process) and gets in the way of things like Java that expect to be
-> able to do w+x mappings.
->
+The code using the variable 'i' in this function is conditional which
+results in a harmless compiler warning. Using the IS_ENABLED macro
+instead of #ifdef makes the code look nicer and gets rid of the
+warning.
 
-The main difference is that PROT_FINAL is just a feature. It is
-completely up to the userland to decide in which cases (if at all) to
-use it, which -as Kees points out- makes it a lot easier to allow
-certain cases (ashmem filebacked rwx mappings for the JIT heap) while
-ruling out all others. By implementing it in the loader, the vast
-majority of code, rodata and relro mappings are hardened while
-explicit uses of mmap/mprotect in userland code are completely
-unaffected.
+Without this patch, building at91sam9263_defconfig results in:
 
-OTOH PaX's MPROTECT is a full blown policy implemented inside the
-kernel. It imposes rules on which of the various combinations of VM_*
-and VM_MAY* are permissible with little or no control from userland.
+/home/arnd/linux-arm/arch/arm/mach-at91/pm.c: In function 'at91_pm_verify_clocks':
+/home/arnd/linux-arm/arch/arm/mach-at91/pm.c:137:6: warning: unused variable 'i' [-Wunused-variable]
 
--- 
-Ard.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 2c2d865..5315f05 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -153,7 +153,9 @@ static int at91_pm_verify_clocks(void)
+ 		}
+ 	}
+ 
+-#ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
++	if (!IS_ENABLED(CONFIG_AT91_PROGRAMMABLE_CLOCKS))
++		return 1;
++
+ 	/* PCK0..PCK3 must be disabled, or configured to use clk32k */
+ 	for (i = 0; i < 4; i++) {
+ 		u32 css;
+@@ -167,7 +169,6 @@ static int at91_pm_verify_clocks(void)
+ 			return 0;
+ 		}
+ 	}
+-#endif
+ 
+ 	return 1;
+ }
+
