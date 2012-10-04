@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab2JDVSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:18:18 -0400
+	id S1752801Ab2JDWOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:14:16 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932618Ab2JDVSM (ORCPT
+	with ESMTP id S932401Ab2JDVSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:12 -0400
+	Thu, 4 Oct 2012 17:18:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 30/56] xHCI: cancel command after command timeout
-Date: Thu,  4 Oct 2012 14:15:51 -0700
-Message-Id: <20121004211155.538798875@linuxfoundation.org>
+        Khalid Aziz <khalid.aziz@hp.com>, Kees Cook <keescook@chromium.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 26/56] firmware: Add missing attributes to EFI variable attribute print out from sysfs
+Date: Thu,  4 Oct 2012 14:15:47 -0700
+Message-Id: <20121004211155.074576446@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -28,142 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Khalid Aziz <khalid.aziz@hp.com>
 
-commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
+commit 7083909023bbe29b3176e92d2d089def1aa7aa1e upstream.
 
-The patch is used to cancel command when the command isn't
-acknowledged and a timeout occurs.
+Some of the EFI variable attributes are missing from print out from
+/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
+updates code to use pre-defined constants for masking current value
+of attributes.
 
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
-assertion to check for virt_dev=0 bug." That commit papers over a NULL
-pointer dereference, and this patch fixes the underlying issue that
-caused the NULL pointer dereference.
-
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Acked-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
- drivers/usb/host/xhci.h |    3 +++
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ drivers/firmware/efivars.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2525,6 +2525,7 @@ static int xhci_configure_endpoint(struc
- 	struct completion *cmd_completion;
- 	u32 *cmd_status;
- 	struct xhci_virt_device *virt_dev;
-+	union xhci_trb *cmd_trb;
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *en
+ 	if (status != EFI_SUCCESS)
+ 		return -EIO;
  
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	virt_dev = xhci->devs[udev->slot_id];
-@@ -2570,6 +2571,7 @@ static int xhci_configure_endpoint(struc
- 	}
- 	init_completion(cmd_completion);
+-	if (var->Attributes & 0x1)
++	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
+ 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
+-	if (var->Attributes & 0x2)
++	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
+-	if (var->Attributes & 0x4)
++	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
+ 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
++		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
++	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes &
++			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
++		str += sprintf(str,
++			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
++	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
++		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
+ 	return str - buf;
+ }
  
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -2591,14 +2593,17 @@ static int xhci_configure_endpoint(struc
- 	/* Wait for the configure endpoint command to complete */
- 	timeleft = wait_for_completion_interruptible_timeout(
- 			cmd_completion,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for %s command\n",
- 				timeleft == 0 ? "Timeout" : "Signal",
- 				ctx_change == 0 ?
- 					"configure endpoint" :
- 					"evaluate context");
--		/* FIXME cancel the configure endpoint command */
-+		/* cancel the configure endpoint command */
-+		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
-@@ -3547,8 +3552,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-+	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3560,12 +3567,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 
- 	/* XXX: how much time for xHC slot assignment? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for a slot\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the enable slot request */
--		return 0;
-+		/* cancel the enable slot request */
-+		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
- 	}
- 
- 	if (!xhci->slot_id) {
-@@ -3626,6 +3633,7 @@ int xhci_address_device(struct usb_hcd *
- 	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u64 temp_64;
-+	union xhci_trb *cmd_trb;
- 
- 	if (!udev->slot_id) {
- 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
-@@ -3664,6 +3672,7 @@ int xhci_address_device(struct usb_hcd *
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
-@@ -3676,7 +3685,7 @@ int xhci_address_device(struct usb_hcd *
- 
- 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
- 	 * the SetAddress() "recovery interval" required by USB and aborting the
- 	 * command on a timeout.
-@@ -3684,7 +3693,10 @@ int xhci_address_device(struct usb_hcd *
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for address device command\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the address device command */
-+		/* cancel the address device command */
-+		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1256,6 +1256,9 @@ struct xhci_td {
- 	union xhci_trb		*last_trb;
- };
- 
-+/* xHCI command default timeout value */
-+#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
-+
- /* command descriptor */
- struct xhci_cd {
- 	struct list_head	cancel_cmd_list;
 
 
