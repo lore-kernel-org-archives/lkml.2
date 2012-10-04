@@ -1,286 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab2JDVQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:16:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757542Ab2JDVQb (ORCPT
+	id S1757612Ab2JDVQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:16:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757541Ab2JDVQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:16:31 -0400
+	Thu, 4 Oct 2012 17:16:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: =?UTF-8?q?=5B=2000/56=5D=203=2E6=2E1-stable=20review?=
-Date: Thu,  4 Oct 2012 14:15:21 -0700
-Message-Id: <20121004211152.101901246@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 01/56] usb: gadget: make g_printer enumerate again
+Date: Thu,  4 Oct 2012 14:15:22 -0700
+Message-Id: <20121004211152.281537274@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
+References: <20121004211152.101901246@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note, I don't normally do stable releases in the middle of the -rc1
-merge window, but by doing that, they get really big and delay getting
-bugfixes to users who want/need them.  So I've picked through the
-patches submitted for the stable releases so far, and taken the "safer"
-ones (i.e. mostly all small driver fixes).  I still have a lot more
-patches in the queue to be applied after this release, so if you don't
-see a patch you have submitted in here, please wait for the next stable
-release before worrying.
-
-------
-
-This is the start of the stable review cycle for the 3.6.1 release.
-There are 56 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by Sat Oct  6 21:11:02 UTC 2012.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.1-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Bart Van Assche <bvanassche@acm.org>
-    SCSI: scsi_dh_alua: Enable STPG for unavailable ports
-
-Dan Williams <djbw@fb.com>
-    SCSI: scsi_remove_target: fix softlockup regression on hot remove
-
-Dan Williams <dan.j.williams@intel.com>
-    isci: fix isci_pci_probe() generates warning on efi failure path
-
-Mike Marciniszyn <mike.marciniszyn@intel.com>
-    IB/qib: Fix local access validation for user MRs
-
-Bart Van Assche <bvanassche@acm.org>
-    IB/srp: Avoid having aborted requests hang
-
-Bart Van Assche <bvanassche@acm.org>
-    IB/srp: Fix use-after-free in srp_reset_req()
-
-Patrick McHardy <kaber@trash.net>
-    IPoIB: Fix use-after-free of multicast object
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    remoteproc: fix a potential NULL-dereference on cleanup
-
-Ohad Ben-Cohen <ohad@wizery.com>
-    remoteproc: select VIRTIO to avoid build breakage
-
-Seth Forshee <seth.forshee@canonical.com>
-    Input: synaptics - adjust threshold for treating position values as negative
-
-Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-    can: mscan-mpc5xxx: fix return value check in mpc512x_can_get_clock()
-
-Stephen M. Cameron <scameron@beardog.cce.hp.com>
-    SCSI: hpsa: Use LUN reset instead of target reset
-
-Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    SCSI: ibmvscsi: Fix host config length field overflow
-
-Kees Cook <keescook@chromium.org>
-    Yama: handle 32-bit userspace prctl
-
-Matthieu CASTET <matthieu.castet@parrot.com>
-    UBI: erase free PEB with bitflip in EC header
-
-Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-    UBI: fix autoresize handling in R/O mode
-
-Russ Gorby <russ.gorby@intel.com>
-    n_gsm: memory leak in uplink error path
-
-Russ Gorby <russ.gorby@intel.com>
-    n_gsm: added interlocking for gsm_data_lock for certain code paths
-
-Russ Gorby <russ.gorby@intel.com>
-    n_gsm: uplink SKBs accumulate on list
-
-xiaojin <jin.xiao@intel.com>
-    n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
-
-Denys Vlasenko <vda.linux@googlemail.com>
-    coredump: prevent double-free on an error path in core dumper
-
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    xen/pciback: Restore the PCI config space after an FLR.
-
-Sujith Manoharan <c_manoha@qualcomm.com>
-    ath9k: Disable ASPM only for AR9285
-
-Kevin Daughtridge <kevin@kdau.com>
-    HID: keep dev_rdesc unmodified and use it for comparisons
-
-Michael Spang <spang@chromium.org>
-    Increase XHCI suspend timeout to 16ms
-
-Elric Fu <elricfu1@gmail.com>
-    xHCI: handle command after aborting the command ring
-
-Elric Fu <elricfu1@gmail.com>
-    xHCI: cancel command after command timeout
-
-Elric Fu <elricfu1@gmail.com>
-    xHCI: add aborting command ring function
-
-Elric Fu <elricfu1@gmail.com>
-    xHCI: add cmd_ring_state
-
-Sarah Sharp <sarah.a.sharp@linux.intel.com>
-    xhci: Intel Panther Point BEI quirk.
-
-Khalid Aziz <khalid.aziz@hp.com>
-    firmware: Add missing attributes to EFI variable attribute print out from sysfs
-
-Larry Finger <Larry.Finger@lwfinger.net>
-    b43legacy: Fix crash on unload when firmware not available
-
-Ben Hutchings <ben@decadent.org.uk>
-    tools/hv: Check for read/write errors
-
-Ben Hutchings <ben@decadent.org.uk>
-    tools/hv: Fix exit() error code
-
-Ben Hutchings <ben@decadent.org.uk>
-    tools/hv: Fix file handle leak
-
-Flavio Leitner <fbl@redhat.com>
-    serial: set correct baud_base for EXSYS EX-41092 Dual 16950
-
-Linus Walleij <linus.walleij@linaro.org>
-    serial: pl011: handle corruption at high clock speeds
-
-Vikram Pandita <vikram.pandita@ti.com>
-    serial: omap: fix software flow control
-
-Jiri Slaby <jslaby@suse.cz>
-    TTY: ttyprintk, don't touch behind tty->write_buf
-
-Stanislav Kozina <skozina@redhat.com>
-    Remove BUG_ON from n_tty_read()
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: fix memory leak for saved channel list
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: don't dereference user memory for INSN_INTTRIG
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: jr3_pci: fix iomem dereference
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: s626: don't dereference insn->data
-
-Larry Finger <Larry.Finger@lwfinger.net>
-    staging: r8712u: Do not queue cloned skb
-
-Christopher Brannon <chris@the-brannons.com>
-    tty: keyboard.c: Remove locking from vt_get_leds.
-
-Ben Hutchings <ben@decadent.org.uk>
-    staging: speakup_soft: Fix reading of init string
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    USB: serial: fix up bug with missing {}
-
-Vivek Gautam <gautam.vivek@samsung.com>
-    usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
-
-Bjørn Mork <bjorn@mork.no>
-    USB: qcaux: add Pantech vendor class match
-
-Alan Stern <stern@rowland.harvard.edu>
-    USB: EHCI: convert warning messages to debug-level
-
-Antonio Ospite <ospite@studenti.unina.it>
-    USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
-
-Bjørn Mork <bjorn@mork.no>
-    USB: option: blacklist QMI interface on ZTE MF683
-
-Mike Thompson <mpthompson@gmail.com>
-    usb: otg: mxs-phy: Fix mx23 operation
-
-Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-    usb: gadget: initialize the strings in tcm_usb_gadget properly
-
-Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-    usb: gadget: make g_printer enumerate again
-
-
--------------
-
-Diffstat:
-
- Makefile                                       |   4 +-
- arch/arm/plat-omap/include/plat/omap-serial.h  |   4 +-
- drivers/char/ttyprintk.c                       |   2 +-
- drivers/firmware/efivars.c                     |  17 +-
- drivers/hid/hid-core.c                         |  16 +-
- drivers/hid/usbhid/hid-core.c                  |   6 +-
- drivers/infiniband/hw/qib/qib_keys.c           |   5 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |   2 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |  19 +-
- drivers/infiniband/ulp/srp/ib_srp.c            |   3 +-
- drivers/input/mouse/synaptics.c                |  31 ++-
- drivers/mtd/ubi/attach.c                       |   2 +-
- drivers/mtd/ubi/build.c                        |   5 +
- drivers/net/can/mscan/mpc5xxx_can.c            |   4 +-
- drivers/net/wireless/ath/ath9k/pci.c           |   5 +-
- drivers/net/wireless/b43legacy/main.c          |   2 +
- drivers/remoteproc/Kconfig                     |   1 +
- drivers/remoteproc/remoteproc_core.c           |  22 +-
- drivers/scsi/device_handler/scsi_dh_alua.c     |   3 +-
- drivers/scsi/hpsa.c                            |   2 +-
- drivers/scsi/ibmvscsi/ibmvscsi.c               |   3 +
- drivers/scsi/isci/init.c                       |   1 -
- drivers/scsi/isci/probe_roms.c                 |   1 -
- drivers/scsi/scsi_sysfs.c                      |  30 ++-
- drivers/staging/comedi/comedi_fops.c           |   5 +-
- drivers/staging/comedi/drivers/jr3_pci.c       |   2 +-
- drivers/staging/comedi/drivers/s626.c          |   2 +-
- drivers/staging/rtl8712/rtl8712_recv.c         |   5 +-
- drivers/staging/speakup/speakup_soft.c         |  13 +-
- drivers/tty/n_gsm.c                            |  26 ++-
- drivers/tty/n_tty.c                            |   3 +-
- drivers/tty/serial/8250/8250_pci.c             |   9 +-
- drivers/tty/serial/amba-pl011.c                |  15 +-
- drivers/tty/serial/omap-serial.c               |  12 +-
- drivers/tty/vt/keyboard.c                      |   3 -
- drivers/usb/gadget/printer.c                   | 128 ++++++------
- drivers/usb/gadget/tcm_usb_gadget.c            |  33 +--
- drivers/usb/gadget/tcm_usb_gadget.h            |  14 +-
- drivers/usb/host/ehci-timer.c                  |   6 +-
- drivers/usb/host/xhci-mem.c                    |   7 +
- drivers/usb/host/xhci-pci.c                    |   1 +
- drivers/usb/host/xhci-ring.c                   | 286 +++++++++++++++++++++++++-
- drivers/usb/host/xhci.c                        |  38 +++-
- drivers/usb/host/xhci.h                        |  20 ++
- drivers/usb/otg/mxs-phy.c                      |  38 +++-
- drivers/usb/serial/ftdi_sio.c                  |   2 +
- drivers/usb/serial/ftdi_sio_ids.h              |   5 +
- drivers/usb/serial/option.c                    |   3 +-
- drivers/usb/serial/qcaux.c                     |  10 +-
- drivers/usb/serial/usb-serial.c                |   3 +-
- drivers/xen/xen-pciback/pci_stub.c             |   1 +
- fs/binfmt_elf.c                                |  19 +-
- include/linux/pci_ids.h                        |   1 -
- security/yama/yama_lsm.c                       |   2 +-
- tools/hv/hv_kvp_daemon.c                       |  45 ++--
- 55 files changed, 697 insertions(+), 250 deletions(-)
+3.6-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+
+commit 5a175bb84d7344fbe5e26cf61b597129e7c80564 upstream.
+
+This was broken in 2e87edf49 ("usb: gadget: make g_printer use
+composite").
+The USB-strings were not setup properly and were not used. No function
+was added which results in an empty USB config.
+While fixing this, the interface number is now auto generated and not
+hard coded to 0.
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/gadget/printer.c |  128 +++++++++++++++++++++----------------------
+ 1 file changed, 65 insertions(+), 63 deletions(-)
+
+--- a/drivers/usb/gadget/printer.c
++++ b/drivers/usb/gadget/printer.c
+@@ -141,18 +141,14 @@ module_param(qlen, uint, S_IRUGO|S_IWUSR
+  * descriptors are built on demand.
+  */
+ 
+-#define STRING_MANUFACTURER		1
+-#define STRING_PRODUCT			2
+-#define STRING_SERIALNUM		3
++#define STRING_MANUFACTURER		0
++#define STRING_PRODUCT			1
++#define STRING_SERIALNUM		2
+ 
+ /* holds our biggest descriptor */
+ #define USB_DESC_BUFSIZE		256
+ #define USB_BUFSIZE			8192
+ 
+-/* This device advertises one configuration. */
+-#define DEV_CONFIG_VALUE		1
+-#define	PRINTER_INTERFACE		0
+-
+ static struct usb_device_descriptor device_desc = {
+ 	.bLength =		sizeof device_desc,
+ 	.bDescriptorType =	USB_DT_DEVICE,
+@@ -162,16 +158,12 @@ static struct usb_device_descriptor devi
+ 	.bDeviceProtocol =	0,
+ 	.idVendor =		cpu_to_le16(PRINTER_VENDOR_NUM),
+ 	.idProduct =		cpu_to_le16(PRINTER_PRODUCT_NUM),
+-	.iManufacturer =	STRING_MANUFACTURER,
+-	.iProduct =		STRING_PRODUCT,
+-	.iSerialNumber =	STRING_SERIALNUM,
+ 	.bNumConfigurations =	1
+ };
+ 
+ static struct usb_interface_descriptor intf_desc = {
+ 	.bLength =		sizeof intf_desc,
+ 	.bDescriptorType =	USB_DT_INTERFACE,
+-	.bInterfaceNumber =	PRINTER_INTERFACE,
+ 	.bNumEndpoints =	2,
+ 	.bInterfaceClass =	USB_CLASS_PRINTER,
+ 	.bInterfaceSubClass =	1,	/* Printer Sub-Class */
+@@ -260,9 +252,9 @@ static char				pnp_string [1024] =
+ 
+ /* static strings, in UTF-8 */
+ static struct usb_string		strings [] = {
+-	{ STRING_MANUFACTURER,	manufacturer, },
+-	{ STRING_PRODUCT,	product_desc, },
+-	{ STRING_SERIALNUM,	serial_num, },
++	[STRING_MANUFACTURER].s = manufacturer,
++	[STRING_PRODUCT].s = product_desc,
++	[STRING_SERIALNUM].s =	serial_num,
+ 	{  }		/* end of list */
+ };
+ 
+@@ -871,25 +863,13 @@ static int set_interface(struct printer_
+ 	int			result = 0;
+ 
+ 	/* Free the current interface */
+-	switch (dev->interface) {
+-	case PRINTER_INTERFACE:
+-		printer_reset_interface(dev);
+-		break;
+-	}
++	printer_reset_interface(dev);
+ 
+-	switch (number) {
+-	case PRINTER_INTERFACE:
+-		result = set_printer_interface(dev);
+-		if (result) {
+-			printer_reset_interface(dev);
+-		} else {
+-			dev->interface = PRINTER_INTERFACE;
+-		}
+-		break;
+-	default:
+-		result = -EINVAL;
+-		/* FALL THROUGH */
+-	}
++	result = set_printer_interface(dev);
++	if (result)
++		printer_reset_interface(dev);
++	else
++		dev->interface = number;
+ 
+ 	if (!result)
+ 		INFO(dev, "Using interface %x\n", number);
+@@ -972,7 +952,7 @@ static int printer_func_setup(struct usb
+ 		switch (ctrl->bRequest) {
+ 		case 0: /* Get the IEEE-1284 PNP String */
+ 			/* Only one printer interface is supported. */
+-			if ((wIndex>>8) != PRINTER_INTERFACE)
++			if ((wIndex>>8) != dev->interface)
+ 				break;
+ 
+ 			value = (pnp_string[0]<<8)|pnp_string[1];
+@@ -983,7 +963,7 @@ static int printer_func_setup(struct usb
+ 
+ 		case 1: /* Get Port Status */
+ 			/* Only one printer interface is supported. */
+-			if (wIndex != PRINTER_INTERFACE)
++			if (wIndex != dev->interface)
+ 				break;
+ 
+ 			*(u8 *)req->buf = dev->printer_status;
+@@ -992,7 +972,7 @@ static int printer_func_setup(struct usb
+ 
+ 		case 2: /* Soft Reset */
+ 			/* Only one printer interface is supported. */
+-			if (wIndex != PRINTER_INTERFACE)
++			if (wIndex != dev->interface)
+ 				break;
+ 
+ 			printer_soft_reset(dev);
+@@ -1020,6 +1000,37 @@ unknown:
+ static int __init printer_func_bind(struct usb_configuration *c,
+ 		struct usb_function *f)
+ {
++	struct printer_dev *dev = container_of(f, struct printer_dev, function);
++	struct usb_composite_dev *cdev = c->cdev;
++	struct usb_ep		*in_ep, *out_ep;
++	int id;
++
++	id = usb_interface_id(c, f);
++	if (id < 0)
++		return id;
++	intf_desc.bInterfaceNumber = id;
++
++	/* all we really need is bulk IN/OUT */
++	in_ep = usb_ep_autoconfig(cdev->gadget, &fs_ep_in_desc);
++	if (!in_ep) {
++autoconf_fail:
++		dev_err(&cdev->gadget->dev, "can't autoconfigure on %s\n",
++			cdev->gadget->name);
++		return -ENODEV;
++	}
++	in_ep->driver_data = in_ep;	/* claim */
++
++	out_ep = usb_ep_autoconfig(cdev->gadget, &fs_ep_out_desc);
++	if (!out_ep)
++		goto autoconf_fail;
++	out_ep->driver_data = out_ep;	/* claim */
++
++	/* assumes that all endpoints are dual-speed */
++	hs_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
++	hs_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
++
++	dev->in_ep = in_ep;
++	dev->out_ep = out_ep;
+ 	return 0;
+ }
+ 
+@@ -1035,7 +1046,8 @@ static int printer_func_set_alt(struct u
+ 	int ret = -ENOTSUPP;
+ 
+ 	if (!alt)
+-		ret = set_interface(dev, PRINTER_INTERFACE);
++		ret = set_interface(dev, intf);
++
+ 	return ret;
+ }
+ 
+@@ -1107,13 +1119,14 @@ static int __init printer_bind_config(st
+ {
+ 	struct usb_gadget	*gadget = c->cdev->gadget;
+ 	struct printer_dev	*dev;
+-	struct usb_ep		*in_ep, *out_ep;
+ 	int			status = -ENOMEM;
+ 	int			gcnum;
+ 	size_t			len;
+ 	u32			i;
+ 	struct usb_request	*req;
+ 
++	usb_ep_autoconfig_reset(gadget);
++
+ 	dev = &usb_printer_gadget;
+ 
+ 	dev->function.name = shortname;
+@@ -1125,6 +1138,10 @@ static int __init printer_bind_config(st
+ 	dev->function.set_alt = printer_func_set_alt;
+ 	dev->function.disable = printer_func_disable;
+ 
++	status = usb_add_function(c, &dev->function);
++	if (status)
++		return status;
++
+ 	/* Setup the sysfs files for the printer gadget. */
+ 	dev->pdev = device_create(usb_gadget_class, NULL, g_printer_devno,
+ 				  NULL, "g_printer");
+@@ -1169,26 +1186,6 @@ static int __init printer_bind_config(st
+ 	pnp_string[0] = (len >> 8) & 0xFF;
+ 	pnp_string[1] = len & 0xFF;
+ 
+-	/* all we really need is bulk IN/OUT */
+-	usb_ep_autoconfig_reset(gadget);
+-	in_ep = usb_ep_autoconfig(gadget, &fs_ep_in_desc);
+-	if (!in_ep) {
+-autoconf_fail:
+-		dev_err(&gadget->dev, "can't autoconfigure on %s\n",
+-			gadget->name);
+-		return -ENODEV;
+-	}
+-	in_ep->driver_data = in_ep;	/* claim */
+-
+-	out_ep = usb_ep_autoconfig(gadget, &fs_ep_out_desc);
+-	if (!out_ep)
+-		goto autoconf_fail;
+-	out_ep->driver_data = out_ep;	/* claim */
+-
+-	/* assumes that all endpoints are dual-speed */
+-	hs_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
+-	hs_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
+-
+ 	usb_gadget_set_selfpowered(gadget);
+ 
+ 	if (gadget->is_otg) {
+@@ -1215,9 +1212,6 @@ autoconf_fail:
+ 	dev->current_rx_bytes = 0;
+ 	dev->current_rx_buf = NULL;
+ 
+-	dev->in_ep = in_ep;
+-	dev->out_ep = out_ep;
+-
+ 	for (i = 0; i < QLEN; i++) {
+ 		req = printer_req_alloc(dev->in_ep, USB_BUFSIZE, GFP_KERNEL);
+ 		if (!req) {
+@@ -1250,8 +1244,6 @@ autoconf_fail:
+ 	dev->gadget = gadget;
+ 
+ 	INFO(dev, "%s, version: " DRIVER_VERSION "\n", driver_desc);
+-	INFO(dev, "using %s, OUT %s IN %s\n", gadget->name, out_ep->name,
+-			in_ep->name);
+ 	return 0;
+ 
+ fail:
+@@ -1266,7 +1258,17 @@ static int printer_unbind(struct usb_com
+ 
+ static int __init printer_bind(struct usb_composite_dev *cdev)
+ {
+-	return usb_add_config(cdev, &printer_cfg_driver, printer_bind_config);
++	int ret;
++
++	ret = usb_string_ids_tab(cdev, strings);
++	if (ret < 0)
++		return ret;
++	device_desc.iManufacturer = strings[STRING_MANUFACTURER].id;
++	device_desc.iProduct = strings[STRING_PRODUCT].id;
++	device_desc.iSerialNumber = strings[STRING_SERIALNUM].id;
++
++	ret = usb_add_config(cdev, &printer_cfg_driver, printer_bind_config);
++	return ret;
+ }
+ 
+ static struct usb_composite_driver printer_driver = {
 
 
