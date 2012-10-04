@@ -1,108 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab2JDVKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:10:05 -0400
-Received: from frost.carfax.org.uk ([85.119.82.111]:51927 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab2JDVKD (ORCPT
+	id S1757595Ab2JDVQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:16:33 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757542Ab2JDVQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:10:03 -0400
-Date: Thu, 4 Oct 2012 22:09:59 +0100
-From: Hugo Mills <hugo-lkml@carfax.org.uk>
-To: Hugo Mills <hugo-lkml@carfax.org.uk>, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: Re: i915 problems with suspend to disk
-Message-ID: <20121004210959.GJ25498@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <20121004192017.GI25498@carfax.org.uk>
- <20121004193139.GJ5661@phenom.ffwll.local>
+	Thu, 4 Oct 2012 17:16:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: =?UTF-8?q?=5B=2000/56=5D=203=2E6=2E1-stable=20review?=
+Date: Thu,  4 Oct 2012 14:15:21 -0700
+Message-Id: <20121004211152.101901246@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/D3X8sky0X3AmG5"
-Content-Disposition: inline
-In-Reply-To: <20121004193139.GJ5661@phenom.ffwll.local>
-X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
-X-GPG-Key: 515C238D
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Note, I don't normally do stable releases in the middle of the -rc1
+merge window, but by doing that, they get really big and delay getting
+bugfixes to users who want/need them.  So I've picked through the
+patches submitted for the stable releases so far, and taken the "safer"
+ones (i.e. mostly all small driver fixes).  I still have a lot more
+patches in the queue to be applied after this release, so if you don't
+see a patch you have submitted in here, please wait for the next stable
+release before worrying.
 
---W/D3X8sky0X3AmG5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------
 
-On Thu, Oct 04, 2012 at 09:31:39PM +0200, Daniel Vetter wrote:
-> On Thu, Oct 04, 2012 at 08:20:17PM +0100, Hugo Mills wrote:
-> >    On 3.6, I've got a problem with my video driver after resuming from
-> > suspend-to-disk: the lower part of the display flickers, rapidly but
-> > irregularly (think of a neon sign in a bad film noir), flicking
-> > between the correct display and... something else, it's hard to see
-> > what.
-> > 
-> >    Shutting the lid of the machine (to trigger a suspend-to-ram) and
-> > waking it up again fixes the flicker.
-> > 
-> >    In syslogs, I have nothing obvious on suspend, and this warning on
-> > resume:
-[snip]
-> >    Hardware is a Lenovo Thinkpad Edge13, lspci says:
-> > 
-> > 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
-> > 
-> > aka
-> > 
-> > 00:02.0 0300: 8086:2a42 (rev 07)
-> > 
-> >    Let me know if you need more information. I can probably manage a
-> > bisect if necessary -- it's easily repeatable as a bug.
-> 
-> Before you do a bisect, can you try the drm-intel-fixes branch from
-> http://cgit.freedesktop.org/~danvet/drm-intel or a bit more risky, latest
-> upstream git? That contains a completely rewritten modeset code, which
-> might fix this already. To fix the breakage on 3.6 I guess we need a
-> bisect - at least I don't have any idea off-hand what could have gone
-> wrong here.
+This is the start of the stable review cycle for the 3.6.1 release.
+There are 56 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-   Thank you for the quick response.
+Responses should be made by Sat Oct  6 21:11:02 UTC 2012.
+Anything received after that time might be too late.
 
-   The drm-intel-fixes branch seems to have done the trick. No more
-flickering. I think we can call this one fixed.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.1-rc1.gz
+and the diffstat can be found below.
 
-   Hugo.
+thanks,
 
--- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-             --- I always felt that as a C programmer, I ---             
-                         was becoming typecast.                          
+greg k-h
 
---W/D3X8sky0X3AmG5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-------------
+Pseudo-Shortlog of commits:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Bart Van Assche <bvanassche@acm.org>
+    SCSI: scsi_dh_alua: Enable STPG for unavailable ports
 
-iQIVAwUBUG37J79z9OVl50rAAQKq0RAAj/o9mB+mV/2MjyQe+XX/+ws1zh/G2gMM
-Pth8pXZTE5tlpoL95HHcRsyOLyzN8hGCdLeTSNaGlZmbflIBBV3CXBN3XLi5ytGs
-cLTLruT8Yt6/S4SdWDMxNUlVxEmu6DFILCQpiPI8ZwpIZ/LOflvlki1eiP3pB4wy
-Bk1rMsCnbE9IuOb4PFFaiKEVsQ4GgZqcEfUSo+msel3+JhlKzsTU90WmRDSuAn5Z
-mUB23zyWjQEDNCC2ovmtG+CZ1pOODh4Iw/Ixv4fp028p+MSbmyKLQlqmLL5o1mHZ
-AelaInL5BUcAJWbCo8hnBJiYlzK9J3mH4MAeqrsKf1k8pXgjAoOb21jRwqUDGyev
-Lcc253ALTqxdTd+CkRGwdZwGU7cao6Aoc7b0qGa03Ygs7G2rnGwthpYevVNfjmfL
-oZbbhzVU8pkUyjcLcIg2KPAKLbheheKQ4kt6DWlpLweZnZB21yoxTI9soND3x27F
-GbbDquY5LfmhdPfXS4togwH4BqQczb840277YRpi0T/AtjDOL4TlNsSzeiP/yDuF
-4prlfR5IzHbar/EwLOpklchnucag4yiKkfBXNPQwV1WkV2cCUMKio8oukzldzpFP
-l9xqpjz+qzjugl1dVdJVb95Erc2zEdMDVHzC6L+15ZvfgBCA52zMs3dny/6EKX5g
-6owA9eCLaD0=
-=OPa1
------END PGP SIGNATURE-----
+Dan Williams <djbw@fb.com>
+    SCSI: scsi_remove_target: fix softlockup regression on hot remove
 
---W/D3X8sky0X3AmG5--
+Dan Williams <dan.j.williams@intel.com>
+    isci: fix isci_pci_probe() generates warning on efi failure path
+
+Mike Marciniszyn <mike.marciniszyn@intel.com>
+    IB/qib: Fix local access validation for user MRs
+
+Bart Van Assche <bvanassche@acm.org>
+    IB/srp: Avoid having aborted requests hang
+
+Bart Van Assche <bvanassche@acm.org>
+    IB/srp: Fix use-after-free in srp_reset_req()
+
+Patrick McHardy <kaber@trash.net>
+    IPoIB: Fix use-after-free of multicast object
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    remoteproc: fix a potential NULL-dereference on cleanup
+
+Ohad Ben-Cohen <ohad@wizery.com>
+    remoteproc: select VIRTIO to avoid build breakage
+
+Seth Forshee <seth.forshee@canonical.com>
+    Input: synaptics - adjust threshold for treating position values as negative
+
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    can: mscan-mpc5xxx: fix return value check in mpc512x_can_get_clock()
+
+Stephen M. Cameron <scameron@beardog.cce.hp.com>
+    SCSI: hpsa: Use LUN reset instead of target reset
+
+Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    SCSI: ibmvscsi: Fix host config length field overflow
+
+Kees Cook <keescook@chromium.org>
+    Yama: handle 32-bit userspace prctl
+
+Matthieu CASTET <matthieu.castet@parrot.com>
+    UBI: erase free PEB with bitflip in EC header
+
+Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+    UBI: fix autoresize handling in R/O mode
+
+Russ Gorby <russ.gorby@intel.com>
+    n_gsm: memory leak in uplink error path
+
+Russ Gorby <russ.gorby@intel.com>
+    n_gsm: added interlocking for gsm_data_lock for certain code paths
+
+Russ Gorby <russ.gorby@intel.com>
+    n_gsm: uplink SKBs accumulate on list
+
+xiaojin <jin.xiao@intel.com>
+    n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
+
+Denys Vlasenko <vda.linux@googlemail.com>
+    coredump: prevent double-free on an error path in core dumper
+
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    xen/pciback: Restore the PCI config space after an FLR.
+
+Sujith Manoharan <c_manoha@qualcomm.com>
+    ath9k: Disable ASPM only for AR9285
+
+Kevin Daughtridge <kevin@kdau.com>
+    HID: keep dev_rdesc unmodified and use it for comparisons
+
+Michael Spang <spang@chromium.org>
+    Increase XHCI suspend timeout to 16ms
+
+Elric Fu <elricfu1@gmail.com>
+    xHCI: handle command after aborting the command ring
+
+Elric Fu <elricfu1@gmail.com>
+    xHCI: cancel command after command timeout
+
+Elric Fu <elricfu1@gmail.com>
+    xHCI: add aborting command ring function
+
+Elric Fu <elricfu1@gmail.com>
+    xHCI: add cmd_ring_state
+
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    xhci: Intel Panther Point BEI quirk.
+
+Khalid Aziz <khalid.aziz@hp.com>
+    firmware: Add missing attributes to EFI variable attribute print out from sysfs
+
+Larry Finger <Larry.Finger@lwfinger.net>
+    b43legacy: Fix crash on unload when firmware not available
+
+Ben Hutchings <ben@decadent.org.uk>
+    tools/hv: Check for read/write errors
+
+Ben Hutchings <ben@decadent.org.uk>
+    tools/hv: Fix exit() error code
+
+Ben Hutchings <ben@decadent.org.uk>
+    tools/hv: Fix file handle leak
+
+Flavio Leitner <fbl@redhat.com>
+    serial: set correct baud_base for EXSYS EX-41092 Dual 16950
+
+Linus Walleij <linus.walleij@linaro.org>
+    serial: pl011: handle corruption at high clock speeds
+
+Vikram Pandita <vikram.pandita@ti.com>
+    serial: omap: fix software flow control
+
+Jiri Slaby <jslaby@suse.cz>
+    TTY: ttyprintk, don't touch behind tty->write_buf
+
+Stanislav Kozina <skozina@redhat.com>
+    Remove BUG_ON from n_tty_read()
+
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: fix memory leak for saved channel list
+
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: don't dereference user memory for INSN_INTTRIG
+
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: jr3_pci: fix iomem dereference
+
+Ian Abbott <abbotti@mev.co.uk>
+    staging: comedi: s626: don't dereference insn->data
+
+Larry Finger <Larry.Finger@lwfinger.net>
+    staging: r8712u: Do not queue cloned skb
+
+Christopher Brannon <chris@the-brannons.com>
+    tty: keyboard.c: Remove locking from vt_get_leds.
+
+Ben Hutchings <ben@decadent.org.uk>
+    staging: speakup_soft: Fix reading of init string
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    USB: serial: fix up bug with missing {}
+
+Vivek Gautam <gautam.vivek@samsung.com>
+    usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
+
+Bjørn Mork <bjorn@mork.no>
+    USB: qcaux: add Pantech vendor class match
+
+Alan Stern <stern@rowland.harvard.edu>
+    USB: EHCI: convert warning messages to debug-level
+
+Antonio Ospite <ospite@studenti.unina.it>
+    USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
+
+Bjørn Mork <bjorn@mork.no>
+    USB: option: blacklist QMI interface on ZTE MF683
+
+Mike Thompson <mpthompson@gmail.com>
+    usb: otg: mxs-phy: Fix mx23 operation
+
+Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+    usb: gadget: initialize the strings in tcm_usb_gadget properly
+
+Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+    usb: gadget: make g_printer enumerate again
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                       |   4 +-
+ arch/arm/plat-omap/include/plat/omap-serial.h  |   4 +-
+ drivers/char/ttyprintk.c                       |   2 +-
+ drivers/firmware/efivars.c                     |  17 +-
+ drivers/hid/hid-core.c                         |  16 +-
+ drivers/hid/usbhid/hid-core.c                  |   6 +-
+ drivers/infiniband/hw/qib/qib_keys.c           |   5 +-
+ drivers/infiniband/ulp/ipoib/ipoib_main.c      |   2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_multicast.c |  19 +-
+ drivers/infiniband/ulp/srp/ib_srp.c            |   3 +-
+ drivers/input/mouse/synaptics.c                |  31 ++-
+ drivers/mtd/ubi/attach.c                       |   2 +-
+ drivers/mtd/ubi/build.c                        |   5 +
+ drivers/net/can/mscan/mpc5xxx_can.c            |   4 +-
+ drivers/net/wireless/ath/ath9k/pci.c           |   5 +-
+ drivers/net/wireless/b43legacy/main.c          |   2 +
+ drivers/remoteproc/Kconfig                     |   1 +
+ drivers/remoteproc/remoteproc_core.c           |  22 +-
+ drivers/scsi/device_handler/scsi_dh_alua.c     |   3 +-
+ drivers/scsi/hpsa.c                            |   2 +-
+ drivers/scsi/ibmvscsi/ibmvscsi.c               |   3 +
+ drivers/scsi/isci/init.c                       |   1 -
+ drivers/scsi/isci/probe_roms.c                 |   1 -
+ drivers/scsi/scsi_sysfs.c                      |  30 ++-
+ drivers/staging/comedi/comedi_fops.c           |   5 +-
+ drivers/staging/comedi/drivers/jr3_pci.c       |   2 +-
+ drivers/staging/comedi/drivers/s626.c          |   2 +-
+ drivers/staging/rtl8712/rtl8712_recv.c         |   5 +-
+ drivers/staging/speakup/speakup_soft.c         |  13 +-
+ drivers/tty/n_gsm.c                            |  26 ++-
+ drivers/tty/n_tty.c                            |   3 +-
+ drivers/tty/serial/8250/8250_pci.c             |   9 +-
+ drivers/tty/serial/amba-pl011.c                |  15 +-
+ drivers/tty/serial/omap-serial.c               |  12 +-
+ drivers/tty/vt/keyboard.c                      |   3 -
+ drivers/usb/gadget/printer.c                   | 128 ++++++------
+ drivers/usb/gadget/tcm_usb_gadget.c            |  33 +--
+ drivers/usb/gadget/tcm_usb_gadget.h            |  14 +-
+ drivers/usb/host/ehci-timer.c                  |   6 +-
+ drivers/usb/host/xhci-mem.c                    |   7 +
+ drivers/usb/host/xhci-pci.c                    |   1 +
+ drivers/usb/host/xhci-ring.c                   | 286 +++++++++++++++++++++++++-
+ drivers/usb/host/xhci.c                        |  38 +++-
+ drivers/usb/host/xhci.h                        |  20 ++
+ drivers/usb/otg/mxs-phy.c                      |  38 +++-
+ drivers/usb/serial/ftdi_sio.c                  |   2 +
+ drivers/usb/serial/ftdi_sio_ids.h              |   5 +
+ drivers/usb/serial/option.c                    |   3 +-
+ drivers/usb/serial/qcaux.c                     |  10 +-
+ drivers/usb/serial/usb-serial.c                |   3 +-
+ drivers/xen/xen-pciback/pci_stub.c             |   1 +
+ fs/binfmt_elf.c                                |  19 +-
+ include/linux/pci_ids.h                        |   1 -
+ security/yama/yama_lsm.c                       |   2 +-
+ tools/hv/hv_kvp_daemon.c                       |  45 ++--
+ 55 files changed, 697 insertions(+), 250 deletions(-)
+
+
