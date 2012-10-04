@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946174Ab2JDVl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:41:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934343Ab2JDVZV (ORCPT
+	id S1946176Ab2JDVlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:41:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934330Ab2JDVZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:21 -0400
+	Thu, 4 Oct 2012 17:25:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: =?UTF-8?q?=5B=2039/52=5D=20UBI=3A=20fix=20autoresize=20handling=20in=20R/O=20mode?=
-Date: Thu,  4 Oct 2012 14:21:30 -0700
-Message-Id: <20121004210640.224185343@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 37/52] n_gsm: added interlocking for gsm_data_lock for certain code paths
+Date: Thu,  4 Oct 2012 14:21:28 -0700
+Message-Id: <20121004210639.993159947@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,35 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit abb3e01103eb4e2ea5c15e6fedbc74e08bd4cc2b upstream.
+commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
 
-Currently UBI fails in autoresize when it is in R/O mode (e.g., because the
-underlying MTD device is R/O). This patch fixes the issue - we just skip
-autoresize and print a warning.
+There were some locking holes in the management of the MUX's
+message queue for 2 code paths:
+1) gsmld_write_wakeup
+2) receipt of CMD_FCON flow-control message
+In both cases gsm_data_kick is called w/o locking so it can collide
+with other other instances of gsm_data_kick (pulling messages tx_tail)
+or potentially other instances of __gsm_data_queu (adding messages to tx_head)
 
-Reported-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Changed to take the tx_lock in these 2 cases
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/build.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/tty/n_gsm.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -816,6 +816,11 @@ static int autoresize(struct ubi_device
- 	struct ubi_volume *vol = ubi->volumes[vol_id];
- 	int err, old_reserved_pebs = vol->reserved_pebs;
- 
-+	if (ubi->ro_mode) {
-+		ubi_warn("skip auto-resize because of R/O mode");
-+		return 0;
-+	}
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1193,6 +1193,8 @@ static void gsm_control_message(struct g
+ 							u8 *data, int clen)
+ {
+ 	u8 buf[1];
++	unsigned long flags;
 +
- 	/*
- 	 * Clear the auto-resize flag in the volume in-memory copy of the
- 	 * volume table, and 'ubi_resize_volume()' will propagate this change
+ 	switch (command) {
+ 	case CMD_CLD: {
+ 		struct gsm_dlci *dlci = gsm->dlci[0];
+@@ -1218,7 +1220,9 @@ static void gsm_control_message(struct g
+ 		gsm->constipated = 0;
+ 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
+ 		/* Kick the link in case it is idling */
++		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_data_kick(gsm);
++		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 		break;
+ 	case CMD_MSC:
+ 		/* Out of band modem line change indicator for a DLCI */
+@@ -2380,12 +2384,12 @@ static void gsmld_write_wakeup(struct tt
+ 
+ 	/* Queue poll */
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++	spin_lock_irqsave(&gsm->tx_lock, flags);
+ 	gsm_data_kick(gsm);
+ 	if (gsm->tx_bytes < TX_THRESH_LO) {
+-		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_dlci_data_sweep(gsm);
+-		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 	}
++	spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ }
+ 
+ /**
 
 
