@@ -1,132 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2JDKck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:32:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51820 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab2JDKci (ORCPT
+	id S1753998Ab2JDKda (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:33:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49576 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab2JDKd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:32:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 12/17] ARM: iop13xx: mark iop13xx_scan_bus as __devinit
-Date: Thu, 4 Oct 2012 10:32:20 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <kernel@wantstofly.org>, Dan Williams <djbw@fb.com>,
-        Greg KH <greg@kroah.com>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-13-git-send-email-arnd@arndb.de> <CAErSpo7rkN_F=AxweoEG3oXj392FvzVGPSKnkXCd=JX6cg0aTA@mail.gmail.com>
-In-Reply-To: <CAErSpo7rkN_F=AxweoEG3oXj392FvzVGPSKnkXCd=JX6cg0aTA@mail.gmail.com>
+	Thu, 4 Oct 2012 06:33:27 -0400
+Date: Thu, 4 Oct 2012 03:33:03 -0700
+From: tip-bot for David Rientjes <rientjes@google.com>
+Message-ID: <tip-d886931968a1c7e7bc7d4891cbd12cecf3111bd0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, riel@redhat.com,
+        tglx@linutronix.de, rientjes@google.com
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, rientjes@google.com
+In-Reply-To: <alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] mm/mpol: Fix build warning for UMA kernels
+Git-Commit-ID: d886931968a1c7e7bc7d4891cbd12cecf3111bd0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210041032.20300.arnd@arndb.de>
-X-Provags-ID: V02:K0:SH1WjKZJKfqlzL2s6K88M9exHl85WWr8monxses47Kh
- czinxsGnxxaTJ29iK3UBRs0/L93lzbRJcJ/uodes5yHflTMucZ
- +bx3QxVGpXqCdz8HFdsyzOHS/X2Fy5agWLjhQ/xTba2Kcgo2qK
- +Rxp4ZiSm9S0bFV1NCz0FqVkoZX132DINZPdFp3sWrdJxAJM1c
- JcX2y3JV5RodX4W1LAEybLt/RkGtg8bSvLUUBrnSHEm0M0SjyS
- nMX487b2PAMKP4FLZsLxawI3oP37eiMLV2xdgCgV2ZySjr8h+r
- 3FuyoSK6/Bnxt9Y5EGq64aZUYUKI5dBRPs5mkEgTZpqxo+F4l8
- oEBKEdZp/IyCinN9JNN8=
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 04 Oct 2012 03:33:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(+Greg)
+Commit-ID:  d886931968a1c7e7bc7d4891cbd12cecf3111bd0
+Gitweb:     http://git.kernel.org/tip/d886931968a1c7e7bc7d4891cbd12cecf3111bd0
+Author:     David Rientjes <rientjes@google.com>
+AuthorDate: Tue, 2 Oct 2012 13:14:10 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 4 Oct 2012 10:15:16 +0200
 
-On Tuesday 02 October 2012, Bjorn Helgaas wrote:
-> 
-> On Tue, Oct 2, 2012 at 10:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > pci_scan_root_bus is __devinit, so iop13xx_scan_bus has to be the
-> > same in order to safely call it. This is ok because the function
-> > itself is only called from the hwpci->scan callback.
-> >
-> > WARNING: vmlinux.o(.text+0x10138): Section mismatch in reference from the function iop13xx_scan_bus() to the function .devinit.text:pci_scan_root_bus()
-> > The function iop13xx_scan_bus() references
-> > the function __devinit pci_scan_root_bus().
-> > This is often because iop13xx_scan_bus lacks a __devinit
-> > annotation or the annotation of pci_scan_root_bus is wrong.
-> 
-> With CONFIG_HOTPLUG going away (I think the current state is that it
-> is always set to "y"), __devinit will effectively become a no-op, so I
-> expect we'll remove it from pci_scan_root_bus().
-> 
-> Therefore, I would skip this patch and live with the warning a little longer.
+mm/mpol: Fix build warning for UMA kernels
 
-Hmm, I'm just trying to get rid of all build time warnings in the defconfigs
-right now, and modpost still complains about the section mismatches. I have
-a bunch more of these patches, but it would also be fine with me if we can
-patch mostpost to ignore these cases.
+Commit "mm, mpol: Use special PROT_NONE to migrate pages"
+causes a build warning when CONFIG_NUMA is not enabled:
 
-I've also redone the analysis that Greg cited in the commit message for
-45f035ab9b8 "CONFIG_HOTPLUG should be always on"
+  mm/huge_memory.c: In function 'do_huge_pmd_prot_none':
+  mm/huge_memory.c:745: warning: unused variable 'node'
 
-   It is quite hard to disable it these days, and even if you do, it
-    only saves you about 200 bytes.  However, if it is disabled, lots of
-    bugs show up because it is almost never tested if the option is disabled.
+"node" is only used once, so avoid using it altogether.
 
-My test case (ARM omap2plus_defconfig, one of the most common configurations)
-shows these size -A differences:
+Signed-off-by: David Rientjes <rientjes@google.com>
+Cc: pjt@google.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-
-
-section		nohotplug	hotplug		difference
-.head.text	392		392		0
-.text		4829940		4881140		51200
-.rodata		1630360		1633056		2696
-__ksymtab	25720		25720		0
-__ksymtab_gpl	17096		17136		40
-__kcrctab	12860		12860		0
-__kcrctab_gpl	8548		8568		20
-__ksymtab_stri	96427		96509		82
-__init_rodata	0		9800		9800
-__param		2320		2320		0
-__modver	716		364		-352
-.ARM.unwind_idx	160360		160792		432
-.ARM.unwind_tab	24312		24312		0
-.init.text	234632		195688		-38944
-.exit.text	8680		5116		-3564
-.init.proc.info	312		312		0
-.init.arch.info	2964		2964		0
-.init.tagtable	72		72		0
-.init.smpalt	776		776		0
-.init.pv_table	880		880		0
-.init.data	123356		111348		-12008
-.exit.data	0		0		0
-.data..percpu	12928		12928		0
-.data		560160		562688		2528
-.notes		36		36		0
-.bss		5605324		5605580		256
-
-total		13359171	13371357	12186
-after boot	13001183	13054521	53338
-
-That is over 50kb difference after discarding the init sections,
-significantly more than the 200 bytes that Greg found.
-The point about lack of testing is still valid of course, and I'm
-not saying we need to keep the option around, but it's really
-not as obvious as before. An argument in favor of removing the
-__devinit logic is that these 50kb is still just 0.4% of the
-kernel size.
-
-For the five ARM defconfig files that actually turn off hotplug,
-the absolute numbers are a bit lower, but the percentage is similar.
-
-This is the amount of space wasted by enabling on CONFIG_HOTPLUG
-on them, in bytes after discarding the init sections, and as a
-percentage of the vmlinux size:
-
-at91x40_defconfig	3448	0.27%
-edb7211_defconfig	8912	0.41%
-footbridge_defconfig	33347	0.97%
-fortunet_defconfig	4592	0.25%
-pleb_defconfig		7405	0.28%
-
-Footbridge is the only config among these that enables PCI and USB, so
-it has a bunch more drivers that actually have notable functions that 
-can be discarded.
-
-	Arnd
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 4a9ea86..2e2a814 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -768,7 +768,6 @@ void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 	struct page *page = NULL;
+-	int node;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, entry)))
+@@ -791,8 +790,7 @@ void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * XXX should we serialize against split_huge_page ?
+ 	 */
+ 
+-	node = mpol_misplaced(page, vma, haddr, mm->numa_big);
+-	if (node == -1)
++	if (mpol_misplaced(page, vma, haddr, mm->numa_big) == -1)
+ 		goto do_fixup;
+ 
+ 	/*
