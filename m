@@ -1,93 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab2JDU23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 16:28:29 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38178 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab2JDU21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 16:28:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <87obki23uv.fsf@rustcorp.com.au>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-	<CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
-	<87obki23uv.fsf@rustcorp.com.au>
-Date: Thu, 4 Oct 2012 13:28:25 -0700
-X-Google-Sender-Auth: Qlo9ridXdAYyJ92nFy6G4SPxFY8
-Message-ID: <CAGXu5j+i_6_2zUKZzFfptD53k+vQrgssw3r8qpn5WSQV1pnsyA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1754433Ab2JDU26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 16:28:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812Ab2JDU24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 16:28:56 -0400
+From: David Howells <dhowells@redhat.com>
+To: tony.luck@intel.com
+Cc: dhowells@redhat.com, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for ia64
+Date: Thu, 04 Oct 2012 20:51:22 +0100
+Message-ID: <17377.1349380282@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 10:39 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->
->> On Thu, Sep 20, 2012 at 3:14 PM, Kees Cook <keescook@chromium.org> wrote:
->>> As part of the effort to create a stronger boundary between root and
->>> kernel, Chrome OS wants to be able to enforce that kernel modules are
->>> being loaded only from our read-only crypto-hash verified (dm_verity)
->>> root filesystem. Since the init_module syscall hands the kernel a module
->>> as a memory blob, no reasoning about the origin of the blob can be made.
->>>
->>> Earlier proposals for appending signatures to kernel modules would not be
->>> useful in Chrome OS, since it would involve adding an additional set of
->>> keys to our kernel and builds for no good reason: we already trust the
->>> contents of our root filesystem. We don't need to verify those kernel
->>> modules a second time. Having to do signature checking on module loading
->>> would slow us down and be redundant. All we need to know is where a
->>> module is coming from so we can say yes/no to loading it.
->>>
->>> If a file descriptor is used as the source of a kernel module, many more
->>> things can be reasoned about. In Chrome OS's case, we could enforce that
->>> the module lives on the filesystem we expect it to live on.  In the case
->>> of IMA (or other LSMs), it would be possible, for example, to examine
->>> extended attributes that may contain signatures over the contents of
->>> the module.
->>>
->>> This introduces a new syscall (on x86), similar to init_module, that has
->>> only two arguments. The first argument is used as a file descriptor to
->>> the module and the second argument is a pointer to the NULL terminated
->>> string of module arguments.
->>
->> Hi Rusty,
->>
->> Is this likely to land in the 3.7 change window? I'd really like to
->> get the syscall number assigned so I can start sending patches to
->> glibc, kmod, etc. My tree is here, FWIW:
->
-> No, unfortunately it's a little late and there were issues with ARM
-> signoffs and syscall numbers...
->
->> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/module-fd-syscall
->
-> Messy merge due to the module signing stuff going in :(
+Can you merge the following branch into the ia64 tree please.
 
-Sure was! :) I've done the merge now (and sent the v5 patches). I
-think it looks pretty clean now.
+This is to complete part of the UAPI disintegration for which the preparatory
+patches were pulled recently.
 
-> Please rebase on top of my kernel.org modules-next branch, and I'll pull
-> into my modules-wip branch for 3.8.
+Note that there are some fixup patches which are at the base of the branch
+aimed at you, plus all arches get the asm-generic branch merged in too.
 
-As Mimi mentioned, it would be really nice if this could land in 3.7.
-Can I maybe convince you? It's technically a small change, just with a
-lot of reordering of the calling code, but I think it's a relatively
-small change. The diff output is horrible due to extracting
-do_init_module, but the code changed is pretty minimal.
+The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
 
--Kees
+  Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
 
--- 
-Kees Cook
-Chrome OS Security
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-ia64
+
+for you to fetch changes up to f68301fee71510300140990c4e7a2769801fbd70:
+
+  UAPI: (Scripted) Disintegrate arch/ia64/include/asm (2012-10-04 18:20:49 +0100)
+
+----------------------------------------------------------------
+David Howells (6):
+      UAPI: Fix the guards on various asm/unistd.h files
+      UAPI: Split compound conditionals containing __KERNEL__ in Arm64
+      Merge remote-tracking branch 'c6x/for-linux-next' into uapi-prep
+      UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k)
+      UAPI: (Scripted) Disintegrate include/asm-generic
+      UAPI: (Scripted) Disintegrate arch/ia64/include/asm
+
+Mark Salter (2):
+      c6x: make dsk6455 the default config
+      c6x: remove c6x signal.h
+
+ arch/arm64/include/asm/hwcap.h                     |   4 +-
+ arch/arm64/include/asm/stat.h                      |   4 +-
+ arch/arm64/include/asm/unistd.h                    |   8 +-
+ arch/arm64/include/asm/unistd32.h                  |   4 -
+ arch/c6x/Makefile                                  |   2 +
+ arch/c6x/include/asm/Kbuild                        |   1 +
+ arch/c6x/include/asm/signal.h                      |  17 -
+ arch/c6x/include/asm/unistd.h                      |   4 -
+ arch/hexagon/include/asm/unistd.h                  |   5 -
+ arch/ia64/include/asm/Kbuild                       |  15 -
+ arch/ia64/include/asm/gcc_intrin.h                 | 615 +-------------
+ arch/ia64/include/asm/intrinsics.h                 | 120 +--
+ arch/ia64/include/asm/kvm_para.h                   |  10 +-
+ arch/ia64/include/asm/mman.h                       |  12 +-
+ arch/ia64/include/asm/param.h                      |  22 +-
+ arch/ia64/include/asm/perfmon.h                    | 171 +---
+ arch/ia64/include/asm/ptrace.h                     | 236 +-----
+ arch/ia64/include/asm/siginfo.h                    | 118 +--
+ arch/ia64/include/asm/signal.h                     | 122 +--
+ arch/ia64/include/asm/termios.h                    |  46 +-
+ arch/ia64/include/asm/types.h                      |  19 +-
+ arch/ia64/include/asm/unistd.h                     | 324 +-------
+ arch/ia64/include/asm/ustack.h                     |  11 +-
+ arch/ia64/include/uapi/asm/Kbuild                  |  45 +
+ arch/ia64/include/{ => uapi}/asm/auxvec.h          |   0
+ arch/ia64/include/{ => uapi}/asm/bitsperlong.h     |   0
+ arch/ia64/include/{ => uapi}/asm/break.h           |   0
+ arch/ia64/include/{ => uapi}/asm/byteorder.h       |   0
+ arch/ia64/include/{ => uapi}/asm/cmpxchg.h         |   0
+ arch/ia64/include/{ => uapi}/asm/errno.h           |   0
+ arch/ia64/include/{ => uapi}/asm/fcntl.h           |   0
+ arch/ia64/include/{ => uapi}/asm/fpu.h             |   0
+ arch/ia64/include/uapi/asm/gcc_intrin.h            | 618 ++++++++++++++
+ arch/ia64/include/{ => uapi}/asm/ia64regs.h        |   0
+ arch/ia64/include/{ => uapi}/asm/intel_intrin.h    |   0
+ arch/ia64/include/uapi/asm/intrinsics.h            | 124 +++
+ arch/ia64/include/{ => uapi}/asm/ioctl.h           |   0
+ arch/ia64/include/{ => uapi}/asm/ioctls.h          |   0
+ arch/ia64/include/{ => uapi}/asm/ipcbuf.h          |   0
+ arch/ia64/include/{ => uapi}/asm/kvm.h             |   0
+ arch/ia64/include/uapi/asm/mman.h                  |  16 +
+ arch/ia64/include/{ => uapi}/asm/msgbuf.h          |   0
+ arch/ia64/include/uapi/asm/param.h                 |  29 +
+ arch/ia64/include/uapi/asm/perfmon.h               | 177 ++++
+ .../include/{ => uapi}/asm/perfmon_default_smpl.h  |   0
+ arch/ia64/include/{ => uapi}/asm/poll.h            |   0
+ arch/ia64/include/{ => uapi}/asm/posix_types.h     |   0
+ arch/ia64/include/uapi/asm/ptrace.h                | 247 ++++++
+ arch/ia64/include/{ => uapi}/asm/ptrace_offsets.h  |   0
+ arch/ia64/include/{ => uapi}/asm/resource.h        |   0
+ arch/ia64/include/{ => uapi}/asm/rse.h             |   0
+ arch/ia64/include/{ => uapi}/asm/sembuf.h          |   0
+ arch/ia64/include/{ => uapi}/asm/setup.h           |   0
+ arch/ia64/include/{ => uapi}/asm/shmbuf.h          |   0
+ arch/ia64/include/{ => uapi}/asm/sigcontext.h      |   0
+ arch/ia64/include/uapi/asm/siginfo.h               | 121 +++
+ arch/ia64/include/uapi/asm/signal.h                | 127 +++
+ arch/ia64/include/{ => uapi}/asm/socket.h          |   0
+ arch/ia64/include/{ => uapi}/asm/sockios.h         |   0
+ arch/ia64/include/{ => uapi}/asm/stat.h            |   0
+ arch/ia64/include/{ => uapi}/asm/statfs.h          |   0
+ arch/ia64/include/{ => uapi}/asm/swab.h            |   0
+ arch/ia64/include/{ => uapi}/asm/termbits.h        |   0
+ arch/ia64/include/uapi/asm/termios.h               |  50 ++
+ arch/ia64/include/uapi/asm/types.h                 |  31 +
+ arch/ia64/include/{ => uapi}/asm/ucontext.h        |   0
+ arch/ia64/include/uapi/asm/unistd.h                | 328 ++++++++
+ arch/ia64/include/uapi/asm/ustack.h                |  12 +
+ arch/openrisc/include/asm/unistd.h                 |   5 -
+ arch/score/include/asm/unistd.h                    |   5 -
+ arch/tile/include/asm/unistd.h                     |   5 -
+ arch/unicore32/include/asm/unistd.h                |   4 -
+ include/asm-generic/Kbuild                         |  35 -
+ include/asm-generic/bitsperlong.h                  |  13 +-
+ include/asm-generic/int-l64.h                      |  26 +-
+ include/asm-generic/int-ll64.h                     |  31 +-
+ include/asm-generic/ioctl.h                        |  95 +--
+ include/asm-generic/kvm_para.h                     |   5 +-
+ include/asm-generic/param.h                        |  17 +-
+ include/asm-generic/resource.h                     |  66 +-
+ include/asm-generic/siginfo.h                      | 297 +------
+ include/asm-generic/signal.h                       | 117 +--
+ include/asm-generic/statfs.h                       |  81 +-
+ include/asm-generic/termios.h                      |  49 +-
+ include/asm-generic/unistd.h                       | 911 +--------------------
+ include/linux/Kbuild                               |   9 +-
+ include/uapi/asm-generic/Kbuild                    |  35 +
+ include/{ => uapi}/asm-generic/auxvec.h            |   0
+ include/uapi/asm-generic/bitsperlong.h             |  15 +
+ include/{ => uapi}/asm-generic/errno-base.h        |   0
+ include/{ => uapi}/asm-generic/errno.h             |   0
+ include/{ => uapi}/asm-generic/fcntl.h             |   0
+ include/uapi/asm-generic/int-l64.h                 |  34 +
+ include/uapi/asm-generic/int-ll64.h                |  39 +
+ include/uapi/asm-generic/ioctl.h                   |  98 +++
+ include/{ => uapi}/asm-generic/ioctls.h            |   0
+ include/{ => uapi}/asm-generic/ipcbuf.h            |   0
+ include/{ => uapi}/asm-generic/mman-common.h       |   0
+ include/{ => uapi}/asm-generic/mman.h              |   0
+ include/{ => uapi}/asm-generic/msgbuf.h            |   0
+ include/uapi/asm-generic/param.h                   |  19 +
+ include/{ => uapi}/asm-generic/poll.h              |   0
+ include/{ => uapi}/asm-generic/posix_types.h       |   0
+ include/uapi/asm-generic/resource.h                |  68 ++
+ include/{ => uapi}/asm-generic/sembuf.h            |   0
+ include/{ => uapi}/asm-generic/setup.h             |   0
+ include/{ => uapi}/asm-generic/shmbuf.h            |   0
+ include/{ => uapi}/asm-generic/shmparam.h          |   0
+ include/uapi/asm-generic/siginfo.h                 | 298 +++++++
+ include/{ => uapi}/asm-generic/signal-defs.h       |   0
+ include/uapi/asm-generic/signal.h                  | 123 +++
+ include/{ => uapi}/asm-generic/socket.h            |   0
+ include/{ => uapi}/asm-generic/sockios.h           |   0
+ include/{ => uapi}/asm-generic/stat.h              |   0
+ include/uapi/asm-generic/statfs.h                  |  83 ++
+ include/{ => uapi}/asm-generic/swab.h              |   0
+ include/{ => uapi}/asm-generic/termbits.h          |   0
+ include/uapi/asm-generic/termios.h                 |  50 ++
+ include/{ => uapi}/asm-generic/types.h             |   0
+ include/{ => uapi}/asm-generic/ucontext.h          |   0
+ include/uapi/asm-generic/unistd.h                  | 902 ++++++++++++++++++++
+ security/apparmor/Makefile                         |   2 +-
+ 122 files changed, 3754 insertions(+), 3598 deletions(-)
+ delete mode 100644 arch/c6x/include/asm/signal.h
+ rename arch/ia64/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/break.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/cmpxchg.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/fpu.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/gcc_intrin.h
+ rename arch/ia64/include/{ => uapi}/asm/ia64regs.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/intel_intrin.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/intrinsics.h
+ rename arch/ia64/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/kvm.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/kvm_para.h
+ create mode 100644 arch/ia64/include/uapi/asm/mman.h
+ rename arch/ia64/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/param.h
+ create mode 100644 arch/ia64/include/uapi/asm/perfmon.h
+ rename arch/ia64/include/{ => uapi}/asm/perfmon_default_smpl.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/ptrace.h
+ rename arch/ia64/include/{ => uapi}/asm/ptrace_offsets.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/rse.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/sembuf.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/setup.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/sigcontext.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/siginfo.h
+ create mode 100644 arch/ia64/include/uapi/asm/signal.h
+ rename arch/ia64/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/ia64/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/termios.h
+ create mode 100644 arch/ia64/include/uapi/asm/types.h
+ rename arch/ia64/include/{ => uapi}/asm/ucontext.h (100%)
+ create mode 100644 arch/ia64/include/uapi/asm/unistd.h
+ create mode 100644 arch/ia64/include/uapi/asm/ustack.h
+ rename include/{ => uapi}/asm-generic/auxvec.h (100%)
+ create mode 100644 include/uapi/asm-generic/bitsperlong.h
+ rename include/{ => uapi}/asm-generic/errno-base.h (100%)
+ rename include/{ => uapi}/asm-generic/errno.h (100%)
+ rename include/{ => uapi}/asm-generic/fcntl.h (100%)
+ create mode 100644 include/uapi/asm-generic/int-l64.h
+ create mode 100644 include/uapi/asm-generic/int-ll64.h
+ create mode 100644 include/uapi/asm-generic/ioctl.h
+ rename include/{ => uapi}/asm-generic/ioctls.h (100%)
+ rename include/{ => uapi}/asm-generic/ipcbuf.h (100%)
+ create mode 100644 include/uapi/asm-generic/kvm_para.h
+ rename include/{ => uapi}/asm-generic/mman-common.h (100%)
+ rename include/{ => uapi}/asm-generic/mman.h (100%)
+ rename include/{ => uapi}/asm-generic/msgbuf.h (100%)
+ create mode 100644 include/uapi/asm-generic/param.h
+ rename include/{ => uapi}/asm-generic/poll.h (100%)
+ rename include/{ => uapi}/asm-generic/posix_types.h (100%)
+ create mode 100644 include/uapi/asm-generic/resource.h
+ rename include/{ => uapi}/asm-generic/sembuf.h (100%)
+ rename include/{ => uapi}/asm-generic/setup.h (100%)
+ rename include/{ => uapi}/asm-generic/shmbuf.h (100%)
+ rename include/{ => uapi}/asm-generic/shmparam.h (100%)
+ create mode 100644 include/uapi/asm-generic/siginfo.h
+ rename include/{ => uapi}/asm-generic/signal-defs.h (100%)
+ create mode 100644 include/uapi/asm-generic/signal.h
+ rename include/{ => uapi}/asm-generic/socket.h (100%)
+ rename include/{ => uapi}/asm-generic/sockios.h (100%)
+ rename include/{ => uapi}/asm-generic/stat.h (100%)
+ create mode 100644 include/uapi/asm-generic/statfs.h
+ rename include/{ => uapi}/asm-generic/swab.h (100%)
+ rename include/{ => uapi}/asm-generic/termbits.h (100%)
+ create mode 100644 include/uapi/asm-generic/termios.h
+ rename include/{ => uapi}/asm-generic/types.h (100%)
+ rename include/{ => uapi}/asm-generic/ucontext.h (100%)
+ create mode 100644 include/uapi/asm-generic/unistd.h
+.
