@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab2JDHYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:24:33 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64128 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab2JDHYb (ORCPT
+	id S1753749Ab2JDHZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:25:36 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60996 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab2JDHZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:24:31 -0400
-Date: Thu, 4 Oct 2012 00:24:26 -0700
+	Thu, 4 Oct 2012 03:25:32 -0400
+Date: Thu, 4 Oct 2012 00:25:28 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Poddar, Sourav" <sourav.poddar@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, b-cousson@ti.com, balbi@ti.com,
-        santosh.shilimkar@ti.com
-Subject: Re: [PATCHv3 2/4] Input: keypad: Add smsc ece1099 keypad driver
-Message-ID: <20121004072426.GB14217@core.coreip.homeip.net>
-References: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com>
- <20121002061829.GA3853@core.coreip.homeip.net>
- <CAKdam55BEQi9tJb1yzKJWNhO7sHrW5NFHfsZjicw2NGYDEFovQ@mail.gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: rob@landley.net, pinglinux@gmail.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] USB: input: wacom_sys.c: format OLED image in kernel
+Message-ID: <20121004072528.GD14217@core.coreip.homeip.net>
+References: <1347219438-2598-1-git-send-email-przemo@firszt.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKdam55BEQi9tJb1yzKJWNhO7sHrW5NFHfsZjicw2NGYDEFovQ@mail.gmail.com>
+In-Reply-To: <1347219438-2598-1-git-send-email-przemo@firszt.eu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 11:26:46AM +0530, Poddar, Sourav wrote:
-> Hi Dmitry,
+Hi Przemo,
+
+On Sun, Sep 09, 2012 at 03:37:18PM -0400, Przemo Firszt wrote:
+> This patch adds a new way of handling Wacom Intuos4 family OLEDs.
+> Previously the images had to be 'scrambled' by userland application. Now
+> the 'scrambling' is done in the kernel module, so user space can send
+> simple 64x32 pixels 4-bit grayscale (2 pixels per byte) 0,0 in top left corner
+> images straight to a wacom OLED sysfs entry. An example:
 > 
-> On Tue, Oct 2, 2012 at 11:48 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Sourav,
-> >
-> > On Mon, Oct 01, 2012 at 04:31:50PM +0530, Sourav Poddar wrote:
-> >> From: G, Manjunath Kondaiah <manjugk@ti.com>
-> >>
-> >> +
-> >> +     /* Enable smsc keypad interrupts */
-> >> +     ret = smsc_write(dev, SMSC_KP_INT_MASK, 0xff);
-> >> +     if (ret < 0)
-> >> +             goto err2;
-> >> +
-> >> +     return 0;
-> >> +
-> >> +err2:
-> >> +     input_unregister_device(input);
-> >> +err1:
-> >> +     input_free_device(input);
-> >
-> > Double free.
-> >
-> I believe what you are trying to say here is that we dont really
-> need a " input_unregister_device" (as also I checked in other keypad
-> implementations) and do a "unregister_device" in the remove api ??
+> dd bs=1024 if=image_file \
+> of=/sys/bus/usb/drivers/wacom/[DevNo]/wacom_led/button[No]_formattedimg \
+> count=1
+> 
+> This patch greatly simplifies user space preparation of the image.
+> The raw image sysfs enties are still present to avoid breaking API.
 
-What I was trying to say is that if input device has been registered
-then you need to call input_unregister_device() to unregister and free
-it, otherwise you need to call input_free_device(), but not both.
+I do not not believe that we should add code to the kernel for tasks that
+can be just as easily performed in userspace.
 
-Thanks.
+Thanks!
 
 -- 
 Dmitry
