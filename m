@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab2JDFoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 01:44:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:57826 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab2JDFoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 01:44:13 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Anthony Liguori <anthony@codemonkey.ws>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-In-Reply-To: <87sj9vxbnf.fsf@codemonkey.ws>
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf@rustcorp.com.au> <87sj9vxbnf.fsf@codemonkey.ws>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 04 Oct 2012 14:47:59 +0930
-Message-ID: <87r4pe24u0.fsf@rustcorp.com.au>
+	id S1755671Ab2JDFwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 01:52:49 -0400
+Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:7099 "EHLO
+	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2JDFwr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 01:52:47 -0400
+From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: RE: [PATCH] Input: Add new driver into Input Subsystem for
+ Synaptics DS4 touchscreen I2C devices
+Thread-Topic: [PATCH] Input: Add new driver into Input Subsystem for
+ Synaptics DS4 touchscreen I2C devices
+Thread-Index: AQHNk/HhVA088HpSAk6VMBpKXya6/ZelpTiwgAFjI8CAAGvVgIABSqoA
+Date: Thu, 4 Oct 2012 05:52:45 +0000
+Message-ID: <CC51EC7B5B7F984AA566DC102237848896F593FA@hkdcw-mail1.synaptics-inc.local>
+References: <CC51EC7B5B7F984AA566DC102237848896F590C0@hkdcw-mail1.synaptics-inc.local>
+ <20121003180121.GA4198@polaris.bitmath.org>
+In-Reply-To: <20121003180121.GA4198@polaris.bitmath.org>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-HK
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.14.51.94]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anthony Liguori <anthony@codemonkey.ws> writes:
+From: Henrik Rydberg
+Sent: Thursday, October 04, 2012 2:01 AM
+> It seems this driver is already present in staging. Comments and
+> formatting have been improved in the staging version, but that aside,
+> the two versions look very similar.  Why don't you submit fixes to
+> that driver instead?
 
-> Rusty Russell <rusty@rustcorp.com.au> writes:
->
->> "Michael S. Tsirkin" <mst@redhat.com> writes:
->>
->> There's a reason I haven't done this.  I really, really dislike "my
->> implemention isn't broken" feature bits.  We could have an infinite
->> number of them, for each bug in each device.
->>
->> So my plan was to tie this assumption to the new PCI layout.  And have a
->> stress-testing patch like the one below in the kernel (see my virtio-wip
->> branch for stuff like this).  Turn it on at boot with
->> "virtio_ring.torture" on the kernel commandline.
->>
->> BTW, I've fixed lguest, but my kvm here (Ubuntu precise, kvm-qemu 1.0)
->> is too old.  Building the latest git now...
->>
->> Cheers,
->> Rusty.
->>
->> Subject: virtio: CONFIG_VIRTIO_DEVICE_TORTURE
->>
->> Virtio devices are not supposed to depend on the framing of the scatter-gather
->> lists, but various implementations did.  Safeguard this in future by adding
->> an option to deliberately create perverse descriptors.
->>
->> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->
-> Ignore framing is really a bad idea.  You want backends to enforce
-> reasonable framing because guest's shouldn't do silly things with framing.
->
-> For instance, with virtio-blk, if you want decent performance, you
-> absolutely want to avoid bouncing the data.  If you're using O_DIRECT in
-> the host to submit I/O requests, then it's critical that all of the s/g
-> elements are aligned to a sector boundary and sized to a sector
-> boundary.
->
-> Yes, QEMU can handle if that's not the case, but it would be insanely
-> stupid for a guest not to do this.  This is the sort of thing that ought
-> to be enforced in the specification because a guest cannot perform well
-> if it doesn't follow these rules.
+> On a general note, both versions of the driver use MT-A. Please
+> convert to MT-B, using the in-kernel tracking if necessary.
 
-Lack of imagination is what got us into trouble in the first place; when
-presented with one counter-example, it's useful to look for others.
 
-That's our job, not to dismiss them a "insanely stupid".
+Hi Henrik,
 
-For example:
-1) Perhaps the guest isn't trying to perform well, it's trying to be a
-   tiny bootloader?
-2) Perhaps the guest is the direct consumer, and aligning buffers is
-   redundant.
+Appreciate your suggestion!
+We are going to update a patch of using MT-B, because Synaptics devices are 
+capable of tracking identifiable contacts (type B).
+Thanks for pointing out this.
 
-> A spec isn't terribly useful if the result is guest drivers that are
-> slow.  There's very little to gain by not enforcing rules around framing
-> and there's a lot to lose if a guest frames incorrectly.
+You are right, there is already a synaptics_i2c_rmi4 driver in staging 
+state (drivers/staging/ste_rmi4). 
+Actually synaptics_ds4_i2c driver is developed based on synaptics_i2c_rmi4 
+driver. The point is that we would want to make a clear definition that 
+synaptics_ds4_i2c only targets to DS4 family, so that we can keep maintaining 
+driver focusing on DS4 product line (not all Synaptics touchscreen devices are 
+DS4 compatible).
 
-The guest has the flexibility, and gets to decide.  The spec is not
-forcing them to perform badly.
+We are open to discuss if it is appropriate to retained DS4 driver, and please 
+let us know if you have any concerns.
 
-> In the rare case where we want to make a framing change, we should use
-> feature bits like Michael is proposing.
->
-> In this case, we should simply say that with the feature bit, the vnet
-> header can be in the same element as the data but not allow the header
-> to be spread across multiple elements.
-
-I'd love to split struct virtio_net_hdr_mrg_rxbuf, so the num_buffers
-ends up somewhere else.
-
-The simplest rules are "never" or "always".
-
-Cheers,
-Rusty.
-PS.  Inserting zero-length buffers is something I'd be prepared to rule
-     out, my current patch does it just for yuks...
+Best Regards,
+Alexandra Chin
