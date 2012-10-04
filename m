@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab2JDUHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 16:07:52 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:19800 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab2JDUHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 16:07:50 -0400
-Message-ID: <506DEC95.8050806@hp.com>
-Date: Thu, 04 Oct 2012 14:07:49 -0600
-From: Randy Wright <rwright@hp.com>
-Organization: Hewlett-Packard Company
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120824 Thunderbird/10.0.7
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: linux-kernel@vger.kernel.org, tmac@hp.com, hpa@zytor.com, rwright@hp.com
-Subject: Re: [PATCH] Fix devmem_is_allowed for below 1MB accesses for an 
- efi machine
-References: <jQim6-6MC-7@gated-at.bofh.it> <jQiFt-6UB-13@gated-at.bofh.it> <jQoUx-33k-3@gated-at.bofh.it> <jQp4d-37r-3@gated-at.bofh.it> <jQpxf-3Cv-1@gated-at.bofh.it>
-In-Reply-To: <jQpxf-3Cv-1@gated-at.bofh.it>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753104Ab2JDULM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 16:11:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51069 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650Ab2JDULL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 16:11:11 -0400
+Message-ID: <1349381456.4260.50.camel@pasglop>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 05 Oct 2012 06:10:56 +1000
+In-Reply-To: <CA+55aFxbzeNG=sAQvPcE56rEpAbACqM04m2s73BzXVgK+PCnaQ@mail.gmail.com>
+References: <1349339900.4260.10.camel@pasglop>
+	 <CA+55aFxbzeNG=sAQvPcE56rEpAbACqM04m2s73BzXVgK+PCnaQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 11:20 PM, Matthew Garrett wrote:
+On Thu, 2012-10-04 at 09:00 -0700, Linus Torvalds wrote:
+> So this happens if you have "reverse merges" (ie you've pulled my
+> tree, or some other tree I've pulled), and there is no longer a single
+> clear common point that you started from. In that case, there is no
+> simple diff for the "what has changed since that original point", and
+> to get the diff for the merge you actually have to do the merge and
+> check the end result. git-request-pull doesn't do that, it just
+> assumes it's the simple case of some single common point.
 
-> Oh, right, got you. In that case I think we potentially need a 
-> finer-grained check on EFI platforms - the EFI memory map is kind enough 
-> to tell us the difference between unusable regions and io regions, and 
-> we could avoid access to the unusable ones.
+That was more/less my guess. Thanks.
+
+> The fact that you haven't seen it until now just means that you've
+> generally done a good job at keeping your powerpc tree "clean" from
+> other trees, and containing only your own work. 
+
+Heh, yeah I try to :-) In this specific case, this was a topic branch
+from Bjorn which some pre-requisite patches to the generic PCI code that
+Gavin did to allow us to get rid of some custom resource allocation
+crap, so the "getting rid of" had a dependency on that topic branch.
+
+Unfortunately, Bjorn had also based that branch on top of some larger
+cleanup patch so I ended up pulling that as well from him, which tripped
+the whole thing.
+
+Cheers,
+Ben.
 
 
-I wanted to mention in this context a patch RFC I posted yesterday as a
-distinct thread which is visible as https://lkml.org/lkml/2012/10/3/589
-with the subject: [PATCH RFC] function probe_roms accessing improper
-addresses on UEFI systems.
-
-While the mechanism is different from Tmac's patch (because probe_roms
-runs early in boot, prior to resource structure initialization) the
-intent of the change is the same: to prevent a machine check resulting
-from access to inappropriate physical addresses.
-
-I will monitor both this thread as well as my own recent RFC posting
-since the underlying issues are common.
-
--- 
-Randy Wright        <rwright@hp.com>        +1-970-898-0998
