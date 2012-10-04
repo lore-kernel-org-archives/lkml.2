@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965256Ab2JDOht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:37:49 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56700 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965038Ab2JDOhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:37:48 -0400
-Message-ID: <506D9ED1.8060903@linux.vnet.ibm.com>
-Date: Thu, 04 Oct 2012 09:36:01 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S965310Ab2JDOlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:41:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12740 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965130Ab2JDOlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:41:13 -0400
+Date: Thu, 4 Oct 2012 10:41:06 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: RCU_USER_QS traces.
+Message-ID: <20121004144106.GB11191@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFC] mm: add support for zsmalloc and zcache
-References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com> <505CB9BC.8040905@linux.vnet.ibm.com> <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default> <50609794.8030508@linux.vnet.ibm.com> <b34c65c9-4b25-431d-8b82-cbe911126be9@default> <5064B647.3000906@linux.vnet.ibm.com> <76d1a3f1-efc5-48b5-b485-604a94adcc1d@default> <506B2C4B.3080508@linux.vnet.ibm.com> <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
-In-Reply-To: <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100414-7408-0000-0000-000009062C1A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 01:17 PM, Dan Magenheimer wrote:
-> If so, <shake hands> and move forward?  What do you see as next steps?
+ > We have CONFIG_RCU_USER_QS that is a specific case. It's an intermediate state
+ > before we implement a true CONFIG_NO_HZ_FULL. But the option is useless on its
+ > own for users. Worse, it introduces a real overhead. OTOH we want it to be upstream
+ > to make the development of full tickless feature more incremental.
 
-I'll need to get up to speed on the new codebase before I can answer
-this.  I should be able to answer by early next week.
+I couldn't resist trying it.. Did these get reported yet ?
 
-Seth
+
+WARNING: at kernel/rcutree.c:377 rcu_eqs_enter+0x93/0xa0()
+Pid: 0, comm: swapper/1 Not tainted 3.6.0+ #24
+Call Trace:
+ [<ffffffff810678af>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8106790a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8111a383>] rcu_eqs_enter+0x93/0xa0
+ [<ffffffff8111af0b>] rcu_idle_enter+0x2b/0x70
+ [<ffffffff8102460f>] cpu_idle+0xbf/0x140
+ [<ffffffff816ad18d>] start_secondary+0x252/0x254
+
+WARNING: at kernel/rcutree.c:352 rcu_eqs_enter_common.isra.37+0x1c6/0x1e0()
+Pid: 0, comm: swapper/1 Tainted: G        W    3.6.0+ #24
+Call Trace:
+ [<ffffffff810678af>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8106790a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8111a2d6>] rcu_eqs_enter_common.isra.37+0x1c6/0x1e0
+ [<ffffffff8111a355>] rcu_eqs_enter+0x65/0xa0
+ [<ffffffff8111af0b>] rcu_idle_enter+0x2b/0x70
+ [<ffffffff8102460f>] cpu_idle+0xbf/0x140
+ [<ffffffff816ad18d>] start_secondary+0x252/0x254
+
+WARNING: at kernel/rcutree.c:539 rcu_eqs_exit+0x99/0xb0()
+Pid: 0, comm: swapper/1 Tainted: G        W    3.6.0+ #24
+Call Trace:
+ [<ffffffff810678af>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8106790a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8111a0f9>] rcu_eqs_exit+0x99/0xb0
+ [<ffffffff8111ae9b>] rcu_idle_exit+0x2b/0x70
+ [<ffffffff8102461e>] cpu_idle+0xce/0x140
+ [<ffffffff816ad18d>] start_secondary+0x252/0x254
+
+WARNING: at kernel/rcutree.c:513 rcu_eqs_exit_common.isra.35+0xd4/0xe0()
+Pid: 0, comm: swapper/1 Tainted: G        W    3.6.0+ #24
+Call Trace:
+ [<ffffffff810678af>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8106790a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8111a054>] rcu_eqs_exit_common.isra.35+0xd4/0xe0
+ [<ffffffff8111a0bc>] rcu_eqs_exit+0x5c/0xb0
+ [<ffffffff8111ae9b>] rcu_idle_exit+0x2b/0x70
+ [<ffffffff8102461e>] cpu_idle+0xce/0x140
+ [<ffffffff816ad18d>] start_secondary+0x252/0x254
+
+	Dave
 
