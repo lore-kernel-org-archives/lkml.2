@@ -1,107 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab2JDTuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:50:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50208 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757105Ab2JDTuQ (ORCPT
+	id S1757254Ab2JDTuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:50:55 -0400
+Received: from frost.carfax.org.uk ([85.119.82.111]:55580 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756950Ab2JDTux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:50:16 -0400
-Date: Thu, 4 Oct 2012 12:50:12 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Zach Brown <zab@zabbo.net>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tytso@google.com,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        michael.mesnier@intel.com, jeffrey.d.skirvin@intel.com,
-        Martin Petersen <martin.petersen@oracle.com>
-Subject: Re: [RFC, PATCH] Extensible AIO interface
-Message-ID: <20121004195012.GA29494@google.com>
-References: <20121001222341.GF26488@google.com>
- <20121001231222.GB14533@lenny.home.zabbo.net>
- <20121001232235.GH26488@google.com>
- <20121001234439.GC14533@lenny.home.zabbo.net>
- <20121002002216.GI26488@google.com>
- <20121002174323.GE14533@lenny.home.zabbo.net>
- <20121002214113.GV26488@google.com>
- <20121003014106.GC15806@localhost>
- <20121003030020.GB19788@moria.home.lan>
- <20121003215806.GA19248@localhost>
+	Thu, 4 Oct 2012 15:50:53 -0400
+X-Greylist: delayed 1831 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Oct 2012 15:50:53 EDT
+Date: Thu, 4 Oct 2012 20:20:17 +0100
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Subject: i915 problems with suspend to disk
+Message-ID: <20121004192017.GI25498@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	linux-kernel@vger.kernel.org,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="boAH8PqvUi1v1f55"
 Content-Disposition: inline
-In-Reply-To: <20121003215806.GA19248@localhost>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 06:58:06AM +0900, Tejun Heo wrote:
-> Hello, Kent.
-> 
-> On Tue, Oct 02, 2012 at 08:00:20PM -0700, Kent Overstreet wrote:
-> > > However, I don't think it's a good idea to try to implement something
-> > > which is a neutral transport of opaque data between userland and lower
-> > > layers.  Things like that sound attractive with unlimited
-> > > possibilities but reality seems to have the tendancy to make a big
-> > > mess out of setups like that.
-> > 
-> > I don't see how the "neutral transport of opaque data" itself is a bad
-> > thing. We want something simple and sane to build actual interfaces on
-> > top of - once we've got that, we can either build clean generic well
-> > defined interfaces or we can make a mess like with ioctls :P
-> > 
-> > It's like any other mechanism. There's good syscalls and bad syscalls...
-> 
-> Depending on what a feature aims for, the design and implementation
-> vary greatly.  If you go for completely generic extensible stuff which
-> can be used to warp space-time continuum, it's easy to end up with a
-> monstrosity with generic and programmable parser, verifier, accessor
-> and so on.
 
-I don't think that's concrete enough that I can comment - I think this
-is becoming too abstract.
+--boAH8PqvUi1v1f55
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You didn't have any complaints when I showed you the code I posted, I
-don't plan on making it really any more complicated than that - I think
-we do need explicit return values but honestly that makes it less
-generic.
+   Hi,
 
+   On 3.6, I've got a problem with my video driver after resuming from
+suspend-to-disk: the lower part of the display flickers, rapidly but
+irregularly (think of a neon sign in a bad film noir), flicking
+between the correct display and... something else, it's hard to see
+what.
 
-> > Say we implement an attr to control a block layer cache. That attr could
-> > be parsed/validated in high level code (if there's any to do) - that I
-> > don't object to. But the high level code isn't going to /know/ whether
-> > there was any block cache in the stack that handled the attr. If the
-> > attr is passed down to the block cache, that block cache can return that
-> > it was handled.
-> 
-> My point is that if it doesn't fit the generic abstract model as in
-> fadvise(2), it probably isn't worth supporting in any generic manner.
+   Shutting the lid of the machine (to trigger a suspend-to-ram) and
+waking it up again fixes the flicker.
 
-How so? Do you mean the file range part? I think that's orthogonal to
-the rest (the hints fadvise specifies could be used per IO or with a
-file range like they are now), but the hints themselves are inadequate
-for SSD caches.
+   In syslogs, I have nothing obvious on suspend, and this warning on
+resume:
 
-> > > It's okay to allow some side channel thing for specific hacky uses but
-> > > I really hope the general design were focused around properly
-> > > abstracted attributes which can be understood and handled by the upper
-> > > layer.
-> > 
-> > Completely agreed. I want to leave that side channel open for
-> > experimentation, and so we have a way of implementing one off hacky
-> > stuff when we need to - but normal mainline stuff should be sane and
-> > well designed.
-> 
-> So, I think we can aim for something simple and modest (the only thing
-> I can think of at the moment is task association) and provide simple
-> framework which can be used for specific custom usages.  Let's please
-> not go overboard with generic parser / verifier which supports pointer
-> indirection or whatnot.
+Oct  4 19:53:04 ruth kernel: [ 2892.184086] ------------[ cut here ]------------
+Oct  4 19:53:04 ruth kernel: [ 2892.184114] WARNING: at drivers/gpu/drm/i915/intel_display.c:1225 intel_crtc_disable+0x52/0x86 [i915]()
+Oct  4 19:53:04 ruth kernel: [ 2892.184115] Hardware name: 0196CTO
+Oct  4 19:53:04 ruth kernel: [ 2892.184117] pipe B assertion failure (expected off, current on)
+Oct  4 19:53:04 ruth kernel: [ 2892.184188] Modules linked in: cpufreq_powersave cpufreq_userspace cpufreq_stats cpufreq_conservative rfcomm bnep binfmt_misc uinput nfsd auth_rpcgss nfs_acl nfs lockd fscache sunrpc ext4 jbd2 mbcache loop arc4 iwldvm mac80211 snd_hda_codec_hdmi snd_hda_codec_conexant coretemp i915 snd_hda_intel snd_hda_codec drm_kms_helper iwlwifi snd_hwdep snd_pcm snd_page_alloc joydev snd_seq snd_seq_device snd_timer kvm_intel drm i2c_algo_bit thinkpad_acpi acpi_cpufreq nvram btusb bluetooth kvm crc16 cfg80211 microcode psmouse evdev i2c_i801 video rfkill wmi mperf i2c_core snd battery ac processor soundcore button btrfs crc32c libcrc32c zlib_deflate sha256_generic ablk_helper cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod sd_mod crc_t10dif ums_realtek usb_storage uas thermal thermal_sys ahci libahci libata uhci_hcd scsi_mod ehci_hcd r8169 mii usbcore usb_common
+Oct  4 19:53:04 ruth kernel: [ 2892.184198] Pid: 4117, comm: kworker/u:3 Not tainted 3.6.0 #14
+Oct  4 19:53:04 ruth kernel: [ 2892.184199] Call Trace:
+Oct  4 19:53:04 ruth kernel: [ 2892.184207]  [<ffffffff8102bdc5>] ? warn_slowpath_common+0x78/0x8c
+Oct  4 19:53:04 ruth kernel: [ 2892.184213]  [<ffffffff8104afd3>] ? async_schedule+0xc/0xc
+Oct  4 19:53:04 ruth kernel: [ 2892.184216]  [<ffffffff8102be71>] ? warn_slowpath_fmt+0x45/0x4a
+Oct  4 19:53:04 ruth kernel: [ 2892.184221]  [<ffffffff8104afd3>] ? async_schedule+0xc/0xc
+Oct  4 19:53:04 ruth kernel: [ 2892.184238]  [<ffffffffa03fdae0>] ? intel_crtc_disable+0x52/0x86 [i915]
+Oct  4 19:53:04 ruth kernel: [ 2892.184245]  [<ffffffffa0273e47>] ? drm_helper_disable_unused_functions+0xd0/0xfb [drm_kms_helper]
+Oct  4 19:53:04 ruth kernel: [ 2892.184250]  [<ffffffffa027461e>] ? drm_helper_resume_force_mode+0xf1/0xff [drm_kms_helper]
+Oct  4 19:53:04 ruth kernel: [ 2892.184254]  [<ffffffff8104afd3>] ? async_schedule+0xc/0xc
+Oct  4 19:53:04 ruth kernel: [ 2892.184264]  [<ffffffffa03dc17f>] ? i915_drm_thaw+0xd4/0x10b [i915]
+Oct  4 19:53:04 ruth kernel: [ 2892.184274]  [<ffffffffa03dc4fc>] ? i915_resume+0x3b/0x50 [i915]
+Oct  4 19:53:04 ruth kernel: [ 2892.184279]  [<ffffffff81193f21>] ? pci_legacy_resume+0x39/0x39
+Oct  4 19:53:04 ruth kernel: [ 2892.184284]  [<ffffffff812196f7>] ? dpm_run_callback.isra.5+0x26/0x54
+Oct  4 19:53:04 ruth kernel: [ 2892.184289]  [<ffffffff81219fe1>] ? device_resume+0xd0/0x110
+Oct  4 19:53:04 ruth kernel: [ 2892.184292]  [<ffffffff8121a035>] ? async_resume+0x14/0x38
+Oct  4 19:53:04 ruth kernel: [ 2892.184296]  [<ffffffff8104b070>] ? async_run_entry_fn+0x9d/0x175
+Oct  4 19:53:04 ruth kernel: [ 2892.184300]  [<ffffffff81041a1a>] ? process_one_work+0x184/0x2a3
+Oct  4 19:53:04 ruth kernel: [ 2892.184304]  [<ffffffff810426f1>] ? worker_thread+0x1fe/0x29f
+Oct  4 19:53:04 ruth kernel: [ 2892.184307]  [<ffffffff810424f3>] ? manage_workers+0x223/0x223
+Oct  4 19:53:04 ruth kernel: [ 2892.184310]  [<ffffffff810424f3>] ? manage_workers+0x223/0x223
+Oct  4 19:53:04 ruth kernel: [ 2892.184315]  [<ffffffff81045adf>] ? kthread+0x67/0x6f
+Oct  4 19:53:04 ruth kernel: [ 2892.184319]  [<ffffffff812fe774>] ? kernel_thread_helper+0x4/0x10
+Oct  4 19:53:04 ruth kernel: [ 2892.184324]  [<ffffffff81045a78>] ? kthread_freezable_should_stop+0x3c/0x3c
+Oct  4 19:53:04 ruth kernel: [ 2892.184327]  [<ffffffff812fe770>] ? gs_change+0xb/0xb
+Oct  4 19:53:04 ruth kernel: [ 2892.184328] ---[ end trace 4e63ed9ed8ebc493 ]---
 
-I wasn't seriously proposing implementing a generic parser/verifier -
-certainly not just for this, that was idle musing; all I'm saying is
-that when an attr needs parsing/verification, that should be done in the
-attr code, not driver code.
+   Hardware is a Lenovo Thinkpad Edge13, lspci says:
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+
+aka
+
+00:02.0 0300: 8086:2a42 (rev 07)
+
+   Let me know if you need more information. I can probably manage a
+bisect if necessary -- it's easily repeatable as a bug.
+
+   Hugo.
+
+-- 
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+                   --- Ceci n'est pas une pipe:  | ---                   
+
+--boAH8PqvUi1v1f55
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUBUG3hcb9z9OVl50rAAQIPAw/+PTmEo/emKxq+hDmsKFF9FtJFqz1yk+Vs
+dR44YG0JtR6fwqJJysvQPL4k9/Idi5qvYL632DHmfWcoiuO5NI0CRj+GBe4tcNBt
+rfDeA9rAzlIXVOScif5JUX1TAd84dEnV1xS0gB5HLVeybDCKolg1GeP3EUK/5bMV
++zD3t1thoDuWcltguBTBwJtGLjGVHOEF0kwhVxYLxnT3jtzoPVpoNL7z27rvBHOv
+mN38k4Mli0F7Rh9zCrS6fz2heq6OlP3CbgfIViQdt7AcFglulO4FoXoshVnzgHlP
++4G8cDq/bnjPLG6/ZIRu/3FAZd13E5iVKliWWmQXd9H+nFO6RGUn2I3ikVxV6Jf8
+TAmzr7VlvomhoUHSUhvtdK1jyY/pvBN9oy/Oq7mLDpymXYFRylVEQ6oEuzVKaeZy
+S0FRp/lJA/by39nFDYSjhz8apJ9sVGG08Mm+0lVJyWpmfkqSIbpv212FMgxTyhZx
+QXpLphoJYhQnEmQhztVEIONGTxq2Ct1sHOy0/V6tdevIpa5BRqExP3mY15PrINjs
+jIaheBc0/x1crWUbE65TDZIkW76RkazH2hLWJpCbzV+Jyd0VDsOkHe2LgJqC5xCW
+A4k3UDG6Tv1EzGL7ww2hyL81Gl9697bRrj6BZXqoWGJ2TdkeTamr+f1iC2AtvcvR
+zCyBkOzZHag=
+=cvZe
+-----END PGP SIGNATURE-----
+
+--boAH8PqvUi1v1f55--
