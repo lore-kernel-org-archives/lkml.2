@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab2JDSPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:15:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59018 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391Ab2JDSPG (ORCPT
+	id S1755010Ab2JDSSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:18:22 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:58807 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806Ab2JDSPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:15:06 -0400
+	Thu, 4 Oct 2012 14:15:11 -0400
 From: Michal Simek <monstr@monstr.eu>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Wendy Liang <wendy.liang@petalogix.com>,
+        Nico Augustijn <Nico.Augustijn@Adeas.nl>,
         Anirudha Sarangi <anirudh@xilinx.com>,
         John Linn <John.Linn@xilinx.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 03/11] net: axienet: Do not use NO_IRQ
-Date: Thu,  4 Oct 2012 20:14:49 +0200
-Message-Id: <1349374497-9540-3-git-send-email-monstr@monstr.eu>
+Subject: [PATCH 04/11] net: axienet: Additional MDIO clock functionality
+Date: Thu,  4 Oct 2012 20:14:50 +0200
+Message-Id: <1349374497-9540-4-git-send-email-monstr@monstr.eu>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
 References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
@@ -25,31 +27,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NO_IRQ is not longer used by Microblaze.
+The MDIO clock was previously hard coded and it is now
+calculated thanks to a patch from the community.
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
+Modify the Xilinx patch to get the clock frequency from
+the connected AXI bus instead of the CPU.
+
+Currently, the AXI ethernet mdio bus id is set as the mdio device node start
+address, but the mdio node don't have a start address. Use the start address
+of the AXI ethernet controller which connects to the MDIO bus instead.
+
+Signed-off-by: Wendy Liang <wendy.liang@petalogix.com>
+Signed-off-by: Nico Augustijn <Nico.Augustijn@Adeas.nl>
 CC: Anirudha Sarangi <anirudh@xilinx.com>
 CC: John Linn <John.Linn@xilinx.com>
 CC: Grant Likely <grant.likely@secretlab.ca>
 CC: Rob Herring <rob.herring@calxeda.com>
 CC: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c |   76 +++++++++++----------
+ 1 files changed, 40 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index a5b41cd..8d1db13 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -1599,7 +1599,7 @@ static int __devinit axienet_of_probe(struct platform_device *op)
- 	lp->rx_irq = irq_of_parse_and_map(np, 1);
- 	lp->tx_irq = irq_of_parse_and_map(np, 0);
- 	of_node_put(np);
--	if ((lp->rx_irq == NO_IRQ) || (lp->tx_irq == NO_IRQ)) {
-+	if ((!lp->rx_irq) || (!lp->tx_irq)) {
- 		dev_err(&op->dev, "could not determine irqs\n");
- 		ret = -ENOMEM;
- 		goto err_iounmap_2;
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+index e90e1f4..49acc1e 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+@@ -128,11 +128,11 @@ static int axienet_mdio_write(struct mii_bus *bus, int phy_id, int reg,
+ int axienet_mdio_setup(struct axienet_local *lp, struct device_node *np)
+ {
+ 	int ret;
+-	u32 clk_div, host_clock;
+-	u32 *property_p;
++	u32 clk_div;
+ 	struct mii_bus *bus;
+ 	struct resource res;
+ 	struct device_node *np1;
++	struct device_node *npp = 0; /* the ethernet controller device node */
+ 
+ 	/* clk_div can be calculated by deriving it from the equation:
+ 	 * fMDIO = fHOST / ((1 + clk_div) * 2)
+@@ -158,41 +158,46 @@ int axienet_mdio_setup(struct axienet_local *lp, struct device_node *np)
+ 	 * fHOST can be read from the flattened device tree as property
+ 	 * "clock-frequency" from the CPU
+ 	 */
+-
+-	np1 = of_find_node_by_name(NULL, "cpu");
+-	if (!np1) {
+-		printk(KERN_WARNING "%s(): Could not find CPU device node.",
+-		       __func__);
+-		printk(KERN_WARNING "Setting MDIO clock divisor to "
+-		       "default %d\n", DEFAULT_CLOCK_DIVISOR);
+-		clk_div = DEFAULT_CLOCK_DIVISOR;
+-		goto issue;
+-	}
+-	property_p = (u32 *) of_get_property(np1, "clock-frequency", NULL);
+-	if (!property_p) {
+-		printk(KERN_WARNING "%s(): Could not find CPU property: "
+-		       "clock-frequency.", __func__);
+-		printk(KERN_WARNING "Setting MDIO clock divisor to "
+-		       "default %d\n", DEFAULT_CLOCK_DIVISOR);
++	np1 = of_get_parent(lp->phy_node);
++	if (np1)
++		npp = of_get_parent(np1);
++	if (!npp) {
++		dev_warn(lp->dev,
++			"Could not find ethernet controller device node.");
++		dev_warn(lp->dev, "Setting MDIO clock divisor to default %d\n",
++		       DEFAULT_CLOCK_DIVISOR);
+ 		clk_div = DEFAULT_CLOCK_DIVISOR;
+-		goto issue;
++	} else {
++		u32 *property_p;
++
++		property_p = (uint32_t *)of_get_property(npp,
++						"clock-frequency", NULL);
++		if (!property_p) {
++			dev_warn(lp->dev, "Could not find clock ethernet " \
++						      "controller property.");
++			dev_warn(lp->dev,
++				 "Setting MDIO clock divisor to default %d\n",
++							DEFAULT_CLOCK_DIVISOR);
++			clk_div = DEFAULT_CLOCK_DIVISOR;
++		} else {
++			u32 host_clock = be32_to_cpup(property_p);
++
++			clk_div = (host_clock / (MAX_MDIO_FREQ * 2)) - 1;
++
++			/* If there is any remainder from the division of
++			 * fHOST / (MAX_MDIO_FREQ * 2), then we need to add 1
++			 * to the clock divisor or we will surely be
++			 * above 2.5 MHz */
++			if (host_clock % (MAX_MDIO_FREQ * 2))
++				clk_div++;
++			dev_dbg(lp->dev, "Setting MDIO clock divisor to %u " \
++						"based on %u Hz host clock.\n",
++						clk_div, host_clock);
++		}
+ 	}
+ 
+-	host_clock = be32_to_cpup(property_p);
+-	clk_div = (host_clock / (MAX_MDIO_FREQ * 2)) - 1;
+-	/* If there is any remainder from the division of
+-	 * fHOST / (MAX_MDIO_FREQ * 2), then we need to add
+-	 * 1 to the clock divisor or we will surely be above 2.5 MHz */
+-	if (host_clock % (MAX_MDIO_FREQ * 2))
+-		clk_div++;
+-
+-	printk(KERN_DEBUG "%s(): Setting MDIO clock divisor to %u based "
+-	       "on %u Hz host clock.\n", __func__, clk_div, host_clock);
+-
+-	of_node_put(np1);
+-issue:
+-	axienet_iow(lp, XAE_MDIO_MC_OFFSET,
+-		    (((u32) clk_div) | XAE_MDIO_MC_MDIOEN_MASK));
++	axienet_iow(lp, XAE_MDIO_MC_OFFSET, (((u32)clk_div) |
++						XAE_MDIO_MC_MDIOEN_MASK));
+ 
+ 	ret = axienet_mdio_wait_until_ready(lp);
+ 	if (ret < 0)
+@@ -202,8 +207,7 @@ issue:
+ 	if (!bus)
+ 		return -ENOMEM;
+ 
+-	np1 = of_get_parent(lp->phy_node);
+-	of_address_to_resource(np1, 0, &res);
++	of_address_to_resource(npp, 0, &res);
+ 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
+ 		 (unsigned long long) res.start);
+ 
 -- 
 1.7.0.4
 
