@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2JDWSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:18:01 -0400
+	id S1754800Ab2JDWSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:18:23 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757722Ab2JDVRK (ORCPT
+	with ESMTP id S1757699Ab2JDVRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:10 -0400
+	Thu, 4 Oct 2012 17:17:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Samuel Thibault <sthibault@debian.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 10/56] staging: speakup_soft: Fix reading of init string
-Date: Thu,  4 Oct 2012 14:15:31 -0700
-Message-Id: <20121004211153.277712522@linuxfoundation.org>
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>
+Subject: [ 08/56] usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
+Date: Thu,  4 Oct 2012 14:15:29 -0700
+Message-Id: <20121004211153.055952802@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,69 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-commit 40fe4f89671fb3c7ded94190fb267402a38b0261 upstream.
+commit 457a73d346187c2cc5d599072f38676f18f130e0 upstream.
 
-softsynth_read() reads a character at a time from the init string;
-when it finds the null terminator it sets the initialized flag but
-then repeats the last character.
+In 71c731a: usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
+when extracting DMI strings (vendor or product_name) to mark them as quirk
+we may get NULL pointer in case of non-x86 systems which won't define
+CONFIG_DMI. Hence susbsequent strstr() calls crash while driver probing.
 
-Additionally, if the read() buffer is not big enough for the init
-string, the next read() will start reading from the beginning again.
-So the caller may never progress to reading anything else.
+So, returning 'false' here in case we get a NULL vendor or product_name.
 
-Replace the simple initialized flag with the current position in
-the init string, carried over between calls.  Switch to reading
-real data once this reaches the null terminator.
+This is tested with ARM (exynos) system.
 
-(This assumes that the length of the init string can't change, which
-seems to be the case.  Really, the string and position belong together
-in a per-file private struct.)
+This patch should be backported to stable kernels as old as 3.6, that
+contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
+xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
 
-Tested-by: Samuel Thibault <sthibault@debian.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Sebastian Gottschall (DD-WRT) <s.gottschall@dd-wrt.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/speakup/speakup_soft.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ drivers/usb/host/xhci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -40,7 +40,7 @@ static int softsynth_is_alive(struct spk
- static unsigned char get_index(void);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -470,6 +470,8 @@ static bool compliance_mode_recovery_tim
  
- static struct miscdevice synth_device;
--static int initialized;
-+static int init_pos;
- static int misc_registered;
+ 	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
++	if (!dmi_product_name || !dmi_sys_vendor)
++		return false;
  
- static struct var_t vars[] = {
-@@ -194,7 +194,7 @@ static int softsynth_close(struct inode
- 	unsigned long flags;
- 	spk_lock(flags);
- 	synth_soft.alive = 0;
--	initialized = 0;
-+	init_pos = 0;
- 	spk_unlock(flags);
- 	/* Make sure we let applications go before leaving */
- 	speakup_start_ttys();
-@@ -239,13 +239,8 @@ static ssize_t softsynth_read(struct fil
- 			ch = '\x18';
- 		} else if (synth_buffer_empty()) {
- 			break;
--		} else if (!initialized) {
--			if (*init) {
--				ch = *init;
--				init++;
--			} else {
--				initialized = 1;
--			}
-+		} else if (init[init_pos]) {
-+			ch = init[init_pos++];
- 		} else {
- 			ch = synth_buffer_getc();
- 		}
+ 	if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
+ 		return false;
 
 
