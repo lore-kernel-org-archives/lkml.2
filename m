@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2JDSJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:09:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39746 "EHLO
+	id S1754786Ab2JDSTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:19:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39780 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab2JDSJ0 (ORCPT
+	with ESMTP id S1752597Ab2JDSJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:26 -0400
+	Thu, 4 Oct 2012 14:09:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/42] perf inject: Remove static variables
-Date: Thu,  4 Oct 2012 15:08:11 -0300
-Message-Id: <1349374122-27806-12-git-send-email-acme@infradead.org>
+Subject: [PATCH 19/42] perf buildid-cache: Don't use globals where not needed to
+Date: Thu,  4 Oct 2012 15:08:19 -0300
+Message-Id: <1349374122-27806-20-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
 References: <1349374122-27806-1-git-send-email-acme@infradead.org>
@@ -31,13 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We want to reduce the impact that each of the builtins has on perf as a
-whole, so use the superclassing of perf_tool mechanizm to move its
-config knobs to the stack, so that only if we use that tool, its impact
-will be felt.
-
-In this case is more about consistency, as the impact of this tool is
-minimal.
+Some variables were global but used in just one function, so move it to
+where it belongs.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -47,134 +42,103 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-z2b3matvawihtenmez9hkcja@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-6i7lqzm4hmkg35o1370lb7w4@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c |   72 ++++++++++++++++++++++--------------------
- 1 files changed, 38 insertions(+), 34 deletions(-)
+ tools/perf/builtin-buildid-cache.c |   58 ++++++++++++++++--------------------
+ 1 files changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index e249f24..3c9ab55 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -14,7 +14,10 @@
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index 8365455..d37e077 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -15,22 +15,6 @@
+ #include "util/strlist.h"
+ #include "util/symbol.h"
  
- #include "util/parse-options.h"
- 
--static bool		inject_build_ids;
-+struct perf_inject {
-+	struct perf_tool tool;
-+	bool		 build_ids;
-+};
- 
- static int perf_event__repipe_synth(struct perf_tool *tool __maybe_unused,
- 				    union perf_event *event,
-@@ -207,22 +210,6 @@ repipe:
- 	return 0;
- }
- 
--struct perf_tool perf_inject = {
--	.sample		= perf_event__repipe_sample,
--	.mmap		= perf_event__repipe,
--	.comm		= perf_event__repipe,
--	.fork		= perf_event__repipe,
--	.exit		= perf_event__repipe,
--	.lost		= perf_event__repipe,
--	.read		= perf_event__repipe_sample,
--	.throttle	= perf_event__repipe,
--	.unthrottle	= perf_event__repipe,
--	.attr		= perf_event__repipe_attr,
--	.event_type	= perf_event__repipe_event_type_synth,
--	.tracing_data	= perf_event__repipe_tracing_data_synth,
--	.build_id	= perf_event__repipe_op2_synth,
+-static char const *add_name_list_str, *remove_name_list_str;
+-
+-static const char * const buildid_cache_usage[] = {
+-	"perf buildid-cache [<options>]",
+-	NULL
 -};
 -
- extern volatile int session_done;
- 
- static void sig_handler(int sig __maybe_unused)
-@@ -230,25 +217,25 @@ static void sig_handler(int sig __maybe_unused)
- 	session_done = 1;
- }
- 
--static int __cmd_inject(void)
-+static int __cmd_inject(struct perf_inject *inject)
- {
- 	struct perf_session *session;
- 	int ret = -EINVAL;
- 
- 	signal(SIGINT, sig_handler);
- 
--	if (inject_build_ids) {
--		perf_inject.sample	 = perf_event__inject_buildid;
--		perf_inject.mmap	 = perf_event__repipe_mmap;
--		perf_inject.fork	 = perf_event__repipe_task;
--		perf_inject.tracing_data = perf_event__repipe_tracing_data;
-+	if (inject->build_ids) {
-+		inject->tool.sample	  = perf_event__inject_buildid;
-+		inject->tool.mmap	  = perf_event__repipe_mmap;
-+		inject->tool.fork	  = perf_event__repipe_task;
-+		inject->tool.tracing_data = perf_event__repipe_tracing_data;
- 	}
- 
--	session = perf_session__new("-", O_RDONLY, false, true, &perf_inject);
-+	session = perf_session__new("-", O_RDONLY, false, true, &inject->tool);
- 	if (session == NULL)
- 		return -ENOMEM;
- 
--	ret = perf_session__process_events(session, &perf_inject);
-+	ret = perf_session__process_events(session, &inject->tool);
- 
- 	perf_session__delete(session);
- 
-@@ -260,16 +247,33 @@ static const char * const report_usage[] = {
- 	NULL
- };
- 
--static const struct option options[] = {
--	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
--		    "Inject build-ids into the output stream"),
--	OPT_INCR('v', "verbose", &verbose,
--		 "be more verbose (show build ids, etc)"),
+-static const struct option buildid_cache_options[] = {
+-	OPT_STRING('a', "add", &add_name_list_str,
+-		   "file list", "file(s) to add"),
+-	OPT_STRING('r', "remove", &remove_name_list_str, "file list",
+-		    "file(s) to remove"),
+-	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
 -	OPT_END()
 -};
 -
- int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ static int build_id_cache__add_file(const char *filename, const char *debugdir)
  {
-+	struct perf_inject inject = {
-+		.tool = {
-+			.sample		= perf_event__repipe_sample,
-+			.mmap		= perf_event__repipe,
-+			.comm		= perf_event__repipe,
-+			.fork		= perf_event__repipe,
-+			.exit		= perf_event__repipe,
-+			.lost		= perf_event__repipe,
-+			.read		= perf_event__repipe_sample,
-+			.throttle	= perf_event__repipe,
-+			.unthrottle	= perf_event__repipe,
-+			.attr		= perf_event__repipe_attr,
-+			.event_type	= perf_event__repipe_event_type_synth,
-+			.tracing_data	= perf_event__repipe_tracing_data_synth,
-+			.build_id	= perf_event__repipe_op2_synth,
-+		},
+ 	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+@@ -51,8 +35,8 @@ static int build_id_cache__add_file(const char *filename, const char *debugdir)
+ 	return err;
+ }
+ 
+-static int build_id_cache__remove_file(const char *filename __maybe_unused,
+-				       const char *debugdir __maybe_unused)
++static int build_id_cache__remove_file(const char *filename,
++				       const char *debugdir)
+ {
+ 	u8 build_id[BUILD_ID_SIZE];
+ 	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+@@ -73,11 +57,34 @@ static int build_id_cache__remove_file(const char *filename __maybe_unused,
+ 	return err;
+ }
+ 
+-static int __cmd_buildid_cache(void)
++int cmd_buildid_cache(int argc, const char **argv,
++		      const char *prefix __maybe_unused)
+ {
+ 	struct strlist *list;
+ 	struct str_node *pos;
+ 	char debugdir[PATH_MAX];
++	char const *add_name_list_str = NULL,
++		   *remove_name_list_str = NULL;
++	const struct option buildid_cache_options[] = {
++	OPT_STRING('a', "add", &add_name_list_str,
++		   "file list", "file(s) to add"),
++	OPT_STRING('r', "remove", &remove_name_list_str, "file list",
++		    "file(s) to remove"),
++	OPT_INCR('v', "verbose", &verbose, "be more verbose"),
++	OPT_END()
 +	};
-+	const struct option options[] = {
-+		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
-+			    "Inject build-ids into the output stream"),
-+		OPT_INCR('v', "verbose", &verbose,
-+			 "be more verbose (show build ids, etc)"),
-+		OPT_END()
++	const char * const buildid_cache_usage[] = {
++		"perf buildid-cache [<options>]",
++		NULL
 +	};
 +
- 	argc = parse_options(argc, argv, options, report_usage, 0);
++	argc = parse_options(argc, argv, buildid_cache_options,
++			     buildid_cache_usage, 0);
++
++	if (symbol__init() < 0)
++		return -1;
++
++	setup_pager();
  
- 	/*
-@@ -281,5 +285,5 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (symbol__init() < 0)
- 		return -1;
+ 	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
  
--	return __cmd_inject();
-+	return __cmd_inject(&inject);
+@@ -119,16 +126,3 @@ static int __cmd_buildid_cache(void)
+ 
+ 	return 0;
  }
+-
+-int cmd_buildid_cache(int argc, const char **argv,
+-		      const char *prefix __maybe_unused)
+-{
+-	argc = parse_options(argc, argv, buildid_cache_options,
+-			     buildid_cache_usage, 0);
+-
+-	if (symbol__init() < 0)
+-		return -1;
+-
+-	setup_pager();
+-	return __cmd_buildid_cache();
+-}
 -- 
 1.7.1
 
