@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422864Ab2JDQZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 12:25:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37379 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933406Ab2JDQZv convert rfc822-to-8bit (ORCPT
+	id S933452Ab2JDQ3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 12:29:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37659 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab2JDQ3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 12:25:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,537,1344236400"; 
-   d="scan'208";a="229965769"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: [PATCH] MAINTAINERS: Add myself as the SWIOTLB maintainer.
-Thread-Topic: [PATCH] MAINTAINERS: Add myself as the SWIOTLB maintainer.
-Thread-Index: AQHNokmRlOK8mC80wkOoDHMGv+0DMJepVPpg
-Date: Thu, 4 Oct 2012 16:25:50 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D48564@ORSMSX108.amr.corp.intel.com>
-References: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 4 Oct 2012 12:29:36 -0400
+Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
+ __alloc_pages_nodemask+0x1d4/0x68c()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: mbizon@freebox.fr
+Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <1349366521.2532.12.camel@sakura.staff.proxad.net>
+References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
+	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
+	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Oct 2012 18:29:31 +0200
+Message-ID: <1349368171.16011.79.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now that I've an IA64 box on top of the other boxes
-> (IBM with Calgary-X, Intel VT-d, AMD Vi, and AMD GART - that
-> can use SWIOTLB as fallback) I can reliably do regression
-> testing.
+On Thu, 2012-10-04 at 18:02 +0200, Maxime Bizon wrote:
+> On Fri, 2012-08-31 at 19:21 -0700, Hugh Dickins wrote:
+> 
+> Hi,
+> 
+> > Francois is right that a GFP_ATOMIC allocation from pskb_expand_head()
+> > is failing, which can easily happen, and cause your "failed to reallocate
+> > TX buffer" errors; but it's well worth looking up what's actually on
+> > lines 2108 and 2109 of mm/page_alloc.c in 3.2.27:
+> > 
+> > 	if (order >= MAX_ORDER) {
+> > 		WARN_ON_ONCE(!(gfp_mask & __GFP_NOWARN));
+> > 
+> > That was probably not a sane allocation request, it has gone out of range:
+> > maybe the skb header is even corrupted.  If you're lucky, it might be
+> > something that netdev will recognize as already fixed.
+> 
+> I have the same problem on the exact same hardware and found the cause:
+> 
+> Author: Eric Dumazet <eric.dumazet@gmail.com>
+> Date:   Tue Apr 10 20:08:39 2012 +0000
+> 
+>     net: allow pskb_expand_head() to get maximum tailroom
+>     
+>     [ Upstream commit 87151b8689d890dfb495081f7be9b9e257f7a2df ]
+>     
+> 
+> It turns out this change has a bad side effect on drivers that uses
+> skb_recycle(), in that case mv643xx_eth.c
+> 
+> Since skb_recycle() resets skb->data using (skb->head + NET_SKB_PAD), a
+> recycled skb going multiple times through a path that needs to expand
+> skb head will get bigger and bigger each time, and you eventually end up
+> with an allocation failure.
+> 
+> An idea to fix this would be to pass needed skb size to skb_resize() and
+> set skb->data to MIN(NET_SKB_PAD, (skb->end - skb->head - skb_size) / 2)
+> 
+> skb recycling gives a small speed boost, but does not get a lot of test
+> coverage since only 3 drivers uses it
+> 
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+Thanks Maxime
+
+Sure we can probably fix this issue, but its really not worth the pain.
+
+I would get rid of it, its superseded by build_skb() to get cache hot
+skbs anyway, and more over, rx path now uses skb->head allocated from a
+page fragment for optimal GRO/TCP coalescing behavior.
+
+skb_recycle() assumes skb allocation is slow, but its not per se.
+
+Cache line misses are expensive, thats the real issue.
+
+
 
