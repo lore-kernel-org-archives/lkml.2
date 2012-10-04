@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933582Ab2JDVT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:19:29 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36877 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933568Ab2JDVTY (ORCPT
+	id S933601Ab2JDVTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:19:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933584Ab2JDVTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:24 -0400
+	Thu, 4 Oct 2012 17:19:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 45/56] SCSI: hpsa: Use LUN reset instead of target reset
-Date: Thu,  4 Oct 2012 14:16:06 -0700
-Message-Id: <20121004211157.255280031@linuxfoundation.org>
+        Jack Wang <jack_wang@usish.com>, John Drescher <drescherjm@gmail.com>,
+        Dan Williams <djbw@fb.com>, James Bottomley <JBottomley@Parallels.com>
+Subject: [ 55/56] SCSI: scsi_remove_target: fix softlockup regression on hot remove
+Date: Thu,  4 Oct 2012 14:16:16 -0700
+Message-Id: <20121004211158.373013789@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,53 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Dan Williams <djbw@fb.com>
 
-commit 21e89afd325849eb38adccf382df16cc895911f9 upstream.
+commit bc3f02a795d3b4faa99d37390174be2a75d091bd upstream.
 
-It turns out Smart Array logical drives do not support target
-reset and when the target reset fails, the logical drive will
-be taken off line.  Symptoms look like this:
+John reports:
+ BUG: soft lockup - CPU#2 stuck for 23s! [kworker/u:8:2202]
+ [..]
+ Call Trace:
+  [<ffffffff8141782a>] scsi_remove_target+0xda/0x1f0
+  [<ffffffff81421de5>] sas_rphy_remove+0x55/0x60
+  [<ffffffff81421e01>] sas_rphy_delete+0x11/0x20
+  [<ffffffff81421e35>] sas_port_delete+0x25/0x160
+  [<ffffffff814549a3>] mptsas_del_end_device+0x183/0x270
 
-hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
-hpsa 0000:03:00.0: resetting device 1:0:0:0
-hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
-hpsa 0000:03:00.0: resetting device failed.
-sd 1:0:0:0: Device offlined - not ready after error recovery
-sd 1:0:0:0: rejecting I/O to offline device
-EXT3-fs error (device sdb1): read_block_bitmap:
+...introduced by commit 3b661a9 "[SCSI] fix hot unplug vs async scan race".
 
-LUN reset is supported though, and is what we should be using.
-Target reset is also disruptive in shared SAS situations,
-for example, an external MSA1210m which does support target
-reset attached to Smart Arrays in multiple hosts -- a target
-reset from one host is disruptive to other hosts as all LUNs
-on the target will be reset and will abort all outstanding i/os
-back to all the attached hosts.  So we should use LUN reset,
-not target reset.
+Don't restart lookup of more stargets in the multi-target case, just
+arrange to traverse the list once, on the assumption that new targets
+are always added at the end.  There is no guarantee that the target will
+change state in scsi_target_reap() so we can end up spinning if we
+restart.
 
-Tested this with Smart Array logical drives and with tape drives.
-Not sure how this bug survived since 2009, except it must be very
-rare for a Smart Array to require more than 30s to complete a request.
-
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Acked-by: Jack Wang <jack_wang@usish.com>
+LKML-Reference: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
+Reported-by: John Drescher <drescherjm@gmail.com>
+Tested-by: John Drescher <drescherjm@gmail.com>
+Signed-off-by: Dan Williams <djbw@fb.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/scsi_sysfs.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3266,7 +3266,7 @@ static void fill_cmd(struct CommandList
- 			c->Request.Timeout = 0; /* Don't time out */
- 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
- 			c->Request.CDB[0] =  cmd;
--			c->Request.CDB[1] = 0x03;  /* Reset target above */
-+			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
- 			/* If bytes 4-7 are zero, it means reset the */
- 			/* LunID device */
- 			c->Request.CDB[4] = 0x00;
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1031,33 +1031,31 @@ static void __scsi_remove_target(struct
+ void scsi_remove_target(struct device *dev)
+ {
+ 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
+-	struct scsi_target *starget, *found;
++	struct scsi_target *starget, *last = NULL;
+ 	unsigned long flags;
+ 
+- restart:
+-	found = NULL;
++	/* remove targets being careful to lookup next entry before
++	 * deleting the last
++	 */
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 	list_for_each_entry(starget, &shost->__targets, siblings) {
+ 		if (starget->state == STARGET_DEL)
+ 			continue;
+ 		if (starget->dev.parent == dev || &starget->dev == dev) {
+-			found = starget;
+-			found->reap_ref++;
+-			break;
++			/* assuming new targets arrive at the end */
++			starget->reap_ref++;
++			spin_unlock_irqrestore(shost->host_lock, flags);
++			if (last)
++				scsi_target_reap(last);
++			last = starget;
++			__scsi_remove_target(starget);
++			spin_lock_irqsave(shost->host_lock, flags);
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+-	if (found) {
+-		__scsi_remove_target(found);
+-		scsi_target_reap(found);
+-		/* in the case where @dev has multiple starget children,
+-		 * continue removing.
+-		 *
+-		 * FIXME: does such a case exist?
+-		 */
+-		goto restart;
+-	}
++	if (last)
++		scsi_target_reap(last);
+ }
+ EXPORT_SYMBOL(scsi_remove_target);
+ 
 
 
