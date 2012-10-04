@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933761Ab2JDVVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:21:10 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43815 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933745Ab2JDVVB (ORCPT
+	id S933815Ab2JDVVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:21:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933792Ab2JDVVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:01 -0400
+	Thu, 4 Oct 2012 17:21:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 17/58] staging: comedi: jr3_pci: fix iomem dereference
-Date: Thu,  4 Oct 2012 14:19:24 -0700
-Message-Id: <20121004210637.611844525@linuxfoundation.org>
+        Flavio Leitner <fbl@redhat.com>
+Subject: [ 24/58] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
+Date: Thu,  4 Oct 2012 14:19:31 -0700
+Message-Id: <20121004210638.483886339@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -26,31 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Flavio Leitner <fbl@redhat.com>
 
-commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
+commit 26e8220adb0aec43b7acafa0f1431760eee28522 upstream.
 
-Correct a direct dereference of I/O memory to use an appropriate I/O
-memory access function.  Note that the pointer being dereferenced is not
-currently tagged with `__iomem` but I plan to correct that for 3.7.
+Apparently the same card model has two IDs, so this patch
+complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
+adding the missing one.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Flavio Leitner <fbl@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/8250/8250_pci.c |    9 +++++++--
+ include/linux/pci_ids.h            |    1 -
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -883,7 +883,7 @@ static int jr3_pci_attach(struct comedi_
- 	}
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1164,6 +1164,8 @@ pci_xr17c154_setup(struct serial_private
+ #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
+ #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
+ #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
+ #define PCI_VENDOR_ID_ADVANTECH		0x13fe
+ #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
+ #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
+@@ -3232,8 +3234,11 @@ static struct pci_device_id serial_pci_t
+ 		 * For now just used the hex ID 0x950a.
+ 		 */
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+-		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
+-		pbn_b0_2_115200 },
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
++		0, 0, pbn_b0_2_115200 },
++	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
++		0, 0, pbn_b0_2_115200 },
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_2_1130000 },
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1846,7 +1846,6 @@
+ #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
+ #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
+ #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
+-#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
  
- 	/*  Reset DSP card */
--	devpriv->iobase->channel[0].reset = 0;
-+	writel(0, &devpriv->iobase->channel[0].reset);
+ #define PCI_VENDOR_ID_RADISYS		0x1331
  
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
- 	dev_dbg(dev->hw_dev, "Firmare load %d\n", result);
 
 
