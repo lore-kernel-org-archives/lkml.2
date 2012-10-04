@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab2JDNxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:53:48 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42759 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108Ab2JDNxr (ORCPT
+	id S933266Ab2JDNyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:54:06 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58444 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933108Ab2JDNyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:53:47 -0400
+	Thu, 4 Oct 2012 09:54:04 -0400
+Date: Thu, 4 Oct 2012 09:54:33 -0400
+From: Matt Porter <mporter@ti.com>
+To: Philipp Zabel <pza@pengutronix.de>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
+Message-ID: <20121004135433.GI11149@beef>
+References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+ <20121004091145.GA3317@pengutronix.de>
+ <20121004124253.GC11149@beef>
+ <20121004133553.GA5151@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <506D3704.4060102@ti.com>
-References: <1349246100-7477-1-git-send-email-prabhakar.lad@ti.com>
- <506C158D.4000906@ti.com> <CA+V-a8uFNXvb7bPv0dLKeSeNzZ9C3rvrXCNSWy+8HgiumR9sEw@mail.gmail.com>
- <506D3704.4060102@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 4 Oct 2012 19:23:26 +0530
-Message-ID: <CA+V-a8uqQhpe+9Q_A_ojR1MahHLnbKpOEBdg9Vz3Gq8YQbHyjg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: davinci: dm644x: fix out range signal for ED
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        VGER <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004133553.GA5151@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar
+On Thu, Oct 04, 2012 at 03:35:53PM +0200, Philipp Zabel wrote:
+> On Thu, Oct 04, 2012 at 08:42:53AM -0400, Matt Porter wrote:
+> > > I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
+> > > could be useful to map the L3RAM on Davinci.
+> > > With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
+> > > uio_pruss driver could then use the gen_pool_find_by_phys() (or
+> > > of_get_named_gen_pool() for initialization from device tree) to
+> > > retrieve the struct gen_pool*.
+> > > 
+> > > This way you could avoid handing it over via platform data and you could
+> > > get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
+> > 
+> > I did miss the gen_pool_find_by_phys() call in that series. That does
+> > look useful. I actually mentioned your series in an earlier posting
+> > since I like it,
+> 
+> That I did miss.
+> 
+> > but since the initialization of the driver was inherently
+> > tied to DT it's not usable for DaVinci that's just starting to convert
+> > to DT and needs !DT support as well.
+> 
+> There should be no dependency on DT in the sram driver. It just requests
+> and remaps the first given iomem resource and creates a gen_pool from that.
+> This should work just as well for the !DT case.
+> Maybe it's just my choice of patch series subject gave you that
+> impression? If there's a real issue for !DT, I should fix it.
 
-On Thu, Oct 4, 2012 at 12:43 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 10/4/2012 10:22 AM, Prabhakar Lad wrote:
->> Hi Sekhar,
->>
->> On Wed, Oct 3, 2012 at 4:08 PM, Sekhar Nori <nsekhar@ti.com> wrote:
->>> On 10/3/2012 12:05 PM, Prabhakar wrote:
->>>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>>>
->>>> while testing display on dm644x, for ED out-range signals
->>>> was observed. This patch fixes appropriate clock setting
->>>> for ED.
->>>
->>> Can you please clarify what you mean by "out range signal"? Are there
->>> any user visible artifacts on the display? What was the clock being
->>> provided earlier and what is the value after this patch?
->>>
->>> Also, is the issue severe enough that this patch should be applied to
->>> stable tree as well?
->>>
->> Ideally a clock of 54Mhz is required for  enhanced definition to
->> work, which it was actually set to but while testing I noticed
->> out-of-range signal. The out-of-range signal is often caused
->> when the field rate is above the rate that the television will handle.
->> When this is the case the TV or monitor displays "Out-Of-Range Signal".
->>
->> Reducing the clock fixed it. now the clock is set to 27Mhz.
->
-> So, is the requirement for ED 54MHz or lower? Still trying to explain
-> myself how 27MHz is working where a 54MHz is required. I guess there is
-> also a lower limit on what the frequency should be?
->
-Ideally its 54Mhz, but I see in the datasheet for AD7342/3 [1] it can also
-work at 27Mhz too.
+*sigh*, I see now. I looked at v2 and got wrapped up in the DT use case
+and missed your platform device support. I think it will work just fine
+for us to use in a "phase 2" of this work, replacing the backend of
+davinci sram allocation with this as Sekhar seems to be open to. 
 
-Regards,
---Prabhakar
+> > I do see it moving to your driver exclusively, but I wanted to make this
+> > series focused on only getting rid of the private SRAM API using the
+> > existing pdata framework that's already there. I think once
+> > gen_pool_find_by_phys() goes upstream we can switch to that and get the
+> > address from a resource in the !DT case. I guess we should see if Sekhar
+> > would like to see this happen in two steps or just have us depend on
+> > the gen_pool_find_by_phys() patch now.
+> 
+> Thanks, I'm glad you are aware of the sram driver and consider it useful.
+> 
+> > BTW, I was going to post a patch for your driver to allow
+> > configurability of the allocation order, but have been busy with other
+> > things.  We'll eventually need that when switching to it as the
+> > hardcoded page size order isn't going to work for all cases.
+> 
+> Good point.
 
-[1] http://www.analog.com/static/imported-files/data_sheets/ADV7342_7343.pdf
+I think this is the only blocker to DaVinci adopting it once it goes
+upstream. I can add a patch in your driver thread if that helps.
 
-> Sorry I am not familiar will all the video concepts, hence the questions.
->
-> Thanks,
-> Sekhar
+-Matt
