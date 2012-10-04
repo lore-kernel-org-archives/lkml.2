@@ -1,113 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2JDMov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:44:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58118 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756483Ab2JDMou (ORCPT
+	id S1753194Ab2JDMtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:49:08 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40314 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab2JDMtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:44:50 -0400
-Message-ID: <506D84BD.5010000@gmail.com>
-Date: Thu, 04 Oct 2012 07:44:45 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: linux-serial@vger.kernel.org,
+	Thu, 4 Oct 2012 08:49:05 -0400
+Date: Thu, 4 Oct 2012 08:49:35 -0400
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] serial: i.MX: evaluate linux,stdout-path property
-References: <1349347191-7406-1-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1349347191-7406-1-git-send-email-s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/6] ARM: davinci: sram: ioremap the davinci_soc_info
+ specified sram regions
+Message-ID: <20121004124935.GD11149@beef>
+References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+ <1349276133-26408-2-git-send-email-mporter@ti.com>
+ <506D7799.2090307@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506D7799.2090307@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 05:39 AM, Sascha Hauer wrote:
-> devicetrees may have the linux,stdout-path property to specify the
-> console. This patch adds support to the i.MX serial driver for this.
+On Thu, Oct 04, 2012 at 05:18:41PM +0530, Sekhar Nori wrote:
+> On 10/3/2012 8:25 PM, Matt Porter wrote:
+> > From: Ben Gardiner <bengardiner@nanometrics.ca>
+> > 
+> > The current davinci init sets up SRAM in iotables. There has been an observed
+> > failure to boot a da850 with 128K specified in the iotable.
+> > 
+> > Make the davinci sram allocator -- now based on RMK's consolidated SRAM
+> > support -- do an ioremap of the region specified by the entries in
 > 
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
+> The part about being based on RMK's consolidated SRAM support should be
+> dropped.
+
+Ok, cruft from trying to preserve Ben's original patch comments. Will
+remove.
+
+ 
+> > davinci_soc_info before registering with gen_pool_add_virt().
+> > 
+> > This commit breaks runtime of davinci boards since the regions that
+> > the sram init is now trying to ioremap have been iomapped by their
+> > iotable entries. The iotable entries will be removed in the patches
+> > to come.
 > 
-> I was originally looking for a more generic way to handle this, but
-> since a struct console has no device associated to it, it's not
-> possible to match a console with a device in a generic way. So we
+> I would prefer merging 2/6 into this for this reason.
 
-Could we add a device ptr to struct console?
+Ok, makes sense. This again comes from me trying to just use the
+original patches. I'll squash these together for v4.
 
-> just call add_preferred_console from the driver and let it go down
-> to a string matching in the console code.
-> If anyone has a better idea how to handle this, please let me know.
-> Otherwise I'm happy to see this patch applied aswell.
 > 
-> Thanks
->  Sascha
+> > 
+> > Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+> > [rebased to mainline as the consolidated SRAM support was dropped]
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > ---
+> >  arch/arm/mach-davinci/sram.c |   17 ++++++++++++++---
+> >  1 file changed, 14 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-davinci/sram.c b/arch/arm/mach-davinci/sram.c
+> > index db0f778..0e8ca4f 100644
+> > --- a/arch/arm/mach-davinci/sram.c
+> > +++ b/arch/arm/mach-davinci/sram.c
+> > @@ -10,6 +10,7 @@
+> >   */
+> >  #include <linux/module.h>
+> >  #include <linux/init.h>
+> > +#include <linux/io.h>
+> >  #include <linux/genalloc.h>
+> >  
+> >  #include <mach/common.h>
+> > @@ -32,7 +33,7 @@ void *sram_alloc(size_t len, dma_addr_t *dma)
+> >  		return NULL;
+> >  
+> >  	if (dma)
+> > -		*dma = dma_base + (vaddr - SRAM_VIRT);
+> > +		*dma = gen_pool_virt_to_phys(sram_pool, vaddr);
+> >  	return (void *)vaddr;
+> >  
+> >  }
+> > @@ -53,8 +54,10 @@ EXPORT_SYMBOL(sram_free);
+> >   */
+> >  static int __init sram_init(void)
+> >  {
+> > +	phys_addr_t phys = davinci_soc_info.sram_dma;
+> >  	unsigned len = davinci_soc_info.sram_len;
+> >  	int status = 0;
+> > +	void *addr;
+> >  
+> >  	if (len) {
+> >  		len = min_t(unsigned, len, SRAM_SIZE);
+> > @@ -62,8 +65,16 @@ static int __init sram_init(void)
+> >  		if (!sram_pool)
+> >  			status = -ENOMEM;
+> >  	}
+> > -	if (sram_pool)
+> > -		status = gen_pool_add(sram_pool, SRAM_VIRT, len, -1);
+> > +
+> > +	if (sram_pool) {
+> > +		addr = ioremap(phys, len);
+> > +		if (!addr)
+> > +			return -ENOMEM;
+> > +		if((status = gen_pool_add_virt(sram_pool, (unsigned)addr,
+> > +					       phys, len, -1)))
 > 
->  drivers/tty/serial/imx.c |   29 +++++++++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
+> Nit: prefer to set status outside of if().
+
+Ok. Will change.
+
 > 
-> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-> index e309e8b..b52c4a7 100644
-> --- a/drivers/tty/serial/imx.c
-> +++ b/drivers/tty/serial/imx.c
-> @@ -1397,6 +1397,32 @@ static int serial_imx_resume(struct platform_device *dev)
->  
->  #ifdef CONFIG_OF
->  /*
-> + * Check if this device matches the linux,stdout-path property
-> + * in the chosen node. return true if yes, false otherwise
-> + */
-> +static int serial_imx_is_stdoutpath(struct platform_device *pdev)
+> Looks good otherwise. Thanks for reviving this.
 
-Couldn't this function be generic? Just move
-IS_ENABLED(CONFIG_SERIAL_IMX_CONSOLE) outside this function. Arguably,
-the presence of the property or not could replace the config option all
-together.
+No problem, I'm just glad we seem to have a workable solution now.
 
-And use a struct device so this can work with devices other than
-platform devices (i.e. amba).
+Also, if you could check the conversation with Phillip about
+gen_pool_find_by_phys(), I wonder what you think about depending on that
+now, or waiting to convert to it when it goes upstream.
 
-Rob
+I'm torn as I see all the pdata going away anyway when Davinci is fully
+converted to DT, and then also any use of find_by_phys() would go away
+in favor of using the of helpers with his driver.
 
-> +{
-> +	struct device_node *dn;
-> +	const char *name;
-> +
-> +	if (!IS_ENABLED(CONFIG_SERIAL_IMX_CONSOLE))
-> +		return 0;
-> +
-> +	name = of_get_property(of_chosen, "linux,stdout-path", NULL);
-> +	if (name == NULL)
-> +		return 0;
-> +
-> +	dn = of_find_node_by_path(name);
-> +	if (!dn)
-> +		return 0;
-> +
-> +	if (dn == pdev->dev.of_node)
-> +		return 1;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
->   * This function returns 1 iff pdev isn't a device instatiated by dt, 0 iff it
->   * could successfully get all information from dt or a negative errno.
->   */
-> @@ -1427,6 +1453,9 @@ static int serial_imx_probe_dt(struct imx_port *sport,
->  
->  	sport->devdata = of_id->data;
->  
-> +	if (serial_imx_is_stdoutpath(pdev))
-> +		add_preferred_console(imx_reg.cons->name, sport->port.line, 0);
-> +
->  	return 0;
->  }
->  #else
-> 
-
+-Matt
