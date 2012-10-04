@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2JDKda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:33:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49576 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2JDKd1 (ORCPT
+	id S1754084Ab2JDKdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:33:41 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60346 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab2JDKdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:33:27 -0400
-Date: Thu, 4 Oct 2012 03:33:03 -0700
-From: tip-bot for David Rientjes <rientjes@google.com>
-Message-ID: <tip-d886931968a1c7e7bc7d4891cbd12cecf3111bd0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, riel@redhat.com,
-        tglx@linutronix.de, rientjes@google.com
-Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, rientjes@google.com
-In-Reply-To: <alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol: Fix build warning for UMA kernels
-Git-Commit-ID: d886931968a1c7e7bc7d4891cbd12cecf3111bd0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 4 Oct 2012 06:33:38 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 04 Oct 2012 03:33:10 -0700 (PDT)
+In-Reply-To: <20589.18026.809848.345606@pilspetsen.it.uu.se>
+References: <E1T1N2q-0001xm-5X@morero.ard.nu>
+	<20120820180037.GV4232@outflux.net>
+	<CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
+	<CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
+	<CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
+	<CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com>
+	<20121002153841.a03ad73b.akpm@linux-foundation.org>
+	<alpine.LSU.2.00.1210021733580.1343@eggly.anvils>
+	<506C4F29.4090303@gmail.com>
+	<20589.18026.809848.345606@pilspetsen.it.uu.se>
+Date: Thu, 4 Oct 2012 12:33:38 +0200
+Message-ID: <CAKFga-dzi6gkaMOF9t_fh1xVQLkht_RRAYk+L42Y1d3gzcGNkg@mail.gmail.com>
+Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
+From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d886931968a1c7e7bc7d4891cbd12cecf3111bd0
-Gitweb:     http://git.kernel.org/tip/d886931968a1c7e7bc7d4891cbd12cecf3111bd0
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Tue, 2 Oct 2012 13:14:10 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 4 Oct 2012 10:15:16 +0200
+2012/10/4 Mikael Pettersson <mikpe@it.uu.se>:
+> - If .text is mapped non-writable and final, how would a debugger
+>   (or any ptrace-using monitor-like application) plant a large
+>   number of breakpoints in a target process? Breakpoint registers
+>   aren't enough because (a) they're few in number, and (b) not
+>   all CPUs have them.
+>
 
-mm/mpol: Fix build warning for UMA kernels
+ptrace() doesn't care whether or not the process itself can write to
+its .text segment.
 
-Commit "mm, mpol: Use special PROT_NONE to migrate pages"
-causes a build warning when CONFIG_NUMA is not enabled:
+> - You're proposing to give one component (the dynamic linker/
+>   loader) absolute power to impose new policies on all
+>   applications. How would an application that _deliberately_
+>   does something the new policies don't allow tell the dynamic
+>   linker or kernel to get out of its way?
+>
 
-  mm/huge_memory.c: In function 'do_huge_pmd_prot_none':
-  mm/huge_memory.c:745: warning: unused variable 'node'
+You are debating cases in which the userland would choose not to use
+the feature. That is exactly the point of this patch: the kernel
+supplies the feature and it is up to the userland to use it when
+desired. If not in the loader, perhaps processes running setuid
+binaries or browser sandboxes could choose to call mprotect() to
+finalize some of their existing mappings (their stack?) before handing
+over to less trusted code or opening up to the network.
 
-"node" is only used once, so avoid using it altogether.
+> This clearly changes the de-facto ABIs, and as such I think
+> it needs much more detailed analysis than what you've done
+> here.
+>
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: pjt@google.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.00.1210021312140.8537@chino.kir.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/huge_memory.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Could we at least agree on the fundamental notion that the special
+powers the loader has to modify .text and .rodata sections are hardly
+ever needed by the programs themselves? In that sense, this is similar
+to dropping root privileges when not required anymore, and that is
+typically recognized as a sensible idea.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 4a9ea86..2e2a814 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -768,7 +768,6 @@ void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
- 	struct page *page = NULL;
--	int node;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry)))
-@@ -791,8 +790,7 @@ void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * XXX should we serialize against split_huge_page ?
- 	 */
- 
--	node = mpol_misplaced(page, vma, haddr, mm->numa_big);
--	if (node == -1)
-+	if (mpol_misplaced(page, vma, haddr, mm->numa_big) == -1)
- 		goto do_fixup;
- 
- 	/*
+> At the very least I think this change should be opt-in, but
+> that would require a kernel option or sysctl, or some config
+> file for the user-space dynamic linker/loader.
+
+As long as the kernel does not impose its use, I don't see a reason
+for an interface into the kernel to deactivate it.
+I would be interested in learning about example cases that have a
+valid need to modify their own code and constant data, as
+understanding those would greatly help in designing the ways userland
+should be able to have control over this.
+
+Regards,
+Ard.
