@@ -1,76 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058Ab2JDVXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:23:17 -0400
+	id S934100Ab2JDVXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:23:32 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934042Ab2JDVXL (ORCPT
+	with ESMTP id S934074Ab2JDVX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:11 -0400
+	Thu, 4 Oct 2012 17:23:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tomas Racek <tracek@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Ben Jencks <ben@bjencks.net>, qemu-devel@nongnu.org
-Subject: [ 56/58] x86/alternatives: Fix p6 nops on non-modular kernels
-Date: Thu,  4 Oct 2012 14:20:03 -0700
-Message-Id: <20121004210642.527075904@linuxfoundation.org>
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 02/52] dm: handle requests beyond end of device instead of using BUG_ON
+Date: Thu,  4 Oct 2012 14:20:53 -0700
+Message-Id: <20121004210635.652949978@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
-References: <20121004210635.449598766@linuxfoundation.org>
+In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
+References: <20121004210635.372689554@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit cb09cad44f07044d9810f18f6f9a6a6f3771f979 upstream.
+commit ba1cbad93dd47223b1f3b8edd50dd9ef2abcb2ed upstream.
 
-Probably a leftover from the early days of self-patching, p6nops
-are marked __initconst_or_module, which causes them to be
-discarded in a non-modular kernel.  If something later triggers
-patching, it will overwrite kernel code with garbage.
+The access beyond the end of device BUG_ON that was introduced to
+dm_request_fn via commit 29e4013de7ad950280e4b2208 ("dm: implement
+REQ_FLUSH/FUA support for request-based dm") was an overly
+drastic (but simple) response to this situation.
 
-Reported-by: Tomas Racek <tracek@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: qemu-devel@nongnu.org
-Cc: Anthony Liguori <anthony@codemonkey.ws>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>
-Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Ben Jencks <ben@bjencks.net>
+I have received a report that this BUG_ON was hit and now think
+it would be better to use dm_kill_unmapped_request() to fail the clone
+and original request with -EIO.
+
+map_request() will assign the valid target returned by
+dm_table_find_target to tio->ti.  But when the target
+isn't valid tio->ti is never assigned (because map_request isn't
+called); so add a check for tio->ti != NULL to dm_done().
+
+Reported-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/alternative.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm.c |   56 ++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 38 insertions(+), 18 deletions(-)
 
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -160,7 +160,7 @@ static const unsigned char * const k7_no
- #endif
- 
- #ifdef P6_NOP1
--static const unsigned char  __initconst_or_module p6nops[] =
-+static const unsigned char p6nops[] =
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -865,10 +865,14 @@ static void dm_done(struct request *clon
  {
- 	P6_NOP1,
- 	P6_NOP2,
+ 	int r = error;
+ 	struct dm_rq_target_io *tio = clone->end_io_data;
+-	dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
++	dm_request_endio_fn rq_end_io = NULL;
+ 
+-	if (mapped && rq_end_io)
+-		r = rq_end_io(tio->ti, clone, error, &tio->info);
++	if (tio->ti) {
++		rq_end_io = tio->ti->type->rq_end_io;
++
++		if (mapped && rq_end_io)
++			r = rq_end_io(tio->ti, clone, error, &tio->info);
++	}
+ 
+ 	if (r <= 0)
+ 		/* The target wants to complete the I/O */
+@@ -1566,15 +1570,6 @@ static int map_request(struct dm_target
+ 	int r, requeued = 0;
+ 	struct dm_rq_target_io *tio = clone->end_io_data;
+ 
+-	/*
+-	 * Hold the md reference here for the in-flight I/O.
+-	 * We can't rely on the reference count by device opener,
+-	 * because the device may be closed during the request completion
+-	 * when all bios are completed.
+-	 * See the comment in rq_completed() too.
+-	 */
+-	dm_get(md);
+-
+ 	tio->ti = ti;
+ 	r = ti->type->map_rq(ti, clone, &tio->info);
+ 	switch (r) {
+@@ -1606,6 +1601,26 @@ static int map_request(struct dm_target
+ 	return requeued;
+ }
+ 
++static struct request *dm_start_request(struct mapped_device *md, struct request *orig)
++{
++	struct request *clone;
++
++	blk_start_request(orig);
++	clone = orig->special;
++	atomic_inc(&md->pending[rq_data_dir(clone)]);
++
++	/*
++	 * Hold the md reference here for the in-flight I/O.
++	 * We can't rely on the reference count by device opener,
++	 * because the device may be closed during the request completion
++	 * when all bios are completed.
++	 * See the comment in rq_completed() too.
++	 */
++	dm_get(md);
++
++	return clone;
++}
++
+ /*
+  * q->request_fn for request-based dm.
+  * Called with the queue lock held.
+@@ -1635,14 +1650,21 @@ static void dm_request_fn(struct request
+ 			pos = blk_rq_pos(rq);
+ 
+ 		ti = dm_table_find_target(map, pos);
+-		BUG_ON(!dm_target_is_valid(ti));
++		if (!dm_target_is_valid(ti)) {
++			/*
++			 * Must perform setup, that dm_done() requires,
++			 * before calling dm_kill_unmapped_request
++			 */
++			DMERR_LIMIT("request attempted access beyond the end of device");
++			clone = dm_start_request(md, rq);
++			dm_kill_unmapped_request(clone, -EIO);
++			continue;
++		}
+ 
+ 		if (ti->type->busy && ti->type->busy(ti))
+ 			goto delay_and_out;
+ 
+-		blk_start_request(rq);
+-		clone = rq->special;
+-		atomic_inc(&md->pending[rq_data_dir(clone)]);
++		clone = dm_start_request(md, rq);
+ 
+ 		spin_unlock(q->queue_lock);
+ 		if (map_request(ti, clone, md))
+@@ -1662,8 +1684,6 @@ delay_and_out:
+ 	blk_delay_queue(q, HZ / 10);
+ out:
+ 	dm_table_put(map);
+-
+-	return;
+ }
+ 
+ int dm_underlying_device_busy(struct request_queue *q)
 
 
