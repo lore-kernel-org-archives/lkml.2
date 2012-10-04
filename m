@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab2JDARO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 20:17:14 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:34703 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965Ab2JDARN convert rfc822-to-8bit (ORCPT
+	id S933210Ab2JDASp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 20:18:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36135 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932965Ab2JDASm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 20:17:13 -0400
-X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Oct 2012 20:17:13 EDT
-Date: Wed, 3 Oct 2012 20:09:58 -0400 (EDT)
-From: Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, Steve Hardy <shardy@redhat.com>,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Message-ID: <655051847.640945.1349309398187.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <20121003233758.GC21410@roeck-us.net>
-Subject: Re: [PATCH v5 2/2] hwmon: (ads7828) add support for ADS7830
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [208.88.110.46]
-X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - GC21 (Linux)/7.1.4_GA_2555)
+	Wed, 3 Oct 2012 20:18:42 -0400
+Date: Thu, 4 Oct 2012 10:18:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vipul Pandya <vipul@chelsio.com>, Jay Hernandez <jay@chelsio.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-Id: <20121004101833.019598b7e474c7b74e67ff20@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot Guenter!
-Thanks a lot Vivien also for the help.
+--Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Guillaume
+Hi all,
 
------ Mail original -----
-De: "Guenter Roeck" <linux@roeck-us.net>
-À: "Vivien Didelot" <vivien.didelot@savoirfairelinux.com>
-Cc: lm-sensors@lm-sensors.org, "Guillaume Roguez" <guillaume.roguez@savoirfairelinux.com>, "Jean Delvare" <khali@linux-fr.org>, linux-kernel@vger.kernel.org, "Steve Hardy" <shardy@redhat.com>
-Envoyé: Mercredi 3 Octobre 2012 19:37:58
-Objet: Re: [PATCH v5 2/2] hwmon: (ads7828) add support for ADS7830
+After merging the net tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-On Wed, Oct 03, 2012 at 04:54:08PM -0400, Vivien Didelot wrote:
-> From: Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>
-> 
-> The ADS7830 device is almost the same as the ADS7828,
-> except that it does 8-bit sampling, instead of 12-bit.
-> This patch extends the ads7828 driver to support this chip.
-> 
-> Signed-off-by: Guillaume Roguez <guillaume.roguez@savoirfairelinux.com>
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 't4_memory_rw':
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:2: error: implicit declarati=
+on of function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:7: warning: assignment makes=
+ pointer from integer without a cast [enabled by default]
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:487:2: error: implicit declarati=
+on of function 'vfree' [-Werror=3Dimplicit-function-declaration]
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 'get_vpd_params':
+drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:530:6: warning: assignment makes=
+ pointer from integer without a cast [enabled by default]
 
-Applied to -next.
+Caused by commit 8c357ebd5693 ("cxgb4: Dynamically allocate memory in
+t4_memory_rw() and get_vpd_params()").  Missing include of
+linux/vmalloc.h.
 
-Thanks,
-Guenter
+I have used the net tree from next-20121003 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQbNXZAAoJEECxmPOUX5FEL1gQAIM7QsGAGZP4CwOnCDqxGZOX
+G+DKMU4RdlmvoK9QxLgs91V1CBQYUe8sZwSryA61pVB812LVfe9ojEsE1DvnRyR1
+Ts35KDoAdJxbymPYH7Cl0w2b/MlLzOIf7PHB5UhkZg7RPsFmxpZ635E31B023B20
+iUYHU6ycU8zp9QjQHuSRfauqtJbTkmR/7roq9ahq+5t8UGMmV334//SiNz4EDN+N
+TveGlrqzpz1V1suPFlw6kd9MTEp6PM0+Osln8C0Vu4GhyZx97Y5r0eHRJIxxVnKF
+A3SF1Nv3wnBWvNp/OYCCVbu3cgg9WqNHmRe9NJabki7S1gDisxWqZBSTSq8tJcMs
+Xww6o7X5DEY+MzkHliSbMRcASXpGf50SF6RstivK/wg0pBhxGHDm+u15Uv9WpP9M
+ETvE52vvuPqGhT+0itT98emsCcS8b2TNgWf3zzwGTKFetBzoPjvndW6daoackvKx
+c5rvd6I2KohaqT99yKFOuvXUaB4HnjaMiTEPyGgPvSJ37JTNlOQ7Qc+nvjrVQPxM
++znwswQ6FUD3seeEitrPQo8DDIz9mtMJeSiD0GlHEAYcFe8UwoA6cPf8/SsTrCTI
+zdwVVI37MjYApeOLaA2nlMfrr79Pme+Em4xb8EaT6hFAkaWc4LKXHbB69GUbQPKo
+buinWcCG3JthOMSxTNbN
+=Pmg2
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI--
