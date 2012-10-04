@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2JDGcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 02:32:12 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37455 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab2JDGcK convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
-	Thu, 4 Oct 2012 02:32:10 -0400
-Message-Id: <506D4988020000780009F86E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 04 Oct 2012 07:32:08 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt.fleming@intel.com>
-Cc: <mingo@kernel.org>, <x86@kernel.org>, <mjg@redhat.com>,
-        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH 1/3] x86, mm: Include the entire kernel memory map
- in trampoline_pgd
-References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
- <1349269157-25956-2-git-send-email-matt@console-pimps.org>
- <506C4C3A020000780008D041@nat28.tlf.novell.com>
- <1349273028.7223.35.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1349273028.7223.35.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S965548Ab2JDGja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 02:39:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50792 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965493Ab2JDGjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 02:39:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6854"; a="245504057"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3/3] clk: Don't return negative numbers for unsigned values with !clk
+Date: Wed,  3 Oct 2012 23:38:55 -0700
+Message-Id: <1349332735-20096-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <1349332735-20096-1-git-send-email-sboyd@codeaurora.org>
+References: <1349332735-20096-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.10.12 at 16:03, Matt Fleming <matt.fleming@intel.com> wrote:
-> On Wed, 2012-10-03 at 14:31 +0100, Jan Beulich wrote:
->> >>> Matt Fleming <matt@console-pimps.org> 10/03/12 2:59 PM >>>
->> >@@ -163,6 +258,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
->> >    ret_addr = (void __iomem *) (vaddr + offset);
->> >    mmiotrace_ioremap(unaligned_phys_addr, unaligned_size, ret_addr);
->>  >
->> >+    if (insert_identity_mapping(phys_addr, vaddr, size))
->> >+        printk(KERN_WARNING "ioremap: unable to map 0x%llx in identity pagetable\n",
->> >+                    (unsigned long long)phys_addr);
->> 
->> Isn't that going to trigger quite frequently on 32-bit kernels?
-> 
-> Hmmm... yeah, probably, though it didn't during my testing. If it is
+Some of the helper functions return negative error codes if
+passed a NULL clock. This can lead to confusing behavior when the
+expected return value is unsigned. Fix up these accessors so that
+they return unsigned values (or bool in the case of is_enabled).
+This way we can't interpret NULL clocks as having valid and
+interesting values.
 
-That's suspicious, isn't it? In general, on any machine with more
-than 3Gb of memory below the 4Gb boundary this ought to
-trigger for _all_ mappings of MMIO space, and that's already only
-considering the default of VMSPLIT_3G.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/clk.c            | 20 ++++++++++----------
+ include/linux/clk-provider.h |  6 +++---
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-> likely to trigger a lot then we might be best only inserting the
-> identity mmio mapping for 64-bit, and addressing the 32-bit case if we
-> ever actually need the identity pagetable.
-
-I think that would be the best choice for the moment.
-
-Btw., once this set of yours is in - will I need to resubmit the
-time handling patch that actually triggered this work, or will
-you just reinstate it without further action on my part?
-
-Jan
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 6852809..2847a66 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -262,7 +262,7 @@ inline struct clk_hw *__clk_get_hw(struct clk *clk)
+ 
+ inline u8 __clk_get_num_parents(struct clk *clk)
+ {
+-	return !clk ? -EINVAL : clk->num_parents;
++	return !clk ? 0 : clk->num_parents;
+ }
+ 
+ inline struct clk *__clk_get_parent(struct clk *clk)
+@@ -270,14 +270,14 @@ inline struct clk *__clk_get_parent(struct clk *clk)
+ 	return !clk ? NULL : clk->parent;
+ }
+ 
+-inline int __clk_get_enable_count(struct clk *clk)
++inline unsigned int __clk_get_enable_count(struct clk *clk)
+ {
+-	return !clk ? -EINVAL : clk->enable_count;
++	return !clk ? 0 : clk->enable_count;
+ }
+ 
+-inline int __clk_get_prepare_count(struct clk *clk)
++inline unsigned int __clk_get_prepare_count(struct clk *clk)
+ {
+-	return !clk ? -EINVAL : clk->prepare_count;
++	return !clk ? 0 : clk->prepare_count;
+ }
+ 
+ unsigned long __clk_get_rate(struct clk *clk)
+@@ -303,15 +303,15 @@ out:
+ 
+ inline unsigned long __clk_get_flags(struct clk *clk)
+ {
+-	return !clk ? -EINVAL : clk->flags;
++	return !clk ? 0 : clk->flags;
+ }
+ 
+-int __clk_is_enabled(struct clk *clk)
++bool __clk_is_enabled(struct clk *clk)
+ {
+ 	int ret;
+ 
+ 	if (!clk)
+-		return -EINVAL;
++		return false;
+ 
+ 	/*
+ 	 * .is_enabled is only mandatory for clocks that gate
+@@ -324,7 +324,7 @@ int __clk_is_enabled(struct clk *clk)
+ 
+ 	ret = clk->ops->is_enabled(clk->hw);
+ out:
+-	return ret;
++	return !!ret;
+ }
+ 
+ static struct clk *__clk_lookup_subtree(const char *name, struct clk *clk)
+@@ -569,7 +569,7 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
+ 	unsigned long parent_rate = 0;
+ 
+ 	if (!clk)
+-		return -EINVAL;
++		return 0;
+ 
+ 	if (!clk->ops->round_rate) {
+ 		if (clk->flags & CLK_SET_RATE_PARENT)
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 0571261..3593a3c 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -341,11 +341,11 @@ const char *__clk_get_name(struct clk *clk);
+ struct clk_hw *__clk_get_hw(struct clk *clk);
+ u8 __clk_get_num_parents(struct clk *clk);
+ struct clk *__clk_get_parent(struct clk *clk);
+-inline int __clk_get_enable_count(struct clk *clk);
+-inline int __clk_get_prepare_count(struct clk *clk);
++inline unsigned int __clk_get_enable_count(struct clk *clk);
++inline unsigned int __clk_get_prepare_count(struct clk *clk);
+ unsigned long __clk_get_rate(struct clk *clk);
+ unsigned long __clk_get_flags(struct clk *clk);
+-int __clk_is_enabled(struct clk *clk);
++bool __clk_is_enabled(struct clk *clk);
+ struct clk *__clk_lookup(const char *name);
+ 
+ /*
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
