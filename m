@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab2JDWHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:07:19 -0400
+	id S1754105Ab2JDWHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:07:54 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574Ab2JDVT2 (ORCPT
+	with ESMTP id S933553Ab2JDVTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:28 -0400
+	Thu, 4 Oct 2012 17:19:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Don Morris <don.morris@hp.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [ 54/56] isci: fix isci_pci_probe() generates warning on efi failure path
-Date: Thu,  4 Oct 2012 14:16:15 -0700
-Message-Id: <20121004211158.258739023@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 52/56] IB/srp: Avoid having aborted requests hang
+Date: Thu,  4 Oct 2012 14:16:13 -0700
+Message-Id: <20121004211158.033072722@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,46 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 6d70a74ffd616073a68ae0974d98819bfa8e6da6 upstream.
+commit d8536670916a685df116b5c2cb256573fd25e4e3 upstream.
 
-The oem parameter image embedded in the efi variable is at an offset
-from the start of the variable.  However, in the failure path we try to
-free the 'orom' pointer which is only valid when the paramaters are
-being read from the legacy option-rom space.
+We need to call scsi_done() for commands after we abort them.
 
-Since failure to load the oem parameters is unlikely and we keep the
-memory around in the success case just defer all de-allocation to devm.
-
-Reported-by: Don Morris <don.morris@hp.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Acked-by: David Dillow <dillowda@ornl.gov>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/init.c       |    1 -
- drivers/scsi/isci/probe_roms.c |    1 -
- 2 files changed, 2 deletions(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/isci/init.c
-+++ b/drivers/scsi/isci/init.c
-@@ -644,7 +644,6 @@ static int __devinit isci_pci_probe(stru
- 						orom->hdr.version)) {
- 			dev_warn(&pdev->dev,
- 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
--			devm_kfree(&pdev->dev, orom);
- 			orom = NULL;
- 			break;
- 		}
---- a/drivers/scsi/isci/probe_roms.c
-+++ b/drivers/scsi/isci/probe_roms.c
-@@ -104,7 +104,6 @@ struct isci_orom *isci_request_oprom(str
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1687,6 +1687,7 @@ static int srp_abort(struct scsi_cmnd *s
+ 			  SRP_TSK_ABORT_TASK);
+ 	srp_free_req(target, req, scmnd, 0);
+ 	scmnd->result = DID_ABORT << 16;
++	scmnd->scsi_done(scmnd);
  
- 	if (i >= len) {
- 		dev_err(&pdev->dev, "oprom parse error\n");
--		devm_kfree(&pdev->dev, rom);
- 		rom = NULL;
- 	}
- 	pci_unmap_biosrom(oprom);
+ 	return SUCCESS;
+ }
 
 
