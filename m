@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2JDWD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:03:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933638Ab2JDVUu (ORCPT
+	id S1752473Ab2JDWDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:03:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933683Ab2JDVUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:20:50 -0400
+	Thu, 4 Oct 2012 17:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christopher Brannon <chris@the-brannons.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 14/58] tty: keyboard.c: Remove locking from vt_get_leds.
-Date: Thu,  4 Oct 2012 14:19:21 -0700
-Message-Id: <20121004210637.247428842@linuxfoundation.org>
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>
+Subject: [ 11/58] usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
+Date: Thu,  4 Oct 2012 14:19:18 -0700
+Message-Id: <20121004210636.860142852@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,38 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Brannon <chris@the-brannons.com>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-commit 157a4b311c45c9aba75a990464d9680867dc8805 upstream.
+commit 457a73d346187c2cc5d599072f38676f18f130e0 upstream.
 
-There are three call sites for this function, and all three
-are called within a keyboard handler.
-kbd_event_lock is already held within keyboard handlers,
-so attempting to lock it in vt_get_leds causes deadlock.
+In 71c731a: usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
+when extracting DMI strings (vendor or product_name) to mark them as quirk
+we may get NULL pointer in case of non-x86 systems which won't define
+CONFIG_DMI. Hence susbsequent strstr() calls crash while driver probing.
 
-Signed-off-by: Christopher Brannon <chris@the-brannons.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+So, returning 'false' here in case we get a NULL vendor or product_name.
+
+This is tested with ARM (exynos) system.
+
+This patch should be backported to stable kernels as old as 3.6, that
+contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
+xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Sebastian Gottschall (DD-WRT) <s.gottschall@dd-wrt.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/keyboard.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/usb/host/xhci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -1049,13 +1049,10 @@ static int kbd_update_leds_helper(struct
-  */
- int vt_get_leds(int console, int flag)
- {
--	unsigned long flags;
- 	struct kbd_struct * kbd = kbd_table + console;
- 	int ret;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -470,6 +470,8 @@ static bool compliance_mode_recovery_tim
  
--	spin_lock_irqsave(&kbd_event_lock, flags);
- 	ret = vc_kbd_led(kbd, flag);
--	spin_unlock_irqrestore(&kbd_event_lock, flags);
+ 	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
++	if (!dmi_product_name || !dmi_sys_vendor)
++		return false;
  
- 	return ret;
- }
+ 	if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
+ 		return false;
 
 
