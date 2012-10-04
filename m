@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2JDB0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 21:26:20 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:39471 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab2JDB0T (ORCPT
+	id S1754373Ab2JDB1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 21:27:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:34661 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab2JDB1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 21:26:19 -0400
-MIME-Version: 1.0
-Date: Wed, 3 Oct 2012 21:26:17 -0400
-Message-ID: <CAHFgRy_ju3ybBGyApRXhke6=DW9B=LOZUVrjV0KfZbFFcG4PZA@mail.gmail.com>
-Subject: 3.6.0+ (GIT) -- BUG: sleeping function called from invalid context at
- kernel/mutex.c:269 in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Oct 2012 21:27:51 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-dd-506ce615783e
+Message-id: <506CE614.30606@samsung.com>
+Date: Thu, 04 Oct 2012 10:27:48 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] extcon: max77693: Fix max77693_muic_probe error handling
+References: <1349231038.6191.1.camel@phoenix>
+In-reply-to: <1349231038.6191.1.camel@phoenix>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jAV3RZzkBBo8bDS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGlcadTAUzBSpmt31hb2C8xdPFyMkhIWAicePwLRYIW0ziwr31
+	bF2MXBxCAosYJVY2v2OGcLqYJK6c+8bexcjBwSugIXHwBheIySKgKtFy2h2kl01AS2L/ixts
+	IGFRgQiJX/0cIGFeAUGJH5PvgY0XEVCSWHX/MpjNLOApcfpWFzOILSzgK7Fv/zU2EFtIQFfi
+	weX5YHFOAT2JGSsuMUPUq0tMmrcIypaX2LzmLfMERoFZSFbMQlI2C0nZAkbmVYyiqQXJBcVJ
+	6bmGesWJucWleel6yfm5mxjBwfdMagfjygaLQ4wCHIxKPLyG3TkBQqyJZcWVuYcYJTiYlUR4
+	jbcChXhTEiurUovy44tKc1KLDzFKc7AoifM2e6QECAmkJ5akZqemFqQWwWSZODilGhhzZwu7
+	Ndrd/xdhybPIVq/zaSDD2SLJI69YK4zCj09fV34sSul0kbxMBPNsv1lMAgsiTj5cz213x7/5
+	vge/mJX8p32f6iaLBT+J9LFLV2jdz3Lv8c2iqe8cuv0WCd5wa19wbM+bfoc9u59c6d/+o0j2
+	ziexnteZPFbPrLdLOAmvuPftdryB2CUlluKMREMt5qLiRABay8W3OgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI: Preparing to enter system sleep state S3
-PM: Saving platform NVS memory
-Disabling non-boot CPUs ...
-numa_remove_cpu cpu 1 node 0: mask now 0
-Broke affinity for irq 46
-smpboot: CPU 1 is now offline
-BUG: sleeping function called from invalid context at kernel/mutex.c:269
-in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
-4 locks held by pm-suspend/3561:
- #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8113cab6>]
-sysfs_write_file+0x37/0x121
- #1:  (s_active#98){.+.+.+}, at: [<ffffffff8113cb50>]
-sysfs_write_file+0xd1/0x121
- #2:  (autosleep_lock){+.+.+.}, at: [<ffffffff810616c2>]
-pm_autosleep_lock+0x12/0x14
- #3:  (pm_mutex){+.+.+.}, at: [<ffffffff8105c06c>] pm_suspend+0x38/0x1b8
-irq event stamp: 103458
-hardirqs last  enabled at (103457): [<ffffffff81460461>]
-__mutex_unlock_slowpath+0x101/0x125
-hardirqs last disabled at (103458): [<ffffffff8105be25>]
-arch_suspend_disable_irqs+0xa/0xc
-softirqs last  enabled at (103196): [<ffffffff8103445d>]
-__do_softirq+0x12a/0x155
-softirqs last disabled at (103171): [<ffffffff8146836c>] call_softirq+0x1c/0x30
-Pid: 3561, comm: pm-suspend Not tainted 3.6.0+ #26
-Call Trace:
- [<ffffffff8106b64e>] ? print_irqtrace_events+0x9d/0xa1
- [<ffffffff8104efcd>] __might_sleep+0x19f/0x1a8
- [<ffffffff81460345>] mutex_lock_nested+0x20/0x3b
- [<ffffffff81391cbb>] ledtrig_cpu+0x3b/0x7b
- [<ffffffff81391d29>] ledtrig_cpu_syscore_suspend+0xe/0x15
- [<ffffffff813329e9>] syscore_suspend+0x78/0xfd
- [<ffffffff8105bf42>] suspend_devices_and_enter+0x10f/0x201
- [<ffffffff8105c133>] pm_suspend+0xff/0x1b8
- [<ffffffff8105b4fa>] state_store+0x43/0x6c
- [<ffffffff811c5ba6>] kobj_attr_store+0xf/0x1b
- [<ffffffff8113cb68>] sysfs_write_file+0xe9/0x121
- [<ffffffff810e48a3>] vfs_write+0x9b/0xfd
- [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
- [<ffffffff810e4ac6>] sys_write+0x4d/0x7a
- [<ffffffff814672f4>] tracesys+0xdd/0xe2
+On 10/03/2012 11:23 AM, Axel Lin wrote:
+
+> Fix below issues:
+> 1. If request_threaded_irq() fails, current code does not free all requested
+>    irqs.
+> 2. Add missing extcon_dev_unregister() in error path if failed to read revision
+>    number.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/extcon/extcon-max77693.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+> index e0ed622..9928c63 100644
+> --- a/drivers/extcon/extcon-max77693.c
+> +++ b/drivers/extcon/extcon-max77693.c
+> @@ -696,12 +696,8 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
+>  				IRQF_ONESHOT, muic_irq->name, info);
+>  		if (ret) {
+>  			dev_err(&pdev->dev,
+> -				"failed: irq request (IRQ: %d,"
+> -				" error :%d)\n",
+> +				"failed: irq request (IRQ: %d, error :%d)\n",
+>  				muic_irq->irq, ret);
+> -
+> -			for (i = i - 1; i >= 0; i--)
+> -				free_irq(muic_irq->virq, info);
+>  			goto err_irq;
+>  		}
+>  	}
+> @@ -726,7 +722,7 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
+>  			MAX77693_MUIC_REG_ID, &id);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to read revision number\n");
+> -		goto err_extcon;
+> +		goto err_read_reg;
+>  	}
+>  	dev_info(info->dev, "device ID : 0x%x\n", id);
+>  
+> @@ -738,9 +734,13 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
+>  
+>  	return ret;
+>  
+> +err_read_reg:
+> +	extcon_dev_unregister(info->edev);
+>  err_extcon:
+>  	kfree(info->edev);
+>  err_irq:
+> +	while (--i >= 0)
+> +		free_irq(muic_irqs[i].virq, info);
+
+
+This include possible error when 'i' variable may be used after
+completed request_thread_irq() operation. I think the below patch
+is appropriate because free_irq() function return NULL if first parameter
+is unrequested irq.
+
+err_irq:
++       for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
++               free_irq(muic_irqs[i].virq, info);
+
+Thank you,
+Chanwoo Choi
