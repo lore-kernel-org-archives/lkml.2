@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2JDMgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:36:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54831 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200Ab2JDMgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:36:33 -0400
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Cc: Tim Bird <tim.bird@am.sony.com>, Ezequiel Garcia <elezegarcia@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] lib: Use kmalloc_track_caller to get accurate traces for kvasprintf
-Date: Thu,  4 Oct 2012 09:36:14 -0300
-Message-Id: <1349354174-5560-1-git-send-email-elezegarcia@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1756399Ab2JDMki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:40:38 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:38645 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756200Ab2JDMkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 08:40:37 -0400
+Date: Thu, 4 Oct 2012 14:40:25 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: tty_init_dev: 24 callbacks suppressed
+Message-ID: <20121004124025.GC21028@aftab.osrc.amd.com>
+References: <20121004092055.GA21028@aftab.osrc.amd.com>
+ <20121004112347.GA245@x4>
+ <20121004115157.GA245@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004115157.GA245@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously kvasprintf allocation was being done through kmalloc,
-thus producing an unaccurate trace report.
+On Thu, Oct 04, 2012 at 01:51:57PM +0200, Markus Trippelsdorf wrote:
+> diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+> index e11ccb4..d8de255 100644
+> --- a/include/linux/ratelimit.h
+> +++ b/include/linux/ratelimit.h
+> @@ -46,20 +46,17 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+>  #define WARN_ON_RATELIMIT(condition, state)			\
+>  		WARN_ON((condition) && __ratelimit(state))
+>  
+> -#define __WARN_RATELIMIT(condition, state, format...)		\
+> -({								\
+> -	int rtn = 0;						\
+> -	if (unlikely(__ratelimit(state)))			\
+> -		rtn = WARN(condition, format);			\
+> -	rtn;							\
+> -})
+> -
+> -#define WARN_RATELIMIT(condition, format...)			\
+> +#define WARN_RATELIMIT(condition, fmt, ...)			\
+>  ({								\
+>  	static DEFINE_RATELIMIT_STATE(_rs,			\
+>  				      DEFAULT_RATELIMIT_INTERVAL,	\
+>  				      DEFAULT_RATELIMIT_BURST);	\
+> -	__WARN_RATELIMIT(condition, &_rs, format);		\
+> +	int rtn = !!(condition);				\
+> +								\
+> +	if (unlikely(rtn && __ratelimit(&_rs)))		\
+> +		WARN(rtn, fmt, ##__VA_ARGS__);			\
+> +								\
+> +	rtn;							\
+>  })
 
-This is a common problem: in order to get accurate callsite tracing,
-a lib/utils function shouldn't allocate kmalloc but instead
-use kmalloc_track_caller.
+Aha, I see it. We need to look at the condition before the __ratelimit,
+otherwise we WARN unnecessarily, good catch.
 
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
----
- lib/kasprintf.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>  #else
+> @@ -67,15 +64,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+>  #define WARN_ON_RATELIMIT(condition, state)			\
+>  	WARN_ON(condition)
+>  
+> -#define __WARN_RATELIMIT(condition, state, format...)		\
+> -({								\
+> -	int rtn = WARN(condition, format);			\
+> -	rtn;							\
+> -})
+> -
+> -#define WARN_RATELIMIT(condition, format...)			\
+> +#define WARN_RATELIMIT(condition, fmt, ...)			\
 
-diff --git a/lib/kasprintf.c b/lib/kasprintf.c
-index ae0de80..32f1215 100644
---- a/lib/kasprintf.c
-+++ b/lib/kasprintf.c
-@@ -21,7 +21,7 @@ char *kvasprintf(gfp_t gfp, const char *fmt, va_list ap)
- 	len = vsnprintf(NULL, 0, fmt, aq);
- 	va_end(aq);
- 
--	p = kmalloc(len+1, gfp);
-+	p = kmalloc_track_caller(len+1, gfp);
- 	if (!p)
- 		return NULL;
- 
+... except this change is unrelated and unneeded - there's enough room
+in 80 cols to leave it as "format" instead of shortening it.
+
+Other than that:
+
+Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+
+Thanks.
+
 -- 
-1.7.8.6
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
