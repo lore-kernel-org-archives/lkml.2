@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422820Ab2JDPVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:21:14 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34950 "EHLO zmc.proxad.net"
+	id S1422822Ab2JDPVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:21:41 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34876 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422786Ab2JDPUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:20:10 -0400
+	id S1422755Ab2JDPTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:19:53 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 22/24 v2] USB: OHCI: remove OHCI SH platform driver
-Date: Thu,  4 Oct 2012 17:17:50 +0200
-Message-Id: <1349363872-27004-23-git-send-email-florian@openwrt.org>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 19/24 v2] MIPS: Netlogic: convert to use OHCI platform driver
+Date: Thu,  4 Oct 2012 17:17:47 +0200
+Message-Id: <1349363872-27004-20-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -22,201 +22,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users have been converted to use the OHCI platform driver instead, thus
-making ohci-sh obsolete, so remove it.
+The OHCI platform driver is suitable for use by the Netlogic XLR platform
+so use this driver instead of the OHCI XLS platform driver.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-No changes since v1
+Changes since v1:
+- really make the code register the "ohci-platform" driver instead of "ohci-xls"
 
- drivers/usb/host/Kconfig    |    6 +-
- drivers/usb/host/ohci-hcd.c |    5 --
- drivers/usb/host/ohci-sh.c  |  141 -------------------------------------------
- 3 files changed, 5 insertions(+), 147 deletions(-)
- delete mode 100644 drivers/usb/host/ohci-sh.c
+ arch/mips/netlogic/xlr/platform.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 86a7995..b05b6aa 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -397,9 +397,13 @@ config USB_OHCI_HCD_SSB
- 	  If unsure, say N.
+diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+index 144c5c6..507230e 100644
+--- a/arch/mips/netlogic/xlr/platform.c
++++ b/arch/mips/netlogic/xlr/platform.c
+@@ -16,6 +16,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/i2c.h>
+ #include <linux/usb/ehci_pdriver.h>
++#include <linux/usb/ohci_pdriver.h>
  
- config USB_OHCI_SH
--	bool "OHCI support for SuperH USB controller"
-+	bool "OHCI support for SuperH USB controller (DEPRECATED)"
- 	depends on USB_OHCI_HCD && SUPERH
-+	select USB_OHCI_HCD_PLATFORM
- 	---help---
-+	  This option is deprecated now and the driver was removed, use
-+	  USB_OHCI_HCD_PLATFORM instead.
+ #include <asm/netlogic/haldefs.h>
+ #include <asm/netlogic/xlr/iomap.h>
+@@ -128,12 +129,14 @@ static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+ 	.caps_offset	= 0,
+ };
+ 
++static struct usb_ohci_pdata xls_usb_ohci_pdata;
 +
- 	  Enables support for the on-chip OHCI controller on the SuperH.
- 	  If you use the PCI OHCI controller, this option is not necessary.
+ static struct platform_device xls_usb_ehci_device =
+ 			 USB_PLATFORM_DEV("ehci-platform", 0, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_0 =
+-			 USB_PLATFORM_DEV("ohci-xls-0", 1, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ohci-platform", 1, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_1 =
+-			 USB_PLATFORM_DEV("ohci-xls-1", 2, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ohci-platform", 2, PIC_USB_IRQ);
  
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index b0fc042..2204759 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1123,11 +1123,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
- #endif
+ static struct platform_device *xls_platform_devices[] = {
+ 	&xls_usb_ehci_device,
+@@ -182,10 +185,12 @@ int xls_platform_usb_init(void)
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_0.resource[0].start = memres;
+ 	xls_usb_ohci_device_0.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ohci_device_0.dev.platform_data = &xls_usb_ohci_pdata;
  
--#ifdef CONFIG_USB_OHCI_SH
--#include "ohci-sh.c"
--#define PLATFORM_DRIVER		ohci_hcd_sh_driver
--#endif
--
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_1.resource[0].start = memres;
+ 	xls_usb_ohci_device_1.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ohci_device_1.dev.platform_data = &xls_usb_ohci_pdata;
  
- #ifdef CONFIG_USB_OHCI_HCD_PPC_OF
- #include "ohci-ppc-of.c"
-diff --git a/drivers/usb/host/ohci-sh.c b/drivers/usb/host/ohci-sh.c
-deleted file mode 100644
-index 76a20c2..0000000
---- a/drivers/usb/host/ohci-sh.c
-+++ /dev/null
-@@ -1,141 +0,0 @@
--/*
-- * OHCI HCD (Host Controller Driver) for USB.
-- *
-- * Copyright (C) 2008 Renesas Solutions Corp.
-- *
-- * Author : Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; version 2 of the License.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-- *
-- */
--
--#include <linux/platform_device.h>
--
--static int ohci_sh_start(struct usb_hcd *hcd)
--{
--	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
--
--	ohci_hcd_init(ohci);
--	ohci_init(ohci);
--	ohci_run(ohci);
--	return 0;
--}
--
--static const struct hc_driver ohci_sh_hc_driver = {
--	.description =		hcd_name,
--	.product_desc =		"SuperH OHCI",
--	.hcd_priv_size =	sizeof(struct ohci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq =			ohci_irq,
--	.flags =		HCD_USB11 | HCD_MEMORY,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.start =		ohci_sh_start,
--	.stop =			ohci_stop,
--	.shutdown =		ohci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue =		ohci_urb_enqueue,
--	.urb_dequeue =		ohci_urb_dequeue,
--	.endpoint_disable =	ohci_endpoint_disable,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number =	ohci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data =	ohci_hub_status_data,
--	.hub_control =		ohci_hub_control,
--#ifdef	CONFIG_PM
--	.bus_suspend =		ohci_bus_suspend,
--	.bus_resume =		ohci_bus_resume,
--#endif
--	.start_port_reset =	ohci_start_port_reset,
--};
--
--/*-------------------------------------------------------------------------*/
--
--static int ohci_hcd_sh_probe(struct platform_device *pdev)
--{
--	struct resource *res = NULL;
--	struct usb_hcd *hcd = NULL;
--	int irq = -1;
--	int ret;
--
--	if (usb_disabled())
--		return -ENODEV;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "platform_get_resource error.\n");
--		return -ENODEV;
--	}
--
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0) {
--		dev_err(&pdev->dev, "platform_get_irq error.\n");
--		return -ENODEV;
--	}
--
--	/* initialize hcd */
--	hcd = usb_create_hcd(&ohci_sh_hc_driver, &pdev->dev, (char *)hcd_name);
--	if (!hcd) {
--		dev_err(&pdev->dev, "Failed to create hcd\n");
--		return -ENOMEM;
--	}
--
--	hcd->regs = (void __iomem *)res->start;
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (ret != 0) {
--		dev_err(&pdev->dev, "Failed to add hcd\n");
--		usb_put_hcd(hcd);
--		return ret;
--	}
--
--	return ret;
--}
--
--static int ohci_hcd_sh_remove(struct platform_device *pdev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
--
--	usb_remove_hcd(hcd);
--	usb_put_hcd(hcd);
--
--	return 0;
--}
--
--static struct platform_driver ohci_hcd_sh_driver = {
--	.probe		= ohci_hcd_sh_probe,
--	.remove		= ohci_hcd_sh_remove,
--	.shutdown	= usb_hcd_platform_shutdown,
--	.driver		= {
--		.name	= "sh_ohci",
--		.owner	= THIS_MODULE,
--	},
--};
--
--MODULE_ALIAS("platform:sh_ohci");
+ 	return platform_add_devices(xls_platform_devices,
+ 				ARRAY_SIZE(xls_platform_devices));
 -- 
 1.7.9.5
 
