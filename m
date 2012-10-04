@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab2JDNVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:21:20 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42840 "EHLO gate.crashing.org"
+	id S932757Ab2JDNXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:23:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43074 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab2JDNVS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:21:18 -0400
-Subject: Re: [PATCH 3/3 v2] iommu/fsl: Freescale PAMU driver and IOMMU API implementation.
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1349351808-7156-4-git-send-email-b16395@freescale.com>
-Date: Thu, 4 Oct 2012 08:20:25 -0500
-Cc: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <91BA7E6D-4B29-4CCF-80EB-947EBBCF51F4@kernel.crashing.org>
-References: <1349351808-7156-1-git-send-email-b16395@freescale.com> <1349351808-7156-4-git-send-email-b16395@freescale.com>
-To: "<b16395@freescale.com>" <b16395@freescale.com>
-X-Mailer: Apple Mail (2.1278)
+	id S932305Ab2JDNXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 09:23:51 -0400
+Message-ID: <506D8DD5.20904@redhat.com>
+Date: Thu, 04 Oct 2012 15:23:33 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, avi@redhat.com,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au>
+In-Reply-To: <87ipaq1jtt.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Oct 4, 2012, at 6:56 AM, <b16395@freescale.com> <b16395@freescale.com> wrote:
-
-> From: Varun Sethi <Varun.Sethi@freescale.com>
+Il 04/10/2012 14:51, Rusty Russell ha scritto:
+> Paolo Bonzini <pbonzini@redhat.com> writes:
 > 
-> Following is a brief description of the PAMU hardware:
-> PAMU determines what action to take and whether to authorize the action on the basis
-> of the memory address, a Logical IO Device Number (LIODN), and PAACT table (logically)
-> indexed by LIODN and address. Hardware devices which need to access memory must provide
-> an LIODN in addition to the memory address.
+>> Il 04/10/2012 02:11, Rusty Russell ha scritto:
+>>>>> There's a reason I haven't done this.  I really, really dislike "my
+>>>>> implemention isn't broken" feature bits.  We could have an infinite
+>>>>> number of them, for each bug in each device.
+>>>>
+>>>> However, this bug affects (almost) all implementations and (almost) all
+>>>> devices.  It even makes sense to reserve a transport feature bit for it
+>>>> instead of a device feature bit.
+>>>
+>>> Perhaps, but we have to fix the bugs first!
+>>
+>> Yes. :)  Isn't that what mst's patch does?
+>>
+>>> As I said, my torture patch broke qemu immediately.  Since noone has
+>>> leapt onto fixing that, I'll take a look now...
+>>
+>> I can look at virtio-scsi.
 > 
-> Peripheral Access Authorization and Control Tables (PAACTs) are the primary data structures
-> used by PAMU. A PAACT is a table of peripheral access authorization and control entries (PAACE).
-> Each PAACE defines the range of I/O bus address space that is accessible by the LIOD and the
-> associated access capabilities.
+> Actually, you can't, see my reply to Anthony...
 > 
-> There are two types of PAACTs: primary PAACT (PPAACT) and secondary PAACT (SPAACT). A given physical
-> I/O device may be able to act as one or more independent logical I/O devices (LIODs). Each such
-> logical I/O device is assigned an identifier called logical I/O device number (LIODN). A LIOD is
-> allocated a contiguous portion of the I/O bus address space called the DSA window for performing
-> DSA operations. The DSA window may optionally be divided into multiple sub-windows, each of which
-> may be used to map to a region in system storage space. The first sub-window is referred to
-> as the primary sub-window and the remaining are called secondary sub-windows.
-> 
-> This patch provides the PAMU driver (fsl_pamu.c) and the corresponding IOMMU API implementation
-> (fsl_pamu_domain.c). The PAMU hardware driver (fsl_pamu.c) has been derived from the work done
-> by Ashish Kalra and Timur Tabi (timur@freescale.com).
-> 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
+> Message-ID: <87lifm1y1n.fsf@rustcorp.com.au>
 
-I'm not seeing any of the comments I made addressed.
+    struct virtio_scsi_req_cmd {
+        // Read-only
+        u8 lun[8];
+        u64 id;
+        u8 task_attr;
+        u8 prio;
+        u8 crn;
+        char cdb[cdb_size];
+        char dataout[];
+        // Write-only part
+        u32 sense_len;
+        u32 residual;
+        u16 status_qualifier;
+        u8 status;
+        u8 response;
+        u8 sense[sense_size];
+        char datain[];
+    };
 
-What changed in this version?
+where cdb_size and sense_size come from configuration space.  The device
+right now expects everything before dataout/datain to be in a single
+descriptor, but that's in no way part of the spec.  Am I missing
+something egregious?
 
-- k
+Paolo
+
