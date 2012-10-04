@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab2JDJVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:21:09 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:37662 "EHLO mail.x86-64.org"
+	id S1754997Ab2JDJ1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:27:05 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:60060 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab2JDJVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:21:08 -0400
-Date: Thu, 4 Oct 2012 11:20:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: tty_init_dev: 24 callbacks suppressed
-Message-ID: <20121004092055.GA21028@aftab.osrc.amd.com>
+	id S1750936Ab2JDJ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 05:27:03 -0400
+Date: Thu, 4 Oct 2012 11:26:44 +0200
+From: David Sterba <dave@jikos.cz>
+To: Rock Lee <zimilo@code-trick.com>
+Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs ulist use rbtree instead
+Message-ID: <20121004092644.GB14582@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Rock Lee <zimilo@code-trick.com>,
+	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1349341866-29320-1-git-send-email-zimilo@code-trick.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349341866-29320-1-git-send-email-zimilo@code-trick.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> @@ -207,16 +266,23 @@ EXPORT_SYMBOL(ulist_add);
+>   * end is reached. No guarantee is made with respect to the order in which
+>   * the elements are returned. They might neither be returned in order of
+>   * addition nor in ascending order.
+> - * It is allowed to call ulist_add during an enumeration. Newly added items
+> - * are guaranteed to show up in the running enumeration.
+>   */
+>  struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_iterator *uiter)
 
-I'm seeing this on today's Linus tree:
+Quick observation:
 
-[   24.048278] tty_init_dev: 24 callbacks suppressed
-[   45.630349] tty_init_dev: 3 callbacks suppressed
+If there's code relying on the behaviour stated in the removed part of
+the comment, it will break. Have you verified this is not the case?
 
-It is either from that WARN_RATELIMIT thing or the printk_ratelimited
-further below in tty_init_dev but I don't know for sure because the
-actual text message from both printk's doesn't come out in dmesg - only
-that something got suppressed.
 
-And it quiets down later, after the machine has finished booting. Still,
-this doesn't tell me anything about any issue. So what's up?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+david
