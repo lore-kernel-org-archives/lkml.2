@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422648Ab2JDPTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:19:18 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34581 "EHLO zmc.proxad.net"
+	id S1422664Ab2JDPTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:19:23 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34626 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965609Ab2JDPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:19:15 -0400
+	id S1422650Ab2JDPTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:19:21 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
         Ralf Baechle <ralf@linux-mips.org>,
-        Kelvin Cheung <keguang.zhang@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 02/24 v2] MIPS: Loongson 1B: use ehci-platform instead of ehci-ls1x.
-Date: Thu,  4 Oct 2012 17:17:30 +0200
-Message-Id: <1349363872-27004-3-git-send-email-florian@openwrt.org>
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/24 v2] MIPS: Netlogic: use ehci-platform driver
+Date: Thu,  4 Oct 2012 17:17:32 +0200
+Message-Id: <1349363872-27004-5-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -22,61 +22,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Loongson 1B EHCI driver does nothing more than what the EHCI platform
-driver already does, so use the generic implementation.
+The EHCI platform driver is suitable for use by the Netlogic XLR platform
+since there is nothing specific that the EHCI XLR platform driver does.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-No changes since v1
+Changes since v1:
+- really change driver name to "ehci-platform"
+- slightly reworded commit message
 
- arch/mips/configs/ls1b_defconfig      |    1 +
- arch/mips/loongson1/common/platform.c |    8 +++++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ arch/mips/netlogic/xlr/platform.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/configs/ls1b_defconfig b/arch/mips/configs/ls1b_defconfig
-index 80cff8b..7eb7554 100644
---- a/arch/mips/configs/ls1b_defconfig
-+++ b/arch/mips/configs/ls1b_defconfig
-@@ -76,6 +76,7 @@ CONFIG_HID_GENERIC=m
- CONFIG_USB=y
- CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
- CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_HCD_PLATFORM=y
- # CONFIG_USB_EHCI_TT_NEWSCHED is not set
- CONFIG_USB_STORAGE=m
- CONFIG_USB_SERIAL=m
-diff --git a/arch/mips/loongson1/common/platform.c b/arch/mips/loongson1/common/platform.c
-index e92d59c..2874bf2 100644
---- a/arch/mips/loongson1/common/platform.c
-+++ b/arch/mips/loongson1/common/platform.c
-@@ -13,6 +13,7 @@
- #include <linux/phy.h>
+diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+index 71b44d8..144c5c6 100644
+--- a/arch/mips/netlogic/xlr/platform.c
++++ b/arch/mips/netlogic/xlr/platform.c
+@@ -15,6 +15,7 @@
  #include <linux/serial_8250.h>
- #include <linux/stmmac.h>
+ #include <linux/serial_reg.h>
+ #include <linux/i2c.h>
 +#include <linux/usb/ehci_pdriver.h>
- #include <asm-generic/sizes.h>
  
- #include <loongson1.h>
-@@ -107,13 +108,18 @@ static struct resource ls1x_ehci_resources[] = {
- 	},
- };
+ #include <asm/netlogic/haldefs.h>
+ #include <asm/netlogic/xlr/iomap.h>
+@@ -123,8 +124,12 @@ static u64 xls_usb_dmamask = ~(u32)0;
+ 		},							\
+ 	}
  
-+static struct usb_ehci_pdata ls1x_ehci_pdata = {
-+	.port_power_off	= 1,
++static struct usb_ehci_pdata xls_usb_ehci_pdata = {
++	.caps_offset	= 0,
 +};
 +
- struct platform_device ls1x_ehci_device = {
--	.name		= "ls1x-ehci",
-+	.name		= "ehci-platform",
- 	.id		= -1,
- 	.num_resources	= ARRAY_SIZE(ls1x_ehci_resources),
- 	.resource	= ls1x_ehci_resources,
- 	.dev		= {
- 		.dma_mask = &ls1x_ehci_dmamask,
-+		.platform_data = &ls1x_ehci_pdata,
- 	},
- };
+ static struct platform_device xls_usb_ehci_device =
+-			 USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ehci-platform", 0, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_0 =
+ 			 USB_PLATFORM_DEV("ohci-xls-0", 1, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_1 =
+@@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
+ 	memres = CPHYSADDR((unsigned long)usb_mmio);
+ 	xls_usb_ehci_device.resource[0].start = memres;
+ 	xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
  
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_0.resource[0].start = memres;
 -- 
 1.7.9.5
 
