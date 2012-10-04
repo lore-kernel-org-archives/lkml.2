@@ -1,72 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab2JDRlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 13:41:23 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:47891 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932214Ab2JDRlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 13:41:22 -0400
-Date: Thu, 4 Oct 2012 10:40:45 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: mlindner@marvell.com, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
- return code
-Message-ID: <20121004104045.4fa02775@nehalam.linuxnetplumber.net>
-In-Reply-To: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
-References: <1349281090-10013-20-git-send-email-peter.senna@gmail.com>
-	<20121003092508.6a7da662@nehalam.linuxnetplumber.net>
-	<CA+MoWDp4W5BCA1t_HgEtLhMs1btVTOkbtBytOVtAzJriEZ-16A@mail.gmail.com>
-	<20121004074442.180d8f01@nehalam.linuxnetplumber.net>
-	<CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933509Ab2JDRmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 13:42:54 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:36686
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932279Ab2JDRmw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 13:42:52 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz1432I4015Izz1202h1d1ah1d2ahzz17326ah8275dhz2fh2a8h668h839h946he5bhf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+To: Paul Bolle <pebolle@tiscali.nl>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 4 Oct 2012 12:42:42 -0500
+Subject: Re: [PATCH v2] qla2xxx: silence two GCC warnings
+Thread-Topic: [PATCH v2] qla2xxx: silence two GCC warnings
+Thread-Index: Ac2iV6i1HCv8kzYnRUiX5ptpWzD3FA==
+Message-ID: <CC93C7DD.EB60%saurav.kashyap@qlogic.com>
+In-Reply-To: <1349163768.1414.32.camel@x61.thuisdomein>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.10.0.110310
+acceptlanguage: en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012 19:32:12 +0200
-Peter Senna Tschudin <peter.senna@gmail.com> wrote:
 
-> >> Stephen, I do not want to include function names on the commit
-> >> message. What do you think about this updated message, is it
-> >> acceptable?
-> >>
-> >
-> > No still to generic, it needs to be written by a human examining
-> > the file and understanding what the cause and effect of the bug
-> > is.
-> 
-> Stephen I've understood what you want. But it is not clear to me why
-> you want. Let me show what Coccinelle produces as output:
-> 
-> [peter@ace linux-next]$ spatch ../../cocci/ret4.cocci -dir .
-> ...
-> * TODO [[view:./drivers/net/ethernet/sun/sungem.c::face=ovl-face1::linb=2894::colb=1::cole=3][./drivers/net/ethernet/sun/sungem.c::2894]]
-> [[view:./drivers/net/ethernet/sun/sungem.c::face=ovl-face2::linb=2966::colb=1::cole=3][./drivers/net/ethernet/sun/sungem.c::2966]]
-> [[view:./drivers/net/ethernet/sun/sungem.c::face=ovl-face2::linb=3015::colb=1::cole=7][./drivers/net/ethernet/sun/sungem.c::3015]]
-> ...
-> 
-> There is "no" automatic code transformation. The semantic patch I'm
-> using only points out where to investigate to change, or not, the
-> code. The output is in Emcas org-mode format. So I can tell you that
-> the patches are not being robot generated. I'm making the patches, one
-> by one, with great help of Coccinelle, but I'm making the code changes
-> by hand.
-> 
-> I can't understand the advantages of describing each patch as you are
-> asking. "For me" the generic commit message together with the patch
-> makes sense.  Can you please help me on that?
 
-The purpose of the commit message is not only so other developers understand
-the patch. It is also so that the consumers (distro's and maintainers)
-understand the scope of the impact.  It maybe that your effort uncovers
-a really bad security hole that requires a CVE and a re-release of a 
-major enterprise product like RHEL, or it could just be a minor corner
-case that can never realistically happen. Unless you give a more complete
-description, someone else will have to do it for each case.
+
+
+>Compiling qla_gs.o (part of the qla2xxx module) triggers two GCC
+>warnings:
+>    drivers/scsi/qla2xxx/qla_gs.c: In function Œqla2x00_fdmi_rhba¹:
+>    drivers/scsi/qla2xxx/qla_gs.c:1339:7: warning: array subscript is
+>above array bounds [-Warray-bounds]
+>    drivers/scsi/qla2xxx/qla_gs.c: In function Œqla2x00_fdmi_register¹:
+>    drivers/scsi/qla2xxx/qla_gs.c:1663:15: warning: array subscript is
+>above array bounds [-Warray-bounds]
+>
+>It seems that the sequence of a strcpy followed by a strlen confuses GCC
+>when it is keeping track of array bounds here. (It is not clear to me
+>which array triggers this warning and by how much GCC thinks the
+>subscript is above its bounds. Neither is it clear to me why comparable
+>code in these two functions doesn't trigger this warning.)
+>
+>An easy way to silence these warnings is to use preprocessor macros
+>here, as that apparently gives GCC enough information to keep track of
+>array bounds.
+>
+>Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>---
+>0) Rolf suggested to not use magic constants, to make sure things keep
+>working when these strings change in the future. A trivial solution is
+>to use preprocessor macros. I needed to add one for the manufacturer
+>string.
+>
+>1) Still only compile tested.
+>
+> drivers/scsi/qla2xxx/qla_def.h | 1 +
+> drivers/scsi/qla2xxx/qla_gs.c  | 6 +++---
+> 2 files changed, 4 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/scsi/qla2xxx/qla_def.h
+>b/drivers/scsi/qla2xxx/qla_def.h
+>index 39007f5..8895038 100644
+>--- a/drivers/scsi/qla2xxx/qla_def.h
+>+++ b/drivers/scsi/qla2xxx/qla_def.h
+>@@ -37,6 +37,7 @@
+> #include "qla_nx.h"
+> #define QLA2XXX_DRIVER_NAME   "qla2xxx"
+> #define QLA2XXX_APIDEV                "ql2xapidev"
+>+#define QLA2XXX_MANUFACTURER  "QLogic Corporation"
+>
+> /*
+>  * We have MAILBOX_REGISTER_COUNT sized arrays in a few places,
+>diff --git a/drivers/scsi/qla2xxx/qla_gs.c b/drivers/scsi/qla2xxx/qla_gs.c
+>index 05260d2..1714035 100644
+>--- a/drivers/scsi/qla2xxx/qla_gs.c
+>+++ b/drivers/scsi/qla2xxx/qla_gs.c
+>@@ -1325,8 +1325,8 @@ qla2x00_fdmi_rhba(scsi_qla_host_t *vha)
+>       /* Manufacturer. */
+>       eiter = (struct ct_fdmi_hba_attr *) (entries + size);
+>       eiter->type = __constant_cpu_to_be16(FDMI_HBA_MANUFACTURER);
+>-      strcpy(eiter->a.manufacturer, "QLogic Corporation");
+>-      alen = strlen(eiter->a.manufacturer);
+>+      strcpy(eiter->a.manufacturer, QLA2XXX_MANUFACTURER);
+>+      alen = strlen(QLA2XXX_MANUFACTURER);
+
+Hi Paul,
+It looks fine except one small thing. Instead of strcpy, strncpy will be
+better option something like this
+
++       alen = strlen(QLA2XXX_MANUFACTURER);
++       strncpy(eiter->a.manufacturer, QLA2XXX_MANUFACTURER, alen);
+
+Thanks,
+~Saurav
+
+
+>       alen += (alen & 3) ? (4 - (alen & 3)) : 4;
+>       eiter->len = cpu_to_be16(4 + alen);
+>       size += 4 + alen;
+>@@ -1647,7 +1647,7 @@ qla2x00_fdmi_rpa(scsi_qla_host_t *vha)
+>       eiter = (struct ct_fdmi_port_attr *) (entries + size);
+>       eiter->type = __constant_cpu_to_be16(FDMI_PORT_OS_DEVICE_NAME);
+>       strcpy(eiter->a.os_dev_name, QLA2XXX_DRIVER_NAME);
+>-      alen = strlen(eiter->a.os_dev_name);
+>+      alen = strlen(QLA2XXX_DRIVER_NAME);
+>       alen += (alen & 3) ? (4 - (alen & 3)) : 4;
+>       eiter->len = cpu_to_be16(4 + alen);
+>       size += 4 + alen;
+>--
+>1.7.11.4
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
