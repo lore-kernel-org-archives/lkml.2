@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2JDXQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 19:16:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38396 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754969Ab2JDXQB (ORCPT
+	id S1755628Ab2JDXSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 19:18:33 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34030 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2JDXSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 19:16:01 -0400
-Date: Fri, 5 Oct 2012 00:15:57 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikola Pajkovsky <npajkovs@redhat.com>
-Message-ID: <20121004231557.GM13292@decadent.org.uk>
-References: <6a854f579a99b4fe2efaca1057e8ae22@local>
- <20121001225203.841869825@1wt.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121001225203.841869825@1wt.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 147/180] udf: Fortify loading of sparing table
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Thu, 4 Oct 2012 19:18:32 -0400
+Message-ID: <1349392709.5198.2.camel@trivette>
+Subject: Re: [PATCH] gpio: add TS-5500 DIO headers support
+From: Vivien Didelot <vivien.didelot@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+Date: Thu, 04 Oct 2012 19:18:29 -0400
+In-Reply-To: <1348673827.2566.17.camel@trivette>
+References: <1348620130-25987-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	 <1348673827.2566.17.camel@trivette>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 12:54:24AM +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Jan Kara <jack@suse.cz>
-> 
-> commit 1df2ae31c724e57be9d7ac00d78db8a5dabdd050 upstream.
-> 
-> Add sanity checks when loading sparing table from disk to avoid accessing
-> unallocated memory or writing to it.
-[...]
+Hi,
 
-It looks like commit 68766a2edcd5cd744262a70a2f67a320ac944760 should
-be added after this.
+Grant, Linus, any feedback?
 
-Ben.
+Thanks,
+Vivien
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+On Wed, 2012-09-26 at 11:37 -0400, Vivien Didelot wrote:
+> > +config GPIO_TS5500
+> > +     tristate "TS-5500 DIO Headers"
+> > +     depends on TS5500
+> > +     help
+> > +       This driver supports the 3 Digital I/O headers of the
+> Technologic
+> > +       Systems TS-5500 platform: DIO1, DIO2, and the LCD port which
+> may be
+> > +       used as a DIO header.
+> 
+> I moved the GPIO_TS5500 entry at the good place in the "Memory mapped
+> GPIO drivers" section. But I'm still worried about select/depends on.
+> I removed the TS5500 symbol dependency, which is not defined yet (will
+> be done in the future board support patch). Does the following entry
+> seem good?
+> 
+>     config GPIO_TS5500
+>             tristate "TS-5500 DIO Headers support"
+>             help
+>               This driver supports the 3 Digital I/O headers of the
+>               Technologic Systems TS-5500 platform: DIO1, DIO2, and
+> the
+>               LCD port which may be used as a DIO header.
+> 
+> Regards,
+> Vivien 
+
