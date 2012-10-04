@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2JDKdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:33:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60346 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287Ab2JDKdi (ORCPT
+	id S1754062Ab2JDKeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:34:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49594 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab2JDKeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:33:38 -0400
+	Thu, 4 Oct 2012 06:34:19 -0400
+Date: Thu, 4 Oct 2012 03:33:59 -0700
+From: tip-bot for David Hooper <dave@beermex.com>
+Message-ID: <tip-fcd8af585f587741c051f7124b8dee6c73c8629b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
+        mingo@kernel.org, dave@beermex.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, dave@beermex.com, tglx@linutronix.de
+In-Reply-To: <20121002142635.17403.59959.stgit@localhost.localdomain>
+References: <20121002142635.17403.59959.stgit@localhost.localdomain>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/reboot: Remove quirk entry for SBC FITPC
+Git-Commit-ID: fcd8af585f587741c051f7124b8dee6c73c8629b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20589.18026.809848.345606@pilspetsen.it.uu.se>
-References: <E1T1N2q-0001xm-5X@morero.ard.nu>
-	<20120820180037.GV4232@outflux.net>
-	<CAKFga-dDRyRwxUu4Sv7QLcoyY5T3xxhw48LP2goWs=avGW0d_A@mail.gmail.com>
-	<CAGXu5jJCqABZcMHuQNAaAcUKCEsSqOTn5=DHdwFdJ70zVLsmSQ@mail.gmail.com>
-	<CAKFga-fB2JSAscSVi+YUOnFS4Lq4yzH5MHRwxDQBQYZfKAgB6A@mail.gmail.com>
-	<CAGXu5jLj6qm+Rv3v2pmJqfEmhZBkKJsMUe0aRqxSa=s=w4wbDw@mail.gmail.com>
-	<20121002153841.a03ad73b.akpm@linux-foundation.org>
-	<alpine.LSU.2.00.1210021733580.1343@eggly.anvils>
-	<506C4F29.4090303@gmail.com>
-	<20589.18026.809848.345606@pilspetsen.it.uu.se>
-Date: Thu, 4 Oct 2012 12:33:38 +0200
-Message-ID: <CAKFga-dzi6gkaMOF9t_fh1xVQLkht_RRAYk+L42Y1d3gzcGNkg@mail.gmail.com>
-Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
-From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 04 Oct 2012 03:34:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/4 Mikael Pettersson <mikpe@it.uu.se>:
-> - If .text is mapped non-writable and final, how would a debugger
->   (or any ptrace-using monitor-like application) plant a large
->   number of breakpoints in a target process? Breakpoint registers
->   aren't enough because (a) they're few in number, and (b) not
->   all CPUs have them.
->
+Commit-ID:  fcd8af585f587741c051f7124b8dee6c73c8629b
+Gitweb:     http://git.kernel.org/tip/fcd8af585f587741c051f7124b8dee6c73c8629b
+Author:     David Hooper <dave@beermex.com>
+AuthorDate: Tue, 2 Oct 2012 15:26:53 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 4 Oct 2012 12:22:32 +0200
 
-ptrace() doesn't care whether or not the process itself can write to
-its .text segment.
+x86/reboot: Remove quirk entry for SBC FITPC
 
-> - You're proposing to give one component (the dynamic linker/
->   loader) absolute power to impose new policies on all
->   applications. How would an application that _deliberately_
->   does something the new policies don't allow tell the dynamic
->   linker or kernel to get out of its way?
->
+Remove the quirk for the SBC FITPC. It seems ot have been
+required when the default was kbd reboot, but no longer required
+now that the default is acpi reboot. Furthermore, BIOS reboot no
+longer works for this board as of 2.6.39 or any of the 3.x
+kernels.
 
-You are debating cases in which the userland would choose not to use
-the feature. That is exactly the point of this patch: the kernel
-supplies the feature and it is up to the userland to use it when
-desired. If not in the loader, perhaps processes running setuid
-binaries or browser sandboxes could choose to call mprotect() to
-finalize some of their existing mappings (their stack?) before handing
-over to less trusted code or opening up to the network.
+Signed-off-by: David Hooper <dave@beermex.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/20121002142635.17403.59959.stgit@localhost.localdomain
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/reboot.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-> This clearly changes the de-facto ABIs, and as such I think
-> it needs much more detailed analysis than what you've done
-> here.
->
-
-Could we at least agree on the fundamental notion that the special
-powers the loader has to modify .text and .rodata sections are hardly
-ever needed by the programs themselves? In that sense, this is similar
-to dropping root privileges when not required anymore, and that is
-typically recognized as a sensible idea.
-
-> At the very least I think this change should be opt-in, but
-> that would require a kernel option or sysctl, or some config
-> file for the user-space dynamic linker/loader.
-
-As long as the kernel does not impose its use, I don't see a reason
-for an interface into the kernel to deactivate it.
-I would be interested in learning about example cases that have a
-valid need to modify their own code and constant data, as
-understanding those would greatly help in designing the ways userland
-should be able to have control over this.
-
-Regards,
-Ard.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 52190a9..4e8ba39 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -358,14 +358,6 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "VGN-Z540N"),
+ 		},
+ 	},
+-	{	/* Handle problems with rebooting on CompuLab SBC-FITPC2 */
+-		.callback = set_bios_reboot,
+-		.ident = "CompuLab SBC-FITPC2",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "CompuLab"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "SBC-FITPC2"),
+-		},
+-	},
+ 	{	/* Handle problems with rebooting on ASUS P4S800 */
+ 		.callback = set_bios_reboot,
+ 		.ident = "ASUS P4S800",
