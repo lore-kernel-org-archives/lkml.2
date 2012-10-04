@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422685Ab2JDPt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:49:26 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35836 "EHLO smtp.outflux.net"
+	id S1757046Ab2JDPt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:49:59 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61304 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab2JDPtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:49:25 -0400
-Date: Thu, 4 Oct 2012 08:49:19 -0700
-From: Kees Cook <kees@outflux.net>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.6
-Message-ID: <20121004154919.GE9092@outflux.net>
-References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
- <20121003194614.GA2893@elliptictech.com>
- <20121003200515.GZ9092@outflux.net>
- <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
- <20121003204141.GB6026@thunk.org>
- <20121003204919.GA9092@outflux.net>
- <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
- <20121004133504.GA5599@elliptictech.com>
+	id S1756889Ab2JDPt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:49:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,535,1344236400"; 
+   d="scan'208";a="200573705"
+Message-ID: <506DB02A.2030901@intel.com>
+Date: Thu, 04 Oct 2012 08:50:02 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121004133504.GA5599@elliptictech.com>
-Organization: Outflux
-X-HELO: www.outflux.net
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org
+Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
+ addresses
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <20121004125546.GA9158@phenom.dumpdata.com>
+In-Reply-To: <20121004125546.GA9158@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 09:35:04AM -0400, Nick Bowler wrote:
-> On 2012-10-03 13:54 -0700, Linus Torvalds wrote:
-> > On Wed, Oct 3, 2012 at 1:49 PM, Kees Cook <kees@outflux.net> wrote:
-> > > I think the benefits of this being on by default outweigh glitches
-> > > like this. Based on Nick's email, it looks like a directory tree of his
-> > > own creation.
-> > 
-> > I agree that *one* report like this doesn't necessarily mean that we
-> > need to turn it off, if Nick is happy to just fix up his script and
-> > it's all local.
-> > 
-> > However, I suspect we'll see more. And once that happens, we're not
-> > going to keep a default that breaks peoples old scripts, and we're
-> > going to have to rely on distributions (or users) explicitly setting
-> > it.
-> 
-> Yes, it is a directory of my own creation, intended as a place for users
-> (read: me) to stick stuff on the local disk as opposed to on NFS.  It's
-> pretty trivial for me to fixup everything to not need this symlink
-> anymore (and I suspect it is the only offender); I just created the
-> symlink in the first place so that I wouldn't have to change anything
-> else.
-> 
-> (While on /this/ machine I created the directory, I have used shared lab
-> machines with a similar setup).
-> 
-> The thing that bothers me most about all this is that it's basically
-> impossible to see why things are failing without digging through the git
-> tree or posting to the mailing list (or recalling earlier mailing list
-> discussions about the restriction, as I vaguely do now).  You just
-> suddenly get "permission denied" errors when all the permissions
-> involved look fine.  As far as I know, the owner, group and mode of
-> symlinks have always been completely meaningless.  Upgrade to 3.6, and
-> they're suddenly meaningful in extremely non-obvious ways.
+On 10/04/2012 05:55 AM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Oct 03, 2012 at 05:38:41PM -0700, Alexander Duyck wrote:
+>> While working on 10Gb/s routing performance I found a significant amount of
+>> time was being spent in the swiotlb DMA handler.  Further digging found that a
+>> significant amount of this was due to the fact that virtual to physical
+>> address translation and calling the function that did it.  It accounted for
+>> nearly 60% of the total overhead.
+>>
+>> This patch set works to resolve that by changing the io_tlb_start address and
+>> io_tlb_overflow_buffer address from virtual addresses to physical addresses.
+>> By doing this, devices that are not making use of bounce buffers can
+>> significantly reduce their overhead.  In addition I followed through with the
+> .. but are still using SWIOTLB for their DMA operations, right?
+>
 
-FWIW, there should have been an audit message about it in dmesg.
+That is correct.  I tested with the bounce buffers in use as well, but
+didn't really see any difference since almost all of the overhead was
+due to the locking required in obtaining and releasing the bounce
+buffers in map/unmap calls.
 
--Kees
+Thanks,
 
--- 
-Kees Cook                                            @outflux.net
+Alex
