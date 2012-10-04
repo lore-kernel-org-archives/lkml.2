@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab2JDWPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:15:20 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49290 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab2JDVRr (ORCPT
+	id S1751846Ab2JDWPn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:15:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321Ab2JDVRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:47 -0400
+	Thu, 4 Oct 2012 17:17:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 14/56] staging: comedi: jr3_pci: fix iomem dereference
-Date: Thu,  4 Oct 2012 14:15:35 -0700
-Message-Id: <20121004211153.732557065@linuxfoundation.org>
+        Guillaume Jaunet <guillaume.jaunet@stericsson.com>,
+        Christophe Arnal <christophe.arnal@stericsson.com>,
+        Matthias Locher <matthias.locher@stericsson.com>,
+        Rajanikanth HV <rajanikanth.hv@stericsson.com>,
+        Bibek Basu <bibek.basu@stericsson.com>,
+        Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 20/56] serial: pl011: handle corruption at high clock speeds
+Date: Thu,  4 Oct 2012 14:15:41 -0700
+Message-Id: <20121004211154.402023265@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,31 +32,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
+commit c5dd553b9fd069892c9e2de734f4f604e280fa7a upstream.
 
-Correct a direct dereference of I/O memory to use an appropriate I/O
-memory access function.  Note that the pointer being dereferenced is not
-currently tagged with `__iomem` but I plan to correct that for 3.7.
+This works around a few glitches in the ST version of the PL011
+serial driver when using very high baud rates, as we do in the
+Ux500: 3, 3.25, 4 and 4.05 Mbps.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Problem Observed/rootcause:
+
+When using high baud-rates, and the baudrate*8 is getting close to
+the provided clock frequency (so a division factor close to 1), when
+using bursts of characters (so they are abutted), then it seems as if
+there is not enough time to detect the beginning of the start-bit which
+is a timing reference for the entire character, and thus the sampling
+moment of character bits is moving towards the end of each bit, instead
+of the middle.
+
+Fix:
+Increase slightly the RX baud rate of the UART above the theoretical
+baudrate by 5%. This will definitely give more margin time to the
+UART_RX to correctly sample the data at the middle of the bit period.
+
+Also fix the ages old copy-paste error in the very stressed comment,
+it's referencing the registers used in the PL010 driver rather than
+the PL011 ones.
+
+Signed-off-by: Guillaume Jaunet <guillaume.jaunet@stericsson.com>
+Signed-off-by: Christophe Arnal <christophe.arnal@stericsson.com>
+Signed-off-by: Matthias Locher <matthias.locher@stericsson.com>
+Signed-off-by: Rajanikanth HV <rajanikanth.hv@stericsson.com>
+Cc: Bibek Basu <bibek.basu@stericsson.com>
+Cc: Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/amba-pl011.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -884,7 +884,7 @@ static int jr3_pci_attach(struct comedi_
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1603,13 +1603,26 @@ pl011_set_termios(struct uart_port *port
+ 			old_cr &= ~ST_UART011_CR_OVSFACT;
  	}
  
- 	/*  Reset DSP card */
--	devpriv->iobase->channel[0].reset = 0;
-+	writel(0, &devpriv->iobase->channel[0].reset);
++	/*
++	 * Workaround for the ST Micro oversampling variants to
++	 * increase the bitrate slightly, by lowering the divisor,
++	 * to avoid delayed sampling of start bit at high speeds,
++	 * else we see data corruption.
++	 */
++	if (uap->vendor->oversampling) {
++		if ((baud >= 3000000) && (baud < 3250000) && (quot > 1))
++			quot -= 1;
++		else if ((baud > 3250000) && (quot > 2))
++			quot -= 2;
++	}
+ 	/* Set baud rate */
+ 	writew(quot & 0x3f, port->membase + UART011_FBRD);
+ 	writew(quot >> 6, port->membase + UART011_IBRD);
  
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
- 	dev_dbg(dev->class_dev, "Firmare load %d\n", result);
+ 	/*
+ 	 * ----------v----------v----------v----------v-----
+-	 * NOTE: MUST BE WRITTEN AFTER UARTLCR_M & UARTLCR_L
++	 * NOTE: lcrh_tx and lcrh_rx MUST BE WRITTEN AFTER
++	 * UART011_FBRD & UART011_IBRD.
+ 	 * ----------^----------^----------^----------^-----
+ 	 */
+ 	writew(lcr_h, port->membase + uap->lcrh_rx);
 
 
