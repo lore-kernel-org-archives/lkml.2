@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab2JDEh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 00:37:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56738 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab2JDEh4 (ORCPT
+	id S1752794Ab2JDEmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 00:42:10 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47394 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab2JDEmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 00:37:56 -0400
+	Thu, 4 Oct 2012 00:42:07 -0400
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Subject: [PATCH v1 0/3] cpuidle: (pSeries) pseries idle driver fixes. 
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Cc: benh@kernel.crashing.org
+Date: Thu, 04 Oct 2012 10:12:01 +0530
+Message-ID: <20121004044154.15921.51256.stgit@deepthi.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <2224867.hMfXSgyTsI@avalon>
-References: <1349272385-24980-1-git-send-email-prabhakar.lad@ti.com> <2224867.hMfXSgyTsI@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 4 Oct 2012 10:07:35 +0530
-Message-ID: <CA+V-a8u_SeTmRLWhpGnbBowgU2SAKYtTuOo6-WjEVFgKogeDoQ@mail.gmail.com>
-Subject: Re: [PATCH v5] media: mt9p031/mt9t001/mt9v032: use
- V4L2_CID_TEST_PATTERN for test pattern control
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        LMML <linux-media@vger.kernel.org>,
-        VGER <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, Jean Delvare <khali@linux-fr.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100404-0260-0000-0000-000001EF11CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+The following series consists of a bunch of fixes for 
+cpuidle back-end driver for ppc64 (pSeries) platform.
 
-On Wed, Oct 3, 2012 at 7:43 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> On Wednesday 03 October 2012 19:23:05 Prabhakar wrote:
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->>
->> V4L2_CID_TEST_PATTERN is now a standard control.
->> This patch replaces the user defined control for test
->> pattern to make use of standard control V4L2_CID_TEST_PATTERN.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->> Cc: Jean Delvare <khali@linux-fr.org>
->
-> Should I push this patch through my tree ? If so I'll wait until the
-> V4L2_CID_TEST_PATTERN control patch hits Mauro's tree.
->
-I will issue a pull request for this patch plus
-V4L2_CID_TEST_PATTERN today thanks.
+The series applies on 3.6-rc7 and has been tested on ppc64 pSeries
+POWER7 system with snooze and nap states.
 
-Regards,
---Prabhakar
+With these fixes, avg idle residency for nap on 50 percent idle system
+increased from 96 to 99.4 percent and idle residency for snooze for
+the same decreased from 4 to 0.6 percent, determined running spec power
+benchmark runs.
 
-> --
-> Regards,
->
-> Laurent Pinchart
->
+ Deepthi Dharwar (3):
+      cpuidle: (POWER) Fix snooze state problem persistant in the current cpuidle design on pseries.
+      cpuidle: (POWER) Fix smt_snooze_delay functionality.
+      cpuidle: (POWER) Fix target residency initialisation in pseries cpuidle
+
+
+  arch/powerpc/include/asm/processor.h            |    4 +
+ arch/powerpc/kernel/sysfs.c                     |    2 -
+ arch/powerpc/platforms/pseries/processor_idle.c |   62 +++++++++++------------
+ 3 files changed, 32 insertions(+), 36 deletions(-)
+
+
+-- Deepthi
+
