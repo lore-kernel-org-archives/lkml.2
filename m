@@ -1,263 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2JDNEV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:04:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43426 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab2JDNET (ORCPT
+	id S1756659Ab2JDNFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:05:38 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49633 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2JDNFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:04:19 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH UPDATED 11/20] perf header: Add HEADER_GROUP_DESC feature
-Date: Thu,  4 Oct 2012 22:03:09 +0900
-Message-Id: <1349355789-19366-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1349354994-17853-12-git-send-email-namhyung@kernel.org>
-References: <1349354994-17853-12-git-send-email-namhyung@kernel.org>
+	Thu, 4 Oct 2012 09:05:37 -0400
+Message-ID: <506D899C.6010705@gmail.com>
+Date: Thu, 04 Oct 2012 08:05:32 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Simon Horman <horms@verge.net.au>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH] ARM: Push selects for TWD/SCU into machine entries
+References: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 10/04/2012 03:50 AM, Stephen Boyd wrote:
+> The TWD and SCU configs are selected by default as long as
+> SCORPIONMP is false and/or MCT is false. Implementing the logic
+> this way certainly saves lines in the Kconfig but it precludes
+> those machines which select SCORPIONMP or MCT from participating
+> in the single zImage effort because when those machines are
+> combined with other SMP capable machines the TWD and SCU are no
+> longer selected.
+> 
+> Push the select out to the machine entries so that we can compile
+> these machines together and still select the appropriate configs.
 
-Save group relationship information so that it can be restored when
-perf report is running.
+I think this is the wrong direction as I'd like to see the platform
+selects shrink. I believe the local timers are run-time enabled now, so
+can't we just drop the condition and always select TWD and SCU for
+multi-platform?
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-Initialize leader to NULL in order to avoid 'may be used uninitialized'
-warning from gcc (gcc version 4.4.3 (Ubuntu 4.4.3-4ubuntu5.1))
+Or perhaps we need a CortexA9 config symbol that selects V7, GIC, TWD,
+SCU, SMP, PL310, errata, etc. rather than duplicating those for every
+platform.
 
- tools/perf/builtin-record.c |    3 +
- tools/perf/util/header.c    |  152 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |    2 +
- 3 files changed, 157 insertions(+)
+Rob
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8c029fe2e22c..7940f0dd3db9 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -558,6 +558,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
- 	}
- 
-+	if (!evsel_list->nr_groups)
-+		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
-+
- 	/*
- 	 * perf_session__delete(session) will be called at perf_record__exit()
- 	 */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7daad237dea5..8969c20986c2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1072,6 +1072,41 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
- }
- 
- /*
-+ * File format:
-+ *
-+ * struct group_descs {
-+ *	u32	nr_groups;
-+ *	struct group_desc {
-+ *		char	name[];
-+ *		u32	leader_idx;
-+ *		u32	nr_members;
-+ *	}[nr_groups];
-+ * };
-+ */
-+static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
-+			    struct perf_evlist *evlist)
-+{
-+	u32 nr_groups = evlist->nr_groups;
-+	struct perf_evsel *evsel;
-+
-+	do_write(fd, &nr_groups, sizeof(nr_groups));
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 0) {
-+			const char *name = evsel->group_name ?: "{anon_group}";
-+			u32 leader_idx = evsel->idx;
-+			u32 nr_members = evsel->nr_members;
-+
-+			do_write_string(fd, name);
-+			do_write(fd, &leader_idx, sizeof(leader_idx));
-+			do_write(fd, &nr_members, sizeof(nr_members));
-+		}
-+	}
-+	return 0;
-+}
-+
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1432,6 +1467,31 @@ error:
- 	fprintf(fp, "# pmu mappings: unable to read\n");
- }
- 
-+static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
-+			     FILE *fp)
-+{
-+	struct perf_session *session;
-+	struct perf_evsel *evsel;
-+	u32 nr = 0;
-+
-+	session = container_of(ph, struct perf_session, header);
-+
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 0) {
-+			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
-+				perf_evsel__name(evsel));
-+
-+			nr = evsel->nr_members;
-+		} else if (nr) {
-+			fprintf(fp, ",%s", perf_evsel__name(evsel));
-+
-+			if (--nr == 0)
-+				fprintf(fp, "}\n");
-+		}
-+	}
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1946,6 +2006,97 @@ error:
- 	return -1;
- }
- 
-+static int process_group_desc(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	size_t ret = -1;
-+	u32 i, nr, nr_groups;
-+	struct perf_session *session;
-+	struct perf_evsel *evsel, *leader = NULL;
-+	struct group_desc {
-+		char *name;
-+		u32 leader_idx;
-+		u32 nr_members;
-+	} *desc;
-+
-+	ret = read(fd, &nr_groups, sizeof(nr_groups));
-+	if (ret != sizeof(nr_groups))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr_groups = bswap_32(nr_groups);
-+
-+	ph->env.nr_groups = nr_groups;
-+	if (!nr_groups) {
-+		pr_debug("group desc not available\n");
-+		return 0;
-+	}
-+
-+	desc = calloc(nr_groups, sizeof(*desc));
-+	if (!desc)
-+		return -1;
-+
-+	for (i = 0; i < nr_groups; i++) {
-+		desc[i].name = do_read_string(fd, ph);
-+		if (!desc[i].name)
-+			goto out_free;
-+
-+		ret = read(fd, &desc[i].leader_idx, sizeof(u32));
-+		if (ret != sizeof(u32))
-+			goto out_free;
-+
-+		ret = read(fd, &desc[i].nr_members, sizeof(u32));
-+		if (ret != sizeof(u32))
-+			goto out_free;
-+
-+		if (ph->needs_swap) {
-+			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-+			desc[i].nr_members = bswap_32(desc[i].nr_members);
-+		}
-+	}
-+
-+	/*
-+	 * Rebuild group relationship based on the group_desc
-+	 */
-+	session = container_of(ph, struct perf_session, header);
-+	session->evlist->nr_groups = nr_groups;
-+
-+	i = nr = 0;
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->idx == (int) desc[i].leader_idx) {
-+			evsel->leader = NULL;
-+			/* {anon_group} is a dummy name */
-+			if (strcmp(desc[i].name, "{anon_group}"))
-+				evsel->group_name = desc[i].name;
-+			evsel->nr_members = desc[i].nr_members;
-+
-+			BUG_ON(i >= nr_groups);
-+			BUG_ON(nr > 0);
-+
-+			leader = evsel;
-+			nr = evsel->nr_members;
-+			i++;
-+		} else if (nr) {
-+			/* This is a group member */
-+			evsel->leader = leader;
-+			/* group_idx starts from 0 */
-+			evsel->group_idx = leader->nr_members - nr;
-+			nr--;
-+		}
-+	}
-+
-+	BUG_ON(i != nr_groups);
-+	BUG_ON(nr != 0);
-+
-+out_free:
-+	while ((int) --i >= 0)
-+		free(desc[i].name);
-+	free(desc);
-+
-+	return ret;
-+}
-+
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1985,6 +2136,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
- };
- 
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 99bdd3abce59..f143aa7153a2 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -29,6 +29,7 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
-+	HEADER_GROUP_DESC,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -79,6 +80,7 @@ struct perf_session_env {
- 	char			*numa_nodes;
- 	int			nr_pmu_mappings;
- 	char			*pmu_mappings;
-+	int			nr_groups;
- };
- 
- struct perf_header {
--- 
-1.7.9.2
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Sascha Hauer <kernel@pengutronix.de>
+> Cc: Shiraz Hashim <shiraz.hashim@st.com>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: Stephen Warren <swarren@wwwdotorg.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Viresh Kumar <viresh.linux@gmail.com>
+> ---
+> 
+> Does OMAP5 need to select TWD? I suspect not if it uses the
+> architected timers.
+> 
+>  arch/arm/Kconfig               | 8 ++++++--
+>  arch/arm/mach-exynos/Kconfig   | 2 ++
+>  arch/arm/mach-highbank/Kconfig | 1 +
+>  arch/arm/mach-imx/Kconfig      | 2 ++
+>  arch/arm/mach-msm/Kconfig      | 7 ++-----
+>  arch/arm/mach-omap2/Kconfig    | 4 ++++
+>  arch/arm/mach-realview/Kconfig | 8 ++++++++
+>  arch/arm/mach-vexpress/Kconfig | 2 ++
+>  arch/arm/plat-spear/Kconfig    | 2 ++
+>  9 files changed, 29 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index e85f2b6..303ce90 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -639,6 +639,8 @@ config ARCH_TEGRA
+>  	select GENERIC_GPIO
+>  	select HAVE_CLK
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select ARCH_HAS_CPUFREQ
+>  	select USE_OF
+> @@ -686,6 +688,8 @@ config ARCH_SHMOBILE
+>  	select CLKDEV_LOOKUP
+>  	select HAVE_MACH_CLKDEV
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select GENERIC_CLOCKEVENTS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select NO_IOPORT
+> @@ -882,6 +886,8 @@ config ARCH_U8500
+>  	select ARCH_REQUIRE_GPIOLIB
+>  	select ARCH_HAS_CPUFREQ
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	help
+>  	  Support for ST-Ericsson's Ux500 architecture
+> @@ -1507,7 +1513,6 @@ config SMP
+>  	depends on HAVE_SMP
+>  	depends on MMU
+>  	select USE_GENERIC_SMP_HELPERS
+> -	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
+>  	help
+>  	  This enables support for systems with more than one CPU. If you have
+>  	  a system with only one CPU, like most personal computers, say N. If
+> @@ -1620,7 +1625,6 @@ config LOCAL_TIMERS
+>  	bool "Use local timer interrupts"
+>  	depends on SMP
+>  	default y
+> -	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+>  	help
+>  	  Enable support for local timers on SMP platforms, rather then the
+>  	  legacy IPI broadcast method.  Local timers allows the system
+> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+> index 4372075..8f97e92 100644
+> --- a/arch/arm/mach-exynos/Kconfig
+> +++ b/arch/arm/mach-exynos/Kconfig
+> @@ -15,6 +15,7 @@ config ARCH_EXYNOS4
+>  	bool "SAMSUNG EXYNOS4"
+>  	default y
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	help
+>  	  Samsung EXYNOS4 SoCs based systems
+> @@ -22,6 +23,7 @@ config ARCH_EXYNOS4
+>  config ARCH_EXYNOS5
+>  	bool "SAMSUNG EXYNOS5"
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+>  	help
+>  	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
+>  
+> diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+> index 0e1d0a4..f1ad1f0 100644
+> --- a/arch/arm/mach-highbank/Kconfig
+> +++ b/arch/arm/mach-highbank/Kconfig
+> @@ -11,5 +11,6 @@ config ARCH_HIGHBANK
+>  	select GENERIC_CLOCKEVENTS
+>  	select HAVE_ARM_SCU
+>  	select HAVE_SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select SPARSE_IRQ
+>  	select USE_OF
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index 519ed57..13f765c 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -759,6 +759,8 @@ config SOC_IMX6Q
+>  	select HAVE_IMX_MMDC
+>  	select HAVE_IMX_SRC
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MFD_SYSCON
+>  	select PINCTRL
+>  	select PINCTRL_IMX6Q
+> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> index 7902de15..5bff882 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -44,7 +44,7 @@ endchoice
+>  
+>  config ARCH_MSM8X60
+>  	bool "MSM8X60"
+> -	select ARCH_MSM_SCORPIONMP
+> +	select HAVE_SMP
+>  	select ARM_GIC
+>  	select CPU_V7
+>  	select MSM_V2_TLMM
+> @@ -55,7 +55,7 @@ config ARCH_MSM8X60
+>  
+>  config ARCH_MSM8960
+>  	bool "MSM8960"
+> -	select ARCH_MSM_SCORPIONMP
+> +	select HAVE_SMP
+>  	select ARM_GIC
+>  	select CPU_V7
+>  	select MSM_V2_TLMM
+> @@ -68,9 +68,6 @@ config MSM_HAS_DEBUG_UART_HS
+>  
+>  config MSM_SOC_REV_A
+>  	bool
+> -config  ARCH_MSM_SCORPIONMP
+> -	bool
+> -	select HAVE_SMP
+>  
+>  config  ARCH_MSM_ARM11
+>  	bool
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index a6219ea..b618748 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -58,7 +58,9 @@ config ARCH_OMAP4
+>  	select CPU_V7
+>  	select ARM_GIC
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+>  	select LOCAL_TIMERS if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select PL310_ERRATA_588369
+>  	select PL310_ERRATA_727915
+>  	select ARM_ERRATA_720789
+> @@ -75,6 +77,8 @@ config SOC_OMAP5
+>  	select CPU_V7
+>  	select ARM_GIC
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select ARM_CPU_SUSPEND if PM
+>  	select SOC_HAS_REALTIME_COUNTER
+>  	select ARM_ARCH_TIMER
+> diff --git a/arch/arm/mach-realview/Kconfig b/arch/arm/mach-realview/Kconfig
+> index c593be4..0c019b7 100644
+> --- a/arch/arm/mach-realview/Kconfig
+> +++ b/arch/arm/mach-realview/Kconfig
+> @@ -13,6 +13,8 @@ config REALVIEW_EB_A9MP
+>  	depends on MACH_REALVIEW_EB
+>  	select CPU_V7
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	help
+>  	  Enable support for the Cortex-A9MPCore tile fitted to the
+> @@ -24,6 +26,8 @@ config REALVIEW_EB_ARM11MP
+>  	select CPU_V6K
+>  	select ARCH_HAS_BARRIERS if SMP
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	help
+>  	  Enable support for the ARM11MPCore tile fitted to the Realview(R)
+> @@ -44,6 +48,8 @@ config MACH_REALVIEW_PB11MP
+>  	select ARM_GIC
+>  	select HAVE_PATA_PLATFORM
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select ARCH_HAS_BARRIERS if SMP
+>  	help
+> @@ -86,6 +92,8 @@ config MACH_REALVIEW_PBX
+>  	select ARM_GIC
+>  	select HAVE_PATA_PLATFORM
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select ARCH_SPARSEMEM_ENABLE if CPU_V7 && !REALVIEW_HIGH_PHYS_OFFSET
+>  	select ZONE_DMA if SPARSEMEM
+> diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
+> index c952960..4f8e0db 100644
+> --- a/arch/arm/mach-vexpress/Kconfig
+> +++ b/arch/arm/mach-vexpress/Kconfig
+> @@ -11,6 +11,8 @@ config ARCH_VEXPRESS
+>  	select HAVE_CLK
+>  	select HAVE_PATA_PLATFORM
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select ICST
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select NO_IOPORT
+> diff --git a/arch/arm/plat-spear/Kconfig b/arch/arm/plat-spear/Kconfig
+> index 4404f82..a090ea3 100644
+> --- a/arch/arm/plat-spear/Kconfig
+> +++ b/arch/arm/plat-spear/Kconfig
+> @@ -14,6 +14,8 @@ config ARCH_SPEAR13XX
+>  	select CPU_V7
+>  	select USE_OF
+>  	select HAVE_SMP
+> +	select HAVE_ARM_SCU if SMP
+> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>  	select MIGHT_HAVE_CACHE_L2X0
+>  	select PINCTRL
+>  	help
+> 
 
