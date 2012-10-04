@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2JDAil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 20:38:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7491 "EHLO mga03.intel.com"
+	id S933312Ab2JDAis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 20:38:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26799 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933167Ab2JDAig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 20:38:36 -0400
+	id S933167Ab2JDAip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 20:38:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,530,1344236400"; 
-   d="scan'208";a="200289012"
+   d="scan'208";a="230270133"
 From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [RFC PATCH 2/7] swiotlb: Make io_tlb_start a physical address instead
-	of a virtual address
+Subject: [RFC PATCH 4/7] swiotlb: Return physical addresses when calling
+	swiotlb_tbl_map_single
 To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
         hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
         joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com
 Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, x86@kernel.org
-Date: Wed, 03 Oct 2012 17:38:53 -0700
-Message-ID: <20121004003853.5016.86765.stgit@gitlad.jf.intel.com>
+Date: Wed, 03 Oct 2012 17:39:03 -0700
+Message-ID: <20121004003903.5016.59036.stgit@gitlad.jf.intel.com>
 In-Reply-To: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
 References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
 User-Agent: StGIT/0.14.2
@@ -28,216 +28,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that io_tlb_start contains a physical address instead
-of a virtual address.  The advantage to this is that we can avoid costly
-translations between virtual and physical addresses when comparing the
-io_tlb_start against DMA addresses.
+This change makes it so that swiotlb_tbl_map_single will return a physical
+address instead of a virtual address when called.  The advantage to this once
+again is that we are avoiding a number of virt_to_phys and phys_to_virt
+translations by working with everything as a physical address.
+
+One change I had to make in order to support using physical addresses is that
+I could no longer trust 0 to be a invalid physical address on all platforms.
+So instead I made it so that ~0 is returned on error.  This should never be a
+valid return value as it implies that only one byte would be available for
+use.
 
 Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
 
- lib/swiotlb.c |   61 +++++++++++++++++++++++++++++----------------------------
- 1 files changed, 31 insertions(+), 30 deletions(-)
+ drivers/xen/swiotlb-xen.c |   22 +++++++-------
+ include/linux/swiotlb.h   |   11 +++++--
+ lib/swiotlb.c             |   73 +++++++++++++++++++++++----------------------
+ 3 files changed, 56 insertions(+), 50 deletions(-)
 
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 58db6df..8a6035a 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -338,9 +338,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 				enum dma_data_direction dir,
+ 				struct dma_attrs *attrs)
+ {
+-	phys_addr_t phys = page_to_phys(page) + offset;
++	phys_addr_t map, phys = page_to_phys(page) + offset;
+ 	dma_addr_t dev_addr = xen_phys_to_bus(phys);
+-	void *map;
+ 
+ 	BUG_ON(dir == DMA_NONE);
+ 	/*
+@@ -356,16 +355,16 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * Oh well, have to allocate and map a bounce buffer.
+ 	 */
+ 	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
+-	if (!map)
++	if (map == SWIOTLB_MAP_ERROR)
+ 		return DMA_ERROR_CODE;
+ 
+-	dev_addr = xen_virt_to_bus(map);
++	dev_addr = xen_phys_to_bus(map);
+ 
+ 	/*
+ 	 * Ensure that the address returned is DMA'ble
+ 	 */
+ 	if (!dma_capable(dev, dev_addr, size)) {
+-		swiotlb_tbl_unmap_single(dev, map, size, dir);
++		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
+ 		dev_addr = 0;
+ 	}
+ 	return dev_addr;
+@@ -494,11 +493,12 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 		if (swiotlb_force ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+ 		    range_straddles_page_boundary(paddr, sg->length)) {
+-			void *map = swiotlb_tbl_map_single(hwdev,
+-							   start_dma_addr,
+-							   sg_phys(sg),
+-							   sg->length, dir);
+-			if (!map) {
++			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
++								 start_dma_addr,
++								 sg_phys(sg),
++								 sg->length,
++								 dir);
++			if (map == SWIOTLB_MAP_ERROR) {
+ 				/* Don't panic here, we expect map_sg users
+ 				   to do proper error handling. */
+ 				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
+@@ -506,7 +506,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 				sgl[0].dma_length = 0;
+ 				return DMA_ERROR_CODE;
+ 			}
+-			sg->dma_address = xen_virt_to_bus(map);
++			sg->dma_address = xen_phys_to_bus(map);
+ 		} else
+ 			sg->dma_address = dev_addr;
+ 		sg->dma_length = sg->length;
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 8d08b3e..1995f3e 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -34,9 +34,14 @@ enum dma_sync_target {
+ 	SYNC_FOR_CPU = 0,
+ 	SYNC_FOR_DEVICE = 1,
+ };
+-extern void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
+-				    phys_addr_t phys, size_t size,
+-				    enum dma_data_direction dir);
++
++/* define the last possible byte of physical address space as a mapping error */
++#define SWIOTLB_MAP_ERROR (~(phys_addr_t)0x0)
++
++extern phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
++					  dma_addr_t tbl_dma_addr,
++					  phys_addr_t phys, size_t size,
++					  enum dma_data_direction dir);
+ 
+ extern void swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr,
+ 				     size_t size, enum dma_data_direction dir);
 diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5cc4d4e..02abb72 100644
+index 62848fb..55e052e 100644
 --- a/lib/swiotlb.c
 +++ b/lib/swiotlb.c
-@@ -57,7 +57,7 @@ int swiotlb_force;
-  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-  * API.
-  */
--static char *io_tlb_start;
-+phys_addr_t io_tlb_start;
+@@ -389,12 +389,13 @@ void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
+ }
+ EXPORT_SYMBOL_GPL(swiotlb_bounce);
  
- /*
-  * The number of IO TLB blocks (in groups of 64).
-@@ -125,14 +125,15 @@ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- void swiotlb_print_info(void)
+-void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
+-			     phys_addr_t phys, size_t size,
+-			     enum dma_data_direction dir)
++phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
++				   dma_addr_t tbl_dma_addr,
++				   phys_addr_t phys, size_t size,
++				   enum dma_data_direction dir)
  {
- 	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
--	phys_addr_t pstart, pend;
-+	unsigned char *vstart, *vend;
- 
--	pstart = virt_to_phys(io_tlb_start);
--	pend = pstart + bytes;
-+	vstart = phys_to_virt(io_tlb_start);
-+	vend = vstart + bytes;
- 
- 	printk(KERN_INFO "software IO TLB [mem %#010llx-%#010llx] (%luMB) mapped at [%p-%p]\n",
--	       (unsigned long long)pstart, (unsigned long long)pend - 1,
--	       bytes >> 20, io_tlb_start, io_tlb_start + bytes - 1);
-+	       (unsigned long long)io_tlb_start,
-+	       (unsigned long long)io_tlb_start + bytes - 1,
-+	       bytes >> 20, vstart, vend - 1);
- }
- 
- void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
-@@ -142,7 +143,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- 	bytes = nslabs << IO_TLB_SHIFT;
- 
- 	io_tlb_nslabs = nslabs;
--	io_tlb_start = tlb;
-+	io_tlb_start = __pa(tlb);
- 
- 	/*
- 	 * Allocate and initialize the free list array.  This array is used
-@@ -171,6 +172,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- static void __init
- swiotlb_init_with_default_size(size_t default_size, int verbose)
- {
-+	unsigned char *vstart;
- 	unsigned long bytes;
- 
- 	if (!io_tlb_nslabs) {
-@@ -183,11 +185,11 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
--	if (!io_tlb_start)
-+	vstart = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
-+	if (!vstart)
- 		panic("Cannot allocate SWIOTLB buffer");
- 
--	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
-+	swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose);
- }
- 
- void __init
-@@ -205,6 +207,7 @@ int
- swiotlb_late_init_with_default_size(size_t default_size)
- {
- 	unsigned long bytes, req_nslabs = io_tlb_nslabs;
-+	unsigned char *vstart = NULL;
- 	unsigned int order;
- 	int rc = 0;
- 
-@@ -221,14 +224,14 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
- 
- 	while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
--		io_tlb_start = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
--							order);
--		if (io_tlb_start)
-+		vstart = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
-+						  order);
-+		if (vstart)
- 			break;
- 		order--;
- 	}
- 
--	if (!io_tlb_start) {
-+	if (!vstart) {
- 		io_tlb_nslabs = req_nslabs;
- 		return -ENOMEM;
- 	}
-@@ -237,9 +240,9 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
- 		io_tlb_nslabs = SLABS_PER_PAGE << order;
- 	}
--	rc = swiotlb_late_init_with_tbl(io_tlb_start, io_tlb_nslabs);
-+	rc = swiotlb_late_init_with_tbl(vstart, io_tlb_nslabs);
- 	if (rc)
--		free_pages((unsigned long)io_tlb_start, order);
-+		free_pages((unsigned long)vstart, order);
- 	return rc;
- }
- 
-@@ -251,9 +254,9 @@ swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
- 	bytes = nslabs << IO_TLB_SHIFT;
- 
- 	io_tlb_nslabs = nslabs;
--	io_tlb_start = tlb;
-+	io_tlb_start = virt_to_phys(tlb);
- 
--	memset(io_tlb_start, 0, bytes);
-+	memset(tlb, 0, bytes);
- 
- 	/*
- 	 * Allocate and initialize the free list array.  This array is used
-@@ -300,7 +303,7 @@ cleanup3:
- 	                                                 sizeof(int)));
- 	io_tlb_list = NULL;
- cleanup2:
--	io_tlb_start = NULL;
-+	io_tlb_start = 0;
- 	io_tlb_nslabs = 0;
- 	return -ENOMEM;
- }
-@@ -317,7 +320,7 @@ void __init swiotlb_free(void)
- 			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
- 								 sizeof(int)));
--		free_pages((unsigned long)io_tlb_start,
-+		free_pages((unsigned long)phys_to_virt(io_tlb_start),
- 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
- 	} else {
- 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
-@@ -326,7 +329,7 @@ void __init swiotlb_free(void)
- 				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_bootmem_late(__pa(io_tlb_list),
- 				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
--		free_bootmem_late(__pa(io_tlb_start),
-+		free_bootmem_late(io_tlb_start,
- 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
- 	io_tlb_nslabs = 0;
-@@ -334,10 +337,8 @@ void __init swiotlb_free(void)
- 
- static int is_swiotlb_buffer(phys_addr_t paddr)
- {
--	phys_addr_t swiotlb_start = virt_to_phys(io_tlb_start);
--
--	return paddr >= swiotlb_start &&
--		paddr < (swiotlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
-+	return paddr >= io_tlb_start &&
-+		paddr < (io_tlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
- }
- 
- /*
-@@ -450,7 +451,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
+ 	unsigned long flags;
+-	char *dma_addr;
++	phys_addr_t dma_addr;
+ 	unsigned int nslots, stride, index, wrap;
+ 	int i;
+ 	unsigned long mask;
+@@ -458,7 +459,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
  				io_tlb_list[i] = 0;
  			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
  				io_tlb_list[i] = ++count;
--			dma_addr = io_tlb_start + (index << IO_TLB_SHIFT);
-+			dma_addr = (char *)phys_to_virt(io_tlb_start) + (index << IO_TLB_SHIFT);
+-			dma_addr = (char *)phys_to_virt(io_tlb_start) + (index << IO_TLB_SHIFT);
++			dma_addr = io_tlb_start + (index << IO_TLB_SHIFT);
  
  			/*
  			 * Update the indices to avoid searching in the next
-@@ -494,7 +495,7 @@ static void *
- map_single(struct device *hwdev, phys_addr_t phys, size_t size,
- 	   enum dma_data_direction dir)
- {
--	dma_addr_t start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
-+	dma_addr_t start_dma_addr = phys_to_dma(hwdev, io_tlb_start);
+@@ -476,7 +477,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
  
- 	return swiotlb_tbl_map_single(hwdev, start_dma_addr, phys, size, dir);
+ not_found:
+ 	spin_unlock_irqrestore(&io_tlb_lock, flags);
+-	return NULL;
++	return SWIOTLB_MAP_ERROR;
+ found:
+ 	spin_unlock_irqrestore(&io_tlb_lock, flags);
+ 
+@@ -488,7 +489,7 @@ found:
+ 	for (i = 0; i < nslots; i++)
+ 		io_tlb_orig_addr[index+i] = phys + (i << IO_TLB_SHIFT);
+ 	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
+-		swiotlb_bounce(phys, dma_addr, size, DMA_TO_DEVICE);
++		swiotlb_bounce(phys, phys_to_virt(dma_addr), size, DMA_TO_DEVICE);
+ 
+ 	return dma_addr;
  }
-@@ -508,7 +509,7 @@ swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
- {
- 	unsigned long flags;
- 	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
--	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
-+	int index = (dma_addr - (char *)phys_to_virt(io_tlb_start)) >> IO_TLB_SHIFT;
- 	phys_addr_t phys = io_tlb_orig_addr[index];
+@@ -498,9 +499,8 @@ EXPORT_SYMBOL_GPL(swiotlb_tbl_map_single);
+  * Allocates bounce buffer and returns its kernel virtual address.
+  */
  
+-static void *
+-map_single(struct device *hwdev, phys_addr_t phys, size_t size,
+-	   enum dma_data_direction dir)
++phys_addr_t map_single(struct device *hwdev, phys_addr_t phys, size_t size,
++		       enum dma_data_direction dir)
+ {
+ 	dma_addr_t start_dma_addr = phys_to_dma(hwdev, io_tlb_start);
+ 
+@@ -594,12 +594,15 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		dma_mask = hwdev->coherent_dma_mask;
+ 
+ 	ret = (void *)__get_free_pages(flags, order);
+-	if (ret && swiotlb_virt_to_bus(hwdev, ret) + size - 1 > dma_mask) {
+-		/*
+-		 * The allocated memory isn't reachable by the device.
+-		 */
+-		free_pages((unsigned long) ret, order);
+-		ret = NULL;
++	if (ret) {
++		dev_addr = swiotlb_virt_to_bus(hwdev, ret);
++		if (dev_addr + size - 1 > dma_mask) {
++			/*
++			 * The allocated memory isn't reachable by the device.
++			 */
++			free_pages((unsigned long) ret, order);
++			ret = NULL;
++		}
+ 	}
+ 	if (!ret) {
+ 		/*
+@@ -607,13 +610,13 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		 * GFP_DMA memory; fall back on map_single(), which
+ 		 * will grab memory from the lowest available address range.
+ 		 */
+-		ret = map_single(hwdev, 0, size, DMA_FROM_DEVICE);
+-		if (!ret)
++		phys_addr_t paddr = map_single(hwdev, 0, size, DMA_FROM_DEVICE);
++		if (paddr == SWIOTLB_MAP_ERROR)
+ 			return NULL;
+-	}
+ 
+-	memset(ret, 0, size);
+-	dev_addr = swiotlb_virt_to_bus(hwdev, ret);
++		ret = phys_to_virt(paddr);
++		dev_addr = phys_to_dma(hwdev, paddr);
++	}
+ 
+ 	/* Confirm address can be DMA'd by device */
+ 	if (dev_addr + size - 1 > dma_mask) {
+@@ -625,7 +628,10 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+ 		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
+ 		return NULL;
+ 	}
++
+ 	*dma_handle = dev_addr;
++	memset(ret, 0, size);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL(swiotlb_alloc_coherent);
+@@ -682,9 +688,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+ 			    enum dma_data_direction dir,
+ 			    struct dma_attrs *attrs)
+ {
+-	phys_addr_t phys = page_to_phys(page) + offset;
++	phys_addr_t map, phys = page_to_phys(page) + offset;
+ 	dma_addr_t dev_addr = phys_to_dma(dev, phys);
+-	void *map;
+ 
+ 	BUG_ON(dir == DMA_NONE);
  	/*
-@@ -549,7 +550,7 @@ swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr, size_t size,
- 			enum dma_data_direction dir,
- 			enum dma_sync_target target)
- {
--	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
-+	int index = (dma_addr - (char *)phys_to_virt(io_tlb_start)) >> IO_TLB_SHIFT;
- 	phys_addr_t phys = io_tlb_orig_addr[index];
+@@ -695,22 +700,18 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
+ 	if (dma_capable(dev, dev_addr, size) && !swiotlb_force)
+ 		return dev_addr;
  
- 	phys += ((unsigned long)dma_addr & ((1 << IO_TLB_SHIFT) - 1));
-@@ -937,6 +938,6 @@ swiotlb_dma_supported(struct device *hwdev, u64 mask)
- {
- 	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+-	/*
+-	 * Oh well, have to allocate and map a bounce buffer.
+-	 */
++	/* Oh well, have to allocate and map a bounce buffer. */
+ 	map = map_single(dev, phys, size, dir);
+-	if (!map) {
++	if (map == SWIOTLB_MAP_ERROR) {
+ 		swiotlb_full(dev, size, dir, 1);
+ 		return phys_to_dma(dev, io_tlb_overflow_buffer);
+ 	}
  
--	return swiotlb_virt_to_bus(hwdev, io_tlb_start + bytes - 1) <= mask;
-+	return phys_to_dma(hwdev, io_tlb_start + bytes - 1) <= mask;
- }
- EXPORT_SYMBOL(swiotlb_dma_supported);
+-	dev_addr = swiotlb_virt_to_bus(dev, map);
++	dev_addr = phys_to_dma(dev, map);
+ 
+-	/*
+-	 * Ensure that the address returned is DMA'ble
+-	 */
++	/* Ensure that the address returned is DMA'ble */
+ 	if (!dma_capable(dev, dev_addr, size)) {
+-		swiotlb_tbl_unmap_single(dev, map, size, dir);
++		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
+ 		return phys_to_dma(dev, io_tlb_overflow_buffer);
+ 	}
+ 
+@@ -836,9 +837,9 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
+ 
+ 		if (swiotlb_force ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length)) {
+-			void *map = map_single(hwdev, sg_phys(sg),
+-					       sg->length, dir);
+-			if (!map) {
++			phys_addr_t map = map_single(hwdev, sg_phys(sg),
++						     sg->length, dir);
++			if (map == SWIOTLB_MAP_ERROR) {
+ 				/* Don't panic here, we expect map_sg users
+ 				   to do proper error handling. */
+ 				swiotlb_full(hwdev, sg->length, dir, 0);
+@@ -847,7 +848,7 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
+ 				sgl[0].dma_length = 0;
+ 				return 0;
+ 			}
+-			sg->dma_address = swiotlb_virt_to_bus(hwdev, map);
++			sg->dma_address = phys_to_dma(hwdev, map);
+ 		} else
+ 			sg->dma_address = dev_addr;
+ 		sg->dma_length = sg->length;
 
