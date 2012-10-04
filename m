@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2JDSUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:20:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44469 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab2JDSUG (ORCPT
+	id S1754082Ab2JDSUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:20:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39745 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab2JDSJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:20:06 -0400
-Date: Thu, 04 Oct 2012 14:20:03 -0400 (EDT)
-Message-Id: <20121004.142003.851528112593506369.davem@davemloft.net>
-To: aneesh.kumar@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org, aarcange@redhat.com, hannes@cmpxchg.org
-Subject: Re: [PATCH 3/8] sparc64: Eliminate PTE table memory wastage.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87y5jmfbd3.fsf@linux.vnet.ibm.com>
-References: <20121002.182642.49574627747120711.davem@davemloft.net>
-	<87y5jmfbd3.fsf@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Oct 2012 14:09:26 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 12/42] perf sched: Look up thread using tid instead of pid
+Date: Thu,  4 Oct 2012 15:08:12 -0300
+Message-Id: <1349374122-27806-13-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
+References: <1349374122-27806-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Thu, 04 Oct 2012 22:00:48 +0530
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> David Miller <davem@davemloft.net> writes:
-> 
->> We've split up the PTE tables so that they take up half a page instead
->> of a full page.  This is in order to facilitate transparent huge page
->> support, which works much better if our PMDs cover 4MB instead of 8MB.
->>
->> What we do is have a one-behind cache for PTE table allocations in the
->> mm struct.
->>
->> This logic triggers only on allocations.  For example, we don't try to
->> keep track of free'd up page table blocks in the style that the s390
->> port does.
-> 
-> I am also implementing a similar change for powerpc. We have a 64K page
-> size, and want to make sure PMD cover 16MB, which is the huge page size
-> supported by the hardware. I was looking at using the s390 logic,
-> considering we have 16 PMDs mapping to same PTE page. Should we look at
-> generalizing the case so that other architectures can start using the
-> same code ?
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-zdu8up6vahogckg2uft7wh3n@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I think until we have multiple cases we won't know what's common or not.
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 9b9e32e..3488ead 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1426,7 +1426,7 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __maybe_
+ 						 struct perf_evsel *evsel,
+ 						 struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, sample->pid);
++	struct thread *thread = machine__findnew_thread(machine, sample->tid);
+ 	int err = 0;
+ 
+ 	if (thread == NULL) {
+-- 
+1.7.1
 
-Each arch has different need.  I need to split the page into two pieces
-so my code is simpler, and juse uses page counting to manage alloc/free.
-
-Whereas s390 uses an bitmask to manage page state, and also reclaims
-pgtable pages into a per-mm list on free.  I decided not to do that
-and to just let the page allocator do the work.
-
-So I don't think it's appropriate to think about commonization at this
-time, as even the only two cases existing are very non-common :-)
