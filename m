@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2JDVRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:17:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab2JDVRW (ORCPT
+	id S1754815Ab2JDWRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:17:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757743Ab2JDVRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:22 -0400
+	Thu, 4 Oct 2012 17:17:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        Dan Williams <dcbw@redhat.com>
-Subject: =?UTF-8?q?=5B=2007/56=5D=20USB=3A=20qcaux=3A=20add=20Pantech=20vendor=20class=20match?=
-Date: Thu,  4 Oct 2012 14:15:28 -0700
-Message-Id: <20121004211152.943237052@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [ 12/56] staging: r8712u: Do not queue cloned skb
+Date: Thu,  4 Oct 2012 14:15:33 -0700
+Message-Id: <20121004211153.499282651@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,49 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit c638eb2872b3af079501e7ee44cbb8a5cce9b4b5 upstream.
+commit fa16e5ea25d7dd83f663f333e70713aa2fa5dffe upstream.
 
-The three Pantech devices UML190 (106c:3716), UML290 (106c:3718) and
-P4200 (106c:3721) all use the same subclasses to identify vendor
-specific functions.  Replace the existing device specific entries
-with generic vendor matching, adding support for the P4200.
+Some post-3.4 kernels have a problem when a cloned skb is used in the
+RX path. This patch handles one such case for r8712u.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Thomas Schäfer <tschaefer@t-online.de>
-Acked-by: Dan Williams <dcbw@redhat.com>
+The patch was suggested by Eric Dumazet.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcaux.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/staging/rtl8712/rtl8712_recv.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/qcaux.c
-+++ b/drivers/usb/serial/qcaux.c
-@@ -36,8 +36,6 @@
- #define UTSTARCOM_PRODUCT_UM175_V1		0x3712
- #define UTSTARCOM_PRODUCT_UM175_V2		0x3714
- #define UTSTARCOM_PRODUCT_UM175_ALLTEL		0x3715
--#define PANTECH_PRODUCT_UML190_VZW		0x3716
--#define PANTECH_PRODUCT_UML290_VZW		0x3718
- 
- /* CMOTECH devices */
- #define CMOTECH_VENDOR_ID			0x16d8
-@@ -68,11 +66,9 @@ static struct usb_device_id id_table[] =
- 	{ USB_DEVICE_AND_INTERFACE_INFO(LG_VENDOR_ID, LG_PRODUCT_VX4400_6000, 0xff, 0xff, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SANYO_VENDOR_ID, SANYO_PRODUCT_KATANA_LX, 0xff, 0xff, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_U520, 0xff, 0x00, 0x00) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xfe, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfd, 0xff) },  /* NMEA */
--	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfe, 0xff) },  /* WMC */
--	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xff, 0xff) },  /* DIAG */
-+	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfd, 0xff) },  /* NMEA */
-+	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfe, 0xff) },  /* WMC */
-+	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xff, 0xff) },  /* DIAG */
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/staging/rtl8712/rtl8712_recv.c
++++ b/drivers/staging/rtl8712/rtl8712_recv.c
+@@ -1127,6 +1127,9 @@ static void recv_tasklet(void *priv)
+ 		recvbuf2recvframe(padapter, pskb);
+ 		skb_reset_tail_pointer(pskb);
+ 		pskb->len = 0;
+-		skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
++		if (!skb_cloned(pskb))
++			skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
++		else
++			consume_skb(pskb);
+ 	}
+ }
 
 
