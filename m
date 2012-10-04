@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2JDSRY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:17:24 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47007 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab2JDSPN (ORCPT
+	id S1755438Ab2JDSRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:17:42 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:30622 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755201Ab2JDSRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:15:13 -0400
-From: Michal Simek <monstr@monstr.eu>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 06/11] net: ll_temac: Fix mdio initialization
-Date: Thu,  4 Oct 2012 20:14:52 +0200
-Message-Id: <1349374497-9540-6-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+	Thu, 4 Oct 2012 14:17:39 -0400
+Date: Thu, 4 Oct 2012 18:17:37 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: your mail
+In-Reply-To: <20121004165008.GF25675@redhat.com>
+Message-ID: <0000013a2cff3c3d-76e00716-2869-4dc8-8717-82f0136018d0-000000@email.amazonses.com>
+References: <20121004165008.GF25675@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current driver required to have phy-node directly in
-the driver. After this fixed we can use standard structure.
+On Thu, 4 Oct 2012, Andrea Arcangeli wrote:
 
-DTS fragment:
+> So we could drop page_autonuma by creating a CONFIG_SLUB=y dependency
+> (AUTONUMA wouldn't be available in the kernel config if SLAB=y, and it
+> also wouldn't be available on 32bit archs but the latter isn't a
+> problem).
 
-phy-handle = <&phy0>;
-mdio {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	phy0: phy@7 {
-		compatible = "marvell,88e1111";
-		device_type = "ethernet-phy";
-		reg = <7>;
-	} ;
-} ;
-
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-CC: Anirudha Sarangi <anirudh@xilinx.com>
-CC: John Linn <John.Linn@xilinx.com>
-CC: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <rob.herring@calxeda.com>
-CC: David S. Miller <davem@davemloft.net>
----
- drivers/net/ethernet/xilinx/ll_temac_main.c |   11 ++++++-----
- drivers/net/ethernet/xilinx/ll_temac_mdio.c |    5 +++--
- 2 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index f8e3518..482b572 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -1108,14 +1108,15 @@ static int __devinit temac_of_probe(struct platform_device *op)
- 	}
- 	temac_set_mac_address(ndev, (void *)addr);
- 
--	rc = temac_mdio_setup(lp, op->dev.of_node);
--	if (rc)
--		dev_warn(&op->dev, "error registering MDIO bus\n");
--
- 	lp->phy_node = of_parse_phandle(op->dev.of_node, "phy-handle", 0);
--	if (lp->phy_node)
-+	if (lp->phy_node) {
- 		dev_dbg(lp->dev, "using PHY node %s (%p)\n", np->full_name, np);
- 
-+		rc = temac_mdio_setup(lp, op->dev.of_node);
-+		if (rc)
-+			dev_warn(&op->dev, "error registering MDIO bus\n");
-+	}
-+
- 	/* Add the device attributes */
- 	rc = sysfs_create_group(&lp->dev->kobj, &temac_attr_group);
- 	if (rc) {
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_mdio.c b/drivers/net/ethernet/xilinx/ll_temac_mdio.c
-index 8cf9d4f..634d898 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_mdio.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_mdio.c
-@@ -63,6 +63,7 @@ int temac_mdio_setup(struct temac_local *lp, struct device_node *np)
- 	int clk_div;
- 	int rc, size;
- 	struct resource res;
-+	struct device_node *np1 = of_get_parent(lp->phy_node);
- 
- 	/* Calculate a reasonable divisor for the clock rate */
- 	clk_div = 0x3f; /* worst-case default setting */
-@@ -85,7 +86,7 @@ int temac_mdio_setup(struct temac_local *lp, struct device_node *np)
- 	if (!bus)
- 		return -ENOMEM;
- 
--	of_address_to_resource(np, 0, &res);
-+	of_address_to_resource(np1, 0, &res);
- 	snprintf(bus->id, MII_BUS_ID_SIZE, "%.8llx",
- 		 (unsigned long long)res.start);
- 	bus->priv = lp;
-@@ -97,7 +98,7 @@ int temac_mdio_setup(struct temac_local *lp, struct device_node *np)
- 
- 	lp->mii_bus = bus;
- 
--	rc = of_mdiobus_register(bus, np);
-+	rc = of_mdiobus_register(bus, np1);
- 	if (rc)
- 		goto err_register;
- 
--- 
-1.7.0.4
+Nope it should depend on page struct alignment. Other kernel subsystems
+may be depeding on page struct alignment in the future (and some other
+arches may already have that requirement)
 
