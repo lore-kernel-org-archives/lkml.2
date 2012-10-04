@@ -1,122 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2JDK4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:56:52 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50783 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab2JDK4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:56:50 -0400
-Message-ID: <506D6A99.7070800@parallels.com>
-Date: Thu, 4 Oct 2012 14:53:13 +0400
-From: Glauber Costa <glommer@parallels.com>
+	id S1754876Ab2JDLAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 07:00:46 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:58535 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab2JDLAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 07:00:44 -0400
+Message-ID: <506D6B64.6030907@linux.vnet.ibm.com>
+Date: Thu, 04 Oct 2012 16:26:36 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu callback
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-13-git-send-email-glommer@parallels.com> <20121001132711.GL8622@dhcp22.suse.cz>
-In-Reply-To: <20121001132711.GL8622@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com> <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com> <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com> <20121003142942.GB15253@linux.vnet.ibm.com> <506C7524.2010103@redhat.com>
+In-Reply-To: <506C7524.2010103@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12100410-1396-0000-0000-000001F4BC76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2012 05:27 PM, Michal Hocko wrote:
-> On Tue 18-09-12 18:04:09, Glauber Costa wrote:
->> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
->> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
->> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
->> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
->> means that the freeing of memcg structure must happen in a compatible context,
->> otherwise we'll get a deadlock.
-> 
-> Maybe I am missing something obvious but why cannot we simply disble
-> (soft)irqs in mem_cgroup_create rather than make the free path much more
-> complicated. It really feels strange to defer everything (e.g. soft
-> reclaim tree cleanup which should be a no-op at the time because there
-> shouldn't be any user pages in the group).
-> 
+On 10/03/2012 10:55 PM, Avi Kivity wrote:
+> On 10/03/2012 04:29 PM, Raghavendra K T wrote:
+>> * Avi Kivity <avi@redhat.com> [2012-09-27 14:03:59]:
+>>
+>>> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+>>>>>
+>> [...]
+>>>> 2) looking at the result (comparing A & C) , I do feel we have
+>>>> significant in iterating over vcpus (when compared to even vmexit)
+>>>> so We still would need undercommit fix sugested by PeterZ (improving by
+>>>> 140%). ?
+>>>
+>>> Looking only at the current runqueue?  My worry is that it misses a lot
+>>> of cases.  Maybe try the current runqueue first and then others.
+>>>
+>>
+>> Okay. Do you mean we can have something like
+>>
+>> +       if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>> +               yielded = -ESRCH;
+>> +               goto out_irq;
+>> +       }
+>>
+>> in the Peter's patch ?
+>>
+>> ( I thought lot about && or || . Both seem to have their own cons ).
+>> But that should be only when we have short term imbalance, as PeterZ
+>> told.
+>
+> I'm missing the context.  What is p_rq?
 
-Ok.
+p_rq is the run queue of target vcpu.
+What I was trying below was to address Rik concern. Suppose
+rq of source vcpu has one task, but target probably has two task,
+with a eligible vcpu waiting to be scheduled.
 
-I was just able to come back to this today - I was mostly working on the
-slab feedback over the past few days. I will answer yours and Tejun's
-concerns at once:
+>
+> What I mean was:
+>
+>    if can_yield_to_process_in_current_rq
+>       do that
+>    else if can_yield_to_process_in_other_rq
+>       do that
+>    else
+>       return -ESRCH
 
-Here is the situation: the backtrace I get is this one:
+I think you are saying we have to check the run queue of the
+source vcpu, if we have a vcpu belonging to same VM and try yield to 
+that? ignoring whatever the target vcpu we received for yield_to.
 
-[  124.956725] =================================
-[  124.957217] [ INFO: inconsistent lock state ]
-[  124.957217] 3.5.0+ #99 Not tainted
-[  124.957217] ---------------------------------
-[  124.957217] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[  124.957217] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[  124.957217]  (&(&ss->id_lock)->rlock){+.?...}, at:
-[<ffffffff810aa7b2>] spin_lock+0x9/0xb
-[  124.957217] {SOFTIRQ-ON-W} state was registered at:
-[  124.957217]   [<ffffffff810996ed>] __lock_acquire+0x31f/0xd68
-[  124.957217]   [<ffffffff8109a660>] lock_acquire+0x108/0x15c
-[  124.957217]   [<ffffffff81534ec4>] _raw_spin_lock+0x40/0x4f
-[  124.957217]   [<ffffffff810aa7b2>] spin_lock+0x9/0xb
-[  124.957217]   [<ffffffff810ad00e>] get_new_cssid+0x69/0xf3
-[  124.957217]   [<ffffffff810ad0da>] cgroup_init_idr+0x42/0x60
-[  124.957217]   [<ffffffff81b20e04>] cgroup_init+0x50/0x100
-[  124.957217]   [<ffffffff81b05b9b>] start_kernel+0x3b9/0x3ee
-[  124.957217]   [<ffffffff81b052d6>] x86_64_start_reservations+0xb1/0xb5
-[  124.957217]   [<ffffffff81b053d8>] x86_64_start_kernel+0xfe/0x10b
+Or is it that kvm_vcpu_yield_to should now check the vcpus of same vm
+belonging to same run queue first. If we don't succeed, go again for
+a vcpu in different runqueue.
+Does it add more overhead especially in <= 1x scenario?
 
-
-So what we learn from it, is: we are acquiring a specific lock (the css
-id one) from softirq context. It was previously taken in a
-softirq-enabled context, that seems to be coming directly from
-get_new_cssid.
-
-Tejun correctly pointed out that we should never acquire that lock from
-a softirq context, in which he is right.
-
-But the situation changes slightly with kmem. Now, the following excerpt
-of a backtrace is possible:
-
-[   48.602775]  [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
-[   48.602775]  [<ffffffff81047f90>] free_task+0x31/0x5c
-[   48.602775]  [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
-[   48.602775]  [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
-[   48.602775]  [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
-[   48.602775]  [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
-[   48.602775]  [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
-[   48.602775]  [<ffffffff8105266d>] __do_softirq+0x122/0x277
-
-So as you can see, free_accounted_pages (that will trigger a memcg_put()
--> mem_cgroup_free()) can now be called from softirq context, which is,
-an rcu callback (and I just realized I wrote the exact opposite in the
-subj line: man, I really suck at that!!)
-As a matter of fact, we could not move to our rcu callback as well:
-
-we need to move it to a worker thread with the rest.
-
-We already have a worker thread: he reason we have it is not
-static_branches: The reason is vfree(), that will BUG_ON(in_interrupt())
-and could not be called from rcu callback as well. We moved static
-branches in there as well for a similar problem, but haven't introduced it.
-
-Could we move just part of it to the worker thread? Absolutely yes.
-Moving just free_css_id() is enough to make it work. But since it is not
-the first context related problem we had, I thought: "to hell with that,
-let's move everything and be safe".
-
-I am fine moving free_css_id() only if you would prefer.
-
-Can we disable softirqs when we initialize css_id? Maybe. My machine
-seems to boot fine and survive the simple workload that would trigger
-that bug if I use irqsave spinlocks instead of normal spinlocks. But
-this has to be done from cgroup core: We have no control over css
-creation in memcg.
-
-How would you guys like me to handle this ?
