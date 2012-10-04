@@ -1,143 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab2JDOae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:30:34 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50559 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964963Ab2JDOad (ORCPT
+	id S965181Ab2JDOco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:32:44 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44730 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965031Ab2JDOcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:30:33 -0400
-X-Sasl-enc: 32ZWMVCal2pgXYR1g4iT1jwLlbsTgq8P+CQt5OF8M+s/ 1349361032
-Date: Thu, 4 Oct 2012 07:30:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <kernel@wantstofly.org>, Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 12/17] ARM: iop13xx: mark iop13xx_scan_bus as __devinit
-Message-ID: <20121004143030.GB26625@kroah.com>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
- <1349195816-2225-13-git-send-email-arnd@arndb.de>
- <CAErSpo7rkN_F=AxweoEG3oXj392FvzVGPSKnkXCd=JX6cg0aTA@mail.gmail.com>
- <201210041032.20300.arnd@arndb.de>
+	Thu, 4 Oct 2012 10:32:43 -0400
+Date: Thu, 4 Oct 2012 07:31:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121004143131.GA2643@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
+ <20121003161702.GA22008@kroah.com>
+ <20121003164712.GF2527@linux.vnet.ibm.com>
+ <20121003172142.GA5061@kroah.com>
+ <20121003174606.GB637@somewhere>
+ <20121003193653.GB30477@redhat.com>
+ <20121003214325.GE637@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201210041032.20300.arnd@arndb.de>
+In-Reply-To: <20121003214325.GE637@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100414-7282-0000-0000-00000D9AE9F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 10:32:20AM +0000, Arnd Bergmann wrote:
-> (+Greg)
-> 
-> On Tuesday 02 October 2012, Bjorn Helgaas wrote:
+On Wed, Oct 03, 2012 at 11:43:37PM +0200, Frederic Weisbecker wrote:
+> On Wed, Oct 03, 2012 at 03:36:53PM -0400, Dave Jones wrote:
+> > On Wed, Oct 03, 2012 at 07:46:18PM +0200, Frederic Weisbecker wrote:
+> >  > > it in the kernel tree, unless we wanted people to use the option?
+> >  > 
+> >  > A solution could be to add that option under CONFIG_DEBUG_KERNEL and specify
+> >  > that it must only be enabled by developers for specific reasons (overhead,
+> >  > security). CONFIG_PROVE_LOCKING falls into that category, right?
+> >  > 
+> >  > We have CONFIG_RCU_USER_QS that is a specific case. It's an intermediate state
+> >  > before we implement a true CONFIG_NO_HZ_FULL. But the option is useless on its
+> >  > own for users. Worse, it introduces a real overhead. OTOH we want it to be upstream
+> >  > to make the development of full tickless feature more incremental.
+> >  > 
+> >  > Perhaps we should put that under CONFIG_DEBUG_KERNEL.
 > > 
-> > On Tue, Oct 2, 2012 at 10:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > pci_scan_root_bus is __devinit, so iop13xx_scan_bus has to be the
-> > > same in order to safely call it. This is ok because the function
-> > > itself is only called from the hwpci->scan callback.
-> > >
-> > > WARNING: vmlinux.o(.text+0x10138): Section mismatch in reference from the function iop13xx_scan_bus() to the function .devinit.text:pci_scan_root_bus()
-> > > The function iop13xx_scan_bus() references
-> > > the function __devinit pci_scan_root_bus().
-> > > This is often because iop13xx_scan_bus lacks a __devinit
-> > > annotation or the annotation of pci_scan_root_bus is wrong.
+> > Overloading an existing config option for something unrelated seems unpleasant to me.
+> > It will only take a few people to start doing this, before it turns into a landslide
+> > where everyone ends up with DEBUG_KERNEL set.
+> > And what of people who already have DEBUG_KERNEL set ?
+> 
+> Sorry, by wording wasn't clear. I didn't mean overloading CONFIG_DEBUG_KERNEL but
+> rather depend on it.
+> 
 > > 
-> > With CONFIG_HOTPLUG going away (I think the current state is that it
-> > is always set to "y"), __devinit will effectively become a no-op, so I
-> > expect we'll remove it from pci_scan_root_bus().
-> > 
-> > Therefore, I would skip this patch and live with the warning a little longer.
+> > Just state what you wrote above in the kconfig.
+> > Currently, RCU_USER_QS says nothing about the fact that it's work in progress.
 > 
-> Hmm, I'm just trying to get rid of all build time warnings in the defconfigs
-> right now, and modpost still complains about the section mismatches. I have
-> a bunch more of these patches, but it would also be fine with me if we can
-> patch mostpost to ignore these cases.
+> Yeah I much prefer that. I'll add some details on the Kconfig.
 > 
-> I've also redone the analysis that Greg cited in the commit message for
-> 45f035ab9b8 "CONFIG_HOTPLUG should be always on"
+> > The missing part that I don't have an answer for however, is what happens
+> > when you deem this production ready? Distro maintainers won't notice the
+> > kconfig text changing. But perhaps that's a good thing, and will lead to things
+> > only being enabled when people explicitly ask for them in distros.
 > 
->    It is quite hard to disable it these days, and even if you do, it
->     only saves you about 200 bytes.  However, if it is disabled, lots of
->     bugs show up because it is almost never tested if the option is disabled.
+> That Kconfig option is likely going to disappear inside a new CONFIG_NO_HZ_FULL that
+> will enables individual features like RCU user mode and stuffs.
 > 
-> My test case (ARM omap2plus_defconfig, one of the most common configurations)
-> shows these size -A differences:
+> And if it stays, it will be enabled by CONFIG_NO_HZ_FULL. So it's not an option
+> anybody will ever have to deal with directly.
 > 
+> > Alternatively, if you really do want to go the path of a new config option,
+> > perhaps CONFIG_NOT_DISTRO_READY would spell things out more clearly.
+> > EXPERIMENTAL is such a wasteland it would take too much manpower to audit
+> > every case, and update accordingly, but scorching the earth and starting
+> > afresh might be feasible.
 > 
-> 
-> section		nohotplug	hotplug		difference
-> .head.text	392		392		0
-> .text		4829940		4881140		51200
-> .rodata		1630360		1633056		2696
-> __ksymtab	25720		25720		0
-> __ksymtab_gpl	17096		17136		40
-> __kcrctab	12860		12860		0
-> __kcrctab_gpl	8548		8568		20
-> __ksymtab_stri	96427		96509		82
-> __init_rodata	0		9800		9800
-> __param		2320		2320		0
-> __modver	716		364		-352
-> .ARM.unwind_idx	160360		160792		432
-> .ARM.unwind_tab	24312		24312		0
-> .init.text	234632		195688		-38944
-> .exit.text	8680		5116		-3564
-> .init.proc.info	312		312		0
-> .init.arch.info	2964		2964		0
-> .init.tagtable	72		72		0
-> .init.smpalt	776		776		0
-> .init.pv_table	880		880		0
-> .init.data	123356		111348		-12008
-> .exit.data	0		0		0
-> .data..percpu	12928		12928		0
-> .data		560160		562688		2528
-> .notes		36		36		0
-> .bss		5605324		5605580		256
-> 
-> total		13359171	13371357	12186
-> after boot	13001183	13054521	53338
-> 
-> That is over 50kb difference after discarding the init sections,
-> significantly more than the 200 bytes that Greg found.
-> The point about lack of testing is still valid of course, and I'm
-> not saying we need to keep the option around, but it's really
-> not as obvious as before. An argument in favor of removing the
-> __devinit logic is that these 50kb is still just 0.4% of the
-> kernel size.
-> 
-> For the five ARM defconfig files that actually turn off hotplug,
-> the absolute numbers are a bit lower, but the percentage is similar.
-> 
-> This is the amount of space wasted by enabling on CONFIG_HOTPLUG
-> on them, in bytes after discarding the init sections, and as a
-> percentage of the vmlinux size:
-> 
-> at91x40_defconfig	3448	0.27%
-> edb7211_defconfig	8912	0.41%
-> footbridge_defconfig	33347	0.97%
-> fortunet_defconfig	4592	0.25%
-> pleb_defconfig		7405	0.28%
-> 
-> Footbridge is the only config among these that enables PCI and USB, so
-> it has a bunch more drivers that actually have notable functions that 
-> can be discarded.
+> CONFIG_STAGING already does that kind of thing I guess. Although I suspect people
+> are reluctant with core features in -staging.
 
-USB drivers should not be having anything discarded if CONFIG_HOTPLUG is
-disabled (it shouldn't be disabled for USB systems, unless someone isn't
-going to plug a USB device into the system after it comes up, which is
-one of the main confusions here.)
+Well, it would certainly be possible to include a file from a
+drivers/staging/rcu directory or some such.  As you say, I am not sure
+how Greg KH would react to such a patch, though.  ;-)
 
-As for PCI, that seems like a lot of code getting thrown away, it would
-be interesting to figure out why that is.
+I guess that the lesson I am learning here is that the nocb patch
+needs to go into the -rt patchset rather than directly into mainline.
+Though Dave Jones's thought of tainting the kernel at boot time
+sounds interesting as well.
 
-My plans are to now start unwinding the CONFIG_HOTPLUG dependancies.  If
-a driver subsystem really does want to throw away sections (like PCI
-will if CONFIG_PCI_HOTPLUG is not enabled), then it should be able to.
-But I imagine all of the real savings will be in the bus cores, not the
-individual drivers, unless they have huge module_init() functions.
+							Thanx, Paul
 
-Thanks for the numbers, I'll look into this more in the coming weeks.
-
-greg k-h
