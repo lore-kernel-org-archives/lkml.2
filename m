@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2JDKf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:35:28 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:46140 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab2JDKf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:35:26 -0400
-From: Nix <nix@esperi.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: udev breakages -
-References: <4FE9169D.5020300@redhat.com> <20121002100319.59146693@redhat.com>
-	<CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
-	<20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com>
-	<CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
-	<506C562E.5090909@redhat.com>
-	<CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
-	<20121003170907.GA23473@ZenIV.linux.org.uk>
-	<CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
-	<20121003192636.GC23473@ZenIV.linux.org.uk>
-	<87pq4z12c1.fsf@spindle.srvr.nix>
-Emacs: where editing text is like playing Paganini on a glass harmonica.
-Date: Thu, 04 Oct 2012 11:35:19 +0100
-In-Reply-To: <87pq4z12c1.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
-	"Thu, 04 Oct 2012 01:57:18 +0100")
-Message-ID: <87ipaq1q54.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1754161Ab2JDKgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:36:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753287Ab2JDKf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 06:35:59 -0400
+Date: Thu, 4 Oct 2012 12:35:48 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com
+Subject: Re: [PATCH 0/8] THP support for Sparc64
+Message-ID: <20121004103548.GB6793@redhat.com>
+References: <20121002.182601.845433592794197720.davem@davemloft.net>
+ <20121002155544.2c67b1e8.akpm@linux-foundation.org>
+ <20121003.220027.1636081487098835868.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=7 Fuz1=7 Fuz2=7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121003.220027.1636081487098835868.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Kay removed because I don't like emailing arguable flamebait directly
-to the person flamed.]
+Hi Dave,
 
-On 4 Oct 2012, nix@esperi.org.uk stated:
+On Wed, Oct 03, 2012 at 10:00:27PM -0400, David Miller wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Date: Tue, 2 Oct 2012 15:55:44 -0700
+> 
+> > I had a shot at integrating all this onto the pending stuff in linux-next. 
+> > "mm: Add and use update_mmu_cache_pmd() in transparent huge page code."
+> > needed minor massaging in huge_memory.c.  But as Andrea mentioned, we
+> > ran aground on Gerald's
+> > http://ozlabs.org/~akpm/mmotm/broken-out/thp-remove-assumptions-on-pgtable_t-type.patch,
+> > part of the thp-for-s390 work.
+> 
+> While working on a rebase relative to this work, I noticed that the
+> s390 patches don't even compile.
+> 
+> It's because of that pmd_pgprot() change from Peter Z. which arrives
+> asynchonously via the linux-next tree.  It makes THP start using
+> pmd_pgprot() (a new interface) which the s390 patches don't provide.
 
-> By udev 175 I, and a lot of other people, had simply stopped upgrading
-> udev entirely on the grounds that we could no longer tolerate the
-> uncertainty over whether our systems would boot every time we upgraded
-> it, for no discernible benefit. Yes, all the incompatible changes are
-> (or were, as of udev 175) called out in the release notes -- but there
-> are so *many* of them, it's easy to miss one. And they all seem so
-> completely unnecessary, and their implications for your system
-> configuration grow more and more invasive all the time.
+My suggestion would be to ignore linux-next and port it to -mm only
+and re-send to Andrew. schednuma is by mistake in linux-next, and
+it's not going to get merged as far as I can tell.
 
-In the bright light of day I realize that this post is not as off-topic
-for this thread as it appears. This is all of a piece. The udev
-maintainer insists that everyone else adapt to udev's demands: before
-now, it has been users, sysadmins, and userspace who must adapt, but now
-is is pushing its demands in the other direction as well: this thread is
-the result.
-
--- 
-NULL && (void)
+Even if schednuma would get merged by mistake, pmd_pgprot is a micro
+optimization and it's by no means necessary. I don't think it's clean
+to add arch dependencies like that just for a micro optimization mixed
+up with schednuma code. The implementation of the AutoNUMA NUMA
+hinting page faults that was introduced recently in schednuma is also
+very bad, all checks on the vmas vm_page_prot are totally unnecessary
+because _PAGE_PROTNONE and _PAGE_NUMA are mutually exclusive code
+paths, _PAGE_PROTNONE would segfault before ever entering
+handle_mm_fault and so checking if it's _PAGE_PROTNONE in
+handle_mm_fault is unnecessary. Calling pte_numa do_prot_none also
+sounds very confusing to me.
