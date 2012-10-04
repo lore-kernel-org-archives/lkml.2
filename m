@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2JDCV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 22:21:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55121 "EHLO
+	id S1754087Ab2JDCVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 22:21:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39870 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752386Ab2JDCVZ (ORCPT
+	with ESMTP id S1752495Ab2JDCV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 22:21:25 -0400
-Date: Thu, 4 Oct 2012 12:21:15 +1000
+	Wed, 3 Oct 2012 22:21:28 -0400
+Date: Thu, 4 Oct 2012 12:21:25 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the drm tree
-Message-Id: <20121004122115.2d59a5301715308bb9d53ffe@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Ben Skeggs <bskeggs@redhat.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+Subject: linux-next: manual merge of the drm tree with the  tree
+Message-Id: <20121004122125.a501fc314016f967fd914c55@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Oct_2012_12_21_15_+1000_0wdQbs9EEbzx+Wxt"
+ boundary="Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Oct_2012_12_21_15_+1000_0wdQbs9EEbzx+Wxt
+--Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Dave,
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-produced these warnings:
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/nouveau (lots of files) between commit 760285e7e7ab
+("UAPI: (Scripted) Convert #include "..." to #include <path/...> in
+drivers/gpu/") from Linus' tree and various commits from the drm tree.
 
-drivers/gpu/drm/gma500/backlight.c:29:13: warning: 'do_gma_backlight_set' d=
-efined but not used [-Wunused-function]
-drivers/gpu/drm/nouveau/core/subdev/gpio/base.c: In function 'nouveau_gpio_=
-isr_del':
-drivers/gpu/drm/nouveau/core/subdev/gpio/base.c:219:4: warning: 'flush_work=
-_sync' is deprecated (declared at include/linux/workqueue.h:448) [-Wdepreca=
-ted-declarations]
-drivers/gpu/drm/nouveau/nouveau_drm.c: In function 'nouveau_drm_open':
-drivers/gpu/drm/nouveau/nouveau_drm.c:503:2: warning: format '%d' expects a=
-rgument of type 'int', but argument 4 has type 'struct pid *' [-Wformat]
+There is a large reorganisation under drivers/gpu/nouveau in the drm
+tree (which only appeared in linux-next today :-().
+
+I used the drm tree versions of the files and but this needs to be done
+properly.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__4_Oct_2012_12_21_15_+1000_0wdQbs9EEbzx+Wxt
+--Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQbPKbAAoJEECxmPOUX5FEKAAP/3FEz5VY6BsL4Z969pTX1E8y
-S45PJ+f8I7o8kG0U5tCzDtrNB4/YdpKhTCaBJCfe+YDJuPpj8ENbA9g9HVMLq5G/
-0If1Lz+svnS7dKjWmht8HixTqUg2cewyBUTBlA2fr0m5u3GooLPk0v30jz+12M9S
-x3cdjHGgKpGgtX5dOPg2sPoKLeqglcoSBOtA+Wk+VZSXKJccKuvOFA2HG4aaMeWY
-m8GjP84+/vz6z3hWiTbZNk1zewuV+6EVEdCzlo8a6CnsBvkssVQXr8ZYmenrn0HA
-ldpWxNjLDQu62B98ftrEz7x1xAEaieQzgkiV88KJM0pKCLc6LrmuudzAuhG24HRB
-CMrxEmz8cXFdrgmTSRoLqbNi0iGHDN+gNoEJ8tQSExBpL70LEIO4Yon48xjICo3X
-oZ8JJWxbxgdJq+ITMVAznGRpbt3lsrjUtjomBI+JCnNnshjFJr9p6weUrUwMSP2n
-1b/ntiflR1l4+5XM25kKrrvmhZ4V6atp6+XzqcsgrOEYOkdWyRFWPBQc2EnsUuTO
-NWpvkw3bEFBzuyYgvxTAfxZfH2zFVQUpCqK73IonnjgY9tsVAChrl5H5Zwn/g0CE
-vBtISGIyhkQmZZZQnhMC4pQ3ukRxJxpIvFQPW533F3/H67T9iSnpAEvOBumIW6cl
-wBcG3UACS5iBPW6785tH
-=Y4Q7
+iQIcBAEBCAAGBQJQbPKlAAoJEECxmPOUX5FEhwwP/1xiKS+q3EDhaBCr1K4VyXpI
+vQ0stHrQS6wre3ilYBQKNmpSmder4TRqLqp+7YREzz6siPqcn5RUBhsA4k9oroTk
+NAY2CcJNHXj78m/M/gHcoe7CfrOt/UaL47yOPj5zN6YSyJvgxyrSkvQatf5ooGG9
+kYF5Fi8G7Nwc9qmSTPp5vACIP66cUy/hY9G2b9P68sUERFbTTx0WM4T1CPI3lSWe
+JYyzKwfvIi96ZRkfDRjKR3EHTAb9UoiPqOaEy/WPUfcI7q4f+QiYLr50iLCpx+WS
+YkMKf9ANcZEMrQIOxsWieT4dQW5vSsmA5A5IOyYh1IKAWyy/RPjCtZUEXQNy2gDy
+SslkLUvHYISCOiEbS+EuRf+tZ9LAmIO1Sfhyx8BHV9YzoZdpt7wnPVpetyaaDGjt
+SOji6kTZeZ8tL8++jjXWD+++Ck4O6fK2aX251UyQaVgkD//JOQP6XDBMPLUpH2Cr
+M+8KXGofnDa3M/l6mOWjQSfYA9kMIPDl24Pkl+RFCJDz3IKEIZRxGN2zlXckcme9
+Hkvj52U2Cvf/+VpkI4JE0b/lflHqWe/8R1bJ0eotAV8TVDI7w6SKamFnWDr9uNtx
+pgQjdLOcT9NdpqkxDyJftv6cvgAavtFFowrV38qDNKEyNdw/uhkTF1mk1iTGd2Y5
+3M9aFDvxNqRR1F0lnJ+i
+=2Ah0
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__4_Oct_2012_12_21_15_+1000_0wdQbs9EEbzx+Wxt--
+--Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE--
