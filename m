@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab2JDSO6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:14:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39790 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab2JDSJa (ORCPT
+	id S1755388Ab2JDSPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:15:21 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59018 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab2JDSPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:30 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 26/42] perf tools: Check existence of _get_comp_words_by_ref when bash completing
-Date: Thu,  4 Oct 2012 15:08:26 -0300
-Message-Id: <1349374122-27806-27-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
-References: <1349374122-27806-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 4 Oct 2012 14:15:14 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 07/11] net: ll_temac: Fix DMA map size bug
+Date: Thu,  4 Oct 2012 20:14:53 +0200
+Message-Id: <1349374497-9540-7-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+DMA allocates skb->len instead of headlen
+which is used for DMA.
+The same fix was applied to the axienet driver.
 
-The '_get_comp_words_by_ref' function is available from the bash
-completion v1.2 so that earlier version emits following warning:
-
-  $ perf re<TAB>_get_comp_words_by_ref: command not found
-
-Use older '_get_cword' method when the above function doesn't exist.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1349191294-6926-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+CC: Anirudha Sarangi <anirudh@xilinx.com>
+CC: John Linn <John.Linn@xilinx.com>
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Rob Herring <rob.herring@calxeda.com>
+CC: David S. Miller <davem@davemloft.net>
 ---
- tools/perf/bash_completion |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 1958fa5..3d48cee 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -1,12 +1,23 @@
- # perf completion
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 482b572..8786d92 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -710,8 +710,8 @@ static int temac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
  
-+function_exists()
-+{
-+	declare -F $1 > /dev/null
-+	return $?
-+}
-+
- have perf &&
- _perf()
- {
--	local cur cmd
-+	local cur prev cmd
+ 	cur_p->app0 |= STS_CTRL_APP0_SOP;
+ 	cur_p->len = skb_headlen(skb);
+-	cur_p->phys = dma_map_single(ndev->dev.parent, skb->data, skb->len,
+-				     DMA_TO_DEVICE);
++	cur_p->phys = dma_map_single(ndev->dev.parent, skb->data,
++				skb_headlen(skb), DMA_TO_DEVICE);
+ 	cur_p->app4 = (unsigned long)skb;
  
- 	COMPREPLY=()
--	_get_comp_words_by_ref cur prev
-+	if function_exists _get_comp_words_by_ref; then
-+		_get_comp_words_by_ref cur prev
-+	else
-+		cur=$(_get_cword)
-+		prev=${COMP_WORDS[COMP_CWORD-1]}
-+	fi
- 
- 	cmd=${COMP_WORDS[0]}
- 
+ 	for (ii = 0; ii < num_frag; ii++) {
 -- 
-1.7.1
+1.7.0.4
 
