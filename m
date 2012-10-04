@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934040Ab2JDVXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:23:08 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
+	id S934058Ab2JDVXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:23:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928Ab2JDVXE (ORCPT
+	with ESMTP id S934042Ab2JDVXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:04 -0400
+	Thu, 4 Oct 2012 17:23:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 54/58] IB/srp: Avoid having aborted requests hang
-Date: Thu,  4 Oct 2012 14:20:01 -0700
-Message-Id: <20121004210642.304726081@linuxfoundation.org>
+        Tomas Racek <tracek@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Ben Jencks <ben@bjencks.net>, qemu-devel@nongnu.org
+Subject: [ 56/58] x86/alternatives: Fix p6 nops on non-modular kernels
+Date: Thu,  4 Oct 2012 14:20:03 -0700
+Message-Id: <20121004210642.527075904@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,30 +33,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Avi Kivity <avi@redhat.com>
 
-commit d8536670916a685df116b5c2cb256573fd25e4e3 upstream.
+commit cb09cad44f07044d9810f18f6f9a6a6f3771f979 upstream.
 
-We need to call scsi_done() for commands after we abort them.
+Probably a leftover from the early days of self-patching, p6nops
+are marked __initconst_or_module, which causes them to be
+discarded in a non-modular kernel.  If something later triggers
+patching, it will overwrite kernel code with garbage.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reported-by: Tomas Racek <tracek@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: qemu-devel@nongnu.org
+Cc: Anthony Liguori <anthony@codemonkey.ws>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Ben Jencks <ben@bjencks.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/alternative.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1687,6 +1687,7 @@ static int srp_abort(struct scsi_cmnd *s
- 			  SRP_TSK_ABORT_TASK);
- 	srp_free_req(target, req, scmnd, 0);
- 	scmnd->result = DID_ABORT << 16;
-+	scmnd->scsi_done(scmnd);
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -160,7 +160,7 @@ static const unsigned char * const k7_no
+ #endif
  
- 	return SUCCESS;
- }
+ #ifdef P6_NOP1
+-static const unsigned char  __initconst_or_module p6nops[] =
++static const unsigned char p6nops[] =
+ {
+ 	P6_NOP1,
+ 	P6_NOP2,
 
 
