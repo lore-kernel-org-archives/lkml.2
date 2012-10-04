@@ -1,227 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2JDSM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:12:28 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:46826 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752893Ab2JDSMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:12:24 -0400
-Date: Thu, 4 Oct 2012 12:12:22 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Subject: RE: [PATCH v2] PPC: Do not make the entire heap executable
-Message-ID: <20121004181222.GD2994@obsidianresearch.com>
-References: <20120930232619.GE30637@obsidianresearch.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120930232619.GE30637@obsidianresearch.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S1753260Ab2JDSMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:12:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39821 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab2JDSJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 14:09:35 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 33/42] perf tools: Complete tracepoint event names
+Date: Thu,  4 Oct 2012 15:08:33 -0300
+Message-Id: <1349374122-27806-34-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
+References: <1349374122-27806-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PPC the ELF PLT sections look like this:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-  [17] .sbss             NOBITS          0002aff8 01aff8 000014 00  WA  0   0  4
-  [18] .plt              NOBITS          0002b00c 01aff8 000084 00 WAX  0   0  4
-  [19] .bss              NOBITS          0002b090 01aff8 0000a4 00  WA  0   0  4
+Currently tracepoint events cannot be completed because they contain a
+colon (:) character.  The colon is considered as a word separator when
+bash completion is done - variable COMP_WORDBREAKS contains colon - so
+if a word being completed contains a colon it can be a problem.
 
-Which results in an ELF load header:
-  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
-  LOAD           0x019c70 0x00029c70 0x00029c70 0x01388 0x014c4 RWE 0x10000
+Recent versions of bash completion provide -n switch to
+_get_comp_words_by_ref and __ltrim_colon_completions functions in order
+to resolve this issue.  Copy the latter in case not exists.
 
-This is all correct, the load region containing the PLT is marked as
-executable. Note that the PLT starts at 0002b00c but the file mapping ends at
-0002aff8, so the PLT falls in the 0 fill section described by the load header,
-and after a page boundary.
-
-Unfortunately the generic ELF loader ignores the X bit in the load headers
-when it creates the 0 filled non-file backed mappings. It assumes all of these
-mappings are RW BSS sections, which is not the case for PPC.
-
-Teach the ELF loader to check the X bit in the relevant load header and
-create 0 filled anonymous mappings that are executable if the load header
-requests that.
-
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349328234-16995-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/powerpc/include/asm/page.h    |   10 +--------
- arch/powerpc/include/asm/page_32.h |    2 -
- arch/powerpc/include/asm/page_64.h |    4 ---
- fs/binfmt_elf.c                    |   41 +++++++++++++++++++++++++++++-------
- 4 files changed, 34 insertions(+), 23 deletions(-)
+ tools/perf/bash_completion |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-Some more testing found a bug, updated patch incase anyone wants
-to try it.
-
-Changes in v2:
- - In load_elf_interp last_bss can become < elf_bss when vm_brk is
-   called. In the unpatched kernel this results in something like
-   0xFFFFFF00 being passed into vm_brk as the len, which rounds up to
-   0 and does nothing, but vm_mmap returns an error.. glibc 2.19
-   triggered this case due to the ld.so layout, eglibc 2.13 didn't.
-
-diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
-index f072e97..61e46fc 100644
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -215,15 +215,7 @@ extern long long virt_phys_offset;
- #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
- #endif
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 5c355ab..56e6a12 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -6,6 +6,19 @@ function_exists()
+ 	return $?
+ }
  
--/*
-- * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
-- * and needs to be executable.  This means the whole heap ends
-- * up being executable.
-- */
--#define VM_DATA_DEFAULT_FLAGS32	(VM_READ | VM_WRITE | VM_EXEC | \
--				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
--
--#define VM_DATA_DEFAULT_FLAGS64	(VM_READ | VM_WRITE | \
-+#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
- 				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
- 
- #ifdef __powerpc64__
-diff --git a/arch/powerpc/include/asm/page_32.h b/arch/powerpc/include/asm/page_32.h
-index 68d73b2..aaae5a6 100644
---- a/arch/powerpc/include/asm/page_32.h
-+++ b/arch/powerpc/include/asm/page_32.h
-@@ -7,8 +7,6 @@
- #endif
- #endif
- 
--#define VM_DATA_DEFAULT_FLAGS	VM_DATA_DEFAULT_FLAGS32
--
- #ifdef CONFIG_NOT_COHERENT_CACHE
- #define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
- #endif
-diff --git a/arch/powerpc/include/asm/page_64.h b/arch/powerpc/include/asm/page_64.h
-index fed85e6..615d88b 100644
---- a/arch/powerpc/include/asm/page_64.h
-+++ b/arch/powerpc/include/asm/page_64.h
-@@ -136,10 +136,6 @@ do {						\
- 
- #endif /* !CONFIG_HUGETLB_PAGE */
- 
--#define VM_DATA_DEFAULT_FLAGS \
--	(is_32bit_task() ? \
--	 VM_DATA_DEFAULT_FLAGS32 : VM_DATA_DEFAULT_FLAGS64)
--
- /*
-  * This is the default if a program doesn't have a PT_GNU_STACK
-  * program header entry. The PPC64 ELF ABI has a non executable stack
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 1b52956..c26b40d 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -76,13 +76,20 @@ static struct linux_binfmt elf_format = {
- 
- #define BAD_ADDR(x) ((unsigned long)(x) >= TASK_SIZE)
- 
--static int set_brk(unsigned long start, unsigned long end)
-+static int set_brk(unsigned long start, unsigned long end, int prot)
- {
- 	start = ELF_PAGEALIGN(start);
- 	end = ELF_PAGEALIGN(end);
- 	if (end > start) {
- 		unsigned long addr;
--		addr = vm_brk(start, end - start);
-+		/* Map the non-file portion of the last load header. If the
-+		   header is requesting these pages to be executeable then
-+		   we have to honour that, otherwise assume they are bss. */
-+		if (prot & PROT_EXEC)
-+			addr = vm_mmap(0, start, end - start, prot,
-+				MAP_PRIVATE | MAP_FIXED, 0);
-+		else
-+			addr = vm_brk(start, end - start);
- 		if (BAD_ADDR(addr))
- 			return addr;
- 	}
-@@ -381,6 +388,7 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
- 	unsigned long load_addr = 0;
- 	int load_addr_set = 0;
- 	unsigned long last_bss = 0, elf_bss = 0;
-+	int bss_prot = 0;
- 	unsigned long error = ~0UL;
- 	unsigned long total_size;
- 	int retval, i, size;
-@@ -489,8 +497,10 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
- 			 * elf_bss and last_bss is the bss section.
- 			 */
- 			k = load_addr + eppnt->p_memsz + eppnt->p_vaddr;
--			if (k > last_bss)
-+			if (k > last_bss) {
- 				last_bss = k;
-+				bss_prot = elf_prot;
-+			}
- 		}
- 	}
- 
-@@ -509,8 +519,19 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
- 		/* What we have mapped so far */
- 		elf_bss = ELF_PAGESTART(elf_bss + ELF_MIN_ALIGN - 1);
- 
--		/* Map the last of the bss segment */
--		error = vm_brk(elf_bss, last_bss - elf_bss);
-+		if (last_bss > elf_bss) {
-+			/* Map the non-file portion of the last load
-+			   header. If the header is requesting these pages to
-+			   be executeable then we have to honour that,
-+			   otherwise assume they are bss. */
-+			if ((bss_prot & PROT_EXEC) && last_bss > elf_bss)
-+				error = vm_mmap(0, elf_bss,
-+					ELF_PAGEALIGN(last_bss - elf_bss),
-+					bss_prot, MAP_PRIVATE | MAP_FIXED, 0);
-+			else
-+				error = vm_brk(elf_bss, last_bss - elf_bss);
-+		}
++function_exists __ltrim_colon_completions ||
++__ltrim_colon_completions()
++{
++	if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
++		# Remove colon-word prefix from COMPREPLY items
++		local colon_word=${1%${1##*:}}
++		local i=${#COMPREPLY[*]}
++		while [[ $((--i)) -ge 0 ]]; do
++			COMPREPLY[$i]=${COMPREPLY[$i]#"$colon_word"}
++		done
++	fi
++}
 +
- 		if (BAD_ADDR(error))
- 			goto out_close;
- 	}
-@@ -560,6 +581,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	unsigned long error;
- 	struct elf_phdr *elf_ppnt, *elf_phdata;
- 	unsigned long elf_bss, elf_brk;
-+	int bss_prot = 0;
- 	int retval, i;
- 	unsigned int size;
- 	unsigned long elf_entry;
-@@ -750,7 +772,8 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 			   before this one. Map anonymous pages, if needed,
- 			   and clear the area.  */
- 			retval = set_brk(elf_bss + load_bias,
--					 elf_brk + load_bias);
-+					 elf_brk + load_bias,
-+					 bss_prot);
- 			if (retval) {
- 				send_sig(SIGKILL, current, 0);
- 				goto out_free_dentry;
-@@ -852,8 +875,10 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 		if (end_data < k)
- 			end_data = k;
- 		k = elf_ppnt->p_vaddr + elf_ppnt->p_memsz;
--		if (k > elf_brk)
-+		if (k > elf_brk) {
-+			bss_prot = elf_prot;
- 			elf_brk = k;
-+		}
- 	}
+ have perf &&
+ _perf()
+ {
+@@ -13,9 +26,9 @@ _perf()
  
- 	loc->elf_ex.e_entry += load_bias;
-@@ -869,7 +894,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 	 * mapping in the interpreter, to make sure it doesn't wind
- 	 * up getting placed where the bss needs to go.
- 	 */
--	retval = set_brk(elf_bss, elf_brk);
-+	retval = set_brk(elf_bss, elf_brk, bss_prot);
- 	if (retval) {
- 		send_sig(SIGKILL, current, 0);
- 		goto out_free_dentry;
+ 	COMPREPLY=()
+ 	if function_exists _get_comp_words_by_ref; then
+-		_get_comp_words_by_ref cur prev
++		_get_comp_words_by_ref -n : cur prev
+ 	else
+-		cur=$(_get_cword)
++		cur=$(_get_cword :)
+ 		prev=${COMP_WORDS[COMP_CWORD-1]}
+ 	fi
+ 
+@@ -35,6 +48,7 @@ _perf()
+ 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+ 		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
++		__ltrim_colon_completions $cur
+ 	# List long option names
+ 	elif [[ $cur == --* ]];  then
+ 		subcmd=${COMP_WORDS[1]}
 -- 
-1.7.5.4
+1.7.1
 
