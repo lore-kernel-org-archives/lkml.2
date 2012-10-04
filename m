@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab2JDHzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:55:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab2JDHzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:55:05 -0400
-Date: Thu, 4 Oct 2012 09:54:43 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v3 -tip 1/5] x86, MSI: Support multiple MSIs in presense
- of IRQ remapping
-Message-ID: <20121004075442.GD2258@dhcp-26-207.brq.redhat.com>
-References: <cover.1349074231.git.agordeev@redhat.com>
- <b15a9b5242c7de5770d2315ea8d13f4dcf63c00b.1349074231.git.agordeev@redhat.com>
- <20121002045518.GA7756@gmail.com>
- <20121002110630.GA2258@dhcp-26-207.brq.redhat.com>
- <20121002112524.GA12420@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002112524.GA12420@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932461Ab2JDH6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:58:14 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:9931 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab2JDH6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 03:58:13 -0400
+Date: Thu, 4 Oct 2012 09:58:03 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: correct struct i2c_driver doc about detection
+Message-ID: <20121004095803.26548bc7@endymion.delvare>
+In-Reply-To: <1349295444-18645-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1349295444-18645-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 01:25:24PM +0200, Ingo Molnar wrote:
-> > > > @@ -584,8 +586,12 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-> > > >  #define irq_alloc_desc_from(from, node)		\
-> > > >  	irq_alloc_descs(-1, from, 1, node)
-> > > >  
-> > > > +#define irq_alloc_descs_from(from, cnt, node)	\
-> > > > +	irq_alloc_descs(-1, from, cnt, node)
-> > > > +
-> > > 
-> > > Please use inlines instead of macros. Might transform the one 
-> > > above it as well in the process.
-> > 
-> > You mean here do not introduce irq_alloc_descs_from, but rather use
-> > irq_alloc_descs() directly?
+Hi Vivien,
+
+On Wed,  3 Oct 2012 16:17:24 -0400, Vivien Didelot wrote:
+> s/address_data/address_list/ in addition to c3813d6.
 > 
-> My suggestion is to add irq_alloc_descs_from() as a (very 
-> simple) inline function and change irq_alloc_desc_from() to be 
-> an inline function as well.
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> ---
+>  include/linux/i2c.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 8e25a91..8d87329 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -140,7 +140,7 @@ extern s32 i2c_smbus_write_i2c_block_data(const struct i2c_client *client,
+>   * The driver.owner field should be set to the module owner of this driver.
+>   * The driver.name field should be set to the name of this driver.
+>   *
+> - * For automatic device detection, both @detect and @address_data must
+> + * For automatic device detection, both @detect and @address_list must
+>   * be defined. @class should also be set, otherwise only devices forced
+>   * with module parameters will be created. The detect function must
+>   * fill at least the name field of the i2c_board_info structure it is
 
-These defines were added on purpose with commit ec53cf2 ("irq: don't put
-module.h into irq.h for tracking irqgen modules.") - the relevant hunk is
-below. I suppose we do not want to revert it?
-
-
-@@ -567,29 +567,21 @@ static inline struct msi_desc *irq_data_get_msi(struct irq_data *d)
- int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 		struct module *owner);
- 
--static inline int irq_alloc_descs(int irq, unsigned int from, unsigned int cnt,
--		int node)
--{
--	return __irq_alloc_descs(irq, from, cnt, node, THIS_MODULE);
--}
-+/* use macros to avoid needing export.h for THIS_MODULE */
-+#define irq_alloc_descs(irq, from, cnt, node)	\
-+	__irq_alloc_descs(irq, from, cnt, node, THIS_MODULE)
- 
--void irq_free_descs(unsigned int irq, unsigned int cnt);
--int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+#define irq_alloc_desc(node)			\
-+	irq_alloc_descs(-1, 0, 1, node)
- 
--static inline int irq_alloc_desc(int node)
--{
--	return irq_alloc_descs(-1, 0, 1, node);
--}
-+#define irq_alloc_desc_at(at, node)		\
-+	irq_alloc_descs(at, at, 1, node)
- 
--static inline int irq_alloc_desc_at(unsigned int at, int node)
--{
--	return irq_alloc_descs(at, at, 1, node);
--}
-+#define irq_alloc_desc_from(from, node)		\
-+	irq_alloc_descs(-1, from, 1, node)
- 
--static inline int irq_alloc_desc_from(unsigned int from, int node)
--{
--	return irq_alloc_descs(-1, from, 1, node);
--}
-+void irq_free_descs(unsigned int irq, unsigned int cnt);
-+int irq_reserve_irqs(unsigned int from, unsigned int cnt);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
-
-
+Good catch! Applied, thanks.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Jean Delvare
