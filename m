@@ -1,210 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab2JDMXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:23:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54957 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756004Ab2JDMXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:23:16 -0400
-Message-ID: <506D7F95.2030401@ti.com>
-Date: Thu, 4 Oct 2012 17:52:45 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1756190Ab2JDM2e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:28:34 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58442 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057Ab2JDM2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 08:28:32 -0400
+Message-ID: <506D80C2.5040405@linux.vnet.ibm.com>
+Date: Thu, 04 Oct 2012 17:57:46 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: Re: [PATCH v3 5/6] ARM: davinci: Add support for PRUSS on DA850
-References: <1349276133-26408-1-git-send-email-mporter@ti.com> <1349276133-26408-6-git-send-email-mporter@ti.com>
-In-Reply-To: <1349276133-26408-6-git-send-email-mporter@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+To: linux-scsi@vger.kernel.org
+CC: James.Bottomley@hansenpartnership.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [qla2xxx] INFO: possible irq lock inversion dependency detected
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12100412-5564-0000-0000-000004BBC234
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/3/2012 8:25 PM, Matt Porter wrote:
-> Adds PRUSS clock, registers the L3RAM pool, and registers the
-> platform device for uio_pruss on DA850.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
+Hi,
 
-I am interested in knowing how this patch was tested.
+With the mainline kernel (in the merge window) I am seeing the following lockdep
+splat every time during boot.
 
-> ---
->  arch/arm/mach-davinci/board-da850-evm.c    |   12 +++++
->  arch/arm/mach-davinci/da850.c              |    7 +++
->  arch/arm/mach-davinci/devices-da8xx.c      |   66 ++++++++++++++++++++++++++++
->  arch/arm/mach-davinci/include/mach/da8xx.h |    2 +
->  4 files changed, 87 insertions(+)
-> 
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index 1295e61..acc6e84 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -29,6 +29,7 @@
->  #include <linux/regulator/machine.h>
->  #include <linux/regulator/tps6507x.h>
->  #include <linux/input/tps6507x-ts.h>
-> +#include <linux/platform_data/uio_pruss.h>
->  #include <linux/spi/spi.h>
->  #include <linux/spi/flash.h>
->  #include <linux/delay.h>
-> @@ -42,6 +43,7 @@
->  #include <mach/da8xx.h>
->  #include <linux/platform_data/mtd-davinci.h>
->  #include <mach/mux.h>
-> +#include <mach/sram.h>
->  #include <linux/platform_data/mtd-davinci-aemif.h>
->  #include <linux/platform_data/spi-davinci.h>
+Regards,
+Srivatsa S. Bhat
 
-I know you did not introduce the mess, but can you include a patch to
-fix the mixture of mach/ and linux/ includes here? mach/ includes should
-follow the linux/ includes.
+------------------------------------>
 
->  
-> @@ -1253,6 +1255,10 @@ static __init int da850_wl12xx_init(void)
->  
->  #endif /* CONFIG_DA850_WL12XX */
->  
-> +struct uio_pruss_pdata da8xx_pruss_uio_pdata = {
-> +	.pintc_base	= 0x4000,
-> +};
-> +
->  #define DA850EVM_SATA_REFCLKPN_RATE	(100 * 1000 * 1000)
->  
->  static __init void da850_evm_init(void)
-> @@ -1339,6 +1345,12 @@ static __init void da850_evm_init(void)
->  		pr_warning("da850_evm_init: lcdcntl mux setup failed: %d\n",
->  				ret);
->  
-> +	da8xx_pruss_uio_pdata.l3ram_pool = sram_get_gen_pool();
+[    3.940316] SCSI subsystem initialized
+[    3.949021] Fusion MPT base driver 3.04.20
+[    3.953141] Copyright (c) 1999-2008 LSI Corporation
+[    3.955471] Fusion MPT SAS Host driver 3.04.20
+[    3.955850] mptbase: ioc0: Initiating bringup
+[    4.656179] ioc0: LSISAS1064E B3: Capabilities={Initiator}
+[   16.216323] scsi0 : ioc0: LSISAS1064E B3, FwRev=011e0000h, Ports=1, MaxQ=277, IRQ=28
+[   16.248414] mptsas: ioc0: attaching ssp device: fw_channel 0, fw_id 1, phy 0, sas_addr 0x5000c5001d7e18c9
+[   16.259708] scsi 0:0:0:0: Direct-Access     IBM-ESXS ST9146803SS      B536 PQ: 0 ANSI: 5
+[   16.271986] mptsas: ioc0: attaching sata device: fw_channel 0, fw_id 3, phy 1, sas_addr 0x677c605e9f919a95
+[   16.284288] scsi 0:0:1:0: Direct-Access     ATA      GBRLB031XVECCM   4.26 PQ: 0 ANSI: 5
+[   16.348106] qla2xxx [0000:00:00.0]-0005: : QLogic Fibre Channel HBA Driver: 8.04.00.03-k.
+[   16.356369] qla2xxx [0000:24:00.0]-001d: : Found an ISP2532 irq 32 iobase 0xffffc9001e0ba000.
+[   16.365364] qla2xxx 0000:24:00.0: irq 66 for MSI/MSI-X
+[   16.370527] qla2xxx 0000:24:00.0: irq 67 for MSI/MSI-X
+[   16.436226] scsi1 : qla2xxx
+[   17.280685] qla2xxx [0000:24:00.0]-505f:1: Link is operational (2 Gbps).
+[   17.780955] 
+[   17.782450] =========================================================
+[   17.784924] [ INFO: possible irq lock inversion dependency detected ]
+[   17.784924] 3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
+[   17.784924] ---------------------------------------------------------
+[   17.784924] qla2xxx_1_dpc/368 just changed the state of lock:
+[   17.784924]  (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924] but this lock was taken by another, HARDIRQ-safe lock in the past:
+[   17.784924]  (&(&ha->hardware_lock)->rlock){-.....}
 
-I wonder if this platform data should still be called l3ram pool. L3RAM
-is OMAP terminology. May be just call it sram_pool? Also this patch
-should follow 6/6 to prevent build breakage.
+and interrupts could create inverse lock ordering between them.
 
-> +	ret = da8xx_register_pruss_uio(&da8xx_pruss_uio_pdata);
-> +	if (ret)
-> +		pr_warning("pruss_uio initialization failed: %d\n",
-> +				ret);
-> +
->  	/* Handle board specific muxing for LCD here */
->  	ret = davinci_cfg_reg_list(da850_evm_lcdc_pins);
->  	if (ret)
-> diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-> index d8d69de..7c01d31 100644
-> --- a/arch/arm/mach-davinci/da850.c
-> +++ b/arch/arm/mach-davinci/da850.c
+[   17.784924] 
+[   17.784924] other info that might help us debug this:
+[   17.784924]  Possible interrupt unsafe locking scenario:
+[   17.784924] 
+[   17.784924]        CPU0                    CPU1
+[   17.784924]        ----                    ----
+[   17.784924]   lock(&(&ha->vport_slock)->rlock);
+[   17.784924]                                local_irq_disable();
+[   17.784924]                                lock(&(&ha->hardware_lock)->rlock);
+[   17.784924]                                lock(&(&ha->vport_slock)->rlock);
+[   17.784924]   <Interrupt>
+[   17.784924]     lock(&(&ha->hardware_lock)->rlock);
+[   17.784924] 
+[   17.784924]  *** DEADLOCK ***
+[   17.784924] 
+[   17.784924] no locks held by qla2xxx_1_dpc/368.
+[   17.784924] 
+[   17.784924] the shortest dependencies between 2nd lock and 1st lock:
+[   17.784924]  -> (&(&ha->hardware_lock)->rlock){-.....} ops: 49 {
+[   17.784924]     IN-HARDIRQ-W at:
+[   17.784924]                       [<ffffffff810ab36f>] mark_irqflags+0x17f/0x190
+[   17.784924]                       [<ffffffff810aca0c>] __lock_acquire+0x35c/0x520
+[   17.784924]                       [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]                       [<ffffffff814afdd4>] _raw_spin_lock_irqsave+0x54/0x70
+[   17.784924]                       [<ffffffffa00b5a90>] qla24xx_msix_default+0x40/0x250 [qla2xxx]
+[   17.784924]                       [<ffffffff810dd644>] handle_irq_event_percpu+0x84/0x3a0
+[   17.784924]                       [<ffffffff810dd9a3>] handle_irq_event+0x43/0x70
+[   17.784924]                       [<ffffffff810e0e6d>] handle_edge_irq+0x6d/0x130
+[   17.784924]                       [<ffffffff810045ed>] handle_irq+0x1d/0x30
+[   17.784924]                       [<ffffffff81003c98>] do_IRQ+0x58/0xe0
+[   17.784924]                       [<ffffffff814b0a32>] ret_from_intr+0x0/0x1a
+[   17.784924]                       [<ffffffff813a8c69>] cpuidle_enter+0x19/0x20
+[   17.784924]                       [<ffffffff813a8c82>] cpuidle_enter_state+0x12/0x50
+[   17.784924]                       [<ffffffff813a96c0>] cpuidle_idle_call+0xc0/0x260
+[   17.784924]                       [<ffffffff8100af35>] cpu_idle+0x95/0xf0
+[   17.784924]                       [<ffffffff8149459a>] rest_init+0xfa/0x170
+[   17.784924]                       [<ffffffff81aeaeec>] start_kernel+0x3bf/0x3cc
+[   17.784924]                       [<ffffffff81aea335>] x86_64_start_reservations+0x131/0x136
+[   17.784924]                       [<ffffffff81aea43d>] x86_64_start_kernel+0x103/0x112
+[   17.784924]     INITIAL USE at:
+[   17.784924]                      [<ffffffff810ac88d>] __lock_acquire+0x1dd/0x520
+[   17.784924]                      [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]                      [<ffffffff814afd68>] _raw_spin_lock_irq+0x48/0x60
+[   17.784924]                      [<ffffffffa00b6b8c>] qla2x00_request_irqs+0x16c/0x2d0 [qla2xxx]
+[   17.784924]                      [<ffffffffa00e1bb6>] qla2x00_probe_one+0xe15/0x225f [qla2xxx]
+[   17.784924]                      [<ffffffff812a6b34>] local_pci_probe+0x74/0x100
+[   17.784924]                      [<ffffffff812a6ca9>] __pci_device_probe+0xe9/0xf0
+[   17.784924]                      [<ffffffff812a7f65>] pci_device_probe+0x35/0x60
+[   17.784924]                      [<ffffffff8134e617>] really_probe+0x67/0x330
+[   17.784924]                      [<ffffffff8134e922>] driver_probe_device+0x42/0xa0
+[   17.784924]                      [<ffffffff8134ea23>] __driver_attach+0xa3/0xb0
+[   17.784924]                      [<ffffffff8134c8a4>] bus_for_each_dev+0x64/0x90
+[   17.784924]                      [<ffffffff8134e3d9>] driver_attach+0x19/0x20
+[   17.784924]                      [<ffffffff8134de18>] bus_add_driver+0x208/0x290
+[   17.784924]                      [<ffffffff8134f0af>] driver_register+0x6f/0x150
+[   17.784924]                      [<ffffffff812a808c>] __pci_register_driver+0x5c/0x70
+[   17.784924]                      [<ffffffffa01091cb>] qla2x00_module_init+0x1cb/0x21a [qla2xxx]
+[   17.784924]                      [<ffffffff810001bd>] do_one_initcall+0x3d/0x170
+[   17.784924]                      [<ffffffff810bafe6>] sys_init_module+0xc6/0x220
+[   17.784924]                      [<ffffffff814b98b9>] system_call_fastpath+0x16/0x1b
+[   17.784924]   }
+[   17.784924]   ... key      at: [<ffffffffa00fb5a8>] __key.74145+0x0/0xfffffffffffe7a58 [qla2xxx]
+[   17.784924]   ... acquired at:
+[   17.784924]    [<ffffffff810ac5ac>] validate_chain+0x63c/0x740
+[   17.784924]    [<ffffffff810ac9bd>] __lock_acquire+0x30d/0x520
+[   17.784924]    [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]    [<ffffffff814afc8c>] _raw_spin_lock+0x3c/0x50
+[   17.784924]    [<ffffffffa009b74d>] qla2x00_init_rings+0x11d/0x240 [qla2xxx]
+[   17.784924]    [<ffffffffa009fad8>] qla2x00_initialize_adapter+0x3b8/0x3e0 [qla2xxx]
+[   17.784924]    [<ffffffffa00e1dd2>] qla2x00_probe_one+0x1031/0x225f [qla2xxx]
+[   17.784924]    [<ffffffff812a6b34>] local_pci_probe+0x74/0x100
+[   17.784924]    [<ffffffff812a6ca9>] __pci_device_probe+0xe9/0xf0
+[   17.784924]    [<ffffffff812a7f65>] pci_device_probe+0x35/0x60
+[   17.784924]    [<ffffffff8134e617>] really_probe+0x67/0x330
+[   17.784924]    [<ffffffff8134e922>] driver_probe_device+0x42/0xa0
+[   17.784924]    [<ffffffff8134ea23>] __driver_attach+0xa3/0xb0
+[   17.784924]    [<ffffffff8134c8a4>] bus_for_each_dev+0x64/0x90
+[   17.784924]    [<ffffffff8134e3d9>] driver_attach+0x19/0x20
+[   17.784924]    [<ffffffff8134de18>] bus_add_driver+0x208/0x290
+[   17.784924]    [<ffffffff8134f0af>] driver_register+0x6f/0x150
+[   17.784924]    [<ffffffff812a808c>] __pci_register_driver+0x5c/0x70
+[   17.784924]    [<ffffffffa01091cb>] qla2x00_module_init+0x1cb/0x21a [qla2xxx]
+[   17.784924]    [<ffffffff810001bd>] do_one_initcall+0x3d/0x170
+[   17.784924]    [<ffffffff810bafe6>] sys_init_module+0xc6/0x220
+[   17.784924]    [<ffffffff814b98b9>] system_call_fastpath+0x16/0x1b
+[   17.784924] 
+[   17.784924] -> (&(&ha->vport_slock)->rlock){+.....} ops: 2 {
+[   17.784924]    HARDIRQ-ON-W at:
+[   17.784924]                     [<ffffffff810ab320>] mark_irqflags+0x130/0x190
+[   17.784924]                     [<ffffffff810aca0c>] __lock_acquire+0x35c/0x520
+[   17.784924]                     [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]                     [<ffffffff814afc8c>] _raw_spin_lock+0x3c/0x50
+[   17.784924]                     [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924]                     [<ffffffffa00a2060>] qla2x00_configure_loop+0x30/0x2f0 [qla2xxx]
+[   17.784924]                     [<ffffffffa00a27d6>] qla2x00_loop_resync+0x126/0x160 [qla2xxx]
+[   17.784924]                     [<ffffffffa00994de>] qla2x00_do_dpc+0x5ee/0x660 [qla2xxx]
+[   17.784924]                     [<ffffffff8106cc26>] kthread+0xd6/0xe0
+[   17.784924]                     [<ffffffff814bab24>] kernel_thread_helper+0x4/0x10
+[   17.784924]    INITIAL USE at:
+[   17.784924]                    [<ffffffff810ac88d>] __lock_acquire+0x1dd/0x520
+[   17.784924]                    [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]                    [<ffffffff814afc8c>] _raw_spin_lock+0x3c/0x50
+[   17.784924]                    [<ffffffffa009b74d>] qla2x00_init_rings+0x11d/0x240 [qla2xxx]
+[   17.784924]                    [<ffffffffa009fad8>] qla2x00_initialize_adapter+0x3b8/0x3e0 [qla2xxx]
+[   17.784924]                    [<ffffffffa00e1dd2>] qla2x00_probe_one+0x1031/0x225f [qla2xxx]
+[   17.784924]                    [<ffffffff812a6b34>] local_pci_probe+0x74/0x100
+[   17.784924]                    [<ffffffff812a6ca9>] __pci_device_probe+0xe9/0xf0
+[   17.784924]                    [<ffffffff812a7f65>] pci_device_probe+0x35/0x60
+[   17.784924]                    [<ffffffff8134e617>] really_probe+0x67/0x330
+[   17.784924]                    [<ffffffff8134e922>] driver_probe_device+0x42/0xa0
+[   17.784924]                    [<ffffffff8134ea23>] __driver_attach+0xa3/0xb0
+[   17.784924]                    [<ffffffff8134c8a4>] bus_for_each_dev+0x64/0x90
+[   17.784924]                    [<ffffffff8134e3d9>] driver_attach+0x19/0x20
+[   17.784924]                    [<ffffffff8134de18>] bus_add_driver+0x208/0x290
+[   17.784924]                    [<ffffffff8134f0af>] driver_register+0x6f/0x150
+[   17.784924]                    [<ffffffff812a808c>] __pci_register_driver+0x5c/0x70
+[   17.784924]                    [<ffffffffa01091cb>] qla2x00_module_init+0x1cb/0x21a [qla2xxx]
+[   17.784924]                    [<ffffffff810001bd>] do_one_initcall+0x3d/0x170
+[   17.784924]                    [<ffffffff810bafe6>] sys_init_module+0xc6/0x220
+[   17.784924]                    [<ffffffff814b98b9>] system_call_fastpath+0x16/0x1b
+[   17.784924]  }
+[   17.784924]  ... key      at: [<ffffffffa00fb5a0>] __key.74146+0x0/0xfffffffffffe7a60 [qla2xxx]
+[   17.784924]  ... acquired at:
+[   17.784924]    [<ffffffff810aa43a>] check_usage_backwards+0x8a/0xf0
+[   17.784924]    [<ffffffff810aadf9>] mark_lock_irq+0x99/0x290
+[   17.784924]    [<ffffffff810ab13e>] mark_lock+0x14e/0x200
+[   17.784924]    [<ffffffff810ab320>] mark_irqflags+0x130/0x190
+[   17.784924]    [<ffffffff810aca0c>] __lock_acquire+0x35c/0x520
+[   17.784924]    [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]    [<ffffffff814afc8c>] _raw_spin_lock+0x3c/0x50
+[   17.784924]    [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924]    [<ffffffffa00a2060>] qla2x00_configure_loop+0x30/0x2f0 [qla2xxx]
+[   17.784924]    [<ffffffffa00a27d6>] qla2x00_loop_resync+0x126/0x160 [qla2xxx]
+[   17.784924]    [<ffffffffa00994de>] qla2x00_do_dpc+0x5ee/0x660 [qla2xxx]
+[   17.784924]    [<ffffffff8106cc26>] kthread+0xd6/0xe0
+[   17.784924]    [<ffffffff814bab24>] kernel_thread_helper+0x4/0x10
+[   17.784924] 
+[   17.784924] 
+[   17.784924] stack backtrace:
+[   17.784924] Pid: 368, comm: qla2xxx_1_dpc Not tainted 3.6.0-0.0.0.28.36b5ec9-default #1
+[   17.784924] Call Trace:
+[   17.784924]  [<ffffffff810a9ce6>] print_irq_inversion_bug+0x1c6/0x210
+[   17.784924]  [<ffffffff810aa43a>] check_usage_backwards+0x8a/0xf0
+[   17.784924]  [<ffffffff814b05cb>] ? _raw_spin_unlock_irqrestore+0x3b/0x80
+[   17.784924]  [<ffffffff810aa3b0>] ? print_usage_bug+0x190/0x190
+[   17.784924]  [<ffffffff810aadf9>] mark_lock_irq+0x99/0x290
+[   17.784924]  [<ffffffff810ab13e>] mark_lock+0x14e/0x200
+[   17.784924]  [<ffffffff810ab320>] mark_irqflags+0x130/0x190
+[   17.784924]  [<ffffffff810aca0c>] __lock_acquire+0x35c/0x520
+[   17.784924]  [<ffffffff810acc6f>] lock_acquire+0x9f/0x190
+[   17.784924]  [<ffffffffa009b377>] ? qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924]  [<ffffffff814afc8c>] _raw_spin_lock+0x3c/0x50
+[   17.784924]  [<ffffffffa009b377>] ? qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924]  [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+[   17.784924]  [<ffffffff810ab700>] ? trace_hardirqs_on_caller+0xb0/0x1a0
+[   17.784924]  [<ffffffffa00a2060>] qla2x00_configure_loop+0x30/0x2f0 [qla2xxx]
+[   17.784924]  [<ffffffffa00a27d6>] qla2x00_loop_resync+0x126/0x160 [qla2xxx]
+[   17.784924]  [<ffffffffa00994de>] qla2x00_do_dpc+0x5ee/0x660 [qla2xxx]
+[   17.784924]  [<ffffffffa0098ef0>] ? qla2x00_relogin+0x220/0x220 [qla2xxx]
+[   17.784924]  [<ffffffff8106cc26>] kthread+0xd6/0xe0
+[   17.784924]  [<ffffffff814b056b>] ? _raw_spin_unlock_irq+0x2b/0x50
+[   17.784924]  [<ffffffff814bab24>] kernel_thread_helper+0x4/0x10
+[   17.784924]  [<ffffffff814b0af3>] ? retint_restore_args+0x13/0x13
+[   17.784924]  [<ffffffff8106cb50>] ? __init_kthread_worker+0x70/0x70
+[   17.784924]  [<ffffffff814bab20>] ? gs_change+0x13/0x13
+[   18.928207] qla2xxx [0000:24:00.0]-00fb:1: QLogic QMI2572 - QLogic 4Gb Fibre Channel Expansion Card (CIOv) for IBM BladeCenter.
+[   18.939685] qla2xxx [0000:24:00.0]-00fc:1: ISP2532: PCIe (5.0GT/s x8) @ 0000:24:00.0 hdma+ host#=1 fw=5.06.05 (90d5).
+[   18.951022] qla2xxx [0000:24:00.1]-001d: : Found an ISP2532 irq 42 iobase 0xffffc9001e2a0000.
+[   18.959964] qla2xxx 0000:24:00.1: irq 68 for MSI/MSI-X
+[   18.965162] qla2xxx 0000:24:00.1: irq 69 for MSI/MSI-X
+[   19.023894] scsi2 : qla2xxx
+[   19.888618] scsi 1:0:0:0: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.901563] scsi 1:0:0:1: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.910274] scsi 1:0:0:2: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.918951] scsi 1:0:0:3: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.927742] scsi 1:0:0:4: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.936460] scsi 1:0:0:5: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.945269] scsi 1:0:0:6: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.953995] scsi 1:0:0:31: Direct-Access     IBM      Universal Xport  0542 PQ: 0 ANSI: 3
+[   19.963750] scsi 1:0:1:0: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.976798] scsi 1:0:1:1: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.985520] scsi 1:0:1:2: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   19.994223] scsi 1:0:1:3: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   20.002872] scsi 1:0:1:4: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   20.011658] scsi 1:0:1:5: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   20.020233] scsi 1:0:1:6: Direct-Access     IBM      1724-100  FAStT  0542 PQ: 0 ANSI: 3
+[   20.028905] scsi 1:0:1:31: Direct-Access     IBM      Universal Xport  0542 PQ: 0 ANSI: 3
+[   24.028195] qla2xxx [0000:24:00.1]-00fb:2: QLogic QMI2572 - QLogic 4Gb Fibre Channel Expansion Card (CIOv) for IBM BladeCenter.
+[   24.039718] qla2xxx [0000:24:00.1]-00fc:2: ISP2532: PCIe (5.0GT/s x8) @ 0000:24:00.1 hdma+ host#=2 fw=5.06.05 (90d5).
+[   24.084241] ACPI: bus type usb registered
 
-Can you separate out board and SoC changes into different patches?
-
-> @@ -212,6 +212,12 @@ static struct clk tptc2_clk = {
->  	.flags		= ALWAYS_ENABLED,
->  };
->  
-> +static struct clk pruss_clk = {
-> +	.name		= "pruss",
-> +	.parent		= &pll0_sysclk2,
-> +	.lpsc		= DA8XX_LPSC0_PRUSS,
-> +};
-> +
->  static struct clk uart0_clk = {
->  	.name		= "uart0",
->  	.parent		= &pll0_sysclk2,
-> @@ -378,6 +384,7 @@ static struct clk_lookup da850_clks[] = {
->  	CLK(NULL,		"tptc1",	&tptc1_clk),
->  	CLK(NULL,		"tpcc1",	&tpcc1_clk),
->  	CLK(NULL,		"tptc2",	&tptc2_clk),
-> +	CLK(NULL,		"pruss",	&pruss_clk),
-
-This is actually incorrect since we should use device name rather than
-con_id for matching the clock. If there is just one clock that the
-driver needs, connection id should be NULL. Looking at the driver now,
-the clk_get() call seems to pass a valid device pointer. So, I wonder
-how you are able to look up the clock even with a NULL device name.
-
->  	CLK(NULL,		"uart0",	&uart0_clk),
->  	CLK(NULL,		"uart1",	&uart1_clk),
->  	CLK(NULL,		"uart2",	&uart2_clk),
-> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-> index bd2f72b..7c2e0d2 100644
-> --- a/arch/arm/mach-davinci/devices-da8xx.c
-> +++ b/arch/arm/mach-davinci/devices-da8xx.c
-> @@ -518,6 +518,72 @@ void __init da8xx_register_mcasp(int id, struct snd_platform_data *pdata)
->  	}
->  }
->  
-> +#define DA8XX_PRUSS_MEM_BASE		0x01C30000
-
-In this file all base addresses are added at the top of the file. The
-defines are sorted in ascending order of address. If that's broken, its
-all my fault, but please don't add to the breakage when adding this entry :)
-
-> +
-> +static struct resource da8xx_pruss_resources[] = {
-> +	{
-> +		.start	= DA8XX_PRUSS_MEM_BASE,
-> +		.end	= DA8XX_PRUSS_MEM_BASE + 0xFFFF,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT0,
-> +		.end	= IRQ_DA8XX_EVTOUT0,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT1,
-> +		.end	= IRQ_DA8XX_EVTOUT1,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT2,
-> +		.end	= IRQ_DA8XX_EVTOUT2,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT3,
-> +		.end	= IRQ_DA8XX_EVTOUT3,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT4,
-> +		.end	= IRQ_DA8XX_EVTOUT4,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT5,
-> +		.end	= IRQ_DA8XX_EVTOUT5,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT6,
-> +		.end	= IRQ_DA8XX_EVTOUT6,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	{
-> +		.start	= IRQ_DA8XX_EVTOUT7,
-> +		.end	= IRQ_DA8XX_EVTOUT7,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct platform_device da8xx_pruss_uio_dev = {
-> +	.name		= "pruss_uio",
-> +	.id		= -1,
-> +	.num_resources	= ARRAY_SIZE(da8xx_pruss_resources),
-> +	.resource	= da8xx_pruss_resources,
-> +	.dev	 =	{
-> +		.coherent_dma_mask = 0xffffffff,
-
-DMA_BIT_MASK(32)?
-
-Thanks,
-Sekhar
