@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934311Ab2JDVZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934252Ab2JDVY7 (ORCPT
+	id S1946189Ab2JDVmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:42:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934229Ab2JDVZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:59 -0400
+	Thu, 4 Oct 2012 17:25:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Spang <spang@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 32/52] Increase XHCI suspend timeout to 16ms
-Date: Thu,  4 Oct 2012 14:21:23 -0700
-Message-Id: <20121004210639.369058849@linuxfoundation.org>
+        xiaojin <jin.xiao@intel.com>, "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 35/52] n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
+Date: Thu,  4 Oct 2012 14:21:26 -0700
+Message-Id: <20121004210639.741523886@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -27,38 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Spang <spang@chromium.org>
+From: xiaojin <jin.xiao@intel.com>
 
-commit a6e097dfdfd189b6929af6efa1d289af61858386 upstream.
+commit 7e8ac7b23b67416700dfb8b4136a4e81ce675b48 upstream.
 
-The Intel XHCI specification says that after clearing the run/stop bit
-the controller may take up to 16ms to halt. We've seen a device take
-14ms, which with the current timeout of 10ms causes the kernel to
-abort the suspend. Increasing the timeout to the recommended value
-fixes the problem.
+In 3GPP27.010 5.8.1, it defined:
+The TE multiplexer initiates the establishment of the multiplexer control channel by sending a SABM frame on DLCI 0 using the procedures of clause 5.4.1.
+Once the multiplexer channel is established other DLCs may be established using the procedures of clause 5.4.1.
+This patch implement 5.8.1 in MUX level, it make sure DLC0 is the first channel to be setup.
 
-This patch should be backported to kernels as old as 2.6.37, that
-contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
-PCI power management implementation".
+[or for those not familiar with the specification: it was possible to try
+ and open a data connection while the control channel was not yet fully
+ open, which is a spec violation and confuses some modems]
 
-Signed-off-by: Michael Spang <spang@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: xiaojin <jin.xiao@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+[tweaked the order we check things and error code]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_gsm.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -890,7 +890,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command &= ~CMD_RUN;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
- 	if (handshake(xhci, &xhci->op_regs->status,
--		      STS_HALT, STS_HALT, 100*100)) {
-+		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
- 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -2889,6 +2889,10 @@ static int gsmtty_open(struct tty_struct
+ 	gsm = gsm_mux[mux];
+ 	if (gsm->dead)
+ 		return -EL2HLT;
++	/* If DLCI 0 is not yet fully open return an error. This is ok from a locking
++	   perspective as we don't have to worry about this if DLCI0 is lost */
++	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
++		return -EL2NSYNC;
+ 	dlci = gsm->dlci[line];
+ 	if (dlci == NULL)
+ 		dlci = gsm_dlci_alloc(gsm, line);
 
 
