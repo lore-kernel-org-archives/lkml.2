@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422829Ab2JDQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 12:17:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43752 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757077Ab2JDQRH (ORCPT
+	id S1757155Ab2JDQTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 12:19:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60716 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757077Ab2JDQTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 12:17:07 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 0/4] Clean up some long arch conditionals
-Date: Thu,  4 Oct 2012 17:15:53 +0100
-Message-Id: <1349367357-13865-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
+	Thu, 4 Oct 2012 12:19:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121003165105.GA30214@jshin-Toonie>
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
+	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+	<20121003165105.GA30214@jshin-Toonie>
+Date: Thu, 4 Oct 2012 09:19:08 -0700
+X-Google-Sender-Auth: pgjpOgQhKELXeEgAHWY4ECabSUo
+Message-ID: <CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com>
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That's the second version of the arch conditionals clean-up patches.
-This time the Kconfig options are added in random places (or
-alphabetical for arm64) to reduce the conflicts with other patches.
+On Wed, Oct 3, 2012 at 9:51 AM, Jacob Shin <jacob.shin@amd.com> wrote:
+> Any comments, thoughts? hpa? Yinghai?
+>
+> So it seems that during init_memory_mapping Xen needs to modify page table
+> bits and the memory where the page tables live needs to be direct mapped at
+> that time.
+>
+> Since we now call init_memory_mapping for every E820_RAM range sequencially,
+> the only way to satisfy Xen is to find_early_page_table_space (good_end needs
+> to be within memory already mapped at the time) for every init_memory_mapping
+> call.
+>
+> What do you think Yinghai?
 
-Thanks.
+that may put the page table on near end of every ram range for next
+memory range.
 
+then kdump may have problem get big range again.
 
-Catalin Marinas (4):
-  Clean up the long arch list for the UID16 config option
-  Clean up the long arch list for the DEBUG_KMEMLEAK config option
-  Clean up the long arch list for the DEBUG_BUGVERBOSE config option
-  Clean up the "#if defined(arch)" list for exception-trace sysctl
-    entry
-
- arch/arm/Kconfig        |    2 ++
- arch/arm64/Kconfig      |    4 ++++
- arch/blackfin/Kconfig   |    1 +
- arch/cris/Kconfig       |    1 +
- arch/frv/Kconfig        |    2 ++
- arch/h8300/Kconfig      |    1 +
- arch/m32r/Kconfig       |    1 +
- arch/m68k/Kconfig       |    2 ++
- arch/microblaze/Kconfig |    1 +
- arch/mips/Kconfig       |    1 +
- arch/powerpc/Kconfig    |    2 ++
- arch/s390/Kconfig       |    3 +++
- arch/sh/Kconfig         |    3 +++
- arch/sparc/Kconfig      |    5 +++++
- arch/tile/Kconfig       |    3 +++
- arch/um/Kconfig.common  |    1 +
- arch/x86/Kconfig        |    4 ++++
- init/Kconfig            |   11 +++++++++--
- kernel/sysctl.c         |    3 +--
- lib/Kconfig.debug       |   16 ++++++++--------
- 20 files changed, 55 insertions(+), 12 deletions(-)
-
+Yinghai
