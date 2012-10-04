@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946444Ab2JDVdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:33:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42952 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946401Ab2JDV1u (ORCPT
+	id S1946410Ab2JDVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:33:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37556 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1946401Ab2JDVdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Yin, Fengwei" <fengwei.yin@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 18/33] n_gsm: added interlocking for gsm_data_lock for certain code paths
-Date: Thu,  4 Oct 2012 14:26:40 -0700
-Message-Id: <20121004210600.709118485@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
-References: <20121004210558.383865383@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 17:33:53 -0400
+Date: Thu, 4 Oct 2012 22:33:50 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20121004213350.GJ13292@decadent.org.uk>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+ <20121001225201.884628603@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001225201.884628603@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 101/180] SCSI: libsas: continue revalidation
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 02, 2012 at 12:53:38AM +0200, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Dan Williams <dan.j.williams@intel.com>
+> 
+> commit 26f2f199ff150d8876b2641c41e60d1c92d2fb81 upstream.
+> 
+> Continue running revalidation until no more broadcast devices are
+> discovered.  Fixes cases where re-discovery completes too early in a
+> domain with multiple expanders with pending re-discovery events.
+> Servicing BCNs can get backed up behind error recovery.
+> 
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> commit 2da74cd8a6bad64d02207396c76d0939f3c57aaa upstream.
+[...]
 
-------------------
+Another 3.0 stable reference.
 
-From: Russ Gorby <russ.gorby@intel.com>
+Ben.
 
-commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
-
-There were some locking holes in the management of the MUX's
-message queue for 2 code paths:
-1) gsmld_write_wakeup
-2) receipt of CMD_FCON flow-control message
-In both cases gsm_data_kick is called w/o locking so it can collide
-with other other instances of gsm_data_kick (pulling messages tx_tail)
-or potentially other instances of __gsm_data_queu (adding messages to tx_head)
-
-Changed to take the tx_lock in these 2 cases
-
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/n_gsm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1152,6 +1152,8 @@ static void gsm_control_message(struct g
- 							u8 *data, int clen)
- {
- 	u8 buf[1];
-+	unsigned long flags;
-+
- 	switch (command) {
- 	case CMD_CLD: {
- 		struct gsm_dlci *dlci = gsm->dlci[0];
-@@ -1177,7 +1179,9 @@ static void gsm_control_message(struct g
- 		gsm->constipated = 0;
- 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
- 		/* Kick the link in case it is idling */
-+		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_data_kick(gsm);
-+		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 		break;
- 	case CMD_MSC:
- 		/* Out of band modem line change indicator for a DLCI */
-@@ -2269,12 +2273,12 @@ static void gsmld_write_wakeup(struct tt
- 
- 	/* Queue poll */
- 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-+	spin_lock_irqsave(&gsm->tx_lock, flags);
- 	gsm_data_kick(gsm);
- 	if (gsm->tx_bytes < TX_THRESH_LO) {
--		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_dlci_data_sweep(gsm);
--		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 	}
-+	spin_unlock_irqrestore(&gsm->tx_lock, flags);
- }
- 
- /**
-
-
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
