@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab2JDCVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 22:21:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39870 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2JDCV2 (ORCPT
+	id S1753966Ab2JDCbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 22:31:37 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:49963 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab2JDCbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 22:21:28 -0400
-Date: Thu, 4 Oct 2012 12:21:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Ben Skeggs <bskeggs@redhat.com>,
-        Martin Peres <martin.peres@labri.fr>,
-        Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-Subject: linux-next: manual merge of the drm tree with the  tree
-Message-Id: <20121004122125.a501fc314016f967fd914c55@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE"
+	Wed, 3 Oct 2012 22:31:36 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: linux-efi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, glin@suse.com,
+        "Lee, Chun-Yi" <jlee@suse.com>, Matt Fleming <matt.fleming@intel.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] efi: add efivars kobject to efi sysfs folder
+Date: Thu,  4 Oct 2012 10:24:46 +0800
+Message-Id: <1349317486-30006-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+UEFI variable filesystem need a new mount point, so this patch add
+efivars kobject to efi_kobj for create a /sys/firmware/efi/efivars
+folder.
 
-Hi Dave,
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ drivers/firmware/efivars.c |   11 +++++++++++
+ include/linux/efi.h        |    1 +
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/nouveau (lots of files) between commit 760285e7e7ab
-("UAPI: (Scripted) Convert #include "..." to #include <path/...> in
-drivers/gpu/") from Linus' tree and various commits from the drm tree.
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 1e1aad0..7c1234e 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -1487,6 +1487,7 @@ void unregister_efivars(struct efivars *efivars)
+ 		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
+ 	kfree(efivars->new_var);
+ 	kfree(efivars->del_var);
++	kobject_put(efivars->kobject);
+ 	kset_unregister(efivars->kset);
+ }
+ EXPORT_SYMBOL_GPL(unregister_efivars);
+@@ -1518,6 +1519,13 @@ int register_efivars(struct efivars *efivars,
+ 		goto out;
+ 	}
+ 
++	efivars->kobject = kobject_create_and_add("efivars", parent_kobj);
++	if (!efivars->kobject) {
++		pr_err("efivars: Subsystem registration failed.\n");
++		error = -ENOMEM;
++		goto err_unreg_vars;
++	}
++
+ 	/*
+ 	 * Per EFI spec, the maximum storage allocated for both
+ 	 * the variable name and variable data is 1024 bytes.
+@@ -1562,6 +1570,9 @@ int register_efivars(struct efivars *efivars,
+ 
+ 	register_filesystem(&efivars_fs_type);
+ 
++err_unreg_vars:
++	kset_unregister(efivars->kset);
++
+ out:
+ 	kfree(variable_name);
+ 
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 1829a97..c993f54 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -654,6 +654,7 @@ struct efivars {
+ 	spinlock_t lock;
+ 	struct list_head list;
+ 	struct kset *kset;
++	struct kobject *kobject;
+ 	struct bin_attribute *new_var, *del_var;
+ 	const struct efivar_operations *ops;
+ 	struct efivar_entry *walk_entry;
+-- 
+1.7.7
 
-There is a large reorganisation under drivers/gpu/nouveau in the drm
-tree (which only appeared in linux-next today :-().
-
-I used the drm tree versions of the files and but this needs to be done
-properly.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQbPKlAAoJEECxmPOUX5FEhwwP/1xiKS+q3EDhaBCr1K4VyXpI
-vQ0stHrQS6wre3ilYBQKNmpSmder4TRqLqp+7YREzz6siPqcn5RUBhsA4k9oroTk
-NAY2CcJNHXj78m/M/gHcoe7CfrOt/UaL47yOPj5zN6YSyJvgxyrSkvQatf5ooGG9
-kYF5Fi8G7Nwc9qmSTPp5vACIP66cUy/hY9G2b9P68sUERFbTTx0WM4T1CPI3lSWe
-JYyzKwfvIi96ZRkfDRjKR3EHTAb9UoiPqOaEy/WPUfcI7q4f+QiYLr50iLCpx+WS
-YkMKf9ANcZEMrQIOxsWieT4dQW5vSsmA5A5IOyYh1IKAWyy/RPjCtZUEXQNy2gDy
-SslkLUvHYISCOiEbS+EuRf+tZ9LAmIO1Sfhyx8BHV9YzoZdpt7wnPVpetyaaDGjt
-SOji6kTZeZ8tL8++jjXWD+++Ck4O6fK2aX251UyQaVgkD//JOQP6XDBMPLUpH2Cr
-M+8KXGofnDa3M/l6mOWjQSfYA9kMIPDl24Pkl+RFCJDz3IKEIZRxGN2zlXckcme9
-Hkvj52U2Cvf/+VpkI4JE0b/lflHqWe/8R1bJ0eotAV8TVDI7w6SKamFnWDr9uNtx
-pgQjdLOcT9NdpqkxDyJftv6cvgAavtFFowrV38qDNKEyNdw/uhkTF1mk1iTGd2Y5
-3M9aFDvxNqRR1F0lnJ+i
-=2Ah0
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Oct_2012_12_21_25_+1000_brN3boo0ORNYiYdE--
