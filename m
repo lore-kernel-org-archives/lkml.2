@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab2JDTqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:46:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45234 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757024Ab2JDTqv (ORCPT
+	id S1757212Ab2JDTrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:47:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46271 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757172Ab2JDTrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:46:51 -0400
-Date: Thu, 04 Oct 2012 15:46:49 -0400 (EDT)
-Message-Id: <20121004.154649.2206336946126738090.davem@davemloft.net>
-To: linux-mm@kvack.org
-CC: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org,
-        aarcange@redhat.com, hannes@cmpxchg.org
-Subject: [PATCH v2 2/7] sparc64: Halve the size of PTE tables.
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Oct 2012 15:47:08 -0400
+Date: Thu, 4 Oct 2012 20:46:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH 1/4] Clean up the long arch list for the UID16 config
+	option
+Message-ID: <20121004194648.GB4625@n2100.arm.linux.org.uk>
+References: <1349282666-32100-1-git-send-email-catalin.marinas@arm.com> <1349282666-32100-2-git-send-email-catalin.marinas@arm.com> <20121003151505.8d59b646.akpm@linux-foundation.org> <20121004194131.GA4625@n2100.arm.linux.org.uk> <CAMuHMdWiPLdw3+iKJZRb0bR5seTDz1jTuiF2bV=WvAiyXJz3CQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWiPLdw3+iKJZRb0bR5seTDz1jTuiF2bV=WvAiyXJz3CQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 04, 2012 at 09:45:35PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Oct 4, 2012 at 9:41 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Oct 03, 2012 at 03:15:05PM -0700, Andrew Morton wrote:
+> >> Guys, don't do this.  Either put the new item into a randomly-chosen
+> >> position or, probably better, alphanumerically sort the list.
+> >
+> > I've been telling people to alphanumerically sort Kconfig select
+> > options for some time, but as normal, no one's listening.
+> 
+> Anyone who cares to sort the existing ones "at the end of the merge window",
+> and teaches checkpatch to enforce it for new ones?
 
-The reason we want to do this is to facilitate transparent huge page
-support.
-
-Right now PMD's cover 8MB of address space, and our huge page size is
-4MB.  The current transparent hugepage support is not able to handle
-HPAGE_SIZE != PMD_SIZE.
-
-So make PTE tables be sized to half of a page instead of a full page.
-
-We can still map properly the whole supported virtual address range
-which on sparc64 requires 44 bits.  Add a compile time CPP test which
-ensures that this requirement is always met.
-
-There is a minor inefficiency added by this change.  We only use half
-of the page for PTE tables.  It's not trivial to use only half of the
-page yet still get all of the pgtable_page_{ctor,dtor}() stuff working
-properly.  It is doable, and that will come in a subsequent change.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- arch/sparc/include/asm/pgtable_64.h |   24 +++++++-----------------
- arch/sparc/include/asm/tsb.h        |    4 ++--
- 2 files changed, 9 insertions(+), 19 deletions(-)
-
-diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 387d484..a7b5091 100644
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -45,40 +45,30 @@
- 
- #define vmemmap			((struct page *)VMEMMAP_BASE)
- 
--/* XXX All of this needs to be rethought so we can take advantage
-- * XXX cheetah's full 64-bit virtual address space, ie. no more hole
-- * XXX in the middle like on spitfire. -DaveM
-- */
--/*
-- * Given a virtual address, the lowest PAGE_SHIFT bits determine offset
-- * into the page; the next higher PAGE_SHIFT-3 bits determine the pte#
-- * in the proper pagetable (the -3 is from the 8 byte ptes, and each page
-- * table is a single page long). The next higher PMD_BITS determine pmd#
-- * in the proper pmdtable (where we must have PMD_BITS <= (PAGE_SHIFT-2)
-- * since the pmd entries are 4 bytes, and each pmd page is a single page
-- * long). Finally, the higher few bits determine pgde#.
-- */
--
- /* PMD_SHIFT determines the size of the area a second-level page
-  * table can map
-  */
--#define PMD_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-3))
-+#define PMD_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-4))
- #define PMD_SIZE	(_AC(1,UL) << PMD_SHIFT)
- #define PMD_MASK	(~(PMD_SIZE-1))
- #define PMD_BITS	(PAGE_SHIFT - 2)
- 
- /* PGDIR_SHIFT determines what a third-level page table entry can map */
--#define PGDIR_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-3) + PMD_BITS)
-+#define PGDIR_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-4) + PMD_BITS)
- #define PGDIR_SIZE	(_AC(1,UL) << PGDIR_SHIFT)
- #define PGDIR_MASK	(~(PGDIR_SIZE-1))
- #define PGDIR_BITS	(PAGE_SHIFT - 2)
- 
-+#if (PGDIR_SHIFT + PGDIR_BITS) != 44
-+#error Page table parameters do not cover virtual address space properly.
-+#endif
-+
- #ifndef __ASSEMBLY__
- 
- #include <linux/sched.h>
- 
- /* Entries per page directory level. */
--#define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-3))
-+#define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-4))
- #define PTRS_PER_PMD	(1UL << PMD_BITS)
- #define PTRS_PER_PGD	(1UL << PGDIR_BITS)
- 
-diff --git a/arch/sparc/include/asm/tsb.h b/arch/sparc/include/asm/tsb.h
-index 1a8afd1..6435924 100644
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -152,7 +152,7 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	lduwa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
- 	brz,pn		REG1, FAIL_LABEL; \
- 	 sllx		VADDR, 64 - PMD_SHIFT, REG2; \
--	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
-+	srlx		REG2, 64 - (PAGE_SHIFT - 1), REG2; \
- 	sllx		REG1, 11, REG1; \
- 	andn		REG2, 0x7, REG2; \
- 	add		REG1, REG2, REG1;
-@@ -177,7 +177,7 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	lduwa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
- 	brz,pn		REG1, FAIL_LABEL; \
- 	 sllx		VADDR, 64 - PMD_SHIFT, REG2; \
--	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
-+	srlx		REG2, 64 - (PAGE_SHIFT - 1), REG2; \
- 	sllx		REG1, 11, REG1; \
- 	andn		REG2, 0x7, REG2; \
- 	add		REG1, REG2, REG1;
--- 
-1.7.10.4
-
+Well, I'll certainly do that for ARM... but how long it'll stay like
+that will be very hit and miss...
