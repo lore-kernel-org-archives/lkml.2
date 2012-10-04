@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294Ab2JDVY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934252Ab2JDVYx (ORCPT
+	id S934324Ab2JDVZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:25:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934298Ab2JDVZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:53 -0400
+	Thu, 4 Oct 2012 17:25:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 30/52] xHCI: cancel command after command timeout
-Date: Thu,  4 Oct 2012 14:21:21 -0700
-Message-Id: <20121004210639.123793520@linuxfoundation.org>
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Paul Stewart <pstew@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 33/52] ath9k: Disable ASPM only for AR9285
+Date: Thu,  4 Oct 2012 14:21:24 -0700
+Message-Id: <20121004210639.493048786@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,142 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Sujith Manoharan <c_manoha@qualcomm.com>
 
-commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
+commit 046b6802c8d3c8a57448485513bf7291633e0fa3 upstream.
 
-The patch is used to cancel command when the command isn't
-acknowledged and a timeout occurs.
+Currently, ASPM is disabled for all WLAN+BT combo chipsets
+when BTCOEX is enabled. This is incorrect since the workaround
+is required only for WB195, which is a AR9285+AR3011 combo
+solution. Fix this by checking for the HW version when enabling
+the workaround.
 
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
-assertion to check for virt_dev=0 bug." That commit papers over a NULL
-pointer dereference, and this patch fixes the underlying issue that
-caused the NULL pointer dereference.
-
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Tested-by: Paul Stewart <pstew@chromium.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
- drivers/usb/host/xhci.h |    3 +++
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ drivers/net/wireless/ath/ath9k/pci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2525,6 +2525,7 @@ static int xhci_configure_endpoint(struc
- 	struct completion *cmd_completion;
- 	u32 *cmd_status;
- 	struct xhci_virt_device *virt_dev;
-+	union xhci_trb *cmd_trb;
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -122,8 +122,9 @@ static void ath_pci_aspm_init(struct ath
+ 	if (!parent)
+ 		return;
  
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	virt_dev = xhci->devs[udev->slot_id];
-@@ -2570,6 +2571,7 @@ static int xhci_configure_endpoint(struc
- 	}
- 	init_completion(cmd_completion);
- 
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	if (!ctx_change)
- 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
- 				udev->slot_id, must_succeed);
-@@ -2591,14 +2593,17 @@ static int xhci_configure_endpoint(struc
- 	/* Wait for the configure endpoint command to complete */
- 	timeleft = wait_for_completion_interruptible_timeout(
- 			cmd_completion,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for %s command\n",
- 				timeleft == 0 ? "Timeout" : "Signal",
- 				ctx_change == 0 ?
- 					"configure endpoint" :
- 					"evaluate context");
--		/* FIXME cancel the configure endpoint command */
-+		/* cancel the configure endpoint command */
-+		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
-@@ -3547,8 +3552,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 	unsigned long flags;
- 	int timeleft;
- 	int ret;
-+	union xhci_trb *cmd_trb;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -3560,12 +3567,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
- 
- 	/* XXX: how much time for xHC slot assignment? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for a slot\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the enable slot request */
--		return 0;
-+		/* cancel the enable slot request */
-+		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
- 	}
- 
- 	if (!xhci->slot_id) {
-@@ -3626,6 +3633,7 @@ int xhci_address_device(struct usb_hcd *
- 	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u64 temp_64;
-+	union xhci_trb *cmd_trb;
- 
- 	if (!udev->slot_id) {
- 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
-@@ -3664,6 +3672,7 @@ int xhci_address_device(struct usb_hcd *
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
-+	cmd_trb = xhci->cmd_ring->dequeue;
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
-@@ -3676,7 +3685,7 @@ int xhci_address_device(struct usb_hcd *
- 
- 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
- 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
--			USB_CTRL_SET_TIMEOUT);
-+			XHCI_CMD_DEFAULT_TIMEOUT);
- 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
- 	 * the SetAddress() "recovery interval" required by USB and aborting the
- 	 * command on a timeout.
-@@ -3684,7 +3693,10 @@ int xhci_address_device(struct usb_hcd *
- 	if (timeleft <= 0) {
- 		xhci_warn(xhci, "%s while waiting for address device command\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
--		/* FIXME cancel the address device command */
-+		/* cancel the address device command */
-+		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
-+		if (ret < 0)
-+			return ret;
- 		return -ETIME;
- 	}
- 
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1252,6 +1252,9 @@ struct xhci_td {
- 	union xhci_trb		*last_trb;
- };
- 
-+/* xHCI command default timeout value */
-+#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
-+
- /* command descriptor */
- struct xhci_cd {
- 	struct list_head	cancel_cmd_list;
+-	if (ath9k_hw_get_btcoex_scheme(ah) != ATH_BTCOEX_CFG_NONE) {
+-		/* Bluetooth coexistance requires disabling ASPM. */
++	if ((ath9k_hw_get_btcoex_scheme(ah) != ATH_BTCOEX_CFG_NONE) &&
++	    (AR_SREV_9285(ah))) {
++		/* Bluetooth coexistance requires disabling ASPM for AR9285. */
+ 		pci_read_config_byte(pdev, pos + PCI_EXP_LNKCTL, &aspm);
+ 		aspm &= ~(PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1);
+ 		pci_write_config_byte(pdev, pos + PCI_EXP_LNKCTL, aspm);
 
 
