@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab2JDWIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:08:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933205Ab2JDVTJ (ORCPT
+	id S933171Ab2JDVTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:19:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932519Ab2JDVTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:09 -0400
+	Thu, 4 Oct 2012 17:19:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <rdunlap@xenotime.net>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 48/56] remoteproc: select VIRTIO to avoid build breakage
-Date: Thu,  4 Oct 2012 14:16:09 -0700
-Message-Id: <20121004211157.579264666@linuxfoundation.org>
+        xiaojin <jin.xiao@intel.com>, "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 37/56] n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
+Date: Thu,  4 Oct 2012 14:15:58 -0700
+Message-Id: <20121004211156.346645912@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,40 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ohad Ben-Cohen <ohad@wizery.com>
+From: xiaojin <jin.xiao@intel.com>
 
-commit 2ed6d29c725c4aead510b5c23f563795b265acf5 upstream.
+commit 7e8ac7b23b67416700dfb8b4136a4e81ce675b48 upstream.
 
-drivers/built-in.o: In function `rproc_virtio_finalize_features':
-remoteproc_virtio.c:(.text+0x2f9a02): undefined reference to `vring_transport_features'
-drivers/built-in.o: In function `rproc_virtio_del_vqs':
-remoteproc_virtio.c:(.text+0x2f9a74): undefined reference to `vring_del_virtqueue'
-drivers/built-in.o: In function `rproc_virtio_find_vqs':
-remoteproc_virtio.c:(.text+0x2f9c44): undefined reference to `vring_new_virtqueue'
-drivers/built-in.o: In function `rproc_add_virtio_dev':
-(.text+0x2f9e2c): undefined reference to `register_virtio_device'
-drivers/built-in.o: In function `rproc_vq_interrupt':
-(.text+0x2f9db7): undefined reference to `vring_interrupt'
-drivers/built-in.o: In function `rproc_remove_virtio_dev':
-(.text+0x2f9e9f): undefined reference to `unregister_virtio_device'
+In 3GPP27.010 5.8.1, it defined:
+The TE multiplexer initiates the establishment of the multiplexer control channel by sending a SABM frame on DLCI 0 using the procedures of clause 5.4.1.
+Once the multiplexer channel is established other DLCs may be established using the procedures of clause 5.4.1.
+This patch implement 5.8.1 in MUX level, it make sure DLC0 is the first channel to be setup.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+[or for those not familiar with the specification: it was possible to try
+ and open a data connection while the control channel was not yet fully
+ open, which is a spec violation and confuses some modems]
+
+Signed-off-by: xiaojin <jin.xiao@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+[tweaked the order we check things and error code]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/n_gsm.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -5,6 +5,7 @@ config REMOTEPROC
- 	tristate
- 	depends on EXPERIMENTAL
- 	select FW_CONFIG
-+	select VIRTIO
- 
- config OMAP_REMOTEPROC
- 	tristate "OMAP remoteproc support"
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -2889,6 +2889,10 @@ static int gsmtty_open(struct tty_struct
+ 	gsm = gsm_mux[mux];
+ 	if (gsm->dead)
+ 		return -EL2HLT;
++	/* If DLCI 0 is not yet fully open return an error. This is ok from a locking
++	   perspective as we don't have to worry about this if DLCI0 is lost */
++	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
++		return -EL2NSYNC;
+ 	dlci = gsm->dlci[line];
+ 	if (dlci == NULL)
+ 		dlci = gsm_dlci_alloc(gsm, line);
 
 
