@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab2JDJiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:38:09 -0400
-Received: from ams-iport-4.cisco.com ([144.254.224.147]:57270 "EHLO
-	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2JDJiH (ORCPT
+	id S1751481Ab2JDJn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:43:57 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:51932 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2JDJn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:38:07 -0400
-X-IronPort-AV: E=Sophos;i="4.80,533,1344211200"; 
-   d="scan'208";a="8521580"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH v3] media: davinci: vpif: set device capabilities
-Date: Thu, 4 Oct 2012 11:37:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-References: <1349342998-31804-1-git-send-email-prabhakar.lad@ti.com> <1349342998-31804-2-git-send-email-prabhakar.lad@ti.com>
-In-Reply-To: <1349342998-31804-2-git-send-email-prabhakar.lad@ti.com>
+	Thu, 4 Oct 2012 05:43:56 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com AEBD28217D
+Date: Thu, 4 Oct 2012 11:43:49 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 1/3] sched: introduce distinct per-cpu load average
+Message-ID: <20121004094349.GA2163@thinkpad>
+References: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
+ <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
+ <1349341186.4438.1.camel@twins>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210041137.52523.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349341186.4438.1.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 4 October 2012 11:29:58 Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Thu, Oct 04, 2012 at 10:59:46AM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-10-04 at 01:05 +0200, Andrea Righi wrote:
+> > +++ b/kernel/sched/core.c
+> > @@ -727,15 +727,17 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+> >  void activate_task(struct rq *rq, struct task_struct *p, int flags)
+> >  {
+> >         if (task_contributes_to_load(p))
+> > -               rq->nr_uninterruptible--;
+> > +               cpu_rq(p->on_cpu_uninterruptible)->nr_uninterruptible--;
+> >  
+> >         enqueue_task(rq, p, flags);
+> >  }
 > 
-> set device_caps and also change the driver and
-> bus_info to proper values as per standard.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> That's completely broken, you cannot do non-atomic cross-cpu
+> modifications like that. Also, adding an atomic op to the wakeup/sleep
+> paths isn't going to be popular at all.
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Right, the update must be atomic to have a coherent nr_uninterruptible
+value. And AFAICS the only way to account a coherent nr_uninterruptible
+value per-cpu is to go with atomic ops... mmh... I'll think more on
+this.
 
-Regards,
+> 
+> >  void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
+> >  {
+> > -       if (task_contributes_to_load(p))
+> > -               rq->nr_uninterruptible++;
+> > +       if (task_contributes_to_load(p)) {
+> > +               task_rq(p)->nr_uninterruptible++;
+> > +               p->on_cpu_uninterruptible = task_cpu(p);
+> > +       }
+> >  
+> >         dequeue_task(rq, p, flags);
+> >  } 
+> 
+> This looks pointless, at deactivate time task_rq() had better be rq or
+> something is terribly broken.
 
-	Hans
+Correct, I didn't realize that, sorry.
 
-> ---
->  Changes for v3:
->  1: Removed READWRITE flag for device_caps pointed by Hans.
-> 
->  Changes for v2:
->  1: Change the bus_info and driver to proper values,
->     pointed by Hans.
-> 
->  drivers/media/platform/davinci/vpif_capture.c |    8 +++++---
->  drivers/media/platform/davinci/vpif_display.c |    8 +++++---
->  2 files changed, 10 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-> index cabd5a2..fcabc02 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -1635,9 +1635,11 @@ static int vpif_querycap(struct file *file, void  *priv,
->  {
->  	struct vpif_capture_config *config = vpif_dev->platform_data;
->  
-> -	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
-> -	strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
-> -	strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
-> +	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
-> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-> +	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-> +	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-> +		 dev_name(vpif_dev));
->  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
->  
->  	return 0;
-> diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-> index 7f20ca5..b716fbd 100644
-> --- a/drivers/media/platform/davinci/vpif_display.c
-> +++ b/drivers/media/platform/davinci/vpif_display.c
-> @@ -827,9 +827,11 @@ static int vpif_querycap(struct file *file, void  *priv,
->  {
->  	struct vpif_display_config *config = vpif_dev->platform_data;
->  
-> -	cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
-> -	strlcpy(cap->driver, "vpif display", sizeof(cap->driver));
-> -	strlcpy(cap->bus_info, "Platform", sizeof(cap->bus_info));
-> +	cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
-> +	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-> +	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-> +	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-> +		 dev_name(vpif_dev));
->  	strlcpy(cap->card, config->card_name, sizeof(cap->card));
->  
->  	return 0;
-> 
+Many thanks for your review, Peter.
+
+-Andrea
