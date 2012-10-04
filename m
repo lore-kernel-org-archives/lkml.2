@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965670Ab2JDPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:42:56 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54934 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965644Ab2JDPmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 11:42:53 -0400
-Message-ID: <506DAE41.6040007@linux.vnet.ibm.com>
-Date: Thu, 04 Oct 2012 21:11:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1422685Ab2JDPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:49:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35836 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343Ab2JDPtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 11:49:25 -0400
+Date: Thu, 4 Oct 2012 08:49:19 -0700
+From: Kees Cook <kees@outflux.net>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6
+Message-ID: <20121004154919.GE9092@outflux.net>
+References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
+ <20121003194614.GA2893@elliptictech.com>
+ <20121003200515.GZ9092@outflux.net>
+ <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
+ <20121003204141.GB6026@thunk.org>
+ <20121003204919.GA9092@outflux.net>
+ <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
+ <20121004133504.GA5599@elliptictech.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-scsi@vger.kernel.org, James.Bottomley@hansenpartnership.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [qla2xxx] INFO: possible irq lock inversion dependency detected
-References: <506D80C2.5040405@linux.vnet.ibm.com> <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12100415-1618-0000-0000-000002970819
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004133504.GA5599@elliptictech.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Thu, Oct 04, 2012 at 09:35:04AM -0400, Nick Bowler wrote:
+> On 2012-10-03 13:54 -0700, Linus Torvalds wrote:
+> > On Wed, Oct 3, 2012 at 1:49 PM, Kees Cook <kees@outflux.net> wrote:
+> > > I think the benefits of this being on by default outweigh glitches
+> > > like this. Based on Nick's email, it looks like a directory tree of his
+> > > own creation.
+> > 
+> > I agree that *one* report like this doesn't necessarily mean that we
+> > need to turn it off, if Nick is happy to just fix up his script and
+> > it's all local.
+> > 
+> > However, I suspect we'll see more. And once that happens, we're not
+> > going to keep a default that breaks peoples old scripts, and we're
+> > going to have to rely on distributions (or users) explicitly setting
+> > it.
+> 
+> Yes, it is a directory of my own creation, intended as a place for users
+> (read: me) to stick stuff on the local disk as opposed to on NFS.  It's
+> pretty trivial for me to fixup everything to not need this symlink
+> anymore (and I suspect it is the only offender); I just created the
+> symlink in the first place so that I wouldn't have to change anything
+> else.
+> 
+> (While on /this/ machine I created the directory, I have used shared lab
+> machines with a similar setup).
+> 
+> The thing that bothers me most about all this is that it's basically
+> impossible to see why things are failing without digging through the git
+> tree or posting to the mailing list (or recalling earlier mailing list
+> discussions about the restriction, as I vaguely do now).  You just
+> suddenly get "permission denied" errors when all the permissions
+> involved look fine.  As far as I know, the owner, group and mode of
+> symlinks have always been completely meaningless.  Upgrade to 3.6, and
+> they're suddenly meaningful in extremely non-obvious ways.
 
-Thanks for taking a look!
- 
-> This seems to be real. You should be seeing that since 3.5-rc1 already 
-> though ... ?
-> 
-> Does the patch below fix that?
-> 
+FWIW, there should have been an audit message about it in dmesg.
 
-Yes, it does, thanks! But 3.6-rc kernels were booting fine as far as I remember.
-I'll check again and get back tomorrow.
+-Kees
 
-> 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] [SCSI] qla2xxx: fix potential deadlock on ha->hardware_lock
-> 
-> Lockdep reports:
-> 
-> === [ cut here ] ===
->  =========================================================
->  [ INFO: possible irq lock inversion dependency detected ]
->  3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
->  ---------------------------------------------------------
->  qla2xxx_1_dpc/368 just changed the state of lock:
->   (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
->  but this lock was taken by another, HARDIRQ-safe lock in the past:
->   (&(&ha->hardware_lock)->rlock){-.....}
-> 
-> and interrupts could create inverse lock ordering between them.
-> 
-> other info that might help us debug this:
->  Possible interrupt unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&(&ha->vport_slock)->rlock);
->                                local_irq_disable();
->                                lock(&(&ha->hardware_lock)->rlock);
->                                lock(&(&ha->vport_slock)->rlock);
->   <Interrupt>
->     lock(&(&ha->hardware_lock)->rlock);
-> === [ cut here ] ===
-> 
-> Fix the potential deadlock by disabling IRQs while holding ha->vport_slock.
-> 
-> Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-Regards,
-Srivatsa S. Bhat
-
-> ---
->  drivers/scsi/qla2xxx/qla_init.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-> index 799a58b..48fca47 100644
-> --- a/drivers/scsi/qla2xxx/qla_init.c
-> +++ b/drivers/scsi/qla2xxx/qla_init.c
-> @@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
->  	uint8_t       domain;
->  	char		connect_type[22];
->  	struct qla_hw_data *ha = vha->hw;
-> +	unsigned long flags;
-> 
->  	/* Get host addresses. */
->  	rval = qla2x00_get_adapter_id(vha,
-> @@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
->  	vha->d_id.b.area = area;
->  	vha->d_id.b.al_pa = al_pa;
-> 
-> -	spin_lock(&ha->vport_slock);
-> +	spin_lock_irqsave(&ha->vport_slock, flags);
->  	qlt_update_vp_map(vha, SET_AL_PA);
-> -	spin_unlock(&ha->vport_slock);
-> +	spin_unlock_irqrestore(&ha->vport_slock, flags);
-> 
->  	if (!vha->flags.init_done)
->  		ql_log(ql_log_info, vha, 0x2010,
-> 
-
+-- 
+Kees Cook                                            @outflux.net
