@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab2JDWSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:18:23 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757699Ab2JDVRD (ORCPT
+	id S1757687Ab2JDVQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:16:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757667Ab2JDVQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:03 -0400
+	Thu, 4 Oct 2012 17:16:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Sebastian Gottschall (DD-WRT)" <s.gottschall@dd-wrt.com>
-Subject: [ 08/56] usb: host: xhci: Fix Null pointer dereferencing with 71c731a for non-x86 systems
-Date: Thu,  4 Oct 2012 14:15:29 -0700
-Message-Id: <20121004211153.055952802@linuxfoundation.org>
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: [ 05/56] USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
+Date: Thu,  4 Oct 2012 14:15:26 -0700
+Message-Id: <20121004211152.725247615@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -28,42 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Gautam <gautam.vivek@samsung.com>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-commit 457a73d346187c2cc5d599072f38676f18f130e0 upstream.
+commit 54575b05af36959dfb6a49a3e9ca0c2b456b7126 upstream.
 
-In 71c731a: usb: host: xhci: Fix Compliance Mode on SN65LVPE502CP Hardware
-when extracting DMI strings (vendor or product_name) to mark them as quirk
-we may get NULL pointer in case of non-x86 systems which won't define
-CONFIG_DMI. Hence susbsequent strstr() calls crash while driver probing.
+TIAO/DIYGADGET USB Multi-Protocol Adapter (TUMPA) is an FTDI FT2232H
+based device which provides an easily accessible JTAG, SPI, I2C, serial
+breakout.
 
-So, returning 'false' here in case we get a NULL vendor or product_name.
+http://www.diygadget.com/tiao-usb-multi-protocol-adapter-jtag-spi-i2c-serial.html
+http://www.tiaowiki.com/w/TIAO_USB_Multi_Protocol_Adapter_User%27s_Manual
 
-This is tested with ARM (exynos) system.
+FTDI FT2232H provides two serial channels (A and B), but on the TUMPA
+channel A is dedicated to JTAG/SPI while channel B can be used for
+UART/RS-232: use the ftdi_jtag_quirk to expose only channel B as
+a usb-serial interface to userspace.
 
-This patch should be backported to stable kernels as old as 3.6, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
-
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Sebastian Gottschall (DD-WRT) <s.gottschall@dd-wrt.com>
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -470,6 +470,8 @@ static bool compliance_mode_recovery_tim
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -584,6 +584,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	/*
+ 	 * ELV devices:
+ 	 */
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -517,6 +517,11 @@
+  */
+ #define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
  
- 	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+	if (!dmi_product_name || !dmi_sys_vendor)
-+		return false;
++/*
++ * TIAO product ids (FTDI_VID)
++ * http://www.tiaowiki.com/w/Main_Page
++ */
++#define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
  
- 	if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
- 		return false;
+ 
+ /********************************/
 
 
