@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2JDJbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:31:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45084 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab2JDJbA (ORCPT
+	id S1756326Ab2JDJbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:31:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53633 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab2JDJbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:31:00 -0400
-From: Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH v3] media: davinci: vpif: set device capabilities
-Date: Thu,  4 Oct 2012 14:59:58 +0530
-Message-Id: <1349342998-31804-2-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1349342998-31804-1-git-send-email-prabhakar.lad@ti.com>
-References: <1349342998-31804-1-git-send-email-prabhakar.lad@ti.com>
+	Thu, 4 Oct 2012 05:31:21 -0400
+Message-ID: <506D575F.4040402@pengutronix.de>
+Date: Thu, 04 Oct 2012 11:31:11 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: wg@grandegger.com, kernel-janitors@vger.kernel.org, davem@davemloft.net,
+        jj@chaosbits.net, linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/20] drivers/net/can/sja1000/peak_pci.c: fix error return
+ code
+References: <1349281090-10013-4-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1349281090-10013-4-git-send-email-peter.senna@gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5BEFDC20CFC64095788A0E8A"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5BEFDC20CFC64095788A0E8A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-set device_caps and also change the driver and
-bus_info to proper values as per standard.
+On 10/03/2012 06:17 PM, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>=20
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+>=20
+> A simplified version of the semantic match that finds this problem is a=
+s
+> follows: (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret !=3D 0\))
+>  { ... return ret; }
+> |
+> ret@p1 =3D 0
+> )
+> ... when !=3D ret =3D e1
+>     when !=3D &ret
+> *if(...)
+> {
+>   ... when !=3D ret =3D e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+>=20
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
----
- Changes for v3:
- 1: Removed READWRITE flag for device_caps pointed by Hans.
+Applied to can.
+Tnx, Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
- Changes for v2:
- 1: Change the bus_info and driver to proper values,
-    pointed by Hans.
 
- drivers/media/platform/davinci/vpif_capture.c |    8 +++++---
- drivers/media/platform/davinci/vpif_display.c |    8 +++++---
- 2 files changed, 10 insertions(+), 6 deletions(-)
+--------------enig5BEFDC20CFC64095788A0E8A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index cabd5a2..fcabc02 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -1635,9 +1635,11 @@ static int vpif_querycap(struct file *file, void  *priv,
- {
- 	struct vpif_capture_config *config = vpif_dev->platform_data;
- 
--	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
--	strlcpy(cap->driver, "vpif capture", sizeof(cap->driver));
--	strlcpy(cap->bus_info, "VPIF Platform", sizeof(cap->bus_info));
-+	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
-+	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-+	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-+	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-+		 dev_name(vpif_dev));
- 	strlcpy(cap->card, config->card_name, sizeof(cap->card));
- 
- 	return 0;
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index 7f20ca5..b716fbd 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -827,9 +827,11 @@ static int vpif_querycap(struct file *file, void  *priv,
- {
- 	struct vpif_display_config *config = vpif_dev->platform_data;
- 
--	cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
--	strlcpy(cap->driver, "vpif display", sizeof(cap->driver));
--	strlcpy(cap->bus_info, "Platform", sizeof(cap->bus_info));
-+	cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
-+	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
-+	snprintf(cap->driver, sizeof(cap->driver), "%s", dev_name(vpif_dev));
-+	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
-+		 dev_name(vpif_dev));
- 	strlcpy(cap->card, config->card_name, sizeof(cap->card));
- 
- 	return 0;
--- 
-1.7.4.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
 
+iEYEARECAAYFAlBtV18ACgkQjTAFq1RaXHPUhACfZftbepPARo5phiUlDFxBOlhZ
+KCYAn3uW8Qr0gOg2wGr2nDG+Nf2mkV4/
+=9Fva
+-----END PGP SIGNATURE-----
+
+--------------enig5BEFDC20CFC64095788A0E8A--
