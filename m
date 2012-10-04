@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab2JDJSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:18:55 -0400
-Received: from mga07.intel.com ([143.182.124.22]:9260 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754323Ab2JDJSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:18:51 -0400
-Message-ID: <1349342304.15966.25.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH 1/3] x86, mm: Include the entire kernel memory map in
- trampoline_pgd
-From: Matt Fleming <matt.fleming@intel.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@kernel.org, x86@kernel.org, mjg@redhat.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com
-Date: Thu, 04 Oct 2012 10:18:24 +0100
-In-Reply-To: <506D4988020000780009F86E@nat28.tlf.novell.com>
-References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
-	 <1349269157-25956-2-git-send-email-matt@console-pimps.org>
-	 <506C4C3A020000780008D041@nat28.tlf.novell.com>
-	 <1349273028.7223.35.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <506D4988020000780009F86E@nat28.tlf.novell.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754414Ab2JDJVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:21:09 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:37662 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab2JDJVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 05:21:08 -0400
+Date: Thu, 4 Oct 2012 11:20:55 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: tty_init_dev: 24 callbacks suppressed
+Message-ID: <20121004092055.GA21028@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 07:32 +0100, Jan Beulich wrote:
-> >>> On 03.10.12 at 16:03, Matt Fleming <matt.fleming@intel.com> wrote:
-> > On Wed, 2012-10-03 at 14:31 +0100, Jan Beulich wrote:
-> >> >>> Matt Fleming <matt@console-pimps.org> 10/03/12 2:59 PM >>>
-> >> >@@ -163,6 +258,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
-> >> >    ret_addr = (void __iomem *) (vaddr + offset);
-> >> >    mmiotrace_ioremap(unaligned_phys_addr, unaligned_size, ret_addr);
-> >>  >
-> >> >+    if (insert_identity_mapping(phys_addr, vaddr, size))
-> >> >+        printk(KERN_WARNING "ioremap: unable to map 0x%llx in identity pagetable\n",
-> >> >+                    (unsigned long long)phys_addr);
-> >> 
-> >> Isn't that going to trigger quite frequently on 32-bit kernels?
-> > 
-> > Hmmm... yeah, probably, though it didn't during my testing. If it is
-> 
-> That's suspicious, isn't it? In general, on any machine with more
-> than 3Gb of memory below the 4Gb boundary this ought to
-> trigger for _all_ mappings of MMIO space, and that's already only
-> considering the default of VMSPLIT_3G.
+Hi,
 
-I don't know about it being suspicious - I don't have any x86 machines
-here with gigabytes of memory. But your point is still valid.
+I'm seeing this on today's Linus tree:
 
-> > likely to trigger a lot then we might be best only inserting the
-> > identity mmio mapping for 64-bit, and addressing the 32-bit case if we
-> > ever actually need the identity pagetable.
-> 
-> I think that would be the best choice for the moment.
+[   24.048278] tty_init_dev: 24 callbacks suppressed
+[   45.630349] tty_init_dev: 3 callbacks suppressed
 
-OK, cool.
+It is either from that WARN_RATELIMIT thing or the printk_ratelimited
+further below in tty_init_dev but I don't know for sure because the
+actual text message from both printk's doesn't come out in dmesg - only
+that something got suppressed.
 
-> Btw., once this set of yours is in - will I need to resubmit the
-> time handling patch that actually triggered this work, or will
-> you just reinstate it without further action on my part?
+And it quiets down later, after the machine has finished booting. Still,
+this doesn't tell me anything about any issue. So what's up?
 
-It's up to you. If you don't want to make any changes to your original
-patch then I'll just re-apply it on top of this series, updating the
-commit log to note why it got reverted and why it's now OK to re-apply.
+Thanks.
 
+-- 
+Regards/Gruss,
+Boris.
 
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
