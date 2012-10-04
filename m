@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951Ab2JDVW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:22:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab2JDVWQ (ORCPT
+	id S933967Ab2JDVWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933928Ab2JDVWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:16 -0400
+	Thu, 4 Oct 2012 17:22:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <rdunlap@xenotime.net>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 50/58] remoteproc: select VIRTIO to avoid build breakage
-Date: Thu,  4 Oct 2012 14:19:57 -0700
-Message-Id: <20121004210641.814153359@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 41/58] n_gsm: uplink SKBs accumulate on list
+Date: Thu,  4 Oct 2012 14:19:48 -0700
+Message-Id: <20121004210640.604690654@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -26,40 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ohad Ben-Cohen <ohad@wizery.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 2ed6d29c725c4aead510b5c23f563795b265acf5 upstream.
+commit 192b6041e75bb4a2aae73834037038cea139a92d upstream.
 
-drivers/built-in.o: In function `rproc_virtio_finalize_features':
-remoteproc_virtio.c:(.text+0x2f9a02): undefined reference to `vring_transport_features'
-drivers/built-in.o: In function `rproc_virtio_del_vqs':
-remoteproc_virtio.c:(.text+0x2f9a74): undefined reference to `vring_del_virtqueue'
-drivers/built-in.o: In function `rproc_virtio_find_vqs':
-remoteproc_virtio.c:(.text+0x2f9c44): undefined reference to `vring_new_virtqueue'
-drivers/built-in.o: In function `rproc_add_virtio_dev':
-(.text+0x2f9e2c): undefined reference to `register_virtio_device'
-drivers/built-in.o: In function `rproc_vq_interrupt':
-(.text+0x2f9db7): undefined reference to `vring_interrupt'
-drivers/built-in.o: In function `rproc_remove_virtio_dev':
-(.text+0x2f9e9f): undefined reference to `unregister_virtio_device'
+gsm_dlci_data_kick will not call any output function if tx_bytes > THRESH_LO
+furthermore it will call the output function only once if tx_bytes == 0
+If the size of the IP writes are on the order of THRESH_LO
+we can get into a situation where skbs accumulate on the outbound list
+being starved for events to call the output function.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+gsm_dlci_data_kick now calls the sweep function when tx_bytes==0
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -5,6 +5,7 @@ config REMOTEPROC
- 	tristate
- 	depends on EXPERIMENTAL
- 	select FW_CONFIG
-+	select VIRTIO
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -971,16 +971,19 @@ static void gsm_dlci_data_sweep(struct g
+ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
+ {
+ 	unsigned long flags;
++	int sweep;
  
- config OMAP_REMOTEPROC
- 	tristate "OMAP remoteproc support"
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
++	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
+ 	if (dlci->gsm->tx_bytes == 0) {
+ 		if (dlci->net)
+ 			gsm_dlci_data_output_framed(dlci->gsm, dlci);
+ 		else
+ 			gsm_dlci_data_output(dlci->gsm, dlci);
+-	} else if (dlci->gsm->tx_bytes < TX_THRESH_LO)
+-		gsm_dlci_data_sweep(dlci->gsm);
++	}
++	if (sweep)
++ 		gsm_dlci_data_sweep(dlci->gsm);
+ 	spin_unlock_irqrestore(&dlci->gsm->tx_lock, flags);
+ }
+ 
 
 
