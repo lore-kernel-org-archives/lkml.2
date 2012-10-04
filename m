@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946211Ab2JDVZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946192Ab2JDVZq (ORCPT
+	id S1946198Ab2JDVZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:25:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946179Ab2JDVZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:46 -0400
+	Thu, 4 Oct 2012 17:25:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 47/52] IB/srp: Fix use-after-free in srp_reset_req()
-Date: Thu,  4 Oct 2012 14:21:38 -0700
-Message-Id: <20121004210641.286380478@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 45/52] remoteproc: fix a potential NULL-dereference on cleanup
+Date: Thu,  4 Oct 2012 14:21:36 -0700
+Message-Id: <20121004210641.050166810@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -27,34 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 9b796d06d5d1b1e85ae2316a283ea11dd739ef96 upstream.
+commit 7168d914a782086e217214c57ddfc7cc4b738c0c upstream.
 
-srp_free_req() uses the scsi_cmnd structure contents to unmap
-buffers, so we must invoke srp_free_req() before we release
-ownership of that structure.
+We only need to allocate mapping if there is an IOMMU domain.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Otherwise, when the mappings are released, the assumption that
+an IOMMU domain is there will crash and burn.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+[ohad: revise commit log]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/remoteproc/remoteproc_core.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -638,9 +638,9 @@ static void srp_reset_req(struct srp_tar
- 	struct scsi_cmnd *scmnd = srp_claim_req(target, req, NULL);
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -643,17 +643,10 @@ static int rproc_handle_carveout(struct
+ 	dev_dbg(dev, "carveout rsc: da %x, pa %x, len %x, flags %x\n",
+ 			rsc->da, rsc->pa, rsc->len, rsc->flags);
  
- 	if (scmnd) {
-+		srp_free_req(target, req, scmnd, 0);
- 		scmnd->result = DID_RESET << 16;
- 		scmnd->scsi_done(scmnd);
--		srp_free_req(target, req, scmnd, 0);
+-	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
+-	if (!mapping) {
+-		dev_err(dev, "kzalloc mapping failed\n");
+-		return -ENOMEM;
+-	}
+-
+ 	carveout = kzalloc(sizeof(*carveout), GFP_KERNEL);
+ 	if (!carveout) {
+ 		dev_err(dev, "kzalloc carveout failed\n");
+-		ret = -ENOMEM;
+-		goto free_mapping;
++		return -ENOMEM;
  	}
+ 
+ 	va = dma_alloc_coherent(dev, rsc->len, &dma, GFP_KERNEL);
+@@ -683,11 +676,18 @@ static int rproc_handle_carveout(struct
+ 	 * physical address in this case.
+ 	 */
+ 	if (rproc->domain) {
++		mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
++		if (!mapping) {
++			dev_err(dev, "kzalloc mapping failed\n");
++			ret = -ENOMEM;
++			goto dma_free;
++		}
++
+ 		ret = iommu_map(rproc->domain, rsc->da, dma, rsc->len,
+ 								rsc->flags);
+ 		if (ret) {
+ 			dev_err(dev, "iommu_map failed: %d\n", ret);
+-			goto dma_free;
++			goto free_mapping;
+ 		}
+ 
+ 		/*
+@@ -728,12 +728,12 @@ static int rproc_handle_carveout(struct
+ 
+ 	return 0;
+ 
++free_mapping:
++	kfree(mapping);
+ dma_free:
+ 	dma_free_coherent(dev, rsc->len, va, dma);
+ free_carv:
+ 	kfree(carveout);
+-free_mapping:
+-	kfree(mapping);
+ 	return ret;
  }
  
 
