@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab2JDNHl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:07:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34519 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407Ab2JDNHj convert rfc822-to-8bit (ORCPT
+	id S932351Ab2JDNJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:09:59 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50392 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131Ab2JDNJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:07:39 -0400
-Message-ID: <1349356038.14388.3.camel@twins>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Date: Thu, 04 Oct 2012 15:07:18 +0200
-In-Reply-To: <506D83EE.2020303@redhat.com>
-References: <20120921115942.27611.67488.sendpatchset@codeblue>
-	 <20120921120000.27611.71321.sendpatchset@codeblue>
-	 <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>
-	 <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>
-	 <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com>
-	 <506D83EE.2020303@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 4 Oct 2012 09:09:58 -0400
+Date: Thu, 4 Oct 2012 09:10:27 -0400
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Philipp Zabel <pza@pengutronix.de>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
+Message-ID: <20121004131027.GH11149@beef>
+References: <1349276133-26408-1-git-send-email-mporter@ti.com>
+ <20121004091145.GA3317@pengutronix.de>
+ <20121004124253.GC11149@beef>
+ <506D8720.8040004@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506D8720.8040004@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 14:41 +0200, Avi Kivity wrote:
+On Thu, Oct 04, 2012 at 06:24:56PM +0530, Sekhar Nori wrote:
+> On 10/4/2012 6:12 PM, Matt Porter wrote:
+> > On Thu, Oct 04, 2012 at 11:11:45AM +0200, Philipp Zabel wrote:
+> >> Hi Matt,
+> >>
+> >> On 10/3/12, Matt Porter <mporter@ti.com> wrote:
+> >>> This series enables uio_pruss on DA850 and removes use of the
+> >>> private SRAM API by the driver. The driver previously was not
+> >>> enabled by any platform and the private SRAM API was accessing
+> >>> an invalid SRAM bank.
+> >>
+> >> have you seen my SRAM patch series at https://lkml.org/lkml/2012/9/7/281
+> >> "Add device tree support for on-chip SRAM" ?
+> > 
+> > Yes.
+> > 
+> >> I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
+> >> could be useful to map the L3RAM on Davinci.
+> >> With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
+> >> uio_pruss driver could then use the gen_pool_find_by_phys() (or
+> >> of_get_named_gen_pool() for initialization from device tree) to
+> >> retrieve the struct gen_pool*.
+> >>
+> >> This way you could avoid handing it over via platform data and you could
+> >> get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
+> > 
+> > I did miss the gen_pool_find_by_phys() call in that series. That does
+> > look useful. I actually mentioned your series in an earlier posting
+> > since I like it, but since the initialization of the driver was inherently
+> > tied to DT it's not usable for DaVinci that's just starting to convert
+> > to DT and needs !DT support as well.
+> > 
+> > I do see it moving to your driver exclusively, but I wanted to make this
+> > series focused on only getting rid of the private SRAM API using the
+> > existing pdata framework that's already there. I think once
+> > gen_pool_find_by_phys() goes upstream we can switch to that and get the
+> > address from a resource in the !DT case. I guess we should see if Sekhar
+> > would like to see this happen in two steps or just have us depend on
+> > the gen_pool_find_by_phys() patch now.
 > 
-> Again the numbers are ridiculously high for arch_local_irq_restore.
-> Maybe there's a bad perf/kvm interaction when we're injecting an
-> interrupt, I can't believe we're spending 84% of the time running the
-> popf instruction. 
+> I prefer going with this series now and switching to the SRAM driver
+> once it is available mainline.
 
-Smells like a software fallback that doesn't do NMI, hrtimer based
-sampling typically hits popf where we re-enable interrupts.
+Ok, thanks. In that case, I'll also plan to keep the davinci-pcm series
+using the same approach for now too.
+
+-Matt
