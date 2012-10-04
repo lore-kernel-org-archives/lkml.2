@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab2JDVSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:18:49 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36877 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932898Ab2JDVSo (ORCPT
+	id S1754520Ab2JDWLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:11:09 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49290 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932911Ab2JDVSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:44 -0400
+	Thu, 4 Oct 2012 17:18:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 40/56] n_gsm: memory leak in uplink error path
-Date: Thu,  4 Oct 2012 14:16:01 -0700
-Message-Id: <20121004211156.670603354@linuxfoundation.org>
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: =?UTF-8?q?=5B=2041/56=5D=20UBI=3A=20fix=20autoresize=20handling=20in=20R/O=20mode?=
+Date: Thu,  4 Oct 2012 14:16:02 -0700
+Message-Id: <20121004211156.800902838@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,50 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Gorby <russ.gorby@intel.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 88ed2a60610974443335c924d7cb8e5dcf9dbdc1 upstream.
+commit abb3e01103eb4e2ea5c15e6fedbc74e08bd4cc2b upstream.
 
-Uplink (TX) network data will go through gsm_dlci_data_output_framed
-there is a bug where if memory allocation fails, the skb which
-has already been pulled off the list will be lost.
+Currently UBI fails in autoresize when it is in R/O mode (e.g., because the
+underlying MTD device is R/O). This patch fixes the issue - we just skip
+autoresize and print a warning.
 
-In addition TX skbs were being processed in LIFO order
-
-Fixed the memory leak, and changed to FIFO order processing
-
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/build.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -875,7 +875,7 @@ static int gsm_dlci_data_output_framed(s
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -759,6 +759,11 @@ static int autoresize(struct ubi_device
+ 	struct ubi_volume *vol = ubi->volumes[vol_id];
+ 	int err, old_reserved_pebs = vol->reserved_pebs;
  
- 	/* dlci->skb is locked by tx_lock */
- 	if (dlci->skb == NULL) {
--		dlci->skb = skb_dequeue(&dlci->skb_list);
-+		dlci->skb = skb_dequeue_tail(&dlci->skb_list);
- 		if (dlci->skb == NULL)
- 			return 0;
- 		first = 1;
-@@ -899,8 +899,11 @@ static int gsm_dlci_data_output_framed(s
- 
- 	/* FIXME: need a timer or something to kick this so it can't
- 	   get stuck with no work outstanding and no buffer free */
--	if (msg == NULL)
-+	if (msg == NULL) {
-+		skb_queue_tail(&dlci->skb_list, dlci->skb);
-+		dlci->skb = NULL;
- 		return -ENOMEM;
++	if (ubi->ro_mode) {
++		ubi_warn("skip auto-resize because of R/O mode");
++		return 0;
 +	}
- 	dp = msg->data;
- 
- 	if (dlci->adaption == 4) { /* Interruptible framed (Packetised Data) */
++
+ 	/*
+ 	 * Clear the auto-resize flag in the volume in-memory copy of the
+ 	 * volume table, and 'ubi_resize_volume()' will propagate this change
 
 
