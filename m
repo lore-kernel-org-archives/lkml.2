@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab2JDNgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:36:08 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57238 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736Ab2JDNgF (ORCPT
+	id S933115Ab2JDNjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:39:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51927 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933044Ab2JDNjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:36:05 -0400
-Date: Thu, 4 Oct 2012 15:35:53 +0200
-From: Philipp Zabel <pza@pengutronix.de>
-To: Matt Porter <mporter@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
-Message-ID: <20121004133553.GA5151@pengutronix.de>
-References: <1349276133-26408-1-git-send-email-mporter@ti.com>
- <20121004091145.GA3317@pengutronix.de>
- <20121004124253.GC11149@beef>
+	Thu, 4 Oct 2012 09:39:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121004124253.GC11149@beef>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:52:23 up  5:21, 12 users,  load average: 0.00, 0.01, 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: pza@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFwVFtUU4TCjz4EDgGDaeR_QwLjmBAJA0kijHkQQ+jxLCw@mail.gmail.com>
+References: <4FE9169D.5020300@redhat.com>
+	<20121002100319.59146693@redhat.com>
+	<CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com>
+	<20121002221239.GA30990@kroah.com>
+	<20121002222333.GA32207@kroah.com>
+	<CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
+	<506C562E.5090909@redhat.com>
+	<CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
+	<20121003170907.GA23473@ZenIV.linux.org.uk>
+	<CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
+	<20121003195059.GA13541@kroah.com>
+	<CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
+	<3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
+	<CA+55aFwVFtUU4TCjz4EDgGDaeR_QwLjmBAJA0kijHkQQ+jxLCw@mail.gmail.com>
+Date: Thu, 4 Oct 2012 09:39:41 -0400
+Message-ID: <CA+5PVA5J0OhmSsy3zOi=z8Ck7QJHVXng=q7OZNOu4nzi6qNA-A@mail.gmail.com>
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
+From: Josh Boyer <jwboyer@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andy Walls <awalls@md.metrocast.net>, Greg KH <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>, Kay Sievers <kay@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Ivan Kalvachev <ikalvachev@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 08:42:53AM -0400, Matt Porter wrote:
-> > I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
-> > could be useful to map the L3RAM on Davinci.
-> > With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
-> > uio_pruss driver could then use the gen_pool_find_by_phys() (or
-> > of_get_named_gen_pool() for initialization from device tree) to
-> > retrieve the struct gen_pool*.
-> > 
-> > This way you could avoid handing it over via platform data and you could
-> > get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
-> 
-> I did miss the gen_pool_find_by_phys() call in that series. That does
-> look useful. I actually mentioned your series in an earlier posting
-> since I like it,
+On Wed, Oct 3, 2012 at 6:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Oct 3, 2012 at 3:48 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+>>
+>> I don't know if you can remove the /sys/.../firmware ABI altogether, because there is at least one, somewhat popular udev replacement that also uses it: mdev
+>>
+>> http://git.busybox.net/busybox/plain/docs/mdev.txt
+>
+> Heh. That web doc documents /lib/firmware as being the place to be.
+>
+> That said, there's clearly enough variation here that I think that for
+> now I won't take the step to disable the udev part. I'll do the patch
+> to support "direct filesystem firmware loading" using the udev default
+> paths, and that hopefully fixes the particular case people see with
+> media modules.
 
-That I did miss.
+As you probably noticed, we had a tester in the RH bug report success
+with the commit you included yesterday.
 
-> but since the initialization of the driver was inherently
-> tied to DT it's not usable for DaVinci that's just starting to convert
-> to DT and needs !DT support as well.
+Do you think this is something worth including in the stable kernels
+after it gets some further testing during the merge window?  Perhaps
+not that specific commit as there seems to be some additional changes
+needed for configurable paths, etc, but a backport of the fleshed out
+changeset might be wanted.
 
-There should be no dependency on DT in the sram driver. It just requests
-and remaps the first given iomem resource and creates a gen_pool from that.
-This should work just as well for the !DT case.
-Maybe it's just my choice of patch series subject gave you that
-impression? If there's a real issue for !DT, I should fix it.
+We have a new enough udev in Fedora 17 to hit this issue with 3.5 and
+3.6 when we rebase.  I'm sure other distributions will be in similar
+circumstances soon if they aren't already.  Udev isn't going to be
+fixed, so having something working in these cases would be great.
 
-> I do see it moving to your driver exclusively, but I wanted to make this
-> series focused on only getting rid of the private SRAM API using the
-> existing pdata framework that's already there. I think once
-> gen_pool_find_by_phys() goes upstream we can switch to that and get the
-> address from a resource in the !DT case. I guess we should see if Sekhar
-> would like to see this happen in two steps or just have us depend on
-> the gen_pool_find_by_phys() patch now.
-
-Thanks, I'm glad you are aware of the sram driver and consider it useful.
-
-> BTW, I was going to post a patch for your driver to allow
-> configurability of the allocation order, but have been busy with other
-> things.  We'll eventually need that when switching to it as the
-> hardcoded page size order isn't going to work for all cases.
-
-Good point.
-
-regards
-Philipp
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+josh
