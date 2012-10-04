@@ -1,97 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab2JDNDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:03:54 -0400
+	id S932216Ab2JDNEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:04:21 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43426 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab2JDNDw (ORCPT
+	with ESMTP id S1753918Ab2JDNET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:03:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349305214-3241-2-git-send-email-yinghai@kernel.org>
-References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
-	<1349305214-3241-1-git-send-email-yinghai@kernel.org>
-	<1349305214-3241-2-git-send-email-yinghai@kernel.org>
-Date: Thu, 4 Oct 2012 09:03:51 -0400
-X-Google-Sender-Auth: CUv1VY5MhfbRPseljwXVFhWVU6g
-Message-ID: <CACJDEmoeD+XwjGnA2WwkeJ5TrsaXfgw+mZHPDcX0+7QZ9_80SA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ACPI: add drivers_autoprobe in struct acpi_device
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Oct 2012 09:04:19 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH UPDATED 11/20] perf header: Add HEADER_GROUP_DESC feature
+Date: Thu,  4 Oct 2012 22:03:09 +0900
+Message-Id: <1349355789-19366-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1349354994-17853-12-git-send-email-namhyung@kernel.org>
+References: <1349354994-17853-12-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 7:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> To use to control the delay attach driver for acpi_device.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-<blinks>
-I am not sure what this says. Can you please explain how it controls
-the delaying of
-attaching drivers?
->
-> Will use bus notifier to toggle this bits when needed.
+Save group relationship information so that it can be restored when
+perf report is running.
 
-Will use ..? In a subsequent patch? Which patch? And when is this
-needed? Is there a patch that needs this?
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/acpi/scan.c     |    8 +++++++-
->  include/acpi/acpi_bus.h |    1 +
->  2 files changed, 8 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index d1ecca2..cbb3ed1 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -333,7 +333,12 @@ static void acpi_device_release(struct device *dev)
->  static int acpi_bus_match(struct device *dev, struct device_driver *drv)
->  {
->         struct acpi_device *acpi_dev = to_acpi_device(dev);
-> -       struct acpi_driver *acpi_drv = to_acpi_driver(drv);
-> +       struct acpi_driver *acpi_drv;
-> +
-> +       if (!acpi_dev->drivers_autoprobe)
-> +               return 0;
-> +
-> +       acpi_drv = to_acpi_driver(drv);
->
->         return !acpi_match_device_ids(acpi_dev, acpi_drv->ids);
->  }
-> @@ -1268,6 +1273,7 @@ static int acpi_add_single_object(struct acpi_device **child,
->         device->parent = acpi_bus_get_parent(handle);
->         device->bus_ops = *ops; /* workround for not call .start */
->         STRUCT_TO_INT(device->status) = sta;
-> +       device->drivers_autoprobe = true;
->
->         acpi_device_get_busid(device);
->
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index bde976e..969544e 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -304,6 +304,7 @@ struct acpi_device {
->         struct device dev;
->         struct acpi_bus_ops bus_ops;    /* workaround for different code path for hotplug */
->         enum acpi_bus_removal_type removal_type;        /* indicate for different removal type */
-> +       bool drivers_autoprobe;
->  };
->
->  static inline void *acpi_driver_data(struct acpi_device *d)
-> --
-> 1.7.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+Initialize leader to NULL in order to avoid 'may be used uninitialized'
+warning from gcc (gcc version 4.4.3 (Ubuntu 4.4.3-4ubuntu5.1))
+
+ tools/perf/builtin-record.c |    3 +
+ tools/perf/util/header.c    |  152 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/header.h    |    2 +
+ 3 files changed, 157 insertions(+)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8c029fe2e22c..7940f0dd3db9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -558,6 +558,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
+ 	}
+ 
++	if (!evsel_list->nr_groups)
++		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
++
+ 	/*
+ 	 * perf_session__delete(session) will be called at perf_record__exit()
+ 	 */
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 7daad237dea5..8969c20986c2 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1072,6 +1072,41 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
+ }
+ 
+ /*
++ * File format:
++ *
++ * struct group_descs {
++ *	u32	nr_groups;
++ *	struct group_desc {
++ *		char	name[];
++ *		u32	leader_idx;
++ *		u32	nr_members;
++ *	}[nr_groups];
++ * };
++ */
++static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
++			    struct perf_evlist *evlist)
++{
++	u32 nr_groups = evlist->nr_groups;
++	struct perf_evsel *evsel;
++
++	do_write(fd, &nr_groups, sizeof(nr_groups));
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 0) {
++			const char *name = evsel->group_name ?: "{anon_group}";
++			u32 leader_idx = evsel->idx;
++			u32 nr_members = evsel->nr_members;
++
++			do_write_string(fd, name);
++			do_write(fd, &leader_idx, sizeof(leader_idx));
++			do_write(fd, &nr_members, sizeof(nr_members));
++		}
++	}
++	return 0;
++}
++
++/*
+  * default get_cpuid(): nothing gets recorded
+  * actual implementation must be in arch/$(ARCH)/util/header.c
+  */
+@@ -1432,6 +1467,31 @@ error:
+ 	fprintf(fp, "# pmu mappings: unable to read\n");
+ }
+ 
++static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
++			     FILE *fp)
++{
++	struct perf_session *session;
++	struct perf_evsel *evsel;
++	u32 nr = 0;
++
++	session = container_of(ph, struct perf_session, header);
++
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (perf_evsel__is_group_leader(evsel) &&
++		    evsel->nr_members > 0) {
++			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
++				perf_evsel__name(evsel));
++
++			nr = evsel->nr_members;
++		} else if (nr) {
++			fprintf(fp, ",%s", perf_evsel__name(evsel));
++
++			if (--nr == 0)
++				fprintf(fp, "}\n");
++		}
++	}
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1946,6 +2006,97 @@ error:
+ 	return -1;
+ }
+ 
++static int process_group_desc(struct perf_file_section *section __maybe_unused,
++			      struct perf_header *ph, int fd,
++			      void *data __maybe_unused)
++{
++	size_t ret = -1;
++	u32 i, nr, nr_groups;
++	struct perf_session *session;
++	struct perf_evsel *evsel, *leader = NULL;
++	struct group_desc {
++		char *name;
++		u32 leader_idx;
++		u32 nr_members;
++	} *desc;
++
++	ret = read(fd, &nr_groups, sizeof(nr_groups));
++	if (ret != sizeof(nr_groups))
++		return -1;
++
++	if (ph->needs_swap)
++		nr_groups = bswap_32(nr_groups);
++
++	ph->env.nr_groups = nr_groups;
++	if (!nr_groups) {
++		pr_debug("group desc not available\n");
++		return 0;
++	}
++
++	desc = calloc(nr_groups, sizeof(*desc));
++	if (!desc)
++		return -1;
++
++	for (i = 0; i < nr_groups; i++) {
++		desc[i].name = do_read_string(fd, ph);
++		if (!desc[i].name)
++			goto out_free;
++
++		ret = read(fd, &desc[i].leader_idx, sizeof(u32));
++		if (ret != sizeof(u32))
++			goto out_free;
++
++		ret = read(fd, &desc[i].nr_members, sizeof(u32));
++		if (ret != sizeof(u32))
++			goto out_free;
++
++		if (ph->needs_swap) {
++			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
++			desc[i].nr_members = bswap_32(desc[i].nr_members);
++		}
++	}
++
++	/*
++	 * Rebuild group relationship based on the group_desc
++	 */
++	session = container_of(ph, struct perf_session, header);
++	session->evlist->nr_groups = nr_groups;
++
++	i = nr = 0;
++	list_for_each_entry(evsel, &session->evlist->entries, node) {
++		if (evsel->idx == (int) desc[i].leader_idx) {
++			evsel->leader = NULL;
++			/* {anon_group} is a dummy name */
++			if (strcmp(desc[i].name, "{anon_group}"))
++				evsel->group_name = desc[i].name;
++			evsel->nr_members = desc[i].nr_members;
++
++			BUG_ON(i >= nr_groups);
++			BUG_ON(nr > 0);
++
++			leader = evsel;
++			nr = evsel->nr_members;
++			i++;
++		} else if (nr) {
++			/* This is a group member */
++			evsel->leader = leader;
++			/* group_idx starts from 0 */
++			evsel->group_idx = leader->nr_members - nr;
++			nr--;
++		}
++	}
++
++	BUG_ON(i != nr_groups);
++	BUG_ON(nr != 0);
++
++out_free:
++	while ((int) --i >= 0)
++		free(desc[i].name);
++	free(desc);
++
++	return ret;
++}
++
+ struct feature_ops {
+ 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
+ 	void (*print)(struct perf_header *h, int fd, FILE *fp);
+@@ -1985,6 +2136,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+ 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
++	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
+ };
+ 
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 99bdd3abce59..f143aa7153a2 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -29,6 +29,7 @@ enum {
+ 	HEADER_NUMA_TOPOLOGY,
+ 	HEADER_BRANCH_STACK,
+ 	HEADER_PMU_MAPPINGS,
++	HEADER_GROUP_DESC,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+@@ -79,6 +80,7 @@ struct perf_session_env {
+ 	char			*numa_nodes;
+ 	int			nr_pmu_mappings;
+ 	char			*pmu_mappings;
++	int			nr_groups;
+ };
+ 
+ struct perf_header {
+-- 
+1.7.9.2
+
