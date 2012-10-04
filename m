@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946569Ab2JDVay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:30:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42952 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946409Ab2JDV2S (ORCPT
+	id S1946576Ab2JDVbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:31:05 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33781 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946512Ab2JDVbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:28:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Patrick McHardy <kaber@trash.net>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 26/33] IPoIB: Fix use-after-free of multicast object
-Date: Thu,  4 Oct 2012 14:26:48 -0700
-Message-Id: <20121004210601.734344224@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
-References: <20121004210558.383865383@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 4 Oct 2012 17:31:00 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 4 Oct 2012 23:30:38 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Kees Cook <kees@outflux.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6
+Message-ID: <20121004233038.2a4c1c10@stein>
+In-Reply-To: <20121004171602.GA20155@elliptictech.com>
+References: <20121003194614.GA2893@elliptictech.com>
+	<20121003200515.GZ9092@outflux.net>
+	<CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
+	<20121003204141.GB6026@thunk.org>
+	<20121003204919.GA9092@outflux.net>
+	<CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
+	<20121004133504.GA5599@elliptictech.com>
+	<20121004154919.GE9092@outflux.net>
+	<20121004160354.GA19347@elliptictech.com>
+	<20121004161422.GF9092@outflux.net>
+	<20121004171602.GA20155@elliptictech.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Oct 04 Nick Bowler wrote:
+> On 2012-10-04 09:14 -0700, Kees Cook wrote:
+> > On Thu, Oct 04, 2012 at 12:03:54PM -0400, Nick Bowler wrote:
+> > > On 2012-10-04 08:49 -0700, Kees Cook wrote:
+> > > > FWIW, there should have been an audit message about it in dmesg.
+> > > 
+> > > There were zero messages in the kernel log.
+> > > 
+> > >   # dmesg -C
+> > >   # cd /tmp
+> > >   # mkdir testdir
+> > >   # ln -s testdir testlink
+> > >   # chown -h nobody testlink
+> > >   # cd testlink
+> > >   cd: permission denied: testlink
+> > >   # dmesg
+> > >   (no output)
+> > 
+> > Well that's sad. :( Two situations I can think of for that:
+> > - the kernel wasn't build with CONFIG_AUDIT
+> 
+> Indeed, I do not have this option enabled.  Why would I have it?  The
+> description says it's for SELinux, which I do not use.
 
-------------------
-
-From: Patrick McHardy <kaber@trash.net>
-
-commit bea1e22df494a729978e7f2c54f7bda328f74bc3 upstream.
-
-Fix a crash in ipoib_mcast_join_task().  (with help from Or Gerlitz)
-
-Commit c8c2afe360b7 ("IPoIB: Use rtnl lock/unlock when changing device
-flags") added a call to rtnl_lock() in ipoib_mcast_join_task(), which
-is run from the ipoib_workqueue, and hence the workqueue can't be
-flushed from the context of ipoib_stop().
-
-In the current code, ipoib_stop() (which doesn't flush the workqueue)
-calls ipoib_mcast_dev_flush(), which goes and deletes all the
-multicast entries.  This takes place without any synchronization with
-a possible running instance of ipoib_mcast_join_task() for the same
-ipoib device, leading to a crash due to NULL pointer dereference.
-
-Fix this by making sure that the workqueue is flushed before
-ipoib_mcast_dev_flush() is called.  To make that possible, we move the
-RTNL-lock wrapped code to ipoib_mcast_join_finish().
-
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |    2 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |   19 ++++++++++---------
- 2 files changed, 11 insertions(+), 10 deletions(-)
-
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -148,7 +148,7 @@ static int ipoib_stop(struct net_device
- 
- 	netif_stop_queue(dev);
- 
--	ipoib_ib_dev_down(dev, 0);
-+	ipoib_ib_dev_down(dev, 1);
- 	ipoib_ib_dev_stop(dev, 0);
- 
- 	if (!test_bit(IPOIB_FLAG_SUBINTERFACE, &priv->flags)) {
---- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-@@ -189,7 +189,9 @@ static int ipoib_mcast_join_finish(struc
- 
- 	mcast->mcmember = *mcmember;
- 
--	/* Set the cached Q_Key before we attach if it's the broadcast group */
-+	/* Set the multicast MTU and cached Q_Key before we attach if it's
-+	 * the broadcast group.
-+	 */
- 	if (!memcmp(mcast->mcmember.mgid.raw, priv->dev->broadcast + 4,
- 		    sizeof (union ib_gid))) {
- 		spin_lock_irq(&priv->lock);
-@@ -197,10 +199,17 @@ static int ipoib_mcast_join_finish(struc
- 			spin_unlock_irq(&priv->lock);
- 			return -EAGAIN;
- 		}
-+		priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
- 		priv->qkey = be32_to_cpu(priv->broadcast->mcmember.qkey);
- 		spin_unlock_irq(&priv->lock);
- 		priv->tx_wr.wr.ud.remote_qkey = priv->qkey;
- 		set_qkey = 1;
-+
-+		if (!ipoib_cm_admin_enabled(dev)) {
-+			rtnl_lock();
-+			dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
-+			rtnl_unlock();
-+		}
- 	}
- 
- 	if (!test_bit(IPOIB_MCAST_FLAG_SENDONLY, &mcast->flags)) {
-@@ -586,14 +595,6 @@ void ipoib_mcast_join_task(struct work_s
- 		return;
- 	}
- 
--	priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
--
--	if (!ipoib_cm_admin_enabled(dev)) {
--		rtnl_lock();
--		dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
--		rtnl_unlock();
--	}
--
- 	ipoib_dbg_mcast(priv, "successfully joined all multicast groups\n");
- 
- 	clear_bit(IPOIB_MCAST_RUN, &priv->flags);
-
-
+It says it is /among else/ for SELinux.  Another user appears to be
+ConsoleKit, which wants CONFIG_AUDITSYSCALL, which depends on CONFIG_AUDIT.
+-- 
+Stefan Richter
+-=====-===-- =-=- --=--
+http://arcgraph.de/sr/
