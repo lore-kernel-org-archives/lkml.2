@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab2JDHJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:09:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab2JDHJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:09:15 -0400
-Message-ID: <506D3610.7000103@redhat.com>
-Date: Thu, 04 Oct 2012 09:09:04 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752055Ab2JDHM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:12:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60022 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab2JDHM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 03:12:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH 2/6] mfd: da9052: Introduce da9052-irq.c
+Date: Thu, 4 Oct 2012 07:12:48 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+References: <1349320509-26930-1-git-send-email-festevam@gmail.com> <1349320509-26930-2-git-send-email-festevam@gmail.com>
+In-Reply-To: <1349320509-26930-2-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, avi@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au>
-In-Reply-To: <87bogj2j1b.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210040712.48516.arnd@arndb.de>
+X-Provags-ID: V02:K0:onk9C9N6KGp7XWqimm3Q/mXw9uXiGx3RkV4U7O1VzTT
+ LoQBNv56QN0IEQHvpsZa2Yv614EhorStrjkNxEFe8NbwdT+90G
+ tdXfazotgM/FU0a3mTi+LdrutB4uQINCOwOhQIorHXelg9/LJW
+ yHKu2oK3UPPHo5kZEYXd2LG9WlKrO27BU17/IGpx69amCCXKIv
+ gpzaT5pQEIGwKMEhfsSBAiNnvHU0w5lswghGB3gyldKS7qU1m0
+ Z8SL437MO7RnXjg0FZegtsBe93S/HLJVSnZeMVzLUrYGZtb/FK
+ cNJLnbpmZXgKgd2BOArP24tAd0OVZ5QLwchBnJos97cqcUDFfg
+ Vm+SyQHOoi9xR3ag8nbQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/10/2012 02:11, Rusty Russell ha scritto:
-> > > There's a reason I haven't done this.  I really, really dislike "my
-> > > implemention isn't broken" feature bits.  We could have an infinite
-> > > number of them, for each bug in each device.
-> >
-> > However, this bug affects (almost) all implementations and (almost) all
-> > devices.  It even makes sense to reserve a transport feature bit for it
-> > instead of a device feature bit.
->
-> Perhaps, but we have to fix the bugs first!
+On Thursday 04 October 2012, Fabio Estevam wrote:
+> +static int da9052_map_irq(struct da9052 *da9052, int irq)
+> +{
+> +       return regmap_irq_get_virq(da9052->irq_data, irq);
+> +}
+> +
+> +int da9052_enable_irq(struct da9052 *da9052, int irq)
+> +{
+> +       irq = da9052_map_irq(da9052, irq);
+> +       if (irq < 0)
+> +               return irq;
+> +
+> +       enable_irq(irq);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(da9052_enable_irq);
 
-Yes. :)  Isn't that what mst's patch does?
+This looks correct, but I'm not sure it's actually simpler
+than letting the sub-drivers deal with calling regmap_irq_get_virq().
 
-> As I said, my torture patch broke qemu immediately.  Since noone has
-> leapt onto fixing that, I'll take a look now...
+Can't each driver just call regmap_irq_get_virq once at init time and
+then call the regular irq management functions?
 
-I can look at virtio-scsi.
+Maybe I just don't see the real purpose of these functions. If I'm
+contradicting what Mark said, listen to him instead.
 
-Paolo
+	Arnd
