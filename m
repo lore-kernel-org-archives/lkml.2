@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab2JDWG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:06:58 -0400
+	id S1753993Ab2JDWHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:07:19 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933586Ab2JDVTe (ORCPT
+	with ESMTP id S933574Ab2JDVT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:34 -0400
+	Thu, 4 Oct 2012 17:19:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 56/56] SCSI: scsi_dh_alua: Enable STPG for unavailable ports
-Date: Thu,  4 Oct 2012 14:16:17 -0700
-Message-Id: <20121004211158.487556118@linuxfoundation.org>
+        Don Morris <don.morris@hp.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [ 54/56] isci: fix isci_pci_probe() generates warning on efi failure path
+Date: Thu,  4 Oct 2012 14:16:15 -0700
+Message-Id: <20121004211158.258739023@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -28,37 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit e47f8976d8e573928824a06748f7bc82c58d747f upstream.
+commit 6d70a74ffd616073a68ae0974d98819bfa8e6da6 upstream.
 
-A quote from SPC-4: "While in the unavailable primary target port
-asymmetric access state, the device server shall support those of
-the following commands that it supports while in the active/optimized
-state: [ ... ] d) SET TARGET PORT GROUPS; [ ... ]". Hence enable
-sending STPG to a target port group that is in the unavailable state.
+The oem parameter image embedded in the efi variable is at an offset
+from the start of the variable.  However, in the failure path we try to
+free the 'orom' pointer which is only valid when the paramaters are
+being read from the legacy option-rom space.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Since failure to load the oem parameters is unlikely and we keep the
+memory around in the success case just defer all de-allocation to devm.
+
+Reported-by: Don Morris <don.morris@hp.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/device_handler/scsi_dh_alua.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/scsi/isci/init.c       |    1 -
+ drivers/scsi/isci/probe_roms.c |    1 -
+ 2 files changed, 2 deletions(-)
 
---- a/drivers/scsi/device_handler/scsi_dh_alua.c
-+++ b/drivers/scsi/device_handler/scsi_dh_alua.c
-@@ -641,8 +641,7 @@ static int alua_rtpg(struct scsi_device
- 		h->state = TPGS_STATE_STANDBY;
- 		break;
- 	case TPGS_STATE_OFFLINE:
--	case TPGS_STATE_UNAVAILABLE:
--		/* Path unusable for unavailable/offline */
-+		/* Path unusable */
- 		err = SCSI_DH_DEV_OFFLINED;
- 		break;
- 	default:
+--- a/drivers/scsi/isci/init.c
++++ b/drivers/scsi/isci/init.c
+@@ -644,7 +644,6 @@ static int __devinit isci_pci_probe(stru
+ 						orom->hdr.version)) {
+ 			dev_warn(&pdev->dev,
+ 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
+-			devm_kfree(&pdev->dev, orom);
+ 			orom = NULL;
+ 			break;
+ 		}
+--- a/drivers/scsi/isci/probe_roms.c
++++ b/drivers/scsi/isci/probe_roms.c
+@@ -104,7 +104,6 @@ struct isci_orom *isci_request_oprom(str
+ 
+ 	if (i >= len) {
+ 		dev_err(&pdev->dev, "oprom parse error\n");
+-		devm_kfree(&pdev->dev, rom);
+ 		rom = NULL;
+ 	}
+ 	pci_unmap_biosrom(oprom);
 
 
