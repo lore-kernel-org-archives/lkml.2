@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932830Ab2JDVSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:18:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782Ab2JDVSc (ORCPT
+	id S933025Ab2JDVSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:18:52 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932858Ab2JDVSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:32 -0400
+	Thu, 4 Oct 2012 17:18:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 36/56] coredump: prevent double-free on an error path in core dumper
-Date: Thu,  4 Oct 2012 14:15:57 -0700
-Message-Id: <20121004211156.232573923@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 39/56] n_gsm: added interlocking for gsm_data_lock for certain code paths
+Date: Thu,  4 Oct 2012 14:16:00 -0700
+Message-Id: <20121004211156.562748779@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -29,65 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denys Vlasenko <vda.linux@googlemail.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
+commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
 
-In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
-memory for info->fields, it frees already allocated stuff and returns
-error to its caller, fill_note_info.  Which in turn returns error to its
-caller, elf_core_dump.  Which jumps to cleanup label and calls
-free_note_info, which will happily try to free all info->fields again.
-BOOM.
+There were some locking holes in the management of the MUX's
+message queue for 2 code paths:
+1) gsmld_write_wakeup
+2) receipt of CMD_FCON flow-control message
+In both cases gsm_data_kick is called w/o locking so it can collide
+with other other instances of gsm_data_kick (pulling messages tx_tail)
+or potentially other instances of __gsm_data_queu (adding messages to tx_head)
 
-This is the fix.
+Changed to take the tx_lock in these 2 cases
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_elf.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ drivers/tty/n_gsm.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1696,30 +1696,19 @@ static int elf_note_info_init(struct elf
- 		return 0;
- 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
- 	if (!info->psinfo)
--		goto notes_free;
-+		return 0;
- 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
- 	if (!info->prstatus)
--		goto psinfo_free;
-+		return 0;
- 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
- 	if (!info->fpu)
--		goto prstatus_free;
-+		return 0;
- #ifdef ELF_CORE_COPY_XFPREGS
- 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
- 	if (!info->xfpu)
--		goto fpu_free;
-+		return 0;
- #endif
- 	return 1;
--#ifdef ELF_CORE_COPY_XFPREGS
-- fpu_free:
--	kfree(info->fpu);
--#endif
-- prstatus_free:
--	kfree(info->prstatus);
-- psinfo_free:
--	kfree(info->psinfo);
-- notes_free:
--	kfree(info->notes);
--	return 0;
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1193,6 +1193,8 @@ static void gsm_control_message(struct g
+ 							u8 *data, int clen)
+ {
+ 	u8 buf[1];
++	unsigned long flags;
++
+ 	switch (command) {
+ 	case CMD_CLD: {
+ 		struct gsm_dlci *dlci = gsm->dlci[0];
+@@ -1218,7 +1220,9 @@ static void gsm_control_message(struct g
+ 		gsm->constipated = 0;
+ 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
+ 		/* Kick the link in case it is idling */
++		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_data_kick(gsm);
++		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 		break;
+ 	case CMD_MSC:
+ 		/* Out of band modem line change indicator for a DLCI */
+@@ -2380,12 +2384,12 @@ static void gsmld_write_wakeup(struct tt
+ 
+ 	/* Queue poll */
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++	spin_lock_irqsave(&gsm->tx_lock, flags);
+ 	gsm_data_kick(gsm);
+ 	if (gsm->tx_bytes < TX_THRESH_LO) {
+-		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_dlci_data_sweep(gsm);
+-		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 	}
++	spin_unlock_irqrestore(&gsm->tx_lock, flags);
  }
  
- static int fill_note_info(struct elfhdr *elf, int phdrs,
+ /**
 
 
