@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934072Ab2JDVX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:23:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934042Ab2JDVXU (ORCPT
+	id S1752038Ab2JDVv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:51:26 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934061Ab2JDVXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:20 -0400
+	Thu, 4 Oct 2012 17:23:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 51/58] remoteproc: fix a potential NULL-dereference on cleanup
-Date: Thu,  4 Oct 2012 14:19:58 -0700
-Message-Id: <20121004210641.917625695@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 01/52] vfs: dcache: fix deadlock in tree traversal
+Date: Thu,  4 Oct 2012 14:20:52 -0700
+Message-Id: <20121004210635.539049678@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
-References: <20121004210635.449598766@linuxfoundation.org>
+In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
+References: <20121004210635.372689554@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Miklos Szeredi <miklos@szeredi.hu>
 
-commit 7168d914a782086e217214c57ddfc7cc4b738c0c upstream.
+commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
 
-We only need to allocate mapping if there is an IOMMU domain.
+IBM reported a deadlock in select_parent().  This was found to be caused
+by taking rename_lock when already locked when restarting the tree
+traversal.
 
-Otherwise, when the mappings are released, the assumption that
-an IOMMU domain is there will crash and burn.
+There are two cases when the traversal needs to be restarted:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-[ohad: revise commit log]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+ 1) concurrent d_move(); this can only happen when not already locked,
+    since taking rename_lock protects against concurrent d_move().
+
+ 2) racing with final d_put() on child just at the moment of ascending
+    to parent; rename_lock doesn't protect against this rare race, so it
+    can happen when already locked.
+
+Because of case 2, we need to be able to handle restarting the traversal
+when rename_lock is already held.  This patch fixes all three callers of
+try_to_ascend().
+
+IBM reported that the deadlock is gone with this patch.
+
+[ I rewrote the patch to be smaller and just do the "goto again" if the
+  lock was already held, but credit goes to Miklos for the real work.
+   - Linus ]
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/remoteproc_core.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ fs/dcache.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -643,17 +643,10 @@ static int rproc_handle_carveout(struct
- 	dev_dbg(dev, "carveout rsc: da %x, pa %x, len %x, flags %x\n",
- 			rsc->da, rsc->pa, rsc->len, rsc->flags);
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1116,6 +1116,8 @@ positive:
+ 	return 1;
  
--	mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
--	if (!mapping) {
--		dev_err(dev, "kzalloc mapping failed\n");
--		return -ENOMEM;
--	}
--
- 	carveout = kzalloc(sizeof(*carveout), GFP_KERNEL);
- 	if (!carveout) {
- 		dev_err(dev, "kzalloc carveout failed\n");
--		ret = -ENOMEM;
--		goto free_mapping;
-+		return -ENOMEM;
- 	}
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -1218,6 +1220,8 @@ out:
+ rename_retry:
+ 	if (found)
+ 		return found;
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -2963,6 +2967,8 @@ resume:
+ 	return;
  
- 	va = dma_alloc_coherent(dev, rsc->len, &dma, GFP_KERNEL);
-@@ -683,11 +676,18 @@ static int rproc_handle_carveout(struct
- 	 * physical address in this case.
- 	 */
- 	if (rproc->domain) {
-+		mapping = kzalloc(sizeof(*mapping), GFP_KERNEL);
-+		if (!mapping) {
-+			dev_err(dev, "kzalloc mapping failed\n");
-+			ret = -ENOMEM;
-+			goto dma_free;
-+		}
-+
- 		ret = iommu_map(rproc->domain, rsc->da, dma, rsc->len,
- 								rsc->flags);
- 		if (ret) {
- 			dev_err(dev, "iommu_map failed: %d\n", ret);
--			goto dma_free;
-+			goto free_mapping;
- 		}
- 
- 		/*
-@@ -728,12 +728,12 @@ static int rproc_handle_carveout(struct
- 
- 	return 0;
- 
-+free_mapping:
-+	kfree(mapping);
- dma_free:
- 	dma_free_coherent(dev, rsc->len, va, dma);
- free_carv:
- 	kfree(carveout);
--free_mapping:
--	kfree(mapping);
- 	return ret;
- }
- 
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
 
 
