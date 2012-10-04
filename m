@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2JDQKR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 12:10:17 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:59722 "EHLO ns.iliad.fr"
+	id S1757137Ab2JDQO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 12:14:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56186 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757061Ab2JDQKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 12:10:15 -0400
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Oct 2012 12:10:15 EDT
-Message-ID: <1349366521.2532.12.camel@sakura.staff.proxad.net>
-Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
- __alloc_pages_nodemask+0x1d4/0x68c()
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Date: Thu, 04 Oct 2012 18:02:01 +0200
-In-Reply-To: <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
-References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
-	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
-Organization: Freebox
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757114Ab2JDQO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 12:14:27 -0400
+Date: Thu, 4 Oct 2012 09:14:22 -0700
+From: Kees Cook <kees@outflux.net>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.6
+Message-ID: <20121004161422.GF9092@outflux.net>
+References: <CA+55aFw1Y5_HtfXh+-OEQ2KGpW0N18kA4O3R7=cv29_CaF+3UQ@mail.gmail.com>
+ <20121003194614.GA2893@elliptictech.com>
+ <20121003200515.GZ9092@outflux.net>
+ <CA+55aFwgF1O_DzF0bqGO06n2kxNGE=f5BQsvZF_+q9o0pFPeGw@mail.gmail.com>
+ <20121003204141.GB6026@thunk.org>
+ <20121003204919.GA9092@outflux.net>
+ <CA+55aFwXLXfAHHBEYYiz_4qjxWUpENECCZwFN_1gq+e48f+3Sw@mail.gmail.com>
+ <20121004133504.GA5599@elliptictech.com>
+ <20121004154919.GE9092@outflux.net>
+ <20121004160354.GA19347@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004160354.GA19347@elliptictech.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, 2012-08-31 at 19:21 -0700, Hugh Dickins wrote:
-
-Hi,
-
-> Francois is right that a GFP_ATOMIC allocation from pskb_expand_head()
-> is failing, which can easily happen, and cause your "failed to reallocate
-> TX buffer" errors; but it's well worth looking up what's actually on
-> lines 2108 and 2109 of mm/page_alloc.c in 3.2.27:
+On Thu, Oct 04, 2012 at 12:03:54PM -0400, Nick Bowler wrote:
+> On 2012-10-04 08:49 -0700, Kees Cook wrote:
+> > On Thu, Oct 04, 2012 at 09:35:04AM -0400, Nick Bowler wrote:
+> > > On 2012-10-03 13:54 -0700, Linus Torvalds wrote:
+> > > > On Wed, Oct 3, 2012 at 1:49 PM, Kees Cook <kees@outflux.net> wrote:
+> > > > > I think the benefits of this being on by default outweigh glitches
+> > > > > like this. Based on Nick's email, it looks like a directory tree of his
+> > > > > own creation.
+> > > > 
+> > > > I agree that *one* report like this doesn't necessarily mean that we
+> > > > need to turn it off, if Nick is happy to just fix up his script and
+> > > > it's all local.
+> > > > 
+> > > > However, I suspect we'll see more. And once that happens, we're not
+> > > > going to keep a default that breaks peoples old scripts, and we're
+> > > > going to have to rely on distributions (or users) explicitly setting
+> > > > it.
+> > > 
+> > > Yes, it is a directory of my own creation, intended as a place for users
+> > > (read: me) to stick stuff on the local disk as opposed to on NFS.  It's
+> > > pretty trivial for me to fixup everything to not need this symlink
+> > > anymore (and I suspect it is the only offender); I just created the
+> > > symlink in the first place so that I wouldn't have to change anything
+> > > else.
+> > > 
+> > > (While on /this/ machine I created the directory, I have used shared lab
+> > > machines with a similar setup).
+> > > 
+> > > The thing that bothers me most about all this is that it's basically
+> > > impossible to see why things are failing without digging through the git
+> > > tree or posting to the mailing list (or recalling earlier mailing list
+> > > discussions about the restriction, as I vaguely do now).  You just
+> > > suddenly get "permission denied" errors when all the permissions
+> > > involved look fine.  As far as I know, the owner, group and mode of
+> > > symlinks have always been completely meaningless.  Upgrade to 3.6, and
+> > > they're suddenly meaningful in extremely non-obvious ways.
+> > 
+> > FWIW, there should have been an audit message about it in dmesg.
 > 
-> 	if (order >= MAX_ORDER) {
-> 		WARN_ON_ONCE(!(gfp_mask & __GFP_NOWARN));
+> There were zero messages in the kernel log.
 > 
-> That was probably not a sane allocation request, it has gone out of range:
-> maybe the skb header is even corrupted.  If you're lucky, it might be
-> something that netdev will recognize as already fixed.
+>   # dmesg -C
+>   # cd /tmp
+>   # mkdir testdir
+>   # ln -s testdir testlink
+>   # chown -h nobody testlink
+>   # cd testlink
+>   cd: permission denied: testlink
+>   # dmesg
+>   (no output)
 
-I have the same problem on the exact same hardware and found the cause:
+Well that's sad. :( Two situations I can think of for that:
+- the kernel wasn't build with CONFIG_AUDIT
+- auditd is running and hiding the notices in some other log file
 
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Tue Apr 10 20:08:39 2012 +0000
-
-    net: allow pskb_expand_head() to get maximum tailroom
-    
-    [ Upstream commit 87151b8689d890dfb495081f7be9b9e257f7a2df ]
-    
-
-It turns out this change has a bad side effect on drivers that uses
-skb_recycle(), in that case mv643xx_eth.c
-
-Since skb_recycle() resets skb->data using (skb->head + NET_SKB_PAD), a
-recycled skb going multiple times through a path that needs to expand
-skb head will get bigger and bigger each time, and you eventually end up
-with an allocation failure.
-
-An idea to fix this would be to pass needed skb size to skb_resize() and
-set skb->data to MIN(NET_SKB_PAD, (skb->end - skb->head - skb_size) / 2)
-
-skb recycling gives a small speed boost, but does not get a lot of test
-coverage since only 3 drivers uses it
+-Kees
 
 -- 
-Maxime
-
-
+Kees Cook                                            @outflux.net
