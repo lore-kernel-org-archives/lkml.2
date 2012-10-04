@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946601Ab2JDVrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:47:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946106Ab2JDVYI (ORCPT
+	id S1946611Ab2JDVrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:47:49 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946086Ab2JDVYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:08 -0400
+	Thu, 4 Oct 2012 17:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 15/52] staging: comedi: dont dereference user memory for INSN_INTTRIG
-Date: Thu,  4 Oct 2012 14:21:06 -0700
-Message-Id: <20121004210637.232204648@linuxfoundation.org>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 05/52] usb: gadget: dummy_hcd: fixup error probe path
+Date: Thu,  4 Oct 2012 14:20:56 -0700
+Message-Id: <20121004210636.012779615@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,32 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
-commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
+commit 1b68a4ca2d038addb7314211d122fb6d7002b38b upstream.
 
-`parse_insn()` is dereferencing the user-space pointer `insn->data`
-directly when handling the `INSN_INTTRIG` comedi instruction.  It
-shouldn't be using `insn->data` at all; it should be using the separate
-`data` pointer passed to the function.  Fix it.
+If USB2 host controller probes fine but USB3 does not then we don't
+remove the USB controller properly and lock up the system while the HUB
+code will try to enumerate the USB2 controller and access memory which
+is no longer available in case the dummy_hcd was compiled as a module.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+This is a problem since 448b6eb1 ("USB: Make sure to fetch the BOS desc
+for roothubs.) if used in USB3 mode because dummy does not provide this
+descriptor and explodes later.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/dummy_hcd.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -843,7 +843,7 @@ static int parse_insn(struct comedi_devi
- 				ret = -EAGAIN;
- 				break;
- 			}
--			ret = s->async->inttrig(dev, s, insn->data[0]);
-+			ret = s->async->inttrig(dev, s, data[0]);
- 			if (ret >= 0)
- 				ret = 1;
- 			break;
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -2505,10 +2505,8 @@ static int dummy_hcd_probe(struct platfo
+ 	hs_hcd->has_tt = 1;
+ 
+ 	retval = usb_add_hcd(hs_hcd, 0, 0);
+-	if (retval != 0) {
+-		usb_put_hcd(hs_hcd);
+-		return retval;
+-	}
++	if (retval)
++		goto put_usb2_hcd;
+ 
+ 	if (mod_data.is_super_speed) {
+ 		ss_hcd = usb_create_shared_hcd(&dummy_hcd, &pdev->dev,
+@@ -2527,6 +2525,8 @@ static int dummy_hcd_probe(struct platfo
+ put_usb3_hcd:
+ 	usb_put_hcd(ss_hcd);
+ dealloc_usb2_hcd:
++	usb_remove_hcd(hs_hcd);
++put_usb2_hcd:
+ 	usb_put_hcd(hs_hcd);
+ 	the_controller.hs_hcd = the_controller.ss_hcd = NULL;
+ 	return retval;
 
 
