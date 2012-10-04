@@ -1,117 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab2JDJcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:32:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64847 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2JDJch (ORCPT
+	id S932484Ab2JDJhI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:37:08 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48618 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab2JDJhF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:32:37 -0400
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: myungjoo.ham@samsung.com, mturquette@linaro.org, kyungmin.park@samsung.com,
-        rjw@sisk.pl
-Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH v4 3/3] devfreq: Add current freq callback in device profile
-Date: Thu,  4 Oct 2012 14:58:34 +0530
-Message-Id: <1349342914-7095-4-git-send-email-rajagopal.venkat@linaro.org>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1349342914-7095-1-git-send-email-rajagopal.venkat@linaro.org>
-References: <1349342914-7095-1-git-send-email-rajagopal.venkat@linaro.org>
+	Thu, 4 Oct 2012 05:37:05 -0400
+MIME-Version: 1.0
+X-Originating-IP: [93.172.255.235]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 4 Oct 2012 11:36:44 +0200
+Message-ID: <CAK=Wgbb4uxRQPioho_sGZ2ycrfqzadLgnYQZfQMasRzfo6ohyA@mail.gmail.com>
+Subject: [GIT PULL] remoteproc for 3.7
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        "Gutierrez, Juan" <jgutierrez@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Emil Goode <emilgoode@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devfreq returns governor predicted frequency as current frequency
-via sysfs interface. But device may not support all frequencies
-that governor predicts. So add a callback in device profile to get
-current freq from driver. Also add a new sysfs node to expose
-governor predicted next target frequency.
+Hi Linus,
 
-Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- Documentation/ABI/testing/sysfs-class-devfreq | 11 ++++++++++-
- drivers/devfreq/devfreq.c                     | 14 ++++++++++++++
- include/linux/devfreq.h                       |  3 +++
- 3 files changed, 27 insertions(+), 1 deletion(-)
+Please pull remoteproc 3.7 material, thanks.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
-index 89283b1..e6cf08e 100644
---- a/Documentation/ABI/testing/sysfs-class-devfreq
-+++ b/Documentation/ABI/testing/sysfs-class-devfreq
-@@ -19,7 +19,16 @@ Date:		September 2011
- Contact:	MyungJoo Ham <myungjoo.ham@samsung.com>
- Description:
- 		The /sys/class/devfreq/.../cur_freq shows the current
--		frequency of the corresponding devfreq object.
-+		frequency of the corresponding devfreq object. Same as
-+		target_freq when get_cur_freq() is not implemented by
-+		devfreq driver.
-+
-+What:		/sys/class/devfreq/.../target_freq
-+Date:		September 2012
-+Contact:	Rajagopal Venkat <rajagopal.venkat@linaro.org>
-+Description:
-+		The /sys/class/devfreq/.../target_freq shows the next governor
-+		predicted target frequency of the corresponding devfreq object.
- 
- What:		/sys/class/devfreq/.../polling_interval
- Date:		September 2011
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 63e075e..9fdcb5d 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -465,6 +465,19 @@ static ssize_t show_governor(struct device *dev,
- static ssize_t show_freq(struct device *dev,
- 			 struct device_attribute *attr, char *buf)
- {
-+	unsigned long freq;
-+	struct devfreq *devfreq = to_devfreq(dev);
-+
-+	if (devfreq->profile->get_cur_freq &&
-+		!devfreq->profile->get_cur_freq(devfreq->dev.parent, &freq))
-+			return sprintf(buf, "%lu\n", freq);
-+
-+	return sprintf(buf, "%lu\n", devfreq->previous_freq);
-+}
-+
-+static ssize_t show_target_freq(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
- 	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
- }
- 
-@@ -564,6 +577,7 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
- static struct device_attribute devfreq_attrs[] = {
- 	__ATTR(governor, S_IRUGO, show_governor, NULL),
- 	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
-+	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
- 	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
- 	       store_polling_interval),
- 	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index ee243a3..7e2e2ea 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -66,6 +66,8 @@ struct devfreq_dev_status {
-  *			explained above with "DEVFREQ_FLAG_*" macros.
-  * @get_dev_status	The device should provide the current performance
-  *			status to devfreq, which is used by governors.
-+ * @get_cur_freq	The device should provide the current frequency
-+ *			at which it is operating.
-  * @exit		An optional callback that is called when devfreq
-  *			is removing the devfreq object due to error or
-  *			from devfreq_remove_device() call. If the user
-@@ -79,6 +81,7 @@ struct devfreq_dev_profile {
- 	int (*target)(struct device *dev, unsigned long *freq, u32 flags);
- 	int (*get_dev_status)(struct device *dev,
- 			      struct devfreq_dev_status *stat);
-+	int (*get_cur_freq)(struct device *dev, unsigned long *freq);
- 	void (*exit)(struct device *dev);
- };
- 
--- 
-1.7.11.3
+PS - I recently found an annoying typo in the subject of one of the
+patches, but I decided to accept it over doing a rebase.
 
+The following changes since commit 55d512e245bc7699a8800e23df1a24195dd08217:
+
+  Linux 3.6-rc5 (2012-09-08 16:43:45 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
+tags/remoteproc-for-3.7
+
+for you to fetch changes up to d09f53a735bae43806a77754312a45d3f1198342:
+
+  remoteproc: Fix use of format specifyer (2012-10-02 10:14:43 +0200)
+
+----------------------------------------------------------------
+- Remoteproc Recovery - by Fernando Guzman Lugo - when a remote processor
+  crash is detected, this mechanism will remove all virtio children
+  devices, wait until their drivers let go, hard reset the remote
+  processor and reload the firmware (resulting in the relevant virtio
+  children devices re-added). Essentially the entire software stack
+  is reset, together with the relevant hardware, so users don't have
+  to reset the entire phone.
+- STE Modem driver is added - by Sjur Brændeland
+- OMAP DSP boot address support is added - by Juan Gutierrez
+- A handful of fixes/cleanups - Sjur Brændeland, Dan Carpenter, Emil Goode
+
+----------------------------------------------------------------
+Dan Carpenter (3):
+      remoteproc: snprintf() can return more than was printed
+      remoteproc: return -EFAULT on copy_from_user failure
+      remoteproc: fix a potential NULL-dereference on cleanup
+
+Emil Goode (1):
+      remoteproc: Fix use of format specifyer
+
+Fernando Guzman Lugo (3):
+      remoteproc: add rproc_report_crash function to notify rproc crashes
+      remoteproc: add actual recovery implementation
+      remoteproc: create a 'recovery' debugfs entry
+
+Juan Gutierrez (1):
+      remoteproc/omap: set bootaddr support
+
+Ohad Ben-Cohen (1):
+      remoteproc: select VIRTIO to avoid build breakage
+
+Sjur Brændeland (3):
+      remoteproc: Add dependency to HAS_DMA
+      remtoteproc: maintain max notifyid
+      remoteproc: Add STE modem driver
+
+ Documentation/remoteproc.txt                 |   7 +
+ arch/arm/plat-omap/include/plat/remoteproc.h |   2 +
+ drivers/remoteproc/Kconfig                   |  14 ++
+ drivers/remoteproc/Makefile                  |   1 +
+ drivers/remoteproc/omap_remoteproc.c         |   3 +
+ drivers/remoteproc/remoteproc_core.c         | 209 +++++++++++++----
+ drivers/remoteproc/remoteproc_debugfs.c      |  85 ++++++-
+ drivers/remoteproc/remoteproc_internal.h     |   1 +
+ drivers/remoteproc/ste_modem_rproc.c         | 322 +++++++++++++++++++++++++++
+ include/linux/remoteproc.h                   |  24 ++
+ include/linux/ste_modem_shm.h                |  56 +++++
+ 11 files changed, 682 insertions(+), 42 deletions(-)
+ create mode 100644 drivers/remoteproc/ste_modem_rproc.c
+ create mode 100644 include/linux/ste_modem_shm.h
