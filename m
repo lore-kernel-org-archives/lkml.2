@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab2JDVzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:55:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933937Ab2JDVWW (ORCPT
+	id S1752065Ab2JDV4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:56:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933881Ab2JDVWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:22 -0400
+	Thu, 4 Oct 2012 17:22:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Yin, Fengwei" <fengwei.yin@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 42/58] n_gsm: added interlocking for gsm_data_lock for certain code paths
-Date: Thu,  4 Oct 2012 14:19:49 -0700
-Message-Id: <20121004210640.743182779@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 30/58] xhci: Intel Panther Point BEI quirk.
+Date: Thu,  4 Oct 2012 14:19:37 -0700
+Message-Id: <20121004210639.219821005@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,64 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Gorby <russ.gorby@intel.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
+commit 80fab3b244a22e0ca539d2439bdda50e81e5666f upstream.
 
-There were some locking holes in the management of the MUX's
-message queue for 2 code paths:
-1) gsmld_write_wakeup
-2) receipt of CMD_FCON flow-control message
-In both cases gsm_data_kick is called w/o locking so it can collide
-with other other instances of gsm_data_kick (pulling messages tx_tail)
-or potentially other instances of __gsm_data_queu (adding messages to tx_head)
+When a device with an isochronous endpoint is behind a hub plugged into
+the Intel Panther Point xHCI host controller, and the driver submits
+multiple frames per URB, the xHCI driver will set the Block Event
+Interrupt (BEI) flag on all but the last TD for the URB.  This causes
+the host controller to place an event on the event ring, but not send an
+interrupt.  When the last TD for the URB completes, BEI is cleared, and
+we get an interrupt for the whole URB.
 
-Changed to take the tx_lock in these 2 cases
+However, under a Panther Point xHCI host controller, if the parent hub
+is unplugged when one or more events from transfers with BEI set are on
+the event ring, a port status change event is placed on the event ring,
+but no interrupt is generated.  This means URBs stop completing, and the
+USB device disconnect is not noticed.  Something like a USB headset will
+cause mplayer to hang when the device is disconnected.
 
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+If another transfer is sent (such as running `sudo lsusb -v`), the next
+transfer event seems to "unstick" the event ring, the xHCI driver gets
+an interrupt, and the disconnect is reported to the USB core.
+
+The fix is not to use the BEI flag under the Panther Point xHCI host.
+This will impact power consumption and system responsiveness, because
+the xHCI driver will receive an interrupt for every frame in all
+isochronous URBs instead of once per URB.
+
+Intel chipset developers confirm that this bug will be hit if the BEI
+flag is used on any endpoint, not just ones that are behind a hub.
+
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 69e848c2090aebba5698a1620604c7dccb448684 "Intel xhci: Support
+EHCI/xHCI port switching."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c  |    1 +
+ drivers/usb/host/xhci-ring.c |    4 +++-
+ drivers/usb/host/xhci.h      |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1193,6 +1193,8 @@ static void gsm_control_message(struct g
- 							u8 *data, int clen)
- {
- 	u8 buf[1];
-+	unsigned long flags;
-+
- 	switch (command) {
- 	case CMD_CLD: {
- 		struct gsm_dlci *dlci = gsm->dlci[0];
-@@ -1218,7 +1220,9 @@ static void gsm_control_message(struct g
- 		gsm->constipated = 0;
- 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
- 		/* Kick the link in case it is idling */
-+		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_data_kick(gsm);
-+		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 		break;
- 	case CMD_MSC:
- 		/* Out of band modem line change indicator for a DLCI */
-@@ -2380,12 +2384,12 @@ static void gsmld_write_wakeup(struct tt
- 
- 	/* Queue poll */
- 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-+	spin_lock_irqsave(&gsm->tx_lock, flags);
- 	gsm_data_kick(gsm);
- 	if (gsm->tx_bytes < TX_THRESH_LO) {
--		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_dlci_data_sweep(gsm);
--		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -103,6 +103,7 @@ static void xhci_pci_quirks(struct devic
+ 		 * PPT chipsets.
+ 		 */
+ 		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
++		xhci->quirks |= XHCI_AVOID_BEI;
  	}
-+	spin_unlock_irqrestore(&gsm->tx_lock, flags);
- }
- 
- /**
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3400,7 +3400,9 @@ static int xhci_queue_isoc_tx(struct xhc
+ 			} else {
+ 				td->last_trb = ep_ring->enqueue;
+ 				field |= TRB_IOC;
+-				if (xhci->hci_version == 0x100) {
++				if (xhci->hci_version == 0x100 &&
++						!(xhci->quirks &
++							XHCI_AVOID_BEI)) {
+ 					/* Set BEI bit except for the last td */
+ 					if (i < num_tds - 1)
+ 						field |= TRB_BEI;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1496,6 +1496,7 @@ struct xhci_hcd {
+ #define XHCI_INTEL_HOST		(1 << 12)
+ #define XHCI_SPURIOUS_REBOOT	(1 << 13)
+ #define XHCI_COMP_MODE_QUIRK	(1 << 14)
++#define XHCI_AVOID_BEI		(1 << 15)
+ 	unsigned int		num_active_eps;
+ 	unsigned int		limit_active_eps;
+ 	/* There are two roothubs to keep track of bus suspend info for */
 
 
