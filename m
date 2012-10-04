@@ -1,173 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab2JDUxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 16:53:43 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:35784 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756185Ab2JDUxl (ORCPT
+	id S1757539Ab2JDU5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 16:57:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37229 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757319Ab2JDU53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 16:53:41 -0400
+	Thu, 4 Oct 2012 16:57:29 -0400
+Date: Thu, 4 Oct 2012 21:57:25 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        James Bottomley <JBottomley@Parallels.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20121004205724.GE13292@decadent.org.uk>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+ <20121001225201.376690206@1wt.eu>
+ <20121004203436.GD13292@decadent.org.uk>
+ <20121004203813.GL10245@1wt.eu>
 MIME-Version: 1.0
-In-Reply-To: <506C0C53.60205@jp.fujitsu.com>
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Thu, 4 Oct 2012 16:53:17 -0400
-X-Google-Sender-Auth: Z-brJtr9ejgyLPFb6NuB5e5oSm4
-Message-ID: <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to acpi_memory_device_remove()
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004203813.GL10245@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 089/180] SCSI: fix scsi_wait_scan
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 5:58 AM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->
-> In the 1st case, acpi_memory_disable_device() will be called.
-> In the 2nd case, acpi_memory_device_remove() will be called.
-> acpi_memory_device_remove() will also be called when we unbind the
-> memory device from the driver acpi_memhotplug.
->
-> acpi_memory_disable_device() has already implemented a code which
-> offlines memory and releases acpi_memory_info struct . But
-> acpi_memory_device_remove() has not implemented it yet.
->
-> So the patch implements acpi_memory_remove_memory() for offlining
-> memory and releasing acpi_memory_info struct. And it is used by both
-> acpi_memory_device_remove() and acpi_memory_disable_device().
->
-> Additionally, if the type is ACPI_BUS_REMOVAL_EJECT in
-> acpi_memory_device_remove() , it means that the user wants to eject
-> the memory device. In this case, acpi_memory_device_remove() calls
-> acpi_memory_remove_memory().
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  drivers/acpi/acpi_memhotplug.c |   44 +++++++++++++++++++++++++++++++----------
->  1 file changed, 34 insertions(+), 10 deletions(-)
->
-> Index: linux-3.6/drivers/acpi/acpi_memhotplug.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/acpi/acpi_memhotplug.c       2012-10-03 18:55:33.386378909 +0900
-> +++ linux-3.6/drivers/acpi/acpi_memhotplug.c    2012-10-03 18:55:58.624380688 +0900
-> @@ -306,24 +306,37 @@ static int acpi_memory_powerdown_device(
->         return 0;
->  }
->
-> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->  {
->         int result;
->         struct acpi_memory_info *info, *n;
->
-> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+On Thu, Oct 04, 2012 at 10:38:13PM +0200, Willy Tarreau wrote:
+> On Thu, Oct 04, 2012 at 09:34:36PM +0100, Ben Hutchings wrote:
+> > On Tue, Oct 02, 2012 at 12:53:26AM +0200, Willy Tarreau wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: James Bottomley <jbottomley@parallels.com>
+> > > 
+> > > commit 1ff2f40305772b159a91c19590ee159d3a504afc upstream.
+> > > 
+> > > Commit  c751085943362143f84346d274e0011419c84202
+> > > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > > Date:   Sun Apr 12 20:06:56 2009 +0200
+> > > 
+> > >     PM/Hibernate: Wait for SCSI devices scan to complete during resume
+> > > 
+> > > Broke the scsi_wait_scan module in 2.6.30.  Apparently debian still uses it so
+> > > fix it and backport to stable before removing it in 3.6.
+> > [...]
+> > > --- a/drivers/scsi/scsi_wait_scan.c
+> > > +++ b/drivers/scsi/scsi_wait_scan.c
+> > > @@ -13,6 +13,7 @@
+> > >  #include <linux/module.h>
+> > >  #include <linux/device.h>
+> > >  #include <scsi/scsi_scan.h>
+> > > +#include "scsi_priv.h"
+> > >  
+> > >  static int __init wait_scan_init(void)
+> > >  {
+> > 
+> > This backported version is a no-op.  I think we need to do:
+> > 
+> > -#include <scsi/scsi_scan.h>
+> > +
+> > +extern int scsi_complete_async_scans(void);
+> 
+> But this is what we have in scsi_scan.h :
+> 
+> #ifdef CONFIG_SCSI
+> /* drivers/scsi/scsi_scan.c */
+> extern int scsi_complete_async_scans(void);
+> #else
+> static inline int scsi_complete_async_scans(void) { return 0; }
+> #endif
+> 
+> Since CONFIG_SCSI_WAIT_SCAN depends on CONFIG_SCSI, we're certain to have
+> it defined when we build this code.
+> 
+> Am I missing something ?
+ 
+Yes, this is dealing with the modular SCSI case (CONFIG_SCSI not
+defined).  We can't change the '#ifdef CONFIG_SCSI' to check
+CONFIG_SCSI_MODULE as well, because <scsi/scsi_scan.h> is also used by
+the PM code which is built-in.
 
-Which lock protect this loop?
+Ben.
 
-
-> +               if (!info->enabled)
-> +                       return -EBUSY;
-> +
-> +               result = remove_memory(info->start_addr, info->length);
-> +               if (result)
-> +                       return result;
-
-I suspect you need to implement rollback code instead of just return.
-
-
-> +
-> +               list_del(&info->list);
-> +               kfree(info);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +{
-> +       int result;
->
->         /*
->          * Ask the VM to offline this memory range.
->          * Note: Assume that this function returns zero on success
->          */
-
-Write function comment instead of this silly comment.
-
-> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
-> -               if (info->enabled) {
-> -                       result = remove_memory(info->start_addr, info->length);
-> -                       if (result)
-> -                               return result;
-> -               }
-> -               kfree(info);
-> -       }
-> +       result = acpi_memory_remove_memory(mem_device);
-> +       if (result)
-> +               return result;
->
->         /* Power-off and eject the device */
->         result = acpi_memory_powerdown_device(mem_device);
-
-This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
-to release callback, but don't explain why.
-
-
-
-
-
-> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
->  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->  {
->         struct acpi_memory_device *mem_device = NULL;
-> -
-> +       int result;
->
->         if (!device || !acpi_driver_data(device))
->                 return -EINVAL;
->
->         mem_device = acpi_driver_data(device);
-> +
-> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
-> +               /*
-> +                * offline and remove memory only when the memory device is
-> +                * ejected.
-> +                */
-
-This comment explain nothing. A comment should describe _why_ should we do.
-e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
-we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
-
-
-> +               result = acpi_memory_remove_memory(mem_device);
-> +               if (result)
-> +                       return result;
-> +       }
-> +
->         kfree(mem_device);
->
->         return 0;
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
