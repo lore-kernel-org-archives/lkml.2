@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab2JDIP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:15:27 -0400
-Received: from wren.arvixe.com ([50.97.138.99]:56750 "EHLO wren.arvixe.com"
+	id S933309Ab2JDIPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 04:15:45 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51556 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932554Ab2JDIPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:15:22 -0400
-Message-ID: <3b6f1beb0a048e1d02a7f684447c46b8.squirrel@webmail.firszt.eu>
-In-Reply-To: <20121004072528.GD14217@core.coreip.homeip.net>
-References: <1347219438-2598-1-git-send-email-przemo@firszt.eu>
-    <20121004072528.GD14217@core.coreip.homeip.net>
-Date: Thu, 4 Oct 2012 09:15:19 +0100
-Subject: Re: [PATCH] USB: input: wacom_sys.c: format OLED image in kernel
-From: "Przemo Firszt" <przemo@firszt.eu>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: "Przemo Firszt" <przemo@firszt.eu>, rob@landley.net, pinglinux@gmail.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-input@vger.kernel.org
-Reply-To: przemo@firszt.eu
-User-Agent: SquirrelMail/1.4.22
+	id S932554Ab2JDIPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 04:15:39 -0400
+Message-ID: <506D459B.3070504@ti.com>
+Date: Thu, 4 Oct 2012 13:45:23 +0530
+From: Sourav <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - wren.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <b-cousson@ti.com>, <balbi@ti.com>, <santosh.shilimkar@ti.com>
+Subject: Re: [PATCHv3 2/4] Input: keypad: Add smsc ece1099 keypad driver
+References: <1349089310-22134-1-git-send-email-sourav.poddar@ti.com> <20121002061829.GA3853@core.coreip.homeip.net> <CAKdam55BEQi9tJb1yzKJWNhO7sHrW5NFHfsZjicw2NGYDEFovQ@mail.gmail.com> <20121004072426.GB14217@core.coreip.homeip.net>
+In-Reply-To: <20121004072426.GB14217@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Dnia 4 Pa¼dziernika 2012, 8:25 am, Cz, Dmitry Torokhov napisa³(a):
-> Hi Przemo,
 Hi Dmitry,
->
-> On Sun, Sep 09, 2012 at 03:37:18PM -0400, Przemo Firszt wrote:
->> This patch adds a new way of handling Wacom Intuos4 family OLEDs.
->> Previously the images had to be 'scrambled' by userland application. Now
->> the 'scrambling' is done in the kernel module, so user space can send
->> simple 64x32 pixels 4-bit grayscale (2 pixels per byte) 0,0 in top left
->> corner
->> images straight to a wacom OLED sysfs entry. An example:
+On Thursday 04 October 2012 12:54 PM, Dmitry Torokhov wrote:
+> On Wed, Oct 03, 2012 at 11:26:46AM +0530, Poddar, Sourav wrote:
+>> Hi Dmitry,
 >>
->> dd bs=1024 if=image_file \
->> of=/sys/bus/usb/drivers/wacom/[DevNo]/wacom_led/button[No]_formattedimg
->> \
->> count=1
->>
->> This patch greatly simplifies user space preparation of the image.
->> The raw image sysfs enties are still present to avoid breaking API.
+>> On Tue, Oct 2, 2012 at 11:48 AM, Dmitry Torokhov
+>> <dmitry.torokhov@gmail.com> wrote:
+>>> Hi Sourav,
+>>>
+>>> On Mon, Oct 01, 2012 at 04:31:50PM +0530, Sourav Poddar wrote:
+>>>> From: G, Manjunath Kondaiah <manjugk@ti.com>
+>>>>
+>>>> +
+>>>> +     /* Enable smsc keypad interrupts */
+>>>> +     ret = smsc_write(dev, SMSC_KP_INT_MASK, 0xff);
+>>>> +     if (ret < 0)
+>>>> +             goto err2;
+>>>> +
+>>>> +     return 0;
+>>>> +
+>>>> +err2:
+>>>> +     input_unregister_device(input);
+>>>> +err1:
+>>>> +     input_free_device(input);
+>>> Double free.
+>>>
+>> I believe what you are trying to say here is that we dont really
+>> need a " input_unregister_device" (as also I checked in other keypad
+>> implementations) and do a "unregister_device" in the remove api ??
+> What I was trying to say is that if input device has been registered
+> then you need to call input_unregister_device() to unregister and free
+> it, otherwise you need to call input_free_device(), but not both.
 >
-> I do not not believe that we should add code to the kernel for tasks that
-> can be just as easily performed in userspace.
->
-> Thanks!
->
-> --
-> Dmitry
->
-OK, thanks for the explanation!
+> Thanks.
+Ok. Thanks for the clarification. Will update and post a new version.
 
--- 
-Regards,
-Przemo Firszt
+~Sourav
 
