@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2JDWCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:02:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933735Ab2JDVU6 (ORCPT
+	id S1753720Ab2JDWCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:02:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933695Ab2JDVVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:20:58 -0400
+	Thu, 4 Oct 2012 17:21:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [ 16/58] staging: comedi: s626: dont dereference insn->data
-Date: Thu,  4 Oct 2012 14:19:23 -0700
-Message-Id: <20121004210637.496539693@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 18/58] staging: comedi: dont dereference user memory for INSN_INTTRIG
+Date: Thu,  4 Oct 2012 14:19:25 -0700
+Message-Id: <20121004210637.735523742@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -29,30 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Abbott <abbotti@mev.co.uk>
 
-commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
+commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
 
-`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
-is a pointer to user memory.  It should be dereferencing the separate
-`data` parameter that points to a copy of the data in kernel memory.
+`parse_insn()` is dereferencing the user-space pointer `insn->data`
+directly when handling the `INSN_INTTRIG` comedi instruction.  It
+shouldn't be using `insn->data` at all; it should be using the separate
+`data` pointer passed to the function.  Fix it.
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
+ drivers/staging/comedi/comedi_fops.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -2311,7 +2311,7 @@ static int s626_enc_insn_config(struct c
- 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
- 
- 	k->SetMode(dev, k, Setup, TRUE);
--	Preload(dev, k, *(insn->data));
-+	Preload(dev, k, data[0]);
- 	k->PulseIndex(dev, k);
- 	SetLatchSource(dev, k, valueSrclatch);
- 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1132,7 +1132,7 @@ static int parse_insn(struct comedi_devi
+ 				ret = -EAGAIN;
+ 				break;
+ 			}
+-			ret = s->async->inttrig(dev, s, insn->data[0]);
++			ret = s->async->inttrig(dev, s, data[0]);
+ 			if (ret >= 0)
+ 				ret = 1;
+ 			break;
 
 
