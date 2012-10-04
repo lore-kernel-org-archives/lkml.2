@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946615Ab2JDVqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:46:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934109Ab2JDVYR (ORCPT
+	id S1946601Ab2JDVrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:47:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946106Ab2JDVYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:17 -0400
+	Thu, 4 Oct 2012 17:24:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Samo Pogacnik <samo_pogacnik@t-2.net>
-Subject: [ 18/52] TTY: ttyprintk, dont touch behind tty->write_buf
-Date: Thu,  4 Oct 2012 14:21:09 -0700
-Message-Id: <20121004210637.615232809@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 15/52] staging: comedi: dont dereference user memory for INSN_INTTRIG
+Date: Thu,  4 Oct 2012 14:21:06 -0700
+Message-Id: <20121004210637.232204648@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,33 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit ee8b593affdf893012e57f4c54a21984d1b0d92e upstream.
+commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
 
-If a user provides a buffer larger than a tty->write_buf chunk and
-passes '\r' at the end of the buffer, we touch an out-of-bound memory.
+`parse_insn()` is dereferencing the user-space pointer `insn->data`
+directly when handling the `INSN_INTTRIG` comedi instruction.  It
+shouldn't be using `insn->data` at all; it should be using the separate
+`data` pointer passed to the function.  Fix it.
 
-Add a check there to prevent this.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Samo Pogacnik <samo_pogacnik@t-2.net>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/ttyprintk.c |    2 +-
+ drivers/staging/comedi/comedi_fops.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/ttyprintk.c
-+++ b/drivers/char/ttyprintk.c
-@@ -67,7 +67,7 @@ static int tpk_printk(const unsigned cha
- 				tmp[tpk_curr + 1] = '\0';
- 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
- 				tpk_curr = 0;
--				if (buf[i + 1] == '\n')
-+				if ((i + 1) < count && buf[i + 1] == '\n')
- 					i++;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -843,7 +843,7 @@ static int parse_insn(struct comedi_devi
+ 				ret = -EAGAIN;
  				break;
- 			case '\n':
+ 			}
+-			ret = s->async->inttrig(dev, s, insn->data[0]);
++			ret = s->async->inttrig(dev, s, data[0]);
+ 			if (ret >= 0)
+ 				ret = 1;
+ 			break;
 
 
