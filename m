@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2JDBYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 21:24:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61945 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab2JDBYv (ORCPT
+	id S1754237Ab2JDB0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 21:26:20 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39471 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab2JDB0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 21:24:51 -0400
-From: Anthony Liguori <anthony@codemonkey.ws>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-In-Reply-To: <87vces2gxq.fsf@rustcorp.com.au>
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf@rustcorp.com.au>
-User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 03 Oct 2012 20:24:47 -0500
-Message-ID: <87mx033u74.fsf@codemonkey.ws>
+	Wed, 3 Oct 2012 21:26:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Wed, 3 Oct 2012 21:26:17 -0400
+Message-ID: <CAHFgRy_ju3ybBGyApRXhke6=DW9B=LOZUVrjV0KfZbFFcG4PZA@mail.gmail.com>
+Subject: 3.6.0+ (GIT) -- BUG: sleeping function called from invalid context at
+ kernel/mutex.c:269 in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
+From: Miles Lane <miles.lane@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
-
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
->
->> Thinking about Sasha's patches, we can reduce ring usage
->> for virtio net small packets dramatically if we put
->> virtio net header inline with the data.
->> This can be done for free in case guest net stack allocated
->> extra head room for the packet, and I don't see
->> why would this have any downsides.
->
-> I've been wanting to do this for the longest time... but...
->
->> Even though with my recent patches qemu
->> no longer requires header to be the first s/g element,
->> we need a new feature bit to detect this.
->> A trivial qemu patch will be sent separately.
->
-> There's a reason I haven't done this.  I really, really dislike "my
-> implemention isn't broken" feature bits.  We could have an infinite
-> number of them, for each bug in each device.
-
-This is a bug in the specification.
-
-The QEMU implementation pre-dates the specification.  All of the actual
-implementations of virtio relied on the semantics of s/g elements and
-still do.
-
-What's in the specification really doesn't matter when it doesn't agree
-with all of the existing implementations.
-
-Users use implementations, not specifications.  The specification really
-ought to be changed here.
-
-Regards,
-
-Anthony Liguori
+ACPI: Preparing to enter system sleep state S3
+PM: Saving platform NVS memory
+Disabling non-boot CPUs ...
+numa_remove_cpu cpu 1 node 0: mask now 0
+Broke affinity for irq 46
+smpboot: CPU 1 is now offline
+BUG: sleeping function called from invalid context at kernel/mutex.c:269
+in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
+4 locks held by pm-suspend/3561:
+ #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8113cab6>]
+sysfs_write_file+0x37/0x121
+ #1:  (s_active#98){.+.+.+}, at: [<ffffffff8113cb50>]
+sysfs_write_file+0xd1/0x121
+ #2:  (autosleep_lock){+.+.+.}, at: [<ffffffff810616c2>]
+pm_autosleep_lock+0x12/0x14
+ #3:  (pm_mutex){+.+.+.}, at: [<ffffffff8105c06c>] pm_suspend+0x38/0x1b8
+irq event stamp: 103458
+hardirqs last  enabled at (103457): [<ffffffff81460461>]
+__mutex_unlock_slowpath+0x101/0x125
+hardirqs last disabled at (103458): [<ffffffff8105be25>]
+arch_suspend_disable_irqs+0xa/0xc
+softirqs last  enabled at (103196): [<ffffffff8103445d>]
+__do_softirq+0x12a/0x155
+softirqs last disabled at (103171): [<ffffffff8146836c>] call_softirq+0x1c/0x30
+Pid: 3561, comm: pm-suspend Not tainted 3.6.0+ #26
+Call Trace:
+ [<ffffffff8106b64e>] ? print_irqtrace_events+0x9d/0xa1
+ [<ffffffff8104efcd>] __might_sleep+0x19f/0x1a8
+ [<ffffffff81460345>] mutex_lock_nested+0x20/0x3b
+ [<ffffffff81391cbb>] ledtrig_cpu+0x3b/0x7b
+ [<ffffffff81391d29>] ledtrig_cpu_syscore_suspend+0xe/0x15
+ [<ffffffff813329e9>] syscore_suspend+0x78/0xfd
+ [<ffffffff8105bf42>] suspend_devices_and_enter+0x10f/0x201
+ [<ffffffff8105c133>] pm_suspend+0xff/0x1b8
+ [<ffffffff8105b4fa>] state_store+0x43/0x6c
+ [<ffffffff811c5ba6>] kobj_attr_store+0xf/0x1b
+ [<ffffffff8113cb68>] sysfs_write_file+0xe9/0x121
+ [<ffffffff810e48a3>] vfs_write+0x9b/0xfd
+ [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
+ [<ffffffff810e4ac6>] sys_write+0x4d/0x7a
+ [<ffffffff814672f4>] tracesys+0xdd/0xe2
