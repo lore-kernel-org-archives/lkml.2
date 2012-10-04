@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946164Ab2JDVZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946130Ab2JDVZ2 (ORCPT
+	id S1946216Ab2JDVkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:40:10 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946149Ab2JDVZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:28 -0400
+	Thu, 4 Oct 2012 17:25:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 41/52] SCSI: ibmvscsi: Fix host config length field overflow
-Date: Thu,  4 Oct 2012 14:21:32 -0700
-Message-Id: <20121004210640.470188727@linuxfoundation.org>
+Subject: [ 42/52] SCSI: hpsa: Use LUN reset instead of target reset
+Date: Thu,  4 Oct 2012 14:21:33 -0700
+Message-Id: <20121004210640.604014297@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,34 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 225c56960fcafeccc2b6304f96cd3f0dbf42a16a upstream.
+commit 21e89afd325849eb38adccf382df16cc895911f9 upstream.
 
-The length field in the host config packet is only 16-bit long, so
-passing it 0x10000 (64K which is our standard PAGE_SIZE) doesn't
-work and result in an empty config from the server.
+It turns out Smart Array logical drives do not support target
+reset and when the target reset fails, the logical drive will
+be taken off line.  Symptoms look like this:
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
+hpsa 0000:03:00.0: resetting device 1:0:0:0
+hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
+hpsa 0000:03:00.0: resetting device failed.
+sd 1:0:0:0: Device offlined - not ready after error recovery
+sd 1:0:0:0: rejecting I/O to offline device
+EXT3-fs error (device sdb1): read_block_bitmap:
+
+LUN reset is supported though, and is what we should be using.
+Target reset is also disruptive in shared SAS situations,
+for example, an external MSA1210m which does support target
+reset attached to Smart Arrays in multiple hosts -- a target
+reset from one host is disruptive to other hosts as all LUNs
+on the target will be reset and will abort all outstanding i/os
+back to all the attached hosts.  So we should use LUN reset,
+not target reset.
+
+Tested this with Smart Array logical drives and with tape drives.
+Not sure how this bug survived since 2009, except it must be very
+rare for a Smart Array to require more than 30s to complete a request.
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/ibmvscsi/ibmvscsi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/ibmvscsi/ibmvscsi.c
-+++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -1541,6 +1541,9 @@ static int ibmvscsi_do_host_config(struc
- 
- 	host_config = &evt_struct->iu.mad.host_config;
- 
-+	/* The transport length field is only 16-bit */
-+	length = min(0xffff, length);
-+
- 	/* Set up a lun reset SRP command */
- 	memset(host_config, 0x00, sizeof(*host_config));
- 	host_config->common.type = VIOSRP_HOST_CONFIG_TYPE;
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -2943,7 +2943,7 @@ static void fill_cmd(struct CommandList
+ 			c->Request.Timeout = 0; /* Don't time out */
+ 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
+ 			c->Request.CDB[0] =  cmd;
+-			c->Request.CDB[1] = 0x03;  /* Reset target above */
++			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
+ 			/* If bytes 4-7 are zero, it means reset the */
+ 			/* LunID device */
+ 			c->Request.CDB[4] = 0x00;
 
 
