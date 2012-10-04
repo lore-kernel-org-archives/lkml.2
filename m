@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2JDLtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 07:49:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36769 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755249Ab2JDLtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 07:49:14 -0400
-Message-ID: <506D7799.2090307@ti.com>
-Date: Thu, 4 Oct 2012 17:18:41 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1755521Ab2JDLwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 07:52:00 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:33178 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab2JDLv7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 07:51:59 -0400
+Date: Thu, 4 Oct 2012 13:51:57 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: tty_init_dev: 24 callbacks suppressed
+Message-ID: <20121004115157.GA245@x4>
+References: <20121004092055.GA21028@aftab.osrc.amd.com>
+ <20121004112347.GA245@x4>
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: Re: [PATCH v3 1/6] ARM: davinci: sram: ioremap the davinci_soc_info
- specified sram regions
-References: <1349276133-26408-1-git-send-email-mporter@ti.com> <1349276133-26408-2-git-send-email-mporter@ti.com>
-In-Reply-To: <1349276133-26408-2-git-send-email-mporter@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121004112347.GA245@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/3/2012 8:25 PM, Matt Porter wrote:
-> From: Ben Gardiner <bengardiner@nanometrics.ca>
+On 2012.10.04 at 13:23 +0200, Markus Trippelsdorf wrote:
+> On 2012.10.04 at 11:20 +0200, Borislav Petkov wrote:
+> > Hi,
+> > 
+> > I'm seeing this on today's Linus tree:
+> > 
+> > [   24.048278] tty_init_dev: 24 callbacks suppressed
+> > [   45.630349] tty_init_dev: 3 callbacks suppressed
+> > 
+> > It is either from that WARN_RATELIMIT thing or the printk_ratelimited
+> > further below in tty_init_dev but I don't know for sure because the
+> > actual text message from both printk's doesn't come out in dmesg - only
+> > that something got suppressed.
+> > 
+> > And it quiets down later, after the machine has finished booting. Still,
+> > this doesn't tell me anything about any issue. So what's up?
 > 
-> The current davinci init sets up SRAM in iotables. There has been an observed
-> failure to boot a da850 with 128K specified in the iotable.
-> 
-> Make the davinci sram allocator -- now based on RMK's consolidated SRAM
-> support -- do an ioremap of the region specified by the entries in
+> I'm seeing the same thing.
+> This can be fixed by a slightly modified version of:
+> https://patchwork.kernel.org/patch/1339221/
 
-The part about being based on RMK's consolidated SRAM support should be
-dropped.
+My first patch was wrong. This one should be correct:
 
-> davinci_soc_info before registering with gen_pool_add_virt().
-> 
-> This commit breaks runtime of davinci boards since the regions that
-> the sram init is now trying to ioremap have been iomapped by their
-> iotable entries. The iotable entries will be removed in the patches
-> to come.
-
-I would prefer merging 2/6 into this for this reason.
-
-> 
-> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-> [rebased to mainline as the consolidated SRAM support was dropped]
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  arch/arm/mach-davinci/sram.c |   17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/sram.c b/arch/arm/mach-davinci/sram.c
-> index db0f778..0e8ca4f 100644
-> --- a/arch/arm/mach-davinci/sram.c
-> +++ b/arch/arm/mach-davinci/sram.c
-> @@ -10,6 +10,7 @@
->   */
->  #include <linux/module.h>
->  #include <linux/init.h>
-> +#include <linux/io.h>
->  #include <linux/genalloc.h>
->  
->  #include <mach/common.h>
-> @@ -32,7 +33,7 @@ void *sram_alloc(size_t len, dma_addr_t *dma)
->  		return NULL;
->  
->  	if (dma)
-> -		*dma = dma_base + (vaddr - SRAM_VIRT);
-> +		*dma = gen_pool_virt_to_phys(sram_pool, vaddr);
->  	return (void *)vaddr;
->  
->  }
-> @@ -53,8 +54,10 @@ EXPORT_SYMBOL(sram_free);
->   */
->  static int __init sram_init(void)
->  {
-> +	phys_addr_t phys = davinci_soc_info.sram_dma;
->  	unsigned len = davinci_soc_info.sram_len;
->  	int status = 0;
-> +	void *addr;
->  
->  	if (len) {
->  		len = min_t(unsigned, len, SRAM_SIZE);
-> @@ -62,8 +65,16 @@ static int __init sram_init(void)
->  		if (!sram_pool)
->  			status = -ENOMEM;
->  	}
-> -	if (sram_pool)
-> -		status = gen_pool_add(sram_pool, SRAM_VIRT, len, -1);
-> +
-> +	if (sram_pool) {
-> +		addr = ioremap(phys, len);
-> +		if (!addr)
-> +			return -ENOMEM;
-> +		if((status = gen_pool_add_virt(sram_pool, (unsigned)addr,
-> +					       phys, len, -1)))
-
-Nit: prefer to set status outside of if().
-
-Looks good otherwise. Thanks for reviving this.
-
-Thanks,
-Sekhar
+diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
+index e11ccb4..d8de255 100644
+--- a/include/linux/ratelimit.h
++++ b/include/linux/ratelimit.h
+@@ -46,20 +46,17 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 		WARN_ON((condition) && __ratelimit(state))
+ 
+-#define __WARN_RATELIMIT(condition, state, format...)		\
+-({								\
+-	int rtn = 0;						\
+-	if (unlikely(__ratelimit(state)))			\
+-		rtn = WARN(condition, format);			\
+-	rtn;							\
+-})
+-
+-#define WARN_RATELIMIT(condition, format...)			\
++#define WARN_RATELIMIT(condition, fmt, ...)			\
+ ({								\
+ 	static DEFINE_RATELIMIT_STATE(_rs,			\
+ 				      DEFAULT_RATELIMIT_INTERVAL,	\
+ 				      DEFAULT_RATELIMIT_BURST);	\
+-	__WARN_RATELIMIT(condition, &_rs, format);		\
++	int rtn = !!(condition);				\
++								\
++	if (unlikely(rtn && __ratelimit(&_rs)))		\
++		WARN(rtn, fmt, ##__VA_ARGS__);			\
++								\
++	rtn;							\
+ })
+ 
+ #else
+@@ -67,15 +64,9 @@ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+ #define WARN_ON_RATELIMIT(condition, state)			\
+ 	WARN_ON(condition)
+ 
+-#define __WARN_RATELIMIT(condition, state, format...)		\
+-({								\
+-	int rtn = WARN(condition, format);			\
+-	rtn;							\
+-})
+-
+-#define WARN_RATELIMIT(condition, format...)			\
++#define WARN_RATELIMIT(condition, fmt, ...)			\
+ ({								\
+-	int rtn = WARN(condition, format);			\
++	int rtn = WARN(condition, fmt, ##__VA_ARGS__);		\
+ 	rtn;							\
+ })
+ 
+-- 
+Markus
