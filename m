@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965058Ab2JDOW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:22:29 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60988 "EHLO
+	id S965065Ab2JDO0e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:26:34 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64217 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965014Ab2JDOW0 (ORCPT
+	with ESMTP id S964963Ab2JDO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:22:26 -0400
-Date: Thu, 4 Oct 2012 10:10:59 -0400
+	Thu, 4 Oct 2012 10:26:33 -0400
+Date: Thu, 4 Oct 2012 10:15:06 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -16,126 +16,134 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
         bhutchings@solarflare.com, gregory.v.rose@intel.com,
         davem@davemloft.net--no-chain-reply-to
-Subject: Re: [PATCH 1/5] PCI: Add pci_dev_type
-Message-ID: <20121004141058.GI9158@phenom.dumpdata.com>
+Subject: Re: [PATCH 4/5] PCI: Add max_vfs in sysfs per pci device where
+ supports
+Message-ID: <20121004141505.GJ9158@phenom.dumpdata.com>
 References: <506C3B11.9010009@redhat.com>
  <1349286695-26713-1-git-send-email-yinghai@kernel.org>
- <1349286695-26713-2-git-send-email-yinghai@kernel.org>
+ <1349286695-26713-5-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349286695-26713-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1349286695-26713-5-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 10:51:31AM -0700, Yinghai Lu wrote:
-> need to use it for visiable attribute control in syfsfs for pci_dev.
+On Wed, Oct 03, 2012 at 10:51:34AM -0700, Yinghai Lu wrote:
+> only pci device that support sriov will have max_vfs show up in /sys
+  ^-Only   ^-devices           ^-SRIOV
 
-Please use 'ispell' before sending your patches.
+> 
+> when user set value in /sys, driver ops set_max_vfs will be called to enable
+> VF there.
 
+Huh? What value? What are they enabling? Your comment makes it sound as
+if setting any value (say '0xdeadbeef') will be called to enable a VF.
 
-Also please explain why do you want this? If I do
-'git annotate' on that file (say six months from now when I've forgotten
-a lot) and try to lookup what 'is_visible' attribute is, I get
-this one line explanation. Worst, the explanation does not
-say *why* we need it - or the *purpose* behind it. Or if there
-are patches that are going to utilize it.
+I don't think that is what the code does. Can you explain what the
+proper values are to be submitted to the SysFS value 'max_vfs' and
+what the kernel ought to be doing? Perhaps include a little snippet
+from the kernel log so if somebody has a bug they can look at see
+what you got and can compare?
 
-The Documentation/SubmittingPatches says:
-
-	2) Describe your changes.
-
-	Describe the technical detail of the change(s) your patch includes.
-
-	Be as specific as possible.  The WORST descriptions possible include
-	things like "update driver X", "bug fix for driver X", or "this patch
-	includes updates for subsystem X.  Please apply."
-
-	The maintainer will thank you if you write your patch description in a
-	form which can be easily pulled into Linux's source code management
-	system, git, as a "commit log".  See #15, below.
-
-	If your description starts to get long, that's a sign that you probably
-	need to split up your patch.  See #3, next.
-
-	When you submit or resubmit a patch or patch series, include the
-	complete patch description and justification for it.  Don't just
-	say that this is version N of the patch (series).  Don't expect the
-	patch merger to refer back to earlier patch versions or referenced
-	URLs to find the patch description and put that into the patch.
-	I.e., the patch (series) and its description should be self-contained.
-	This benefits both the patch merger(s) and reviewers.  Some reviewers
-	probably didn't even receive earlier versions of the patch.
-
-	If the patch fixes a logged bug entry, refer to that bug entry by
-	number and URL.
-
+Thank you.
 > 
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  drivers/pci/pci-sysfs.c |   24 ++++++++++++++++++++++++
->  drivers/pci/pci.h       |    1 +
->  drivers/pci/probe.c     |    1 +
->  3 files changed, 26 insertions(+), 0 deletions(-)
+>  drivers/pci/pci-sysfs.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h     |    1 +
+>  2 files changed, 52 insertions(+), 0 deletions(-)
 > 
 > diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 02d107b..3d160aa 100644
+> index fbbb97f..9b6f409 100644
 > --- a/drivers/pci/pci-sysfs.c
 > +++ b/drivers/pci/pci-sysfs.c
-> @@ -1411,3 +1411,27 @@ static int __init pci_sysfs_init(void)
+> @@ -458,6 +458,52 @@ boot_vga_show(struct device *dev, struct device_attribute *attr, char *buf)
 >  }
+>  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
 >  
->  late_initcall(pci_sysfs_init);
-> +
-> +static struct attribute *pci_dev_dev_attrs[] = {
-> +	NULL,
-> +};
-> +
-> +static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
-> +						struct attribute *a, int n)
+> +static ssize_t
+> +max_vfs_show(struct device *dev, struct device_attribute *attr, char *buf)
 > +{
-> +	return a->mode;
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +
+> +	return sprintf(buf, "%u\n", pdev->max_vfs);
 > +}
 > +
-> +static struct attribute_group pci_dev_attr_group = {
-> +	.attrs = pci_dev_dev_attrs,
-> +	.is_visible = pci_dev_attrs_are_visible,
-> +};
+> +static void max_vfs_callback(struct device *dev)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(dev);
 > +
-> +static const struct attribute_group *pci_dev_attr_groups[] = {
-> +	&pci_dev_attr_group,
-> +	NULL,
-> +};
+> +	mutex_lock(&pci_remove_rescan_mutex);
+> +	if (pdev->is_added && dev->driver) {
+> +		struct pci_driver *pdrv;
 > +
-> +struct device_type pci_dev_type = {
-> +	.groups = pci_dev_attr_groups,
-> +};
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index bacbcba..6f6cd14 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -157,6 +157,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+> +		pdrv = to_pci_driver(dev->driver);
+> +		if (pdrv->set_max_vfs)
+> +			pdrv->set_max_vfs(pdev);
+> +
+> +	}
+> +	mutex_unlock(&pci_remove_rescan_mutex);
+> +}
+> +static ssize_t
+> +max_vfs_store(struct device *dev, struct device_attribute *attr,
+> +		 const char *buf, size_t count)
+> +{
+> +	unsigned long val;
+> +	int err;
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +
+> +	if (kstrtoul(buf, 0, &val) < 0)
+> +		return -EINVAL;
+> +
+> +	pdev->max_vfs = val;
+> +
+> +	err = device_schedule_callback(dev, max_vfs_callback);
+> +
+> +	if (err)
+> +		return err;
+> +
+> +	return count;
+> +}
+> +struct device_attribute max_vfs_attr =
+> +	__ATTR(max_vfs, 0644, max_vfs_show, max_vfs_store);
+> +
+>  static void
+>  pci_config_pm_runtime_get(struct pci_dev *pdev)
+>  {
+> @@ -1405,6 +1451,7 @@ late_initcall(pci_sysfs_init);
+>  
+>  static struct attribute *pci_dev_dev_attrs[] = {
+>  	&vga_attr.attr,
+> +	&max_vfs_attr.attr,
+>  	NULL,
+>  };
+>  
+> @@ -1418,6 +1465,10 @@ static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
+>  		if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+>  			return 0;
+>  
+> +	if (a == &max_vfs_attr.attr)
+> +		if (!pdev->is_physfn)
+> +			return 0;
+> +
+>  	return a->mode;
 >  }
->  extern struct device_attribute pci_dev_attrs[];
->  extern struct device_attribute pcibus_dev_attrs[];
-> +extern struct device_type pci_dev_type;
->  #ifdef CONFIG_HOTPLUG
->  extern struct bus_attribute pci_bus_attrs[];
->  #else
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index ec909af..0312f1c48 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -975,6 +975,7 @@ int pci_setup_device(struct pci_dev *dev)
->  	dev->sysdata = dev->bus->sysdata;
->  	dev->dev.parent = dev->bus->bridge;
->  	dev->dev.bus = &pci_bus_type;
-> +	dev->dev.type = &pci_dev_type;
->  	dev->hdr_type = hdr_type & 0x7f;
->  	dev->multifunction = !!(hdr_type & 0x80);
->  	dev->error_state = pci_channel_io_normal;
+>  
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 7d70a5e..f7423d4 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -335,6 +335,7 @@ struct pci_dev {
+>  	unsigned int	broken_intx_masking:1;
+>  	unsigned int	io_window_1k:1;	/* Intel P2P bridge 1K I/O windows */
+>  	pci_dev_flags_t dev_flags;
+> +	unsigned int	max_vfs;
+>  	atomic_t	enable_cnt;	/* pci_enable_device has been called */
+>  
+>  	u32		saved_config_space[16]; /* config space saved at suspend time */
 > -- 
 > 1.7.7
 > 
