@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422833Ab2JDPXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 11:23:15 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:34846 "EHLO zmc.proxad.net"
+	id S1422805Ab2JDPXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 11:23:35 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:34820 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422720Ab2JDPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1422719Ab2JDPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 11:19:45 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 15/24 v2] MIPS: PNX8550: use OHCI platform driver
-Date: Thu,  4 Oct 2012 17:17:43 +0200
-Message-Id: <1349363872-27004-16-git-send-email-florian@openwrt.org>
+Subject: [PATCH 13/24] USB: ohci: remove check for RH already suspended in ohci_suspend
+Date: Thu,  4 Oct 2012 17:17:41 +0200
+Message-Id: <1349363872-27004-14-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349363872-27004-1-git-send-email-florian@openwrt.org>
 References: <1349363872-27004-1-git-send-email-florian@openwrt.org>
@@ -21,67 +21,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As suggested by Alan Stern, the code checking for the OHCI Root Hub already
+suspended is no longer required since the bug it fixes has not been seen in
+ages, remove that check making ohci_suspend much simpler.
+
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-No changes since v1
+ drivers/usb/host/ohci-hcd.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
- arch/mips/pnx8550/common/platform.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mips/pnx8550/common/platform.c b/arch/mips/pnx8550/common/platform.c
-index 5264cc0..0a8faea 100644
---- a/arch/mips/pnx8550/common/platform.c
-+++ b/arch/mips/pnx8550/common/platform.c
-@@ -20,6 +20,7 @@
- #include <linux/serial.h>
- #include <linux/serial_pnx8xxx.h>
- #include <linux/platform_device.h>
-+#include <linux/usb/ohci_pdriver.h>
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 0cba8d6..5d30992 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -985,26 +985,19 @@ static int __maybe_unused ohci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+ {
+ 	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
+ 	unsigned long	flags;
+-	int		rc = 0;
  
- #include <int.h>
- #include <usb.h>
-@@ -96,12 +97,40 @@ static u64 ohci_dmamask = DMA_BIT_MASK(32);
+-	/* Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
++	/* Disable irq emission and mark HW unaccessible. Use
+ 	 * the spinlock to properly synchronize with possible pending
+ 	 * RH suspend or resume activity.
+ 	 */
+ 	spin_lock_irqsave (&ohci->lock, flags);
+-	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
+ 	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+ 	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
  
- static u64 uart_dmamask = DMA_BIT_MASK(32);
+ 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+- bail:
+ 	spin_unlock_irqrestore (&ohci->lock, flags);
  
-+static int pnx8550_usb_ohci_power_on(struct platform_device *pdev)
-+{
-+	/*
-+	 * Set register CLK48CTL to enable and 48MHz
-+	 */
-+	outl(0x00000003, PCI_BASE | 0x0004770c);
-+
-+	/*
-+	 * Set register CLK12CTL to enable and 48MHz
-+	 */
-+	outl(0x00000003, PCI_BASE | 0x00047710);
-+
-+	udelay(100);
-+
+-	return rc;
 +	return 0;
-+}
-+
-+static void pnx8550_usb_ohci_power_off(struct platform_device *pdev)
-+{
-+	udelay(10);
-+}
-+
-+static struct usb_ohci_pdata pnx8550_usb_ohci_pdata = {
-+	.power_on	= pnx8550_usb_ohci_power_on,
-+	.power_off	= pnx8550_usb_ohci_power_off,
-+};
-+
- static struct platform_device pnx8550_usb_ohci_device = {
--	.name		= "pnx8550-ohci",
-+	.name		= "ohci-platform",
- 	.id		= -1,
- 	.dev = {
- 		.dma_mask		= &ohci_dmamask,
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+		.platform_data		= &pnx8550_usb_ohci_pdata,
- 	},
- 	.num_resources	= ARRAY_SIZE(pnx8550_usb_ohci_resources),
- 	.resource	= pnx8550_usb_ohci_resources,
+ }
+ 
+ 
 -- 
 1.7.9.5
 
