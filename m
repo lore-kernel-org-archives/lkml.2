@@ -1,118 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911Ab2JDVWG (ORCPT <rfc822;w@1wt.eu>);
+	id S1752227Ab2JDV46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:56:58 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:12535 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933904Ab2JDVWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 17:22:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933877Ab2JDVWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kevin Daughtridge <kevin@kdau.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 36/58] HID: keep dev_rdesc unmodified and use it for comparisons
-Date: Thu,  4 Oct 2012 14:19:43 -0700
-Message-Id: <20121004210639.974132799@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
-References: <20121004210635.449598766@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] pidns: remove recursion from free_pid_ns
+Date: Fri,  5 Oct 2012 01:21:02 +0400
+Message-Id: <1349385662-571743-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+Here is a stack trace of recursion:
+free_pid_ns(parent)
+  put_pid_ns(parent)
+    kref_put(&ns->kref, free_pid_ns);
+      free_pid_ns
 
-------------------
+This patch turns recursion into loops.
 
-From: Kevin Daughtridge <kevin@kdau.com>
+pidns can be nested many times, so in case of recursion
+a simple user space program can provoke a kernel panic
+due to exceed of a kernel stack.
 
-commit 86e6b77eb7cf9ca2e9c7092b4dfd588f0a3307b6 upstream.
-
-The dev_rdesc member of the hid_device structure is meant to store the original
-report descriptor received from the device, but it is currently passed to any
-report_fixup method before it is copied to the rdesc member. This patch uses a
-temporary buffer to shield dev_rdesc from the side effects of many HID drivers'
-report_fixup implementations.
-
-usbhid's hid_post_reset checks the report descriptor currently returned by the
-device against a descriptor that may have been modified by a driver's
-report_fixup method. That leaves some devices nonfunctional after a resume, with
-a "reset_resume error 1" reported. This patch checks the new descriptor against
-the unmodified dev_rdesc instead and uses the original, instead of modified,
-report size.
-
-BugLink: http://bugs.launchpad.net/bugs/1049623
-Signed-off-by: Kevin Daughtridge <kevin@kdau.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- drivers/hid/hid-core.c        |   16 +++++++++++++---
- drivers/hid/usbhid/hid-core.c |    6 +++---
- 2 files changed, 16 insertions(+), 6 deletions(-)
+ include/linux/kref.h   |   12 ++++++++++++
+ kernel/pid_namespace.c |   17 +++++++++++++----
+ 2 files changed, 25 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -757,6 +757,7 @@ int hid_open_report(struct hid_device *d
- 	struct hid_item item;
- 	unsigned int size;
- 	__u8 *start;
-+	__u8 *buf;
- 	__u8 *end;
- 	int ret;
- 	static int (*dispatch_type[])(struct hid_parser *parser,
-@@ -775,12 +776,21 @@ int hid_open_report(struct hid_device *d
- 		return -ENODEV;
- 	size = device->dev_rsize;
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 65af688..d234199 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+ 	return kref_sub(kref, 1, release);
+ }
  
-+	buf = kmemdup(start, size, GFP_KERNEL);
-+	if (buf == NULL)
-+		return -ENOMEM;
++/**
++ * kref_put - decrement refcount for object.
++ * @kref: object.
++ *
++ * Decrement the refcount.
++ * Return 1 if refcount is zero.
++ */
++static inline int __kref_put(struct kref *kref)
++{
++	return atomic_sub_and_test(1, &kref->refcount);
++}
 +
- 	if (device->driver->report_fixup)
--		start = device->driver->report_fixup(device, start, &size);
-+		start = device->driver->report_fixup(device, buf, &size);
-+	else
-+		start = buf;
+ static inline int kref_put_mutex(struct kref *kref,
+ 				 void (*release)(struct kref *kref),
+ 				 struct mutex *lock)
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index b17bf93..632eb88 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -138,11 +138,20 @@ void free_pid_ns(struct kref *kref)
  
--	device->rdesc = kmemdup(start, size, GFP_KERNEL);
--	if (device->rdesc == NULL)
-+	start = kmemdup(start, size, GFP_KERNEL);
-+	kfree(buf);
-+	if (start == NULL)
- 		return -ENOMEM;
+ 	ns = container_of(kref, struct pid_namespace, kref);
+ 
+-	parent = ns->parent;
+-	destroy_pid_namespace(ns);
++	while (1) {
+ 
+-	if (parent != NULL)
+-		put_pid_ns(parent);
++		parent = ns->parent;
++		destroy_pid_namespace(ns);
 +
-+	device->rdesc = start;
- 	device->rsize = size;
++		if (parent == NULL || parent == &init_pid_ns)
++			break;
++
++		/* kref_put cannot be used for avoiding recursion */
++		if (__kref_put(&parent->kref) == 0)
++			break;
++
++		ns = parent;
++	}
+ }
  
- 	parser = vzalloc(sizeof(struct hid_parser));
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1423,20 +1423,20 @@ static int hid_post_reset(struct usb_int
- 	 * configuration descriptors passed, we already know that
- 	 * the size of the HID report descriptor has not changed.
- 	 */
--	rdesc = kmalloc(hid->rsize, GFP_KERNEL);
-+	rdesc = kmalloc(hid->dev_rsize, GFP_KERNEL);
- 	if (!rdesc) {
- 		dbg_hid("couldn't allocate rdesc memory (post_reset)\n");
- 		return 1;
- 	}
- 	status = hid_get_class_descriptor(dev,
- 				interface->desc.bInterfaceNumber,
--				HID_DT_REPORT, rdesc, hid->rsize);
-+				HID_DT_REPORT, rdesc, hid->dev_rsize);
- 	if (status < 0) {
- 		dbg_hid("reading report descriptor failed (post_reset)\n");
- 		kfree(rdesc);
- 		return 1;
- 	}
--	status = memcmp(rdesc, hid->rdesc, hid->rsize);
-+	status = memcmp(rdesc, hid->dev_rdesc, hid->dev_rsize);
- 	kfree(rdesc);
- 	if (status != 0) {
- 		dbg_hid("report descriptor changed\n");
-
+ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+-- 
+1.7.1
 
