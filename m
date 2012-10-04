@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab2JDSuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:50:17 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37767 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab2JDSuO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:50:14 -0400
-From: Anthony Liguori <aliguori@us.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Adam Litke <agl@us.ibm.com>,
-        Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Avishay Traeger <AVISHAY@il.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: qemu-devel <qemu-devel@nongnu.org>, LKML <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [Qemu-devel] Proposal for virtio standardization.
-In-Reply-To: <87zk4c2tqq.fsf@rustcorp.com.au>
-References: <87zk4c2tqq.fsf@rustcorp.com.au>
-User-Agent: Notmuch/0.13.2+93~ged93d79 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 04 Oct 2012 13:49:56 -0500
-Message-ID: <874nmajcmj.fsf@codemonkey.ws>
+	id S1755696Ab2JDSur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:50:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50961 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755191Ab2JDSuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 14:50:00 -0400
+Date: Thu, 4 Oct 2012 20:49:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: memcontrol: handle potential crash when rmap
+ races with task exit
+Message-ID: <20121004184958.GG27536@dhcp22.suse.cz>
+References: <1349374157-20604-1-git-send-email-hannes@cmpxchg.org>
+ <1349374157-20604-2-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12100418-9264-0000-0000-000002721DF2
+Content-Disposition: inline
+In-Reply-To: <1349374157-20604-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> writes:
+On Thu 04-10-12 14:09:16, Johannes Weiner wrote:
+> page_referenced() counts only references of mm's that are associated
+> with the memcg hierarchy that is being reclaimed.  However, if it
+> races with the owner of the mm exiting, mm->owner may be NULL.  Don't
+> crash, just ignore the reference.
 
-> Hi all,
->
-> 	I've had several requests for a more formal approach to the
-> virtio draft spec, and (after some soul-searching) I'd like to try that.
->
-> 	The proposal is to use OASIS as the standards body, as it's
-> fairly light-weight as these things go.  For me this means paperwork and
-> setting up a Working Group and getting the right people involved as
-> Voting members starting with the current contributors; for most of you
-> it just means a new mailing list, though I'll be cross-posting any
-> drafts and major changes here anyway.
->
-> 	I believe that a documented standard (aka virtio 1.0) will
-> increase visibility and adoption in areas outside our normal linux/kvm
-> universe.  There's been some of that already, but this is the clearest
-> path to accelerate it.  Not the easiest path, but I believe that a solid
-> I/O standard is a Good Thing for everyone.
->
-> 	Yet I also want to decouple new and experimental development
-> from the standards effort; running code comes first.  New feature bits
-> and new device numbers should be reservable without requiring a full
-> spec change.
->
-> So the essence of my proposal is:
-> 1) I start a Working Group within OASIS where we can aim for virtio spec
->    1.0.
->
-> 2) The current spec is textually reordered so the core is clearly
->    bus-independent, with PCI, mmio, etc appendices.
->
-> 3) Various clarifications, formalizations and cleanups to the spec text,
->    and possibly elimination of old deprecated features.
->
-> 4) The only significant change to the spec is that we use PCI
->    capabilities, so we can have infinite feature bits.
->    (see http://lists.linuxfoundation.org/pipermail/virtualization/2011-December/019198.html)
+This seems to be fixed by Hugh's patch 3a981f48 "memcg: fix use_hierarchy
+css_is_ancestor oops regression" which seems to be merged already.
 
-We discussed this on IRC last night.  I don't think PCI capabilites are
-a good mechanism to use...
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: stable@kernel.org [3.5]
+> ---
+>  include/linux/memcontrol.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 8d9489f..8686294 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -91,7 +91,7 @@ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+>  
+>  	rcu_read_lock();
+>  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
+> -	match = __mem_cgroup_same_or_subtree(cgroup, memcg);
+> +	match = memcg && __mem_cgroup_same_or_subtree(cgroup, memcg);
+>  	rcu_read_unlock();
+>  	return match;
+>  }
+> -- 
+> 1.7.11.4
+> 
 
-PCI capabilities are there to organize how the PCI config space is
-allocated to allow vendor extensions to co-exist with future PCI
-extensions.
-
-But we've never used the PCI config space within virtio-pci.  We do
-everything in BAR0.  I don't think there's any real advantage of using
-the config space vs. a BAR for virtio-pci.
-
-The nice thing about using a BAR is that the region is MMIO or PIO.
-This maps really nicely to non-PCI transports too.  But extending the
-PCI config space (especially dealing with capability allocation) is
-pretty gnarly and there isn't an obvious equivalent outside of PCI.
-
-There are very devices that we emulate today that make use of extended
-PCI device registers outside the platform devices (that have no BARs).
-
-Regards,
-
-Anthony Liguori
-
->
-> 5) Changes to the ring layout and other such things are deferred to a
->    future virtio version; whether this is done within OASIS or
->    externally depends on how well this works for the 1.0 release.
->
-> Thoughts?
-> Rusty.
-
+-- 
+Michal Hocko
+SUSE Labs
