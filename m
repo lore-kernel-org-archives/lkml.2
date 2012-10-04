@@ -1,179 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2JDKxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:53:36 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39752 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab2JDKxe (ORCPT
+	id S1754766Ab2JDKyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:54:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60836 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab2JDKyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:53:34 -0400
-Message-ID: <506D69AB.7020400@linux.vnet.ibm.com>
-Date: Thu, 04 Oct 2012 16:19:15 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com> <506C7057.6000102@redhat.com>
-In-Reply-To: <506C7057.6000102@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12100410-3864-0000-0000-000004E9244B
+	Thu, 4 Oct 2012 06:54:06 -0400
+Message-ID: <1349348039.8070.5.camel@shinybook.infradead.org>
+Subject: Re: [PATCH] gmux: Fix backlight set function
+From: David Woodhouse <dwmw2@infradead.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Date: Thu, 04 Oct 2012 11:53:59 +0100
+In-Reply-To: <CACxGe6ufKKHEYZGpcrnPJRqKVzKwkH4PEtnMS0RhH8V5ABfWFQ@mail.gmail.com>
+References: <1347566555-9388-1-git-send-email-grant.likely@secretlab.ca>
+	 <1347568514.21322.5.camel@shinybook.infradead.org>
+	 <CACxGe6ufKKHEYZGpcrnPJRqKVzKwkH4PEtnMS0RhH8V5ABfWFQ@mail.gmail.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-B/jyBN10IKlt2SFhacez"
+X-Mailer: Evolution 3.5.92 (3.5.92-2.fc18) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 10:35 PM, Avi Kivity wrote:
-> On 10/03/2012 02:22 PM, Raghavendra K T wrote:
->>> So I think it's worth trying again with ple_window of 20000-40000.
->>>
->>
->> Hi Avi,
->>
->> I ran different benchmarks increasing ple_window, and results does not
->> seem to be encouraging for increasing ple_window.
->
-> Thanks for testing! Comments below.
->
->> Results:
->> 16 core PLE machine with 16 vcpu guest.
->>
->> base kernel = 3.6-rc5 + ple handler optimization patch
->> base_pleopt_8k = base kernel + ple window = 8k
->> base_pleopt_16k = base kernel + ple window = 16k
->> base_pleopt_32k = base kernel + ple window = 32k
->>
->>
->> Percentage improvements of benchmarks w.r.t base_pleopt with ple_window = 4096
->>
->> 		base_pleopt_8k	base_pleopt_16k	base_pleopt_32k
->> -----------------------------------------------------------------			
->> kernbench_1x	-5.54915	-15.94529	-44.31562
->> kernbench_2x	-7.89399	-17.75039	-37.73498
->
-> So, 44% degradation even with no overcommit?  That's surprising.
 
-Yes. Kernbench was run with #threads = #vcpu * 2 as usual. Is it
-spending 8 times the original ple_window cycles for 16 vcpus
-significant?
+--=-B/jyBN10IKlt2SFhacez
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
->> I also got perf top output to analyse the difference. Difference comes
->> because of flushtlb (and also spinlock).
->
-> That's in the guest, yes?
+On Fri, 2012-09-14 at 14:06 +0100, Grant Likely wrote:
+> What patches are you running on top of mainline for the mbp8,3?
 
-Yes. Perf is in guest.
+A slightly simpler answer: I'm running the Fedora 18 3.6 kernel, with
+these two patches backported:
 
->
->>
->> Ebizzy run for 4k ple_window
->> -  87.20%  [kernel]  [k] arch_local_irq_restore
->>     - arch_local_irq_restore
->>        - 100.00% _raw_spin_unlock_irqrestore
->>           + 52.89% release_pages
->>           + 47.10% pagevec_lru_move_fn
->> -   5.71%  [kernel]  [k] arch_local_irq_restore
->>     - arch_local_irq_restore
->>        + 86.03% default_send_IPI_mask_allbutself_phys
->>        + 13.96% default_send_IPI_mask_sequence_phys
->> -   3.10%  [kernel]  [k] smp_call_function_many
->>       smp_call_function_many
->>
->>
->> Ebizzy run for 32k ple_window
->>
->> -  91.40%  [kernel]  [k] arch_local_irq_restore
->>     - arch_local_irq_restore
->>        - 100.00% _raw_spin_unlock_irqrestore
->>           + 53.13% release_pages
->>           + 46.86% pagevec_lru_move_fn
->> -   4.38%  [kernel]  [k] smp_call_function_many
->>       smp_call_function_many
->> -   2.51%  [kernel]  [k] arch_local_irq_restore
->>     - arch_local_irq_restore
->>        + 90.76% default_send_IPI_mask_allbutself_phys
->>        + 9.24% default_send_IPI_mask_sequence_phys
->>
->
-> Both the 4k and the 32k results are crazy.  Why is
-> arch_local_irq_restore() so prominent?  Do you have a very high
-> interrupt rate in the guest?
+commit f462ed939de67c20528bc08f11d2fc4f2d59c0d5
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Fri Jul 27 12:58:53 2012 -0400
 
-How to measure if I have high interrupt rate in guest?
- From /proc/interrupt numbers I am not able to judge :(
+    efifb: Skip DMI checks if the bootloader knows what it's doing
 
-I went back and got the results on a 32 core machine with 32 vcpu guest.
-Strangely, I got result supporting the claim that increasing ple_window 
-helps for non-overcommitted scenario.
+commit a7d92035a1d64242cbc1f79577e66f230fe59732
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Fri Jul 27 17:16:17 2012 -0400
 
-32 core 32 vcpu guest 1x scenarios.
+    x86, EFI: Calculate the EFI framebuffer size instead of trusting the fi=
+rmware
 
-ple_gap = 0
-kernbench: Elapsed Time 38.61
-ebizzy: 7463 records/s
+The F18 kernel has Matthew's stuff to handle PCI ROMs already
+backported, although it's broken; it still prioritises the
+IORESOURCE_ROM_SHADOW bit and returns 0xC0000 when there is a ROM from
+EFI. You'll have to fix that too, so it matches commit 463edf567.
 
-ple_window = 4k
-kernbench: Elapsed Time 43.5067
-ebizzy:    2528 records/s
+It still fails the same way =E2=80=94 the Intel driver never manages to dis=
+play.
+So I'm back on my 3.5.0-based build until I have some time to work it
+out.
 
-ple_window = 32k
-kernebench : Elapsed Time 39.4133
-ebizzy: 7196 records/s
+--=20
+dwmw2
+
+--=-B/jyBN10IKlt2SFhacez
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDA0MTA1MzU5WjAjBgkqhkiG9w0BCQQx
+FgQUv43SoL6zs+mjRSgEdIQ+QlKSbSQwgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCK3KDG5obatNElwaRV3ZGlRplE
+cMch0E+cZstDnlFsGWqH9ZbIsMk7QkjgODtr60aRCSptUl4vQb0CEismg9fIYAQCY6heUoZeBZUp
+CT+r7U/Vm/32vQwN6W0pF5wQt6PEg4gxJi6MxyxagJK0JTuhdH8uuQa4FQ2LBM2Cpqbxqc+NsJDk
+8/8nW1l1n8Pln7Z+LXCqrLh+na3VD9Oho3/fyEVuPrvOyot1a3w8PNLmpxOwxqowlqzYjCgqCDKx
+MFyLZm8vuWttHHG+tNaUY39+f5YKt9aFJR+OVbRpVW1OBWx5hq+4OsZXCdloyKGWND/G7s3+fxp/
+XwHv/1Jik9RsAAAAAAAA
 
 
-perf top for ebizzy for above:
-ple_gap = 0
--  84.74%  [kernel]  [k] arch_local_irq_restore
-    - arch_local_irq_restore
-       - 100.00% _raw_spin_unlock_irqrestore
-          + 50.96% release_pages
-          + 49.02% pagevec_lru_move_fn
--   6.57%  [kernel]  [k] arch_local_irq_restore
-    - arch_local_irq_restore
-       + 92.54% default_send_IPI_mask_allbutself_phys
-       + 7.46% default_send_IPI_mask_sequence_phys
--   1.54%  [kernel]  [k] smp_call_function_many
-      smp_call_function_many
-
-ple_window = 32k
--  84.47%  [kernel]  [k] arch_local_irq_restore
-    + arch_local_irq_restore
--   6.46%  [kernel]  [k] arch_local_irq_restore
-    - arch_local_irq_restore
-       + 93.51% default_send_IPI_mask_allbutself_phys
-       + 6.49% default_send_IPI_mask_sequence_phys
--   1.80%  [kernel]  [k] smp_call_function_many
-    - smp_call_function_many
-       + 99.98% native_flush_tlb_others
-
-
-ple_window = 4k
--  91.35%  [kernel]  [k] arch_local_irq_restore
-    - arch_local_irq_restore
-       - 100.00% _raw_spin_unlock_irqrestore
-          + 53.19% release_pages
-          + 46.81% pagevec_lru_move_fn
--   3.90%  [kernel]  [k] smp_call_function_many
-      smp_call_function_many
--   2.94%  [kernel]  [k] arch_local_irq_restore
-    - arch_local_irq_restore
-       + 93.12% default_send_IPI_mask_allbutself_phys
-       + 6.88% default_send_IPI_mask_sequence_phys
-
-Let me know if I can try something here..
-/me confused :(
+--=-B/jyBN10IKlt2SFhacez--
 
