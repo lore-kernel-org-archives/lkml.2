@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab2JDVQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:16:49 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757615Ab2JDVQq (ORCPT
+	id S1757663Ab2JDVQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:16:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757619Ab2JDVQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:16:46 -0400
+	Thu, 4 Oct 2012 17:16:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Mike Thompson <mpthompson@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
         Felipe Balbi <balbi@ti.com>
-Subject: [ 02/56] usb: gadget: initialize the strings in tcm_usb_gadget properly
-Date: Thu,  4 Oct 2012 14:15:23 -0700
-Message-Id: <20121004211152.383235155@linuxfoundation.org>
+Subject: [ 03/56] usb: otg: mxs-phy: Fix mx23 operation
+Date: Thu,  4 Oct 2012 14:15:24 -0700
+Message-Id: <20121004211152.495075619@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -28,126 +28,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Mike Thompson <mpthompson@gmail.com>
 
-commit 18786da4853017d983ff6911648543ca617c12d1 upstream.
+commit 363366cf61c544ea476f3d220f43a95cb03014f5 upstream.
 
-I have no idea what I've been thinking while I was doing this in the first
-place. Now the strings are initialized properly and reported by lsusb.
+Currently mx23 fails to enumerate a USB device:
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+[ 1.300000] hub 1-0:1.0: unable to enumerate USB device on port 1
+[ 1.520000] hub 1-0:1.0: unable to enumerate USB device on port 1
+[ 1.740000] hub 1-0:1.0: unable to enumerate USB device on port 1
+[ 1.960000] hub 1-0:1.0: unable to enumerate USB device on port 1
+[ 2.180000] hub 1-0:1.0: unable to enumerate USB device on port 1
+
+Use a kernel workqueue to asynchronously delay the setting of
+ENHOSTDISCONDETECT bit until after higher level hub connect/reset processing
+is complete.  Prematurely setting the bit prevents the connection
+processing from completing and not setting it prevents disconnect from being
+detected. No delay is needed for clearing of ENHOSTDISCONDETECT.
+
+Successfully tested on mx23-olinuxino (micro, mini and maxi variants) and mx28evk.
+
+Signed-off-by: Mike Thompson <mpthompson@gmail.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/tcm_usb_gadget.c |   33 ++++++++++++++++++++-------------
- drivers/usb/gadget/tcm_usb_gadget.h |   14 ++++++++------
- 2 files changed, 28 insertions(+), 19 deletions(-)
+ drivers/usb/otg/mxs-phy.c |   38 +++++++++++++++++++++++++++++++++++---
+ 1 file changed, 35 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/tcm_usb_gadget.c
-+++ b/drivers/usb/gadget/tcm_usb_gadget.c
-@@ -1977,7 +1977,6 @@ static struct usb_interface_descriptor b
- 	.bInterfaceClass =      USB_CLASS_MASS_STORAGE,
- 	.bInterfaceSubClass =   USB_SC_SCSI,
- 	.bInterfaceProtocol =   USB_PR_BULK,
--	.iInterface =           USB_G_STR_INT_UAS,
- };
+--- a/drivers/usb/otg/mxs-phy.c
++++ b/drivers/usb/otg/mxs-phy.c
+@@ -20,6 +20,7 @@
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
++#include <linux/workqueue.h>
  
- static struct usb_interface_descriptor uasp_intf_desc = {
-@@ -1988,7 +1987,6 @@ static struct usb_interface_descriptor u
- 	.bInterfaceClass =	USB_CLASS_MASS_STORAGE,
- 	.bInterfaceSubClass =	USB_SC_SCSI,
- 	.bInterfaceProtocol =	USB_PR_UAS,
--	.iInterface =		USB_G_STR_INT_BBB,
- };
+ #define DRIVER_NAME "mxs_phy"
  
- static struct usb_endpoint_descriptor uasp_bi_desc = {
-@@ -2209,20 +2207,16 @@ static struct usb_device_descriptor usbg
- 	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
- 	.idVendor =		cpu_to_le16(UAS_VENDOR_ID),
- 	.idProduct =		cpu_to_le16(UAS_PRODUCT_ID),
--	.iManufacturer =	USB_G_STR_MANUFACTOR,
--	.iProduct =		USB_G_STR_PRODUCT,
--	.iSerialNumber =	USB_G_STR_SERIAL,
--
- 	.bNumConfigurations =   1,
- };
+@@ -34,9 +35,16 @@
+ #define BM_USBPHY_CTRL_ENUTMILEVEL2		BIT(14)
+ #define BM_USBPHY_CTRL_ENHOSTDISCONDETECT	BIT(1)
  
- static struct usb_string	usbg_us_strings[] = {
--	{ USB_G_STR_MANUFACTOR,	"Target Manufactor"},
--	{ USB_G_STR_PRODUCT,	"Target Product"},
--	{ USB_G_STR_SERIAL,	"000000000001"},
--	{ USB_G_STR_CONFIG,	"default config"},
--	{ USB_G_STR_INT_UAS,	"USB Attached SCSI"},
--	{ USB_G_STR_INT_BBB,	"Bulk Only Transport"},
-+	[USB_G_STR_MANUFACTOR].s	= "Target Manufactor",
-+	[USB_G_STR_PRODUCT].s		= "Target Product",
-+	[USB_G_STR_SERIAL].s		= "000000000001",
-+	[USB_G_STR_CONFIG].s		= "default config",
-+	[USB_G_STR_INT_UAS].s		= "USB Attached SCSI",
-+	[USB_G_STR_INT_BBB].s		= "Bulk Only Transport",
- 	{ },
- };
- 
-@@ -2244,7 +2238,6 @@ static int guas_unbind(struct usb_compos
- static struct usb_configuration usbg_config_driver = {
- 	.label                  = "Linux Target",
- 	.bConfigurationValue    = 1,
--	.iConfiguration		= USB_G_STR_CONFIG,
- 	.bmAttributes           = USB_CONFIG_ATT_SELFPOWER,
- };
- 
-@@ -2417,6 +2410,9 @@ static int usbg_cfg_bind(struct usb_conf
- 	fu->function.disable = usbg_disable;
- 	fu->tpg = the_only_tpg_I_currently_have;
- 
-+	bot_intf_desc.iInterface = usbg_us_strings[USB_G_STR_INT_BBB].id;
-+	uasp_intf_desc.iInterface = usbg_us_strings[USB_G_STR_INT_UAS].id;
++/*
++ * Amount of delay in miliseconds to safely enable ENHOSTDISCONDETECT bit
++ * so that connection and reset processing can be completed for the root hub.
++ */
++#define MXY_PHY_ENHOSTDISCONDETECT_DELAY	250
 +
- 	ret = usb_add_function(c, &fu->function);
- 	if (ret)
- 		goto err;
-@@ -2431,6 +2427,17 @@ static int usb_target_bind(struct usb_co
- {
- 	int ret;
+ struct mxs_phy {
+ 	struct usb_phy phy;
+ 	struct clk *clk;
++	struct delayed_work enhostdiscondetect_work;
+ };
  
-+	ret = usb_string_ids_tab(cdev, usbg_us_strings);
-+	if (ret)
-+		return ret;
-+
-+	usbg_device_desc.iManufacturer =
-+		usbg_us_strings[USB_G_STR_MANUFACTOR].id;
-+	usbg_device_desc.iProduct = usbg_us_strings[USB_G_STR_PRODUCT].id;
-+	usbg_device_desc.iSerialNumber = usbg_us_strings[USB_G_STR_SERIAL].id;
-+	usbg_config_driver.iConfiguration =
-+		usbg_us_strings[USB_G_STR_CONFIG].id;
-+
- 	ret = usb_add_config(cdev, &usbg_config_driver,
- 			usbg_cfg_bind);
+ #define to_mxs_phy(p) container_of((p), struct mxs_phy, phy)
+@@ -62,6 +70,7 @@ static int mxs_phy_init(struct usb_phy *
+ 
+ 	clk_prepare_enable(mxs_phy->clk);
+ 	mxs_phy_hw_init(mxs_phy);
++	INIT_DELAYED_WORK(&mxs_phy->enhostdiscondetect_work, NULL);
+ 
  	return 0;
---- a/drivers/usb/gadget/tcm_usb_gadget.h
-+++ b/drivers/usb/gadget/tcm_usb_gadget.h
-@@ -16,12 +16,14 @@
- #define UASP_SS_EP_COMP_LOG_STREAMS 4
- #define UASP_SS_EP_COMP_NUM_STREAMS (1 << UASP_SS_EP_COMP_LOG_STREAMS)
+ }
+@@ -76,13 +85,34 @@ static void mxs_phy_shutdown(struct usb_
+ 	clk_disable_unprepare(mxs_phy->clk);
+ }
  
--#define USB_G_STR_MANUFACTOR    1
--#define USB_G_STR_PRODUCT       2
--#define USB_G_STR_SERIAL        3
--#define USB_G_STR_CONFIG        4
--#define USB_G_STR_INT_UAS       5
--#define USB_G_STR_INT_BBB       6
-+enum {
-+	USB_G_STR_MANUFACTOR,
-+	USB_G_STR_PRODUCT,
-+	USB_G_STR_SERIAL,
-+	USB_G_STR_CONFIG,
-+	USB_G_STR_INT_UAS,
-+	USB_G_STR_INT_BBB,
-+};
++static void mxs_phy_enhostdiscondetect_delay(struct work_struct *ws)
++{
++	struct mxs_phy *mxs_phy = container_of(ws, struct mxs_phy,
++						enhostdiscondetect_work.work);
++
++	/* Enable HOSTDISCONDETECT after delay. */
++	dev_dbg(mxs_phy->phy.dev, "Setting ENHOSTDISCONDETECT\n");
++	writel_relaxed(BM_USBPHY_CTRL_ENHOSTDISCONDETECT,
++				mxs_phy->phy.io_priv + HW_USBPHY_CTRL_SET);
++}
++
+ static int mxs_phy_on_connect(struct usb_phy *phy, int port)
+ {
++	struct mxs_phy *mxs_phy = to_mxs_phy(phy);
++
+ 	dev_dbg(phy->dev, "Connect on port %d\n", port);
  
- #define USB_G_ALT_INT_BBB       0
- #define USB_G_ALT_INT_UAS       1
+-	mxs_phy_hw_init(to_mxs_phy(phy));
+-	writel_relaxed(BM_USBPHY_CTRL_ENHOSTDISCONDETECT,
+-			phy->io_priv + HW_USBPHY_CTRL_SET);
++	mxs_phy_hw_init(mxs_phy);
++
++	/*
++	 * Delay enabling ENHOSTDISCONDETECT so that connection and
++	 * reset processing can be completed for the root hub.
++	 */
++	dev_dbg(phy->dev, "Delaying setting ENHOSTDISCONDETECT\n");
++	PREPARE_DELAYED_WORK(&mxs_phy->enhostdiscondetect_work,
++			mxs_phy_enhostdiscondetect_delay);
++	schedule_delayed_work(&mxs_phy->enhostdiscondetect_work,
++			msecs_to_jiffies(MXY_PHY_ENHOSTDISCONDETECT_DELAY));
+ 
+ 	return 0;
+ }
+@@ -91,6 +121,8 @@ static int mxs_phy_on_disconnect(struct
+ {
+ 	dev_dbg(phy->dev, "Disconnect on port %d\n", port);
+ 
++	/* No need to delay before clearing ENHOSTDISCONDETECT. */
++	dev_dbg(phy->dev, "Clearing ENHOSTDISCONDETECT\n");
+ 	writel_relaxed(BM_USBPHY_CTRL_ENHOSTDISCONDETECT,
+ 			phy->io_priv + HW_USBPHY_CTRL_CLR);
+ 
 
 
