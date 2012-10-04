@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946381Ab2JDVgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:36:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45983 "EHLO
+	id S1946345Ab2JDVhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:37:15 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50785 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946249Ab2JDV1V (ORCPT
+	with ESMTP id S1946315Ab2JDV1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:21 -0400
+	Thu, 4 Oct 2012 17:27:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 08/33] staging: comedi: jr3_pci: fix iomem dereference
-Date: Thu,  4 Oct 2012 14:26:30 -0700
-Message-Id: <20121004210559.484144284@linuxfoundation.org>
+        Samuel Thibault <sthibault@debian.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 06/33] staging: speakup_soft: Fix reading of init string
+Date: Thu,  4 Oct 2012 14:26:28 -0700
+Message-Id: <20121004210559.245641710@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -26,31 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
+commit 40fe4f89671fb3c7ded94190fb267402a38b0261 upstream.
 
-Correct a direct dereference of I/O memory to use an appropriate I/O
-memory access function.  Note that the pointer being dereferenced is not
-currently tagged with `__iomem` but I plan to correct that for 3.7.
+softsynth_read() reads a character at a time from the init string;
+when it finds the null terminator it sets the initialized flag but
+then repeats the last character.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Additionally, if the read() buffer is not big enough for the init
+string, the next read() will start reading from the beginning again.
+So the caller may never progress to reading anything else.
+
+Replace the simple initialized flag with the current position in
+the init string, carried over between calls.  Switch to reading
+real data once this reaches the null terminator.
+
+(This assumes that the length of the init string can't change, which
+seems to be the case.  Really, the string and position belong together
+in a per-file private struct.)
+
+Tested-by: Samuel Thibault <sthibault@debian.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/speakup/speakup_soft.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -913,7 +913,7 @@ static int jr3_pci_attach(struct comedi_
- 	}
+--- a/drivers/staging/speakup/speakup_soft.c
++++ b/drivers/staging/speakup/speakup_soft.c
+@@ -40,7 +40,7 @@ static int softsynth_is_alive(struct spk
+ static unsigned char get_index(void);
  
- 	/*  Reset DSP card */
--	devpriv->iobase->channel[0].reset = 0;
-+	writel(0, &devpriv->iobase->channel[0].reset);
+ static struct miscdevice synth_device;
+-static int initialized;
++static int init_pos;
+ static int misc_registered;
  
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
- 	printk("Firmare load %d\n", result);
+ static struct var_t vars[] = {
+@@ -194,7 +194,7 @@ static int softsynth_close(struct inode
+ 	unsigned long flags;
+ 	spk_lock(flags);
+ 	synth_soft.alive = 0;
+-	initialized = 0;
++	init_pos = 0;
+ 	spk_unlock(flags);
+ 	/* Make sure we let applications go before leaving */
+ 	speakup_start_ttys();
+@@ -239,13 +239,8 @@ static ssize_t softsynth_read(struct fil
+ 			ch = '\x18';
+ 		} else if (synth_buffer_empty()) {
+ 			break;
+-		} else if (!initialized) {
+-			if (*init) {
+-				ch = *init;
+-				init++;
+-			} else {
+-				initialized = 1;
+-			}
++		} else if (init[init_pos]) {
++			ch = init[init_pos++];
+ 		} else {
+ 			ch = synth_buffer_getc();
+ 		}
 
 
