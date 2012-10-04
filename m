@@ -1,131 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964974Ab2JDOUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:20:23 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:57275 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964793Ab2JDOUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:20:21 -0400
-Message-ID: <506D9B17.7070007@parallels.com>
-Date: Thu, 4 Oct 2012 18:20:07 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S965058Ab2JDOW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:22:29 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60988 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965014Ab2JDOW0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:22:26 -0400
+Date: Thu, 4 Oct 2012 10:10:59 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Don Dutile <ddutile@redhat.com>, yuvalmin@broadcom.com,
+        bhutchings@solarflare.com, gregory.v.rose@intel.com,
+        davem@davemloft.net--no-chain-reply-to
+Subject: Re: [PATCH 1/5] PCI: Add pci_dev_type
+Message-ID: <20121004141058.GI9158@phenom.dumpdata.com>
+References: <506C3B11.9010009@redhat.com>
+ <1349286695-26713-1-git-send-email-yinghai@kernel.org>
+ <1349286695-26713-2-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
-        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu callback
-References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-13-git-send-email-glommer@parallels.com> <20121001132711.GL8622@dhcp22.suse.cz> <506D6A99.7070800@parallels.com>
-In-Reply-To: <506D6A99.7070800@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349286695-26713-2-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 02:53 PM, Glauber Costa wrote:
-> On 10/01/2012 05:27 PM, Michal Hocko wrote:
->> On Tue 18-09-12 18:04:09, Glauber Costa wrote:
->>> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
->>> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
->>> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
->>> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
->>> means that the freeing of memcg structure must happen in a compatible context,
->>> otherwise we'll get a deadlock.
->>
->> Maybe I am missing something obvious but why cannot we simply disble
->> (soft)irqs in mem_cgroup_create rather than make the free path much more
->> complicated. It really feels strange to defer everything (e.g. soft
->> reclaim tree cleanup which should be a no-op at the time because there
->> shouldn't be any user pages in the group).
->>
-> 
-> Ok.
-> 
-> I was just able to come back to this today - I was mostly working on the
-> slab feedback over the past few days. I will answer yours and Tejun's
-> concerns at once:
-> 
-> Here is the situation: the backtrace I get is this one:
-> 
-> [  124.956725] =================================
-> [  124.957217] [ INFO: inconsistent lock state ]
-> [  124.957217] 3.5.0+ #99 Not tainted
-> [  124.957217] ---------------------------------
-> [  124.957217] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-> [  124.957217] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE1:SE0] takes:
-> [  124.957217]  (&(&ss->id_lock)->rlock){+.?...}, at:
-> [<ffffffff810aa7b2>] spin_lock+0x9/0xb
-> [  124.957217] {SOFTIRQ-ON-W} state was registered at:
-> [  124.957217]   [<ffffffff810996ed>] __lock_acquire+0x31f/0xd68
-> [  124.957217]   [<ffffffff8109a660>] lock_acquire+0x108/0x15c
-> [  124.957217]   [<ffffffff81534ec4>] _raw_spin_lock+0x40/0x4f
-> [  124.957217]   [<ffffffff810aa7b2>] spin_lock+0x9/0xb
-> [  124.957217]   [<ffffffff810ad00e>] get_new_cssid+0x69/0xf3
-> [  124.957217]   [<ffffffff810ad0da>] cgroup_init_idr+0x42/0x60
-> [  124.957217]   [<ffffffff81b20e04>] cgroup_init+0x50/0x100
-> [  124.957217]   [<ffffffff81b05b9b>] start_kernel+0x3b9/0x3ee
-> [  124.957217]   [<ffffffff81b052d6>] x86_64_start_reservations+0xb1/0xb5
-> [  124.957217]   [<ffffffff81b053d8>] x86_64_start_kernel+0xfe/0x10b
-> 
-> 
-> So what we learn from it, is: we are acquiring a specific lock (the css
-> id one) from softirq context. It was previously taken in a
-> softirq-enabled context, that seems to be coming directly from
-> get_new_cssid.
-> 
-> Tejun correctly pointed out that we should never acquire that lock from
-> a softirq context, in which he is right.
-> 
-> But the situation changes slightly with kmem. Now, the following excerpt
-> of a backtrace is possible:
-> 
-> [   48.602775]  [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
-> [   48.602775]  [<ffffffff81047f90>] free_task+0x31/0x5c
-> [   48.602775]  [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
-> [   48.602775]  [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
-> [   48.602775]  [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
-> [   48.602775]  [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
-> [   48.602775]  [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
-> [   48.602775]  [<ffffffff8105266d>] __do_softirq+0x122/0x277
-> 
-> So as you can see, free_accounted_pages (that will trigger a memcg_put()
-> -> mem_cgroup_free()) can now be called from softirq context, which is,
-> an rcu callback (and I just realized I wrote the exact opposite in the
-> subj line: man, I really suck at that!!)
-> As a matter of fact, we could not move to our rcu callback as well:
-> 
-> we need to move it to a worker thread with the rest.
-> 
-> We already have a worker thread: he reason we have it is not
-> static_branches: The reason is vfree(), that will BUG_ON(in_interrupt())
-> and could not be called from rcu callback as well. We moved static
-> branches in there as well for a similar problem, but haven't introduced it.
-> 
-> Could we move just part of it to the worker thread? Absolutely yes.
-> Moving just free_css_id() is enough to make it work. But since it is not
-> the first context related problem we had, I thought: "to hell with that,
-> let's move everything and be safe".
-> 
-> I am fine moving free_css_id() only if you would prefer.
-> 
-> Can we disable softirqs when we initialize css_id? Maybe. My machine
-> seems to boot fine and survive the simple workload that would trigger
-> that bug if I use irqsave spinlocks instead of normal spinlocks. But
-> this has to be done from cgroup core: We have no control over css
-> creation in memcg.
-> 
-> How would you guys like me to handle this ?
+On Wed, Oct 03, 2012 at 10:51:31AM -0700, Yinghai Lu wrote:
+> need to use it for visiable attribute control in syfsfs for pci_dev.
 
-One more thing: As I mentioned in the Changelog,
-mem_cgroup_remove_exceeded(), called from mem_cgroup_remove_from_trees()
-will lead to the same usage pattern.
+Please use 'ispell' before sending your patches.
 
 
+Also please explain why do you want this? If I do
+'git annotate' on that file (say six months from now when I've forgotten
+a lot) and try to lookup what 'is_visible' attribute is, I get
+this one line explanation. Worst, the explanation does not
+say *why* we need it - or the *purpose* behind it. Or if there
+are patches that are going to utilize it.
 
+The Documentation/SubmittingPatches says:
 
+	2) Describe your changes.
+
+	Describe the technical detail of the change(s) your patch includes.
+
+	Be as specific as possible.  The WORST descriptions possible include
+	things like "update driver X", "bug fix for driver X", or "this patch
+	includes updates for subsystem X.  Please apply."
+
+	The maintainer will thank you if you write your patch description in a
+	form which can be easily pulled into Linux's source code management
+	system, git, as a "commit log".  See #15, below.
+
+	If your description starts to get long, that's a sign that you probably
+	need to split up your patch.  See #3, next.
+
+	When you submit or resubmit a patch or patch series, include the
+	complete patch description and justification for it.  Don't just
+	say that this is version N of the patch (series).  Don't expect the
+	patch merger to refer back to earlier patch versions or referenced
+	URLs to find the patch description and put that into the patch.
+	I.e., the patch (series) and its description should be self-contained.
+	This benefits both the patch merger(s) and reviewers.  Some reviewers
+	probably didn't even receive earlier versions of the patch.
+
+	If the patch fixes a logged bug entry, refer to that bug entry by
+	number and URL.
+
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/pci-sysfs.c |   24 ++++++++++++++++++++++++
+>  drivers/pci/pci.h       |    1 +
+>  drivers/pci/probe.c     |    1 +
+>  3 files changed, 26 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 02d107b..3d160aa 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -1411,3 +1411,27 @@ static int __init pci_sysfs_init(void)
+>  }
+>  
+>  late_initcall(pci_sysfs_init);
+> +
+> +static struct attribute *pci_dev_dev_attrs[] = {
+> +	NULL,
+> +};
+> +
+> +static umode_t pci_dev_attrs_are_visible(struct kobject *kobj,
+> +						struct attribute *a, int n)
+> +{
+> +	return a->mode;
+> +}
+> +
+> +static struct attribute_group pci_dev_attr_group = {
+> +	.attrs = pci_dev_dev_attrs,
+> +	.is_visible = pci_dev_attrs_are_visible,
+> +};
+> +
+> +static const struct attribute_group *pci_dev_attr_groups[] = {
+> +	&pci_dev_attr_group,
+> +	NULL,
+> +};
+> +
+> +struct device_type pci_dev_type = {
+> +	.groups = pci_dev_attr_groups,
+> +};
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index bacbcba..6f6cd14 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -157,6 +157,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+>  }
+>  extern struct device_attribute pci_dev_attrs[];
+>  extern struct device_attribute pcibus_dev_attrs[];
+> +extern struct device_type pci_dev_type;
+>  #ifdef CONFIG_HOTPLUG
+>  extern struct bus_attribute pci_bus_attrs[];
+>  #else
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index ec909af..0312f1c48 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -975,6 +975,7 @@ int pci_setup_device(struct pci_dev *dev)
+>  	dev->sysdata = dev->bus->sysdata;
+>  	dev->dev.parent = dev->bus->bridge;
+>  	dev->dev.bus = &pci_bus_type;
+> +	dev->dev.type = &pci_dev_type;
+>  	dev->hdr_type = hdr_type & 0x7f;
+>  	dev->multifunction = !!(hdr_type & 0x80);
+>  	dev->error_state = pci_channel_io_normal;
+> -- 
+> 1.7.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
