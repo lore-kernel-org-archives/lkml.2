@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab2JDSJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:09:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39785 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab2JDSJ3 (ORCPT
+	id S1753668Ab2JDSLn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:11:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44208 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2JDSLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:29 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 22/42] perf top: Don't use globals where not needed to
-Date: Thu,  4 Oct 2012 15:08:22 -0300
-Message-Id: <1349374122-27806-23-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
-References: <1349374122-27806-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 4 Oct 2012 14:11:41 -0400
+Date: Thu, 04 Oct 2012 14:11:36 -0400 (EDT)
+Message-Id: <20121004.141136.1763670567147718953.davem@davemloft.net>
+To: aarcange@redhat.com
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        hannes@cmpxchg.org, gerald.schaefer@de.ibm.com
+Subject: Re: [PATCH 0/8] THP support for Sparc64
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121004103548.GB6793@redhat.com>
+References: <20121002155544.2c67b1e8.akpm@linux-foundation.org>
+	<20121003.220027.1636081487098835868.davem@davemloft.net>
+	<20121004103548.GB6793@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
+Date: Thu, 4 Oct 2012 12:35:48 +0200
 
-Some variables were global but used in just one function, so move it to
-where it belongs.
+> Hi Dave,
+> 
+> On Wed, Oct 03, 2012 at 10:00:27PM -0400, David Miller wrote:
+>> From: Andrew Morton <akpm@linux-foundation.org>
+>> Date: Tue, 2 Oct 2012 15:55:44 -0700
+>> 
+>> > I had a shot at integrating all this onto the pending stuff in linux-next. 
+>> > "mm: Add and use update_mmu_cache_pmd() in transparent huge page code."
+>> > needed minor massaging in huge_memory.c.  But as Andrea mentioned, we
+>> > ran aground on Gerald's
+>> > http://ozlabs.org/~akpm/mmotm/broken-out/thp-remove-assumptions-on-pgtable_t-type.patch,
+>> > part of the thp-for-s390 work.
+>> 
+>> While working on a rebase relative to this work, I noticed that the
+>> s390 patches don't even compile.
+>> 
+>> It's because of that pmd_pgprot() change from Peter Z. which arrives
+>> asynchonously via the linux-next tree.  It makes THP start using
+>> pmd_pgprot() (a new interface) which the s390 patches don't provide.
+> 
+> My suggestion would be to ignore linux-next and port it to -mm only
+> and re-send to Andrew. schednuma is by mistake in linux-next, and
+> it's not going to get merged as far as I can tell.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3gddcwclncio29a7jiey0qtq@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+Sorry Andrea, that simply is impractical.
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e434a16..f0c1c4f 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1159,11 +1159,6 @@ setup:
- 	return 0;
- }
- 
--static const char * const top_usage[] = {
--	"perf top [<options>]",
--	NULL
--};
--
- int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_evsel *pos;
-@@ -1250,6 +1245,10 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('u', "uid", &top.target.uid_str, "user", "user to profile"),
- 	OPT_END()
- 	};
-+	const char * const top_usage[] = {
-+		"perf top [<options>]",
-+		NULL
-+	};
- 
- 	top.evlist = perf_evlist__new(NULL, NULL);
- 	if (top.evlist == NULL)
--- 
-1.7.1
+The first thing Andrew's patch series does is include linux-next,
+therefore every THP and MM patch in his series is against linux-next.
 
+So there are already dependencies in there on the pmd_pgprot() bits
+and I already did the implementation for sparc64 so that's what I'm
+submitting against.
