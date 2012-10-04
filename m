@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab2JDJn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:43:57 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:51932 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab2JDJn4 (ORCPT
+	id S1751773Ab2JDJoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:44:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48158 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751018Ab2JDJoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:43:56 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com AEBD28217D
-Date: Thu, 4 Oct 2012 11:43:49 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/3] sched: introduce distinct per-cpu load average
-Message-ID: <20121004094349.GA2163@thinkpad>
-References: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
- <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
- <1349341186.4438.1.camel@twins>
+	Thu, 4 Oct 2012 05:44:04 -0400
+X-Authenticated: #7756412
+X-Provags-ID: V01U2FsdGVkX1+PZFweKQeP9Abr7picHBwA1ovjDZrXNtduCULZPS
+	SOR5Mhyba0ZZ5D
+Message-ID: <506D5A60.6040208@gmx.net>
+Date: Thu, 04 Oct 2012 11:44:00 +0200
+From: Arne Jansen <sensille@gmx.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349341186.4438.1.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rock Lee <zimilo@code-trick.com>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs ulist use rbtree instead
+References: <1349341866-29320-1-git-send-email-zimilo@code-trick.com> <20121004092644.GB14582@twin.jikos.cz>
+In-Reply-To: <20121004092644.GB14582@twin.jikos.cz>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 10:59:46AM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-10-04 at 01:05 +0200, Andrea Righi wrote:
-> > +++ b/kernel/sched/core.c
-> > @@ -727,15 +727,17 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
-> >  void activate_task(struct rq *rq, struct task_struct *p, int flags)
-> >  {
-> >         if (task_contributes_to_load(p))
-> > -               rq->nr_uninterruptible--;
-> > +               cpu_rq(p->on_cpu_uninterruptible)->nr_uninterruptible--;
-> >  
-> >         enqueue_task(rq, p, flags);
-> >  }
+On 04.10.2012 11:26, David Sterba wrote:
+>> @@ -207,16 +266,23 @@ EXPORT_SYMBOL(ulist_add);
+>>   * end is reached. No guarantee is made with respect to the order in which
+>>   * the elements are returned. They might neither be returned in order of
+>>   * addition nor in ascending order.
+>> - * It is allowed to call ulist_add during an enumeration. Newly added items
+>> - * are guaranteed to show up in the running enumeration.
+>>   */
+>>  struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_iterator *uiter)
 > 
-> That's completely broken, you cannot do non-atomic cross-cpu
-> modifications like that. Also, adding an atomic op to the wakeup/sleep
-> paths isn't going to be popular at all.
+> Quick observation:
+> 
+> If there's code relying on the behaviour stated in the removed part of
+> the comment, it will break. Have you verified this is not the case?
 
-Right, the update must be atomic to have a coherent nr_uninterruptible
-value. And AFAICS the only way to account a coherent nr_uninterruptible
-value per-cpu is to go with atomic ops... mmh... I'll think more on
-this.
+It's a good thing to use rb-trees when the small inline cache is exhausted,
+but of course it should keep the semantics. We heavily rely on the removed
+part.
+It should be possible to keep the semantics if the elements are also kept
+in a linked list. As it inflates the size of struct ulist_node even more,
+it might make sense to use a smaller struct for the inline cache to keep
+the footprint low.
+
+Also, a commit message might be good that explains the motivation for the
+change. Have you done any measurements?
+
+Thanks for working on this.
+
+-Arne
 
 > 
-> >  void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
-> >  {
-> > -       if (task_contributes_to_load(p))
-> > -               rq->nr_uninterruptible++;
-> > +       if (task_contributes_to_load(p)) {
-> > +               task_rq(p)->nr_uninterruptible++;
-> > +               p->on_cpu_uninterruptible = task_cpu(p);
-> > +       }
-> >  
-> >         dequeue_task(rq, p, flags);
-> >  } 
 > 
-> This looks pointless, at deactivate time task_rq() had better be rq or
-> something is terribly broken.
+> david
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Correct, I didn't realize that, sorry.
-
-Many thanks for your review, Peter.
-
--Andrea
