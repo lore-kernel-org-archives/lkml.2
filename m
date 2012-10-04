@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934278Ab2JDVYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934252Ab2JDVYr (ORCPT
+	id S934294Ab2JDVY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:24:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934252Ab2JDVYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:47 -0400
+	Thu, 4 Oct 2012 17:24:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guillaume Jaunet <guillaume.jaunet@stericsson.com>,
-        Christophe Arnal <christophe.arnal@stericsson.com>,
-        Matthias Locher <matthias.locher@stericsson.com>,
-        Rajanikanth HV <rajanikanth.hv@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>,
-        Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 20/52] serial: pl011: handle corruption at high clock speeds
-Date: Thu,  4 Oct 2012 14:21:11 -0700
-Message-Id: <20121004210637.871299205@linuxfoundation.org>
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 30/52] xHCI: cancel command after command timeout
+Date: Thu,  4 Oct 2012 14:21:21 -0700
+Message-Id: <20121004210639.123793520@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -32,75 +28,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Elric Fu <elricfu1@gmail.com>
 
-commit c5dd553b9fd069892c9e2de734f4f604e280fa7a upstream.
+commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
 
-This works around a few glitches in the ST version of the PL011
-serial driver when using very high baud rates, as we do in the
-Ux500: 3, 3.25, 4 and 4.05 Mbps.
+The patch is used to cancel command when the command isn't
+acknowledged and a timeout occurs.
 
-Problem Observed/rootcause:
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
 
-When using high baud-rates, and the baudrate*8 is getting close to
-the provided clock frequency (so a division factor close to 1), when
-using bursts of characters (so they are abutted), then it seems as if
-there is not enough time to detect the beginning of the start-bit which
-is a timing reference for the entire character, and thus the sampling
-moment of character bits is moving towards the end of each bit, instead
-of the middle.
-
-Fix:
-Increase slightly the RX baud rate of the UART above the theoretical
-baudrate by 5%. This will definitely give more margin time to the
-UART_RX to correctly sample the data at the middle of the bit period.
-
-Also fix the ages old copy-paste error in the very stressed comment,
-it's referencing the registers used in the PL010 driver rather than
-the PL011 ones.
-
-Signed-off-by: Guillaume Jaunet <guillaume.jaunet@stericsson.com>
-Signed-off-by: Christophe Arnal <christophe.arnal@stericsson.com>
-Signed-off-by: Matthias Locher <matthias.locher@stericsson.com>
-Signed-off-by: Rajanikanth HV <rajanikanth.hv@stericsson.com>
-Cc: Bibek Basu <bibek.basu@stericsson.com>
-Cc: Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
+ drivers/usb/host/xhci.h |    3 +++
+ 2 files changed, 22 insertions(+), 7 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1654,13 +1654,26 @@ pl011_set_termios(struct uart_port *port
- 			old_cr &= ~ST_UART011_CR_OVSFACT;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2525,6 +2525,7 @@ static int xhci_configure_endpoint(struc
+ 	struct completion *cmd_completion;
+ 	u32 *cmd_status;
+ 	struct xhci_virt_device *virt_dev;
++	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	virt_dev = xhci->devs[udev->slot_id];
+@@ -2570,6 +2571,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
+ 
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -2591,14 +2593,17 @@ static int xhci_configure_endpoint(struc
+ 	/* Wait for the configure endpoint command to complete */
+ 	timeleft = wait_for_completion_interruptible_timeout(
+ 			cmd_completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for %s command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal",
+ 				ctx_change == 0 ?
+ 					"configure endpoint" :
+ 					"evaluate context");
+-		/* FIXME cancel the configure endpoint command */
++		/* cancel the configure endpoint command */
++		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
  	}
  
-+	/*
-+	 * Workaround for the ST Micro oversampling variants to
-+	 * increase the bitrate slightly, by lowering the divisor,
-+	 * to avoid delayed sampling of start bit at high speeds,
-+	 * else we see data corruption.
-+	 */
-+	if (uap->vendor->oversampling) {
-+		if ((baud >= 3000000) && (baud < 3250000) && (quot > 1))
-+			quot -= 1;
-+		else if ((baud > 3250000) && (quot > 2))
-+			quot -= 2;
-+	}
- 	/* Set baud rate */
- 	writew(quot & 0x3f, port->membase + UART011_FBRD);
- 	writew(quot >> 6, port->membase + UART011_IBRD);
+@@ -3547,8 +3552,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
++	union xhci_trb *cmd_trb;
  
- 	/*
- 	 * ----------v----------v----------v----------v-----
--	 * NOTE: MUST BE WRITTEN AFTER UARTLCR_M & UARTLCR_L
-+	 * NOTE: lcrh_tx and lcrh_rx MUST BE WRITTEN AFTER
-+	 * UART011_FBRD & UART011_IBRD.
- 	 * ----------^----------^----------^----------^-----
- 	 */
- 	writew(lcr_h, port->membase + uap->lcrh_rx);
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3560,12 +3567,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the enable slot request */
+-		return 0;
++		/* cancel the enable slot request */
++		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 	}
+ 
+ 	if (!xhci->slot_id) {
+@@ -3626,6 +3633,7 @@ int xhci_address_device(struct usb_hcd *
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u64 temp_64;
++	union xhci_trb *cmd_trb;
+ 
+ 	if (!udev->slot_id) {
+ 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
+@@ -3664,6 +3672,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+@@ -3676,7 +3685,7 @@ int xhci_address_device(struct usb_hcd *
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+@@ -3684,7 +3693,10 @@ int xhci_address_device(struct usb_hcd *
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for address device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the address device command */
++		/* cancel the address device command */
++		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1252,6 +1252,9 @@ struct xhci_td {
+ 	union xhci_trb		*last_trb;
+ };
+ 
++/* xHCI command default timeout value */
++#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
++
+ /* command descriptor */
+ struct xhci_cd {
+ 	struct list_head	cancel_cmd_list;
 
 
