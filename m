@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2JDVx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:53:28 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933974Ab2JDVWq (ORCPT
+	id S1753129Ab2JDVxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:53:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933990Ab2JDVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:46 -0400
+	Thu, 4 Oct 2012 17:22:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        xiaojin <jin.xiao@intel.com>, "Yin, Fengwei" <fengwei.yin@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 40/58] n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
-Date: Thu,  4 Oct 2012 14:19:47 -0700
-Message-Id: <20121004210640.484023769@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 48/58] SCSI: hpsa: Use LUN reset instead of target reset
+Date: Thu,  4 Oct 2012 14:19:55 -0700
+Message-Id: <20121004210641.547495721@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,41 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiaojin <jin.xiao@intel.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 7e8ac7b23b67416700dfb8b4136a4e81ce675b48 upstream.
+commit 21e89afd325849eb38adccf382df16cc895911f9 upstream.
 
-In 3GPP27.010 5.8.1, it defined:
-The TE multiplexer initiates the establishment of the multiplexer control channel by sending a SABM frame on DLCI 0 using the procedures of clause 5.4.1.
-Once the multiplexer channel is established other DLCs may be established using the procedures of clause 5.4.1.
-This patch implement 5.8.1 in MUX level, it make sure DLC0 is the first channel to be setup.
+It turns out Smart Array logical drives do not support target
+reset and when the target reset fails, the logical drive will
+be taken off line.  Symptoms look like this:
 
-[or for those not familiar with the specification: it was possible to try
- and open a data connection while the control channel was not yet fully
- open, which is a spec violation and confuses some modems]
+hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
+hpsa 0000:03:00.0: resetting device 1:0:0:0
+hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
+hpsa 0000:03:00.0: resetting device failed.
+sd 1:0:0:0: Device offlined - not ready after error recovery
+sd 1:0:0:0: rejecting I/O to offline device
+EXT3-fs error (device sdb1): read_block_bitmap:
 
-Signed-off-by: xiaojin <jin.xiao@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-[tweaked the order we check things and error code]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+LUN reset is supported though, and is what we should be using.
+Target reset is also disruptive in shared SAS situations,
+for example, an external MSA1210m which does support target
+reset attached to Smart Arrays in multiple hosts -- a target
+reset from one host is disruptive to other hosts as all LUNs
+on the target will be reset and will abort all outstanding i/os
+back to all the attached hosts.  So we should use LUN reset,
+not target reset.
+
+Tested this with Smart Array logical drives and with tape drives.
+Not sure how this bug survived since 2009, except it must be very
+rare for a Smart Array to require more than 30s to complete a request.
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2889,6 +2889,10 @@ static int gsmtty_open(struct tty_struct
- 	gsm = gsm_mux[mux];
- 	if (gsm->dead)
- 		return -EL2HLT;
-+	/* If DLCI 0 is not yet fully open return an error. This is ok from a locking
-+	   perspective as we don't have to worry about this if DLCI0 is lost */
-+	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN)
-+		return -EL2NSYNC;
- 	dlci = gsm->dlci[line];
- 	if (dlci == NULL)
- 		dlci = gsm_dlci_alloc(gsm, line);
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3266,7 +3266,7 @@ static void fill_cmd(struct CommandList
+ 			c->Request.Timeout = 0; /* Don't time out */
+ 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
+ 			c->Request.CDB[0] =  cmd;
+-			c->Request.CDB[1] = 0x03;  /* Reset target above */
++			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
+ 			/* If bytes 4-7 are zero, it means reset the */
+ 			/* LunID device */
+ 			c->Request.CDB[4] = 0x00;
 
 
