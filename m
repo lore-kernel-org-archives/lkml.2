@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab2JDWKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:10:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56495 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225Ab2JDWJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:09:58 -0400
-Message-ID: <506E092A.6050405@zytor.com>
-Date: Thu, 04 Oct 2012 15:09:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for x86
-References: <17459.1349380319@warthog.procyon.org.uk>
-In-Reply-To: <17459.1349380319@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754369Ab2JDWKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:10:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab2JDVSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:18:50 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Matthieu Castet <matthieu.castet@parrot.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 42/56] UBI: erase free PEB with bitflip in EC header
+Date: Thu,  4 Oct 2012 14:16:03 -0700
+Message-Id: <20121004211156.907947144@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
+References: <20121004211152.101901246@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 12:51 PM, David Howells wrote:
-> Can you merge the following branch into the x86 tree please.
->
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
->
-> Note that there are some fixup patches which are at the base of the branch
-> aimed at you, plus all arches get the asm-generic branch merged in too.
->
-> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
->
->    Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
->
-> are available in the git repository at:
->
->
->    git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-x86
->
-> for you to fetch changes up to c64630429a9d37a248c6b06a738fad838f2f5e37:
->
->    UAPI: (Scripted) Disintegrate arch/x86/include/asm (2012-10-04 18:21:45 +0100)
->
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-That branch does have generic patches which are not yet in upstream.  I 
-presume that is intentional.
+------------------
 
-	-hpa
+From: Matthieu CASTET <matthieu.castet@parrot.com>
 
+commit 193819cf2e6e395b1e1be2d36785dc5563a6edca upstream.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Without this patch, these PEB are not scrubbed until we put data in them.
+Bitflip can accumulate latter and we can loose the EC header (but VID header
+should be intact and allow to recover data).
+
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/mtd/ubi/attach.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/mtd/ubi/attach.c
++++ b/drivers/mtd/ubi/attach.c
+@@ -975,7 +975,7 @@ static int scan_peb(struct ubi_device *u
+ 			return err;
+ 		goto adjust_mean_ec;
+ 	case UBI_IO_FF:
+-		if (ec_err)
++		if (ec_err || bitflips)
+ 			err = add_to_list(ai, pnum, UBI_UNKNOWN,
+ 					  UBI_UNKNOWN, ec, 1, &ai->erase);
+ 		else
+
 
