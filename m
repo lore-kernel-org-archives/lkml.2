@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab2JDKpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1350 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754049Ab2JDKpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:45:50 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <7367.1349344178@warthog.procyon.org.uk>
-References: <7367.1349344178@warthog.procyon.org.uk> <CA+55aFzuHdT5NLGTd-+2hPvV4uzWxT+dTFZ5kCrWS+8-1zDtOA@mail.gmail.com> <alpine.DEB.2.00.1210040456090.3115@skynet.skynet.ie>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm merge for rc1 (part 1)
-Date: Thu, 04 Oct 2012 11:45:45 +0100
-Message-ID: <7974.1349347545@warthog.procyon.org.uk>
+	id S1754633Ab2JDKvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:51:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32971 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab2JDKvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 06:51:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1349276601-8371-5-git-send-email-florian@openwrt.org>
+References: <1349276601-8371-1-git-send-email-florian@openwrt.org> <1349276601-8371-5-git-send-email-florian@openwrt.org>
+From: Jonas Gorski <jonas.gorski@gmail.com>
+Date: Thu, 4 Oct 2012 12:51:01 +0200
+Message-ID: <CAOiHx==UaweOJ2sCqkRvW3KWVeGFGoi_YwreNWBo99_Xswv=Kg@mail.gmail.com>
+Subject: Re: [PATCH 04/25] MIPS: Netlogic: use ehci-platform driver
+To: Florian Fainelli <florian@openwrt.org>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On 3 October 2012 17:02, Florian Fainelli <florian@openwrt.org> wrote:
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+>  arch/mips/netlogic/xlr/platform.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+> index 71b44d8..1731dfd 100644
+> --- a/arch/mips/netlogic/xlr/platform.c
+> +++ b/arch/mips/netlogic/xlr/platform.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/serial_8250.h>
+>  #include <linux/serial_reg.h>
+>  #include <linux/i2c.h>
+> +#include <linux/usb/ehci_pdriver.h>
+>
+>  #include <asm/netlogic/haldefs.h>
+>  #include <asm/netlogic/xlr/iomap.h>
+> @@ -123,6 +124,10 @@ static u64 xls_usb_dmamask = ~(u32)0;
+>                 },                                                      \
+>         }
+>
+> +static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+> +       .caps_offset    = 0,
+> +};
+> +
+>  static struct platform_device xls_usb_ehci_device =
+>                          USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
 
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > Ok, as usual I actually wanted to do the merge myself despite the
-> > annoying conflicts (this *really* is the last time I will ever accept
-> > any header file "cleanups" - they simply aren't worth the pain).
-> 
-> There was a reason I asked you to pull the patches at the *end* of the merge
-> window,
+Don't you also need to change this to "ehci-platform"?
 
-Okay, I owe you an apology...  I forgot to request that you pull at the end of
-the merge window when I asked you to pull the preparatory patches instead.
+>  static struct platform_device xls_usb_ohci_device_0 =
+> @@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
+>         memres = CPHYSADDR((unsigned long)usb_mmio);
+>         xls_usb_ehci_device.resource[0].start = memres;
+>         xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
+> +       xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
+>
+>         memres += 0x400;
+>         xls_usb_ohci_device_0.resource[0].start = memres;
+> --
+> 1.7.9.5
 
-David
+Jonas
