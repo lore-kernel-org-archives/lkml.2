@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab2JDQuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 12:50:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932263Ab2JDQuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 12:50:54 -0400
-Date: Thu, 4 Oct 2012 18:50:08 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Message-ID: <20121004165008.GF25675@redhat.com>
+	id S933023Ab2JDQza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 12:55:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:53251 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932774Ab2JDQz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 12:55:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <506D4BCD.3020402@codeaurora.org>
+References: <506D4BCD.3020402@codeaurora.org>
+Date: Thu, 4 Oct 2012 09:55:27 -0700
+Message-ID: <CAOesGMjotnx_6HiwngRO9OaZYGGAexiwZ_shkOK7qROZcjDmqA@mail.gmail.com>
+Subject: Re: arm-soc maintainer entry
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Re: [PATCH 29/33] autonuma: page_autonuma
-Reply-To: 
-In-Reply-To: <0000013a2c223da2-632aa43e-21f8-4abd-a0ba-2e1b49881e3a-000000@email.amazonses.com>
+Hi,
 
-Hi Christoph,
+On Thu, Oct 4, 2012 at 1:41 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Is the arm@kernel.org alias going to be added into the MAINTAINERS file?
+> Should anybody be sending mails to this address?
+>
+> It seems I asked this over a year ago and the response was positive but
+> nothing ever happened[1]. Maybe something like below? I only ask because
+> get_maintainer.pl isn't picking up this email.
 
-On Thu, Oct 04, 2012 at 02:16:14PM +0000, Christoph Lameter wrote:
-> On Thu, 4 Oct 2012, Andrea Arcangeli wrote:
-> 
-> > Move the autonuma_last_nid from the "struct page" to a separate
-> > page_autonuma data structure allocated in the memsection (with
-> > sparsemem) or in the pgdat (with flatmem).
-> 
-> Note that there is a available word in struct page before the autonuma
-> patches on x86_64 with CONFIG_HAVE_ALIGNED_STRUCT_PAGE.
-> 
-> In fact the page_autonuma fills up the structure to nicely fit in one 64
-> byte cacheline.
+I've been holding off re-proposing this, mostly because life is easier
+for us if we don't get arm@kernel.org cc:d on every single patch by
+people who run get_maintainers.pl -- it's the equivalent of getting
+linux-arm-kernel cc:d to your inbox. It's better signal-to-noise ratio
+if it's mostly platform maintainers that email us on that address with
+pull requests or patches they want applied.
 
-Good point indeed.
+But yeah, it also means that the maintainer structure is undocumented.
+I'm open for suggestions.
 
-So we could drop page_autonuma by creating a CONFIG_SLUB=y dependency
-(AUTONUMA wouldn't be available in the kernel config if SLAB=y, and it
-also wouldn't be available on 32bit archs but the latter isn't a
-problem).
 
-I think it's a reasonable alternative to page_autonuma. Certainly it
-looks more appealing than taking over 16 precious bits from
-page->flags. There are still pros and cons. I'm neutral on it so more
-comments would be welcome ;).
-
-Andrea
-
-PS. randomly moved some in Cc over to Bcc as I overflowed the max
-header allowed on linux-kernel oops!
+-Olof
