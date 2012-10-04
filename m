@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934100Ab2JDVXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:23:32 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	id S934116Ab2JDVXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:23:36 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934074Ab2JDVX1 (ORCPT
+	with ESMTP id S934074Ab2JDVXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:27 -0400
+	Thu, 4 Oct 2012 17:23:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
         Alasdair G Kergon <agk@redhat.com>
-Subject: [ 02/52] dm: handle requests beyond end of device instead of using BUG_ON
-Date: Thu,  4 Oct 2012 14:20:53 -0700
-Message-Id: <20121004210635.652949978@linuxfoundation.org>
+Subject: [ 04/52] dm verity: fix overflow check
+Date: Thu,  4 Oct 2012 14:20:55 -0700
+Message-Id: <20121004210635.889254121@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -29,131 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ba1cbad93dd47223b1f3b8edd50dd9ef2abcb2ed upstream.
+commit 1d55f6bcc0331d744cd5b56c4ee79e3809438161 upstream.
 
-The access beyond the end of device BUG_ON that was introduced to
-dm_request_fn via commit 29e4013de7ad950280e4b2208 ("dm: implement
-REQ_FLUSH/FUA support for request-based dm") was an overly
-drastic (but simple) response to this situation.
+This patch fixes sector_t overflow checking in dm-verity.
 
-I have received a report that this BUG_ON was hit and now think
-it would be better to use dm_kill_unmapped_request() to fail the clone
-and original request with -EIO.
+Without this patch, the code checks for overflow only if sector_t is
+smaller than long long, not if sector_t and long long have the same size.
 
-map_request() will assign the valid target returned by
-dm_table_find_target to tio->ti.  But when the target
-isn't valid tio->ti is never assigned (because map_request isn't
-called); so add a check for tio->ti != NULL to dm_done().
-
-Reported-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |   56 ++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 38 insertions(+), 18 deletions(-)
+ drivers/md/dm-verity.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -865,10 +865,14 @@ static void dm_done(struct request *clon
- {
- 	int r = error;
- 	struct dm_rq_target_io *tio = clone->end_io_data;
--	dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
-+	dm_request_endio_fn rq_end_io = NULL;
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -718,8 +718,8 @@ static int verity_ctr(struct dm_target *
+ 	v->hash_dev_block_bits = ffs(num) - 1;
  
--	if (mapped && rq_end_io)
--		r = rq_end_io(tio->ti, clone, error, &tio->info);
-+	if (tio->ti) {
-+		rq_end_io = tio->ti->type->rq_end_io;
-+
-+		if (mapped && rq_end_io)
-+			r = rq_end_io(tio->ti, clone, error, &tio->info);
-+	}
+ 	if (sscanf(argv[5], "%llu%c", &num_ll, &dummy) != 1 ||
+-	    num_ll << (v->data_dev_block_bits - SECTOR_SHIFT) !=
+-	    (sector_t)num_ll << (v->data_dev_block_bits - SECTOR_SHIFT)) {
++	    (sector_t)(num_ll << (v->data_dev_block_bits - SECTOR_SHIFT))
++	    >> (v->data_dev_block_bits - SECTOR_SHIFT) != num_ll) {
+ 		ti->error = "Invalid data blocks";
+ 		r = -EINVAL;
+ 		goto bad;
+@@ -733,8 +733,8 @@ static int verity_ctr(struct dm_target *
+ 	}
  
- 	if (r <= 0)
- 		/* The target wants to complete the I/O */
-@@ -1566,15 +1570,6 @@ static int map_request(struct dm_target
- 	int r, requeued = 0;
- 	struct dm_rq_target_io *tio = clone->end_io_data;
- 
--	/*
--	 * Hold the md reference here for the in-flight I/O.
--	 * We can't rely on the reference count by device opener,
--	 * because the device may be closed during the request completion
--	 * when all bios are completed.
--	 * See the comment in rq_completed() too.
--	 */
--	dm_get(md);
--
- 	tio->ti = ti;
- 	r = ti->type->map_rq(ti, clone, &tio->info);
- 	switch (r) {
-@@ -1606,6 +1601,26 @@ static int map_request(struct dm_target
- 	return requeued;
- }
- 
-+static struct request *dm_start_request(struct mapped_device *md, struct request *orig)
-+{
-+	struct request *clone;
-+
-+	blk_start_request(orig);
-+	clone = orig->special;
-+	atomic_inc(&md->pending[rq_data_dir(clone)]);
-+
-+	/*
-+	 * Hold the md reference here for the in-flight I/O.
-+	 * We can't rely on the reference count by device opener,
-+	 * because the device may be closed during the request completion
-+	 * when all bios are completed.
-+	 * See the comment in rq_completed() too.
-+	 */
-+	dm_get(md);
-+
-+	return clone;
-+}
-+
- /*
-  * q->request_fn for request-based dm.
-  * Called with the queue lock held.
-@@ -1635,14 +1650,21 @@ static void dm_request_fn(struct request
- 			pos = blk_rq_pos(rq);
- 
- 		ti = dm_table_find_target(map, pos);
--		BUG_ON(!dm_target_is_valid(ti));
-+		if (!dm_target_is_valid(ti)) {
-+			/*
-+			 * Must perform setup, that dm_done() requires,
-+			 * before calling dm_kill_unmapped_request
-+			 */
-+			DMERR_LIMIT("request attempted access beyond the end of device");
-+			clone = dm_start_request(md, rq);
-+			dm_kill_unmapped_request(clone, -EIO);
-+			continue;
-+		}
- 
- 		if (ti->type->busy && ti->type->busy(ti))
- 			goto delay_and_out;
- 
--		blk_start_request(rq);
--		clone = rq->special;
--		atomic_inc(&md->pending[rq_data_dir(clone)]);
-+		clone = dm_start_request(md, rq);
- 
- 		spin_unlock(q->queue_lock);
- 		if (map_request(ti, clone, md))
-@@ -1662,8 +1684,6 @@ delay_and_out:
- 	blk_delay_queue(q, HZ / 10);
- out:
- 	dm_table_put(map);
--
--	return;
- }
- 
- int dm_underlying_device_busy(struct request_queue *q)
+ 	if (sscanf(argv[6], "%llu%c", &num_ll, &dummy) != 1 ||
+-	    num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT) !=
+-	    (sector_t)num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT)) {
++	    (sector_t)(num_ll << (v->hash_dev_block_bits - SECTOR_SHIFT))
++	    >> (v->hash_dev_block_bits - SECTOR_SHIFT) != num_ll) {
+ 		ti->error = "Invalid hash start";
+ 		r = -EINVAL;
+ 		goto bad;
 
 
