@@ -1,225 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab2JDEJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 00:09:04 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:40324 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750973Ab2JDEJA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 00:09:00 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Date: Thu, 4 Oct 2012 06:08:40 +0200
-Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Index: Ac2hekJQukkkX5cJRMOWjSdav3E+FQAZyvbA
-Message-ID: <F45880696056844FA6A73F415B568C695B69719936@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
- <1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
- <20120928160045.GD2625@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
- <20121001155940.GA1957@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
- <20121003151748.GA5745@kroah.com>
-In-Reply-To: <20121003151748.GA5745@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751082Ab2JDEVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 00:21:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54519 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2JDEVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 00:21:41 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: sameo@linux.intel.com
+Cc: broonie@opensource.wolfsonmicro.com, ashish.jangam@kpitcummins.com,
+        dchen@diasemi.com, arnd@arndb.de, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-input@vger.kernel.org>
+Subject: [PATCH v2 3/6] Input: da9052_tsi.c: Fix interrupt handling
+Date: Thu,  4 Oct 2012 01:21:30 -0300
+Message-Id: <1349324490-738-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Oct 03, 2012 at 05:54:08AM +0200, Arun MURTHY wrote:
-> > > On Mon, Oct 01, 2012 at 07:30:38AM +0200, Arun MURTHY wrote:
-> > > > > On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
-> > > > > > +#include <linux/module.h>
-> > > > > > +#include <linux/slab.h>
-> > > > > > +#include <linux/err.h>
-> > > > > > +#include <linux/printk.h>
-> > > > > > +#include <linux/modem_shm/modem.h>
-> > > > > > +
-> > > > > > +static struct class *modem_class;
-> > > > >
-> > > > > What's wrong with a bus_type instead?
-> > > >
-> > > > Can I know the advantage of using bus_type over class?
-> > >
-> > > You have devices living on a bus, and it's much more descriptive
-> > > than a class (which we are going to eventually get rid of one of these
-> days...).
-> > >
-> > > Might I ask why you choose a class over a bus_type?
-> >
-> > Basically my requirement is to create a central entity for accessing
-> > and releasing modem from APE.
-> 
-> What is an "APE"?
-> 
-> And what do you mean by "accessing" and "releasing"?
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-APE - Application Processor Engine
-There are two processors but on a single chip, one being the APE and other
-is the modem. So 'accessing' means requesting access or waking-up the
-co-processor and releasing means allowing the co-processor to sleep.
+Currently da9062_tsi does not probe and it fails as follows:
 
+da9052 1-0048: Unable to determine device interrupts
 
-> 
-> > Since this is done by different clients the central entity should be
-> > able to handle the request and play safely, since this has more affect
-> > in system suspend and deep sleep. Using class helps me in achieving
-> > this and also create an entry to user space which can be used in the
-> > later parts. Moreover this not something like a bus or so, so I didn't
-> > use bus instead went with a simple class approach.
-> 
-> But as you have devices that are "binding" to this "controller", a bus might
-> make more sense, right?
+Use the new da9052 irq functions and allow the driver to probe and operate 
+correctly.
 
-Have explained above regarding the platform, the concept of bus doesn't
-come into picture at all. Here its just waking-up the modem and allowing
-it to go to sleep.
+Tested on mx53qsb board using 'evtest' tool.
 
-> 
-> I don't see how a class helps out for you here more than anything else, what
-> are you expecting from the class interface?  You aren't using the reference
-> counting logic it provides, so why use it at all?
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: <linux-input@vger.kernel.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v2:
+- Sent the correct patch now. v1 was the incorrect version.
 
-I am using the reference counting logic in class such as  class_for_each_device.
+ drivers/input/touchscreen/da9052_tsi.c |   59 +++++++++++---------------------
+ 1 file changed, 20 insertions(+), 39 deletions(-)
 
-> 
-> Actually, why use the driver core at all in the first place if you aren't needing
-> the devices to show up in sysfs (as you don't have a device, you are just a
-> mediator)?
+diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
+index e8df341..33fd3fa 100644
+--- a/drivers/input/touchscreen/da9052_tsi.c
++++ b/drivers/input/touchscreen/da9052_tsi.c
+@@ -27,8 +27,6 @@ struct da9052_tsi {
+ 	struct input_dev *dev;
+ 	struct delayed_work ts_pen_work;
+ 	struct mutex mutex;
+-	unsigned int irq_pendwn;
+-	unsigned int irq_datardy;
+ 	bool stopped;
+ 	bool adc_on;
+ };
+@@ -45,8 +43,8 @@ static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
+ 
+ 	if (!tsi->stopped) {
+ 		/* Mask PEN_DOWN event and unmask TSI_READY event */
+-		disable_irq_nosync(tsi->irq_pendwn);
+-		enable_irq(tsi->irq_datardy);
++		da9052_disable_irq_nosync(tsi->da9052, DA9052_IRQ_PENDOWN);
++		da9052_enable_irq(tsi->da9052, DA9052_IRQ_TSIREADY);
+ 
+ 		da9052_ts_adc_toggle(tsi, true);
+ 
+@@ -137,8 +135,8 @@ static void da9052_ts_pen_work(struct work_struct *work)
+ 				return;
+ 
+ 			/* Mask TSI_READY event and unmask PEN_DOWN event */
+-			disable_irq(tsi->irq_datardy);
+-			enable_irq(tsi->irq_pendwn);
++			da9052_disable_irq(tsi->da9052, DA9052_IRQ_TSIREADY);
++			da9052_enable_irq(tsi->da9052, DA9052_IRQ_PENDOWN);
+ 		}
+ 	}
+ }
+@@ -197,7 +195,7 @@ static int da9052_ts_input_open(struct input_dev *input_dev)
+ 	mb();
+ 
+ 	/* Unmask PEN_DOWN event */
+-	enable_irq(tsi->irq_pendwn);
++	da9052_enable_irq(tsi->da9052, DA9052_IRQ_PENDOWN);
+ 
+ 	/* Enable Pen Detect Circuit */
+ 	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
+@@ -210,11 +208,11 @@ static void da9052_ts_input_close(struct input_dev *input_dev)
+ 
+ 	tsi->stopped = true;
+ 	mb();
+-	disable_irq(tsi->irq_pendwn);
++	da9052_disable_irq(tsi->da9052, DA9052_IRQ_PENDOWN);
+ 	cancel_delayed_work_sync(&tsi->ts_pen_work);
+ 
+ 	if (tsi->adc_on) {
+-		disable_irq(tsi->irq_datardy);
++		da9052_disable_irq(tsi->da9052, DA9052_IRQ_TSIREADY);
+ 		da9052_ts_adc_toggle(tsi, false);
+ 
+ 		/*
+@@ -222,7 +220,7 @@ static void da9052_ts_input_close(struct input_dev *input_dev)
+ 		 * twice and we need to enable it to keep enable/disable
+ 		 * counter balanced. IRQ is still off though.
+ 		 */
+-		enable_irq(tsi->irq_pendwn);
++		da9052_enable_irq(tsi->da9052, DA9052_IRQ_PENDOWN);
+ 	}
+ 
+ 	/* Disable Pen Detect Circuit */
+@@ -234,21 +232,12 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 	struct da9052 *da9052;
+ 	struct da9052_tsi *tsi;
+ 	struct input_dev *input_dev;
+-	int irq_pendwn;
+-	int irq_datardy;
+ 	int error;
+ 
+ 	da9052 = dev_get_drvdata(pdev->dev.parent);
+ 	if (!da9052)
+ 		return -EINVAL;
+ 
+-	irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
+-	irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
+-	if (irq_pendwn < 0 || irq_datardy < 0) {
+-		dev_err(da9052->dev, "Unable to determine device interrupts\n");
+-		return -ENXIO;
+-	}
+-
+ 	tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
+ 	input_dev = input_allocate_device();
+ 	if (!tsi || !input_dev) {
+@@ -258,8 +247,6 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 
+ 	tsi->da9052 = da9052;
+ 	tsi->dev = input_dev;
+-	tsi->irq_pendwn = da9052->irq_base + irq_pendwn;
+-	tsi->irq_datardy = da9052->irq_base + irq_datardy;
+ 	tsi->stopped = true;
+ 	INIT_DELAYED_WORK(&tsi->ts_pen_work, da9052_ts_pen_work);
+ 
+@@ -287,31 +274,25 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 	/* Disable ADC */
+ 	da9052_ts_adc_toggle(tsi, false);
+ 
+-	error = request_threaded_irq(tsi->irq_pendwn,
+-				     NULL, da9052_ts_pendwn_irq,
+-				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				     "PENDWN", tsi);
++	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN, 
++				"pendown-irq", da9052_ts_pendwn_irq, tsi);
+ 	if (error) {
+ 		dev_err(tsi->da9052->dev,
+-			"Failed to register PENDWN IRQ %d, error = %d\n",
+-			tsi->irq_pendwn, error);
++			"Failed to register PENDWN IRQ: %d\n", error);
+ 		goto err_free_mem;
+ 	}
+ 
+-	error = request_threaded_irq(tsi->irq_datardy,
+-				     NULL, da9052_ts_datardy_irq,
+-				     IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+-				     "TSIRDY", tsi);
++	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_TSIREADY, 
++				"tsiready-irq", da9052_ts_datardy_irq, tsi);
+ 	if (error) {
+ 		dev_err(tsi->da9052->dev,
+-			"Failed to register TSIRDY IRQ %d, error = %d\n",
+-			tsi->irq_datardy, error);
++			"Failed to register TSIRDY IRQ :%d\n", error);
+ 		goto err_free_pendwn_irq;
+ 	}
+ 
+ 	/* Mask PEN_DOWN and TSI_READY events */
+-	disable_irq(tsi->irq_pendwn);
+-	disable_irq(tsi->irq_datardy);
++	da9052_disable_irq(tsi->da9052, DA9052_IRQ_PENDOWN);
++	da9052_disable_irq(tsi->da9052, DA9052_IRQ_TSIREADY);
+ 
+ 	error = da9052_configure_tsi(tsi);
+ 	if (error)
+@@ -326,9 +307,9 @@ static int __devinit da9052_ts_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_free_datardy_irq:
+-	free_irq(tsi->irq_datardy, tsi);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
+ err_free_pendwn_irq:
+-	free_irq(tsi->irq_pendwn, tsi);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
+ err_free_mem:
+ 	kfree(tsi);
+ 	input_free_device(input_dev);
+@@ -342,8 +323,8 @@ static int  __devexit da9052_ts_remove(struct platform_device *pdev)
+ 
+ 	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
+ 
+-	free_irq(tsi->irq_pendwn, tsi);
+-	free_irq(tsi->irq_datardy, tsi);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_TSIREADY, tsi);
++	da9052_free_irq(tsi->da9052, DA9052_IRQ_PENDOWN, tsi);
+ 
+ 	input_unregister_device(tsi->dev);
+ 	kfree(tsi);
+-- 
+1.7.9.5
 
-Yes I am something like a mediator, but since this is associated with many
-clients, there should be some central entity to take inputs from all the clients
-and act accordingly. This MAF does that. Sysfs will also be created for this
-MAF in the coming versions.
-
-> 
-> > > > > > +int modem_release(struct modem_desc *mdesc) {
-> > > > > > +	if (!mdesc->release)
-> > > > > > +		return -EFAULT;
-> > > > > > +
-> > > > > > +	if (modem_is_requested(mdesc)) {
-> > > > > > +		atomic_dec(&mdesc->mclients->cnt);
-> > > > > > +		if (atomic_read(&mdesc->use_cnt) == 1) {
-> > > > > > +			mdesc->release(mdesc);
-> > > > > > +			atomic_dec(&mdesc->use_cnt);
-> > > > > > +		}
-> > > > >
-> > > > > Eeek, why aren't you using the built-in reference counting that
-> > > > > the struct device provided to you, and instead are rolling your own?
-> > > > > This happens in many places, why?
-> > > >
-> > > > My usage of counters over here is for each modem there are many
-> clients.
-> > > > Each of the clients will have a ref to modem_desc. Each of them
-> > > > use this for requesting and releasing the modem. One counter for
-> > > > tracking the request and release for each client which is done by
-> > > > variable 'cnt' in
-> > > struct clients.
-> > > > The counter use_cnt is used for tracking the modem request/release
-> > > > irrespective of the clients and counter cli_cnt is used for
-> > > > restricting the modem_get to the no of clients defined in no_clients.
-> > > >
-> > > > So totally 3 counter one for restricting the usage of modem_get by
-> > > > clients, second for restricting modem request/release at top
-> > > > level, and 3rd for restricting modem release/request for per
-> > > > client per modem
-> > > basis.
-> > > >
-> > > > Can you let me know if the same can be achieved by using built-in
-> > > > ref counting?
-> > >
-> > > Yes, because you don't need all of those different levels, just
-> > > stick with one and you should be fine. :)
-> > >
-> >
-> > No, checks at all these levels are required, I have briefed out the need also.
-> 
-> I still don't understand, sorry.
-
-The pictorial view by Anish should help in understanding.
-           Modem                 Client1     Client2    Client3    Client4
-State  turn-on                   request
-State  no-state-change                     request
-State  no-state-change                                   request
-State  no-state-change				request
-State  no-state-change      release
-State  no-state-change                                   release
-State  no-state-change                     release
-State   turn-off					release
-
-This is just a simple straight forward example.
-
-> 
-> > This will have effect on system power management, i.e suspend and deep
-> > sleep.
-> 
-> How does power management matter?  If you tie into the driver model
-> properly, power management comes "for free" so you don't have to do
-> anything special about it.  Why not use that logic instead of trying to roll your
-> own?
-
-As said there are two processors on a single chip playing over here. One being
-the APE(Application Processor Engine) and other is Modem. Since they are on
-a single chip but for APE entering into deep sleep modem should be released.
-
-> 
-> > We restrict that the drivers should request modem only once and
-> > release only once, but we cannot rely on the clients hence a check for
-> > the same has to be done in the MAF.
-> 
-> You can't rely on the clients to do what?  And why can't you rely on them?
-> What is going to happen?  Who is a "client" here?  Other kernel code?
-
-Yes, let me take my driver itself as an example. Here the clients are the
-shared memory driver, sim driver, security etc. Shared memory driver
-is the communicating media between the APE and Modem and hence
-needs to wake-up the modem and after completion should allow modem
-to enter sleep.
-Similarly it's the same for sim driver also.
-We define that the clients such as shared memory driver and the sim
-driver should request for modem only one and then release only once
-and also since this is a MAF shouldn't it take care of checking the same?
-
-> 
-> I really don't understand your model at all as to what you are trying to
-> mediate and manage here, sorry.  I suggest writing it all up as your first patch
-> (documentation is good), so that we can properly review your
-> implementation and not argue about how to implement something that I
-> honestly don't understand.
-
-Sorry for that. Actually my 4th patch in this patchset includes the documentation.
-Since it's the kernel doc I have made it as the last patch in this patchset, else
-kernel doc compilation will fail.
-Please feel free to refer the 4th patch for the documentation part and if still
-not clear I can provide more explanation on this.
-
-> 
-> > Also the no of clients should be defined and hence a check for the
-> > same is done in MAF.
-> 
-> Defined where?  What is "MAF"?
-
-This driver is MAF(Modem Access Framework).
-
-> 
-> > Apart from all these the requests coming from all the clients is to be
-> > accumulated and based on that modem release or access should be
-> > performed, hence so.
-> 
-> That sentance makes no sense to me, it must be too early for me here...
-
-Thanks and Regards,
-Arun R Murthy
------------------
