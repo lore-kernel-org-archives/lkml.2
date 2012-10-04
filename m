@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab2JDEdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 00:33:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42711 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab2JDEdO (ORCPT
+	id S1751911Ab2JDEhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 00:37:45 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44343 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2JDEhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 00:33:14 -0400
-Date: Thu, 4 Oct 2012 14:33:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: linux-next: manual merge of the arm-soc tree with Linus' tree
-Message-Id: <20121004143311.e04a99036b0b6c519444d615@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Oct_2012_14_33_11_+1000_s_+EgHFD5KoUBCvR"
+	Thu, 4 Oct 2012 00:37:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1348252345-5642-5-git-send-email-morten.rasmussen@arm.com>
+References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+	<1348252345-5642-5-git-send-email-morten.rasmussen@arm.com>
+Date: Thu, 4 Oct 2012 10:07:43 +0530
+Message-ID: <CAKohpomHW8P8tUm5nHd49oExe=LzjyAHFNpJ2OJOrJ30SDUU7A@mail.gmail.com>
+Subject: Re: [RFC PATCH 04/10] sched: Introduce priority-based task migration filter
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: morten.rasmussen@arm.com
+Cc: paulmck@linux.vnet.ibm.com, pjt@google.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com, linaro-sched-sig@lists.linaro.org,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Oct_2012_14_33_11_+1000_s_+EgHFD5KoUBCvR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22 September 2012 00:02,  <morten.rasmussen@arm.com> wrote:
 
-Hi all,
+Hi Morten,
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/x86/include/asm/Kbuild between commit 10b63956fce7 ("UAPI: Plumb the
-UAPI Kbuilds into the user header installation and checking") from Linus'
-tree and commit e7a570ff7dff ("asm-generic: Add default clkdev.h") from
-the arm-soc tree.
+I would try to review your patches in coming days. For now, Just
+reporting a problem
+which i encountered during routine build.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 490f1f0..8f0f3b9 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3129,9 +3129,12 @@ static int __init hmp_cpu_mask_setup(void)
+>   * hmp_down_threshold: max. load allowed for tasks migrating to a slower cpu
+>   * The default values (512, 256) offer good responsiveness, but may need
+>   * tweaking suit particular needs.
+> + *
+> + * hmp_up_prio: Only up migrate task with high priority (<hmp_up_prio)
+>   */
+>  unsigned int hmp_up_threshold = 512;
+>  unsigned int hmp_down_threshold = 256;
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 
-diff --cc arch/x86/include/asm/Kbuild
-index 1595d68,66e5f0e..0000000
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@@ -22,3 -22,9 +22,5 @@@ header-y +=3D sigcontext32.
-  header-y +=3D ucontext.h
-  header-y +=3D vm86.h
-  header-y +=3D vsyscall.h
-+=20
- -genhdr-y +=3D unistd_32.h
- -genhdr-y +=3D unistd_64.h
- -genhdr-y +=3D unistd_x32.h
- -
-+ generic-y +=3D clkdev.h
+> +unsigned int hmp_up_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
 
---Signature=_Thu__4_Oct_2012_14_33_11_+1000_s_+EgHFD5KoUBCvR
-Content-Type: application/pgp-signature
+#endif
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+is required here for successful build without CONFIG_SCHED_HMP_PRIO_FILTER_VAL.
 
-iQIcBAEBCAAGBQJQbRGHAAoJEECxmPOUX5FE+24P/3b7YaNQ96EOb/FFAZ0Iamri
-nZ6yp+87VFbPL00B9cLGCN5od7jy1PwUSZ7/uc8H7SiTEUWYlGgc28b35Wh36Ow5
-8qLuEWhT71JGbJAAwxEkzFibE6LUNS5OU7W6LWu3r1kf9o7oNdSRJx0s+xfwUQmb
-CVbLvFWJ/6S5XpD/7IE/V2f/rhJCDYBdibhQAE6pIxIy5IFBY0Ibgp2y2mKyAlCa
-BAdlptFbgekmDxUeaHqaizpO07fL183E1ljjO4ljRBQrJ7m2K6PdybEFDA3vpyTk
-MOTHOH27BXfx/b+y0cG3pV0KqXlqo7ACobTJTcVmhR3aFs7nvwRGVjaNVKLmasp3
-TNDwt1vRPsoZVh8RIPBnE6I92S7SqLyWR4xOJaUzOWM5pExw18V83NI27XPQWbUd
-BALSEFc4DIEzufKAKPJ/fXfORwGBdPeE60WOf3jHkqL6v80AlZ6Ju3JqPkfcgIeb
-dARVBBSyNKxvMr1Hx1AqEAqrrabIl2S7ARPiU4QLcWavdVJLl2CDhbTr5W23bYEh
-KzGLQY1/srNhy7fKuZKSCghuzDNsqxn5Mq774JmihSVB4un+aDTHfUijb+jhx/Hn
-hbQBSv2t5XmEE4BuJ0Y4aQI+/GfJLFR2yQSPHJ97rgqzf/KwcHu4LMRkctW8jP93
-dZyrAOF4r4+MWBd4rlHI
-=ACo0
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Oct_2012_14_33_11_+1000_s_+EgHFD5KoUBCvR--
+--
+viresh
