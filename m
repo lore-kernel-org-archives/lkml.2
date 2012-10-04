@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab2JDTVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:21:20 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60530 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab2JDTVT (ORCPT
+	id S1756359Ab2JDTWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:22:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:17095 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab2JDTW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:21:19 -0400
-Message-ID: <506DE1AC.500@zankel.net>
-Date: Thu, 04 Oct 2012 12:21:16 -0700
-From: Chris Zankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Thu, 4 Oct 2012 15:22:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6855"; a="245825904"
+Message-ID: <506DE1F4.9090309@codeaurora.org>
+Date: Thu, 04 Oct 2012 12:22:28 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] xtensa patchset for 3.7
-References: <506CBAFC.8010908@zankel.net> <CAMuHMdUn_96wqTNin_p6UgWB5kzofBex2s+AbLJzW=1YoTuOPQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdUn_96wqTNin_p6UgWB5kzofBex2s+AbLJzW=1YoTuOPQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Simon Horman <horms@verge.net.au>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH] ARM: Push selects for TWD/SCU into machine entries
+References: <1349340644-13937-1-git-send-email-sboyd@codeaurora.org> <506D899C.6010705@gmail.com>
+In-Reply-To: <506D899C.6010705@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On 10/04/12 06:05, Rob Herring wrote:
+> On 10/04/2012 03:50 AM, Stephen Boyd wrote:
+>> The TWD and SCU configs are selected by default as long as
+>> SCORPIONMP is false and/or MCT is false. Implementing the logic
+>> this way certainly saves lines in the Kconfig but it precludes
+>> those machines which select SCORPIONMP or MCT from participating
+>> in the single zImage effort because when those machines are
+>> combined with other SMP capable machines the TWD and SCU are no
+>> longer selected.
+>>
+>> Push the select out to the machine entries so that we can compile
+>> these machines together and still select the appropriate configs.
+> I think this is the wrong direction as I'd like to see the platform
+> selects shrink. I believe the local timers are run-time enabled now, so
+> can't we just drop the condition and always select TWD and SCU for
+> multi-platform?
 
-Sorry, misunderstood it. Won't happen again.
+That sounds fine for multi-platform but it penalizes the "optimized"
+images made for a particular device that doesn't want any extra code
+than is necessary. Isn't this why we have the Kconfig language?
 
-I have added it to https://github.com/czankel/xtensa-linux.git 
-xtensa-next, so it should be pulled to mainline soon (once I'm done with 
-my homework of getting my key signed ;-)
+>
+> Or perhaps we need a CortexA9 config symbol that selects V7, GIC, TWD,
+> SCU, SMP, PL310, errata, etc. rather than duplicating those for every
+> platform.
+>
+>
 
-Thanks,
--Chris
+This sounds like a good consolidation of lines that can be done in
+parallel to this patch. Care to send a patch on top?
 
-On 10/04/2012 11:45 AM, Geert Uytterhoeven wrote:
-> Hi Chris,
->
-> On Thu, Oct 4, 2012 at 12:23 AM, Chris Zankel <chris@zankel.net> wrote:
->> Patchset for the Xtensa architecture for 3.7
-> I think you forgot https://lkml.org/lkml/2012/9/10/560
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
