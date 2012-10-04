@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2JDNot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:44:49 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64168 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab2JDNor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:44:47 -0400
-Date: Thu, 4 Oct 2012 09:33:21 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        x86@kernel.org
-Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
- addresses
-Message-ID: <20121004133319.GD9158@phenom.dumpdata.com>
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933148Ab2JDNsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:48:14 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:46822 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933049Ab2JDNsN convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 4 Oct 2012 09:48:13 -0400
+Message-Id: <506DAFBA020000780009FA8C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 04 Oct 2012 14:48:10 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Hugh Dickins" <hughd@google.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix page table accounting
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 05:38:41PM -0700, Alexander Duyck wrote:
-> While working on 10Gb/s routing performance I found a significant amount of
-> time was being spent in the swiotlb DMA handler.  Further digging found that a
-> significant amount of this was due to the fact that virtual to physical
-> address translation and calling the function that did it.  It accounted for
-> nearly 60% of the total overhead.
-> 
-> This patch set works to resolve that by changing the io_tlb_start address and
-> io_tlb_overflow_buffer address from virtual addresses to physical addresses.
+Commit 20167d3421a089a1bf1bd680b150dc69c9506810 ("x86-64: Fix
+accounting in kernel_physical_mapping_init()") went a little too far
+by entirely removing the counting of pre-populated page tables: This
+should be done at boot time (to cover the page tables set up in early
+boot code), but shouldn't be done during memory hot add.
 
-The assertion in your patches is that the DMA addresses (bus address)
-are linear is not applicable (unfortunatly). Meaning virt_to_phys() !=
-virt_to_dma().
+Hence, re-add the removed increments of "pages", but make them and the
+one in phys_pte_init() conditional upon !after_bootmem.
 
-Now, on x86 and ia64 it is true - but one of the users of swiotlb
-library is the Xen swiotlb - which cannot guarantee that the physical
-address are 1-1 with the bus addresses. Hence the bulk of dealing with
-figuring out the right physical to bus address is done in Xen-SWIOTLB
-and the basics of finding an entry in the bounce buffer (if needed),
-mapping it, unmapping ,etc is carried out by the generic library.
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-This is sad - b/c your patches are a good move forward.
+---
+Not sure if this ought to be copied to stable@.
 
-Perhaps another way to do this is by having your patches split the
-lookups in "chunks". Wherein we validate in swiotlb_init_*tbl that the
-'tbl' (so the bounce buffer) is linear - if not, we split it up in
-chunks. Perhaps the various backends can be responsible for this since
-they would know which of their memory regions are linear or not. But
-that sounds complicated and we don't want to complicate this library.
+---
+ arch/x86/mm/init_64.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Or another way would be to provide 'phys_to_virt' and 'virt_to_phys'
-functions for the swiotlb_tbl_{map|unmap}_single and the main library
-(lib/swiotlb.c) can decide to use them. If they are NULL, then it
-would do what your patches suggested. If they are defined, then
-carry out those lookups on the 'empty-to-be-used' bounce buffer
-address. Hm, that sounds like a better way of doing it.
+--- 3.6/arch/x86/mm/init_64.c
++++ 3.6-x86_64-page-table-count/arch/x86/mm/init_64.c
+@@ -386,7 +386,8 @@ phys_pte_init(pte_t *pte_page, unsigned
+ 		 * these mappings are more intelligent.
+ 		 */
+ 		if (pte_val(*pte)) {
+-			pages++;
++			if (!after_bootmem)
++				pages++;
+ 			continue;
+ 		}
+ 
+@@ -451,6 +452,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
+ 			 * attributes.
+ 			 */
+ 			if (page_size_mask & (1 << PG_LEVEL_2M)) {
++				if (!after_bootmem)
++					pages++;
+ 				last_map_addr = next;
+ 				continue;
+ 			}
+@@ -526,6 +529,8 @@ phys_pud_init(pud_t *pud_page, unsigned
+ 			 * attributes.
+ 			 */
+ 			if (page_size_mask & (1 << PG_LEVEL_1G)) {
++				if (!after_bootmem)
++					pages++;
+ 				last_map_addr = next;
+ 				continue;
+ 			}
+
+
 
