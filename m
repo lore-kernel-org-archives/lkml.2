@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965283Ab2JDOgk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:36:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40194 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965038Ab2JDOgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:36:37 -0400
-Date: Thu, 4 Oct 2012 16:36:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
- request_firmware_nowait()
-In-Reply-To: <CA+55aFwz_7sksJRnFHZQFHD001ihF7ejkk5+-6Punc2dFtoqVQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1210041628400.9942@pobox.suse.cz>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com> <4FE37194.30407@redhat.com> <4FE8B8BC.3020702@iki.fi> <4FE8C4C4.1050901@redhat.com> <4FE8CED5.104@redhat.com> <20120625223306.GA2764@kroah.com> <4FE9169D.5020300@redhat.com>
- <20121002100319.59146693@redhat.com> <CA+55aFyzXFNq7O+M9EmiRLJ=cDJziipf=BLM8GGAG70j_QTciQ@mail.gmail.com> <20121002221239.GA30990@kroah.com> <20121002222333.GA32207@kroah.com> <CA+55aFwNEm9fCE+U_c7XWT33gP8rxothHBkSsnDbBm8aXoB+nA@mail.gmail.com>
- <alpine.LRH.2.00.1210030159440.31999@twin.jikos.cz> <CA+55aFwz_7sksJRnFHZQFHD001ihF7ejkk5+-6Punc2dFtoqVQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S965256Ab2JDOht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:37:49 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:56700 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965038Ab2JDOhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 10:37:48 -0400
+Message-ID: <506D9ED1.8060903@linux.vnet.ibm.com>
+Date: Thu, 04 Oct 2012 09:36:01 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+References: <1346794486-12107-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120921161252.GV11266@suse.de> <20120921180222.GA7220@phenom.dumpdata.com> <505CB9BC.8040905@linux.vnet.ibm.com> <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default> <50609794.8030508@linux.vnet.ibm.com> <b34c65c9-4b25-431d-8b82-cbe911126be9@default> <5064B647.3000906@linux.vnet.ibm.com> <76d1a3f1-efc5-48b5-b485-604a94adcc1d@default> <506B2C4B.3080508@linux.vnet.ibm.com> <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
+In-Reply-To: <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100414-7408-0000-0000-000009062C1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Oct 2012, Linus Torvalds wrote:
+On 10/02/2012 01:17 PM, Dan Magenheimer wrote:
+> If so, <shake hands> and move forward?  What do you see as next steps?
 
-> Now, at the same time, I do agree that network devices should generally 
-> try to delay it until ifup time
+I'll need to get up to speed on the new codebase before I can answer
+this.  I should be able to answer by early next week.
 
-Slightly tangential to the ongoing discussion, but still ... I think that 
-even "all network drivers should delay firmware loading to ifup time" 
-might be too general.
+Seth
 
-I would expect that there are network cards which require firmware to be 
-present for PHY to work, right? On such cards, if you want to have link 
-detection even on interfaces that are down (so that things like ifplugd 
-can detect the link presence and configure the interface), ifup is too 
-late.
-
-I admit I haven't checked whether there actually are such cards out there, 
-but it doesn't seem to be completely unrealistic to me.
-
--- 
-Jiri Kosina
-SUSE Labs
