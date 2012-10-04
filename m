@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2JDMvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 08:51:47 -0400
+	id S1756786Ab2JDMvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 08:51:52 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:62392 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756113Ab2JDMvn (ORCPT
+	with ESMTP id S1756740Ab2JDMvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 08:51:43 -0400
+	Thu, 4 Oct 2012 08:51:47 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 09/20] perf hists: Add more helpers for hist entry stat
-Date: Thu,  4 Oct 2012 21:49:43 +0900
-Message-Id: <1349354994-17853-10-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 10/20] perf tools: Keep group information
+Date: Thu,  4 Oct 2012 21:49:44 +0900
+Message-Id: <1349354994-17853-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
 References: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
@@ -26,69 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Add and use he_stat__add_{period,stat} for calculating hist entry's
-stat.  It will be used for accumulated stats later as well.
+Add a few of group-related field in struct perf_{evlist,evsel} so that
+the group information in a evlist can be known easily.  It only counts
+groups which have more than 1 members since leader-only groups are
+treated as non-group events.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c |   26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+ tools/perf/util/evlist.c       |   10 ++++++++--
+ tools/perf/util/evlist.h       |    1 +
+ tools/perf/util/evsel.h        |   10 ++++++++++
+ tools/perf/util/parse-events.c |    1 +
+ tools/perf/util/parse-events.h |    1 +
+ tools/perf/util/parse-events.y |   10 ++++++++++
+ 6 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 02476cb3167d..277947a669b2 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -151,6 +151,22 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index ae89686102f4..ac9730c12884 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -111,20 +111,26 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ void __perf_evlist__set_leader(struct list_head *list)
+ {
+ 	struct perf_evsel *evsel, *leader;
++	int count = 0;
+ 
+ 	leader = list_entry(list->next, struct perf_evsel, node);
+ 	leader->leader = NULL;
+ 
+ 	list_for_each_entry(evsel, list, node) {
+-		if (evsel != leader)
++		if (evsel != leader) {
+ 			evsel->leader = leader;
++			evsel->group_idx = count++;
++		}
  	}
++	leader->nr_members = count;
  }
  
-+static void he_stat__add_period(struct he_stat *he_stat, u64 period)
-+{
-+	he_stat->period		+= period;
-+	he_stat->nr_events	+= 1;
-+}
-+
-+static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
-+{
-+	dest->period		+= src->period;
-+	dest->period_sys	+= src->period_sys;
-+	dest->period_us		+= src->period_us;
-+	dest->period_guest_sys	+= src->period_guest_sys;
-+	dest->period_guest_us	+= src->period_guest_us;
-+	dest->nr_events		+= src->nr_events;
-+}
-+
- static void hist_entry__decay(struct hist_entry *he)
+ void perf_evlist__set_leader(struct perf_evlist *evlist)
  {
- 	he->stat.period = (he->stat.period * 7) / 8;
-@@ -270,8 +286,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		cmp = hist_entry__cmp(entry, he);
+-	if (evlist->nr_entries)
++	if (evlist->nr_entries) {
++		evlist->nr_groups = evlist->nr_entries > 1 ? 1 : 0;
+ 		__perf_evlist__set_leader(&evlist->entries);
++	}
+ }
  
- 		if (!cmp) {
--			he->stat.period += period;
--			++he->stat.nr_events;
-+			he_stat__add_period(&he->stat, period);
+ int perf_evlist__add_default(struct perf_evlist *evlist)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 3f1fb66be022..a3a4906d4a4e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -21,6 +21,7 @@ struct perf_evlist {
+ 	struct list_head entries;
+ 	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
+ 	int		 nr_entries;
++	int		 nr_groups;
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+ 	int		 mmap_len;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3ead0d59c03d..407c8e84fee3 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -74,6 +74,10 @@ struct perf_evsel {
+ 	int			exclude_GH;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
++	union {
++		int		nr_members;
++		int		group_idx;
++	};
+ };
  
- 			/* If the map of an existing hist_entry has
- 			 * become out-of-date due to an exec() or
-@@ -418,12 +433,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 		cmp = hist_entry__collapse(iter, he);
+ struct cpu_map;
+@@ -225,4 +229,10 @@ static inline struct perf_evsel *perf_evsel__next(struct perf_evsel *evsel)
+ {
+ 	return list_entry(evsel->node.next, struct perf_evsel, node);
+ }
++
++/* Treat a non-group event as a leader */
++static inline bool perf_evsel__is_group_leader(struct perf_evsel *evsel)
++{
++	return evsel->leader == NULL;
++}
+ #endif /* __PERF_EVSEL_H */
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index aed38e4b9dfa..364e518b0fce 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -816,6 +816,7 @@ int parse_events(struct perf_evlist *evlist, const char *str,
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
++		evlist->nr_groups += data.nr_groups;
+ 		return 0;
+ 	}
  
- 		if (!cmp) {
--			iter->stat.period		+= he->stat.period;
--			iter->stat.period_sys		+= he->stat.period_sys;
--			iter->stat.period_us		+= he->stat.period_us;
--			iter->stat.period_guest_sys	+= he->stat.period_guest_sys;
--			iter->stat.period_guest_us	+= he->stat.period_guest_us;
--			iter->stat.nr_events		+= he->stat.nr_events;
-+			he_stat__add_stat(&iter->stat, &he->stat);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index c356e443448d..f6b0254afe17 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -65,6 +65,7 @@ struct parse_events__term {
+ struct parse_events_data__events {
+ 	struct list_head list;
+ 	int idx;
++	int nr_groups;
+ };
  
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
+ struct parse_events_data__terms {
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index cd88209e3c58..a7810dd0938a 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -122,6 +122,11 @@ group_def:
+ PE_NAME '{' events '}'
+ {
+ 	struct list_head *list = $3;
++	struct parse_events_data__events *data = _data;
++
++	/* Count groups only have more than 1 members */
++	if (!list_is_last(list->next, list))
++		data->nr_groups++;
+ 
+ 	parse_events__set_leader($1, list);
+ 	$$ = list;
+@@ -130,6 +135,11 @@ PE_NAME '{' events '}'
+ '{' events '}'
+ {
+ 	struct list_head *list = $2;
++	struct parse_events_data__events *data = _data;
++
++	/* Count groups only have more than 1 members */
++	if (!list_is_last(list->next, list))
++		data->nr_groups++;
+ 
+ 	parse_events__set_leader(NULL, list);
+ 	$$ = list;
 -- 
 1.7.9.2
 
