@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934213Ab2JDVYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934182Ab2JDVY0 (ORCPT
+	id S934231Ab2JDVYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:24:38 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48438 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934182Ab2JDVYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:26 -0400
+	Thu, 4 Oct 2012 17:24:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Flavio Leitner <fbl@redhat.com>
-Subject: [ 21/52] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
-Date: Thu,  4 Oct 2012 14:21:12 -0700
-Message-Id: <20121004210637.987333559@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 24/52] tools/hv: Check for read/write errors
+Date: Thu,  4 Oct 2012 14:21:15 -0700
+Message-Id: <20121004210638.378057432@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,56 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Flavio Leitner <fbl@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 26e8220adb0aec43b7acafa0f1431760eee28522 upstream.
+commit 436473bc2173499ae274d0f50111d1e355006caf upstream.
 
-Apparently the same card model has two IDs, so this patch
-complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
-adding the missing one.
+hv_kvp_daemon currently does not check whether fread() or fwrite()
+succeed.  Add the necessary checks.  Also, remove the incorrect use of
+feof() before fread().
 
-Signed-off-by: Flavio Leitner <fbl@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    9 +++++++--
- include/linux/pci_ids.h            |    1 -
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1125,6 +1125,8 @@ pci_xr17c154_setup(struct serial_private
- #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
- #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
- #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
- #define PCI_VENDOR_ID_ADVANTECH		0x13fe
- #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
- #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
-@@ -3187,8 +3189,11 @@ static struct pci_device_id serial_pci_t
- 		 * For now just used the hex ID 0x950a.
- 		 */
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
--		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
--		pbn_b0_2_115200 },
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
-+		0, 0, pbn_b0_2_115200 },
-+	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
-+		0, 0, pbn_b0_2_115200 },
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_2_1130000 },
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1846,7 +1846,6 @@
- #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
- #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
- #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
--#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -144,7 +144,12 @@ static void kvp_update_file(int pool)
+ 				sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
  
- #define PCI_VENDOR_ID_RADISYS		0x1331
+-	fclose(filep);
++	if (ferror(filep) || fclose(filep)) {
++		kvp_release_lock(pool);
++		syslog(LOG_ERR, "Failed to write file, pool: %d", pool);
++		exit(EXIT_FAILURE);
++	}
++
+ 	kvp_release_lock(pool);
+ }
  
+@@ -165,12 +170,17 @@ static void kvp_update_mem_state(int poo
+ 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
+ 		exit(EXIT_FAILURE);
+ 	}
+-	while (!feof(filep)) {
++	for (;;) {
+ 		readp = &record[records_read];
+ 		records_read += fread(readp, sizeof(struct kvp_record),
+ 					ENTRIES_PER_BLOCK * num_blocks,
+ 					filep);
+ 
++		if (ferror(filep)) {
++			syslog(LOG_ERR, "Failed to read file, pool: %d", pool);
++			exit(EXIT_FAILURE);
++		}
++
+ 		if (!feof(filep)) {
+ 			/*
+ 			 * We have more data to read.
+@@ -233,12 +243,18 @@ static int kvp_file_init(void)
+ 			fclose(filep);
+ 			return 1;
+ 		}
+-		while (!feof(filep)) {
++		for (;;) {
+ 			readp = &record[records_read];
+ 			records_read += fread(readp, sizeof(struct kvp_record),
+ 					ENTRIES_PER_BLOCK,
+ 					filep);
+ 
++			if (ferror(filep)) {
++				syslog(LOG_ERR, "Failed to read file, pool: %d",
++				       i);
++				exit(EXIT_FAILURE);
++			}
++
+ 			if (!feof(filep)) {
+ 				/*
+ 				 * We have more data to read.
 
 
