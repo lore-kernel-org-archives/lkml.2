@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab2JDFoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 01:44:16 -0400
-Received: from ozlabs.org ([203.10.76.45]:40242 "EHLO ozlabs.org"
+	id S1755284Ab2JDFoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 01:44:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:57826 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab2JDFoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751470Ab2JDFoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 01:44:13 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-In-Reply-To: <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
+To: Anthony Liguori <anthony@codemonkey.ws>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+In-Reply-To: <87sj9vxbnf.fsf@codemonkey.ws>
+References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf@rustcorp.com.au> <87sj9vxbnf.fsf@codemonkey.ws>
 User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 04 Oct 2012 15:09:04 +0930
-Message-ID: <87obki23uv.fsf@rustcorp.com.au>
+Date: Thu, 04 Oct 2012 14:47:59 +0930
+Message-ID: <87r4pe24u0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
+Anthony Liguori <anthony@codemonkey.ws> writes:
 
-> On Thu, Sep 20, 2012 at 3:14 PM, Kees Cook <keescook@chromium.org> wrote:
->> As part of the effort to create a stronger boundary between root and
->> kernel, Chrome OS wants to be able to enforce that kernel modules are
->> being loaded only from our read-only crypto-hash verified (dm_verity)
->> root filesystem. Since the init_module syscall hands the kernel a module
->> as a memory blob, no reasoning about the origin of the blob can be made.
->>
->> Earlier proposals for appending signatures to kernel modules would not be
->> useful in Chrome OS, since it would involve adding an additional set of
->> keys to our kernel and builds for no good reason: we already trust the
->> contents of our root filesystem. We don't need to verify those kernel
->> modules a second time. Having to do signature checking on module loading
->> would slow us down and be redundant. All we need to know is where a
->> module is coming from so we can say yes/no to loading it.
->>
->> If a file descriptor is used as the source of a kernel module, many more
->> things can be reasoned about. In Chrome OS's case, we could enforce that
->> the module lives on the filesystem we expect it to live on.  In the case
->> of IMA (or other LSMs), it would be possible, for example, to examine
->> extended attributes that may contain signatures over the contents of
->> the module.
->>
->> This introduces a new syscall (on x86), similar to init_module, that has
->> only two arguments. The first argument is used as a file descriptor to
->> the module and the second argument is a pointer to the NULL terminated
->> string of module arguments.
+> Rusty Russell <rusty@rustcorp.com.au> writes:
 >
-> Hi Rusty,
+>> "Michael S. Tsirkin" <mst@redhat.com> writes:
+>>
+>> There's a reason I haven't done this.  I really, really dislike "my
+>> implemention isn't broken" feature bits.  We could have an infinite
+>> number of them, for each bug in each device.
+>>
+>> So my plan was to tie this assumption to the new PCI layout.  And have a
+>> stress-testing patch like the one below in the kernel (see my virtio-wip
+>> branch for stuff like this).  Turn it on at boot with
+>> "virtio_ring.torture" on the kernel commandline.
+>>
+>> BTW, I've fixed lguest, but my kvm here (Ubuntu precise, kvm-qemu 1.0)
+>> is too old.  Building the latest git now...
+>>
+>> Cheers,
+>> Rusty.
+>>
+>> Subject: virtio: CONFIG_VIRTIO_DEVICE_TORTURE
+>>
+>> Virtio devices are not supposed to depend on the framing of the scatter-gather
+>> lists, but various implementations did.  Safeguard this in future by adding
+>> an option to deliberately create perverse descriptors.
+>>
+>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 >
-> Is this likely to land in the 3.7 change window? I'd really like to
-> get the syscall number assigned so I can start sending patches to
-> glibc, kmod, etc. My tree is here, FWIW:
+> Ignore framing is really a bad idea.  You want backends to enforce
+> reasonable framing because guest's shouldn't do silly things with framing.
+>
+> For instance, with virtio-blk, if you want decent performance, you
+> absolutely want to avoid bouncing the data.  If you're using O_DIRECT in
+> the host to submit I/O requests, then it's critical that all of the s/g
+> elements are aligned to a sector boundary and sized to a sector
+> boundary.
+>
+> Yes, QEMU can handle if that's not the case, but it would be insanely
+> stupid for a guest not to do this.  This is the sort of thing that ought
+> to be enforced in the specification because a guest cannot perform well
+> if it doesn't follow these rules.
 
-No, unfortunately it's a little late and there were issues with ARM
-signoffs and syscall numbers...
+Lack of imagination is what got us into trouble in the first place; when
+presented with one counter-example, it's useful to look for others.
 
-> http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/module-fd-syscall
+That's our job, not to dismiss them a "insanely stupid".
 
-Messy merge due to the module signing stuff going in :(
+For example:
+1) Perhaps the guest isn't trying to perform well, it's trying to be a
+   tiny bootloader?
+2) Perhaps the guest is the direct consumer, and aligning buffers is
+   redundant.
 
-Please rebase on top of my kernel.org modules-next branch, and I'll pull
-into my modules-wip branch for 3.8.
+> A spec isn't terribly useful if the result is guest drivers that are
+> slow.  There's very little to gain by not enforcing rules around framing
+> and there's a lot to lose if a guest frames incorrectly.
 
-Thanks,
+The guest has the flexibility, and gets to decide.  The spec is not
+forcing them to perform badly.
+
+> In the rare case where we want to make a framing change, we should use
+> feature bits like Michael is proposing.
+>
+> In this case, we should simply say that with the feature bit, the vnet
+> header can be in the same element as the data but not allow the header
+> to be spread across multiple elements.
+
+I'd love to split struct virtio_net_hdr_mrg_rxbuf, so the num_buffers
+ends up somewhere else.
+
+The simplest rules are "never" or "always".
+
+Cheers,
 Rusty.
+PS.  Inserting zero-length buffers is something I'd be prepared to rule
+     out, my current patch does it just for yuks...
