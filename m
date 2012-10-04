@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab2JDWPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:15:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	id S932311Ab2JDVRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:17:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab2JDVRl (ORCPT
+	with ESMTP id S932150Ab2JDVR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:41 -0400
+	Thu, 4 Oct 2012 17:17:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guillaume Jaunet <guillaume.jaunet@stericsson.com>,
-        Christophe Arnal <christophe.arnal@stericsson.com>,
-        Matthias Locher <matthias.locher@stericsson.com>,
-        Rajanikanth HV <rajanikanth.hv@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>,
-        Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 20/56] serial: pl011: handle corruption at high clock speeds
-Date: Thu,  4 Oct 2012 14:15:41 -0700
-Message-Id: <20121004211154.402023265@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 16/56] staging: comedi: fix memory leak for saved channel list
+Date: Thu,  4 Oct 2012 14:15:37 -0700
+Message-Id: <20121004211153.961891639@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -32,75 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit c5dd553b9fd069892c9e2de734f4f604e280fa7a upstream.
+commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
 
-This works around a few glitches in the ST version of the PL011
-serial driver when using very high baud rates, as we do in the
-Ux500: 3, 3.25, 4 and 4.05 Mbps.
+When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
+list, it frees any previously allocated channel list in
+`async->cmd.chanlist` and replaces it with the new one.  However, if the
+device is ever removed (or "detached") the cleanup code in
+`cleanup_device()` in "drivers.c" does not free this memory so it is
+lost.
 
-Problem Observed/rootcause:
+A sensible place to free the kernel copy of the channel list is in
+`do_become_nonbusy()` as at that point the comedi asynchronous command
+associated with the channel list is no longer valid.  Free the channel
+list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
+pointer to prevent it being freed more than once.
 
-When using high baud-rates, and the baudrate*8 is getting close to
-the provided clock frequency (so a division factor close to 1), when
-using bursts of characters (so they are abutted), then it seems as if
-there is not enough time to detect the beginning of the start-bit which
-is a timing reference for the entire character, and thus the sampling
-moment of character bits is moving towards the end of each bit, instead
-of the middle.
+Note that `cleanup_device()` could be called at an inappropriate time
+while the comedi device is open, but that's a separate bug not related
+to this this patch.
 
-Fix:
-Increase slightly the RX baud rate of the UART above the theoretical
-baudrate by 5%. This will definitely give more margin time to the
-UART_RX to correctly sample the data at the middle of the bit period.
-
-Also fix the ages old copy-paste error in the very stressed comment,
-it's referencing the registers used in the PL010 driver rather than
-the PL011 ones.
-
-Signed-off-by: Guillaume Jaunet <guillaume.jaunet@stericsson.com>
-Signed-off-by: Christophe Arnal <christophe.arnal@stericsson.com>
-Signed-off-by: Matthias Locher <matthias.locher@stericsson.com>
-Signed-off-by: Rajanikanth HV <rajanikanth.hv@stericsson.com>
-Cc: Bibek Basu <bibek.basu@stericsson.com>
-Cc: Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1603,13 +1603,26 @@ pl011_set_termios(struct uart_port *port
- 			old_cr &= ~ST_UART011_CR_OVSFACT;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1196,7 +1196,6 @@ static int do_cmd_ioctl(struct comedi_de
+ 		goto cleanup;
  	}
  
-+	/*
-+	 * Workaround for the ST Micro oversampling variants to
-+	 * increase the bitrate slightly, by lowering the divisor,
-+	 * to avoid delayed sampling of start bit at high speeds,
-+	 * else we see data corruption.
-+	 */
-+	if (uap->vendor->oversampling) {
-+		if ((baud >= 3000000) && (baud < 3250000) && (quot > 1))
-+			quot -= 1;
-+		else if ((baud > 3250000) && (quot > 2))
-+			quot -= 2;
-+	}
- 	/* Set baud rate */
- 	writew(quot & 0x3f, port->membase + UART011_FBRD);
- 	writew(quot >> 6, port->membase + UART011_IBRD);
- 
- 	/*
- 	 * ----------v----------v----------v----------v-----
--	 * NOTE: MUST BE WRITTEN AFTER UARTLCR_M & UARTLCR_L
-+	 * NOTE: lcrh_tx and lcrh_rx MUST BE WRITTEN AFTER
-+	 * UART011_FBRD & UART011_IBRD.
- 	 * ----------^----------^----------^----------^-----
- 	 */
- 	writew(lcr_h, port->membase + uap->lcrh_rx);
+-	kfree(async->cmd.chanlist);
+ 	async->cmd = user_cmd;
+ 	async->cmd.data = NULL;
+ 	/* load channel/gain list */
+@@ -2033,6 +2032,8 @@ void do_become_nonbusy(struct comedi_dev
+ 	if (async) {
+ 		comedi_reset_async_buf(async);
+ 		async->inttrig = NULL;
++		kfree(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 	} else {
+ 		printk(KERN_ERR
+ 		       "BUG: (?) do_become_nonbusy called with async=0\n");
 
 
