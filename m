@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab2JDSQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:16:06 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42821 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2JDSPR (ORCPT
+	id S1754709Ab2JDSQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:16:31 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55597 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab2JDSPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Oct 2012 14:15:17 -0400
 From: Michal Simek <monstr@monstr.eu>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 10/11] net: ll_temac: Simplify xmit
-Date: Thu,  4 Oct 2012 20:14:56 +0200
-Message-Id: <1349374497-9540-10-git-send-email-monstr@monstr.eu>
+Subject: [PATCH 09/11] net: ll_temac: Move frag loading to frag loop
+Date: Thu,  4 Oct 2012 20:14:55 +0200
+Message-Id: <1349374497-9540-9-git-send-email-monstr@monstr.eu>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
 References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use one return statement instead of two.
+Load frag value when necessary.
 
 Signed-off-by: Michal Simek <monstr@monstr.eu>
 CC: Anirudha Sarangi <anirudh@xilinx.com>
@@ -34,24 +34,36 @@ CC: Grant Likely <grant.likely@secretlab.ca>
 CC: Rob Herring <rob.herring@calxeda.com>
 CC: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/ethernet/xilinx/ll_temac_main.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index fec42d9..58b2869 100644
+index 8bafa15..fec42d9 100644
 --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
 +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -690,10 +690,8 @@ static int temac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+@@ -686,7 +686,6 @@ static int temac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	skb_frag_t *frag;
+ 
+ 	num_frag = skb_shinfo(skb)->nr_frags;
+-	frag = &skb_shinfo(skb)->frags[0];
+ 	start_p = lp->tx_bd_p + sizeof(*lp->tx_bd_v) * lp->tx_bd_tail;
  	cur_p = &lp->tx_bd_v[lp->tx_bd_tail];
  
- 	if (temac_check_tx_bd_space(lp, num_frag)) {
--		if (!netif_queue_stopped(ndev)) {
-+		if (!netif_queue_stopped(ndev))
- 			netif_stop_queue(ndev);
--			return NETDEV_TX_BUSY;
--		}
- 		return NETDEV_TX_BUSY;
+@@ -715,6 +714,7 @@ static int temac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 	cur_p->app4 = (unsigned long)skb;
+ 
+ 	for (ii = 0; ii < num_frag; ii++) {
++		frag = &skb_shinfo(skb)->frags[ii];
+ 		lp->tx_bd_tail++;
+ 		if (lp->tx_bd_tail >= TX_BD_NUM)
+ 			lp->tx_bd_tail = 0;
+@@ -725,7 +725,6 @@ static int temac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 					     skb_frag_size(frag), DMA_TO_DEVICE);
+ 		cur_p->len = skb_frag_size(frag);
+ 		cur_p->app0 = 0;
+-		frag++;
  	}
+ 	cur_p->app0 |= STS_CTRL_APP0_EOP;
  
 -- 
 1.7.0.4
