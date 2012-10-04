@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946407Ab2JDV1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:27:52 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:32862 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946391Ab2JDV1o (ORCPT
+	id S1946444Ab2JDVdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:33:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42952 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946401Ab2JDV1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:44 -0400
+	Thu, 4 Oct 2012 17:27:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Khalid Aziz <khalid.aziz@hp.com>, Kees Cook <keescook@chromium.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [ 16/33] firmware: Add missing attributes to EFI variable attribute print out from sysfs
-Date: Thu,  4 Oct 2012 14:26:38 -0700
-Message-Id: <20121004210600.465802613@linuxfoundation.org>
+        Russ Gorby <russ.gorby@intel.com>,
+        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [ 18/33] n_gsm: added interlocking for gsm_data_lock for certain code paths
+Date: Thu,  4 Oct 2012 14:26:40 -0700
+Message-Id: <20121004210600.709118485@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -27,52 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@hp.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 7083909023bbe29b3176e92d2d089def1aa7aa1e upstream.
+commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
 
-Some of the EFI variable attributes are missing from print out from
-/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-updates code to use pre-defined constants for masking current value
-of attributes.
+There were some locking holes in the management of the MUX's
+message queue for 2 code paths:
+1) gsmld_write_wakeup
+2) receipt of CMD_FCON flow-control message
+In both cases gsm_data_kick is called w/o locking so it can collide
+with other other instances of gsm_data_kick (pulling messages tx_tail)
+or potentially other instances of __gsm_data_queu (adding messages to tx_head)
 
-Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Acked-by: Matthew Garrett <mjg@redhat.com>
+Changed to take the tx_lock in these 2 cases
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/tty/n_gsm.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -400,12 +400,23 @@ efivar_attr_read(struct efivar_entry *en
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1152,6 +1152,8 @@ static void gsm_control_message(struct g
+ 							u8 *data, int clen)
+ {
+ 	u8 buf[1];
++	unsigned long flags;
++
+ 	switch (command) {
+ 	case CMD_CLD: {
+ 		struct gsm_dlci *dlci = gsm->dlci[0];
+@@ -1177,7 +1179,9 @@ static void gsm_control_message(struct g
+ 		gsm->constipated = 0;
+ 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
+ 		/* Kick the link in case it is idling */
++		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_data_kick(gsm);
++		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 		break;
+ 	case CMD_MSC:
+ 		/* Out of band modem line change indicator for a DLCI */
+@@ -2269,12 +2273,12 @@ static void gsmld_write_wakeup(struct tt
  
--	if (var->Attributes & 0x1)
-+	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
- 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
--	if (var->Attributes & 0x2)
-+	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
--	if (var->Attributes & 0x4)
-+	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
-+		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
-+	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes &
-+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
-+		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
- 	return str - buf;
+ 	/* Queue poll */
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
++	spin_lock_irqsave(&gsm->tx_lock, flags);
+ 	gsm_data_kick(gsm);
+ 	if (gsm->tx_bytes < TX_THRESH_LO) {
+-		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_dlci_data_sweep(gsm);
+-		spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 	}
++	spin_unlock_irqrestore(&gsm->tx_lock, flags);
  }
  
+ /**
 
 
