@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab2JDNyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:54:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:58444 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108Ab2JDNyE (ORCPT
+	id S933256Ab2JDN4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:56:37 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:40130 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933102Ab2JDN4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:54:04 -0400
-Date: Thu, 4 Oct 2012 09:54:33 -0400
-From: Matt Porter <mporter@ti.com>
-To: Philipp Zabel <pza@pengutronix.de>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
-Message-ID: <20121004135433.GI11149@beef>
-References: <1349276133-26408-1-git-send-email-mporter@ti.com>
- <20121004091145.GA3317@pengutronix.de>
- <20121004124253.GC11149@beef>
- <20121004133553.GA5151@pengutronix.de>
+	Thu, 4 Oct 2012 09:56:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121004133553.GA5151@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <506D8669.30501.3087FAA@pageexec.freemail.hu>
+References: <E1T1N2q-0001xm-5X@morero.ard.nu>
+	<20121003141804.f9896690.akpm@linux-foundation.org>
+	<CAGXu5jLY8kFaTMNetqnO_PHwkCCfqkaTxTZQdSc1AwcDiAr86g@mail.gmail.com>
+	<506D8669.30501.3087FAA@pageexec.freemail.hu>
+Date: Thu, 4 Oct 2012 15:56:35 +0200
+Message-ID: <CAKFga-eLC+2utN05Yu_CwEMLsXNi64Fn0zv36O5T=u7ncn+B+Q@mail.gmail.com>
+Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
+From: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+To: pageexec@freemail.hu
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 03:35:53PM +0200, Philipp Zabel wrote:
-> On Thu, Oct 04, 2012 at 08:42:53AM -0400, Matt Porter wrote:
-> > > I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
-> > > could be useful to map the L3RAM on Davinci.
-> > > With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
-> > > uio_pruss driver could then use the gen_pool_find_by_phys() (or
-> > > of_get_named_gen_pool() for initialization from device tree) to
-> > > retrieve the struct gen_pool*.
-> > > 
-> > > This way you could avoid handing it over via platform data and you could
-> > > get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
-> > 
-> > I did miss the gen_pool_find_by_phys() call in that series. That does
-> > look useful. I actually mentioned your series in an earlier posting
-> > since I like it,
-> 
-> That I did miss.
-> 
-> > but since the initialization of the driver was inherently
-> > tied to DT it's not usable for DaVinci that's just starting to convert
-> > to DT and needs !DT support as well.
-> 
-> There should be no dependency on DT in the sram driver. It just requests
-> and remaps the first given iomem resource and creates a gen_pool from that.
-> This should work just as well for the !DT case.
-> Maybe it's just my choice of patch series subject gave you that
-> impression? If there's a real issue for !DT, I should fix it.
+2012/10/4 PaX Team <pageexec@freemail.hu>:
 
-*sigh*, I see now. I looked at v2 and got wrapped up in the DT use case
-and missed your platform device support. I think it will work just fine
-for us to use in a "phase 2" of this work, replacing the backend of
-davinci sram allocation with this as Sekhar seems to be open to. 
+Thanks for taking a look at this matter.
 
-> > I do see it moving to your driver exclusively, but I wanted to make this
-> > series focused on only getting rid of the private SRAM API using the
-> > existing pdata framework that's already there. I think once
-> > gen_pool_find_by_phys() goes upstream we can switch to that and get the
-> > address from a resource in the !DT case. I guess we should see if Sekhar
-> > would like to see this happen in two steps or just have us depend on
-> > the gen_pool_find_by_phys() patch now.
-> 
-> Thanks, I'm glad you are aware of the sram driver and consider it useful.
-> 
-> > BTW, I was going to post a patch for your driver to allow
-> > configurability of the allocation order, but have been busy with other
-> > things.  We'll eventually need that when switching to it as the
-> > hardcoded page size order isn't going to work for all cases.
-> 
-> Good point.
+>> >> This is mainly intended for the dynamic linker,
+>> >> which sets up the address space on behalf of
+>> >> dynamic binaries. By using this flag, it can
+>> >> prevent exploited code from remapping read-only
+>> >> executable code or data sections read-write.
+>
+> now this last paragraph/sentence seems to be the closest thing that
+> describes a scenario where we have some vulnerability (i'm guessing
+> of the memory corruption kind) that allows an attacker (exploit writer)
+> to force the attacked vulnerable application to perform a gratuitous
+> mprotect(PROT_WRITE|PROT_EXEC) on some library/etc mapping and prepare
+> it for shellcode injection/execution (a.k.a. 'game over' or the 'holy
+> grail' ;). so far so good. the question that arises here is that what
+> prevents the same exploit technique (say, ret2libc in this case) from
+> executing an open/mmap(PROT_WRITE|PROT_EXEC) of the very same library
+> that PROT_FINAL would protect? or just a plain anon mmap that is just as
+> good for shellcode execution? in other words, if the attacker can make
+> the attacked application execute mprotect with arbitrary parameters,
+> then why can't the same attacker execute open/mmap/etc as well, completely
+> circumventing the proposed solution? i hope you see now why this issue
+> has to be settled before anyone looks into the implementation details.
+>
 
-I think this is the only blocker to DaVinci adopting it once it goes
-upstream. I can add a patch in your driver thread if that helps.
+The main difference here is that it is much easier to doctor a set of
+stack frames that issues a mprotect(+PROT_EXEC) on the whole address
+space than it is to re-issue the exact same mmap() call (with
+MAP_FIXED this time, and the exact offset the kernel decided to load
+it this time around) that will put the same code/data in exactly the
+same place in memory (relocated and all) without blowing up your
+process. In our specific implementation, it is mainly about rodata
+(public keys) rather than executable code, but the same applies; for
+us, it is more about rigging binaries: the attacker may not be
+interested in hijacking the whole process, but just nop'ing out some
+code that makes the process behave more to his liking.
 
--Matt
+>> The 'interface' we use is a LSM .ko which registers handlers for
+>> mmap() and mprotect() that fail the respective invocations if the
+>> passed arguments do not adhere to the policy.
+>
+> i'm guessing again that their LSM tries to tackle the above described
+> scenarios except we don't know if this LSM will ever become public,
+> whether/how other LSMs will acquire the same capabilities and why it's
+> not mentioned in the PROT_FINAL submission that by itself this feature
+> doesn't increase security. i'm also wondering what kind of policy can
+> allow ld.so to load a library but forbid it a second time, it doesn't
+> seem compatible with real-life cases (think dynamically loaded and
+> unloaded plugins), not to mention the control of anonymous mappings.
+>
+
+The LSM encapsulates the policy, and relies on the PROT_FINAL feature.
+The fact that the policy can impose the use of PROT_FINAL in
+particular cases makes the implementation of the policy potentially
+much simpler than that of PaX MPROTECT (but not necessarily as
+secure).
+
+However, let's decide first whether there is a point to having some
+control over the VM_MAY* flags directly. If yes, then the patch makes
+sense, otherwise it doesn't. How policies may be built on top of that
+is part of another debate.
+
+> last but not least, just saw this from Ard while not on CC:
+>
+>> ptrace() doesn't care whether or not the process itself can write to
+>> its .text segment.
+>
+> ptrace cares about VM_MAYWRITE which PROT_FINAL can take away (under
+> PaX MPROTECT'ed processes cannot be debugged with sw breakpoints).
+>
+
+My bad: I spent some time looking at access_process_vm() but could not
+find any references to the vma permissions.
+
+>> Could we at least agree on the fundamental notion that the special
+>> powers the loader has to modify .text and .rodata sections are hardly
+>> ever needed by the programs themselves? In that sense, this is similar
+>> to dropping root privileges when not required anymore, and that is
+>> typically recognized as a sensible idea.
+>
+> the difference is that the uid is a process-wide attribute, whereas
+> PROT_FINAL isn't, unlike PaX's MPROTECT. in other words, dropping root
+> is irreversible but PROT_FINAL isn't, one just has to create an entirely
+> new mapping to acquire the access rights that PROT_FINAL was supposed to
+> prevent (again, all this modulo an LSM and policies).
+>
+
+There remains a fundamental difference between the ability to
+manipulate existing mappings and creating entirely new ones.
+Especially when trying to manipulate GOT/PLT or vtable entries or
+tweak the behavior of a program in other subtle ways, mmap()'ing the
+same file again is just not going to cut it.
+
+Regards,
+Ard.
