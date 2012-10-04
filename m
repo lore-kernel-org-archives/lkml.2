@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab2JDVWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:22:16 -0400
+	id S933951Ab2JDVW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:26 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933909Ab2JDVWG (ORCPT
+	with ESMTP id S1757670Ab2JDVWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:06 -0400
+	Thu, 4 Oct 2012 17:22:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 38/58] xen/pciback: Restore the PCI config space after an FLR.
-Date: Thu,  4 Oct 2012 14:19:45 -0700
-Message-Id: <20121004210640.231825790@linuxfoundation.org>
+        Randy Dunlap <rdunlap@xenotime.net>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 50/58] remoteproc: select VIRTIO to avoid build breakage
+Date: Thu,  4 Oct 2012 14:19:57 -0700
+Message-Id: <20121004210641.814153359@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -26,54 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
 
-commit c341ca45ce56143804ef5a8f4db753e554e640b4 upstream.
+commit 2ed6d29c725c4aead510b5c23f563795b265acf5 upstream.
 
-When we do an FLR, or D0->D3_hot we may lose the BARs as the
-device has turned itself off (and on). This means the device cannot
-function unless the pci_restore_state is called - which it is
-when the PCI device is unbound from the Xen PCI backend driver.
-For PV guests it ends up calling pci_enable_device / pci_enable_msi[x]
-which does the proper steps
+drivers/built-in.o: In function `rproc_virtio_finalize_features':
+remoteproc_virtio.c:(.text+0x2f9a02): undefined reference to `vring_transport_features'
+drivers/built-in.o: In function `rproc_virtio_del_vqs':
+remoteproc_virtio.c:(.text+0x2f9a74): undefined reference to `vring_del_virtqueue'
+drivers/built-in.o: In function `rproc_virtio_find_vqs':
+remoteproc_virtio.c:(.text+0x2f9c44): undefined reference to `vring_new_virtqueue'
+drivers/built-in.o: In function `rproc_add_virtio_dev':
+(.text+0x2f9e2c): undefined reference to `register_virtio_device'
+drivers/built-in.o: In function `rproc_vq_interrupt':
+(.text+0x2f9db7): undefined reference to `vring_interrupt'
+drivers/built-in.o: In function `rproc_remove_virtio_dev':
+(.text+0x2f9e9f): undefined reference to `unregister_virtio_device'
 
-That however is not happening if a HVM guest is run as QEMU
-deals with PCI configuration space. QEMU also requires that the
-device be "parked"  under the ownership of a pci-stub driver to
-guarantee that the PCI device is not being used. Hence we
-follow the same incantation as pci_reset_function does - by
-doing an FLR, then restoring the PCI configuration space.
-
-The result of this patch is that when you run lspci, you get
-now this:
-
--       Region 0: [virtual] Memory at fe8c0000 (32-bit, non-prefetchable) [size=128K]
--       Region 1: [virtual] Memory at fe800000 (32-bit, non-prefetchable) [size=512K]
-+       Region 0: Memory at fe8c0000 (32-bit, non-prefetchable) [size=128K]
-+       Region 1: Memory at fe800000 (32-bit, non-prefetchable) [size=512K]
-        Region 2: I/O ports at c000 [size=32]
--       Region 3: [virtual] Memory at fe8e0000 (32-bit, non-prefetchable) [size=16K]
-+       Region 3: Memory at fe8e0000 (32-bit, non-prefetchable) [size=16K]
-
-The [virtual] means that lspci read those entries from SysFS but when
-it read them from the device it got a different value (0xfffffff).
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/xen-pciback/pci_stub.c |    1 +
+ drivers/remoteproc/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -362,6 +362,7 @@ static int __devinit pcistub_init_device
- 	else {
- 		dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
- 		__pci_reset_function_locked(dev);
-+		pci_restore_state(dev);
- 	}
- 	/* Now disable the device (this also ensures some private device
- 	 * data is setup before we export)
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -5,6 +5,7 @@ config REMOTEPROC
+ 	tristate
+ 	depends on EXPERIMENTAL
+ 	select FW_CONFIG
++	select VIRTIO
+ 
+ config OMAP_REMOTEPROC
+ 	tristate "OMAP remoteproc support"
 
 
