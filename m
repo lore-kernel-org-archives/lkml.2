@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946388Ab2JDV1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:27:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42952 "EHLO
+	id S1946436Ab2JDV16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:27:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44259 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946263Ab2JDV1i (ORCPT
+	with ESMTP id S1946409Ab2JDV1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:27:38 -0400
+	Thu, 4 Oct 2012 17:27:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Flavio Leitner <fbl@redhat.com>
-Subject: [ 14/33] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
-Date: Thu,  4 Oct 2012 14:26:36 -0700
-Message-Id: <20121004210600.240956019@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 19/33] coredump: prevent double-free on an error path in core dumper
+Date: Thu,  4 Oct 2012 14:26:41 -0700
+Message-Id: <20121004210600.834498560@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210558.383865383@linuxfoundation.org>
 References: <20121004210558.383865383@linuxfoundation.org>
@@ -26,56 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Flavio Leitner <fbl@redhat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
 
-commit 26e8220adb0aec43b7acafa0f1431760eee28522 upstream.
+commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
 
-Apparently the same card model has two IDs, so this patch
-complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
-adding the missing one.
+In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
+memory for info->fields, it frees already allocated stuff and returns
+error to its caller, fill_note_info.  Which in turn returns error to its
+caller, elf_core_dump.  Which jumps to cleanup label and calls
+free_note_info, which will happily try to free all info->fields again.
+BOOM.
 
-Signed-off-by: Flavio Leitner <fbl@redhat.com>
+This is the fix.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250_pci.c |    9 +++++++--
- include/linux/pci_ids.h       |    1 -
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ fs/binfmt_elf.c |   19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -1011,6 +1011,8 @@ static int pci_eg20t_init(struct pci_dev
- #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
- #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
- #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
-+#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
- #define PCI_VENDOR_ID_ADVANTECH		0x13fe
- #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
- #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
-@@ -3009,8 +3011,11 @@ static struct pci_device_id serial_pci_t
- 		 * For now just used the hex ID 0x950a.
- 		 */
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
--		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
--		pbn_b0_2_115200 },
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
-+		0, 0, pbn_b0_2_115200 },
-+	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
-+		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
-+		0, 0, pbn_b0_2_115200 },
- 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_2_1130000 },
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1818,7 +1818,6 @@
- #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
- #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
- #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
--#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1669,30 +1669,19 @@ static int elf_note_info_init(struct elf
+ 		return 0;
+ 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
+ 	if (!info->psinfo)
+-		goto notes_free;
++		return 0;
+ 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
+ 	if (!info->prstatus)
+-		goto psinfo_free;
++		return 0;
+ 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
+ 	if (!info->fpu)
+-		goto prstatus_free;
++		return 0;
+ #ifdef ELF_CORE_COPY_XFPREGS
+ 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
+ 	if (!info->xfpu)
+-		goto fpu_free;
++		return 0;
+ #endif
+ 	return 1;
+-#ifdef ELF_CORE_COPY_XFPREGS
+- fpu_free:
+-	kfree(info->fpu);
+-#endif
+- prstatus_free:
+-	kfree(info->prstatus);
+- psinfo_free:
+-	kfree(info->psinfo);
+- notes_free:
+-	kfree(info->notes);
+-	return 0;
+ }
  
- #define PCI_VENDOR_ID_RADISYS		0x1331
- 
+ static int fill_note_info(struct elfhdr *elf, int phdrs,
 
 
