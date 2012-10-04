@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab2JDRgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 13:36:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59426 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932151Ab2JDRgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 13:36:21 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] regmap: Split raw writes that cross window boundaries
-Date: Thu,  4 Oct 2012 18:36:16 +0100
-Message-Id: <1349372177-18931-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1349372177-18931-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1349372177-18931-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S933511Ab2JDRhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 13:37:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932253Ab2JDRhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 13:37:03 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAMuHMdUx6he0MdL5etO6pDrMgd=JZWsf1TZj5WevjSpFANCWRA@mail.gmail.com>
+References: <CAMuHMdUx6he0MdL5etO6pDrMgd=JZWsf1TZj5WevjSpFANCWRA@mail.gmail.com> <18137.1349203013@warthog.procyon.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: dhowells@redhat.com, torvalds@osdl.org, arnd@arndb.de, hpa@zytor.com,
+        alan@lxorguk.ukuu.org.uk, fengguang.wu@intel.com,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] User API Disintegrate: Preparatory patches
+Date: Thu, 04 Oct 2012 18:36:46 +0100
+Message-ID: <29855.1349372206@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a block write covers a paged memory region and crosses a window
-boundary then rather than failing the write split the transfer up
-into multiple writes, making the whole process more transparent for
-drivers.
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regmap.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+> >  include/linux/libfdt.h                           |  4 +-
+> 
+> So what happened here?
+> 
+>  -#include "../../scripts/dtc/libfdt/fdt.h"
+> -#include "../../scripts/dtc/libfdt/libfdt.h"
+> +#include <>
+> +#include <>
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index baf9586..07ea564 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -852,8 +852,25 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 
- 	range = _regmap_range_lookup(map, reg);
- 	if (range) {
--		ret = _regmap_select_page(map, &reg, range,
--					  val_len / map->format.val_bytes);
-+		int val_num = val_len / map->format.val_bytes;
-+		int win_offset = (reg - range->range_min) % range->window_len;
-+		int win_residue = range->window_len - win_offset;
-+
-+		/* If the write goes beyond the end of the window split it */
-+		while (val_num > win_residue) {
-+			dev_dbg(map->dev, "Writing window %d/%d\n",
-+				win_residue, val_len);
-+			ret = _regmap_raw_write(map, reg, val, win_residue);
-+			if (ret != 0)
-+				return ret;
-+
-+			val += win_residue;
-+			val_len -= win_residue;
-+			val_num = val_len / map->format.val_bytes;
-+			win_residue = range->window_len - win_offset;
-+		}
-+
-+		ret = _regmap_select_page(map, &reg, range, val_num);
- 		if (ret != 0)
- 			return ret;
- 	}
--- 
-1.7.10.4
+I didn't expect 'system' header files to be outside of include/ or
+arch/*/include/, so the bit of perl I had to turn this into <...> quietly
+malfunctioned when it stripped too much off of the front.
 
+Out of interest, why aren't these in include/?  The normal way seems to be to
+point the tool build at the kernel headers, not the kernel build at the script
+headers.
+
+David
