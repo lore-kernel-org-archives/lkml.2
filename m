@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2JDTTN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:19:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45989 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755821Ab2JDTTL (ORCPT
+	id S1756291Ab2JDTVU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:21:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60530 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab2JDTVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:19:11 -0400
-Date: Thu, 4 Oct 2012 15:19:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Fainelli <florian@openwrt.org>
-cc: linux-usb@vger.kernel.org, Anton Vorontsov <avorontsov@mvista.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/24 v2] ARM: cns3xxx: use OHCI platform driver
-In-Reply-To: <1349363872-27004-18-git-send-email-florian@openwrt.org>
-Message-ID: <Pine.LNX.4.44L0.1210041517091.1441-100000@iolanthe.rowland.org>
+	Thu, 4 Oct 2012 15:21:19 -0400
+Message-ID: <506DE1AC.500@zankel.net>
+Date: Thu, 04 Oct 2012 12:21:16 -0700
+From: Chris Zankel <chris@zankel.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] xtensa patchset for 3.7
+References: <506CBAFC.8010908@zankel.net> <CAMuHMdUn_96wqTNin_p6UgWB5kzofBex2s+AbLJzW=1YoTuOPQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdUn_96wqTNin_p6UgWB5kzofBex2s+AbLJzW=1YoTuOPQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Florian Fainelli wrote:
+Hi Geert,
 
-> Since both the EHCI and OHCI platform drivers use the same power_{on,off}
-> callbacks, rename them to cns3xx_usb_power_{on,off} to show that they are
-> shared.
+Sorry, misunderstood it. Won't happen again.
 
-This is an example of the sort of thing I complained about before.  
-People who read only the patch description and not the title will
-wonder why this patch adds cns3xxx_usb_ohci_pdata and
-cns3xxx_usb_ohci_device.
+I have added it to https://github.com/czankel/xtensa-linux.git 
+xtensa-next, so it should be pulled to mainline soon (once I'm done with 
+my homework of getting my key signed ;-)
 
-And people who read both will wonder why they talk about different 
-things.
+Thanks,
+-Chris
 
-Alan Stern
+On 10/04/2012 11:45 AM, Geert Uytterhoeven wrote:
+> Hi Chris,
+>
+> On Thu, Oct 4, 2012 at 12:23 AM, Chris Zankel <chris@zankel.net> wrote:
+>> Patchset for the Xtensa architecture for 3.7
+> I think you forgot https://lkml.org/lkml/2012/9/10/560
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
 
