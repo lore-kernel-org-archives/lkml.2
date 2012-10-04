@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933802Ab2JDVV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:21:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933777Ab2JDVVT (ORCPT
+	id S1753438Ab2JDV74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:59:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933804Ab2JDVV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:19 -0400
+	Thu, 4 Oct 2012 17:21:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guillaume Jaunet <guillaume.jaunet@stericsson.com>,
-        Christophe Arnal <christophe.arnal@stericsson.com>,
-        Matthias Locher <matthias.locher@stericsson.com>,
-        Rajanikanth HV <rajanikanth.hv@stericsson.com>,
-        Bibek Basu <bibek.basu@stericsson.com>,
-        Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 23/58] serial: pl011: handle corruption at high clock speeds
-Date: Thu,  4 Oct 2012 14:19:30 -0700
-Message-Id: <20121004210638.364139405@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 26/58] tools/hv: Fix exit() error code
+Date: Thu,  4 Oct 2012 14:19:33 -0700
+Message-Id: <20121004210638.717381908@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -32,75 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit c5dd553b9fd069892c9e2de734f4f604e280fa7a upstream.
+commit 6bb22fea25624ab593eee376fa5fb82d1b13f45a upstream.
 
-This works around a few glitches in the ST version of the PL011
-serial driver when using very high baud rates, as we do in the
-Ux500: 3, 3.25, 4 and 4.05 Mbps.
+Linux native exit codes are 8-bit unsigned values.  exit(-1) results
+in an exit code of 255, which is usually reserved for shells reporting
+'command not found'.  Use the portable value EXIT_FAILURE.  (Not that
+this matters much for a daemon.)
 
-Problem Observed/rootcause:
-
-When using high baud-rates, and the baudrate*8 is getting close to
-the provided clock frequency (so a division factor close to 1), when
-using bursts of characters (so they are abutted), then it seems as if
-there is not enough time to detect the beginning of the start-bit which
-is a timing reference for the entire character, and thus the sampling
-moment of character bits is moving towards the end of each bit, instead
-of the middle.
-
-Fix:
-Increase slightly the RX baud rate of the UART above the theoretical
-baudrate by 5%. This will definitely give more margin time to the
-UART_RX to correctly sample the data at the middle of the bit period.
-
-Also fix the ages old copy-paste error in the very stressed comment,
-it's referencing the registers used in the PL010 driver rather than
-the PL011 ones.
-
-Signed-off-by: Guillaume Jaunet <guillaume.jaunet@stericsson.com>
-Signed-off-by: Christophe Arnal <christophe.arnal@stericsson.com>
-Signed-off-by: Matthias Locher <matthias.locher@stericsson.com>
-Signed-off-by: Rajanikanth HV <rajanikanth.hv@stericsson.com>
-Cc: Bibek Basu <bibek.basu@stericsson.com>
-Cc: Par-Gunnar Hjalmdahl <par-gunnar.hjalmdahl@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/amba-pl011.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ tools/hv/hv_kvp_daemon.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -1603,13 +1603,26 @@ pl011_set_termios(struct uart_port *port
- 			old_cr &= ~ST_UART011_CR_OVSFACT;
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -106,7 +106,7 @@ static void kvp_acquire_lock(int pool)
+ 
+ 	if (fcntl(kvp_file_info[pool].fd, F_SETLKW, &fl) == -1) {
+ 		syslog(LOG_ERR, "Failed to acquire the lock pool: %d", pool);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ }
+ 
+@@ -118,7 +118,7 @@ static void kvp_release_lock(int pool)
+ 	if (fcntl(kvp_file_info[pool].fd, F_SETLK, &fl) == -1) {
+ 		perror("fcntl");
+ 		syslog(LOG_ERR, "Failed to release the lock pool: %d", pool);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ }
+ 
+@@ -137,7 +137,7 @@ static void kvp_update_file(int pool)
+ 	if (!filep) {
+ 		kvp_release_lock(pool);
+ 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
+-		exit(-1);
++		exit(EXIT_FAILURE);
  	}
  
-+	/*
-+	 * Workaround for the ST Micro oversampling variants to
-+	 * increase the bitrate slightly, by lowering the divisor,
-+	 * to avoid delayed sampling of start bit at high speeds,
-+	 * else we see data corruption.
-+	 */
-+	if (uap->vendor->oversampling) {
-+		if ((baud >= 3000000) && (baud < 3250000) && (quot > 1))
-+			quot -= 1;
-+		else if ((baud > 3250000) && (quot > 2))
-+			quot -= 2;
-+	}
- 	/* Set baud rate */
- 	writew(quot & 0x3f, port->membase + UART011_FBRD);
- 	writew(quot >> 6, port->membase + UART011_IBRD);
+ 	bytes_written = fwrite(kvp_file_info[pool].records,
+@@ -163,7 +163,7 @@ static void kvp_update_mem_state(int poo
+ 	if (!filep) {
+ 		kvp_release_lock(pool);
+ 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 	while (!feof(filep)) {
+ 		readp = &record[records_read];
+@@ -180,7 +180,7 @@ static void kvp_update_mem_state(int poo
  
- 	/*
- 	 * ----------v----------v----------v----------v-----
--	 * NOTE: MUST BE WRITTEN AFTER UARTLCR_M & UARTLCR_L
-+	 * NOTE: lcrh_tx and lcrh_rx MUST BE WRITTEN AFTER
-+	 * UART011_FBRD & UART011_IBRD.
- 	 * ----------^----------^----------^----------^-----
- 	 */
- 	writew(lcr_h, port->membase + uap->lcrh_rx);
+ 			if (record == NULL) {
+ 				syslog(LOG_ERR, "malloc failed");
+-				exit(-1);
++				exit(EXIT_FAILURE);
+ 			}
+ 			continue;
+ 		}
+@@ -209,7 +209,7 @@ static int kvp_file_init(void)
+ 	if (access("/var/opt/hyperv", F_OK)) {
+ 		if (mkdir("/var/opt/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
+ 			syslog(LOG_ERR, " Failed to create /var/opt/hyperv");
+-			exit(-1);
++			exit(EXIT_FAILURE);
+ 		}
+ 	}
+ 
+@@ -658,13 +658,13 @@ int main(void)
+ 
+ 	if (kvp_file_init()) {
+ 		syslog(LOG_ERR, "Failed to initialize the pools");
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 
+ 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
+ 	if (fd < 0) {
+ 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 	addr.nl_family = AF_NETLINK;
+ 	addr.nl_pad = 0;
+@@ -676,7 +676,7 @@ int main(void)
+ 	if (error < 0) {
+ 		syslog(LOG_ERR, "bind failed; error:%d", error);
+ 		close(fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 	sock_opt = addr.nl_groups;
+ 	setsockopt(fd, 270, 1, &sock_opt, sizeof(sock_opt));
+@@ -696,7 +696,7 @@ int main(void)
+ 	if (len < 0) {
+ 		syslog(LOG_ERR, "netlink_send failed; error:%d", len);
+ 		close(fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 
+ 	pfd.fd = fd;
+@@ -864,7 +864,7 @@ kvp_done:
+ 		len = netlink_send(fd, incoming_cn_msg);
+ 		if (len < 0) {
+ 			syslog(LOG_ERR, "net_link send failed; error:%d", len);
+-			exit(-1);
++			exit(EXIT_FAILURE);
+ 		}
+ 	}
+ 
 
 
