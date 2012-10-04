@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965400Ab2JDOrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:47:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34690 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965008Ab2JDOrv (ORCPT
+	id S965421Ab2JDOvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:51:06 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40921 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965130Ab2JDOvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:47:51 -0400
-Message-ID: <1349362057.16173.27.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 022/180] ioat2: kill pending flag
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>, Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Date: Thu, 04 Oct 2012 15:47:37 +0100
-In-Reply-To: <20121001225158.550410866@1wt.eu>
-References: <20121001225158.550410866@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-mcdImmfrdkLs8xJDWZKN"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 4 Oct 2012 10:51:03 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/25] MIPS: Netlogic: use ehci-platform driver
+Date: Thu, 04 Oct 2012 07:51:01 -0700 (PDT)
+Message-ID: <17094030.Jd6tWHquEF@flexo>
+Organization: OpenWrt
+User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1210031151300.1441-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1210031151300.1441-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 03 October 2012 12:47:58 Alan Stern wrote:
+> On Wed, 3 Oct 2012, Florian Fainelli wrote:
+> 
+> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> 
+> IMO, patches should always have a non-empty changelog.  Even if it is 
+> relatively trivial.  The same comment applies to several other patches 
+> in this series.
+> 
+> > ---
+> >  arch/mips/netlogic/xlr/platform.c |    6 ++++++
+> >  1 file changed, 6 insertions(+)
+> 
+> Does this need to enable CONFIG_USB_EHCI_HCD_PLATFORM is some 
+> defconfig file, like you did with the MIPS Loongson 1B?
 
---=-mcdImmfrdkLs8xJDWZKN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Netlogic platforms have USB disabled by default in their defconfig, so I'd say 
+no, but only for them.
 
-On Tue, 2012-10-02 at 00:52 +0200, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Dan Williams <dan.j.williams@intel.com>
->=20
-> commit 281befa5592b0c5f9a3856b5666c62ac66d3d9ee upstream.
->=20
-> The pending =3D=3D 2 case no longer exists in the driver so, we can use
-> ioat2_ring_pending() outside the lock to determine if there might be any
-> descriptors in the ring that the hardware has not seen.
-[...]
-
-What bug does this fix?  Is ioat2_ring_pending() *really* safe to call
-without the ring_lock?
-
-Ben.
-
---=20
-Ben Hutchings
-For every complex problem
-there is a solution that is simple, neat, and wrong.
-
---=-mcdImmfrdkLs8xJDWZKN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUG2hiee/yOyVhhEJAQq7FA/7BBl4Oc/ts67AS2ve+qYjJ3xJdDgMIYx/
-fGCxvUyfQAuMvwB4sXRzYRDg8ikXGD6YRxAi9SktoBJ7LolKD09WY6GVpmxFzOYj
-yx0OemnEhHFgODl85BQ5tUvfdt/7cCv+Qyrphg+cEn94wFDLWjaA6T7eZxDC4qzN
-fAe911NKmhAFV9wf3ioQeB6JB7YqMxaIjdJvflpf+272DoiVxtOTv8EWPgr+S5Jm
-KSZTrmoUOLkKji6HoLgnzmLNxvqtJ42IaqYyALLQ9U3EPFSH66zklXAmwa9VTH62
-OoRLUMQyq+rCC23tieMbbBo2eubzWWwcmKWehfPBUE66IfHrzErkQXy9TO+qxhu+
-xzxmlaZ3kB8vJbbArtMPsGs8Dum0fy+hsePPG1I6z03Du9L26fFoXyypS3nmgOjK
-HKSjlXCaaD/Uy9lm4DyFXtP+nltnq3IyKG6MBKkzgSnPlYmumdi009WG11sXAKFT
-L9H8J6P105edlqvg50p8Ah7RmiJJ90qlosdICA7jjuwaJMTjfqDgJQaDNmYYK0XT
-JMLZ88nZ6i1jCpCUlsTDRr8BmHq7UX/43aRuk7j/3+XXrazSxT8GyjBeQ5oqzQmn
-WxmIlc//CIdgLARYaBObg3mgXswFXPsS0AXXqgIpQGqThOumuj2kvjXX9x/TZY2q
-mtN7+7JOKWI=
-=XTxF
------END PGP SIGNATURE-----
-
---=-mcdImmfrdkLs8xJDWZKN--
+> 
+> And likewise for quite a few of the other patches in this series.
+> 
+> > diff --git a/arch/mips/netlogic/xlr/platform.c 
+b/arch/mips/netlogic/xlr/platform.c
+> > index 71b44d8..1731dfd 100644
+> > --- a/arch/mips/netlogic/xlr/platform.c
+> > +++ b/arch/mips/netlogic/xlr/platform.c
+> > @@ -15,6 +15,7 @@
+> >  #include <linux/serial_8250.h>
+> >  #include <linux/serial_reg.h>
+> >  #include <linux/i2c.h>
+> > +#include <linux/usb/ehci_pdriver.h>
+> >  
+> >  #include <asm/netlogic/haldefs.h>
+> >  #include <asm/netlogic/xlr/iomap.h>
+> > @@ -123,6 +124,10 @@ static u64 xls_usb_dmamask = ~(u32)0;
+> >  		},							\
+> >  	}
+> >  
+> > +static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+> > +	.caps_offset	= 0,
+> > +};
+> > +
+> >  static struct platform_device xls_usb_ehci_device =
+> >  			 USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
+> >  static struct platform_device xls_usb_ohci_device_0 =
+> > @@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
+> >  	memres = CPHYSADDR((unsigned long)usb_mmio);
+> >  	xls_usb_ehci_device.resource[0].start = memres;
+> >  	xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
+> > +	xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
+> >  
+> >  	memres += 0x400;
+> >  	xls_usb_ohci_device_0.resource[0].start = memres;
+> 
+> Don't you need to change/set the pdev name also?  Likewise for patch 
+> 20/25 and 24/25.
+> 
+> Alan Stern
+> 
