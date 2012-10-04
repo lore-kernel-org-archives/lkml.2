@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2JDSJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:09:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39691 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab2JDSJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751679Ab2JDSJA (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 4 Oct 2012 14:09:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39651 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab2JDSI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 14:08:57 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 27/42] perf tools: Complete long option names of perf command
-Date: Thu,  4 Oct 2012 15:08:27 -0300
-Message-Id: <1349374122-27806-28-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/42] perf tools: Move libdw availability check before arch Makefile
+Date: Thu,  4 Oct 2012 15:08:01 -0300
+Message-Id: <1349374122-27806-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
 References: <1349374122-27806-1-git-send-email-acme@infradead.org>
@@ -27,47 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The main perf binary can receive a number of options that configure
-working environment.  Add them to the completion script.
+Since NO_DWARF is used in arch/$(ARCH)/Makefiles, it should be checked
+before including those files.  It was moved by mistake during libelf
+dependency removal work by me, sorry.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1349191294-6926-3-git-send-email-namhyung@kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1348824728-14025-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bash_completion |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ tools/perf/Makefile |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 3d48cee..bef06f0 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -21,10 +21,16 @@ _perf()
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e5e71e7..834f09f 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -486,7 +486,13 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+ 		NO_DWARF := 1
+ 		NO_DEMANGLE := 1
+ 	endif
+-endif
++else
++	FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
++	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
++		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
++		NO_DWARF := 1
++	endif # Dwarf support
++endif # SOURCE_LIBELF
+ endif # NO_LIBELF
  
- 	cmd=${COMP_WORDS[0]}
+ ifndef NO_LIBUNWIND
+@@ -532,12 +538,6 @@ ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
+ 	BASIC_CFLAGS += -DLIBELF_NO_MMAP
+ endif
  
--	# List perf subcommands
-+	# List perf subcommands or long options
- 	if [ $COMP_CWORD -eq 1 ]; then
--		cmds=$($cmd --list-cmds)
--		COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+		if [[ $cur == --* ]]; then
-+			COMPREPLY=( $( compgen -W '--help --version \
-+			--exec-path --html-path --paginate --no-pager \
-+			--perf-dir --work-tree --debugfs-dir' -- "$cur" ) )
-+		else
-+			cmds=$($cmd --list-cmds)
-+			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
-+		fi
- 	# List possible events for -e option
- 	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
- 		cmds=$($cmd list --raw-dump)
+-FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+-ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+-	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+-	NO_DWARF := 1
+-endif # Dwarf support
+-
+ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
 -- 
 1.7.1
 
