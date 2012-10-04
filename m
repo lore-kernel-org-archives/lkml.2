@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933967Ab2JDVWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:22:30 -0400
+	id S933987Ab2JDVWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:22:39 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928Ab2JDVWT (ORCPT
+	with ESMTP id S933969Ab2JDVWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:22:19 -0400
+	Thu, 4 Oct 2012 17:22:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [ 41/58] n_gsm: uplink SKBs accumulate on list
-Date: Thu,  4 Oct 2012 14:19:48 -0700
-Message-Id: <20121004210640.604690654@linuxfoundation.org>
+        Matthieu Castet <matthieu.castet@parrot.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 45/58] UBI: erase free PEB with bitflip in EC header
+Date: Thu,  4 Oct 2012 14:19:52 -0700
+Message-Id: <20121004210641.147222378@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -28,50 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Gorby <russ.gorby@intel.com>
+From: Matthieu CASTET <matthieu.castet@parrot.com>
 
-commit 192b6041e75bb4a2aae73834037038cea139a92d upstream.
+commit 193819cf2e6e395b1e1be2d36785dc5563a6edca upstream.
 
-gsm_dlci_data_kick will not call any output function if tx_bytes > THRESH_LO
-furthermore it will call the output function only once if tx_bytes == 0
-If the size of the IP writes are on the order of THRESH_LO
-we can get into a situation where skbs accumulate on the outbound list
-being starved for events to call the output function.
+Without this patch, these PEB are not scrubbed until we put data in them.
+Bitflip can accumulate latter and we can loose the EC header (but VID header
+should be intact and allow to recover data).
 
-gsm_dlci_data_kick now calls the sweep function when tx_bytes==0
-
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/mtd/ubi/attach.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -971,16 +971,19 @@ static void gsm_dlci_data_sweep(struct g
- static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
- {
- 	unsigned long flags;
-+	int sweep;
- 
- 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
- 	/* If we have nothing running then we need to fire up */
-+	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
- 	if (dlci->gsm->tx_bytes == 0) {
- 		if (dlci->net)
- 			gsm_dlci_data_output_framed(dlci->gsm, dlci);
+--- a/drivers/mtd/ubi/attach.c
++++ b/drivers/mtd/ubi/attach.c
+@@ -975,7 +975,7 @@ static int scan_peb(struct ubi_device *u
+ 			return err;
+ 		goto adjust_mean_ec;
+ 	case UBI_IO_FF:
+-		if (ec_err)
++		if (ec_err || bitflips)
+ 			err = add_to_list(ai, pnum, UBI_UNKNOWN,
+ 					  UBI_UNKNOWN, ec, 1, &ai->erase);
  		else
- 			gsm_dlci_data_output(dlci->gsm, dlci);
--	} else if (dlci->gsm->tx_bytes < TX_THRESH_LO)
--		gsm_dlci_data_sweep(dlci->gsm);
-+	}
-+	if (sweep)
-+ 		gsm_dlci_data_sweep(dlci->gsm);
- 	spin_unlock_irqrestore(&dlci->gsm->tx_lock, flags);
- }
- 
 
 
