@@ -1,141 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab2JDTJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:09:41 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:50674 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab2JDTJj convert rfc822-to-8bit (ORCPT
+	id S1755879Ab2JDTLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:11:54 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:13186 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751572Ab2JDTLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:09:39 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: RE: [PATCH 3/5] rapidio: run discovery as an asynchronous process
-Thread-Topic: [PATCH 3/5] rapidio: run discovery as an asynchronous process
-Thread-Index: AQHNoZwoWl65ZA0aUEi7DUNE9YWzm5eon1eAgADhfbA=
-Date: Thu, 4 Oct 2012 19:08:27 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D1499FC7D9@corpmail2.na.ads.idt.com>
-References: <1349291923-22860-1-git-send-email-alexandre.bounine@idt.com>
-	<1349291923-22860-4-git-send-email-alexandre.bounine@idt.com>
- <20121003152953.79aecece.akpm@linux-foundation.org>
-In-Reply-To: <20121003152953.79aecece.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Oct 2012 15:11:53 -0400
+Date: Thu, 4 Oct 2012 19:11:51 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 29/33] autonuma: page_autonuma
+In-Reply-To: <20121004183819.GM25675@redhat.com>
+Message-ID: <0000013a2d30ebf2-1a2bb821-92a0-464b-9db0-f960b2fd074d-000000@email.amazonses.com>
+References: <20121004165008.GF25675@redhat.com> <0000013a2cff3c3d-76e00716-2869-4dc8-8717-82f0136018d0-000000@email.amazonses.com> <20121004183819.GM25675@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, October 03, 2012 6:30 PM
-Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> On Wed,  3 Oct 2012 15:18:41 -0400
-> Alexandre Bounine <alexandre.bounine@idt.com> wrote:
-> 
-> > ...
-> >
-> > +static void __devinit disc_work_handler(struct work_struct *_work)
-> > +{
-> > +	struct rio_disc_work *work = container_of(_work,
-> > +						  struct rio_disc_work, work);
-> 
-> There's a nice simple way to avoid such ugliness:
-> 
-> --- a/drivers/rapidio/rio.c~rapidio-run-discovery-as-an-asynchronous-
-> process-fix
-> +++ a/drivers/rapidio/rio.c
-> @@ -1269,9 +1269,9 @@ struct rio_disc_work {
-> 
->  static void __devinit disc_work_handler(struct work_struct *_work)
->  {
-> -	struct rio_disc_work *work = container_of(_work,
-> -						  struct rio_disc_work, work);
-> +	struct rio_disc_work *work;
-> 
-> +	work = container_of(_work, struct rio_disc_work, work);
->  	pr_debug("RIO: discovery work for mport %d %s\n",
->  		 work->mport->id, work->mport->name);
->  	rio_disc_mport(work->mport);
-> _
-> 
+On Thu, 4 Oct 2012, Andrea Arcangeli wrote:
 
-Thank you for the fix. Will avoid that ugliness in the future.
+> If you mean CONFIG_AUTONUMA=y should select (not depend) on
+> CONFIG_HAVE_ALIGNED_STRUCT_PAGE, that would allow to enable it in all
+> .configs but it would have a worse cons: losing 8bytes per page
+> unconditionally (even when booting on non-NUMA hardware).
 
-> > +	pr_debug("RIO: discovery work for mport %d %s\n",
-> > +		 work->mport->id, work->mport->name);
-> > +	rio_disc_mport(work->mport);
-> > +
-> > +	kfree(work);
-> > +}
-> > +
-> >  int __devinit rio_init_mports(void)
-> >  {
-> >  	struct rio_mport *port;
-> > +	struct rio_disc_work *work;
-> > +	int no_disc = 0;
-> >
-> >  	list_for_each_entry(port, &rio_mports, node) {
-> >  		if (port->host_deviceid >= 0)
-> >  			rio_enum_mport(port);
-> > -		else
-> > -			rio_disc_mport(port);
-> > +		else if (!no_disc) {
-> > +			if (!rio_wq) {
-> > +				rio_wq = alloc_workqueue("riodisc", 0, 0);
-> > +				if (!rio_wq) {
-> > +					pr_err("RIO: unable allocate rio_wq\n");
-> > +					no_disc = 1;
-> > +					continue;
-> > +				}
-> > +			}
-> > +
-> > +			work = kzalloc(sizeof *work, GFP_KERNEL);
-> > +			if (!work) {
-> > +				pr_err("RIO: no memory for work struct\n");
-> > +				no_disc = 1;
-> > +				continue;
-> > +			}
-> > +
-> > +			work->mport = port;
-> > +			INIT_WORK(&work->work, disc_work_handler);
-> > +			queue_work(rio_wq, &work->work);
-> > +		}
-> > +	}
-> 
-> I'm having a lot of trouble with `no_disc'.  afacit what it does is to
-> cease running async discovery for any remaining devices if the
-> workqueue
-> allocation failed (vaguely reasonable) or if the allocation of a single
-> work item failed (incomprehensible).
-> 
-> But if we don't run discovery, the subsystem is permanently busted for
-> at least some devices, isn't it?
+I did not say anything like that. Still not convinced that autonuma is
+worth doing and that it is beneficial given the complexity it adds to the
+kernel. Just wanted to point out that there is a case to be made for
+adding another word to the page struct.
 
-This is correct. We are considering ways to restart discovery
-process later but it is not applicable now.
-
-> 
-> And this code is basically untestable unless the programmer does
-> deliberate fault injection, which makes it pretty much unmaintainable.
-> 
-> So...  if I haven't totally misunderstood, I suggest a rethink is in
-> order?
->
-
-I will review and simplify. Probably, just try to allocate all required
-resources ahead of port list scan. Simple and safe.
- 
-> > +	if (rio_wq) {
-> > +		pr_debug("RIO: flush discovery workqueue\n");
-> > +		flush_workqueue(rio_wq);
-> > +		pr_debug("RIO: flush discovery workqueue finished\n");
-> > +		destroy_workqueue(rio_wq);
-> >  	}
