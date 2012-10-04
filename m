@@ -1,27 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab2JDSVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:21:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39721 "EHLO
+	id S1752023Ab2JDSJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:09:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39692 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab2JDSJI (ORCPT
+	with ESMTP id S1751715Ab2JDSJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:09:08 -0400
+	Thu, 4 Oct 2012 14:09:00 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arun Sharma <asharma@fb.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Dong Hao <haodong@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
         Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 37/42] perf tools: Removing hists pair argument from output path
-Date: Thu,  4 Oct 2012 15:08:37 -0300
-Message-Id: <1349374122-27806-38-git-send-email-acme@infradead.org>
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/42] perf/core improvements and fixes
+Date: Thu,  4 Oct 2012 15:08:00 -0300
+Message-Id: <1349374122-27806-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349374122-27806-1-git-send-email-acme@infradead.org>
-References: <1349374122-27806-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,163 +35,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Hi Ingo,
 
-The hists pointer is now part of the 'struct hist_entry'.
+	Please consider pulling,
 
-And since the overhead and baseline columns are split now, there's no
-reason to pass it through the output path.
+- Arnaldo
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1349354994-17853-5-git-send-email-namhyung@kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+The following changes since commit 29a0fc9b2b6084e7a8810481df62a0fa496d8957:
+
+  perf tools: Convert to LIBELF_SUPPORT (2012-09-28 21:07:36 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 139c0815903de1a7865fe1d6beac5e995fefdf46:
+
+  perf hists: Add more helpers for hist entry stat (2012-10-04 13:36:18 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes
+
+. Remove several cases of needless global variables, on most builtins.
+
+. Look up thread using tid instead of pid in 'perf sched'.
+
+. Move global variables into a perf_kvm struct, from David Ahern.
+
+. Hists refactorings, preparatory for improved 'diff' command, from Jiri Olsa.
+
+. Hists refactorings, preparatory for event group viewieng work, from Namhyung Kim.
+
+. Remove double negation on optional feature macro definitions, from Namhyung Kim.
+
+. Bash auto completion improvements, now we can auto complete the tools long
+  options, tracepoint event names, etc, from Namhyung Kim.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-diff.c   |    3 +--
- tools/perf/builtin-report.c |    2 +-
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/ui/hist.c        |    9 +++++----
- tools/perf/ui/stdio/hist.c  |   10 +++-------
- tools/perf/util/hist.h      |    4 ++--
- 6 files changed, 13 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 5cb577a..413c65a 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -214,8 +214,7 @@ static int __cmd_diff(void)
- 		first = false;
- 
- 		hists__match(&evsel_old->hists, &evsel->hists);
--		hists__fprintf(&evsel->hists, &evsel_old->hists,
--			       true, 0, 0, stdout);
-+		hists__fprintf(&evsel->hists, true, 0, 0, stdout);
- 	}
- 
- out_delete:
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 6748cac..95e7ea8 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -320,7 +320,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		const char *evname = perf_evsel__name(pos);
- 
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
--		hists__fprintf(hists, NULL, true, 0, 0, stdout);
-+		hists__fprintf(hists, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
- 	}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 3571158..ff6db80 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -316,7 +316,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 	hists__output_recalc_col_len(&top->sym_evsel->hists,
- 				     top->winsize.ws_row - 3);
- 	putchar('\n');
--	hists__fprintf(&top->sym_evsel->hists, NULL, false,
-+	hists__fprintf(&top->sym_evsel->hists, false,
- 		       top->winsize.ws_row - 4 - printed, win_width, stdout);
- }
- 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 532a601..6b0138e 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -228,16 +228,17 @@ static int hpp__width_delta(struct perf_hpp *hpp __maybe_unused)
- 
- static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
- {
--	struct hists *pair_hists = hpp->ptr;
-+	struct hist_entry *pair = he->pair;
-+	struct hists *pair_hists = pair ? pair->hists : NULL;
- 	u64 old_total, new_total;
- 	double old_percent = 0, new_percent = 0;
- 	double diff;
- 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
- 	char buf[32] = " ";
- 
--	old_total = pair_hists->stats.total_period;
--	if (old_total > 0 && he->pair)
--		old_percent = 100.0 * he->pair->period / old_total;
-+	old_total = pair_hists ? pair_hists->stats.total_period : 0;
-+	if (old_total > 0 && pair)
-+		old_percent = 100.0 * pair->period / old_total;
- 
- 	new_total = hpp->total_period;
- 	if (new_total > 0)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 0aa6776..1340c93 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -307,8 +307,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
- }
- 
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
--			       struct hists *hists, struct hists *pair_hists,
--			       u64 total_period, FILE *fp)
-+			       struct hists *hists, u64 total_period, FILE *fp)
- {
- 	char bf[512];
- 	int ret;
-@@ -316,7 +315,6 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 		.total_period	= total_period,
--		.ptr		= pair_hists,
- 	};
- 	bool color = !symbol_conf.field_sep;
- 
-@@ -335,8 +333,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 	return ret;
- }
- 
--size_t hists__fprintf(struct hists *hists, struct hists *pair,
--		      bool show_header, int max_rows,
-+size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		      int max_cols, FILE *fp)
- {
- 	struct sort_entry *se;
-@@ -351,7 +348,6 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
--		.ptr	= pair,
- 	};
- 	bool first = true;
- 
-@@ -453,7 +449,7 @@ print_entries:
- 		if (h->filtered)
- 			continue;
- 
--		ret += hist_entry__fprintf(h, max_cols, hists, pair,
-+		ret += hist_entry__fprintf(h, max_cols, hists,
- 					   total_period, fp);
- 
- 		if (max_rows && ++nr_rows >= max_rows)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index b1a2b9d..b83a226 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -98,8 +98,8 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
- void hists__inc_nr_events(struct hists *self, u32 type);
- size_t hists__fprintf_nr_events(struct hists *self, FILE *fp);
- 
--size_t hists__fprintf(struct hists *self, struct hists *pair,
--		      bool show_header, int max_rows, int max_cols, FILE *fp);
-+size_t hists__fprintf(struct hists *self, bool show_header, int max_rows,
-+		      int max_cols, FILE *fp);
- 
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
--- 
-1.7.1
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (19):
+      perf trace: Use evsel->handler.func
+      perf inject: Remove unused 'input_name' static var
+      perf inject: Remove static variables
+      perf sched: Look up thread using tid instead of pid
+      perf stat: Don't use globals where not needed to
+      perf script: Don't use globals where not needed to
+      perf help: Don't use globals where not needed to
+      perf kmem: Don't use globals where not needed to
+      perf lock: Don't use globals where not needed to
+      perf timechart: Don't use globals where not needed to
+      perf buildid-cache: Don't use globals where not needed to
+      perf buildid-list: Don't use globals where not needed to
+      perf probe: Don't use globals where not needed to
+      perf top: Don't use globals where not needed to
+      perf evlist: Don't use globals where not needed to
+      perf record: Don't use globals where not needed to
+      perf inject: Don't use globals where not needed to
+      perf evlist: Introduce add_newtp method
+      perf evlist: Remove some unused methods
 
+David Ahern (1):
+      perf kvm: Move global variables into a perf_kvm struct
+
+Jiri Olsa (6):
+      perf hists: Add struct hists pointer to struct hist_entry
+      perf diff: Refactor diff displacement possition info
+      perf hists: Separate overhead and baseline columns
+      perf tools: Removing hists pair argument from output path
+      perf tool: Add hpp interface to enable/disable hpp column
+      perf diff: Removing the total_period argument from output code
+
+Namhyung Kim (13):
+      perf tools: Convert to LIBUNWIND_SUPPORT
+      perf tools: Convert to LIBAUDIT_SUPPORT
+      perf tools: Convert to NEWT_SUPPORT
+      perf tools: Convert to GTK2_SUPPORT
+      perf tools: Convert to HAVE_STRLCPY
+      perf tools: Check existence of _get_comp_words_by_ref when bash completing
+      perf tools: Complete long option names of perf command
+      perf tools: Long option completion support for each subcommands
+      perf tools: Convert to BACKTRACE_SUPPORT
+      perf tools: Complete tracepoint event names
+      perf hists: Introduce struct he_stat
+      perf hists: Move he->stat.nr_events initialization to a template
+      perf hists: Add more helpers for hist entry stat
+
+ tools/perf/Makefile                |   46 ++--
+ tools/perf/bash_completion         |   50 +++-
+ tools/perf/builtin-buildid-cache.c |   58 ++---
+ tools/perf/builtin-buildid-list.c  |   55 ++---
+ tools/perf/builtin-diff.c          |   68 ++++--
+ tools/perf/builtin-evlist.c        |   21 +-
+ tools/perf/builtin-help.c          |   40 ++--
+ tools/perf/builtin-inject.c        |   86 +++----
+ tools/perf/builtin-kmem.c          |   66 ++----
+ tools/perf/builtin-kvm.c           |  460 ++++++++++++++++++++----------------
+ tools/perf/builtin-lock.c          |   90 +++----
+ tools/perf/builtin-probe.c         |   26 +-
+ tools/perf/builtin-record.c        |   27 ++-
+ tools/perf/builtin-report.c        |    4 +-
+ tools/perf/builtin-sched.c         |    2 +-
+ tools/perf/builtin-script.c        |   90 ++++---
+ tools/perf/builtin-stat.c          |  328 +++++++++++++------------
+ tools/perf/builtin-timechart.c     |  100 ++++----
+ tools/perf/builtin-top.c           |   11 +-
+ tools/perf/builtin-trace.c         |  134 +++++++----
+ tools/perf/perf.c                  |    2 +-
+ tools/perf/ui/browsers/hists.c     |   12 +-
+ tools/perf/ui/gtk/browser.c        |    6 +-
+ tools/perf/ui/gtk/util.c           |    2 +-
+ tools/perf/ui/helpline.h           |   18 +-
+ tools/perf/ui/hist.c               |  145 +++++++-----
+ tools/perf/ui/setup.c              |    2 +-
+ tools/perf/ui/stdio/hist.c         |   45 ++--
+ tools/perf/util/annotate.h         |    8 +-
+ tools/perf/util/cache.h            |   38 +--
+ tools/perf/util/debug.c            |    2 +-
+ tools/perf/util/debug.h            |   17 +-
+ tools/perf/util/evlist.c           |   88 +------
+ tools/perf/util/evlist.h           |   18 +-
+ tools/perf/util/hist.c             |   66 ++++--
+ tools/perf/util/hist.h             |   38 ++-
+ tools/perf/util/parse-options.c    |    8 +
+ tools/perf/util/parse-options.h    |    1 +
+ tools/perf/util/path.c             |    2 +-
+ tools/perf/util/perf_regs.h        |    4 +-
+ tools/perf/util/sort.h             |   19 +-
+ tools/perf/util/unwind.h           |    4 +-
+ tools/perf/util/util.c             |    4 +-
+ 43 files changed, 1172 insertions(+), 1139 deletions(-)
