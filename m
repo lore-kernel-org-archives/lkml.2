@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab2JDKy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 06:54:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57991 "EHLO mx2.suse.de"
+	id S1754803Ab2JDK4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 06:56:52 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:50783 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab2JDKy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 06:54:58 -0400
-Subject: Re: [PATCH] powerpc/iommu: Fix multiple issues with IOMMU pools code
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20121004145710.2cf95dcd@kryten>
-Date: Thu, 4 Oct 2012 12:54:45 +0200
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML List <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, skinsbursky@parallels.com,
-        bfields@redhat.com, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+	id S1754194Ab2JDK4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 06:56:50 -0400
+Message-ID: <506D6A99.7070800@parallels.com>
+Date: Thu, 4 Oct 2012 14:53:13 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <devel@openvz.org>,
+        Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v3 12/13] execute the whole memcg freeing in rcu callback
+References: <1347977050-29476-1-git-send-email-glommer@parallels.com> <1347977050-29476-13-git-send-email-glommer@parallels.com> <20121001132711.GL8622@dhcp22.suse.cz>
+In-Reply-To: <20121001132711.GL8622@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <96119AB6-3DCC-460E-BD40-98DC3BB8D4B4@suse.de>
-References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de> <CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com> <DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de> <20120928151043.GA19102@fieldses.org> <2A52FC96-148C-4F7A-9950-E152E0C6698D@suse.de> <1349139509.3847.2.camel@pasglop> <20121002214327.GA29218@linux.vnet.ibm.com> <9257E705-4EF9-4347-945C-B4A7582C427F@suse.de> <20121002221736.GB29218@linux.vnet.ibm.com> <E141CA01-F58C-47B1-8ED5-A314D1DEC968@suse.de> <20121004145710.2cf95dcd@kryten>
-To: Anton Blanchard <anton@samba.org>
-X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+On 10/01/2012 05:27 PM, Michal Hocko wrote:
+> On Tue 18-09-12 18:04:09, Glauber Costa wrote:
+>> A lot of the initialization we do in mem_cgroup_create() is done with softirqs
+>> enabled. This include grabbing a css id, which holds &ss->id_lock->rlock, and
+>> the per-zone trees, which holds rtpz->lock->rlock. All of those signal to the
+>> lockdep mechanism that those locks can be used in SOFTIRQ-ON-W context. This
+>> means that the freeing of memcg structure must happen in a compatible context,
+>> otherwise we'll get a deadlock.
+> 
+> Maybe I am missing something obvious but why cannot we simply disble
+> (soft)irqs in mem_cgroup_create rather than make the free path much more
+> complicated. It really feels strange to defer everything (e.g. soft
+> reclaim tree cleanup which should be a no-op at the time because there
+> shouldn't be any user pages in the group).
+> 
 
-On 04.10.2012, at 06:57, Anton Blanchard wrote:
+Ok.
 
-> 
-> Hi Alex,
-> 
-> Looks to be a preempt issue with the iommu pools code. I did find a
-> couple more bugs along the way too.
-> 
-> Anton
-> --
-> 
-> There are a number of issues in the recent IOMMU pools code:
-> 
-> - On a preempt kernel we might switch CPUs in the middle of building
->  a scatter gather list. When this happens the handle hint passed in
->  no longer falls within the local CPU's pool. Check for this and
->  fall back to the pool hint.
-> 
-> - We were missing a spin_unlock/spin_lock in one spot where we
->  switch pools.
-> 
-> - We need to provide locking around dart_tlb_invalidate_all and
->  dart_tlb_invalidate_one now that the global lock is gone.
-> 
-> Reported-by: Alexander Graf <agraf@suse.de>
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
-> 
-> There is still an issue with the lazy u3 flushing, but I wanted
-> to get this out for testing.
+I was just able to come back to this today - I was mostly working on the
+slab feedback over the past few days. I will answer yours and Tejun's
+concerns at once:
 
-Yup. It fixes the nfs problem on my U4 based machine.
+Here is the situation: the backtrace I get is this one:
 
-Tested-by: Alexander Graf <agraf@suse.de>
+[  124.956725] =================================
+[  124.957217] [ INFO: inconsistent lock state ]
+[  124.957217] 3.5.0+ #99 Not tainted
+[  124.957217] ---------------------------------
+[  124.957217] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+[  124.957217] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE1:SE0] takes:
+[  124.957217]  (&(&ss->id_lock)->rlock){+.?...}, at:
+[<ffffffff810aa7b2>] spin_lock+0x9/0xb
+[  124.957217] {SOFTIRQ-ON-W} state was registered at:
+[  124.957217]   [<ffffffff810996ed>] __lock_acquire+0x31f/0xd68
+[  124.957217]   [<ffffffff8109a660>] lock_acquire+0x108/0x15c
+[  124.957217]   [<ffffffff81534ec4>] _raw_spin_lock+0x40/0x4f
+[  124.957217]   [<ffffffff810aa7b2>] spin_lock+0x9/0xb
+[  124.957217]   [<ffffffff810ad00e>] get_new_cssid+0x69/0xf3
+[  124.957217]   [<ffffffff810ad0da>] cgroup_init_idr+0x42/0x60
+[  124.957217]   [<ffffffff81b20e04>] cgroup_init+0x50/0x100
+[  124.957217]   [<ffffffff81b05b9b>] start_kernel+0x3b9/0x3ee
+[  124.957217]   [<ffffffff81b052d6>] x86_64_start_reservations+0xb1/0xb5
+[  124.957217]   [<ffffffff81b053d8>] x86_64_start_kernel+0xfe/0x10b
 
-Alex
 
+So what we learn from it, is: we are acquiring a specific lock (the css
+id one) from softirq context. It was previously taken in a
+softirq-enabled context, that seems to be coming directly from
+get_new_cssid.
+
+Tejun correctly pointed out that we should never acquire that lock from
+a softirq context, in which he is right.
+
+But the situation changes slightly with kmem. Now, the following excerpt
+of a backtrace is possible:
+
+[   48.602775]  [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
+[   48.602775]  [<ffffffff81047f90>] free_task+0x31/0x5c
+[   48.602775]  [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
+[   48.602775]  [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
+[   48.602775]  [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
+[   48.602775]  [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
+[   48.602775]  [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
+[   48.602775]  [<ffffffff8105266d>] __do_softirq+0x122/0x277
+
+So as you can see, free_accounted_pages (that will trigger a memcg_put()
+-> mem_cgroup_free()) can now be called from softirq context, which is,
+an rcu callback (and I just realized I wrote the exact opposite in the
+subj line: man, I really suck at that!!)
+As a matter of fact, we could not move to our rcu callback as well:
+
+we need to move it to a worker thread with the rest.
+
+We already have a worker thread: he reason we have it is not
+static_branches: The reason is vfree(), that will BUG_ON(in_interrupt())
+and could not be called from rcu callback as well. We moved static
+branches in there as well for a similar problem, but haven't introduced it.
+
+Could we move just part of it to the worker thread? Absolutely yes.
+Moving just free_css_id() is enough to make it work. But since it is not
+the first context related problem we had, I thought: "to hell with that,
+let's move everything and be safe".
+
+I am fine moving free_css_id() only if you would prefer.
+
+Can we disable softirqs when we initialize css_id? Maybe. My machine
+seems to boot fine and survive the simple workload that would trigger
+that bug if I use irqsave spinlocks instead of normal spinlocks. But
+this has to be done from cgroup core: We have no control over css
+creation in memcg.
+
+How would you guys like me to handle this ?
