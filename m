@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab2JDWAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:00:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933737Ab2JDVVZ (ORCPT
+	id S933790Ab2JDVVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:21:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933757Ab2JDVVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:21:25 -0400
+	Thu, 4 Oct 2012 17:21:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [ 25/58] tools/hv: Fix file handle leak
-Date: Thu,  4 Oct 2012 14:19:32 -0700
-Message-Id: <20121004210638.600175918@linuxfoundation.org>
+        Stanislav Kozina <skozina@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: [ 20/58] Remove BUG_ON from n_tty_read()
+Date: Thu,  4 Oct 2012 14:19:27 -0700
+Message-Id: <20121004210638.002931461@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -27,38 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Stanislav Kozina <skozina@redhat.com>
 
-commit d5ab482799e7c4c4b7c0aa67e8710dce28115d03 upstream.
+commit e9490e93c1978b6669f3e993caa3189be13ce459 upstream.
 
-Match up each fopen() with an fclose().
+Change the BUG_ON to WARN_ON and return in case of tty->read_buf==NULL. We want to track a
+couple of long standing reports of this but at the same time we can avoid killing the box.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Stanislav Kozina <skozina@redhat.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/hv/hv_kvp_daemon.c |    3 ++-
+ drivers/tty/n_tty.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -144,7 +144,7 @@ static void kvp_update_file(int pool)
- 				sizeof(struct kvp_record),
- 				kvp_file_info[pool].num_records, filep);
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1728,7 +1728,8 @@ static ssize_t n_tty_read(struct tty_str
  
--	fflush(filep);
-+	fclose(filep);
- 	kvp_release_lock(pool);
- }
+ do_it_again:
  
-@@ -191,6 +191,7 @@ static void kvp_update_mem_state(int poo
- 	kvp_file_info[pool].records = record;
- 	kvp_file_info[pool].num_records = records_read;
+-	BUG_ON(!tty->read_buf);
++	if (WARN_ON(!tty->read_buf))
++		return -EAGAIN;
  
-+	fclose(filep);
- 	kvp_release_lock(pool);
- }
- static int kvp_file_init(void)
+ 	c = job_control(tty, file);
+ 	if (c < 0)
 
 
