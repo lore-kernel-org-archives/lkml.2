@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab2JDVZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:25:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934298Ab2JDVZL (ORCPT
+	id S1946180Ab2JDVZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:25:39 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946158Ab2JDVZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:25:11 -0400
+	Thu, 4 Oct 2012 17:25:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 28/52] xHCI: add cmd_ring_state
-Date: Thu,  4 Oct 2012 14:21:19 -0700
-Message-Id: <20121004210638.880914187@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 43/52] can: mscan-mpc5xxx: fix return value check in mpc512x_can_get_clock()
+Date: Thu,  4 Oct 2012 14:21:34 -0700
+Message-Id: <20121004210640.733092776@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -28,80 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit c181bc5b5d5c79b71203cd10cef97f802fb6f9c1 upstream.
+commit f61bd0585dfc7d99db4936d7467de4ca8e2f7ea0 upstream.
 
-Adding cmd_ring_state for command ring. It helps to verify
-the current command ring state for controlling the command
-ring operations.
+In case of error, the function clk_get() returns ERR_PTR()
+and never returns NULL pointer. The NULL test in the error
+handling should be replaced with IS_ERR().
 
-This patch should be backported to kernels as old as 3.0.  The commit
-7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an assertion to
-check for virt_dev=0 bug." papers over the NULL pointer dereference that
-I now believe is related to a timed out Set Address command.  This (and
-the four patches that follow it) contain the real fix that also allows
-VIA USB 3.0 hubs to consistently re-enumerate during the plug/unplug
-stress tests.
+dpatch engine is used to auto generated this patch.
+(https://github.com/weiyj/dpatch)
 
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    3 +++
- drivers/usb/host/xhci.c      |    6 ++++--
- drivers/usb/host/xhci.h      |    4 ++++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/net/can/mscan/mpc5xxx_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -280,6 +280,9 @@ static inline int room_on_ring(struct xh
- /* Ring the host controller doorbell after placing a command on the ring */
- void xhci_ring_cmd_db(struct xhci_hcd *xhci)
- {
-+	if (!(xhci->cmd_ring_state & CMD_RING_STATE_RUNNING))
-+		return;
-+
- 	xhci_dbg(xhci, "// Ding dong!\n");
- 	xhci_writel(xhci, DB_VALUE_HOST, &xhci->dba->doorbell[0]);
- 	/* Flush PCI posted writes */
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -105,9 +105,10 @@ int xhci_halt(struct xhci_hcd *xhci)
+--- a/drivers/net/can/mscan/mpc5xxx_can.c
++++ b/drivers/net/can/mscan/mpc5xxx_can.c
+@@ -181,7 +181,7 @@ static u32 __devinit mpc512x_can_get_clo
  
- 	ret = handshake(xhci, &xhci->op_regs->status,
- 			STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC);
--	if (!ret)
-+	if (!ret) {
- 		xhci->xhc_state |= XHCI_STATE_HALTED;
--	else
-+		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-+	} else
- 		xhci_warn(xhci, "Host not halted after %u microseconds.\n",
- 				XHCI_MAX_HALT_USEC);
- 	return ret;
-@@ -583,6 +584,7 @@ static int xhci_run_finished(struct xhci
- 		return -ENODEV;
- 	}
- 	xhci->shared_hcd->state = HC_STATE_RUNNING;
-+	xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
+ 		if (!clock_name || !strcmp(clock_name, "sys")) {
+ 			sys_clk = clk_get(&ofdev->dev, "sys_clk");
+-			if (!sys_clk) {
++			if (IS_ERR(sys_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get sys_clk\n");
+ 				goto exit_unmap;
+ 			}
+@@ -204,7 +204,7 @@ static u32 __devinit mpc512x_can_get_clo
  
- 	if (xhci->quirks & XHCI_NEC_HOST)
- 		xhci_ring_cmd_db(xhci);
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1417,6 +1417,10 @@ struct xhci_hcd {
- 	/* data structures */
- 	struct xhci_device_context_array *dcbaa;
- 	struct xhci_ring	*cmd_ring;
-+	unsigned int            cmd_ring_state;
-+#define CMD_RING_STATE_RUNNING         (1 << 0)
-+#define CMD_RING_STATE_ABORTED         (1 << 1)
-+#define CMD_RING_STATE_STOPPED         (1 << 2)
- 	unsigned int		cmd_ring_reserved_trbs;
- 	struct xhci_ring	*event_ring;
- 	struct xhci_erst	erst;
+ 		if (clocksrc < 0) {
+ 			ref_clk = clk_get(&ofdev->dev, "ref_clk");
+-			if (!ref_clk) {
++			if (IS_ERR(ref_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get ref_clk\n");
+ 				goto exit_unmap;
+ 			}
 
 
