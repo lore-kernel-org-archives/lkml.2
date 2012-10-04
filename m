@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2JDSRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:17:42 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:30622 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755201Ab2JDSRj (ORCPT
+	id S1754999Ab2JDSSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:18:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54728 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2JDSPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:17:39 -0400
-Date: Thu, 4 Oct 2012 18:17:37 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: your mail
-In-Reply-To: <20121004165008.GF25675@redhat.com>
-Message-ID: <0000013a2cff3c3d-76e00716-2869-4dc8-8717-82f0136018d0-000000@email.amazonses.com>
-References: <20121004165008.GF25675@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Thu, 4 Oct 2012 14:15:12 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 05/11] net: axienet: Enable VLAN support by default
+Date: Thu,  4 Oct 2012 20:14:51 +0200
+Message-Id: <1349374497-9540-5-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Andrea Arcangeli wrote:
+The driver is using frame size for VLAN packets
+but does not enable VLAN IP option.
 
-> So we could drop page_autonuma by creating a CONFIG_SLUB=y dependency
-> (AUTONUMA wouldn't be available in the kernel config if SLAB=y, and it
-> also wouldn't be available on 32bit archs but the latter isn't a
-> problem).
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+CC: Anirudha Sarangi <anirudh@xilinx.com>
+CC: John Linn <John.Linn@xilinx.com>
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Rob Herring <rob.herring@calxeda.com>
+CC: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Nope it should depend on page struct alignment. Other kernel subsystems
-may be depeding on page struct alignment in the future (and some other
-arches may already have that requirement)
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index 8d1db13..4ef148f 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -483,6 +483,7 @@ static void axienet_device_reset(struct net_device *ndev)
+ 	__axienet_device_reset(lp, &ndev->dev, XAXIDMA_RX_CR_OFFSET);
+ 
+ 	lp->max_frm_size = XAE_MAX_VLAN_FRAME_SIZE;
++	lp->options |= XAE_OPTION_VLAN;
+ 	lp->options &= (~XAE_OPTION_JUMBO);
+ 
+ 	if ((ndev->mtu > XAE_MTU) &&
+-- 
+1.7.0.4
 
