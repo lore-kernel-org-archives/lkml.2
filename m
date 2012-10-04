@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2JDVRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:17:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2JDVRZ (ORCPT
+	id S932340Ab2JDVRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:17:43 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49290 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932213Ab2JDVRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:17:25 -0400
+	Thu, 4 Oct 2012 17:17:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 15/56] staging: comedi: dont dereference user memory for INSN_INTTRIG
-Date: Thu,  4 Oct 2012 14:15:36 -0700
-Message-Id: <20121004211153.854934933@linuxfoundation.org>
+        Stanislav Kozina <skozina@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: [ 17/56] Remove BUG_ON from n_tty_read()
+Date: Thu,  4 Oct 2012 14:15:38 -0700
+Message-Id: <20121004211154.067672105@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -26,32 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Stanislav Kozina <skozina@redhat.com>
 
-commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
+commit e9490e93c1978b6669f3e993caa3189be13ce459 upstream.
 
-`parse_insn()` is dereferencing the user-space pointer `insn->data`
-directly when handling the `INSN_INTTRIG` comedi instruction.  It
-shouldn't be using `insn->data` at all; it should be using the separate
-`data` pointer passed to the function.  Fix it.
+Change the BUG_ON to WARN_ON and return in case of tty->read_buf==NULL. We want to track a
+couple of long standing reports of this but at the same time we can avoid killing the box.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Stanislav Kozina <skozina@redhat.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_tty.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -951,7 +951,7 @@ static int parse_insn(struct comedi_devi
- 				ret = -EAGAIN;
- 				break;
- 			}
--			ret = s->async->inttrig(dev, s, insn->data[0]);
-+			ret = s->async->inttrig(dev, s, data[0]);
- 			if (ret >= 0)
- 				ret = 1;
- 			break;
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1728,7 +1728,8 @@ static ssize_t n_tty_read(struct tty_str
+ 
+ do_it_again:
+ 
+-	BUG_ON(!tty->read_buf);
++	if (WARN_ON(!tty->read_buf))
++		return -EAGAIN;
+ 
+ 	c = job_control(tty, file);
+ 	if (c < 0)
 
 
