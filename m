@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab2JDT42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:56:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56583 "EHLO mx1.redhat.com"
+	id S1757414Ab2JDT4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:56:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757326Ab2JDTvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:51:20 -0400
+	id S1756950Ab2JDTvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 15:51:18 -0400
 From: David Howells <dhowells@redhat.com>
-To: starvik@axis.com
-Cc: dhowells@redhat.com, jesper.nilsson@axis.com, linux-cris-kernel@axis.com,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Disintegrate UAPI for cris
-Date: Thu, 04 Oct 2012 20:51:13 +0100
-Message-ID: <17362.1349380273@warthog.procyon.org.uk>
+To: hskinnemoen@gmail.com
+Cc: dhowells@redhat.com, egtvedt@samfundet.no, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for avr32
+Date: Thu, 04 Oct 2012 20:51:06 +0100
+Message-ID: <17353.1349380266@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you merge the following branch into the cris tree please.
+Can you merge the following branch into the avr32 tree please.
 
 This is to complete part of the UAPI disintegration for which the preparatory
 patches were pulled recently.
@@ -32,184 +31,163 @@ The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
 are available in the git repository at:
 
 
-  git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-cris
+  git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-avr32
 
-for you to fetch changes up to 4816d1b7a51526bc4722731d5516c295a9c72a1c:
+for you to fetch changes up to b1118be90af0ea0a847d38416304d9596f9ea0f0:
 
-  UAPI: (Scripted) Disintegrate arch/cris/include/asm (2012-10-04 18:20:35 +0100)
+  UAPI: (Scripted) Disintegrate arch/avr32/include/asm (2012-10-04 18:20:27 +0100)
 
 ----------------------------------------------------------------
-David Howells (8):
+David Howells (6):
       UAPI: Fix the guards on various asm/unistd.h files
       UAPI: Split compound conditionals containing __KERNEL__ in Arm64
       Merge remote-tracking branch 'c6x/for-linux-next' into uapi-prep
       UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k)
       UAPI: (Scripted) Disintegrate include/asm-generic
-      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v10/arch
-      UAPI: (Scripted) Disintegrate arch/cris/include/arch-v32/arch
-      UAPI: (Scripted) Disintegrate arch/cris/include/asm
+      UAPI: (Scripted) Disintegrate arch/avr32/include/asm
 
 Mark Salter (2):
       c6x: make dsk6455 the default config
       c6x: remove c6x signal.h
 
- arch/arm64/include/asm/hwcap.h                     |   4 +-
- arch/arm64/include/asm/stat.h                      |   4 +-
- arch/arm64/include/asm/unistd.h                    |   8 +-
- arch/arm64/include/asm/unistd32.h                  |   4 -
- arch/c6x/Makefile                                  |   2 +
- arch/c6x/include/asm/Kbuild                        |   1 +
- arch/c6x/include/asm/signal.h                      |  17 -
- arch/c6x/include/asm/unistd.h                      |   4 -
- arch/cris/include/arch-v10/arch/Kbuild             |   4 -
- arch/cris/include/arch-v32/arch/Kbuild             |   2 -
- arch/cris/include/arch-v32/arch/cryptocop.h        | 116 +--
- arch/cris/include/asm/Kbuild                       |   6 -
- arch/cris/include/asm/ptrace.h                     |   5 +-
- arch/cris/include/asm/signal.h                     | 122 +--
- arch/cris/include/asm/swab.h                       |   3 +-
- arch/cris/include/asm/termios.h                    |  43 +-
- arch/cris/include/asm/types.h                      |   5 +-
- arch/cris/include/asm/unistd.h                     | 342 +-------
- arch/cris/include/uapi/arch-v10/arch/Kbuild        |   4 +
- .../include/{ => uapi}/arch-v10/arch/sv_addr.agh   |   0
- .../include/{ => uapi}/arch-v10/arch/sv_addr_ag.h  |   0
- .../cris/include/{ => uapi}/arch-v10/arch/svinto.h |   0
- arch/cris/include/{ => uapi}/arch-v10/arch/user.h  |   0
- arch/cris/include/uapi/arch-v32/arch/Kbuild        |   2 +
- arch/cris/include/uapi/arch-v32/arch/cryptocop.h   | 122 +++
- arch/cris/include/{ => uapi}/arch-v32/arch/user.h  |   0
- arch/cris/include/uapi/asm/Kbuild                  |  34 +
- arch/cris/include/{ => uapi}/asm/auxvec.h          |   0
- arch/cris/include/{ => uapi}/asm/bitsperlong.h     |   0
- arch/cris/include/{ => uapi}/asm/byteorder.h       |   0
- arch/cris/include/{ => uapi}/asm/errno.h           |   0
- arch/cris/include/{ => uapi}/asm/ethernet.h        |   0
- arch/cris/include/{ => uapi}/asm/etraxgpio.h       |   0
- arch/cris/include/{ => uapi}/asm/fcntl.h           |   0
- arch/cris/include/{ => uapi}/asm/ioctl.h           |   0
- arch/cris/include/{ => uapi}/asm/ioctls.h          |   0
- arch/cris/include/{ => uapi}/asm/ipcbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/mman.h            |   0
- arch/cris/include/{ => uapi}/asm/msgbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/param.h           |   0
- arch/cris/include/{ => uapi}/asm/poll.h            |   0
- arch/cris/include/{ => uapi}/asm/posix_types.h     |   0
- arch/cris/include/uapi/asm/ptrace.h                |   1 +
- arch/cris/include/{ => uapi}/asm/resource.h        |   0
- arch/cris/include/{ => uapi}/asm/rs485.h           |   0
- arch/cris/include/{ => uapi}/asm/sembuf.h          |   0
- arch/cris/include/{ => uapi}/asm/setup.h           |   0
- arch/cris/include/{ => uapi}/asm/shmbuf.h          |   0
- arch/cris/include/{ => uapi}/asm/sigcontext.h      |   0
- arch/cris/include/{ => uapi}/asm/siginfo.h         |   0
- arch/cris/include/uapi/asm/signal.h                | 122 +++
- arch/cris/include/{ => uapi}/asm/socket.h          |   0
- arch/cris/include/{ => uapi}/asm/sockios.h         |   0
- arch/cris/include/{ => uapi}/asm/stat.h            |   0
- arch/cris/include/{ => uapi}/asm/statfs.h          |   0
- arch/cris/include/{ => uapi}/asm/sync_serial.h     |   0
- arch/cris/include/{ => uapi}/asm/termbits.h        |   0
- arch/cris/include/uapi/asm/termios.h               |  45 +
- arch/cris/include/uapi/asm/types.h                 |   1 +
- arch/cris/include/uapi/asm/unistd.h                | 344 ++++++++
- arch/hexagon/include/asm/unistd.h                  |   5 -
- arch/openrisc/include/asm/unistd.h                 |   5 -
- arch/score/include/asm/unistd.h                    |   5 -
- arch/tile/include/asm/unistd.h                     |   5 -
- arch/unicore32/include/asm/unistd.h                |   4 -
- include/asm-generic/Kbuild                         |  35 -
- include/asm-generic/bitsperlong.h                  |  13 +-
- include/asm-generic/int-l64.h                      |  26 +-
- include/asm-generic/int-ll64.h                     |  31 +-
- include/asm-generic/ioctl.h                        |  95 +--
- include/asm-generic/kvm_para.h                     |   5 +-
- include/asm-generic/param.h                        |  17 +-
- include/asm-generic/resource.h                     |  66 +-
- include/asm-generic/siginfo.h                      | 297 +------
- include/asm-generic/signal.h                       | 117 +--
- include/asm-generic/statfs.h                       |  81 +-
- include/asm-generic/termios.h                      |  49 +-
- include/asm-generic/unistd.h                       | 911 +--------------------
- include/linux/Kbuild                               |   9 +-
- include/uapi/asm-generic/Kbuild                    |  35 +
- include/{ => uapi}/asm-generic/auxvec.h            |   0
- include/uapi/asm-generic/bitsperlong.h             |  15 +
- include/{ => uapi}/asm-generic/errno-base.h        |   0
- include/{ => uapi}/asm-generic/errno.h             |   0
- include/{ => uapi}/asm-generic/fcntl.h             |   0
- include/uapi/asm-generic/int-l64.h                 |  34 +
- include/uapi/asm-generic/int-ll64.h                |  39 +
- include/uapi/asm-generic/ioctl.h                   |  98 +++
- include/{ => uapi}/asm-generic/ioctls.h            |   0
- include/{ => uapi}/asm-generic/ipcbuf.h            |   0
- include/{ => uapi}/asm-generic/mman-common.h       |   0
- include/{ => uapi}/asm-generic/mman.h              |   0
- include/{ => uapi}/asm-generic/msgbuf.h            |   0
- include/uapi/asm-generic/param.h                   |  19 +
- include/{ => uapi}/asm-generic/poll.h              |   0
- include/{ => uapi}/asm-generic/posix_types.h       |   0
- include/uapi/asm-generic/resource.h                |  68 ++
- include/{ => uapi}/asm-generic/sembuf.h            |   0
- include/{ => uapi}/asm-generic/setup.h             |   0
- include/{ => uapi}/asm-generic/shmbuf.h            |   0
- include/{ => uapi}/asm-generic/shmparam.h          |   0
- include/uapi/asm-generic/siginfo.h                 | 298 +++++++
- include/{ => uapi}/asm-generic/signal-defs.h       |   0
- include/uapi/asm-generic/signal.h                  | 123 +++
- include/{ => uapi}/asm-generic/socket.h            |   0
- include/{ => uapi}/asm-generic/sockios.h           |   0
- include/{ => uapi}/asm-generic/stat.h              |   0
- include/uapi/asm-generic/statfs.h                  |  83 ++
- include/{ => uapi}/asm-generic/swab.h              |   0
- include/{ => uapi}/asm-generic/termbits.h          |   0
- include/uapi/asm-generic/termios.h                 |  50 ++
- include/{ => uapi}/asm-generic/types.h             |   0
- include/{ => uapi}/asm-generic/ucontext.h          |   0
- include/uapi/asm-generic/unistd.h                  | 902 ++++++++++++++++++++
- security/apparmor/Makefile                         |   2 +-
- 115 files changed, 2475 insertions(+), 2434 deletions(-)
+ arch/arm64/include/asm/hwcap.h                  |   4 +-
+ arch/arm64/include/asm/stat.h                   |   4 +-
+ arch/arm64/include/asm/unistd.h                 |   8 +-
+ arch/arm64/include/asm/unistd32.h               |   4 -
+ arch/avr32/include/asm/Kbuild                   |   3 -
+ arch/avr32/include/asm/param.h                  |  18 +-
+ arch/avr32/include/asm/ptrace.h                 | 115 +--
+ arch/avr32/include/asm/setup.h                  |   5 +-
+ arch/avr32/include/asm/signal.h                 | 121 +---
+ arch/avr32/include/asm/termios.h                |  41 +-
+ arch/avr32/include/asm/types.h                  |   6 +-
+ arch/avr32/include/asm/unistd.h                 | 296 +-------
+ arch/avr32/include/uapi/asm/Kbuild              |  32 +
+ arch/avr32/include/{ => uapi}/asm/auxvec.h      |   0
+ arch/avr32/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/avr32/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/avr32/include/{ => uapi}/asm/cachectl.h    |   0
+ arch/avr32/include/{ => uapi}/asm/errno.h       |   0
+ arch/avr32/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/avr32/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/avr32/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/avr32/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/avr32/include/{ => uapi}/asm/kvm_para.h    |   0
+ arch/avr32/include/{ => uapi}/asm/mman.h        |   0
+ arch/avr32/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/avr32/include/uapi/asm/param.h             |  18 +
+ arch/avr32/include/{ => uapi}/asm/poll.h        |   0
+ arch/avr32/include/{ => uapi}/asm/posix_types.h |   0
+ arch/avr32/include/uapi/asm/ptrace.h            | 126 ++++
+ arch/avr32/include/{ => uapi}/asm/resource.h    |   0
+ arch/avr32/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/avr32/include/uapi/asm/setup.h             |  17 +
+ arch/avr32/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/avr32/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/avr32/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/avr32/include/uapi/asm/signal.h            | 128 ++++
+ arch/avr32/include/{ => uapi}/asm/socket.h      |   0
+ arch/avr32/include/{ => uapi}/asm/sockios.h     |   0
+ arch/avr32/include/{ => uapi}/asm/stat.h        |   0
+ arch/avr32/include/{ => uapi}/asm/statfs.h      |   0
+ arch/avr32/include/{ => uapi}/asm/swab.h        |   0
+ arch/avr32/include/{ => uapi}/asm/termbits.h    |   0
+ arch/avr32/include/uapi/asm/termios.h           |  50 ++
+ arch/avr32/include/uapi/asm/types.h             |   8 +
+ arch/avr32/include/uapi/asm/unistd.h            | 305 ++++++++
+ arch/c6x/Makefile                               |   2 +
+ arch/c6x/include/asm/Kbuild                     |   1 +
+ arch/c6x/include/asm/signal.h                   |  17 -
+ arch/c6x/include/asm/unistd.h                   |   4 -
+ arch/hexagon/include/asm/unistd.h               |   5 -
+ arch/openrisc/include/asm/unistd.h              |   5 -
+ arch/score/include/asm/unistd.h                 |   5 -
+ arch/tile/include/asm/unistd.h                  |   5 -
+ arch/unicore32/include/asm/unistd.h             |   4 -
+ include/asm-generic/Kbuild                      |  35 -
+ include/asm-generic/bitsperlong.h               |  13 +-
+ include/asm-generic/int-l64.h                   |  26 +-
+ include/asm-generic/int-ll64.h                  |  31 +-
+ include/asm-generic/ioctl.h                     |  95 +--
+ include/asm-generic/kvm_para.h                  |   5 +-
+ include/asm-generic/param.h                     |  17 +-
+ include/asm-generic/resource.h                  |  66 +-
+ include/asm-generic/siginfo.h                   | 297 +-------
+ include/asm-generic/signal.h                    | 117 +--
+ include/asm-generic/statfs.h                    |  81 +--
+ include/asm-generic/termios.h                   |  49 +-
+ include/asm-generic/unistd.h                    | 911 +-----------------------
+ include/linux/Kbuild                            |   9 +-
+ include/uapi/asm-generic/Kbuild                 |  35 +
+ include/{ => uapi}/asm-generic/auxvec.h         |   0
+ include/uapi/asm-generic/bitsperlong.h          |  15 +
+ include/{ => uapi}/asm-generic/errno-base.h     |   0
+ include/{ => uapi}/asm-generic/errno.h          |   0
+ include/{ => uapi}/asm-generic/fcntl.h          |   0
+ include/uapi/asm-generic/int-l64.h              |  34 +
+ include/uapi/asm-generic/int-ll64.h             |  39 +
+ include/uapi/asm-generic/ioctl.h                |  98 +++
+ include/{ => uapi}/asm-generic/ioctls.h         |   0
+ include/{ => uapi}/asm-generic/ipcbuf.h         |   0
+ include/{ => uapi}/asm-generic/mman-common.h    |   0
+ include/{ => uapi}/asm-generic/mman.h           |   0
+ include/{ => uapi}/asm-generic/msgbuf.h         |   0
+ include/uapi/asm-generic/param.h                |  19 +
+ include/{ => uapi}/asm-generic/poll.h           |   0
+ include/{ => uapi}/asm-generic/posix_types.h    |   0
+ include/uapi/asm-generic/resource.h             |  68 ++
+ include/{ => uapi}/asm-generic/sembuf.h         |   0
+ include/{ => uapi}/asm-generic/setup.h          |   0
+ include/{ => uapi}/asm-generic/shmbuf.h         |   0
+ include/{ => uapi}/asm-generic/shmparam.h       |   0
+ include/uapi/asm-generic/siginfo.h              | 298 ++++++++
+ include/{ => uapi}/asm-generic/signal-defs.h    |   0
+ include/uapi/asm-generic/signal.h               | 123 ++++
+ include/{ => uapi}/asm-generic/socket.h         |   0
+ include/{ => uapi}/asm-generic/sockios.h        |   0
+ include/{ => uapi}/asm-generic/stat.h           |   0
+ include/uapi/asm-generic/statfs.h               |  83 +++
+ include/{ => uapi}/asm-generic/swab.h           |   0
+ include/{ => uapi}/asm-generic/termbits.h       |   0
+ include/uapi/asm-generic/termios.h              |  50 ++
+ include/{ => uapi}/asm-generic/types.h          |   0
+ include/{ => uapi}/asm-generic/ucontext.h       |   0
+ include/uapi/asm-generic/unistd.h               | 902 +++++++++++++++++++++++
+ security/apparmor/Makefile                      |   2 +-
+ 104 files changed, 2485 insertions(+), 2390 deletions(-)
+ rename arch/avr32/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/cachectl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/param.h
+ rename arch/avr32/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/ptrace.h
+ rename arch/avr32/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/setup.h
+ rename arch/avr32/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/signal.h
+ rename arch/avr32/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/termios.h
+ create mode 100644 arch/avr32/include/uapi/asm/types.h
+ create mode 100644 arch/avr32/include/uapi/asm/unistd.h
  delete mode 100644 arch/c6x/include/asm/signal.h
- rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr.agh (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr_ag.h (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/svinto.h (100%)
- rename arch/cris/include/{ => uapi}/arch-v10/arch/user.h (100%)
- create mode 100644 arch/cris/include/uapi/arch-v32/arch/cryptocop.h
- rename arch/cris/include/{ => uapi}/arch-v32/arch/user.h (100%)
- rename arch/cris/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/cris/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/cris/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/cris/include/{ => uapi}/asm/errno.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ethernet.h (100%)
- rename arch/cris/include/{ => uapi}/asm/etraxgpio.h (100%)
- rename arch/cris/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/cris/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/mman.h (100%)
- rename arch/cris/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/param.h (100%)
- rename arch/cris/include/{ => uapi}/asm/poll.h (100%)
- rename arch/cris/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/ptrace.h
- rename arch/cris/include/{ => uapi}/asm/resource.h (100%)
- rename arch/cris/include/{ => uapi}/asm/rs485.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sembuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/setup.h (100%)
- rename arch/cris/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/cris/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/signal.h
- rename arch/cris/include/{ => uapi}/asm/socket.h (100%)
- rename arch/cris/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/cris/include/{ => uapi}/asm/stat.h (100%)
- rename arch/cris/include/{ => uapi}/asm/statfs.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/swab.h
- rename arch/cris/include/{ => uapi}/asm/sync_serial.h (100%)
- rename arch/cris/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/cris/include/uapi/asm/termios.h
- create mode 100644 arch/cris/include/uapi/asm/types.h
- create mode 100644 arch/cris/include/uapi/asm/unistd.h
  rename include/{ => uapi}/asm-generic/auxvec.h (100%)
  create mode 100644 include/uapi/asm-generic/bitsperlong.h
  rename include/{ => uapi}/asm-generic/errno-base.h (100%)
