@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab2JDASp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 20:18:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36135 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965Ab2JDASm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 20:18:42 -0400
-Date: Thu, 4 Oct 2012 10:18:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vipul Pandya <vipul@chelsio.com>, Jay Hernandez <jay@chelsio.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20121004101833.019598b7e474c7b74e67ff20@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S933216Ab2JDA0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 20:26:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:53877 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933013Ab2JDA0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 20:26:13 -0400
+Date: Thu, 4 Oct 2012 10:26:01 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-nfs@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML List <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, skinsbursky@parallels.com,
+        bfields@redhat.com, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [REGRESSION] nfsd crashing with 3.6.0-rc7 on PowerPC
+Message-ID: <20121004102601.52790b04@kryten>
+In-Reply-To: <E141CA01-F58C-47B1-8ED5-A314D1DEC968@suse.de>
+References: <3BDA9E62-7031-42D6-8CA9-5327B61700F5@suse.de>
+	<CA+55aFyXwB1QcXE4Z_FAGnXROSgvP2x2+wjnX9OWPa4Dfaaf0A@mail.gmail.com>
+	<DC545CD9-8745-47DD-B13B-3385C0EB5B27@suse.de>
+	<20120928151043.GA19102@fieldses.org>
+	<2A52FC96-148C-4F7A-9950-E152E0C6698D@suse.de>
+	<1349139509.3847.2.camel@pasglop>
+	<20121002214327.GA29218@linux.vnet.ibm.com>
+	<9257E705-4EF9-4347-945C-B4A7582C427F@suse.de>
+	<20121002221736.GB29218@linux.vnet.ibm.com>
+	<E141CA01-F58C-47B1-8ED5-A314D1DEC968@suse.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi,
 
-After merging the net tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> Yes. With that patch applied, things work for me again.
 
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 't4_memory_rw':
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:2: error: implicit declarati=
-on of function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:7: warning: assignment makes=
- pointer from integer without a cast [enabled by default]
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:487:2: error: implicit declarati=
-on of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 'get_vpd_params':
-drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:530:6: warning: assignment makes=
- pointer from integer without a cast [enabled by default]
+Thanks Alex, Nish. We can reproduce this on one of our Biminis, looking
+into it now.
 
-Caused by commit 8c357ebd5693 ("cxgb4: Dynamically allocate memory in
-t4_memory_rw() and get_vpd_params()").  Missing include of
-linux/vmalloc.h.
-
-I have used the net tree from next-20121003 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQbNXZAAoJEECxmPOUX5FEL1gQAIM7QsGAGZP4CwOnCDqxGZOX
-G+DKMU4RdlmvoK9QxLgs91V1CBQYUe8sZwSryA61pVB812LVfe9ojEsE1DvnRyR1
-Ts35KDoAdJxbymPYH7Cl0w2b/MlLzOIf7PHB5UhkZg7RPsFmxpZ635E31B023B20
-iUYHU6ycU8zp9QjQHuSRfauqtJbTkmR/7roq9ahq+5t8UGMmV334//SiNz4EDN+N
-TveGlrqzpz1V1suPFlw6kd9MTEp6PM0+Osln8C0Vu4GhyZx97Y5r0eHRJIxxVnKF
-A3SF1Nv3wnBWvNp/OYCCVbu3cgg9WqNHmRe9NJabki7S1gDisxWqZBSTSq8tJcMs
-Xww6o7X5DEY+MzkHliSbMRcASXpGf50SF6RstivK/wg0pBhxGHDm+u15Uv9WpP9M
-ETvE52vvuPqGhT+0itT98emsCcS8b2TNgWf3zzwGTKFetBzoPjvndW6daoackvKx
-c5rvd6I2KohaqT99yKFOuvXUaB4HnjaMiTEPyGgPvSJ37JTNlOQ7Qc+nvjrVQPxM
-+znwswQ6FUD3seeEitrPQo8DDIz9mtMJeSiD0GlHEAYcFe8UwoA6cPf8/SsTrCTI
-zdwVVI37MjYApeOLaA2nlMfrr79Pme+Em4xb8EaT6hFAkaWc4LKXHbB69GUbQPKo
-buinWcCG3JthOMSxTNbN
-=Pmg2
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Oct_2012_10_18_33_+1000_D+lzKzoQLdrrT6QI--
+Anton
