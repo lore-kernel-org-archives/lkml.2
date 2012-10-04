@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab2JDAiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 20:38:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19009 "EHLO mga01.intel.com"
+	id S933285Ab2JDAib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 20:38:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54165 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933167Ab2JDAiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 20:38:24 -0400
+	id S933167Ab2JDAia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 20:38:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,530,1344236400"; 
-   d="scan'208";a="230270042"
+   d="scan'208";a="201305146"
 From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [RFC PATCH 0/7] Improve swiotlb performance by using physical
-	addresses
+Subject: [RFC PATCH 1/7] swiotlb: Instead of tracking the end of the swiotlb
+	region just calculate it
 To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
         hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
         joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com
 Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, x86@kernel.org
-Date: Wed, 03 Oct 2012 17:38:41 -0700
-Message-ID: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
+Date: Wed, 03 Oct 2012 17:38:47 -0700
+Message-ID: <20121004003847.5016.50978.stgit@gitlad.jf.intel.com>
+In-Reply-To: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
 User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,74 +28,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While working on 10Gb/s routing performance I found a significant amount of
-time was being spent in the swiotlb DMA handler.  Further digging found that a
-significant amount of this was due to the fact that virtual to physical
-address translation and calling the function that did it.  It accounted for
-nearly 60% of the total overhead.
+In the case of swiotlb we already have the start of the region and the number
+of slabs that give us the region size.  Instead of having to call
+virt_to_phys on two pointers we can just take advantage of the fact that the
+region is linear and just compute the end based on the start plus the size.
 
-This patch set works to resolve that by changing the io_tlb_start address and
-io_tlb_overflow_buffer address from virtual addresses to physical addresses.
-By doing this, devices that are not making use of bounce buffers can
-significantly reduce their overhead.  In addition I followed through with the
-cleanup to the point that the only functions that really require the virtual
-address for the dma buffer are the init, free, and bounce functions.
-
-When running a routing throughput test using small packets I saw roughly a 5%
-increase in packets rates after applying these patches.  This appears to match
-up with the CPU overhead reduction I was tracking via perf.
-
-Before:
-Results 10.29Mps
-# Overhead Symbol
-# ........ ...........................................................................................................
-#
-     1.97%  [k] __phys_addr                                                                                   
-            |              
-            |--24.97%-- swiotlb_sync_single
-            |          
-            |--16.55%-- is_swiotlb_buffer
-            |          
-            |--11.25%-- unmap_single
-            |          
-             --2.71%-- swiotlb_dma_mapping_error
-     1.66%  [k] swiotlb_sync_single                                                                                 
-     1.45%  [k] is_swiotlb_buffer                                     
-     0.53%  [k] unmap_single                                                                                     
-     0.52%  [k] swiotlb_map_page                                      
-     0.47%  [k] swiotlb_sync_single_for_device                                                                 
-     0.43%  [k] swiotlb_sync_single_for_cpu                           
-     0.42%  [k] swiotlb_dma_mapping_error                                                               
-     0.34%  [k] swiotlb_unmap_page                
-
-After:
-Results 10.99Mps
-# Overhead Symbol
-# ........ ...........................................................................................................
-#
-     0.50%  [k] swiotlb_map_page                                                                                        
-     0.50%  [k] swiotlb_sync_single                                                                                     
-     0.36%  [k] swiotlb_sync_single_for_cpu                                                                             
-     0.35%  [k] swiotlb_sync_single_for_device                                                                          
-     0.25%  [k] swiotlb_unmap_page                                                                                      
-     0.17%  [k] swiotlb_dma_mapping_error  
-
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
 
-Alexander Duyck (7):
-      swiotlb:  Do not export swiotlb_bounce since there are no external consumers
-      swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
-      swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
-      swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
-      swiotlb: Make io_tlb_overflow_buffer a physical address
-      swiotlb: Make io_tlb_start a physical address instead of a virtual address
-      swiotlb: Instead of tracking the end of the swiotlb region just calculate it
+ lib/swiotlb.c |   25 ++++++++++++-------------
+ 1 files changed, 12 insertions(+), 13 deletions(-)
 
-
- drivers/xen/swiotlb-xen.c |   25 ++---
- include/linux/swiotlb.h   |   20 ++--
- lib/swiotlb.c             |  247 +++++++++++++++++++++++----------------------
- 3 files changed, 150 insertions(+), 142 deletions(-)
-
--- 
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index f114bf6..5cc4d4e 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -57,11 +57,11 @@ int swiotlb_force;
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+  * API.
+  */
+-static char *io_tlb_start, *io_tlb_end;
++static char *io_tlb_start;
+ 
+ /*
+- * The number of IO TLB blocks (in groups of 64) between io_tlb_start and
+- * io_tlb_end.  This is command line adjustable via setup_io_tlb_npages.
++ * The number of IO TLB blocks (in groups of 64).
++ * This is command line adjustable via setup_io_tlb_npages.
+  */
+ static unsigned long io_tlb_nslabs;
+ 
+@@ -128,11 +128,11 @@ void swiotlb_print_info(void)
+ 	phys_addr_t pstart, pend;
+ 
+ 	pstart = virt_to_phys(io_tlb_start);
+-	pend = virt_to_phys(io_tlb_end);
++	pend = pstart + bytes;
+ 
+ 	printk(KERN_INFO "software IO TLB [mem %#010llx-%#010llx] (%luMB) mapped at [%p-%p]\n",
+ 	       (unsigned long long)pstart, (unsigned long long)pend - 1,
+-	       bytes >> 20, io_tlb_start, io_tlb_end - 1);
++	       bytes >> 20, io_tlb_start, io_tlb_start + bytes - 1);
+ }
+ 
+ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+@@ -143,12 +143,10 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+ 
+ 	io_tlb_nslabs = nslabs;
+ 	io_tlb_start = tlb;
+-	io_tlb_end = io_tlb_start + bytes;
+ 
+ 	/*
+ 	 * Allocate and initialize the free list array.  This array is used
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+-	 * between io_tlb_start and io_tlb_end.
+ 	 */
+ 	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+@@ -254,14 +252,12 @@ swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
+ 
+ 	io_tlb_nslabs = nslabs;
+ 	io_tlb_start = tlb;
+-	io_tlb_end = io_tlb_start + bytes;
+ 
+ 	memset(io_tlb_start, 0, bytes);
+ 
+ 	/*
+ 	 * Allocate and initialize the free list array.  This array is used
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+-	 * between io_tlb_start and io_tlb_end.
+ 	 */
+ 	io_tlb_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
+ 	                              get_order(io_tlb_nslabs * sizeof(int)));
+@@ -304,7 +300,6 @@ cleanup3:
+ 	                                                 sizeof(int)));
+ 	io_tlb_list = NULL;
+ cleanup2:
+-	io_tlb_end = NULL;
+ 	io_tlb_start = NULL;
+ 	io_tlb_nslabs = 0;
+ 	return -ENOMEM;
+@@ -339,8 +334,10 @@ void __init swiotlb_free(void)
+ 
+ static int is_swiotlb_buffer(phys_addr_t paddr)
+ {
+-	return paddr >= virt_to_phys(io_tlb_start) &&
+-		paddr < virt_to_phys(io_tlb_end);
++	phys_addr_t swiotlb_start = virt_to_phys(io_tlb_start);
++
++	return paddr >= swiotlb_start &&
++		paddr < (swiotlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
+ }
+ 
+ /*
+@@ -938,6 +935,8 @@ EXPORT_SYMBOL(swiotlb_dma_mapping_error);
+ int
+ swiotlb_dma_supported(struct device *hwdev, u64 mask)
+ {
+-	return swiotlb_virt_to_bus(hwdev, io_tlb_end - 1) <= mask;
++	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
++
++	return swiotlb_virt_to_bus(hwdev, io_tlb_start + bytes - 1) <= mask;
+ }
+ EXPORT_SYMBOL(swiotlb_dma_supported);
 
