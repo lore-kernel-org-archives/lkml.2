@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964893Ab2JDAnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Oct 2012 20:43:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34972 "EHLO
+	id S964928Ab2JDAu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Oct 2012 20:50:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35076 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964801Ab2JDAnk (ORCPT
+	with ESMTP id S964832Ab2JDAuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Oct 2012 20:43:40 -0400
-Date: Wed, 03 Oct 2012 20:43:36 -0400 (EDT)
-Message-Id: <20121003.204336.1981040659629176119.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: haicheng.li@linux.intel.com, netdev@vger.kernel.org, tshimizu818@gmail.com,
-        linux-kernel@vger.kernel.org, haicheng.lee@gmail.com
-Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
- dependency.
+	Wed, 3 Oct 2012 20:50:55 -0400
+Date: Wed, 03 Oct 2012 20:50:53 -0400 (EDT)
+Message-Id: <20121003.205053.1711360628623711137.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vipul@chelsio.com, jay@chelsio.com
+Subject: Re: linux-next: build failure after merge of the net tree
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1349300710.2763.8.camel@bwh-desktop.uk.solarflarecom.com>
-References: <50654A62.5090003@linux.intel.com>
-	<20121002.222238.1580734803370802133.davem@davemloft.net>
-	<1349300710.2763.8.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <20121004101833.019598b7e474c7b74e67ff20@canb.auug.org.au>
+References: <20121004101833.019598b7e474c7b74e67ff20@canb.auug.org.au>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,13 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Wed, 3 Oct 2012 22:45:10 +0100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 4 Oct 2012 10:18:33 +1000
 
-> I thought of it as being a peripheral feature (which most Solarflare
-> hardware doesn't implement) so it made sense for SFC_PTP to be optional
-> like SFC_MTD and so on.  But I'm quite happy to use a select instead, if
-> you want that to be the convention for all drivers implementing PHC.
+> After merging the net tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 't4_memory_rw':
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:2: error: implicit declaration of function 'vmalloc' [-Werror=implicit-function-declaration]
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:420:7: warning: assignment makes pointer from integer without a cast [enabled by default]
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:487:2: error: implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c: In function 'get_vpd_params':
+> drivers/net/ethernet/chelsio/cxgb4/t4_hw.c:530:6: warning: assignment makes pointer from integer without a cast [enabled by default]
+> 
+> Caused by commit 8c357ebd5693 ("cxgb4: Dynamically allocate memory in
+> t4_memory_rw() and get_vpd_params()").  Missing include of
+> linux/vmalloc.h.
+> 
+> I have used the net tree from next-20121003 for today.
 
-I think that consistency might trump those conerns you mentioned, at
-least in this case.
+Thanks, I'll fix this as is shown below.
+
+I do have a question though, it is honestly really that much easier to
+revert a whole days worth of changes (and therefore not get the code
+tested at all) than to simply add the obvious one liner?
+
+It seems to me to be absolutely the wrong tradeoff in these situations.
+
+====================
+[PATCH] cxgb4: Fix build error due to missing linux/vmalloc.h include.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h b/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h
+index 745a1f5..31752b2 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4.h
+@@ -43,6 +43,7 @@
+ #include <linux/pci.h>
+ #include <linux/spinlock.h>
+ #include <linux/timer.h>
++#include <linux/vmalloc.h>
+ #include <asm/io.h>
+ #include "cxgb4_uld.h"
+ #include "t4_hw.h"
+-- 
+1.7.11.4
+
