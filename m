@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab2JDVUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:20:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
+	id S933620Ab2JDVUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:20:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933664Ab2JDVUc (ORCPT
+	with ESMTP id S933607Ab2JDVUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:20:32 -0400
+	Thu, 4 Oct 2012 17:20:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "Shawn J. Goff" <shawn7400@gmail.com>
-Subject: =?UTF-8?q?=5B=2008/58=5D=20USB=3A=20option=3A=20blacklist=20QMI=20interface=20on=20ZTE=20MF683?=
-Date: Thu,  4 Oct 2012 14:19:15 -0700
-Message-Id: <20121004210636.482187567@linuxfoundation.org>
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        Dan Williams <dcbw@redhat.com>
+Subject: =?UTF-8?q?=5B=2010/58=5D=20USB=3A=20qcaux=3A=20add=20Pantech=20vendor=20class=20match?=
+Date: Thu,  4 Oct 2012 14:19:17 -0700
+Message-Id: <20121004210636.742027701@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
 References: <20121004210635.449598766@linuxfoundation.org>
@@ -32,29 +33,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bjørn Mork <bjorn@mork.no>
 
-commit 160c9425ac52cb30502be2d9c5e848cec91bb115 upstream.
+commit c638eb2872b3af079501e7ee44cbb8a5cce9b4b5 upstream.
 
-Interface #5 on ZTE MF683 is a QMI/wwan interface.
+The three Pantech devices UML190 (106c:3716), UML290 (106c:3718) and
+P4200 (106c:3721) all use the same subclasses to identify vendor
+specific functions.  Replace the existing device specific entries
+with generic vendor matching, adding support for the P4200.
 
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Shawn J. Goff <shawn7400@gmail.com>
+Cc: Thomas Schäfer <tschaefer@t-online.de>
+Acked-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/qcaux.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -870,7 +870,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0153, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0155, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
+--- a/drivers/usb/serial/qcaux.c
++++ b/drivers/usb/serial/qcaux.c
+@@ -36,8 +36,6 @@
+ #define UTSTARCOM_PRODUCT_UM175_V1		0x3712
+ #define UTSTARCOM_PRODUCT_UM175_V2		0x3714
+ #define UTSTARCOM_PRODUCT_UM175_ALLTEL		0x3715
+-#define PANTECH_PRODUCT_UML190_VZW		0x3716
+-#define PANTECH_PRODUCT_UML290_VZW		0x3718
+ 
+ /* CMOTECH devices */
+ #define CMOTECH_VENDOR_ID			0x16d8
+@@ -68,11 +66,9 @@ static struct usb_device_id id_table[] =
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(LG_VENDOR_ID, LG_PRODUCT_VX4400_6000, 0xff, 0xff, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SANYO_VENDOR_ID, SANYO_PRODUCT_KATANA_LX, 0xff, 0xff, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_U520, 0xff, 0x00, 0x00) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML190_VZW, 0xff, 0xfe, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfd, 0xff) },  /* NMEA */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xfe, 0xff) },  /* WMC */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xff, 0xff) },  /* DIAG */
++	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfd, 0xff) },  /* NMEA */
++	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xfe, 0xff) },  /* WMC */
++	{ USB_VENDOR_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, 0xff, 0xff, 0xff) },  /* DIAG */
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
