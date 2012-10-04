@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab2JDStZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 14:49:25 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17253 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab2JDStW (ORCPT
+	id S1755546Ab2JDSuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 14:50:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58386 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255Ab2JDSt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 14:49:22 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6855"; a="243549937"
-Message-ID: <506DDA31.9010503@codeaurora.org>
-Date: Thu, 04 Oct 2012 11:49:21 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Thu, 4 Oct 2012 14:49:59 -0400
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: arm@kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: arm-soc maintainer entry
-References: <506D4BCD.3020402@codeaurora.org> <CAOesGMjotnx_6HiwngRO9OaZYGGAexiwZ_shkOK7qROZcjDmqA@mail.gmail.com>
-In-Reply-To: <CAOesGMjotnx_6HiwngRO9OaZYGGAexiwZ_shkOK7qROZcjDmqA@mail.gmail.com>
+In-Reply-To: <20121004.142335.1467206545795435493.davem@davemloft.net>
+References: <CA+MoWDp4W5BCA1t_HgEtLhMs1btVTOkbtBytOVtAzJriEZ-16A@mail.gmail.com>
+	<20121004074442.180d8f01@nehalam.linuxnetplumber.net>
+	<CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	<20121004.142335.1467206545795435493.davem@davemloft.net>
+Date: Thu, 4 Oct 2012 20:49:57 +0200
+Message-ID: <CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, mlindner@marvell.com,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/12 09:55, Olof Johansson wrote:
-> Hi,
+On Thu, Oct 4, 2012 at 8:23 PM, David Miller <davem@davemloft.net> wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> Date: Thu, 4 Oct 2012 19:32:12 +0200
 >
-> On Thu, Oct 4, 2012 at 1:41 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> Is the arm@kernel.org alias going to be added into the MAINTAINERS file?
->> Should anybody be sending mails to this address?
->>
->> It seems I asked this over a year ago and the response was positive but
->> nothing ever happened[1]. Maybe something like below? I only ask because
->> get_maintainer.pl isn't picking up this email.
-> I've been holding off re-proposing this, mostly because life is easier
-> for us if we don't get arm@kernel.org cc:d on every single patch by
-> people who run get_maintainers.pl -- it's the equivalent of getting
-> linux-arm-kernel cc:d to your inbox. It's better signal-to-noise ratio
-> if it's mostly platform maintainers that email us on that address with
-> pull requests or patches they want applied.
+>> I can't understand the advantages of describing each patch as you are
+>> asking. "For me" the generic commit message together with the patch
+>> makes sense.  Can you please help me on that?
 >
-> But yeah, it also means that the maintainer structure is undocumented.
-> I'm open for suggestions.
+> Stop being so dense.
 >
+> We want to know the implications of the bug being fixed.
+>
+> Does it potentially cause an OOPS?  Bad reference counting and thus
+> potential leaks or early frees?
+>
+> You have to analyze the implications and ramifications of the bug
+> being fixed.  We need that information.
+>
+> Your commit messages are in fact robotic, they don't describe the
+> salient details of what kinds of problems the bug being fixed might
+> cause.
+>
+> It's just "bad error code, this is the script that fixed it, kthx,
+> bye" which is pretty much useless for anaylsis.
 
-Thanks for clarifying. Maybe we can put in the git tree and no email
-address? That at least documents some structure.
+Thank you David.
+
+What about this as commit message?
+--- // --
+This patch fixes bug(s) related to return value of function(s). In
+some error cases, the function is returning non-negative SUCCESS
+value, when the correct would be negative ERROR value.
+
+When on error, returning non negatives values, or SUCCESS, breaks error
+propagation, producing unpredictable behavior that are very difficult
+to debug.
+--- // --
+
+
+
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Peter
