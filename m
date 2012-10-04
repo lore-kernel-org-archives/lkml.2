@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab2JDJLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:11:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab2JDJLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:11:23 -0400
-Date: Thu, 4 Oct 2012 11:10:59 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, x86@vger.kernel.org,
-        eranian@google.com, jolsa@redhat.com, a.p.zijlstra@chello.nl,
-        Andi Kleen <ak@linux.intel.com>, avi@redhat.com
-Subject: Re: [06/31] perf, kvm: Support the intx/intx_cp modifiers in KVM
- arch perfmon emulation
-Message-ID: <20121004091059.GY23096@redhat.com>
-References: <1349221731-15665-7-git-send-email-andi@firstfloor.org>
+	id S1753910Ab2JDJMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:12:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50580 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab2JDJMC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 05:12:02 -0400
+Date: Thu, 4 Oct 2012 11:11:45 +0200
+From: Philipp Zabel <pza@pengutronix.de>
+To: Matt Porter <mporter@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/6] uio_pruss cleanup and platform support
+Message-ID: <20121004091145.GA3317@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349221731-15665-7-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1349276133-26408-1-git-send-email-mporter@ti.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:43:06 up  1:11,  8 users,  load average: 0.04, 0.05, 0.05
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: pza@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 11:48:26PM -0000, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> This is not arch perfmon, but older CPUs will just ignore it. This makes
-> it possible to do at least some TSX measurements from a KVM guest
-> 
-> Cc: avi@redhat.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> ---
-> arch/x86/kvm/pmu.c |   13 ++++++++++---
->  1 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-> index 9b7ec11..f72a409 100644
-> --- a/arch/x86/kvm/pmu.c
-> +++ b/arch/x86/kvm/pmu.c
-> @@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
->  
->  static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->  		unsigned config, bool exclude_user, bool exclude_kernel,
-> -		bool intr)
-> +		bool intr, bool intx, bool intx_cp)
->  {
->  	struct perf_event *event;
->  	struct perf_event_attr attr = {
-> @@ -173,6 +173,11 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->  		.exclude_kernel = exclude_kernel,
->  		.config = config,
->  	};
-> +	/* Will be ignored on CPUs that don't support this. */
-> +	if (intx)
-> +		attr.config |= HSW_INTX;
-> +	if (intx_cp)
-> +		attr.config |= HSW_INTX_CHECKPOINTED;
->  
->  	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
->  
-> @@ -239,7 +244,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
->  	reprogram_counter(pmc, type, config,
->  			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
->  			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
-> -			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-> +			eventsel & ARCH_PERFMON_EVENTSEL_INT,
-> +			!!(eventsel & HSW_INTX),
-> +			!!(eventsel & HSW_INTX_CHECKPOINTED));
-Before reprogram_gp_counter() is called from kvm_pmu_set_msr() eventsel
-is checked for reserved bits. Both HSW_INTX and HSW_INTX_CHECKPOINTED
-are marked as reserved currently. Reserved bit mask should depend on
-cpuid bits provided to a guest.
+Hi Matt,
 
->  }
->  
->  static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-> @@ -256,7 +263,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
->  			arch_events[fixed_pmc_events[idx]].event_type,
->  			!(en & 0x2), /* exclude user */
->  			!(en & 0x1), /* exclude kernel */
-> -			pmi);
-> +			pmi, false, false);
->  }
->  
->  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+On 10/3/12, Matt Porter <mporter@ti.com> wrote:
+> This series enables uio_pruss on DA850 and removes use of the
+> private SRAM API by the driver. The driver previously was not
+> enabled by any platform and the private SRAM API was accessing
+> an invalid SRAM bank.
 
---
-			Gleb.
+have you seen my SRAM patch series at https://lkml.org/lkml/2012/9/7/281
+"Add device tree support for on-chip SRAM" ?
+
+I think the generic SRAM/genalloc driver (https://lkml.org/lkml/2012/9/7/282)
+could be useful to map the L3RAM on Davinci.
+With the gen_pool lookup patch (https://lkml.org/lkml/2012/9/7/284) the
+uio_pruss driver could then use the gen_pool_find_by_phys() (or
+of_get_named_gen_pool() for initialization from device tree) to
+retrieve the struct gen_pool*.
+
+This way you could avoid handing it over via platform data and you could
+get rid of arch/arm/mach-davinci/{sram.c,include/mach/sram.h} completely.
+
+regards
+Philipp
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
