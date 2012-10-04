@@ -1,66 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933425Ab2JDOMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 10:12:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53051 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933396Ab2JDOMI (ORCPT
+	id S964867Ab2JDONZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 10:13:25 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61933 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933385Ab2JDONY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 10:12:08 -0400
-Date: Thu, 4 Oct 2012 16:11:57 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <samuel.ortiz@linux.intel.com>
-Cc: Fabio Estevam <festevam@gmail.com>, Marc Reilly <marc@cpdesign.com.au>,
-        linux-arm-kernel@lists.infradead.org,
-        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 0/7] Add support for Freescale's mc34708 to mc13xxx driver
-Message-ID: <20121004141157.GK598@pengutronix.de>
-References: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <11987916.rOoNGcb1ly@dev1>
- <CAOMZO5AVP1L-6A7cmV-kQEfG1C+vczFKT=sQbFtLJDaGau0kRg@mail.gmail.com>
- <CAOMZO5BqZpy5Cz0BxbpdOY=sjMjhSOjfQZmJ4j7Xwe6Q7x6Yig@mail.gmail.com>
- <20121004135130.GC5554@sortiz-mobl>
+	Thu, 4 Oct 2012 10:13:24 -0400
+Date: Thu, 4 Oct 2012 10:01:57 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: shuah.khan@hp.com, konrad.wilk@oracle.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        stern@rowland.harvard.edu, joerg.roedel@amd.com, bhelgaas@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH v3] dma-debug: New interfaces to debug dma mapping errors
+Message-ID: <20121004140156.GG9158@phenom.dumpdata.com>
+References: <1347843171.4370.13.camel@lorien2>
+ <1348621517.3091.6.camel@lorien2>
+ <1349276159.3192.4.camel@lorien2>
+ <20121003144511.bdacbc8a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121004135130.GC5554@sortiz-mobl>
+In-Reply-To: <20121003144511.bdacbc8a.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Oct 03, 2012 at 02:45:11PM -0700, Andrew Morton wrote:
+> On Wed, 03 Oct 2012 08:55:59 -0600
+> Shuah Khan <shuah.khan@hp.com> wrote:
+> 
+> > A recent dma mapping error analysis effort showed that a large percentage
+> > of dma_map_single() and dma_map_page() returns are not checked for mapping
+> > errors.
+> > 
+> > Reference:
+> > http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
+> > 
+> > Adding support for tracking dma mapping and unmapping errors to help assess
+> > the following:
+> > 
+> > When do dma mapping errors get detected?
+> > How often do these errors occur?
+> > Why don't we see failures related to missing dma mapping error checks?
+> > Are they silent failures?
+> 
+> This seems to be a strange way of addressing kernel programming errors.
+> Instead of fixing them up, we generate lots of statistics about how
+> often they happen!
 
-On Thu, Oct 04, 2012 at 03:51:30PM +0200, Samuel Ortiz wrote:
-> Did you send it to my samuel.ortiz@intel.com email ? I never look at it when
-> going through my MFD backlog, which is why it was not applied. Which is why it
-> won't be part of the 3.7 merge window, sorry about that.
-I don't know why I picked that one up, but probably it's because this
-address shows up in several commits:
+And by using this we can fix the drivers.
+> 
+> Would it not be better to find and fix the buggy code sites?  A
+> coccinelle script wold probably help here.
 
-	$ git log --grep=samuel.ortiz@intel.com | grep Samuel | sort | uniq -c
-	     18     Acked-by: Samuel Ortiz <samuel.ortiz@intel.com>
-	     12 Author: Samuel Ortiz <sameo@linux.intel.com>
-	     27 Author: Samuel Ortiz <samuel.ortiz@intel.com>
-	      4     Cc: Samuel Ortiz <samuel.ortiz@intel.com>
-	      1     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-	     50     Signed-off-by: Samuel Ortiz <samuel.ortiz@intel.com>
+That is the end goal (fixing the buggy code sites). Shuah has
+identified the bad culprits.
 
-and one of these just happend to be the first I looked at.
+> 
+> And let's also look at *why* we keep doing this.  Partly it's because
+> these things are self-propagating - people copy-n-paste bad code so we
+> get more bad code.
 
-hmm, *shrug*
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+And this patch will now tell the poor engineers that write new code that
+they pasted bad code.
+
+> 
+> 
+> Another reason surely is the poor documentation.  Suppose our diligent
+> programmer goes to the dma_map_single() definition site:
+> 
+> #define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
+> 
+> No documentation at all.  Because it's a stupid macro it doesn't even
+> give the types and names of the arguments or the type of the return
+> value.
+> 
+> So he goes to dma_map_single_attrs() and finds that is altogether
+> undocmented.
+> 
+> So he goes into Documentation/DMA-API-HOWTO.txt, searches for
+> "dma_map_single" and finds
+> 
+> : To map a single region, you do:
+> : 
+> : 	struct device *dev = &my_dev->dev;
+> : 	dma_addr_t dma_handle;
+> : 	void *addr = buffer->ptr;
+> : 	size_t size = buffer->len;
+> : 
+> : 	dma_handle = dma_map_single(dev, addr, size, direction);
+> : 
+> : and to unmap it:
+> : 
+> : 	dma_unmap_single(dev, dma_handle, size, direction);
+> 
+> 
+> So it is hardly surprising that we keep screwing this up!
+
+Right, so that should be also modified (Thank you for looking at that)!
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
