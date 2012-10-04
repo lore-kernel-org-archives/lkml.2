@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab2JDHmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 03:42:44 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48836 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab2JDHmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 03:42:42 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-91-506d3df15606
-Message-id: <506D3DE4.8090207@samsung.com>
-Date: Thu, 04 Oct 2012 16:42:28 +0900
-From: Donghwa Lee <dh09.lee@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Inki Dae <inki.dae@samsung.com>, kernel-janitors@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/video/exynos/exynos_mipi_dsi.c: fix error
- return code
-References: <1349268044-32616-2-git-send-email-peter.senna@gmail.com>
-In-reply-to: <1349268044-32616-2-git-send-email-peter.senna@gmail.com>
-Content-type: text/plain; charset=EUC-KR
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd2PtrkBBq17xCy23pK2ONH3gdXi
-	8q45bA7MHp83yQUwRnHZpKTmZJalFunbJXBlXL0+j7VgLX/FhHM9TA2MDTxdjJwcEgImEjvm
-	zGGEsMUkLtxbz9bFyMUhJDCdUeLpnQ52COclo8TZTU/YQKp4BbQkjuzYww5iswioSnxc8p8F
-	xGYT0JA4fe8+WFxUIEBiY+sZdoh6QYkfk++B1YgIGEj83XOVGWQos8AzRonPD36CJYQFIiRW
-	/OljBrGFBFwlOmd1gMU5Bdwkdv15DmYzAy2Y+vo0I4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWM
-	zKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsPymfQOxlUNFocYBTgYlXh4LSblBAixJpYV
-	V+YeYpTgYFYS4d2smBsgxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUI
-	JsvEwSnVwLiusXzN5ll7Kmcz6+dksO3x+vmivJGrjEM0dV5KQdCG7e8XRzKoX5omUPjtTuJU
-	PTfm9+ec5CQmTJS0l2d9O0H4zOXAvxX7PU43Wz8XtCmd4c/wQnTtJqXeoC/dl1+3l7x+MOVz
-	hNeqP6cdAzhf7zjA3W7whyNy4rrIE7c/Hilb9IiJrS5tb58SS3FGoqEWc1FxIgAr3K/FRwIA	AA==
+	id S932352Ab2JDHnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 03:43:51 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:56421 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab2JDHnu convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 4 Oct 2012 03:43:50 -0400
+Message-Id: <506D5A53020000780009F8B7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 04 Oct 2012 08:43:47 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>
+Cc: "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen_initial_domain: check that
+ xen_start_info is initialized
+References: <alpine.DEB.2.02.1210031431080.29232@kaball.uk.xensource.com>
+ <1349272182.650.150.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.02.1210031450220.29232@kaball.uk.xensource.com>
+ <1349272482.650.151.camel@zakaz.uk.xensource.com>
+ <20121003141116.GA10633@phenom.dumpdata.com>
+ <1349276431.650.156.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.02.1210031641050.29232@kaball.uk.xensource.com>
+ <1349279862.650.171.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.02.1210031658120.29232@kaball.uk.xensource.com>
+ <1349280814.650.178.camel@zakaz.uk.xensource.com>
+ <1349282492.650.185.camel@zakaz.uk.xensource.com>
+ <alpine.DEB.2.02.1210031807340.29232@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1210031807340.29232@kaball.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, Oct 03, 2012 at 21:40, Peter Senna Tschudin wrote
-
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>>> On 03.10.12 at 19:08, Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+wrote:
+> Since commit commit 4c071ee5268f7234c3d084b6093bebccc28cdcba ("arm:
+> initial Xen support") PV on HVM guests can be xen_initial_domain.
+> However PV on HVM guests might have an unitialized xen_start_info, so
+> check before accessing its fields.
 > 
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
+> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> // </smpl>
-> 
-
-
-I agree with you. Other codes is already used negative error return codes.
-
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
->  drivers/video/exynos/exynos_mipi_dsi.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
-> index c4f25de..07d70a3 100644
-> --- a/drivers/video/exynos/exynos_mipi_dsi.c
-> +++ b/drivers/video/exynos/exynos_mipi_dsi.c
-> @@ -375,6 +375,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	dsim->clock = clk_get(&pdev->dev, "dsim0");
->  	if (IS_ERR(dsim->clock)) {
->  		dev_err(&pdev->dev, "failed to get dsim clock source\n");
-> +		ret = -ENODEV;
->  		goto err_clock_get;
->  	}
+> diff --git a/include/xen/xen.h b/include/xen/xen.h
+> index 9a39ca5..e7101bb 100644
+> --- a/include/xen/xen.h
+> +++ b/include/xen/xen.h
+> @@ -28,7 +28,7 @@ extern enum xen_domain_type xen_domain_type;
+>  #include <asm/xen/hypervisor.h>
 >  
-> @@ -383,6 +384,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
->  		dev_err(&pdev->dev, "failed to get io memory region\n");
-> +		ret = -ENODEV;
->  		goto err_platform_get;
->  	}
->  
-> @@ -407,6 +409,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	dsim_ddi = exynos_mipi_dsi_bind_lcd_ddi(dsim, dsim_pd->lcd_panel_name);
->  	if (!dsim_ddi) {
->  		dev_err(&pdev->dev, "mipi_dsim_ddi object not found.\n");
-> +		ret = -EINVAL;
->  		goto err_bind;
->  	}
->  
-> 
-> 
+>  #define xen_initial_domain()	(xen_domain() && \
+> -				 xen_start_info->flags & SIF_INITDOMAIN)
+> +				 xen_start_info && xen_start_info->flags & SIF_INITDOMAIN)
+>  #else  /* !CONFIG_XEN_DOM0 */
+>  #define xen_initial_domain()	(0)
+>  #endif	/* CONFIG_XEN_DOM0 */
 
+Didn't your other patch statically initialize it?
+
+Jan
 
