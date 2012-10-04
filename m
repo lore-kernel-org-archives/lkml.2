@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946122Ab2JDVYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946101Ab2JDVYE (ORCPT
+	id S934178Ab2JDVYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:24:22 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946124Ab2JDVYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:04 -0400
+	Thu, 4 Oct 2012 17:24:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 14/52] staging: comedi: jr3_pci: fix iomem dereference
-Date: Thu,  4 Oct 2012 14:21:05 -0700
-Message-Id: <20121004210637.128041936@linuxfoundation.org>
+        Stanislav Kozina <skozina@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: [ 17/52] Remove BUG_ON from n_tty_read()
+Date: Thu,  4 Oct 2012 14:21:08 -0700
+Message-Id: <20121004210637.483984282@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -26,31 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Stanislav Kozina <skozina@redhat.com>
 
-commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
+commit e9490e93c1978b6669f3e993caa3189be13ce459 upstream.
 
-Correct a direct dereference of I/O memory to use an appropriate I/O
-memory access function.  Note that the pointer being dereferenced is not
-currently tagged with `__iomem` but I plan to correct that for 3.7.
+Change the BUG_ON to WARN_ON and return in case of tty->read_buf==NULL. We want to track a
+couple of long standing reports of this but at the same time we can avoid killing the box.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Stanislav Kozina <skozina@redhat.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_tty.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -905,7 +905,7 @@ static int jr3_pci_attach(struct comedi_
- 	}
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1727,7 +1727,8 @@ static ssize_t n_tty_read(struct tty_str
  
- 	/*  Reset DSP card */
--	devpriv->iobase->channel[0].reset = 0;
-+	writel(0, &devpriv->iobase->channel[0].reset);
+ do_it_again:
  
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
- 	dev_dbg(dev->hw_dev, "Firmare load %d\n", result);
+-	BUG_ON(!tty->read_buf);
++	if (WARN_ON(!tty->read_buf))
++		return -EAGAIN;
+ 
+ 	c = job_control(tty, file);
+ 	if (c < 0)
 
 
