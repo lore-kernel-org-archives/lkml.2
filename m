@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab2JDJsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:48:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55718 "EHLO mx2.suse.de"
+	id S1751970Ab2JDJtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:49:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12577 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab2JDJsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:48:43 -0400
-Date: Thu, 4 Oct 2012 11:48:31 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+	id S1751153Ab2JDJto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 05:49:44 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFzuHdT5NLGTd-+2hPvV4uzWxT+dTFZ5kCrWS+8-1zDtOA@mail.gmail.com>
+References: <CA+55aFzuHdT5NLGTd-+2hPvV4uzWxT+dTFZ5kCrWS+8-1zDtOA@mail.gmail.com> <alpine.DEB.2.00.1210040456090.3115@skynet.skynet.ie>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification
- implementation
-In-Reply-To: <CAN+gG=H1BWmA_VW_RrhYWVU7qXrqbzhGCkkY0_41muL=XqJbjA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1210041145410.9942@pobox.suse.cz>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com> <20121003164306.GA18529@core.coreip.homeip.net> <CAN+gG=H1BWmA_VW_RrhYWVU7qXrqbzhGCkkY0_41muL=XqJbjA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [git pull] drm merge for rc1 (part 1)
+Date: Thu, 04 Oct 2012 10:49:38 +0100
+Message-ID: <7367.1349344178@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Benjamin Tissoires wrote:
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> >> +
-> >> +     hid->claimed = 0;
-> >
-> > Should it be here and not in core?
-> 
-> This is a line that was copied/pasted from usbhid. I'll check how can
-> I do that without interfering with core.
+> Ok, as usual I actually wanted to do the merge myself despite the
+> annoying conflicts (this *really* is the last time I will ever accept
+> any header file "cleanups" - they simply aren't worth the pain).
 
+There was a reason I asked you to pull the patches at the *end* of the merge
+window, and a reason I asked you to give me a chance to regenerate the patches
+before you pulled them.
 
-Well, we are calling ll_driver->stop at multiple places, so having this 
-reset in the actual ll driver callback seems to be cleaner.
+Anyway, I can feed much of the main set of patches through subsystem trees now
+- so thanks for that at least.
 
-(if I understand the concern here correctly).
-
--- 
-Jiri Kosina
-SUSE Labs
+David
