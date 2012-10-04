@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab2JDVSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:18:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932858Ab2JDVSl (ORCPT
+	id S932888Ab2JDVSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:18:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932844Ab2JDVSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:41 -0400
+	Thu, 4 Oct 2012 17:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Russ Gorby <russ.gorby@intel.com>,
-        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
         Alan Cox <alan@linux.intel.com>
-Subject: [ 39/56] n_gsm: added interlocking for gsm_data_lock for certain code paths
-Date: Thu,  4 Oct 2012 14:16:00 -0700
-Message-Id: <20121004211156.562748779@linuxfoundation.org>
+Subject: [ 38/56] n_gsm: uplink SKBs accumulate on list
+Date: Thu,  4 Oct 2012 14:15:59 -0700
+Message-Id: <20121004211156.455425661@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -30,62 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russ Gorby <russ.gorby@intel.com>
 
-commit 5e44708f75b0f8712da715d6babb0c21089b2317 upstream.
+commit 192b6041e75bb4a2aae73834037038cea139a92d upstream.
 
-There were some locking holes in the management of the MUX's
-message queue for 2 code paths:
-1) gsmld_write_wakeup
-2) receipt of CMD_FCON flow-control message
-In both cases gsm_data_kick is called w/o locking so it can collide
-with other other instances of gsm_data_kick (pulling messages tx_tail)
-or potentially other instances of __gsm_data_queu (adding messages to tx_head)
+gsm_dlci_data_kick will not call any output function if tx_bytes > THRESH_LO
+furthermore it will call the output function only once if tx_bytes == 0
+If the size of the IP writes are on the order of THRESH_LO
+we can get into a situation where skbs accumulate on the outbound list
+being starved for events to call the output function.
 
-Changed to take the tx_lock in these 2 cases
+gsm_dlci_data_kick now calls the sweep function when tx_bytes==0
 
 Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 --- a/drivers/tty/n_gsm.c
 +++ b/drivers/tty/n_gsm.c
-@@ -1193,6 +1193,8 @@ static void gsm_control_message(struct g
- 							u8 *data, int clen)
+@@ -971,16 +971,19 @@ static void gsm_dlci_data_sweep(struct g
+ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
  {
- 	u8 buf[1];
-+	unsigned long flags;
-+
- 	switch (command) {
- 	case CMD_CLD: {
- 		struct gsm_dlci *dlci = gsm->dlci[0];
-@@ -1218,7 +1220,9 @@ static void gsm_control_message(struct g
- 		gsm->constipated = 0;
- 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
- 		/* Kick the link in case it is idling */
-+		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_data_kick(gsm);
-+		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 		break;
- 	case CMD_MSC:
- 		/* Out of band modem line change indicator for a DLCI */
-@@ -2380,12 +2384,12 @@ static void gsmld_write_wakeup(struct tt
+ 	unsigned long flags;
++	int sweep;
  
- 	/* Queue poll */
- 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-+	spin_lock_irqsave(&gsm->tx_lock, flags);
- 	gsm_data_kick(gsm);
- 	if (gsm->tx_bytes < TX_THRESH_LO) {
--		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_dlci_data_sweep(gsm);
--		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 	}
-+	spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
++	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
+ 	if (dlci->gsm->tx_bytes == 0) {
+ 		if (dlci->net)
+ 			gsm_dlci_data_output_framed(dlci->gsm, dlci);
+ 		else
+ 			gsm_dlci_data_output(dlci->gsm, dlci);
+-	} else if (dlci->gsm->tx_bytes < TX_THRESH_LO)
+-		gsm_dlci_data_sweep(dlci->gsm);
++	}
++	if (sweep)
++ 		gsm_dlci_data_sweep(dlci->gsm);
+ 	spin_unlock_irqrestore(&dlci->gsm->tx_lock, flags);
  }
  
- /**
 
 
