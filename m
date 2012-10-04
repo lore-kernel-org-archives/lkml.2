@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2JDWNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:13:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab2JDVST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:18:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Spang <spang@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 32/56] Increase XHCI suspend timeout to 16ms
-Date: Thu,  4 Oct 2012 14:15:53 -0700
-Message-Id: <20121004211155.773784078@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
-References: <20121004211152.101901246@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754029Ab2JDWNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:13:19 -0400
+Received: from shutemov.name ([176.9.204.213]:59712 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2JDWNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 18:13:15 -0400
+Date: Fri, 5 Oct 2012 01:13:54 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Steve Capper <steve.capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121004221353.GA11454@shutemov.name>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 02, 2012 at 05:59:11PM +0100, Will Deacon wrote:
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
+> 
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
+> 
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
+> 
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Steve Capper <steve.capper@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-------------------
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-From: Michael Spang <spang@chromium.org>
-
-commit a6e097dfdfd189b6929af6efa1d289af61858386 upstream.
-
-The Intel XHCI specification says that after clearing the run/stop bit
-the controller may take up to 16ms to halt. We've seen a device take
-14ms, which with the current timeout of 10ms causes the kernel to
-abort the suspend. Increasing the timeout to the recommended value
-fixes the problem.
-
-This patch should be backported to kernels as old as 2.6.37, that
-contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
-PCI power management implementation".
-
-Signed-off-by: Michael Spang <spang@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -890,7 +890,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command &= ~CMD_RUN;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
- 	if (handshake(xhci, &xhci->op_regs->status,
--		      STS_HALT, STS_HALT, 100*100)) {
-+		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
- 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
-
-
+-- 
+ Kirill A. Shutemov
