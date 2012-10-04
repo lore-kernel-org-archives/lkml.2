@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965600Ab2JDI7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 04:59:03 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48955 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965054Ab2JDI7A (ORCPT
+	id S1755477Ab2JDJAg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:00:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59111 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab2JDJAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 04:59:00 -0400
-Date: Thu, 4 Oct 2012 17:58:57 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 01/17] ARM: shmobile: fix memory size for kota2_defconfig
-Message-ID: <20121004085857.GA7240@verge.net.au>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
- <1349195816-2225-2-git-send-email-arnd@arndb.de>
- <20121003003759.GD31207@verge.net.au>
- <201210040834.55096.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201210040834.55096.arnd@arndb.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Oct 2012 05:00:35 -0400
+Message-ID: <1349341186.4438.1.camel@twins>
+Subject: Re: [PATCH RFC 1/3] sched: introduce distinct per-cpu load average
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 04 Oct 2012 10:59:46 +0200
+In-Reply-To: <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
+References: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
+	 <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 08:34:54AM +0000, Arnd Bergmann wrote:
-> On Wednesday 03 October 2012, Simon Horman wrote:
-> > I looked through my fines and found a config that I believe
-> > worked with a derivative of 2.6.35.7.
-> > 
-> > It has CONFIG_MEMORY_SIZE=0x1e800000.
-> > 
-> > So what I suspect has happened is that an extra zero has crept into
-> > arch/arm/configs/kota2_defconfig and the intended value is:
-> > 
-> > CONFIG_MEMORY_SIZE=0x1e000000
-> > 
-> > Unfortunately I do not have access to a board to test this,
-> > nor am I aware of anyone who does.
-> 
-> Ok, I'll drop this patch for now then, so we keep the warning around
-> to remind us of the problem.
+On Thu, 2012-10-04 at 01:05 +0200, Andrea Righi wrote:
+> +++ b/kernel/sched/core.c
+> @@ -727,15 +727,17 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+>  void activate_task(struct rq *rq, struct task_struct *p, int flags)
+>  {
+>         if (task_contributes_to_load(p))
+> -               rq->nr_uninterruptible--;
+> +               cpu_rq(p->on_cpu_uninterruptible)->nr_uninterruptible--;
+>  
+>         enqueue_task(rq, p, flags);
+>  }
 
-Thanks. I have subsequently located a Kota2 board,
-however it may be a little while before I get my hands on it.
+That's completely broken, you cannot do non-atomic cross-cpu
+modifications like that. Also, adding an atomic op to the wakeup/sleep
+paths isn't going to be popular at all.
 
+>  void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
+>  {
+> -       if (task_contributes_to_load(p))
+> -               rq->nr_uninterruptible++;
+> +       if (task_contributes_to_load(p)) {
+> +               task_rq(p)->nr_uninterruptible++;
+> +               p->on_cpu_uninterruptible = task_cpu(p);
+> +       }
+>  
+>         dequeue_task(rq, p, flags);
+>  } 
+
+This looks pointless, at deactivate time task_rq() had better be rq or
+something is terribly broken.
