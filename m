@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab2JDWI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:08:27 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462Ab2JDVTS (ORCPT
+	id S933250Ab2JDVTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:19:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63596 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932594Ab2JDVTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:19:18 -0400
+	Thu, 4 Oct 2012 17:19:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 51/56] IB/srp: Fix use-after-free in srp_reset_req()
-Date: Thu,  4 Oct 2012 14:16:12 -0700
-Message-Id: <20121004211157.924399741@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 46/56] can: mscan-mpc5xxx: fix return value check in mpc512x_can_get_clock()
+Date: Thu,  4 Oct 2012 14:16:07 -0700
+Message-Id: <20121004211157.354512166@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
 References: <20121004211152.101901246@linuxfoundation.org>
@@ -27,35 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 9b796d06d5d1b1e85ae2316a283ea11dd739ef96 upstream.
+commit f61bd0585dfc7d99db4936d7467de4ca8e2f7ea0 upstream.
 
-srp_free_req() uses the scsi_cmnd structure contents to unmap
-buffers, so we must invoke srp_free_req() before we release
-ownership of that structure.
+In case of error, the function clk_get() returns ERR_PTR()
+and never returns NULL pointer. The NULL test in the error
+handling should be replaced with IS_ERR().
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+dpatch engine is used to auto generated this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/can/mscan/mpc5xxx_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -638,9 +638,9 @@ static void srp_reset_req(struct srp_tar
- 	struct scsi_cmnd *scmnd = srp_claim_req(target, req, NULL);
+--- a/drivers/net/can/mscan/mpc5xxx_can.c
++++ b/drivers/net/can/mscan/mpc5xxx_can.c
+@@ -181,7 +181,7 @@ static u32 __devinit mpc512x_can_get_clo
  
- 	if (scmnd) {
-+		srp_free_req(target, req, scmnd, 0);
- 		scmnd->result = DID_RESET << 16;
- 		scmnd->scsi_done(scmnd);
--		srp_free_req(target, req, scmnd, 0);
- 	}
- }
+ 		if (!clock_name || !strcmp(clock_name, "sys")) {
+ 			sys_clk = clk_get(&ofdev->dev, "sys_clk");
+-			if (!sys_clk) {
++			if (IS_ERR(sys_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get sys_clk\n");
+ 				goto exit_unmap;
+ 			}
+@@ -204,7 +204,7 @@ static u32 __devinit mpc512x_can_get_clo
  
+ 		if (clocksrc < 0) {
+ 			ref_clk = clk_get(&ofdev->dev, "ref_clk");
+-			if (!ref_clk) {
++			if (IS_ERR(ref_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get ref_clk\n");
+ 				goto exit_unmap;
+ 			}
 
 
