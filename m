@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab2JDTXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 15:23:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60854 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545Ab2JDTXE (ORCPT
+	id S1756490Ab2JDT2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 15:28:12 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43431 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756177Ab2JDT2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 15:23:04 -0400
-Date: Thu, 4 Oct 2012 20:22:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: rwright@hp.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] function probe_roms accessing improper addresses
- on UEFI systems
-Message-ID: <20121004192256.GA6521@srcf.ucam.org>
-References: <201210032353.q93NrkNi018443@filesys1.fc.hp.com>
+	Thu, 4 Oct 2012 15:28:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201210032353.q93NrkNi018443@filesys1.fc.hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Originating-IP: [2620:0:1000:1b02:ae16:2dff:fe07:4e83]
+In-Reply-To: <506DDA31.9010503@codeaurora.org>
+References: <506D4BCD.3020402@codeaurora.org>
+	<CAOesGMjotnx_6HiwngRO9OaZYGGAexiwZ_shkOK7qROZcjDmqA@mail.gmail.com>
+	<506DDA31.9010503@codeaurora.org>
+Date: Thu, 4 Oct 2012 12:28:08 -0700
+Message-ID: <CAOesGMgng=OLWT3AwWcvkDQwVAoQknJ5bdZVF__fwSD6WfbkQQ@mail.gmail.com>
+Subject: Re: arm-soc maintainer entry
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 05:53:46PM -0600, Randy Wright wrote:
+On Thu, Oct 4, 2012 at 11:49 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 10/04/12 09:55, Olof Johansson wrote:
+>> Hi,
+>>
+>> On Thu, Oct 4, 2012 at 1:41 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> Is the arm@kernel.org alias going to be added into the MAINTAINERS file?
+>>> Should anybody be sending mails to this address?
+>>>
+>>> It seems I asked this over a year ago and the response was positive but
+>>> nothing ever happened[1]. Maybe something like below? I only ask because
+>>> get_maintainer.pl isn't picking up this email.
+>> I've been holding off re-proposing this, mostly because life is easier
+>> for us if we don't get arm@kernel.org cc:d on every single patch by
+>> people who run get_maintainers.pl -- it's the equivalent of getting
+>> linux-arm-kernel cc:d to your inbox. It's better signal-to-noise ratio
+>> if it's mostly platform maintainers that email us on that address with
+>> pull requests or patches they want applied.
+>>
+>> But yeah, it also means that the maintainer structure is undocumented.
+>> I'm open for suggestions.
+>>
+>
+> Thanks for clarifying. Maybe we can put in the git tree and no email
+> address? That at least documents some structure.
 
-> The following proposed patch takes advantage of the fact that on EFI
-> systems, the memory map provides a better description of the physical
-> space than on pre-EFI legacy systems. If the efi_enabled state variable
-> indicates the kernel is running on an UEFI system, the patch will use
-> information from the UEFI memory map so as not to access addresses that
-> should avoided according to the UEFI specification.
+Ah, yes, that makes a lot of sense.
 
-This turns out to be awkward. Some (mostly older) EFI platforms still 
-only provide the video ROM through the 0xc0000 window, and that's 
-sometimes needed even if the platform isn't using int10 for anything 
-(for instance, some Intel graphics machines only provide the VBT through 
-the video ROM and don't provide that via the PCI BAR). And, of course, 
-they have an EFI memory map that just shows a hole there.
 
-So we can't distinguish between the two cases easily. The only thing I 
-can think of would be to push that policy out to the graphics drivers 
-and have them trigger a scan only if they can't get the required 
-information from any other source. I suspect that this patch as is would 
-break graphics on a reasonable number of EFI platforms.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+-Olof
