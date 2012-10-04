@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab2JDJAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 05:00:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59111 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab2JDJAf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 05:00:35 -0400
-Message-ID: <1349341186.4438.1.camel@twins>
-Subject: Re: [PATCH RFC 1/3] sched: introduce distinct per-cpu load average
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 04 Oct 2012 10:59:46 +0200
-In-Reply-To: <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
-References: <1349305512-3428-1-git-send-email-andrea@betterlinux.com>
-	 <1349305512-3428-2-git-send-email-andrea@betterlinux.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752024Ab2JDJCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 05:02:50 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:37580 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab2JDJCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 05:02:48 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-acpi@vger.kernel.org
+Subject: [PATCH] ACPI: Sanitize ACPI_INITRD_TABLE_OVERRIDE Kconfig text
+Date: Thu,  4 Oct 2012 11:02:34 +0200
+Message-Id: <1349341354-21466-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.11.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 01:05 +0200, Andrea Righi wrote:
-> +++ b/kernel/sched/core.c
-> @@ -727,15 +727,17 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
->  void activate_task(struct rq *rq, struct task_struct *p, int flags)
->  {
->         if (task_contributes_to_load(p))
-> -               rq->nr_uninterruptible--;
-> +               cpu_rq(p->on_cpu_uninterruptible)->nr_uninterruptible--;
->  
->         enqueue_task(rq, p, flags);
->  }
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-That's completely broken, you cannot do non-atomic cross-cpu
-modifications like that. Also, adding an atomic op to the wakeup/sleep
-paths isn't going to be popular at all.
+Make the bool prompt text shorter and fit the style of Kconfig options
+and move the actual description into the help text.
 
->  void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
->  {
-> -       if (task_contributes_to_load(p))
-> -               rq->nr_uninterruptible++;
-> +       if (task_contributes_to_load(p)) {
-> +               task_rq(p)->nr_uninterruptible++;
-> +               p->on_cpu_uninterruptible = task_cpu(p);
-> +       }
->  
->         dequeue_task(rq, p, flags);
->  } 
+No functionality change.
 
-This looks pointless, at deactivate time task_rq() had better be rq or
-something is terribly broken.
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: linux-acpi@vger.kernel.org
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+
+I guess this one is against tip's x86/acpi branch.
+
+ drivers/acpi/Kconfig | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 44cea5d4b04e..c556b794e12f 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -262,13 +262,13 @@ config ACPI_CUSTOM_DSDT
+ 	default ACPI_CUSTOM_DSDT_FILE != ""
+ 
+ config ACPI_INITRD_TABLE_OVERRIDE
+-	bool "ACPI tables can be passed via uncompressed cpio in initrd"
++	bool "ACPI tables override via initrd"
+ 	default n
+ 	help
+ 	  This option provides functionality to override arbitrary ACPI tables
+-	  via initrd. No functional change if no ACPI tables are passed via
+-	  initrd, therefore it's safe to say Y.
+-	  See Documentation/acpi/initrd_table_override.txt for details
++	  via uncompressed cpio in initrd. No functional change if no ACPI
++	  tables are passed via the initrd, therefore it's safe to say Y.
++	  See Documentation/acpi/initrd_table_override.txt for details.
+ 
+ config ACPI_BLACKLIST_YEAR
+ 	int "Disable ACPI for systems before Jan 1st this year" if X86_32
+-- 
+1.7.11.rc1
+
