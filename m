@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab2JDNnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 09:43:17 -0400
-Received: from 11.mo1.mail-out.ovh.net ([188.165.48.29]:39551 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933077Ab2JDNnP (ORCPT
+	id S933129Ab2JDNot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 09:44:49 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64168 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933077Ab2JDNor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 09:43:15 -0400
-X-Greylist: delayed 1200 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Oct 2012 09:43:15 EDT
-Date: Thu, 4 Oct 2012 15:05:10 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [PATCH 08/17] ARM: at91: unused variable in
- at91_pm_verify_clocks
-Message-ID: <20121004130510.GF5117@game.jcrosoft.org>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
- <1349195816-2225-9-git-send-email-arnd@arndb.de>
- <20121002185540.GB5117@game.jcrosoft.org>
- <201210040828.11226.arnd@arndb.de>
+	Thu, 4 Oct 2012 09:44:47 -0400
+Date: Thu, 4 Oct 2012 09:33:21 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org
+Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
+ addresses
+Message-ID: <20121004133319.GD9158@phenom.dumpdata.com>
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201210040828.11226.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 9950140426886753028
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:28 Thu 04 Oct     , Arnd Bergmann wrote:
-> On Tuesday 02 October 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > >  	unsigned long scsr;
-> > > +#ifdef CONFIG_AT91_PROGRAMMABLE_CLOCKS
-> > >  	int i;
-> > > +#endif
-> > please is if (IS_ENBLED())
-> > 
-> > #ifdef drop code coverage
-> > 
+On Wed, Oct 03, 2012 at 05:38:41PM -0700, Alexander Duyck wrote:
+> While working on 10Gb/s routing performance I found a significant amount of
+> time was being spent in the swiotlb DMA handler.  Further digging found that a
+> significant amount of this was due to the fact that virtual to physical
+> address translation and calling the function that did it.  It accounted for
+> nearly 60% of the total overhead.
 > 
-> Ok, agreed. Here is the new version:
-> 
-> From bacd47abb36104665261c84f6f85bba7aef8a521 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Mon, 30 Apr 2012 13:00:32 +0000
-> Subject: [PATCH] ARM: at91: unused variable in at91_pm_verify_clocks
-> 
-> The code using the variable 'i' in this function is conditional which
-> results in a harmless compiler warning. Using the IS_ENABLED macro
-> instead of #ifdef makes the code look nicer and gets rid of the
-> warning.
-> 
-> Without this patch, building at91sam9263_defconfig results in:
-> 
-> /home/arnd/linux-arm/arch/arm/mach-at91/pm.c: In function 'at91_pm_verify_clocks':
-> /home/arnd/linux-arm/arch/arm/mach-at91/pm.c:137:6: warning: unused variable 'i' [-Wunused-variable]
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> This patch set works to resolve that by changing the io_tlb_start address and
+> io_tlb_overflow_buffer address from virtual addresses to physical addresses.
 
-Best Regards,
-J.
+The assertion in your patches is that the DMA addresses (bus address)
+are linear is not applicable (unfortunatly). Meaning virt_to_phys() !=
+virt_to_dma().
+
+Now, on x86 and ia64 it is true - but one of the users of swiotlb
+library is the Xen swiotlb - which cannot guarantee that the physical
+address are 1-1 with the bus addresses. Hence the bulk of dealing with
+figuring out the right physical to bus address is done in Xen-SWIOTLB
+and the basics of finding an entry in the bounce buffer (if needed),
+mapping it, unmapping ,etc is carried out by the generic library.
+
+This is sad - b/c your patches are a good move forward.
+
+Perhaps another way to do this is by having your patches split the
+lookups in "chunks". Wherein we validate in swiotlb_init_*tbl that the
+'tbl' (so the bounce buffer) is linear - if not, we split it up in
+chunks. Perhaps the various backends can be responsible for this since
+they would know which of their memory regions are linear or not. But
+that sounds complicated and we don't want to complicate this library.
+
+Or another way would be to provide 'phys_to_virt' and 'virt_to_phys'
+functions for the swiotlb_tbl_{map|unmap}_single and the main library
+(lib/swiotlb.c) can decide to use them. If they are NULL, then it
+would do what your patches suggested. If they are defined, then
+carry out those lookups on the 'empty-to-be-used' bounce buffer
+address. Hm, that sounds like a better way of doing it.
+
