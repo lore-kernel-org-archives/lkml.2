@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab2JDVYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:24:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934181Ab2JDVYX (ORCPT
+	id S1946573Ab2JDVps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:45:48 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57562 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934191Ab2JDVY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:24:23 -0400
+	Thu, 4 Oct 2012 17:24:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [ 13/52] staging: comedi: s626: dont dereference insn->data
-Date: Thu,  4 Oct 2012 14:21:04 -0700
-Message-Id: <20121004210636.998681216@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 22/52] tools/hv: Fix file handle leak
+Date: Thu,  4 Oct 2012 14:21:13 -0700
+Message-Id: <20121004210638.124072590@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
 References: <20121004210635.372689554@linuxfoundation.org>
@@ -27,32 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
+commit d5ab482799e7c4c4b7c0aa67e8710dce28115d03 upstream.
 
-`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
-is a pointer to user memory.  It should be dereferencing the separate
-`data` parameter that points to a copy of the data in kernel memory.
+Match up each fopen() with an fclose().
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/hv/hv_kvp_daemon.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -2370,7 +2370,7 @@ static int s626_enc_insn_config(struct c
- 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -144,7 +144,7 @@ static void kvp_update_file(int pool)
+ 				sizeof(struct kvp_record),
+ 				kvp_file_info[pool].num_records, filep);
  
- 	k->SetMode(dev, k, Setup, TRUE);
--	Preload(dev, k, *(insn->data));
-+	Preload(dev, k, data[0]);
- 	k->PulseIndex(dev, k);
- 	SetLatchSource(dev, k, valueSrclatch);
- 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
+-	fflush(filep);
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ 
+@@ -191,6 +191,7 @@ static void kvp_update_mem_state(int poo
+ 	kvp_file_info[pool].records = record;
+ 	kvp_file_info[pool].num_records = records_read;
+ 
++	fclose(filep);
+ 	kvp_release_lock(pool);
+ }
+ static int kvp_file_init(void)
 
 
