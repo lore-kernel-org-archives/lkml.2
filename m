@@ -1,51 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab2JDWNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:13:19 -0400
-Received: from shutemov.name ([176.9.204.213]:59712 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179Ab2JDWNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:13:15 -0400
-Date: Fri, 5 Oct 2012 01:13:54 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, akpm@linux-foundation.org, mhocko@suse.cz,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Steve Capper <steve.capper@arm.com>
-Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-ID: <20121004221353.GA11454@shutemov.name>
-References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932665Ab2JDVSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:18:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40785 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932618Ab2JDVSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 17:18:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 30/56] xHCI: cancel command after command timeout
+Date: Thu,  4 Oct 2012 14:15:51 -0700
+Message-Id: <20121004211155.538798875@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121004211152.101901246@linuxfoundation.org>
+References: <20121004211152.101901246@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 05:59:11PM +0100, Will Deacon wrote:
-> On x86 memory accesses to pages without the ACCESSED flag set result in the
-> ACCESSED flag being set automatically. With the ARM architecture a page access
-> fault is raised instead (and it will continue to be raised until the ACCESSED
-> flag is set for the appropriate PTE/PMD).
-> 
-> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> be called for a write fault.
-> 
-> This patch ensures that faults on transparent hugepages which do not result
-> in a CoW update the access flags for the faulting pmd.
-> 
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Steve Capper <steve.capper@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+------------------
 
--- 
- Kirill A. Shutemov
+From: Elric Fu <elricfu1@gmail.com>
+
+commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
+
+The patch is used to cancel command when the command isn't
+acknowledged and a timeout occurs.
+
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
+
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
+ drivers/usb/host/xhci.h |    3 +++
+ 2 files changed, 22 insertions(+), 7 deletions(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2525,6 +2525,7 @@ static int xhci_configure_endpoint(struc
+ 	struct completion *cmd_completion;
+ 	u32 *cmd_status;
+ 	struct xhci_virt_device *virt_dev;
++	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	virt_dev = xhci->devs[udev->slot_id];
+@@ -2570,6 +2571,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
+ 
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -2591,14 +2593,17 @@ static int xhci_configure_endpoint(struc
+ 	/* Wait for the configure endpoint command to complete */
+ 	timeleft = wait_for_completion_interruptible_timeout(
+ 			cmd_completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for %s command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal",
+ 				ctx_change == 0 ?
+ 					"configure endpoint" :
+ 					"evaluate context");
+-		/* FIXME cancel the configure endpoint command */
++		/* cancel the configure endpoint command */
++		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+@@ -3547,8 +3552,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
++	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3560,12 +3567,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the enable slot request */
+-		return 0;
++		/* cancel the enable slot request */
++		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 	}
+ 
+ 	if (!xhci->slot_id) {
+@@ -3626,6 +3633,7 @@ int xhci_address_device(struct usb_hcd *
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u64 temp_64;
++	union xhci_trb *cmd_trb;
+ 
+ 	if (!udev->slot_id) {
+ 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
+@@ -3664,6 +3672,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+@@ -3676,7 +3685,7 @@ int xhci_address_device(struct usb_hcd *
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+@@ -3684,7 +3693,10 @@ int xhci_address_device(struct usb_hcd *
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for address device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the address device command */
++		/* cancel the address device command */
++		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1256,6 +1256,9 @@ struct xhci_td {
+ 	union xhci_trb		*last_trb;
+ };
+ 
++/* xHCI command default timeout value */
++#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
++
+ /* command descriptor */
+ struct xhci_cd {
+ 	struct list_head	cancel_cmd_list;
+
+
