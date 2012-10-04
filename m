@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2JDVv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 17:51:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56720 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934061Ab2JDVXY (ORCPT
+	id S1752364Ab2JDVvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 17:51:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44933 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934031Ab2JDVXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 17:23:24 -0400
+	Thu, 4 Oct 2012 17:23:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 01/52] vfs: dcache: fix deadlock in tree traversal
-Date: Thu,  4 Oct 2012 14:20:52 -0700
-Message-Id: <20121004210635.539049678@linuxfoundation.org>
+        Don Morris <don.morris@hp.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [ 55/58] isci: fix isci_pci_probe() generates warning on efi failure path
+Date: Thu,  4 Oct 2012 14:20:02 -0700
+Message-Id: <20121004210642.408139217@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121004210635.372689554@linuxfoundation.org>
-References: <20121004210635.372689554@linuxfoundation.org>
+In-Reply-To: <20121004210635.449598766@linuxfoundation.org>
+References: <20121004210635.449598766@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Miklos Szeredi <miklos@szeredi.hu>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
+commit 6d70a74ffd616073a68ae0974d98819bfa8e6da6 upstream.
 
-IBM reported a deadlock in select_parent().  This was found to be caused
-by taking rename_lock when already locked when restarting the tree
-traversal.
+The oem parameter image embedded in the efi variable is at an offset
+from the start of the variable.  However, in the failure path we try to
+free the 'orom' pointer which is only valid when the paramaters are
+being read from the legacy option-rom space.
 
-There are two cases when the traversal needs to be restarted:
+Since failure to load the oem parameters is unlikely and we keep the
+memory around in the success case just defer all de-allocation to devm.
 
- 1) concurrent d_move(); this can only happen when not already locked,
-    since taking rename_lock protects against concurrent d_move().
-
- 2) racing with final d_put() on child just at the moment of ascending
-    to parent; rename_lock doesn't protect against this rare race, so it
-    can happen when already locked.
-
-Because of case 2, we need to be able to handle restarting the traversal
-when rename_lock is already held.  This patch fixes all three callers of
-try_to_ascend().
-
-IBM reported that the deadlock is gone with this patch.
-
-[ I rewrote the patch to be smaller and just do the "goto again" if the
-  lock was already held, but credit goes to Miklos for the real work.
-   - Linus ]
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Don Morris <don.morris@hp.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/isci/init.c       |    1 -
+ drivers/scsi/isci/probe_roms.c |    1 -
+ 2 files changed, 2 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1116,6 +1116,8 @@ positive:
- 	return 1;
+--- a/drivers/scsi/isci/init.c
++++ b/drivers/scsi/isci/init.c
+@@ -641,7 +641,6 @@ static int __devinit isci_pci_probe(stru
+ 						orom->hdr.version)) {
+ 			dev_warn(&pdev->dev,
+ 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
+-			devm_kfree(&pdev->dev, orom);
+ 			orom = NULL;
+ 			break;
+ 		}
+--- a/drivers/scsi/isci/probe_roms.c
++++ b/drivers/scsi/isci/probe_roms.c
+@@ -104,7 +104,6 @@ struct isci_orom *isci_request_oprom(str
  
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -1218,6 +1220,8 @@ out:
- rename_retry:
- 	if (found)
- 		return found;
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -2963,6 +2967,8 @@ resume:
- 	return;
- 
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
+ 	if (i >= len) {
+ 		dev_err(&pdev->dev, "oprom parse error\n");
+-		devm_kfree(&pdev->dev, rom);
+ 		rom = NULL;
+ 	}
+ 	pci_unmap_biosrom(oprom);
 
 
