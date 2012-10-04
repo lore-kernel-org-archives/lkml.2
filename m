@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2JDW2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 18:28:01 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:56303 "EHLO
+	id S1755078Ab2JDW2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 18:28:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51127 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab2JDW17 (ORCPT
+	with ESMTP id S1753895Ab2JDW2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 18:27:59 -0400
-Date: Thu, 4 Oct 2012 15:27:55 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Huacai Chen <chenhc@lemote.com>, Charles Wang <muming.wq@taobao.com>,
-        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Seems like "sched: Add missing call to calc_load_exit_idle()"
- should be reverted in 3.5 branch
-Message-ID: <20121004222755.GC3609@kroah.com>
-References: <CAAhV-H54CJdg+UekpucZ=kOgCY5r5vvYQ+v4VwAMTCv+mCedXA@mail.gmail.com>
- <20121004174626.GB14301@kroah.com>
- <1349375519.14388.16.camel@twins>
+	Thu, 4 Oct 2012 18:28:46 -0400
+Date: Thu, 4 Oct 2012 15:28:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Re: 3.4.10 i915 [GM45] regression
+Message-ID: <20121004222842.GE3609@kroah.com>
+References: <2372445.fuIXicT4H0@tux200s>
+ <20120930143201.GA22107@kroah.com>
+ <CAKMK7uE-L-+bFxJad3-pa-8i2MwvYw4_vYoWM8S-bxRmKruzoQ@mail.gmail.com>
+ <6616255.1baV4zcIkN@tux200s>
+ <CAKMK7uEuRN1WerdF1KEDzova4Qe_hY20i3N=HeNVwvRYxf6gsw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349375519.14388.16.camel@twins>
+In-Reply-To: <CAKMK7uEuRN1WerdF1KEDzova4Qe_hY20i3N=HeNVwvRYxf6gsw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 08:31:59PM +0200, Peter Zijlstra wrote:
-> On Thu, 2012-10-04 at 10:46 -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Oct 04, 2012 at 12:11:01PM +0800, Huacai Chen wrote:
-> > > Hi, Greg
-> > > 
-> > > I found that Linux-3.5.5 accept this commit "sched: Add missing call
-> > > to calc_load_exit_idle()" but I think this isn't needed. Because
-> > > "5167e8d5417b sched/nohz: Rewrite and fix load-avg computation --
-> > > again not fully applied" is true for 3.6 branch, but not for 3.5
-> > > branch.
-> > 
-> > But 5167e8d5417b is in 3.5, so shouldn't this commit still be necessary?
-> > 
-> > > In 3.5 branch, calc_load_exit_idle() is already called in
-> > > tick_nohz_idle_exit(), it doesn't need to be called at
-> > > tick_nohz_update_jiffies() again. In 3.6 branch, some code of
-> > > tick_nohz_idle_exit() is splitted to tick_nohz_restart_sched_tick()
-> > > and calc_load_exit_idle() is missing by accident, so commit "sched:
-> > > Add missing call to calc_load_exit_idle()" is needed.
-> > 
-> > So this really should be dropped from 3.5?  Charles, Peter, Ingo, any
-> > thoughts here?
+On Tue, Oct 02, 2012 at 09:17:22AM +0200, Daniel Vetter wrote:
+> On Mon, Oct 1, 2012 at 11:56 PM, Andreas Sturmlechner
+> <andreas.sturmlechner@gmail.com> wrote:
+> >> Andreas, can you please check whether 3.5.x works for you, just to
+> >> make sure that this particular elephant is only wreaking havoc in 3.4
+> >> and earlier?
+> >
+> > I've been using 3.5 all the time since .0, I never had any trouble there - a few reboots just now with a vanilla 3.5.4 image were
+> > successful as expected. Meanwhile I have upgraded to 3.6, zero issues as well.
 > 
-> Bah, lots of code movement there recently.. let me try and untangle all
-> that afresh.. /me checks out v3.5.5.
-> 
-> OK, assuming ->tick_stopped means what the label says, then we only want
-> to call calc_load_enter_idle() when it flips to 1 and
-> calc_load_exit_idle() when it flips back to 0, such that when an actual
-> tick happens its got correct state.
-> 
-> Now the actual patch "5167e8d5417b sched/nohz: Rewrite and fix load-avg
-> computation -- again not fully applied" modifies
-> tick_nohz_restart_sched_tick() which doesn't appear to exist in v3.5.5
-> and the patch fobbed it into tick_nohz_update_jiffies() which is called
-> from interrupt entry when nohz-idle so that the interrupt (and possible
-> tailing softirq) see a valid jiffies count.
-> 
-> However, since we don't restart the tick, we won't be sampling load muck
-> and calling calc_load_exit_idle() from there is bound to confuse state.
-> 
-> I hope.. damn this code ;-)
-> 
-> I can't find wtf went wrong either, the initial patch 5167e8d5417bf5c
-> contains both hunks, but in that case the fixup 749c8814f0 doesn't make
-> sense, not can I find anything in merge commits using:
-> 
->   git log -S calc_load_exit_idle kernel/time/tick-sched.c
-> 
-> /me puzzled
+> So 3.5 and later really don't seem to have any issue with this patch.
+> I'm as puzzled as ever. Thanks for testing this again.
 
-I'm puzzled as well.  Any ideas if I should do anything here or not?
+I forgot to revert this for 3.4, I'll do so in the next 3.4-stable
+release after this one, thanks.
 
 greg k-h
