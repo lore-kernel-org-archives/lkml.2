@@ -1,124 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2JEJyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:54:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48560 "EHLO mx2.suse.de"
+	id S1755275Ab2JEJzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:55:24 -0400
+Received: from mx1.zhaw.ch ([160.85.104.50]:65205 "EHLO mx1.zhaw.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755217Ab2JEJyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:54:14 -0400
-Date: Fri, 5 Oct 2012 10:54:08 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
- ttwu_queue()
-Message-ID: <20121005095408.GB29125@suse.de>
-References: <20121002065143.GK29125@suse.de>
- <1349164176.7086.43.camel@marge.simpson.net>
- <20121002084501.GL29125@suse.de>
- <506B6F59.8060800@hp.com>
- <20121003094732.GQ29125@suse.de>
- <506C7E20.4090103@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <506C7E20.4090103@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755217Ab2JEJzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 05:55:23 -0400
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Oct 2012 05:55:22 EDT
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio/gpio-pl061: Covert to use devm_* functions
+Date: Fri,  5 Oct 2012 11:45:28 +0200
+Message-Id: <1349430328-18459-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.5.4
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.10.5.93616
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ HTML_00_01 0.05, HTML_00_10 0.05, BODY_SIZE_3000_3999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_NXDOMAIN 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 11:04:16AM -0700, Rick Jones wrote:
-> On 10/03/2012 02:47 AM, Mel Gorman wrote:
-> >On Tue, Oct 02, 2012 at 03:48:57PM -0700, Rick Jones wrote:
-> >>On 10/02/2012 01:45 AM, Mel Gorman wrote:
-> >>
-> >>>SIZE=64
-> >>>taskset -c 0 netserver
-> >>>taskset -c 1 netperf -t UDP_STREAM -i 50,6 -I 99,1 -l 20 -H 127.0.0.1 -- -P 15895 -s 32768 -S 32768 -m $SIZE -M $SIZE
-> >>
-> >>Just FYI, unless you are running a hacked version of netperf, the
-> >>"50" in "-i 50,6" will be silently truncated to 30.
-> >>
-> >
-> >I'm not using a hacked version of netperf. The 50,6 has been there a long
-> >time so I'm not sure where I took it from any more. It might have been an
-> >older version or me being over-zealous at the time.
-> 
-> No version has ever gone past 30.  It has been that way since the
-> confidence interval code was contributed.  It doesn't change
-> anything, so it hasn't messed-up any results.  It would be good to
-> fix but not critical.
-> 
+Use the devm_* family of functions during probe to reduce the error
+handling code footprint.
 
-It's fixed already. I don't know where the 50 came out of in that case.
-I was probably thinking "many iterations" at the time without reading
-the docs properly.
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/gpio/gpio-pl061.c |   59 ++++++++++++++++----------------------------
+ 1 files changed, 22 insertions(+), 37 deletions(-)
 
-> >>PS - I trust it is the receive-side throughput being reported/used
-> >>with UDP_STREAM :)
-> >
-> >Good question. Now that I examine the scripts, it is in fact the sending
-> >side that is being reported which is flawed. Granted I'm not expecting any
-> >UDP loss on loopback and looking through a range of results, the
-> >difference is marginal. It's still wrong to report just the sending side
-> >for UDP_STREAM and I'll correct the scripts for it in the future.
-> 
-> Switching from sending to receiving throughput in UDP_STREAM could
-> be a non-trivial disconnect in throughputs.  As Eric mentions, the
-> receiver could be dropping lots of datagrams if it cannot keep-up,
-> and netperf makes not attempt to provide any application-layer
-> flow-control.
-> 
-
-I'll bear that in mind in the future if there is a sudden change in
-throughput and determine if that is because of this send/receive disconnect
-or something else. The raw data is recorded in either case so it should
-be manageable.
-
-> Not sure which version of netperf you are using to know whether or
-> not it has gone to the "omni" code path.  If you aren't using 2.5.0
-> or 2.6.0 then the confidence intervals will have been computed based
-> on the receive side throughput, so you will at least know that it
-> was stable, even if it wasn't the same as the sending side.
-> 
-
-I'm using 2.4.5 because there was "no reason" to upgrade. I'll take a
-closer look at upgrading soon based on this comment because there is
-a possibility that the confidence interval detection is a little
-broken in the version I'm using.
-
-> The top of trunk will use the remote's receive stats for the omni
-> migration of a UDP_STREAM test too.  I think it is that way in 2.5.0
-> and 2.6.0 as well but I've not gone into the repository to check.
-> 
-> Of course, that means you don't necessarily know that the sending
-> throughput met your confidence intervals :)
-> 
-
-:)
-
-> If you are on 2.5.0 or later, you may find:
-> 
-> http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#Omni-Output-Selection
-> 
-> helpful when looking to parse results.
-> 
-
-Thanks.
-
-> One more, little thing - taskset may indeed be better for what you
-> are doing (it will happen "sooner" certainly), but there is also the
-> global -T option to bind netperf/netserver to the specified CPU id. http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#index-g_t_002dT_002c-Global-41
-> 
-
-I was aware of the option but had avoided using it as I think when I
-worked with taskset inially the option didn't exist.
-
-Thanks a lot Rick for the suggestions, they are very helpful.
-
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index b4b5da4..31d9c9e 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -216,39 +216,34 @@ static void __init pl061_init_gc(struct pl061_gpio *chip, int irq_base)
+ 			       IRQ_GC_INIT_NESTED_LOCK, IRQ_NOREQUEST, 0);
+ }
+ 
+-static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
++static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+-	struct pl061_platform_data *pdata;
++	struct device *dev = &adev->dev;
++	struct pl061_platform_data *pdata = dev->platform_data;
+ 	struct pl061_gpio *chip;
+ 	int ret, irq, i;
+ 
+-	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 
+-	pdata = dev->dev.platform_data;
+ 	if (pdata) {
+ 		chip->gc.base = pdata->gpio_base;
+ 		chip->irq_base = pdata->irq_base;
+-	} else if (dev->dev.of_node) {
++	} else if (adev->dev.of_node) {
+ 		chip->gc.base = -1;
+ 		chip->irq_base = 0;
+-	} else {
+-		ret = -ENODEV;
+-		goto free_mem;
+-	}
++	} else
++		return -ENODEV;
+ 
+-	if (!request_mem_region(dev->res.start,
+-				resource_size(&dev->res), "pl061")) {
+-		ret = -EBUSY;
+-		goto free_mem;
+-	}
++	if (!devm_request_mem_region(dev, adev->res.start,
++				resource_size(&adev->res), "pl061"))
++		return -EBUSY;
+ 
+-	chip->base = ioremap(dev->res.start, resource_size(&dev->res));
+-	if (chip->base == NULL) {
+-		ret = -ENOMEM;
+-		goto release_region;
+-	}
++	chip->base = devm_ioremap(dev, adev->res.start,
++				resource_size(&adev->res));
++	if (chip->base == NULL)
++		return -ENOMEM;
+ 
+ 	spin_lock_init(&chip->lock);
+ 
+@@ -258,13 +253,13 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+ 	chip->gc.set = pl061_set_value;
+ 	chip->gc.to_irq = pl061_to_irq;
+ 	chip->gc.ngpio = PL061_GPIO_NR;
+-	chip->gc.label = dev_name(&dev->dev);
+-	chip->gc.dev = &dev->dev;
++	chip->gc.label = dev_name(dev);
++	chip->gc.dev = dev;
+ 	chip->gc.owner = THIS_MODULE;
+ 
+ 	ret = gpiochip_add(&chip->gc);
+ 	if (ret)
+-		goto iounmap;
++		return ret;
+ 
+ 	/*
+ 	 * irq_chip support
+@@ -276,11 +271,10 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+ 	pl061_init_gc(chip, chip->irq_base);
+ 
+ 	writeb(0, chip->base + GPIOIE); /* disable irqs */
+-	irq = dev->irq[0];
+-	if (irq < 0) {
+-		ret = -ENODEV;
+-		goto iounmap;
+-	}
++	irq = adev->irq[0];
++	if (irq < 0)
++		return -ENODEV;
++
+ 	irq_set_chained_handler(irq, pl061_irq_handler);
+ 	irq_set_handler_data(irq, chip);
+ 
+@@ -294,18 +288,9 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
+ 		}
+ 	}
+ 
+-	amba_set_drvdata(dev, chip);
++	amba_set_drvdata(adev, chip);
+ 
+ 	return 0;
+-
+-iounmap:
+-	iounmap(chip->base);
+-release_region:
+-	release_mem_region(dev->res.start, resource_size(&dev->res));
+-free_mem:
+-	kfree(chip);
+-
+-	return ret;
+ }
+ 
+ #ifdef CONFIG_PM
 -- 
-Mel Gorman
-SUSE Labs
+1.7.5.4
+
