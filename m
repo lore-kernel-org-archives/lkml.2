@@ -1,29 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab2JECdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 22:33:50 -0400
-Received: from mail-ie0-f194.google.com ([209.85.223.194]:37458 "EHLO
-	mail-ie0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab2JECdt (ORCPT
+	id S1756694Ab2JECeC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 22:34:02 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59062 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab2JECd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 22:33:49 -0400
+	Thu, 4 Oct 2012 22:33:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <506E46F7.4080006@jp.fujitsu.com>
+Date: Fri, 5 Oct 2012 11:33:27 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Date: Thu, 4 Oct 2012 19:06:41 -0700
-X-Google-Sender-Auth: X6Dfw3xxOPStIkPAKId7MVR7ock
-Message-ID: <CAHXOMRVYTFHdqSwojydtbhrs6OeZqLb2g9kEjmj5bx=YYzMCMg@mail.gmail.com>
-Subject: Hello Dear
-From: Bintou Eboue <missbintou.eboue@hotmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+To: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, <rientjes@google.com>,
+        <liuj97@gmail.com>, <len.brown@intel.com>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [PATCH 6/10] memory-hotplug : implement register_page_bootmem_info_section
+ of sparse-vmemmap
+References: <506E43E0.70507@jp.fujitsu.com>
+In-Reply-To: <506E43E0.70507@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-how are you dear? I'm happy to write this little note just to say, how
-are you? I'm Bintou, single girl looking for a sincere and honest
-someone for friendship, i have made a very serious decision and I need
-to share it with a trusted someone for our own future benefits, i will
-tell you my motive in details with my picture as soon as i receive
-your response. bye and remain bless as am waiting to hear from you.
-Yours Sincerely
-Bintou
+For removing memmap region of sparse-vmemmap which is allocated bootmem,
+memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
+So the patch searches pages of virtual mapping and registers the pages by
+get_page_bootmem().
+
+Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
+and sparc.
+
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ arch/ia64/mm/discontig.c       |    6 ++++
+ arch/powerpc/mm/init_64.c      |    6 ++++
+ arch/s390/mm/vmem.c            |    6 ++++
+ arch/sparc/mm/init_64.c        |    6 ++++
+ arch/x86/mm/init_64.c          |   52 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h |   11 +-------
+ include/linux/mm.h             |    3 +-
+ mm/memory_hotplug.c            |   37 ++++++++++++++++++++++++++---
+ 8 files changed, 113 insertions(+), 14 deletions(-)
+
+Index: linux-3.6/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.6.orig/include/linux/memory_hotplug.h	2012-10-04 17:15:03.029828127 +0900
++++ linux-3.6/include/linux/memory_hotplug.h	2012-10-04 17:15:59.010833688 +0900
+@@ -163,17 +163,10 @@ static inline void arch_refresh_nodedata
+ #endif /* CONFIG_NUMA */
+ #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+-{
+-}
+-static inline void put_page_bootmem(struct page *page)
+-{
+-}
+-#else
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+ extern void put_page_bootmem(struct page *page);
+-#endif
++extern void get_page_bootmem(unsigned long ingo, struct page *page,
++			     unsigned long type);
+ 
+ /*
+  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
+Index: linux-3.6/mm/memory_hotplug.c
+===================================================================
+--- linux-3.6.orig/mm/memory_hotplug.c	2012-10-04 17:15:27.213831361 +0900
++++ linux-3.6/mm/memory_hotplug.c	2012-10-04 17:37:00.176401540 +0900
+@@ -91,9 +91,8 @@ static void release_memory_resource(stru
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+-#ifndef CONFIG_SPARSEMEM_VMEMMAP
+-static void get_page_bootmem(unsigned long info,  struct page *page,
+-			     unsigned long type)
++void get_page_bootmem(unsigned long info,  struct page *page,
++		      unsigned long type)
+ {
+ 	unsigned long page_type;
+ 
+@@ -127,6 +126,7 @@ void __ref put_page_bootmem(struct page 
+ 
+ }
+ 
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
+ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ {
+ 	unsigned long *usemap, mapsize, section_nr, i;
+@@ -160,6 +160,36 @@ static void register_page_bootmem_info_s
+ 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
+ 
+ }
++#else
++static void register_page_bootmem_info_section(unsigned long start_pfn)
++{
++	unsigned long *usemap, mapsize, section_nr, i;
++	struct mem_section *ms;
++	struct page *page, *memmap;
++
++	if (!pfn_valid(start_pfn))
++		return;
++
++	section_nr = pfn_to_section_nr(start_pfn);
++	ms = __nr_to_section(section_nr);
++
++	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
++
++	page = virt_to_page(memmap);
++	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
++	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
++
++	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
++
++	usemap = __nr_to_section(section_nr)->pageblock_flags;
++	page = virt_to_page(usemap);
++
++	mapsize = PAGE_ALIGN(usemap_size()) >> PAGE_SHIFT;
++
++	for (i = 0; i < mapsize; i++, page++)
++		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
++}
++#endif
+ 
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+@@ -202,7 +232,6 @@ void register_page_bootmem_info_node(str
+ 			register_page_bootmem_info_section(pfn);
+ 	}
+ }
+-#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			   unsigned long end_pfn)
+Index: linux-3.6/arch/ia64/mm/discontig.c
+===================================================================
+--- linux-3.6.orig/arch/ia64/mm/discontig.c	2012-10-01 08:47:46.000000000 +0900
++++ linux-3.6/arch/ia64/mm/discontig.c	2012-10-04 17:15:59.209833459 +0900
+@@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct pa
+ {
+ 	return vmemmap_populate_basepages(start_page, size, node);
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif
+Index: linux-3.6/arch/powerpc/mm/init_64.c
+===================================================================
+--- linux-3.6.orig/arch/powerpc/mm/init_64.c	2012-10-01 08:47:46.000000000 +0900
++++ linux-3.6/arch/powerpc/mm/init_64.c	2012-10-04 17:15:59.217833663 +0900
+@@ -298,5 +298,11 @@ int __meminit vmemmap_populate(struct pa
+ 
+ 	return 0;
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+Index: linux-3.6/arch/s390/mm/vmem.c
+===================================================================
+--- linux-3.6.orig/arch/s390/mm/vmem.c	2012-10-01 08:47:46.000000000 +0900
++++ linux-3.6/arch/s390/mm/vmem.c	2012-10-04 17:15:59.227833764 +0900
+@@ -227,6 +227,12 @@ out:
+ 	return ret;
+ }
+ 
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
++
+ /*
+  * Add memory segment to the segment list if it doesn't overlap with
+  * an already present segment.
+Index: linux-3.6/arch/sparc/mm/init_64.c
+===================================================================
+--- linux-3.6.orig/arch/sparc/mm/init_64.c	2012-10-01 08:47:46.000000000 +0900
++++ linux-3.6/arch/sparc/mm/init_64.c	2012-10-04 17:15:59.232833747 +0900
+@@ -2077,6 +2077,12 @@ void __meminit vmemmap_populate_print_la
+ 		node_start = 0;
+ 	}
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+Index: linux-3.6/arch/x86/mm/init_64.c
+===================================================================
+--- linux-3.6.orig/arch/x86/mm/init_64.c	2012-10-04 17:15:03.021828121 +0900
++++ linux-3.6/arch/x86/mm/init_64.c	2012-10-04 17:15:59.240833769 +0900
+@@ -993,6 +993,58 @@ vmemmap_populate(struct page *start_page
+ 	return 0;
+ }
+ 
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	unsigned long addr = (unsigned long)start_page;
++	unsigned long end = (unsigned long)(start_page + size);
++	unsigned long next;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++
++	for (; addr < end; addr = next) {
++		pte_t *pte = NULL;
++
++		pgd = pgd_offset_k(addr);
++		if (pgd_none(*pgd)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
++
++		pud = pud_offset(pgd, addr);
++		if (pud_none(*pud)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
++
++		if (!cpu_has_pse) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 MIX_SECTION_INFO);
++
++			pte = pte_offset_kernel(pmd, addr);
++			if (pte_none(*pte))
++				continue;
++			get_page_bootmem(section_nr, pte_page(*pte),
++					 SECTION_INFO);
++		} else {
++			next = pmd_addr_end(addr, end);
++
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 SECTION_INFO);
++		}
++	}
++}
++
+ void __meminit vmemmap_populate_print_last(void)
+ {
+ 	if (p_start) {
+Index: linux-3.6/include/linux/mm.h
+===================================================================
+--- linux-3.6.orig/include/linux/mm.h	2012-10-01 08:47:46.000000000 +0900
++++ linux-3.6/include/linux/mm.h	2012-10-04 17:15:59.246833767 +0900
+@@ -1618,7 +1618,8 @@ int vmemmap_populate_basepages(struct pa
+ 						unsigned long pages, int node);
+ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+ void vmemmap_populate_print_last(void);
+-
++void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
++				  unsigned long size);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+
