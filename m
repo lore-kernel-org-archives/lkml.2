@@ -1,162 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2JEDZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 23:25:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60983 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab2JEDZC (ORCPT
+	id S1752788Ab2JEDdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 23:33:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48232 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2JEDdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 23:25:02 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506E52E1.3090609@jp.fujitsu.com>
-Date: Fri, 5 Oct 2012 12:24:17 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Josh Triplett <josh@joshtriplett.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH] CPU hotplug, debug: Detect imbalance between get_online_cpus()
- and put_online_cpus()
-References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz> <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <alpine.LNX.2.00.1210031143260.23544@pobox.suse.cz> <506C2E02.9080804@linux.vnet.ibm.com>	<506C3535.3070401@linux.vnet.ibm.com> <20121003141311.09fb3ffc.akpm@linux-foundation.org> <506D29A7.1000805@linux.vnet.ibm.com>
-In-Reply-To: <506D29A7.1000805@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Oct 2012 23:33:09 -0400
+Date: Fri, 5 Oct 2012 13:32:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: linux-next: manual merge of the arm-soc tree with the arm64 tree
+Message-Id: <20121005133248.cca53b84a9dace0c1052a502@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__5_Oct_2012_13_32_48_+1000_YYD8iuWrDwgiK_TR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/04 15:16, Srivatsa S. Bhat wrote:
-> On 10/04/2012 02:43 AM, Andrew Morton wrote:
->> On Wed, 03 Oct 2012 18:23:09 +0530
->> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->>
->>> The synchronization between CPU hotplug readers and writers is achieved by
->>> means of refcounting, safe-guarded by the cpu_hotplug.lock.
->>>
->>> get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
->>> it. If we ever hit an imbalance between the two, we end up compromising the
->>> guarantees of the hotplug synchronization i.e, for example, an extra call to
->>> put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
->>> a hotplug writer. So, add a BUG_ON() in put_online_cpus() to detect such cases
->>> where the refcount can go negative.
->>>
->>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>> ---
->>>
->>>   kernel/cpu.c |    1 +
->>>   1 file changed, 1 insertion(+)
->>>
->>> diff --git a/kernel/cpu.c b/kernel/cpu.c
->>> index f560598..00d29bc 100644
->>> --- a/kernel/cpu.c
->>> +++ b/kernel/cpu.c
->>> @@ -80,6 +80,7 @@ void put_online_cpus(void)
->>>   	if (cpu_hotplug.active_writer == current)
->>>   		return;
->>>   	mutex_lock(&cpu_hotplug.lock);
->>> +	BUG_ON(cpu_hotplug.refcount == 0);
->>>   	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->>>   		wake_up_process(cpu_hotplug.active_writer);
->>>   	mutex_unlock(&cpu_hotplug.lock);
->>
->> I think calling BUG() here is a bit harsh.  We should only do that if
->> there's a risk to proceeding: a risk of data loss, a reduced ability to
->> analyse the underlying bug, etc.
->>
->> But a cpu-hotplug locking imbalance is a really really really minor
->> problem!  So how about we emit a warning then try to fix things up?
->
-> That would be better indeed, thanks!
->
->> This should increase the chance that the machine will keep running and
->> so will increase the chance that a user will be able to report the bug
->> to us.
->>
->
-> Yep, sounds good.
->
->>
->> --- a/kernel/cpu.c~cpu-hotplug-debug-detect-imbalance-between-get_online_cpus-and-put_online_cpus-fix
->> +++ a/kernel/cpu.c
->> @@ -80,9 +80,12 @@ void put_online_cpus(void)
->>   	if (cpu_hotplug.active_writer == current)
->>   		return;
->>   	mutex_lock(&cpu_hotplug.lock);
->> -	BUG_ON(cpu_hotplug.refcount == 0);
->> -	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->> -		wake_up_process(cpu_hotplug.active_writer);
->> +	if (!--cpu_hotplug.refcount) {
->
-> This won't catch it. We'll enter this 'if' condition only when cpu_hotplug.refcount was
-> decremented to zero. We'll miss out the case when it went negative (which we intended to detect).
->
->> +		if (WARN_ON(cpu_hotplug.refcount == -1))
->> +			cpu_hotplug.refcount++;	/* try to fix things up */
->> +		if (unlikely(cpu_hotplug.active_writer))
->> +			wake_up_process(cpu_hotplug.active_writer);
->> +	}
->>   	mutex_unlock(&cpu_hotplug.lock);
->>
->>   }
->
-> So how about something like below:
->
-> ------------------------------------------------------>
->
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] CPU hotplug, debug: Detect imbalance between get_online_cpus() and put_online_cpus()
->
-> The synchronization between CPU hotplug readers and writers is achieved by
-> means of refcounting, safe-guarded by the cpu_hotplug.lock.
->
-> get_online_cpus() increments the refcount, whereas put_online_cpus() decrements
-> it. If we ever hit an imbalance between the two, we end up compromising the
-> guarantees of the hotplug synchronization i.e, for example, an extra call to
-> put_online_cpus() can end up allowing a hotplug reader to execute concurrently with
-> a hotplug writer. So, add a WARN_ON() in put_online_cpus() to detect such cases
-> where the refcount can go negative, and also attempt to fix it up, so that we can
-> continue to run.
->
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
+--Signature=_Fri__5_Oct_2012_13_32_48_+1000_YYD8iuWrDwgiK_TR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks good to me.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hi all,
 
->
->   kernel/cpu.c |    4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index f560598..42bd331 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -80,6 +80,10 @@ void put_online_cpus(void)
->   	if (cpu_hotplug.active_writer == current)
->   		return;
->   	mutex_lock(&cpu_hotplug.lock);
-> +
-> +	if (WARN_ON(!cpu_hotplug.refcount))
-> +		cpu_hotplug.refcount++; /* try to fix things up */
-> +
->   	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
->   		wake_up_process(cpu_hotplug.active_writer);
->   	mutex_unlock(&cpu_hotplug.lock);
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm64/include/asm/unistd32.h between commit cce72b4219ee ("arm64:
+Use the generic compat_sys_sendfile() implementation") from the arm64
+tree and commit 890139529d45 ("UAPI: Fix the guards on various
+asm/unistd.h files") from the arm-soc tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm64/include/asm/unistd32.h
+index ec61180,3ba1f1a..0000000
+--- a/arch/arm64/include/asm/unistd32.h
++++ b/arch/arm64/include/asm/unistd32.h
+@@@ -754,6 -752,3 +752,4 @@@ __SYSCALL(__NR_syncfs, sys_syncfs
+  #define __ARCH_WANT_SYS_SIGPENDING
+  #define __ARCH_WANT_SYS_SIGPROCMASK
+  #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
+ +#define __ARCH_WANT_COMPAT_SYS_SENDFILE
+-=20
+- #endif /* __ASM_UNISTD32_H */
+
+--Signature=_Fri__5_Oct_2012_13_32_48_+1000_YYD8iuWrDwgiK_TR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQblTgAAoJEECxmPOUX5FEUWAP+wbDbQ5Nb1qyMoaNp4LPf1qm
+02z9y8HRA8xBfPvjJD1Ih8q0kUgf3Y4V9zZ73QonQ+yjr+TTv/5mDhzly29R3v7L
+w2aW2avAPmd8MO+xV42vZt99WgVj/BAFecnrl3AJ3lbcF6dgcig+aPKrHSuTKStj
+mwIuTXLhWraZRDpY+fLaCAAd0+U571avxXMphO7SLXDYGA9Tg8yfr4KsU8pr+cbI
+ouze4FDI6v5bUy1iCb1WBLSj5225otc23N3m2bd81ymP5hRAgl1IEG7TIpKjD7y8
+uIDPRzG9w+xfmdm+ZMvB4Z5TweaUZKkAkhpRX1mavXcx8vV0YojaaMJnv0NXBu52
+8ao97CqllsF1+ePdk76TnB/1JidTAqNAciEPbq2pkOY0+s9gRlh/dIl2HU9RTQZG
+xfwW63eExI9tsuhdyF8ZhKXSxoE0qmi+3WKQ8y8XKa1elDtfuR4tQEXlBu4pRFbh
+OAZVqGFRAzOdlxzK2cFvhRGBMgqPRuiscDShqdfWAt45XZgVRnz6tIarD/2dKVdY
+w0hLFZQwpXsWsD0xo77IR4sD+b5ZDJHXC5i8I3/kvb7nZF9WvydiGq2rqP7OWRHl
+S7hAjhUMqIOOV+G5Dlpv7Ejx1ZTiAEyFpsC+1d9Cyqc8Tre8qjwDbXDOExrn4IWg
+M/0iWw97u9t4eQDOc/Pd
+=YjDV
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__5_Oct_2012_13_32_48_+1000_YYD8iuWrDwgiK_TR--
