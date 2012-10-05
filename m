@@ -1,87 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2JEKt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:49:58 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:47125 "EHLO ns.iliad.fr"
+	id S932259Ab2JEKui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:50:38 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29514 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab2JEKt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:49:56 -0400
-Message-ID: <1349434194.16710.44.camel@sakura.staff.proxad.net>
-Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
- __alloc_pages_nodemask+0x1d4/0x68c()
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Date: Fri, 05 Oct 2012 12:49:54 +0200
-In-Reply-To: <1349422868.21172.38.camel@edumazet-glaptop>
-References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
-	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
-	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
-	 <1349368171.16011.79.camel@edumazet-glaptop>
-	 <1349422868.21172.38.camel@edumazet-glaptop>
-Organization: Freebox
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932108Ab2JEKug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 06:50:36 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-mm@kvack.org>
+Cc: <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH v4] slab: Ignore internal flags in cache creation
+Date: Fri,  5 Oct 2012 14:49:14 +0400
+Message-Id: <1349434154-8000-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some flags are used internally by the allocators for management
+purposes. One example of that is the CFLGS_OFF_SLAB flag that slab uses
+to mark that the metadata for that cache is stored outside of the slab.
 
-On Fri, 2012-10-05 at 09:41 +0200, Eric Dumazet wrote:
+No cache should ever pass those as a creation flags. We can just ignore
+this bit if it happens to be passed (such as when duplicating a cache in
+the kmem memcg patches).
 
-> By the way, the commit you pointed has no effect on the reallocation
-> performed by pskb_expand_head() :
+Because such flags can vary from allocator to allocator, we allow them
+to make their own decisions on that, defining SLAB_AVAILABLE_FLAGS with
+all flags that are valid at creation time.  Allocators that doesn't have
+any specific flag requirement should define that to mean all flags.
 
-The commit has a side effect, because the problem appeared after it was
-merged (and goes away if I revert it)
+Common code will mask out all flags not belonging to that set.
 
-> int size = nhead + skb_end_offset(skb) + ntail;
-> 
-> So pskb_expand_head() always assumed the current head is fully used, and
-> because we have some kmalloc-power-of-two contraints, each time
-> pskb_expand_head() is called with a non zero (nhead + ntail) we double
-> the skb->head ksize.
+[ v2: leave the mask out decision up to the allocators ]
+[ v3: define flags for all allocators ]
+[ v4: move all definitions to slab.h ]
 
-That is true, but only after the commit I mentioned.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+---
+ mm/slab.c        | 22 ----------------------
+ mm/slab.h        | 25 +++++++++++++++++++++++++
+ mm/slab_common.c |  7 +++++++
+ mm/slub.c        |  3 ---
+ 4 files changed, 32 insertions(+), 25 deletions(-)
 
-Before that commit, we indeed reallocate skb->head to twice the size,
-but skb->end is *not* positioned at the end of newly allocated data. So
-on the next pskb_expand_head(), if head and tail are not big values, the
-kmalloc() will be of the same size.
-
-
-The commit adds this after allocation:
-
-size = SKB_WITH_OVERHEAD(ksize(data))
-[...]
-skb->end      = skb->head + size;
-
-so on the next pskb_expand_head, we are going to allocate twice the size
-for sure.
-
-> So why are we using skb_end_offset(skb) here is the question.
-> 
-> I guess it could be (skb_tail_pointer(skb) - skb->head) on some uses.
-
-I think your patch is wrong, ntail is not the new tailroom size, it's
-what missing to the current tailroom size, by adding ntail + nhead +
-tail_offset we are removing previous tailroom.
-
-We cannot shrink the skb that way here I guess, a caller may check
-needed headroom & tailroom, calls with nhead=1/ntail=0 because only
-headroom is missing, but after the call tailroom would be less than
-before the call.
-
-Why don't we juste reallocate to this size:
-
-MAX(current_alloc_size, nhead + ntail + current_end - current_head)
-
+diff --git a/mm/slab.c b/mm/slab.c
+index 87569af..eafef58 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -162,23 +162,6 @@
+  */
+ static bool pfmemalloc_active __read_mostly;
+ 
+-/* Legal flag mask for kmem_cache_create(). */
+-#if DEBUG
+-# define CREATE_MASK	(SLAB_RED_ZONE | \
+-			 SLAB_POISON | SLAB_HWCACHE_ALIGN | \
+-			 SLAB_CACHE_DMA | \
+-			 SLAB_STORE_USER | \
+-			 SLAB_RECLAIM_ACCOUNT | SLAB_PANIC | \
+-			 SLAB_DESTROY_BY_RCU | SLAB_MEM_SPREAD | \
+-			 SLAB_DEBUG_OBJECTS | SLAB_NOLEAKTRACE | SLAB_NOTRACK)
+-#else
+-# define CREATE_MASK	(SLAB_HWCACHE_ALIGN | \
+-			 SLAB_CACHE_DMA | \
+-			 SLAB_RECLAIM_ACCOUNT | SLAB_PANIC | \
+-			 SLAB_DESTROY_BY_RCU | SLAB_MEM_SPREAD | \
+-			 SLAB_DEBUG_OBJECTS | SLAB_NOLEAKTRACE | SLAB_NOTRACK)
+-#endif
+-
+ /*
+  * kmem_bufctl_t:
+  *
+@@ -2385,11 +2368,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	if (flags & SLAB_DESTROY_BY_RCU)
+ 		BUG_ON(flags & SLAB_POISON);
+ #endif
+-	/*
+-	 * Always checks flags, a caller might be expecting debug support which
+-	 * isn't available.
+-	 */
+-	BUG_ON(flags & ~CREATE_MASK);
+ 
+ 	/*
+ 	 * Check that size is in terms of words.  This is needed to avoid
+diff --git a/mm/slab.h b/mm/slab.h
+index 7deeb44..4c35c17 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -45,6 +45,31 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
+ #endif
+ 
+ 
++/* Legal flag mask for kmem_cache_create(), for various configurations */
++#define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | SLAB_PANIC | \
++			 SLAB_DESTROY_BY_RCU | SLAB_DEBUG_OBJECTS )
++
++#if defined(CONFIG_DEBUG_SLAB)
++#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
++#elif defined(CONFIG_SLUB_DEBUG)
++#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
++			  SLAB_TRACE | SLAB_DEBUG_FREE)
++#else
++#define SLAB_DEBUG_FLAGS (0)
++#endif
++
++#if defined(CONFIG_SLAB)
++#define SLAB_CACHE_FLAGS (SLAB_MEMSPREAD | SLAB_NOLEAKTRACE | \
++			  SLAB_RECLAIM_ACCOUNT | SLAB_TEMPORARY | SLAB_NOTRACK)
++#elif defined(CONFIG_SLUB)
++#define SLAB_CACHE_FLAGS (SLAB_NOLEAKTRACE | SLAB_RECLAIM_ACCOUNT | \
++			  SLAB_TEMPORARY | SLAB_NOTRACK)
++#else
++#define SLAB_CACHE_FLAGS (0)
++#endif
++
++#define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
++
+ int __kmem_cache_shutdown(struct kmem_cache *);
+ 
+ #endif
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 9c21725..0e2b8e3 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -107,6 +107,13 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+ 	if (!kmem_cache_sanity_check(name, size) == 0)
+ 		goto out_locked;
+ 
++	/*
++	 * Some allocators will constraint the set of valid flags to a subset
++	 * of all flags. We expect them to define CACHE_CREATE_MASK in this
++	 * case, and we'll just provide them with a sanitized version of the
++	 * passed flags.
++	 */
++	flags &= CACHE_CREATE_MASK;
+ 
+ 	s = __kmem_cache_alias(name, size, align, flags, ctor);
+ 	if (s)
+diff --git a/mm/slub.c b/mm/slub.c
+index 628a261..f50c5b2 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -112,9 +112,6 @@
+  * 			the fast path and disables lockless freelists.
+  */
+ 
+-#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
+-		SLAB_TRACE | SLAB_DEBUG_FREE)
+-
+ static inline int kmem_cache_debug(struct kmem_cache *s)
+ {
+ #ifdef CONFIG_SLUB_DEBUG
 -- 
-Maxime
-
+1.7.11.4
 
