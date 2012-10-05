@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750956Ab2JEGkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:40:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64704 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab2JEGkL (ORCPT
+	id S1751149Ab2JEGko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:40:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42478 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2JEGkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:40:11 -0400
+	Fri, 5 Oct 2012 02:40:41 -0400
+Date: Thu, 4 Oct 2012 23:12:36 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Gerecke <killertofu@gmail.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: build failure after merge of the input tree
+Message-ID: <20121005061236.GA11112@core.coreip.homeip.net>
+References: <20121005114712.02361628ba297ef695d54876@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1348497799-32143-2-git-send-email-ulf.hansson@stericsson.com>
-References: <1348497799-32143-1-git-send-email-ulf.hansson@stericsson.com>
-	<1348497799-32143-2-git-send-email-ulf.hansson@stericsson.com>
-Date: Fri, 5 Oct 2012 08:14:34 +0200
-Message-ID: <CACRpkdac1MJ3ou-vWZ9fFgP8c81+0oag+BYMrJygHRcGwv18YA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: dbx500: Export prmcu_request_ape_opp_100_voltage
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ulf Hansson <ulf.hansson@stericsson.com>
-Cc: linux-arm-kernel@lists.infradead.org, Mike Turquette <mturquette@ti.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Philippe Begnic <philippe.begnic@st.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121005114712.02361628ba297ef695d54876@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 4:43 PM, Ulf Hansson <ulf.hansson@stericsson.com> wrote:
+Hi Stephen,
 
-> From: Ulf Hansson <ulf.hansson@linaro.org>
->
-> This function needs to be exported to let clients be able to
-> request the ape opp 100 voltage.
->
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+On Fri, Oct 05, 2012 at 11:47:12AM +1000, Stephen Rothwell wrote:
+> Hi Dmitry,
+> 
+> After merging the input tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/input/tablet/wacom_sys.c: In function 'wacom_get_sibling':
+> drivers/input/tablet/wacom_sys.c:643:23: error: 'struct usb_device' has no member named 'children'
+> 
+> Caused by commit 316f18bba311 ("Input: wacom - handle split-sensor
+> devices with internal hubs") interacting with commit ff823c79a5c3 ("usb:
+> move children to struct usb_port") that is now in Linus' tree.
+> 
+> I have used the input tree from next-20121004 for today.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Sorry about this. I pulled the offending patch and another one depending
+on it out of my next branch pending my next pull from mainline.
 
-Yours,
-Linus Walleij
+Thanks.
+
+-- 
+Dmitry
