@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2JFADY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 20:03:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57528 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab2JFADX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 20:03:23 -0400
-Date: Fri, 5 Oct 2012 17:02:59 -0700 (PDT)
-From: Min Zhang <mzhang@mvista.com>
-X-X-Sender: mzhang@linux-acr3.site
-To: Ben Hutchings <bhutchings@solarflare.com>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mlx4: set carrier off after register netdev
-In-Reply-To: <1349470415.2819.1.camel@bwh-desktop.uk.solarflarecom.com>
-Message-ID: <alpine.LNX.2.00.1210051701030.17958@linux-acr3.site>
-References: <alpine.LNX.2.00.1210051058420.16216@linux-acr3.site> <1349470415.2819.1.camel@bwh-desktop.uk.solarflarecom.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751938Ab2JFAKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 20:10:01 -0400
+Received: from xes-mad.com ([216.165.139.218]:45689 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853Ab2JFAKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 20:10:00 -0400
+X-Greylist: delayed 3262 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Oct 2012 20:09:59 EDT
+Message-ID: <1349478922.23533.78.camel@petert>
+Subject: Re: 3.6.0+ (GIT) -- lpc_ich: Resource conflict(s) found affecting
+ gpio_ich
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jean Delvare <khali@linux-fr.org>
+Date: Fri, 05 Oct 2012 18:15:22 -0500
+In-Reply-To: <CAHFgRy975B0fPsBqRY7xW53egRpUxcLG=6DYQGawz+M4hTxWdg@mail.gmail.com>
+References: <CAHFgRy975B0fPsBqRY7xW53egRpUxcLG=6DYQGawz+M4hTxWdg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Miles,
 
-On Fri, 5 Oct 2012, Ben Hutchings wrote:
+On Thu, 2012-10-04 at 10:14 -0400, Miles Lane wrote:
+> ACPI Warning: 0x0000000000000828-0x000000000000082f SystemIO conflicts
+> with Region \PMIO 1 (20120711/utaddress-251)
+> ACPI: If an ACPI driver is available for this device, you should use
+> it instead of the native driver
+> ACPI Warning: 0x0000000000000500-0x000000000000053f SystemIO conflicts
+> with Region \GPIO 1 (20120711/utaddress-251)
+> ACPI: If an ACPI driver is available for this device, you should use
+> it instead of the native driver
+> lpc_ich: Resource conflict(s) found affecting gpio_ich
 
-> On Fri, 2012-10-05 at 11:28 -0700, Min Zhang wrote:
-> > ifconfig mlx4_en port reported RUNNING even though the link was down.
-> > 
-> > mlx4_en_init_netdev didn't initialize the dev operstate properly so
-> > the operstate stayed as default IF_OPER_UNKNOWN, then ifconfig treated
-> > the UNKNOWN as RUNNING state for backward compatiblity per RFC2863.
-> > 
-> > The fix calls netif_carrier_off which is supposed to set operstate
-> > after register_netdev. Calling it before register_netdev has no effect
-> > since the dev->state is still NETREG_UNINITIALIZED
-> > 
-> > Tested by removing the physical link signal to the mellanox 10G port,
-> > modprobe mlx4_en, then ifconfig up. Verify there is no RUNNING status.
-> [...]
-> 
-> This was supposed to be fixed by:
-> 
-> commit 8f4cccbbd92f2ad0ddbbc498ef7cee2a1c3defe9
-> Author: Ben Hutchings <bhutchings@solarflare.com>
-> Date:   Mon Aug 20 22:16:51 2012 +0100
-> 
->     net: Set device operstate at registration time
-> 
-> Does that not work for mlx4_en, for some reason?
-> 
-> Ben.
-> 
-> -- 
-> Ben Hutchings, Staff Engineer, Solarflare
-> Not speaking for my employer; that's the marketing department's job.
-> They asked us to note that Solarflare product names are trademarked.
->
+Jean Delvare submitted a patch which may allow you to use the GPIO pins
+in banks not claimed by the BIOS:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4f600ada70beeb1dfe08e11e871bf31015aa0a3d
 
-Indeed, commit 8f4cccbbd92f2ad0ddbbc498ef7cee2a1c3defe9 does fix the issue 
-in mlx4. I didn't have the newest net/core. Therefore ignore my mlx4 fix. 
+This patch is not in 3.6, but will be included in 3.7.
+
+You could also try adding "acpi_enforce_resources=lax" or
+"acpi_enforce_resources=no" to your kernel parameters to disable the
+ACPI conflict checking.  Note this could have other unintended
+consequences.
+
+Best,
+Peter
+
