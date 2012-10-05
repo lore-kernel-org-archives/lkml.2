@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2JEO5Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:57:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51322 "EHLO
+	id S1756502Ab2JEO5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:57:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61677 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756381Ab2JEO4N (ORCPT
+	with ESMTP id S1756370Ab2JEO4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:56:13 -0400
+	Fri, 5 Oct 2012 10:56:12 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Ben Blum <bblum@andrew.cmu.edu>
-Subject: [PATCH 07/16] cgroup: fix warning when building without any subsys
-Date: Fri,  5 Oct 2012 16:55:21 +0200
-Message-Id: <1349448930-23976-8-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Greg Ungerer <gerg@uclinux.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 01/16] ARM: warnings in arch/arm/include/asm/uaccess.h
+Date: Fri,  5 Oct 2012 16:55:15 +0200
+Message-Id: <1349448930-23976-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349448930-23976-1-git-send-email-arnd@arndb.de>
 References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:LE5XuEYuxrwkJLoRKhGJEQRYTOsl099eovMV8WrcDl/
- FHv6vqGM707U3J7JNo/XoRUKO58d75UtmW6rAMQDN/LodvRRTq
- kpBZYhPK2nQ0WQ4vb0c0Tw0G8oQ36S/C8k7FzucW7URB1GwR+B
- 8kjLiZ+FMen0JSLRtSU90ZVtRJWpr4wCCyvPHUKFHeqVKvivqA
- e2dn0y4pngBlMdGhWSJy3o5dJ2SA12W1muzfx3r1lJqmSJxtvA
- Ovux/4ohZ2tm1fGtufRKLV9W9wQ9z68LSzs/OFd/Ur2r0uSkPN
- DiSx0b/b8kqMlsiyMrK5q525tLEmwHHBTTKAd6IvI2rlblLNzE
- nryaVaNKeSYcL65s6MtTmZP3aNjgM6ns8PlB67O38OkqvIhibQ
- PQlkS1WC8rGxAUNiZR3AJaGg5DQyc/aH6E=
+X-Provags-ID: V02:K0:xgkwAi3VsWjkrY6vAMpyEM/iPJLqKEnxkhRRMvqoE4s
+ NPBTd36ONPjlG5lLcL/SACiC35fjBoBZLkmKwqYo3pfxUXH9XU
+ AUtFMJDEprR45BPNAzyaK2BpgEVjknMF+C2fq6+xNytCh6xE6A
+ TK44TZPOarF1rLRSsBhvbdx3Z1xZHnOPSKLSPeljI2V+WcVWMV
+ Wncm7Z9LHtdn4rqTLuCX9yvs2h8DzvBTVyCWxArVyouJWx8Q+o
+ vqAXoQl84idUsMBltDnrGDZDB9sTF2kr1L624WGJ0vUPgC4qJz
+ P7ZAvwzQ8EdMEknIsRqh48SJbnRtPCJdGd19tcW9ReYrmlsJVc
+ q9UA7KCxa4iduqIm/uixDYkDKV8pdVUpo5f3Ii9gcvKgVWkmJ4
+ 25Z9v1F2c0dZxhiFWIxHJvYCzdE+VOxdTg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a configuration where the base cgroup support is enabled but
-every single cgroup subsys is turned off, CGROUP_BUILTIN_SUBSYS_COUNT
-is zero, which causes the sanity check code in cgroup_load_subsys
-to trigger:
+On NOMMU ARM, the __addr_ok() and __range_ok() macros do not evaluate
+their arguments, which may lead to harmless build warnings in some
+code where the variables are not used otherwise. Adding a cast to void
+gets rid of the warning and does not make any semantic changes.
 
-       BUG_ON(ss->subsys_id >= CGROUP_BUILTIN_SUBSYS_COUNT);
-       BUG_ON(subsys[ss->subsys_id] != ss);
+Without this patch, building at91x40_defconfig results in:
 
-Gcc first confirms that subsys_id cannot be 0 or larger and consequently
-warns in the second line.
-
-kernel/cgroup.c: In function 'cgroup_load_subsys':
-kernel/cgroup.c:4326:38: warning: array subscript is below array bounds [-Warray-bounds]
-
-Since the subsys_id can never be less than zero, we can just change the
-type to an unsigned int, which makes the warning go away.
-
-Found by building ARM cns3420vb_defconfig.
+fs/read_write.c: In function 'rw_copy_check_uvector':
+fs/read_write.c:684:9: warning: unused variable 'buf' [-Wunused-variable]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- include/linux/cgroup.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/uaccess.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index c90eaa8..26b99df 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -475,7 +475,7 @@ struct cgroup_subsys {
- 	void (*post_clone)(struct cgroup *cgrp);
- 	void (*bind)(struct cgroup *root);
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 77bd79f..7e1f760 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -200,8 +200,8 @@ extern int __put_user_8(void *, unsigned long long);
+ #define USER_DS			KERNEL_DS
  
--	int subsys_id;
-+	unsigned int subsys_id;
- 	int active;
- 	int disabled;
- 	int early_init;
+ #define segment_eq(a,b)		(1)
+-#define __addr_ok(addr)		(1)
+-#define __range_ok(addr,size)	(0)
++#define __addr_ok(addr)		((void)(addr),1)
++#define __range_ok(addr,size)	((void)(addr),0)
+ #define get_fs()		(KERNEL_DS)
+ 
+ static inline void set_fs(mm_segment_t fs)
 -- 
 1.7.10
 
