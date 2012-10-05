@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2JERqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 13:46:25 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:52592 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab2JERqX convert rfc822-to-8bit (ORCPT
+	id S1756700Ab2JERqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 13:46:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30802 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab2JERql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 13:46:23 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/16] f2fs: add on-disk layout
-Date: Fri, 5 Oct 2012 19:46:21 +0200
-User-Agent: KMail/1.13.7 (Linux/3.6.0-tp520; KDE/4.8.4; x86_64; ; )
-Cc: =?utf-8?q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>,
-        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-References: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com> (sfid-20121005_184512_086765_45BFD6B3)
-In-Reply-To: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201210051946.21451.Martin@lichtvoll.de>
+	Fri, 5 Oct 2012 13:46:41 -0400
+X-Authority-Analysis: v=2.0 cv=fb8vOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_Ld--4Lr3LMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=t9ydKhIB5vYA:10 a=pGLkceISAAAA:8 a=TzeAaOVhAAAA:8 a=vikj0InrG-HBPknX5aYA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=UVEM-Fm2KIoA:10 a=VQ7OGjdcjMoYM5RE:21 a=TrR0jtbbByy9Wq9i:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349459199.6755.66.camel@gandalf.local.home>
+Subject: Re: [PATCHv2.5] trace: reuse kbasename() functionality
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 05 Oct 2012 13:46:39 -0400
+In-Reply-To: <CAHp75Vcvw-uc+2srSSTrdcUqU_rTsMS5k7cLrvkRtiLve6aNvw@mail.gmail.com>
+References: <1349253783-21612-7-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1349254399-22742-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1349455743.6755.57.camel@gandalf.local.home>
+	 <CAHp75Vc1a-4LtuTun=urBLvroLqsok4zeW-Fqm-uDK9izmsR6w@mail.gmail.com>
+	 <1349457161.6755.61.camel@gandalf.local.home>
+	 <CAHp75Vcvw-uc+2srSSTrdcUqU_rTsMS5k7cLrvkRtiLve6aNvw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 5. Oktober 2012 schrieb 김재극:
-> This adds a header file describing the on-disk layout of f2fs.
+On Fri, 2012-10-05 at 20:21 +0300, Andy Shevchenko wrote:
+> On Fri, Oct 5, 2012 at 8:12 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Fri, 2012-10-05 at 20:02 +0300, Andy Shevchenko wrote:
+> >
+> >> > I don't see kbasename() anywhere. Is this based off of other patches?
+> >> It's introduced by first patch in the series.
+> > Usually a series has the format of:
+> >
+> > [PATCH x/n] ....
+> >
+> > Where x is the patch number and n is the total number of patches. I'm
+> > not sure what a v2.5 is. This is version 2 and a half?
+> Ah, it's an update to patch 6/6. You could see it by
+> Message-Id/In-Reply-To chains.
 > 
-> Signed-off-by: Changman Lee <cm224.lee@samsung.com>
-> Signed-off-by: Chul Lee <chur.lee@samsung.com>
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  include/linux/f2fs_fs.h |  359 +++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 359 insertions(+)
->  create mode 100644 include/linux/f2fs_fs.h
-> 
-> diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-> new file mode 100644
-> index 0000000..b17eeec
-> --- /dev/null
-> +++ b/include/linux/f2fs_fs.h
-> @@ -0,0 +1,359 @@
-> +/**
-> + * include/linux/f2fs_fs.h
-[…]
-> +/*
-> + * For superblock
-> + */
-> +struct f2fs_super_block {
-> +       __le32 magic;           /* Magic Number */
-> +       __le16 major_ver;       /* Major Version */
-> +       __le16 minor_ver;       /* Minor Version */
-> +       __le32 log_sectorsize;  /* log2 (Sector size in bytes) */
-> +       __le32 log_sectors_per_block;   /* log2 (Number of sectors per block */
-> +       __le32 log_blocksize;   /* log2 (Block size in bytes) */
-> +       __le32 log_blocks_per_seg; /* log2 (Number of blocks per segment) */
-> +       __le32 log_segs_per_sec; /* log2 (Number of segments per section) */
-> +       __le32 secs_per_zone; /* Number of sections per zone */
-> +       __le32 checksum_offset; /* Checksum position in this super block */
-> +       __le64 block_count;     /* Total number of blocks */
-> +       __le32 section_count;   /* Total number of sections */
-> +       __le32 segment_count;   /* Total number of segments */
-> +       __le32 segment_count_ckpt; /* Total number of segments
-> +                                     in Checkpoint area */
-> +       __le32 segment_count_sit; /* Total number of segments
-> +                                    in Segment information table */
-> +       __le32 segment_count_nat; /* Total number of segments
-> +                                    in Node address table */
-> +       /*Total number of segments in Segment summary area */
-> +       __le32 segment_count_ssa;
-> +       /* Total number of segments in Main area */
-> +       __le32 segment_count_main;
-> +       __le32 failure_safe_block_distance;
-> +       __le64 segment0_blkaddr;        /* Start block address of Segment 0 */
-> +       __le64 start_segment_checkpoint; /* Start block address of ckpt */
-> +       __le64 sit_blkaddr;     /* Start block address of SIT */
-> +       __le64 nat_blkaddr;     /* Start block address of NAT */
-> +       __le64 ssa_blkaddr;     /* Start block address of SSA */
-> +       __le64 main_blkaddr;    /* Start block address of Main area */
-> +       __le32 root_ino;        /* Root directory inode number */
-> +       __le32 node_ino;        /* node inode number */
-> +       __le32 meta_ino;        /* meta inode number */
-> +       __le32 volume_serial_number;    /* VSN is optional field */
-> +       __le16 volume_name[8];  /* Volume Name. 8 unicode characters */
-> +} __packed;
 
-Any reason why volume label is that short?
+OK, that's where the confusion stems from. The original patch 6/6 had in
+the patch:
 
-If superblock can occupy up to 4096 bytes, i.e. a block, I think a bit
-more space for volume label would fit in there. I count 128 bytes up
-to volume_name. Do other structures need to fit in superblock as well?
+Cc: Steven Rostedt <rostedt@goodmis.org> (maintainer:TRACING)                                                                                                                       
+Cc: Frederic Weisbecker <fweisbec@gmail.com> (maintainer:TRACING)
 
-I believe users easily can hit a limit of 8 unicode characters even for
-USB sticks and SD cards.
+But I neither I nor Frederic were on the actual Cc (I had to open my
+LKML folder to see it). Perhaps whatever tool you used to send the
+patches got confused by the (maintainer:TRACING) line.
 
-Nice to see a flash friendly filesystem which seems to take lots of the
-stuff in account I read at Linaro website about flash devices.
+Thus, the only thing that ended up in my INBOX was the [PATCHv2.5] one.
 
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+-- Steve
+
+
