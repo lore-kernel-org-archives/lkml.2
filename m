@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2JEMXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 08:23:38 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:4209 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932193Ab2JEMXg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 08:23:36 -0400
-Message-ID: <1349439810.1491.18.camel@x61.thuisdomein>
-Subject: [PATCH v3] qla2xxx: silence two GCC warnings
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-driver@qlogic.com, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 05 Oct 2012 14:23:30 +0200
-In-Reply-To: <CC93C7DD.EB60%saurav.kashyap@qlogic.com>
-References: <CC93C7DD.EB60%saurav.kashyap@qlogic.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 05 Oct 2012 12:23:30.0845 (UTC) FILETIME=[3AF4BCD0:01CDA2F4]
-X-RcptDomain: vger.kernel.org
+	id S932482Ab2JEM1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 08:27:55 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:47188 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932435Ab2JEM1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 08:27:54 -0400
+Date: Fri, 5 Oct 2012 14:27:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@amd64.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: Re: tty_init_dev: 24 callbacks suppressed
+Message-ID: <20121005122741.GB8019@aftab.osrc.amd.com>
+References: <20121004092055.GA21028@aftab.osrc.amd.com>
+ <20121004112347.GA245@x4>
+ <20121004115157.GA245@x4>
+ <20121004124025.GC21028@aftab.osrc.amd.com>
+ <20121004131101.GA245@x4>
+ <506EC1AE.6000201@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <506EC1AE.6000201@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling qla_gs.o (part of the qla2xxx module) triggers two GCC
-warnings:
-    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_rhba’:
-    drivers/scsi/qla2xxx/qla_gs.c:1339:7: warning: array subscript is above array bounds [-Warray-bounds]
-    drivers/scsi/qla2xxx/qla_gs.c: In function ‘qla2x00_fdmi_register’:
-    drivers/scsi/qla2xxx/qla_gs.c:1663:15: warning: array subscript is above array bounds [-Warray-bounds]
+On Fri, Oct 05, 2012 at 01:17:02PM +0200, Jiri Slaby wrote:
+> BTW what scares me that nobody noticed that bug until this is in the
+> Linus's tree. Do people use -next at all or am I the only one user? (I
+> didn't hit it as I have the patch in my local queue.)
 
-It seems that the sequence of a strcpy followed by a strlen confuses GCC
-when it is keeping track of array bounds here. (It is not clear to me
-which array triggers this warning and by how much GCC thinks the
-subscript is above its bounds. Neither is it clear to me why comparable
-code in these two functions doesn't trigger this warning.)
+Noticing this before -rc1 and fixing it around that time is still fine
+in my book. So can *someone* *please* send a patch already so that we
+can forget about this.
 
-An easy way to silence these warnings is to use preprocessor macros and
-strncpy, as that apparently gives GCC enough information to keep track
-of array bounds.
+Thanks.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Updated for Saurav's request to use strncpy().
-
-1) Still only compile tested.
-
- drivers/scsi/qla2xxx/qla_def.h | 1 +
- drivers/scsi/qla2xxx/qla_gs.c  | 8 ++++----
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/scsi/qla2xxx/qla_def.h b/drivers/scsi/qla2xxx/qla_def.h
-index 39007f5..8895038 100644
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -37,6 +37,7 @@
- #include "qla_nx.h"
- #define QLA2XXX_DRIVER_NAME	"qla2xxx"
- #define QLA2XXX_APIDEV		"ql2xapidev"
-+#define QLA2XXX_MANUFACTURER	"QLogic Corporation"
- 
- /*
-  * We have MAILBOX_REGISTER_COUNT sized arrays in a few places,
-diff --git a/drivers/scsi/qla2xxx/qla_gs.c b/drivers/scsi/qla2xxx/qla_gs.c
-index 05260d2..824cbcf 100644
---- a/drivers/scsi/qla2xxx/qla_gs.c
-+++ b/drivers/scsi/qla2xxx/qla_gs.c
-@@ -1325,8 +1325,8 @@ qla2x00_fdmi_rhba(scsi_qla_host_t *vha)
- 	/* Manufacturer. */
- 	eiter = (struct ct_fdmi_hba_attr *) (entries + size);
- 	eiter->type = __constant_cpu_to_be16(FDMI_HBA_MANUFACTURER);
--	strcpy(eiter->a.manufacturer, "QLogic Corporation");
--	alen = strlen(eiter->a.manufacturer);
-+	alen = strlen(QLA2XXX_MANUFACTURER);
-+	strncpy(eiter->a.manufacturer, QLA2XXX_MANUFACTURER, alen + 1);
- 	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
- 	eiter->len = cpu_to_be16(4 + alen);
- 	size += 4 + alen;
-@@ -1646,8 +1646,8 @@ qla2x00_fdmi_rpa(scsi_qla_host_t *vha)
- 	/* OS device name. */
- 	eiter = (struct ct_fdmi_port_attr *) (entries + size);
- 	eiter->type = __constant_cpu_to_be16(FDMI_PORT_OS_DEVICE_NAME);
--	strcpy(eiter->a.os_dev_name, QLA2XXX_DRIVER_NAME);
--	alen = strlen(eiter->a.os_dev_name);
-+	alen = strlen(QLA2XXX_DRIVER_NAME);
-+	strncpy(eiter->a.os_dev_name, QLA2XXX_DRIVER_NAME, alen + 1);
- 	alen += (alen & 3) ? (4 - (alen & 3)) : 4;
- 	eiter->len = cpu_to_be16(4 + alen);
- 	size += 4 + alen;
 -- 
-1.7.11.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
