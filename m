@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab2JETnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:43:21 -0400
-Received: from nm14.bullet.mail.ac4.yahoo.com ([98.139.52.211]:21890 "HELO
-	nm14.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754408Ab2JETnO (ORCPT
+	id S932663Ab2JETn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:43:29 -0400
+Received: from nm39-vm2.bullet.mail.bf1.yahoo.com ([72.30.239.146]:42414 "EHLO
+	nm39-vm2.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754609Ab2JETnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:43:14 -0400
-X-Yahoo-Newman-Id: 383658.71608.bm@omp1013.access.mail.mud.yahoo.com
+	Fri, 5 Oct 2012 15:43:24 -0400
+X-Yahoo-Newman-Id: 702828.55233.bm@omp1012.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: .WSb_2EVM1lLqW23AboUyfK4rrih30NtdYinw7t2Cbm_Ma3
- tt9YrCjzHaS2a.z.waZgaIbADxg2PwxH9hSYgtRMb_thOTo24_bgw6avEYEk
- yHHnrJ1CQBdlU_zp58M8PwoCfjmUrFiOxdW5JVvcWZk5wHbn0tznTvoD1nEi
- NswIw_RFgseuV8i..GcxBwQ8CikVluZLRjg6JF8CpToKJPftcvL48PaOA5Ze
- CCiahd5u.fC0nkms6O026OE8WhEF7b27agdZ4ecYLBAqYJKVB6KKJfKDdcvp
- N5ioGPnTiDKswXkg.VKvmrZoPR9RXmnQ_iZIQpVcm5HZ1G34uHa6pOZtmgu8
- L2yQMM.D0PByME08InH7m7xhoKTNvG0LQRpOf5Ddv7n9bJSKPIgwajwOiMCJ
- RoI3Q5x.Zk.KvMg12844kZHa5EbNtzzr3HrhHcHj_MWpV2jD1vP938XBbKB4
- 33Q4eIQWzdyOoiG7UIRkLdpq_ExpZHArtBknW9y6vfqWvQJMCC8uAnbAfisY
- fJwuXe3o4pMyj.jGRvpTsmVAe_EquD5FZ4cj5sJeSsVo-
+X-YMail-OSG: JcnYbFEVM1nbjWB9GKF.zeffP97x5ermyO6ZjXGzB8.F6RC
+ 9aDuiBipME771vZk6Pu75qamDdAhkukHqnAi_gGmeavn_CVQPQzNsea.TxKd
+ _9hWm_PgrBDypycA0BSURwV5.6Z4zGJYzdYgy3cwrGLxvTmAb_5lsJR._hUk
+ CPc0_kXu2Oj.8ia8vWpR3HXUU.Mqk6K_TTVEJ0ob22gkyst.OnOzw0b7LveZ
+ 3Ai_vGLVHI1hVz9qonW8yk1ZsLZfB4ISrA_59kSTLqU9WHpwm7ZUr_BY1i10
+ 1..ov0HlGSqLneJBlowSTutWdNm4YA6U5XC9Kqp7dbV1w3xqqxGSxiBtf6Db
+ Xj_OFMBBUFE.bFOjLDbm0SSiptz6e6MfClzOkRQ3C65ciHdTJSoBF_7kTBQR
+ aboEcxJA8Wlh3wWV_m62tIycAJMRzln1vEyATl6xAcXwE2VNIQd9J
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>
@@ -35,9 +33,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v2 02/10] compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
-Date: Fri,  5 Oct 2012 14:42:41 -0500
-Message-Id: <1349466169-20637-2-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v2 04/10] bug.h: directly include linux/compiler.h
+Date: Fri,  5 Oct 2012 14:42:43 -0500
+Message-Id: <1349466169-20637-4-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
@@ -45,50 +43,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Throughout compiler*.h, many version checks are made.  These can be
-simplified by using the macro that gcc's documentation recommends.
-However, my primary reason for adding this is that I need bug-check
-macros that are enabled at certain gcc versions and it's cleaner to use
-this macro than the tradition method:
-
-if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
-
-If you add patch level, it gets this ugly:
-
-if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
-   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
-
-As opposed to:
-
-if GCC_VERSION >= 40201
-
-While having separate headers for gcc 3 & 4 eliminates some of this
-verbosity, they can still be cleaned up by this.
-
-See also:
-http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+We are just including asm/bug.h and expecting that linux/compiler.h will
+eventually be included to define __linktime_error (used in
+BUILD_BUG_ON). This patch includes it directly for clarity and to avoid
+the possibility of changes in <arch>/*/include/asm/bug.h being changed
+or not including linux/compiler.h for some reason. (Later patches will
+in this set use more macros defined in compiler*.h.)
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: Borislav Petkov <bp@alien8.de>
-Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/compiler-gcc.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ include/linux/bug.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index 6a6d7ae..24545cd 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -5,6 +5,9 @@
- /*
-  * Common definitions for all gcc versions go here.
-  */
-+#define GCC_VERSION (__GNUC__ * 10000 \
-+		   + __GNUC_MINOR__ * 100 \
-+		   + __GNUC_PATCHLEVEL__)
+diff --git a/include/linux/bug.h b/include/linux/bug.h
+index aaac4bb..4bd74d8 100644
+--- a/include/linux/bug.h
++++ b/include/linux/bug.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_BUG_H
  
+ #include <asm/bug.h>
++#include <linux/compiler.h>
  
- /* Optimization barrier */
+ enum bug_trap_type {
+ 	BUG_TRAP_TYPE_NONE = 0,
 -- 
 1.7.3.4
 
