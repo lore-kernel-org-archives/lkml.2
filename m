@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab2JETE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:04:29 -0400
-Received: from mo5.mail-out.ovh.net ([178.32.228.5]:35366 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab2JETE2 (ORCPT
+	id S1757075Ab2JETHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:07:05 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:59611 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab2JETHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:04:28 -0400
-Date: Fri, 5 Oct 2012 20:56:43 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com,
-        arnd@arndb.de
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH 04/10] of/i2c: Add support for I2C_CLIENT_WAKE when
- booting with Device Tree
-Message-ID: <20121005185643.GC12462@game.jcrosoft.org>
-References: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
- <1349451107-8009-5-git-send-email-lee.jones@linaro.org>
+	Fri, 5 Oct 2012 15:07:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349451107-8009-5-git-send-email-lee.jones@linaro.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 3312679002474130431
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+In-Reply-To: <506E43E0.70507@jp.fujitsu.com>
+References: <506E43E0.70507@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 5 Oct 2012 15:06:35 -0400
+X-Google-Sender-Auth: 7o_gaewDQpMi7-EegmQ6IFq-ZOQ
+Message-ID: <CAHGf_=qCZvL7xcOkea80Y995sZWkOMQLLVnuvLUto4W+qpUbWA@mail.gmail.com>
+Subject: Re: [PATCH 0/10] memory-hotplug: hot-remove physical memory
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:31 Fri 05 Oct     , Lee Jones wrote:
-> It's important for wakeup sources such as keyboards, power buttons
-> and the like to identify themselves as wakeup devices. Until now
-> this has not been possible when platforms are booting via Device
-> Tree.
-> 
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/of/of_i2c.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-> index 1e173f3..2f20019 100644
-> --- a/drivers/of/of_i2c.c
-> +++ b/drivers/of/of_i2c.c
-> @@ -61,6 +61,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
->  		info.of_node = of_node_get(node);
->  		info.archdata = &dev_ad;
->  
-> +		if (of_get_property(node, "i2c-client-wake", NULL))
-> +			info.flags |= I2C_CLIENT_WAKE;
-use of_property_read_bool
+> Known problems:
+> 1. memory can't be offlined when CONFIG_MEMCG is selected.
+>    For example: there is a memory device on node 1. The address range
+>    is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
+>    and memory11 under the directory /sys/devices/system/memory/.
+>    If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
+>    when we online pages. When we online memory8, the memory stored page cgroup
+>    is not provided by this memory device. But when we online memory9, the memory
+>    stored page cgroup may be provided by memory8. So we can't offline memory8
+>    now. We should offline the memory in the reversed order.
+>    When the memory device is hotremoved, we will auto offline memory provided
+>    by this memory device. But we don't know which memory is onlined first, so
+>    offlining memory may fail. In such case, you should offline the memory by
+>    hand before hotremoving the memory device.
 
-Best Regards,
-J.
+Just iterate twice. 1st iterate: offline every non primary memory
+block. 2nd iterate:
+offline primary (i.e. first added) memory block. It may work.
