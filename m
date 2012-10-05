@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab2JEQXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:23:15 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56347 "EHLO zmc.proxad.net"
+	id S1756877Ab2JEQXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:23:33 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56452 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932658Ab2JEQWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:46 -0400
+	id S1756721Ab2JEQXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:23:10 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 12/32 v3] USB: ohci: allow platform driver to specify the number of ports
-Date: Fri,  5 Oct 2012 18:20:44 +0200
-Message-Id: <1349454064-11606-13-git-send-email-florian@openwrt.org>
+        Paul Mundt <lethal@linux-sh.org>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 22/32 v3] sh: convert boards to use the OHCI platform driver
+Date: Fri,  5 Oct 2012 18:20:54 +0200
+Message-Id: <1349454064-11606-23-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -21,54 +23,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the ohci platform driver to accept the num_ports
-parameter to be set via platform_data. Setting the number of ports must be
-done after the call to ohci_hcd_init().
+This patch makes all SuperH boards using the ohci-sh platform driver to use
+the ohci-platform driver instead, which is suitable for use by these boards.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes in v3:
 - improved commit message
 
- drivers/usb/host/ohci-platform.c |    4 ++++
- include/linux/usb/ohci_pdriver.h |    2 ++
- 2 files changed, 6 insertions(+)
+No changes between v1 and v2
 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index e24ec9f..1caaf65 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -31,6 +31,10 @@ static int ohci_platform_reset(struct usb_hcd *hcd)
- 		ohci->flags |= OHCI_QUIRK_FRAME_NO;
+ arch/sh/kernel/cpu/sh3/setup-sh7720.c  |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7757.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7763.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7786.c |    6 +++++-
+ 4 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/arch/sh/kernel/cpu/sh3/setup-sh7720.c b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+index 0c2f1b2..42d991f 100644
+--- a/arch/sh/kernel/cpu/sh3/setup-sh7720.c
++++ b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+@@ -20,6 +20,7 @@
+ #include <linux/serial_sci.h>
+ #include <linux/sh_timer.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <asm/rtc.h>
+ #include <cpu/serial.h>
  
- 	ohci_hcd_init(ohci);
+@@ -103,12 +104,15 @@ static struct resource usb_ohci_resources[] = {
+ 
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
 +
-+	if (pdata->num_ports)
-+		ohci->num_ports = pdata->num_ports;
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+index 4a2f357..9079a0f 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+@@ -19,6 +19,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <cpu/sh7757.h>
+ 
+@@ -750,12 +751,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
 +
- 	err = ohci_init(ohci);
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask = &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask = DMA_BIT_MASK(32),
++		.platform_data	= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+index bd0a8fb..1686aca 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+@@ -16,6 +16,7 @@
+ #include <linux/sh_intc.h>
+ #include <linux/io.h>
+ #include <linux/serial_sci.h>
++#include <linux/usb/ohci_pdriver.h>
  
- 	return err;
-diff --git a/include/linux/usb/ohci_pdriver.h b/include/linux/usb/ohci_pdriver.h
-index 74e7755..012f2b7 100644
---- a/include/linux/usb/ohci_pdriver.h
-+++ b/include/linux/usb/ohci_pdriver.h
-@@ -25,6 +25,7 @@
-  * @big_endian_desc:	BE descriptors
-  * @big_endian_mmio:	BE registers
-  * @no_big_frame_no:	no big endian frame_no shift
-+ * @num_ports:		number of ports
-  *
-  * These are general configuration options for the OHCI controller. All of
-  * these options are activating more or less workarounds for some hardware.
-@@ -33,6 +34,7 @@ struct usb_ohci_pdata {
- 	unsigned	big_endian_desc:1;
- 	unsigned	big_endian_mmio:1;
- 	unsigned	no_big_frame_no:1;
-+	unsigned int	num_ports;
+ static struct plat_sci_port scif0_platform_data = {
+ 	.mapbase	= 0xffe00000,
+@@ -106,12 +107,15 @@ static struct resource usb_ohci_resources[] = {
  
- 	/* Turn on all power and clocks */
- 	int (*power_on)(struct platform_device *pdev);
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+index 2e6952f..ab52d4d 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+@@ -23,6 +23,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <asm/mmzone.h>
+ 
+@@ -583,12 +584,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
 -- 
 1.7.9.5
 
