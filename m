@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab2JEHuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:50:08 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54669 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab2JEHuG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:50:06 -0400
-Message-ID: <1349423405.3427.3.camel@coredoba.hi.pengutronix.de>
-Subject: Re: [PATCH] mtd: m25p80: Add support for Numonyx N25Q128
-From: Jan =?ISO-8859-1?Q?L=FCbbe?= <jlu@pengutronix.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Wendy Liang <wendy.liang@petalogix.com>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Fri, 05 Oct 2012 09:50:05 +0200
-In-Reply-To: <1349372416-16925-1-git-send-email-monstr@monstr.eu>
-References: <1349372416-16925-1-git-send-email-monstr@monstr.eu>
-Organization: Pengutronix
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:219:99ff:fe56:8d7
-X-SA-Exim-Mail-From: jlu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752775Ab2JEHwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:52:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56804 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab2JEHwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 03:52:33 -0400
+From: "Patil, Rachna" <rachna@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
+        "Patil, Rachna" <rachna@ti.com>
+Subject: [PATCH v5 0/4] Support for TSC/ADC MFD driver
+Date: Fri, 5 Oct 2012 13:04:51 +0530
+Message-ID: <1349422495-27887-1-git-send-email-rachna@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 19:40 +0200, Michal Simek wrote:
-> From: Wendy Liang <wendy.liang@petalogix.com>
-> 
-> Add the id and sector mappings for SPI flash chips.
+This patch set adds a MFD core driver which registers
+touchscreen and ADC as its client drivers.
+The existing touchscreen has been modified to work as
+a MFD client driver and a new ADC driver has been added
+in the IIO subsystem.
 
-An equivalent patch is already in David Woodhouse's l2-mtd tree:
-http://git.infradead.org/users/dedekind/l2-mtd.git/commitdiff/3105875f6b8902628caee2fd7821af43707c6bde
+There are 8 analog input lines, which can be used as:
+1. 8 general purpose ADC channels
+2. 4 wire TS, with 4 general purpose ADC channels
+3. 5 wire TS, with 3 general purpose ADC channels
 
-Regards,
-Jan
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+This patch set has been tested on AM335x EVM.
+
+These set of patches apply to linux-nxt branch and are based
+on top of Touchscreen patch set submitted viz.
+Subject: [PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates [1]
+
+[1] http://www.spinics.net/lists/linux-input/msg22107.html
+
+Changes in v2:
+	Dropped one patch send in the last version after
+	receiving internal comments. I have merged the changes
+	into existing patches.
+	Also added a new patch to support suspend/resume feature.
+	Fixed review comments by Matthias Kaehlcke.
+
+Changes in v3:
+	Addressed review comments by Jonathan Cameron.
+	Improved ADC driver with more readable labels,
+	spaces and comments.
+
+Changes in v4:
+	Renamed the drivers from ti_xxx to ti_am335x_xxx.
+	For consistency with other drivers renamed idev to indio_dev
+	in IIO ADC driver.
+	Replaced suspend/resume callbacks with dev_pm_ops.
+
+Changes in v5:
+	Merged suspend/resume part of code (present as separate patch)
+	into the respective driver.
+
+Patil, Rachna (4):
+  input: TSC: ti_tscadc: Rename the existing touchscreen driver
+  MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+  input: TSC: ti_tsc: Convert TSC into a MFDevice
+  IIO : ADC: tiadc: Add support of TI's ADC driver
+
+ drivers/iio/adc/Kconfig                            |    7 +
+ drivers/iio/adc/Makefile                           |    1 +
+ drivers/iio/adc/ti_am335x_adc.c                    |  260 ++++++++++
+ drivers/input/touchscreen/Kconfig                  |    6 +-
+ drivers/input/touchscreen/Makefile                 |    2 +-
+ drivers/input/touchscreen/ti_am335x_tsc.c          |  398 +++++++++++++++
+ drivers/input/touchscreen/ti_tscadc.c              |  522 --------------------
+ drivers/mfd/Kconfig                                |   11 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/ti_am335x_tscadc.c                     |  277 +++++++++++
+ .../linux/input/{ti_tscadc.h => ti_am335x_tsc.h}   |    4 +-
+ include/linux/mfd/ti_am335x_tscadc.h               |  152 ++++++
+ include/linux/platform_data/ti_am335x_adc.h        |   14 +
+ 13 files changed, 1127 insertions(+), 528 deletions(-)
+ create mode 100644 drivers/iio/adc/ti_am335x_adc.c
+ create mode 100644 drivers/input/touchscreen/ti_am335x_tsc.c
+ delete mode 100644 drivers/input/touchscreen/ti_tscadc.c
+ create mode 100644 drivers/mfd/ti_am335x_tscadc.c
+ rename include/linux/input/{ti_tscadc.h => ti_am335x_tsc.h} (88%)
+ create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
+ create mode 100644 include/linux/platform_data/ti_am335x_adc.h
 
