@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab2JERFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 13:05:33 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39054 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab2JEREW (ORCPT
+	id S1757120Ab2JERFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 13:05:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41884 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757033Ab2JERFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 13:04:22 -0400
-From: Matt Porter <mporter@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>
-Subject: [PATCH v4 3/7] ARM: davinci: da850: changed SRAM allocator to shared ram.
-Date: Fri,  5 Oct 2012 13:04:42 -0400
-Message-Id: <1349456686-22736-4-git-send-email-mporter@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349456686-22736-1-git-send-email-mporter@ti.com>
-References: <1349456686-22736-1-git-send-email-mporter@ti.com>
+	Fri, 5 Oct 2012 13:05:48 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] firmware: Don't attempt to allocate zero bytes with vmalloc()
+Date: Fri,  5 Oct 2012 18:05:31 +0100
+Message-Id: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Subhasish Ghosh <subhasish@mistralsolutions.com>
+vmalloc() will fail (very loudly) if we try to allocate zero bytes to
+read a zero byte file. Instead report that we successfully read in all
+zero bytes.
 
-This patch modifies the sram allocator to allocate memory
-from the DA8XX shared RAM.
+It's not immediately obvious to me that this is better than returning an
+error but it seems better to punt the decision about that to the caller
+on the off chance that it's sensible.
 
-Regression tested suspend/resume on AM180x EVM.
-
-Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
-[rebased onto consolidated SRAM patches]
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-[rebased to mainline as consolidated SRAM patches were dropped]
-Signed-off-by: Matt Porter <mporter@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- arch/arm/mach-davinci/da850.c              |    4 ++--
- arch/arm/mach-davinci/include/mach/da8xx.h |    1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/base/firmware_class.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index b4b324f..d8d69de 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -1081,8 +1081,8 @@ static struct davinci_soc_info davinci_soc_info_da850 = {
- 	.gpio_irq		= IRQ_DA8XX_GPIO0,
- 	.serial_dev		= &da8xx_serial_device,
- 	.emac_pdata		= &da8xx_emac_pdata,
--	.sram_dma		= DA8XX_ARM_RAM_BASE,
--	.sram_len		= SZ_8K,
-+	.sram_dma		= DA8XX_SHARED_RAM_BASE,
-+	.sram_len		= SZ_128K,
- };
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8154145..a14eb92 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -62,6 +62,11 @@ static bool fw_read_file_contents(struct file *file, struct firmware *fw)
+ 	char *buf;
  
- void __init da850_init(void)
-diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
-index c9ee723..20553cf 100644
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@ -68,6 +68,7 @@ extern unsigned int da850_max_speed;
- #define DA8XX_AEMIF_CS2_BASE	0x60000000
- #define DA8XX_AEMIF_CS3_BASE	0x62000000
- #define DA8XX_AEMIF_CTL_BASE	0x68000000
-+#define DA8XX_SHARED_RAM_BASE	0x80000000
- #define DA8XX_ARM_RAM_BASE	0xffff0000
- 
- void __init da830_init(void);
+ 	size = fw_file_size(file);
++	if (size == 0) {
++		fw->data = NULL;
++		fw->size = 0;
++		return true;
++	}
+ 	if (size < 0)
+ 		return false;
+ 	buf = vmalloc(size);
 -- 
-1.7.9.5
+1.7.10.4
 
