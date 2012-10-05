@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab2JEPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:37:16 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52179 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab2JEPhK (ORCPT
+	id S1756347Ab2JEPhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:37:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47464 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab2JEPhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Oct 2012 11:37:10 -0400
-Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
- __alloc_pages_nodemask+0x1d4/0x68c()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: mbizon@freebox.fr
-Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <1349450151.28867.33.camel@sakura.staff.proxad.net>
-References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
-	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
-	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
-	 <1349368171.16011.79.camel@edumazet-glaptop>
-	 <1349422868.21172.38.camel@edumazet-glaptop>
-	 <1349434194.16710.44.camel@sakura.staff.proxad.net>
-	 <1349439732.21172.52.camel@edumazet-glaptop>
-	 <1349441509.28867.17.camel@sakura.staff.proxad.net>
-	 <1349442173.21172.66.camel@edumazet-glaptop>
-	 <1349448659.28867.27.camel@sakura.staff.proxad.net>
-	 <1349449440.21172.118.camel@edumazet-glaptop>
-	 <1349450151.28867.33.camel@sakura.staff.proxad.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Oct 2012 17:37:05 +0200
-Message-ID: <1349451425.21172.119.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Date: Fri, 5 Oct 2012 08:37:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] Fix bogus "callbacks suppressed" messages
+Message-ID: <20121005153706.GA13571@kroah.com>
+References: <20121004092055.GA21028@aftab.osrc.amd.com>
+ <20121004112347.GA245@x4>
+ <20121004115157.GA245@x4>
+ <20121004124025.GC21028@aftab.osrc.amd.com>
+ <20121004131101.GA245@x4>
+ <506EC1AE.6000201@suse.cz>
+ <20121005122741.GB8019@aftab.osrc.amd.com>
+ <20121005125717.GB245@x4>
+ <20121005142639.GA20065@kroah.com>
+ <20121005152948.GC24764@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121005152948.GC24764@aftab.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-05 at 17:15 +0200, Maxime Bizon wrote:
+On Fri, Oct 05, 2012 at 05:29:48PM +0200, Borislav Petkov wrote:
+> On Fri, Oct 05, 2012 at 07:26:39AM -0700, Greg Kroah-Hartman wrote:
+> > I don't have a problem with this patch, but I don't understand why
+> > it's now showing up. There haven't been any changes in the ratelimit.h
+> > area recently that I can see, so why is this change needed now? What
+> > is in the tty layer that is causing this, just the fact that it's
+> > actually being used now?
+> 
+> >From my quick semi-skilled git history browsing, I'd say it's
+> 5d4121c04b357 which added the WARN_RATELIMIT to tty_init_dev during the
+> current merge window.
 
-> You think removing skb_recycle() is too big a change for stable ?
-> 
-> Driver change is simple, as recycling is not guaranteed today you have
-> this:
-> 
->  if (!try_recycle(skb))
->     skb = alloc_skb()
-> > 
-> we just remove the try_recycle part, we are not adding any new code
-> path.
-> 
-> 
-> I'm not the right person to give you a correct NET_SKB_PAD value, I have
-> a lot of out of tree patches in my kernels, some custom drivers as well
-> that needs quite a lot of headroom, and uncommon network setup.
-> 
+So WARN_RATELIMIT was never working properly?  If so, how far back does
+it go in kernel releases that this should be fixed?
 
-OK, I'll send the patch to remove skb_recycle()
+thanks,
 
-
+greg k-h
