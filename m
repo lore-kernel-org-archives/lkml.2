@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab2JEQ3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:29:46 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56336 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932708Ab2JEQ3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:29:41 -0400
+	id S1756479Ab2JEQaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:30:12 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56365 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932677Ab2JEQWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:51 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 31/32] USB: EHCI: make ehci-platform use devm_{ioremap,request_mem_region} helpers
-Date: Fri, 05 Oct 2012 18:28:38 +0200
-Message-ID: <2628717.3gQ4VMN7qb@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1349454064-11606-32-git-send-email-florian@openwrt.org>
-References: <1349454064-11606-1-git-send-email-florian@openwrt.org> <1349454064-11606-32-git-send-email-florian@openwrt.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Subject: [PATCH 16/32 v3] MIPS: PNX8550: use OHCI platform driver
+Date: Fri,  5 Oct 2012 18:20:48 +0200
+Message-Id: <1349454064-11606-17-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
+References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FlorianOn Friday 05 October 2012 18:21:03  Fainelli wrote:
-> This patch changes the ehci-platform driver to use the device managed helper
-> functions for requesting memory region and ioremapping memory resources.
-> As a result the error path in the probe function is simplified, and the
-> platform driver remove callback does not longer need to release and iounmap
-> memory resources.
+Change the PNX8550 platform code to register an ohci-platform driver instead
+of ohci-pnx8550 since the ohci-platform is suitable for use.
 
-I just realized that I could use devm_request_and_ioremap() instead of these
-two calls. Alan, do you mind dropping these last two patches of my serie
-and me sending an updated version of both of these patches?
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+No changes in v2 and v3
 
-Thanks!
+ arch/mips/pnx8550/common/platform.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
-> 
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> ---
->  drivers/usb/host/ehci-platform.c |   16 ++++++----------
->  1 file changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-> index 3cb0b1b..ebe92cf 100644
-> --- a/drivers/usb/host/ehci-platform.c
-> +++ b/drivers/usb/host/ehci-platform.c
-> @@ -123,29 +123,27 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
->  	hcd->rsrc_start = res_mem->start;
->  	hcd->rsrc_len = resource_size(res_mem);
->  
-> -	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-> +	if (!devm_request_mem_region(&dev->dev, hcd->rsrc_start,
-> +					hcd->rsrc_len, hcd_name)) {
->  		dev_err(&dev->dev, "controller already in use");
->  		err = -EBUSY;
->  		goto err_put_hcd;
->  	}
->  
-> -	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
-> +	hcd->regs = devm_ioremap_nocache(&dev->dev, hcd->rsrc_start,
-> +						hcd->rsrc_len);
->  	if (!hcd->regs) {
->  		err = -ENOMEM;
-> -		goto err_release_region;
-> +		goto err_put_hcd;
->  	}
->  	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
->  	if (err)
-> -		goto err_iounmap;
-> +		goto err_put_hcd;
->  
->  	platform_set_drvdata(dev, hcd);
->  
->  	return err;
->  
-> -err_iounmap:
-> -	iounmap(hcd->regs);
-> -err_release_region:
-> -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
->  err_put_hcd:
->  	usb_put_hcd(hcd);
->  err_power:
-> @@ -161,8 +159,6 @@ static int __devexit ehci_platform_remove(struct platform_device *dev)
->  	struct usb_ehci_pdata *pdata = dev->dev.platform_data;
->  
->  	usb_remove_hcd(hcd);
-> -	iounmap(hcd->regs);
-> -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
->  	usb_put_hcd(hcd);
->  	platform_set_drvdata(dev, NULL);
->  
-> -- 
-> 1.7.9.5
-> 
+diff --git a/arch/mips/pnx8550/common/platform.c b/arch/mips/pnx8550/common/platform.c
+index 5264cc0..0a8faea 100644
+--- a/arch/mips/pnx8550/common/platform.c
++++ b/arch/mips/pnx8550/common/platform.c
+@@ -20,6 +20,7 @@
+ #include <linux/serial.h>
+ #include <linux/serial_pnx8xxx.h>
+ #include <linux/platform_device.h>
++#include <linux/usb/ohci_pdriver.h>
+ 
+ #include <int.h>
+ #include <usb.h>
+@@ -96,12 +97,40 @@ static u64 ohci_dmamask = DMA_BIT_MASK(32);
+ 
+ static u64 uart_dmamask = DMA_BIT_MASK(32);
+ 
++static int pnx8550_usb_ohci_power_on(struct platform_device *pdev)
++{
++	/*
++	 * Set register CLK48CTL to enable and 48MHz
++	 */
++	outl(0x00000003, PCI_BASE | 0x0004770c);
++
++	/*
++	 * Set register CLK12CTL to enable and 48MHz
++	 */
++	outl(0x00000003, PCI_BASE | 0x00047710);
++
++	udelay(100);
++
++	return 0;
++}
++
++static void pnx8550_usb_ohci_power_off(struct platform_device *pdev)
++{
++	udelay(10);
++}
++
++static struct usb_ohci_pdata pnx8550_usb_ohci_pdata = {
++	.power_on	= pnx8550_usb_ohci_power_on,
++	.power_off	= pnx8550_usb_ohci_power_off,
++};
++
+ static struct platform_device pnx8550_usb_ohci_device = {
+-	.name		= "pnx8550-ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &ohci_dmamask,
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= &pnx8550_usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(pnx8550_usb_ohci_resources),
+ 	.resource	= pnx8550_usb_ohci_resources,
+-- 
+1.7.9.5
+
