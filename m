@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2JEKal (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:30:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35537 "EHLO bear.ext.ti.com"
+	id S932208Ab2JEKeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:34:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34719 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab2JEKaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:30:39 -0400
-Message-ID: <506EB6B7.4050705@ti.com>
-Date: Fri, 5 Oct 2012 16:00:15 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S932112Ab2JEKeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 06:34:08 -0400
+Date: Fri, 5 Oct 2012 12:34:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Iain Fraser <iainkfraser@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: interrupt context
+Message-ID: <20121005103404.GA12655@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Iain Fraser <iainkfraser@gmail.com>, linux-kernel@vger.kernel.org
+References: <CA+bLfK5FPqFvU2xy7xKdV4LkAvmY6GAPFrB-4UBzn-cOunQ6Xg@mail.gmail.com>
+ <CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
+ <20121005093232.GA7333@liondog.tnic>
+ <CA+bLfK7+xpbbJp+1sJBOtjoT2auGpbKsVKoDMgRk95o-Fwm9RQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 5/6] ARM: davinci: Add support for PRUSS on DA850
-References: <1349276133-26408-1-git-send-email-mporter@ti.com> <1349276133-26408-6-git-send-email-mporter@ti.com> <506D7F95.2030401@ti.com> <20121004163546.GK11149@beef>
-In-Reply-To: <20121004163546.GK11149@beef>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+bLfK7+xpbbJp+1sJBOtjoT2auGpbKsVKoDMgRk95o-Fwm9RQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/2012 10:05 PM, Matt Porter wrote:
-> On Thu, Oct 04, 2012 at 05:52:45PM +0530, Sekhar Nori wrote:
->> On 10/3/2012 8:25 PM, Matt Porter wrote:
->>> +static struct clk pruss_clk = {
->>> +	.name		= "pruss",
->>> +	.parent		= &pll0_sysclk2,
->>> +	.lpsc		= DA8XX_LPSC0_PRUSS,
->>> +};
->>> +
->>>  static struct clk uart0_clk = {
->>>  	.name		= "uart0",
->>>  	.parent		= &pll0_sysclk2,
->>> @@ -378,6 +384,7 @@ static struct clk_lookup da850_clks[] = {
->>>  	CLK(NULL,		"tptc1",	&tptc1_clk),
->>>  	CLK(NULL,		"tpcc1",	&tpcc1_clk),
->>>  	CLK(NULL,		"tptc2",	&tptc2_clk),
->>> +	CLK(NULL,		"pruss",	&pruss_clk),
->>
->> This is actually incorrect since we should use device name rather than
->> con_id for matching the clock. If there is just one clock that the
->> driver needs, connection id should be NULL. Looking at the driver now,
->> the clk_get() call seems to pass a valid device pointer. So, I wonder
->> how you are able to look up the clock even with a NULL device name.
+On Fri, Oct 05, 2012 at 11:20:20AM +0100, Iain Fraser wrote:
+> Hi,
 > 
-> I doublechecked the clk_get() find implentation to confirm that I indeed
-> did get lucky here. Since pruss has only one instance and the clk_find()
-> implementation looks for the best found match, it's able to find the
-> clock just by the con_id, though it's not the "best possible" match in
-> the find implementation...it's the "best found" match.. As you noted,
-> this is incorrect though for a clock expected to be used from a driver
-> context so I will address this in the update.
+> Thanks for the response. But it appears your example illustrates why its bad
+> to sleep while you have a lock. Which I understand, what I wanted to know is
+> why in interrupt context under no circumstances are you allowed to sleep?
+> 
+> Btw I have no intention of doing this, I'm just curious. After
+> thinking about it further
+> I'm starting to think its a "design" decision as opposed to a side effect of the
+> kernel implementation.
 
-Thanks for debugging and clarifying.
+There are more examples where sleeping in IRQ context is simply
+problematic. So prohibiting sleeping in such contexts turns out to be
+the simplest solution concerning code complexity, design, handling, etc.
 
-Regards,
-Sekhar
+Btw, you can trigger some yourself by adding sleeping functions in an
+IRQ handler used on your system, disable the "sleeping-while-atomic"
+warnings and try to run it to see what happens.
+
+> If you could answer:
+>
+> "How can the system timer ( obviously in interrupt context ) call
+> schedule when it is impossible to sleep/schedule in interrupt
+> context?"
+
+I think the best way to learn these things is to stare at the code until
+you've understood exactly what it does when it does it, so I'll let you
+answer that.
+
+And you want to learn because you wouldn't be asking those questions in
+the first place. :-)
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
