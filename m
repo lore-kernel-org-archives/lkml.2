@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab2JEAet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 20:34:49 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:33910 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2JEAes (ORCPT
+	id S1755580Ab2JEAoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 20:44:07 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41525 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab2JEAoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 20:34:48 -0400
+	Thu, 4 Oct 2012 20:44:05 -0400
+Date: Fri, 5 Oct 2012 01:43:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: keescook@chromium.org, levinsasha928@gmail.com, davej@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: prevent use after free in auditing when symlink
+ following was denied
+Message-ID: <20121005004359.GM23473@ZenIV.linux.org.uk>
+References: <1349395000-12050-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:2602:baac:6fff:fe8c:a1a5]
-In-Reply-To: <17353.1349380266@warthog.procyon.org.uk>
-References: <17353.1349380266@warthog.procyon.org.uk>
-Date: Thu, 4 Oct 2012 17:34:47 -0700
-Message-ID: <CACiLriQVWSC06qLa=rXtNV16sR2rAJRLYvLH8fiEYWdr28xkPA@mail.gmail.com>
-Subject: Re: [GIT PULL] Disintegrate UAPI for avr32
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <havard@skinnemoen.net>
-To: David Howells <dhowells@redhat.com>
-Cc: hskinnemoen@gmail.com, egtvedt@samfundet.no, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349395000-12050-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Thu, Oct 04, 2012 at 07:56:40PM -0400, Sasha Levin wrote:
+> Commit "fs: add link restriction audit reporting" has added auditing of failed
+> attempts to follow symlinks. Unfortunately, the auditing was being done after
+> the struct path structure was released earlier.
 
-On Thu, Oct 4, 2012 at 12:51 PM, David Howells <dhowells@redhat.com> wrote:
-> Can you merge the following branch into the avr32 tree please.
-
-I don't really have an avr32 tree anymore. Can you ask Linus to pull
-this directly?
-
-Havard
+Applied, and it's -stable fodder as well.
