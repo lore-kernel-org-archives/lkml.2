@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab2JEImn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:42:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60841 "EHLO
+	id S1752399Ab2JEInf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:43:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60855 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2JEIml (ORCPT
+	with ESMTP id S1750733Ab2JEInd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:42:41 -0400
-Date: Fri, 5 Oct 2012 01:42:17 -0700
+	Fri, 5 Oct 2012 04:43:33 -0400
+Date: Fri, 5 Oct 2012 01:43:14 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-plurd9htha6ea2mo9e9sd1p5@git.kernel.org>
+Message-ID: <tip-wu8lz0g2qg26aqgi51xgzkpp@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf help: Don't use globals where not needed to
-Git-Commit-ID: 2bae1d1b1aa3b763b99431101a04dfe24ec5ba7f
+Subject: [tip:perf/urgent] perf kmem: Don't use globals where not needed to
+Git-Commit-ID: 0433ffbe47d66c5c561b54340ee47adf8826bcc4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,19 +29,19 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 01:42:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 01:43:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2bae1d1b1aa3b763b99431101a04dfe24ec5ba7f
-Gitweb:     http://git.kernel.org/tip/2bae1d1b1aa3b763b99431101a04dfe24ec5ba7f
+Commit-ID:  0433ffbe47d66c5c561b54340ee47adf8826bcc4
+Gitweb:     http://git.kernel.org/tip/0433ffbe47d66c5c561b54340ee47adf8826bcc4
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
 AuthorDate: Mon, 1 Oct 2012 15:20:58 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 2 Oct 2012 18:36:31 -0300
+CommitDate: Tue, 2 Oct 2012 18:36:32 -0300
 
-perf help: Don't use globals where not needed to
+perf kmem: Don't use globals where not needed to
 
 Some variables were global but used in just one function, so move it to
 where it belongs.
@@ -54,82 +54,134 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-plurd9htha6ea2mo9e9sd1p5@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wu8lz0g2qg26aqgi51xgzkpp@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-help.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+ tools/perf/builtin-kmem.c |   66 +++++++++++++++++---------------------------
+ 1 files changed, 26 insertions(+), 40 deletions(-)
 
-diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-index 25c8b94..411ee56 100644
---- a/tools/perf/builtin-help.c
-+++ b/tools/perf/builtin-help.c
-@@ -30,23 +30,6 @@ enum help_format {
- 	HELP_FORMAT_WEB,
- };
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index bc912c6..14bf82f 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -21,8 +21,6 @@
+ struct alloc_stat;
+ typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
  
--static bool show_all = false;
--static enum help_format help_format = HELP_FORMAT_NONE;
--static struct option builtin_help_options[] = {
--	OPT_BOOLEAN('a', "all", &show_all, "print all available commands"),
--	OPT_SET_UINT('m', "man", &help_format, "show man page", HELP_FORMAT_MAN),
--	OPT_SET_UINT('w', "web", &help_format, "show manual in web browser",
--			HELP_FORMAT_WEB),
--	OPT_SET_UINT('i', "info", &help_format, "show info page",
--			HELP_FORMAT_INFO),
--	OPT_END(),
--};
+-static const char		*input_name;
 -
--static const char * const builtin_help_usage[] = {
--	"perf help [--all] [--man|--web|--info] [command]",
+ static int			alloc_flag;
+ static int			caller_flag;
+ 
+@@ -31,8 +29,6 @@ static int			caller_lines = -1;
+ 
+ static bool			raw_ip;
+ 
+-static char			default_sort_order[] = "frag,hit,bytes";
+-
+ static int			*cpunode_map;
+ static int			max_cpu_num;
+ 
+@@ -481,7 +477,7 @@ static void sort_result(void)
+ 	__sort_result(&root_caller_stat, &root_caller_sorted, &caller_sort);
+ }
+ 
+-static int __cmd_kmem(void)
++static int __cmd_kmem(const char *input_name)
+ {
+ 	int err = -EINVAL;
+ 	struct perf_session *session;
+@@ -520,11 +516,6 @@ out_delete:
+ 	return err;
+ }
+ 
+-static const char * const kmem_usage[] = {
+-	"perf kmem [<options>] {record|stat}",
 -	NULL
 -};
 -
- static enum help_format parse_help_format(const char *format)
+ static int ptr_cmp(struct alloc_stat *l, struct alloc_stat *r)
  {
- 	if (!strcmp(format, "man"))
-@@ -258,11 +241,13 @@ static int add_man_viewer_info(const char *var, const char *value)
+ 	if (l->ptr < r->ptr)
+@@ -720,41 +711,17 @@ static int parse_line_opt(const struct option *opt __maybe_unused,
+ 	return 0;
+ }
  
- static int perf_help_config(const char *var, const char *value, void *cb)
- {
-+	enum help_format *help_formatp = cb;
-+
- 	if (!strcmp(var, "help.format")) {
- 		if (!value)
- 			return config_error_nonbool(var);
--		help_format = parse_help_format(value);
--		if (help_format == HELP_FORMAT_NONE)
-+		*help_formatp = parse_help_format(value);
-+		if (*help_formatp == HELP_FORMAT_NONE)
- 			return -1;
- 		return 0;
- 	}
-@@ -428,12 +413,27 @@ static int show_html_page(const char *perf_cmd)
- 
- int cmd_help(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-+	bool show_all = false;
-+	enum help_format help_format = HELP_FORMAT_NONE;
-+	struct option builtin_help_options[] = {
-+	OPT_BOOLEAN('a', "all", &show_all, "print all available commands"),
-+	OPT_SET_UINT('m', "man", &help_format, "show man page", HELP_FORMAT_MAN),
-+	OPT_SET_UINT('w', "web", &help_format, "show manual in web browser",
-+			HELP_FORMAT_WEB),
-+	OPT_SET_UINT('i', "info", &help_format, "show info page",
-+			HELP_FORMAT_INFO),
-+	OPT_END(),
+-static const struct option kmem_options[] = {
+-	OPT_STRING('i', "input", &input_name, "file",
+-		   "input file name"),
+-	OPT_CALLBACK_NOOPT(0, "caller", NULL, NULL,
+-			   "show per-callsite statistics",
+-			   parse_caller_opt),
+-	OPT_CALLBACK_NOOPT(0, "alloc", NULL, NULL,
+-			   "show per-allocation statistics",
+-			   parse_alloc_opt),
+-	OPT_CALLBACK('s', "sort", NULL, "key[,key2...]",
+-		     "sort by keys: ptr, call_site, bytes, hit, pingpong, frag",
+-		     parse_sort_opt),
+-	OPT_CALLBACK('l', "line", NULL, "num",
+-		     "show n lines",
+-		     parse_line_opt),
+-	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
+-	OPT_END()
+-};
+-
+-static const char *record_args[] = {
+-	"record",
+-	"-a",
+-	"-R",
+-	"-f",
+-	"-c", "1",
++static int __cmd_record(int argc, const char **argv)
++{
++	const char * const record_args[] = {
++	"record", "-a", "-R", "-f", "-c", "1",
+ 	"-e", "kmem:kmalloc",
+ 	"-e", "kmem:kmalloc_node",
+ 	"-e", "kmem:kfree",
+ 	"-e", "kmem:kmem_cache_alloc",
+ 	"-e", "kmem:kmem_cache_alloc_node",
+ 	"-e", "kmem:kmem_cache_free",
+-};
+-
+-static int __cmd_record(int argc, const char **argv)
+-{
 +	};
-+	const char * const builtin_help_usage[] = {
-+		"perf help [--all] [--man|--web|--info] [command]",
+ 	unsigned int rec_argc, i, j;
+ 	const char **rec_argv;
+ 
+@@ -775,6 +742,25 @@ static int __cmd_record(int argc, const char **argv)
+ 
+ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
++	const char * const default_sort_order = "frag,hit,bytes";
++	const char *input_name = NULL;
++	const struct option kmem_options[] = {
++	OPT_STRING('i', "input", &input_name, "file", "input file name"),
++	OPT_CALLBACK_NOOPT(0, "caller", NULL, NULL,
++			   "show per-callsite statistics", parse_caller_opt),
++	OPT_CALLBACK_NOOPT(0, "alloc", NULL, NULL,
++			   "show per-allocation statistics", parse_alloc_opt),
++	OPT_CALLBACK('s', "sort", NULL, "key[,key2...]",
++		     "sort by keys: ptr, call_site, bytes, hit, pingpong, frag",
++		     parse_sort_opt),
++	OPT_CALLBACK('l', "line", NULL, "num", "show n lines", parse_line_opt),
++	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
++	OPT_END()
++	};
++	const char * const kmem_usage[] = {
++		"perf kmem [<options>] {record|stat}",
 +		NULL
 +	};
- 	const char *alias;
- 	int rc = 0;
+ 	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
  
- 	load_command_list("perf-", &main_cmds, &other_cmds);
+ 	if (!argc)
+@@ -793,7 +779,7 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		if (list_empty(&alloc_sort))
+ 			setup_sorting(&alloc_sort, default_sort_order);
  
--	perf_config(perf_help_config, NULL);
-+	perf_config(perf_help_config, &help_format);
+-		return __cmd_kmem();
++		return __cmd_kmem(input_name);
+ 	} else
+ 		usage_with_options(kmem_usage, kmem_options);
  
- 	argc = parse_options(argc, argv, builtin_help_options,
- 			builtin_help_usage, 0);
