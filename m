@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2JEIN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:13:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57766 "EHLO bear.ext.ti.com"
+	id S1753424Ab2JEIO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:14:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57783 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab2JEINv convert rfc822-to-8bit (ORCPT
+	id S1751067Ab2JEIOU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:13:51 -0400
+	Fri, 5 Oct 2012 04:14:20 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 07/28] leds-lp5521/5523: cleanup brightness work function
-Thread-Topic: [PATCH 07/28] leds-lp5521/5523: cleanup brightness work
- function
-Thread-Index: Ac2i0VUEWRCgZZz0SGiiitC5nrCczQ==
-Date: Fri, 5 Oct 2012 08:13:42 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F6417674D@DQHE02.ent.ti.com>
+Subject: [PATCH 08/28] leds-lp5521/5523: cleanup setting LED current
+Thread-Topic: [PATCH 08/28] leds-lp5521/5523: cleanup setting LED current
+Thread-Index: Ac2i0WT4h5dfNsBFS5uvhttSLKfX+Q==
+Date: Fri, 5 Oct 2012 08:14:09 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F6417675C@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -30,121 +29,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The brightness function of LED classdev was moved to the lp55xx common driver
- in previous patch.
- To change the LED brightness, specific register should be updated.
- This brightness register is the chip specific.
- Therefore, actual operation should be handled in each driver.
+ The LP55xx common driver has general LED attributes.
+ (led_current and max_current)
+ To set this current, specific register should be updated.
+ Therefore, actual operation is handled in each driver.
 
- This work function is registered on initializing LEDs and
- it is called when the brightness is changed by the user-space.
+ This call is invoked on initializing LEDs and
+ setting current by an user-space.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c |   19 ++++---------------
- drivers/leds/leds-lp5523.c |   23 ++++-------------------
- 2 files changed, 8 insertions(+), 34 deletions(-)
+ drivers/leds/leds-lp5521.c |    9 +++++----
+ drivers/leds/leds-lp5523.c |    8 ++++++++
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 18c194c..e029598 100644
+index e029598..1791655 100644
 --- a/drivers/leds/leds-lp5521.c
 +++ b/drivers/leds/leds-lp5521.c
-@@ -151,8 +151,6 @@ static inline struct lp5521_chip *led_to_lp5521(struct lp5521_led *led)
- 			    leds[led->id]);
+@@ -229,11 +229,11 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
+ 	return lp5521_write(client, LP5521_REG_OP_MODE, mode);
  }
  
--static void lp5521_led_brightness_work(struct work_struct *work);
--
- static inline int lp5521_write(struct i2c_client *client, u8 reg, u8 value)
+-static int lp5521_set_led_current(struct lp5521_chip *chip, int led, u8 curr)
++static void lp5521_set_led_current(struct lp55xx_led *led, u8 led_current)
  {
- 	return i2c_smbus_write_byte_data(client, reg, value);
-@@ -298,24 +296,14 @@ static int lp5521_run_selftest(struct lp5521_chip *chip, char *buf)
- 	return 0;
+-	return lp5521_write(chip->client,
+-		    LP5521_REG_LED_CURRENT_BASE + chip->leds[led].chan_nr,
+-		    curr);
++	led->led_current = led_current;
++	lp55xx_write(led->chip, LP5521_REG_LED_CURRENT_BASE + led->chan_nr,
++		led_current);
  }
  
--static void lp5521_set_brightness(struct led_classdev *cdev,
--			     enum led_brightness brightness)
--{
--	struct lp5521_led *led = cdev_to_led(cdev);
--	led->brightness = (u8)brightness;
--	schedule_work(&led->brightness_work);
--}
--
- static void lp5521_led_brightness_work(struct work_struct *work)
- {
--	struct lp5521_led *led = container_of(work,
--					      struct lp5521_led,
-+	struct lp55xx_led *led = container_of(work, struct lp55xx_led,
- 					      brightness_work);
--	struct lp5521_chip *chip = led_to_lp5521(led);
--	struct i2c_client *client = chip->client;
-+	struct lp55xx_chip *chip = led->chip;
- 
- 	mutex_lock(&chip->lock);
--	lp5521_write(client, LP5521_REG_LED_PWM_BASE + led->chan_nr,
-+	lp55xx_write(chip, LP5521_REG_LED_PWM_BASE + led->chan_nr,
- 		led->brightness);
- 	mutex_unlock(&chip->lock);
- }
-@@ -627,6 +615,7 @@ static struct lp55xx_device_config lp5521_cfg = {
- 		.val  = LP5521_ENABLE_DEFAULT,
+ static int lp5521_post_init_device(struct lp55xx_chip *chip)
+@@ -616,6 +616,7 @@ static struct lp55xx_device_config lp5521_cfg = {
  	},
  	.post_init_device   = lp5521_post_init_device,
-+	.brightness_work_fn = lp5521_led_brightness_work,
+ 	.brightness_work_fn = lp5521_led_brightness_work,
++	.set_led_current    = lp5521_set_led_current,
  };
  
  static int __devinit lp5521_probe(struct i2c_client *client,
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 58c252e..fbde823 100644
+index fbde823..5d383b2 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -163,8 +163,6 @@ static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode);
- static int lp5523_set_engine_mode(struct lp5523_engine *engine, u8 mode);
- static int lp5523_load_program(struct lp5523_engine *engine, const u8 *pattern);
- 
--static void lp5523_led_brightness_work(struct work_struct *work);
--
- static int lp5523_write(struct i2c_client *client, u8 reg, u8 value)
- {
- 	return i2c_smbus_write_byte_data(client, reg, value);
-@@ -457,29 +455,15 @@ release_lock:
- 	return pos;
- }
- 
--static void lp5523_set_brightness(struct led_classdev *cdev,
--			     enum led_brightness brightness)
--{
--	struct lp5523_led *led = cdev_to_led(cdev);
--
--	led->brightness = (u8)brightness;
--
--	schedule_work(&led->brightness_work);
--}
--
- static void lp5523_led_brightness_work(struct work_struct *work)
- {
--	struct lp5523_led *led = container_of(work,
--					      struct lp5523_led,
-+	struct lp55xx_led *led = container_of(work, struct lp55xx_led,
- 					      brightness_work);
--	struct lp5523_chip *chip = led_to_lp5523(led);
--	struct i2c_client *client = chip->client;
-+	struct lp55xx_chip *chip = led->chip;
- 
- 	mutex_lock(&chip->lock);
--
--	lp5523_write(client, LP5523_REG_LED_PWM_BASE + led->chan_nr,
-+	lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + led->chan_nr,
- 		     led->brightness);
--
+@@ -467,6 +467,13 @@ static void lp5523_led_brightness_work(struct work_struct *work)
  	mutex_unlock(&chip->lock);
  }
  
-@@ -704,6 +688,7 @@ static struct lp55xx_device_config lp5523_cfg = {
- 		.val  = LP5523_ENABLE,
++static void lp5523_set_led_current(struct lp55xx_led *led, u8 led_current)
++{
++	led->led_current = led_current;
++	lp55xx_write(led->chip, LP5523_REG_LED_CURRENT_BASE + led->chan_nr,
++		led_current);
++}
++
+ static int lp5523_do_store_load(struct lp5523_engine *engine,
+ 				const char *buf, size_t len)
+ {
+@@ -689,6 +696,7 @@ static struct lp55xx_device_config lp5523_cfg = {
  	},
  	.post_init_device   = lp5523_post_init_device,
-+	.brightness_work_fn = lp5523_led_brightness_work,
+ 	.brightness_work_fn = lp5523_led_brightness_work,
++	.set_led_current    = lp5523_set_led_current,
  };
  
  static int __devinit lp5523_probe(struct i2c_client *client,
