@@ -1,122 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab2JEJIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:08:25 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:38944 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990Ab2JEJIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:08:21 -0400
-Message-ID: <506EA37E.6090208@mev.co.uk>
-Date: Fri, 5 Oct 2012 10:08:14 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
+	id S1755064Ab2JEJI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:08:59 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33268 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab2JEJIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 05:08:54 -0400
+Message-ID: <506EA2A4.8070309@linux.vnet.ibm.com>
+Date: Fri, 05 Oct 2012 14:34:36 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: YAMANE Toshiaki <yamanetoshi@gmail.com>
-CC: Greg Kroah-Hartman <greg@kroah.com>, Ian Abbott <ian.abbott@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/comedi: Use dev_ printks in drivers/me_daq.c
-References: <1349395648-5976-1-git-send-email-yamanetoshi@gmail.com>
-In-Reply-To: <1349395648-5976-1-git-send-email-yamanetoshi@gmail.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving undercommit,overcommit scenarios
+ in PLE handler
+References: <1348486479.11847.46.camel@twins> <50604988.2030506@linux.vnet.ibm.com> <1348490165.11847.58.camel@twins> <50606050.309@linux.vnet.ibm.com> <1348494895.11847.64.camel@twins> <50606B33.1040102@linux.vnet.ibm.com> <5061B437.8070300@linux.vnet.ibm.com> <5064101A.5070902@redhat.com> <50643745.6010202@linux.vnet.ibm.com> <506440AF.9080202@redhat.com> <20121003142942.GB15253@linux.vnet.ibm.com> <506C7524.2010103@redhat.com> <506D6B64.6030907@linux.vnet.ibm.com> <506D8497.1040105@redhat.com>
+In-Reply-To: <506D8497.1040105@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12100509-2674-0000-0000-00000639A4A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-05 01:07, YAMANE Toshiaki wrote:
-> fixed below checkpatch warnings.
-> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-> - WARNING: quoted string split across lines
+On 10/04/2012 06:14 PM, Avi Kivity wrote:
+> On 10/04/2012 12:56 PM, Raghavendra K T wrote:
+>> On 10/03/2012 10:55 PM, Avi Kivity wrote:
+>>> On 10/03/2012 04:29 PM, Raghavendra K T wrote:
+>>>> * Avi Kivity <avi@redhat.com> [2012-09-27 14:03:59]:
+>>>>
+>>>>> On 09/27/2012 01:23 PM, Raghavendra K T wrote:
+>>>>>>>
+>>>> [...]
+>>>>>> 2) looking at the result (comparing A & C) , I do feel we have
+>>>>>> significant in iterating over vcpus (when compared to even vmexit)
+>>>>>> so We still would need undercommit fix sugested by PeterZ
+>>>>>> (improving by
+>>>>>> 140%). ?
+>>>>>
+>>>>> Looking only at the current runqueue?  My worry is that it misses a lot
+>>>>> of cases.  Maybe try the current runqueue first and then others.
+>>>>>
+>>>>
+>>>> Okay. Do you mean we can have something like
+>>>>
+>>>> +       if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>>>> +               yielded = -ESRCH;
+>>>> +               goto out_irq;
+>>>> +       }
+>>>>
+>>>> in the Peter's patch ?
+>>>>
+>>>> ( I thought lot about && or || . Both seem to have their own cons ).
+>>>> But that should be only when we have short term imbalance, as PeterZ
+>>>> told.
+>>>
+>>> I'm missing the context.  What is p_rq?
+>>
+>> p_rq is the run queue of target vcpu.
+>> What I was trying below was to address Rik concern. Suppose
+>> rq of source vcpu has one task, but target probably has two task,
+>> with a eligible vcpu waiting to be scheduled.
+>>
+>>>
+>>> What I mean was:
+>>>
+>>>     if can_yield_to_process_in_current_rq
+>>>        do that
+>>>     else if can_yield_to_process_in_other_rq
+>>>        do that
+>>>     else
+>>>        return -ESRCH
+>>
+>> I think you are saying we have to check the run queue of the
+>> source vcpu, if we have a vcpu belonging to same VM and try yield to
+>> that? ignoring whatever the target vcpu we received for yield_to.
+>>
+>> Or is it that kvm_vcpu_yield_to should now check the vcpus of same vm
+>> belonging to same run queue first. If we don't succeed, go again for
+>> a vcpu in different runqueue.
 >
-> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/me_daq.c |   26 +++++++++++++++-----------
->   1 file changed, 15 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
-> index 2ce0b14..0d85729 100644
-> --- a/drivers/staging/comedi/drivers/me_daq.c
-> +++ b/drivers/staging/comedi/drivers/me_daq.c
-> @@ -384,8 +384,8 @@ static int me_ai_insn_read(struct comedi_device *dev,
->   		    (readw(dev_private->me_regbase +
->   			   ME_READ_AD_FIFO) ^ 0x800) & 0x0FFF;
->   	} else {
-> -		printk(KERN_ERR "comedi%d: Cannot get single value\n",
-> -		       dev->minor);
-> +		dev_err(dev->class_dev, "comedi%d: Cannot get single value\n",
-> +			dev->minor);
+> Right.  Prioritize vcpus that are cheap to yield to.  But may return bad
+> results if all vcpus on the current runqueue are spinners, so probably
+> not a good idea.
 
-There is no need for the "comedi%d: " prefix as dev_??? already puts the 
-device name in the message.  Just use:
+Okay. 'll drop vcpu from same rq idea now.
 
-		dev_err(dev->class_dev, "Cannot get single value\n");
+>
+>> Does it add more overhead especially in <= 1x scenario?
+>
+> The current runqueue should have just our vcpu in that case, so low
+> overhead.  But it's a bad idea due to the above scenario.
+>
 
->   		return -EIO;
->   	}
->
-> @@ -566,8 +566,8 @@ static int me2600_xilinx_download(struct comedi_device *dev,
->   	if (value & 0x20) {
->   		/* Disable interrupt */
->   		writel(0x00, dev_private->plx_regbase + PLX_INTCSR);
-> -		printk(KERN_ERR "comedi%d: Xilinx download failed\n",
-> -		       dev->minor);
-> +		dev_err(dev->class_dev, "comedi%d: Xilinx download failed\n",
-> +			dev->minor);
->   		return -EIO;
->   	}
->
-> @@ -654,8 +654,9 @@ static int me_attach_pci(struct comedi_device *dev, struct pci_dev *pcidev)
->
->   	/* Enable PCI device and request PCI regions */
->   	if (comedi_pci_enable(pcidev, dev->board_name) < 0) {
-> -		printk(KERN_ERR "comedi%d: Failed to enable PCI device and "
-> -		       "request regions\n", dev->minor);
-> +		dev_err(dev->class_dev,
-> +			"comedi%d: Failed to enable PCI device and request regions\n",
-> +			dev->minor);
->   		return -EIO;
->   	}
->
-> @@ -666,7 +667,8 @@ static int me_attach_pci(struct comedi_device *dev, struct pci_dev *pcidev)
->   	    ioremap(plx_regbase_tmp, plx_regbase_size_tmp);
->   	dev_private->plx_regbase_size = plx_regbase_size_tmp;
->   	if (!dev_private->plx_regbase) {
-> -		printk("comedi%d: Failed to remap I/O memory\n", dev->minor);
-> +		dev_err(dev->class_dev,
-> +			"comedi%d: Failed to remap I/O memory\n", dev->minor);
->   		return -ENOMEM;
->   	}
->
-> @@ -676,11 +678,13 @@ static int me_attach_pci(struct comedi_device *dev, struct pci_dev *pcidev)
->   	swap_regbase_size_tmp = pci_resource_len(pcidev, 5);
->
->   	if (!swap_regbase_tmp)
-> -		printk(KERN_ERR "comedi%d: Swap not present\n", dev->minor);
-> +		dev_err(dev->class_dev,
-> +			"comedi%d: Swap not present\n", dev->minor);
->
->   	/*---------------------------------------------- Workaround start ---*/
->   	if (plx_regbase_tmp & 0x0080) {
-> -		printk(KERN_ERR "comedi%d: PLX-Bug detected\n", dev->minor);
-> +		dev_err(dev->class_dev,
-> +			"comedi%d: PLX-Bug detected\n", dev->minor);
->
->   		if (swap_regbase_tmp) {
->   			regbase_tmp = plx_regbase_tmp;
-> @@ -716,8 +720,8 @@ static int me_attach_pci(struct comedi_device *dev, struct pci_dev *pcidev)
->   	dev_private->me_regbase_size = me_regbase_size_tmp;
->   	dev_private->me_regbase = ioremap(me_regbase_tmp, me_regbase_size_tmp);
->   	if (!dev_private->me_regbase) {
-> -		printk(KERN_ERR "comedi%d: Failed to remap I/O memory\n",
-> -		       dev->minor);
-> +		dev_err(dev->class_dev,
-> +			"comedi%d: Failed to remap I/O memory\n", dev->minor);
->   		return -ENOMEM;
->   	}
-
-And the same sort of thing for all of those.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
