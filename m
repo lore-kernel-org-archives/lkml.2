@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2JEJev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:34:51 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38068 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab2JEJeu (ORCPT
+	id S932087Ab2JEJfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:35:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43586 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab2JEJfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:34:50 -0400
+	Fri, 5 Oct 2012 05:35:04 -0400
+Message-ID: <506EA9C4.2000609@monstr.eu>
+Date: Fri, 05 Oct 2012 11:35:00 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <506EA37E.6090208@mev.co.uk>
-References: <1349395648-5976-1-git-send-email-yamanetoshi@gmail.com>
-	<506EA37E.6090208@mev.co.uk>
-Date: Fri, 5 Oct 2012 18:34:48 +0900
-Message-ID: <CAOTypNT6GXu86RNz1CCqR=bjjoDL1mfqAzzYAW9ZyyrpF3OPMA@mail.gmail.com>
-Subject: Re: [PATCH] staging/comedi: Use dev_ printks in drivers/me_daq.c
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, Ian Abbott <ian.abbott@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>  <1349374497-9540-11-git-send-email-monstr@monstr.eu> <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 5, 2012 at 6:08 PM, Ian Abbott <abbotti@mev.co.uk> wrote:
-> On 2012-10-05 01:07, YAMANE Toshiaki wrote:
->>
->> fixed below checkpatch warnings.
->> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then
->> pr_err(...  to printk(KERN_ERR ...
->> - WARNING: quoted string split across lines
->>
->> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
->> ---
->>   drivers/staging/comedi/drivers/me_daq.c |   26
->> +++++++++++++++-----------
->>   1 file changed, 15 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/me_daq.c
->> b/drivers/staging/comedi/drivers/me_daq.c
->> index 2ce0b14..0d85729 100644
->> --- a/drivers/staging/comedi/drivers/me_daq.c
->> +++ b/drivers/staging/comedi/drivers/me_daq.c
->> @@ -384,8 +384,8 @@ static int me_ai_insn_read(struct comedi_device *dev,
->>                     (readw(dev_private->me_regbase +
->>                            ME_READ_AD_FIFO) ^ 0x800) & 0x0FFF;
->>         } else {
->> -               printk(KERN_ERR "comedi%d: Cannot get single value\n",
->> -                      dev->minor);
->> +               dev_err(dev->class_dev, "comedi%d: Cannot get single
->> value\n",
->> +                       dev->minor);
+On 10/04/2012 09:15 PM, Ben Hutchings wrote:
+> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
+>> Just show current setting in bootlog.
+> [...]
+>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
+>>   	/* Setup checksum offload, but default to off if not specified */
+>>   	lp->temac_features = 0;
+>>   	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
+>> +	dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
+>>   	if (p && be32_to_cpu(*p)) {
+>>   		lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
+>>   		/* Can checksum TCP/UDP over IPv4. */
+>>   		ndev->features |= NETIF_F_IP_CSUM;
+>>   	}
+>>   	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
+>> +	dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
+> [...]
 >
->
-> There is no need for the "comedi%d: " prefix as dev_??? already puts the
-> device name in the message.  Just use:
->
->                 dev_err(dev->class_dev, "Cannot get single value\n");
->
->
->>                 return -EIO;
->>         }
->>
->> @@ -566,8 +566,8 @@ static int me2600_xilinx_download(struct comedi_device
->> *dev,
->>         if (value & 0x20) {
->>                 /* Disable interrupt */
->>                 writel(0x00, dev_private->plx_regbase + PLX_INTCSR);
->> -               printk(KERN_ERR "comedi%d: Xilinx download failed\n",
->> -                      dev->minor);
->> +               dev_err(dev->class_dev, "comedi%d: Xilinx download
->> failed\n",
->> +                       dev->minor);
->>                 return -EIO;
->>         }
->>
->> @@ -654,8 +654,9 @@ static int me_attach_pci(struct comedi_device *dev,
->> struct pci_dev *pcidev)
->>
->>         /* Enable PCI device and request PCI regions */
->>         if (comedi_pci_enable(pcidev, dev->board_name) < 0) {
->> -               printk(KERN_ERR "comedi%d: Failed to enable PCI device and
->> "
->> -                      "request regions\n", dev->minor);
->> +               dev_err(dev->class_dev,
->> +                       "comedi%d: Failed to enable PCI device and request
->> regions\n",
->> +                       dev->minor);
->>                 return -EIO;
->>         }
->>
->> @@ -666,7 +667,8 @@ static int me_attach_pci(struct comedi_device *dev,
->> struct pci_dev *pcidev)
->>             ioremap(plx_regbase_tmp, plx_regbase_size_tmp);
->>         dev_private->plx_regbase_size = plx_regbase_size_tmp;
->>         if (!dev_private->plx_regbase) {
->> -               printk("comedi%d: Failed to remap I/O memory\n",
->> dev->minor);
->> +               dev_err(dev->class_dev,
->> +                       "comedi%d: Failed to remap I/O memory\n",
->> dev->minor);
->>                 return -ENOMEM;
->>         }
->>
->> @@ -676,11 +678,13 @@ static int me_attach_pci(struct comedi_device *dev,
->> struct pci_dev *pcidev)
->>         swap_regbase_size_tmp = pci_resource_len(pcidev, 5);
->>
->>         if (!swap_regbase_tmp)
->> -               printk(KERN_ERR "comedi%d: Swap not present\n",
->> dev->minor);
->> +               dev_err(dev->class_dev,
->> +                       "comedi%d: Swap not present\n", dev->minor);
->>
->>         /*---------------------------------------------- Workaround start
->> ---*/
->>         if (plx_regbase_tmp & 0x0080) {
->> -               printk(KERN_ERR "comedi%d: PLX-Bug detected\n",
->> dev->minor);
->> +               dev_err(dev->class_dev,
->> +                       "comedi%d: PLX-Bug detected\n", dev->minor);
->>
->>                 if (swap_regbase_tmp) {
->>                         regbase_tmp = plx_regbase_tmp;
->> @@ -716,8 +720,8 @@ static int me_attach_pci(struct comedi_device *dev,
->> struct pci_dev *pcidev)
->>         dev_private->me_regbase_size = me_regbase_size_tmp;
->>         dev_private->me_regbase = ioremap(me_regbase_tmp,
->> me_regbase_size_tmp);
->>         if (!dev_private->me_regbase) {
->> -               printk(KERN_ERR "comedi%d: Failed to remap I/O memory\n",
->> -                      dev->minor);
->> +               dev_err(dev->class_dev,
->> +                       "comedi%d: Failed to remap I/O memory\n",
->> dev->minor);
->>                 return -ENOMEM;
->>         }
->
->
-> And the same sort of thing for all of those.
+> Is there any particular reason you think this needs to be logged by
+> default, rather than letting users run ethtool -k?  I suggest using
+> dev_dbg() instead.
 
-Ian-san,
+Ok. I have looked at it and there are missing some bits in ndev->features.
 
-Thank you for pointing out my mistakes.
-I will try to fix it.
+Can you please check that my setting is correct?
 
+It is SG DMA ip/driver.
+ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
+
+With two options for csum on RX/TX. They can be selected independently.
+tx Partial csum over IPv4. -> NETIF_F_IP_CSUM
+tx Full csum. -> NETIF_F_HW_CSUM
+
+rx Full csum -> NETIF_F_RXCSUM
+
+Is there any option to support partial csum?
+
+Thanks,
+Michal
 
 -- 
-
-Regards,
-
-YAMANE Toshiaki
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
