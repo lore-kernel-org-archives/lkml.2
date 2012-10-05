@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab2JEOcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:32:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36437 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073Ab2JEOcu (ORCPT
+	id S1755789Ab2JEOkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:40:10 -0400
+Received: from dnvwsmailout1.mcafee.com ([161.69.31.173]:31493 "EHLO
+	DNVWSMAILOUT1.mcafee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab2JEOkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:32:50 -0400
-Date: Fri, 5 Oct 2012 07:32:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [patch 0/3] Turn CONFIG_HOTPLUG always on.
-Message-ID: <20121005143246.GA18276@kroah.com>
-References: <20120904234803.554552301@clark.kroah.org>
- <20120906202815.GA6732@kroah.com>
- <20121005015036.0d0b7ebd.akpm@linux-foundation.org>
+	Fri, 5 Oct 2012 10:40:07 -0400
+Date: Fri, 5 Oct 2012 16:23:58 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201210050623.q956NwaA011361@goober.corp.nai.org>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>, <uclinux-dev@uclinux.org>,
+        <geert@linux-m68k.org>
+Subject: [git pull] m68knommu arch updates for 3.7
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121005015036.0d0b7ebd.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 01:50:36AM -0700, Andrew Morton wrote:
-> On Thu, 6 Sep 2012 13:28:16 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
-> > On Tue, Sep 04, 2012 at 05:01:05PM -0700, Greg Kroah-Hartman wrote:
-> > > From: Greg KH <gregkh@linuxfoundation.org>
-> > > 
-> > > The CONFIG_HOTPLUG variable is tough to turn off, and almost all arches
-> > > default to it on.
-> > > 
-> > > If you turn it off, it saves you a big 200 or so bytes, and then starts
-> > > to cause all sorts of problems as the code paths if the option is
-> > > disabled is never really tested, and memory segments start to get thrown
-> > > away that driver authors assume will always be present.
-> > > 
-> > > So, as part of trying to get rid of the option entirely, let's just turn
-> > > the option always on.
-> > > 
-> > > Note, to do this properly, I found two duplicate definitions of the
-> > > option, in the Tile and Xtensa arch files, this patch series removes
-> > > those duplicates first.
-> > > 
-> > > Anyone object to me just taking these three patches through my
-> > > driver-core tree for 3.7?  After this set, I'll start unwinding the
-> > > places where CONFIG_HOTPLUG is used and remove the parts that are not
-> > > used anymore now that the option can not be turned off.
-> > 
-> > Given the lack of objection, I've now queued these up for 3.7 and will
-> > start unwinding the CONFIG_HOTPLUG mess.
-> > 
-> 
-> I wonder if this has had sufficient consideration.
-> 
-> It isn't just 200 bytes, is it?  It's all memory which is marked
-> __devinit* and __devexit* - that's a tremendous amount of stuff.  We
-> should quantify it.
-> 
-> It wouldn't surprise me if there are organizations who are using
-> CONFIG_HOTPLUG=n effectively.  We regularly bust a gut to save a few
-> bytes and for people who really care about this we're here sending them
-> backwards a lot further than that.
 
-Given the recent round of patches that I've applied to the tree making
-it so that CONFIG_HOTPLUG=n actually boots and works, that were needed
-for the past 6+ kernel versions, I find it very unlikely anyone actually
-runs a system in this type of configuration, but I would love to hear
-from someone who does if they are out there.
+Hi Linus,
 
-greg k-h
+Can you please pull the m68knommu git tree, for-next branch, at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+Most of it is a cleanup of the ColdFire hardware header files. We have had
+a few occurrances of bugs caused by inconsistent definitions of peripheral
+addresses. These patches make them all consistent, and also clean out a
+bunch of old crap. Overall we remove about 1000 lines.
+
+Regards
+Greg
+
+
+
+The following changes since commit 979570e02981d4a8fc20b3cc8fd651856c98ee9d:
+  Linus Torvalds (1):
+        Linux 3.6-rc7
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+Greg Ungerer (25):
+      m68knommu: make ColdFire IMR and IPR register definitions absolute addresses
+      m68knommu: make ColdFire SYPCR and RSR register definitions absolute addresses
+      m68knommu: make ColdFire watchdog register definitions absolute addresses
+      m68knommu: make ColdFire Pin Assignment register definitions absolute addresses
+      m68knommu: make ColdFire Interrupt Source register definitions absolute addresses
+      m68knommu: make ColdFire Chip Select register definitions absolute addresses
+      m68knommu: make ColdFire Park and Assignment register definitions absolute addresses
+      m68knommu: make remaining ColdFire 5272 register definitions absolute addresses
+      m68knommu: make ColdFire 5249 MBAR2 register definitions absolute addresses
+      m68knommu: fix wrong register offsets used for ColdFire 5272 multi-function pins
+      m68knommu: remove unused ColdFire 5282 register definitions
+      m68knommu: remove address offsets relative to IPSBAR for ColdFire 527x
+      m68knommu: use definitions for the ColdFire 528x FEC multi-function pins
+      m68knommu: remove a lot of unsed definitions for 532x ColdFire
+      m68knommu: modify ColdFire 532x GPIO register definitions to be consistent
+      m68knommu: use read/write IO access functions in ColdFire m532x setup code
+      m68knommu: move ColdFire slice timer address defiens to 54xx header
+      m68knommu: fix multi-function pin setup for FEC module on ColdFire 523x
+      m68knommu: clean up Pin Assignment definitions for the 54xx ColdFire CPU
+      m68knommu: clean up ColdFire 54xx General Timer definitions
+      m68knommu: fix inconsistent formating in ColdFire 523x definitions
+      m68knommu: fix inconsistent formating in ColdFire 5272 definitions
+      m68knommu: fix inconsistent formating in ColdFire 527x definitions
+      m68knommu: fix inconsistent formating in ColdFire 5307 definitions
+      m68knommu: fix inconsistent formating in ColdFire 5407 definitions
+
+Paul Bolle (1):
+      m68k: drop unused parts of 68VZ328 Makefile
+
+Philippe De Muyter (1):
+      m68knommu: use "r", not "i" constraint in cacheflush asm's
+
+ arch/m68k/include/asm/cacheflush_no.h   |   19 +-
+ arch/m68k/include/asm/m5206sim.h        |   98 ++--
+ arch/m68k/include/asm/m523xsim.h        |   24 +-
+ arch/m68k/include/asm/m5249sim.h        |   98 ++--
+ arch/m68k/include/asm/m525xsim.h        |   68 +-
+ arch/m68k/include/asm/m5272sim.h        |   99 ++--
+ arch/m68k/include/asm/m527xsim.h        |   84 ++-
+ arch/m68k/include/asm/m528xsim.h        |   51 +--
+ arch/m68k/include/asm/m5307sim.h        |  136 ++--
+ arch/m68k/include/asm/m532xsim.h        | 1189 ++-----------------------------
+ arch/m68k/include/asm/m5407sim.h        |  110 ++--
+ arch/m68k/include/asm/m54xxgpt.h        |   40 +-
+ arch/m68k/include/asm/m54xxsim.h        |   27 +-
+ arch/m68k/include/asm/mcfslt.h          |    7 -
+ arch/m68k/include/asm/nettel.h          |    9 +-
+ arch/m68k/platform/68VZ328/Makefile     |    8 +-
+ arch/m68k/platform/coldfire/device.c    |    4 +-
+ arch/m68k/platform/coldfire/head.S      |    2 +-
+ arch/m68k/platform/coldfire/intc-5249.c |   10 +-
+ arch/m68k/platform/coldfire/intc-5272.c |   20 +-
+ arch/m68k/platform/coldfire/intc.c      |   28 +-
+ arch/m68k/platform/coldfire/m523x.c     |    8 +-
+ arch/m68k/platform/coldfire/m5249.c     |   10 +-
+ arch/m68k/platform/coldfire/m525x.c     |    4 +-
+ arch/m68k/platform/coldfire/m5272.c     |   19 +-
+ arch/m68k/platform/coldfire/m527x.c     |   24 +-
+ arch/m68k/platform/coldfire/m528x.c     |    6 +-
+ arch/m68k/platform/coldfire/m532x.c     |  221 +++---
+ arch/m68k/platform/coldfire/m54xx.c     |   16 +-
+ arch/m68k/platform/coldfire/nettel.c    |    4 +-
+ arch/m68k/platform/coldfire/pci.c       |    4 +-
+ arch/m68k/platform/coldfire/reset.c     |    2 +-
+ arch/m68k/platform/coldfire/sltimers.c  |    4 +-
+ arch/m68k/platform/coldfire/timers.c    |    4 +-
+ drivers/watchdog/m54xx_wdt.c            |   21 +-
+ 35 files changed, 701 insertions(+), 1777 deletions(-)
