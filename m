@@ -1,162 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2JEKui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:50:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29514 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab2JEKug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:50:36 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4] slab: Ignore internal flags in cache creation
-Date: Fri,  5 Oct 2012 14:49:14 +0400
-Message-Id: <1349434154-8000-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S932267Ab2JELBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 07:01:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52189 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab2JELBf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 07:01:35 -0400
+Message-ID: <1349434879.14388.35.camel@twins>
+Subject: Re: [RFC] perf: perf_event_attr anon unions and static initializer
+ issue
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Fri, 05 Oct 2012 13:01:19 +0200
+In-Reply-To: <CABPqkBRCjd5=9t1URNXQvu8GbAHMjf3ixKtb6BV7ebBTZDLF1A@mail.gmail.com>
+References: <CABPqkBRCjd5=9t1URNXQvu8GbAHMjf3ixKtb6BV7ebBTZDLF1A@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some flags are used internally by the allocators for management
-purposes. One example of that is the CFLGS_OFF_SLAB flag that slab uses
-to mark that the metadata for that cache is stored outside of the slab.
+On Fri, 2012-10-05 at 12:36 +0200, Stephane Eranian wrote:
 
-No cache should ever pass those as a creation flags. We can just ignore
-this bit if it happens to be passed (such as when duplicating a cache in
-the kmem memcg patches).
+> struct perf_event_attr attr = { .config = 0x1234, .config1 = 0x456 };
 
-Because such flags can vary from allocator to allocator, we allow them
-to make their own decisions on that, defining SLAB_AVAILABLE_FLAGS with
-all flags that are valid at creation time.  Allocators that doesn't have
-any specific flag requirement should define that to mean all flags.
+> Does anyone have a better solution to propose?
 
-Common code will mask out all flags not belonging to that set.
 
-[ v2: leave the mask out decision up to the allocators ]
-[ v3: define flags for all allocators ]
-[ v4: move all definitions to slab.h ]
+  struct perf_event_attr attr = { 
+	.config = 0x1234, 
+	{ .config1 = 0x5678 },
+  };
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: David Rientjes <rientjes@google.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
----
- mm/slab.c        | 22 ----------------------
- mm/slab.h        | 25 +++++++++++++++++++++++++
- mm/slab_common.c |  7 +++++++
- mm/slub.c        |  3 ---
- 4 files changed, 32 insertions(+), 25 deletions(-)
+sometimes works, but apparently not in this case.. its a bit unfortunate
+indeed. EDG based compilers and the latest C std use your version --
+hence also 4.6 supporting it.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 87569af..eafef58 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -162,23 +162,6 @@
-  */
- static bool pfmemalloc_active __read_mostly;
- 
--/* Legal flag mask for kmem_cache_create(). */
--#if DEBUG
--# define CREATE_MASK	(SLAB_RED_ZONE | \
--			 SLAB_POISON | SLAB_HWCACHE_ALIGN | \
--			 SLAB_CACHE_DMA | \
--			 SLAB_STORE_USER | \
--			 SLAB_RECLAIM_ACCOUNT | SLAB_PANIC | \
--			 SLAB_DESTROY_BY_RCU | SLAB_MEM_SPREAD | \
--			 SLAB_DEBUG_OBJECTS | SLAB_NOLEAKTRACE | SLAB_NOTRACK)
--#else
--# define CREATE_MASK	(SLAB_HWCACHE_ALIGN | \
--			 SLAB_CACHE_DMA | \
--			 SLAB_RECLAIM_ACCOUNT | SLAB_PANIC | \
--			 SLAB_DESTROY_BY_RCU | SLAB_MEM_SPREAD | \
--			 SLAB_DEBUG_OBJECTS | SLAB_NOLEAKTRACE | SLAB_NOTRACK)
--#endif
--
- /*
-  * kmem_bufctl_t:
-  *
-@@ -2385,11 +2368,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (flags & SLAB_DESTROY_BY_RCU)
- 		BUG_ON(flags & SLAB_POISON);
- #endif
--	/*
--	 * Always checks flags, a caller might be expecting debug support which
--	 * isn't available.
--	 */
--	BUG_ON(flags & ~CREATE_MASK);
- 
- 	/*
- 	 * Check that size is in terms of words.  This is needed to avoid
-diff --git a/mm/slab.h b/mm/slab.h
-index 7deeb44..4c35c17 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -45,6 +45,31 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
- #endif
- 
- 
-+/* Legal flag mask for kmem_cache_create(), for various configurations */
-+#define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | SLAB_PANIC | \
-+			 SLAB_DESTROY_BY_RCU | SLAB_DEBUG_OBJECTS )
-+
-+#if defined(CONFIG_DEBUG_SLAB)
-+#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
-+#elif defined(CONFIG_SLUB_DEBUG)
-+#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
-+			  SLAB_TRACE | SLAB_DEBUG_FREE)
-+#else
-+#define SLAB_DEBUG_FLAGS (0)
-+#endif
-+
-+#if defined(CONFIG_SLAB)
-+#define SLAB_CACHE_FLAGS (SLAB_MEMSPREAD | SLAB_NOLEAKTRACE | \
-+			  SLAB_RECLAIM_ACCOUNT | SLAB_TEMPORARY | SLAB_NOTRACK)
-+#elif defined(CONFIG_SLUB)
-+#define SLAB_CACHE_FLAGS (SLAB_NOLEAKTRACE | SLAB_RECLAIM_ACCOUNT | \
-+			  SLAB_TEMPORARY | SLAB_NOTRACK)
-+#else
-+#define SLAB_CACHE_FLAGS (0)
-+#endif
-+
-+#define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
-+
- int __kmem_cache_shutdown(struct kmem_cache *);
- 
- #endif
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 9c21725..0e2b8e3 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -107,6 +107,13 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
- 	if (!kmem_cache_sanity_check(name, size) == 0)
- 		goto out_locked;
- 
-+	/*
-+	 * Some allocators will constraint the set of valid flags to a subset
-+	 * of all flags. We expect them to define CACHE_CREATE_MASK in this
-+	 * case, and we'll just provide them with a sanitized version of the
-+	 * passed flags.
-+	 */
-+	flags &= CACHE_CREATE_MASK;
- 
- 	s = __kmem_cache_alias(name, size, align, flags, ctor);
- 	if (s)
-diff --git a/mm/slub.c b/mm/slub.c
-index 628a261..f50c5b2 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -112,9 +112,6 @@
-  * 			the fast path and disables lockless freelists.
-  */
- 
--#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
--		SLAB_TRACE | SLAB_DEBUG_FREE)
--
- static inline int kmem_cache_debug(struct kmem_cache *s)
- {
- #ifdef CONFIG_SLUB_DEBUG
--- 
-1.7.11.4
-
+Yeah, I'm afraid we're stuck with this until a future where modern C
+isn't modern anymore.
