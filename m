@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab2JEHa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:30:59 -0400
-Received: from ozlabs.org ([203.10.76.45]:58595 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab2JEHaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:30:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-In-Reply-To: <1349355032.2496.11.camel@falcor>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com> <87obki23uv.fsf@rustcorp.com.au> <1349355032.2496.11.camel@falcor>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 05 Oct 2012 13:20:39 +0930
-Message-ID: <878vbl1ss0.fsf@rustcorp.com.au>
+	id S1752686Ab2JEHd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:33:26 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56784 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab2JEHdY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 03:33:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <17446332.558331349354185878.JavaMail.weblogic@epml02>
+References: <17446332.558331349354185878.JavaMail.weblogic@epml02>
+Date: Fri, 5 Oct 2012 10:23:30 +0530
+Message-ID: <CA+Z25wWu_NTMn5U47+ukF8FOtEY0KUR6syKVVxVvJsXq7Pu+6Q@mail.gmail.com>
+Subject: Re: [PATCH v4 0/3] devfreq: Add support for devices which can idle
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: myungjoo.ham@samsung.com
+Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
+        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "patches@linaro.org" <patches@linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
-> Why?  Not only have you had these patches sitting for a while, way
-> before you had the kernel module patches, they've been acked/signed off
-> by Kees, Serge, Eric, and myself.  All security subtree maintainers.
-> The module patches could have easily been built on top of Kees' small
-> patches.  I am really disappointed!
+On 4 October 2012 18:06, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+>> This patchset updates devfreq core to add support for devices
+>> which can idle. When device idleness is detected perhaps
+>> through runtime-pm, need some mechanism to suspend devfreq
+>> load monitoring and resume when device is back online.
+>>
+>> patch 1 introduce core design changes - per device work, decouple
+>> delayed work from core and event based interaction.
+>> patch 2 add devfreq suspend and resume apis.
+>> patch 3 add new sysfs attribute for governor predicted next target
+>> frequency and callback for current device frequency.
+>>
+>> The existing devfreq apis are kept intact. Two new apis
+>> devfreq_suspend_device() and devfreq_resume_device() are
+>> added to support suspend/resume of device devfreq.
+>
+> Could you please tell me which version you have rebased?
+>
+> It seems that the patchset has issues on applying over 3.6.
+> (tried at a0d271cbfed1dd50278c6b06bead3d00ba0a88f9)
 
-Me too.
+These patches are rebased against Linus tree.
 
-Linus' merge window opened on Monday 1-10-2012.  One week before that
-was Monday 24-09-2012, which is the nominal close of my merge window.
+The 203b42f7317494ae5e5efc7be6fb7f29c927f102 commit, which
+renames INIT_DELAYED_WORK_DEFERRABLE to
+INIT_DEFERRABLE_WORK could be the reason for patchset
+not applying over 3.6.
 
-The patches were sent on 21-09 (Friday for you, the weekend my time).
+>
+>
+>>
+>> Changes since v1:
+>> - revised locking mechanism
+>> - added kerneldoc comments for load monitoring helper functions
+>> - fixed minor review comments
+>>
+>> Changes since v2:
+>> - added new helper function for polling interval update
+>> - handled work suspend/resume contention between devfreq driver
+>> and sysfs
+>>
+>> Changes since v3:
+>> - added additonal checks in suspend/resume to avoid invalid usage of apis
+>> - added check in devfreq_monitor_start, not to start monitoring when
+>> polling_ms is set to zero.
+>>
+>> --
+>> Rajagopal Venkat (3):
+>>   devfreq: Core updates to support devices which can idle
+>>   devfreq: Add suspend and resume apis
+>>   devfreq: Add current freq callback in device profile
+>>
+>>  Documentation/ABI/testing/sysfs-class-devfreq |  15 +-
+>>  drivers/devfreq/devfreq.c                     | 481 ++++++++++++--------------
+>>  drivers/devfreq/governor.h                    |  13 +
+>>  drivers/devfreq/governor_performance.c        |  16 +-
+>>  drivers/devfreq/governor_powersave.c          |  16 +-
+>>  drivers/devfreq/governor_simpleondemand.c     |  33 ++
+>>  drivers/devfreq/governor_userspace.c          |  23 +-
+>>  include/linux/devfreq.h                       |  49 +--
+>>  8 files changed, 353 insertions(+), 293 deletions(-)
+>>
+>> --
+>> 1.7.11.3
+>>
+>>
+>>
+>>
+>>
+>>
+>>
+>>
 
-If I had nothing else to do on Monday, I would have applied it, but we
-spent the week trying to get the module signing patches into shape :(
 
-If I take them now, they need to go through linux-next.  That won't
-happen until Monday.  I want two days in linux-next, so that people who
-test linux-next get a chance to find issues, so that's Wednesday before
-I send to Linus, which is getting very late into the merge window.
 
-And keep adding two days for every trivial issue which is found :(
-
-It's in my modules-wip branch for 3.8.
-
-Cheers,
-Rusty.
-
+-- 
+Regards,
+Rajagopal
