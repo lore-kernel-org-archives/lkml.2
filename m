@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab2JEGmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:42:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43389 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2JEGmI convert rfc822-to-8bit (ORCPT
+	id S1751204Ab2JEGnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:43:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60725 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2JEGnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:42:08 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "Porter, Matt" <mporter@ti.com>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH v2 0/7] uio_pruss cleanup and platform support
-Thread-Topic: [PATCH v2 0/7] uio_pruss cleanup and platform support
-Thread-Index: AQHNnbDBq0mAo1oeIk+/mQ19uCF7cpenWDUAgALNG/A=
-Date: Fri, 5 Oct 2012 04:43:56 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA9C6B7@DBDE01.ent.ti.com>
-References: <1348861072-14507-1-git-send-email-mporter@ti.com>
- <20121003150058.GB11180@beef>
-In-Reply-To: <20121003150058.GB11180@beef>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Oct 2012 02:43:03 -0400
+Date: Fri, 5 Oct 2012 10:36:02 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns
+Message-ID: <20121005063602.GA1091@moon>
+References: <1349385662-571743-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349385662-571743-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
-
-On Wed, Oct 03, 2012 at 20:30:58, Porter, Matt wrote:
-> On Fri, Sep 28, 2012 at 03:37:45PM -0400, Matt Porter wrote:
-> > Changes since v1:
-> > 	- Replaced uio_pruss private SRAM API use with genalloc
-> > 	- Added DA850 platform device and clock support
-> > 	- Added DA850 L3 RAM gen_pool support
-> > 	- Split out DT binding
-> > 
-> > This series enables uio_pruss on both DA850 and AM33xx. The driver
-> > previously was not enabled by any platform and the private SRAM API
-> > was accessing an invalid SRAM bank for use on DA850. For AM33xx,
-> > DT, pinctrl, and runtime PM support are added since AM33xx only
-> > boots via DT.
+On Fri, Oct 05, 2012 at 01:21:02AM +0400, Andrew Vagin wrote:
+> Here is a stack trace of recursion:
+> free_pid_ns(parent)
+>   put_pid_ns(parent)
+>     kref_put(&ns->kref, free_pid_ns);
+>       free_pid_ns
 > 
-> I'm dropping AM33xx/OMAP support from v3 for this series 
-
-Just for my clarification, I believe you will be taking up AM33xx/OMAP 
-SRAM support later once you have completed supporting DaVinci. Right?
-
-> since the
-> focus has turned to fixing Davinci SRAM to provide genalloc support
-> and the associated use of that in the driver.
+> This patch turns recursion into loops.
 > 
-> I'll have a separate series with AM33xx support since dealing cleanly
-> with external resets on OMAP is a bigger issue.
-> 
-> -Matt
-> _______________________________________________
-> Davinci-linux-open-source mailing list
-> Davinci-linux-open-source@linux.davincidsp.com
-> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
-> 
+> pidns can be nested many times, so in case of recursion
+> a simple user space program can provoke a kernel panic
+> due to exceed of a kernel stack.
 
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-Regards, 
-Gururaja
+Looks good to me. Thanks Andrew!
