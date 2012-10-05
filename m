@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab2JEO6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:58:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59492 "EHLO
+	id S1756354Ab2JEO4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:56:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51963 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab2JEO4K (ORCPT
+	with ESMTP id S1755257Ab2JEOz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:56:10 -0400
+	Fri, 5 Oct 2012 10:55:57 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Greg Ungerer <gerg@uclinux.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Bryan Wu <bryan.wu@canonical.com>
-Subject: [PATCH 02/16] ARM: binfmt_flat: unused variable 'persistent'
-Date: Fri,  5 Oct 2012 16:55:16 +0200
-Message-Id: <1349448930-23976-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 09/16] USB: EHCI: mark ehci_orion_conf_mbus_windows __devinit
+Date: Fri,  5 Oct 2012 16:55:23 +0200
+Message-Id: <1349448930-23976-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349448930-23976-1-git-send-email-arnd@arndb.de>
 References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:K0YBM3I7f7Mt9STq6dMgB66KyM3j+bH2V2MyrD/xhj8
- zERrUt6C3Njksw55zlCDuzNT1+qCtevjH6JDY6ZLUOSzkczFhT
- PdFdG2beMYXSaOhD1mSni9uc8x+ppPWMkpoWuRfZK0YZQj9o35
- Uki048IXqy7ZN4ZLfi6nWDLTL4JBVTaKJqdPqT30o63RVU0yHN
- Hqlddu23uqcurSFTkTez2U8qVNwEcsprPFZwvezM+EALgZ931v
- 0sEd1gR3Q0+/QrGlt1KH+8LIIykU7hwYw0d6kEXTK4jfcXcx07
- RgBbC9QkErv7/O9NDQVuLcBO1zgfWZhn4CE3hslvrKViguPNSg
- +nu8ELObcN+Nq4VB/txMs0kdkYTFOxMpGZr16scU5p3/UcvG4T
- uZGrxwY0bwr/LYVmxDSbbrotPrnypwheAo=
+X-Provags-ID: V02:K0:ZicKctqEDHf4Kprr51zys7Om/5lSZTZpViHVV/gFGUQ
+ z0kgksG6f3RZasc+K3Phd3IIXX+lySxNLUsBBgEseVRfOIJ+q4
+ jQI9t2YxRGi91czJ74HAekY0MIhp1ba4Ijbf23sR+rA5sOcDjR
+ qVxdJ2te8DPE6PJwn2nav9tfqIwG6wRHy9ODH/9DzaD1cGqta4
+ bVP62u3ko2M5230/2hg1Wt4FZ0L462soqy9bOGf7g0CbHdxuwC
+ WEe+Y8Ef3HVdr6WsBXrP5M69K1O/UOYD2Qg+79R0Dibn49ktEh
+ gVOn55/LAdHmBBxeEj1Cw8G0tDrEQvd8jksEi+XK8rjk84c4/x
+ LXAQ0tNeb7bqEQ8QDYgwLfzmiFNrbgkNlIgZaysXb2mv7J2xbs
+ D1JXGwcU4MNkf8XVlwNnsbhKtFEF7L7wpY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The flat_get_addr_from_rp() macro does not use the 'persistent' argument
-on ARM, causing a harmless compiler warning. A cast to void removes
-that warning.
+The __devinit section is going away soon, but while it's
+still there, we get a correct warning about
+ehci_orion_conf_mbus_windows being discarded before
+its caller, so it should be marked __devinit rather than
+__init.
 
-Without this patch, building at91x40_defconfig results in:
+Without this patch, building dove_defconfig results in:
 
-fs/binfmt_flat.c: In function 'load_flat_file':
-fs/binfmt_flat.c:746:17: warning: unused variable 'persistent' [-Wunused-variable]
+WARNING: drivers/usb/host/built-in.o(.devinit.text+0x8a4): Section mismatch in reference from the function ehci_orion_drv_probe() to the function .init.text:ehci_orion_conf_mbus_windows()
+The function __devinit ehci_orion_drv_probe() references
+a function __init ehci_orion_conf_mbus_windows().
+If ehci_orion_conf_mbus_windows is only used by ehci_orion_drv_probe then
+annotate ehci_orion_conf_mbus_windows with a matching annotation.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Bryan Wu <bryan.wu@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
 ---
- arch/arm/include/asm/flat.h |    2 +-
+ drivers/usb/host/ehci-orion.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/flat.h b/arch/arm/include/asm/flat.h
-index 59426a4..e847d23 100644
---- a/arch/arm/include/asm/flat.h
-+++ b/arch/arm/include/asm/flat.h
-@@ -8,7 +8,7 @@
- #define	flat_argvp_envp_on_stack()		1
- #define	flat_old_ram_flag(flags)		(flags)
- #define	flat_reloc_valid(reloc, size)		((reloc) <= (size))
--#define	flat_get_addr_from_rp(rp, relval, flags, persistent) get_unaligned(rp)
-+#define	flat_get_addr_from_rp(rp, relval, flags, persistent) ((void)persistent,get_unaligned(rp))
- #define	flat_put_addr_at_rp(rp, val, relval)	put_unaligned(val,rp)
- #define	flat_get_relocate_addr(rel)		(rel)
- #define	flat_set_persistent(relval, p)		0
+diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
+index 8892d36..1f5dd5e 100644
+--- a/drivers/usb/host/ehci-orion.c
++++ b/drivers/usb/host/ehci-orion.c
+@@ -160,7 +160,7 @@ static const struct hc_driver ehci_orion_hc_driver = {
+ 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+ };
+ 
+-static void __init
++static void __devinit
+ ehci_orion_conf_mbus_windows(struct usb_hcd *hcd,
+ 			     const struct mbus_dram_target_info *dram)
+ {
 -- 
 1.7.10
 
