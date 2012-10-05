@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2JEPcJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:32:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:38332 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab2JEPcB (ORCPT
+	id S1756369Ab2JEPcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:32:21 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61389 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756138Ab2JEPcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 11:32:01 -0400
+	Fri, 5 Oct 2012 11:32:10 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 01/10] mfd: Prevent STMPE from abusing mfd_add_devices' irq_base parameter
-Date: Fri,  5 Oct 2012 16:31:37 +0100
-Message-Id: <1349451107-8009-2-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 07/10] input: Enable STMPE keypad driver for Device Tree
+Date: Fri,  5 Oct 2012 16:31:43 +0100
+Message-Id: <1349451107-8009-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
 References: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
@@ -21,99 +23,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally IRQ incrementers were provided in some template resource
-structures for keypad and touchscreen devices. These were passed as
-IORESOURCE_IRQs to MFD core in the usual way. The true device IRQs
-were instead added to the irq_base when mfd_add_devices was invoked.
-This is clearly an abuse of the call, and does not scale when IRQ
-Domains are brought into play. Before we can provide the STMPE with
-its own IRQ Domain we must first fix this. This patche keeps most
-of the driver's structure, keeping the template strategy. However,
-instead of providing the IRQ as an increment to irq_base, we
-dynamically populate the IORESOURCE_IRQ with the correct device IRQ.
+This patch allows the STMPE driver to be successfully probed and
+initialised when Device Tree support is enabled. Besides the usual
+platform data changes, we also separate the process of filling in
+the 'in use' pin bitmap, as we have to extract the information from
+Device Tree in the DT boot case.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/stmpe.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
+ drivers/mfd/stmpe.c                   |    1 +
+ 2 files changed, 59 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index c94f521..ad13cb0 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -310,14 +310,10 @@ static struct mfd_cell stmpe_gpio_cell_noirq = {
- static struct resource stmpe_keypad_resources[] = {
- 	{
- 		.name	= "KEYPAD",
--		.start	= 0,
--		.end	= 0,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- 	{
- 		.name	= "KEYPAD_OVER",
--		.start	= 1,
--		.end	= 1,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -397,14 +393,10 @@ static struct stmpe_variant_info stmpe801_noirq = {
- static struct resource stmpe_ts_resources[] = {
- 	{
- 		.name	= "TOUCH_DET",
--		.start	= 0,
--		.end	= 0,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- 	{
- 		.name	= "FIFO_TH",
--		.start	= 1,
--		.end	= 1,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -959,10 +951,10 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
+index 470a877..c722d23 100644
+--- a/drivers/input/keyboard/stmpe-keypad.c
++++ b/drivers/input/keyboard/stmpe-keypad.c
+@@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
+ 			      (plat->debounce_ms << 1));
  }
  
- static int __devinit stmpe_add_device(struct stmpe *stmpe,
--				      struct mfd_cell *cell, int irq)
-+				      struct mfd_cell *cell)
- {
- 	return mfd_add_devices(stmpe->dev, stmpe->pdata->id, cell, 1,
--			       NULL, stmpe->irq_base + irq, NULL);
-+			       NULL, stmpe->irq_base, NULL);
- }
- 
- static int __devinit stmpe_devices_init(struct stmpe *stmpe)
-@@ -970,7 +962,7 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
- 	struct stmpe_variant_info *variant = stmpe->variant;
- 	unsigned int platform_blocks = stmpe->pdata->blocks;
- 	int ret = -EINVAL;
--	int i;
-+	int i, j;
- 
- 	for (i = 0; i < variant->num_blocks; i++) {
- 		struct stmpe_variant_block *block = &variant->blocks[i];
-@@ -978,8 +970,17 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
- 		if (!(platform_blocks & block->block))
- 			continue;
- 
-+		for (j = 0; j < block->cell->num_resources; j++) {
-+			struct resource *res =
-+				(struct resource *) &block->cell->resources[j];
++static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
++				struct stmpe_keypad *keypad,
++				struct stmpe_keypad_platform_data *plat)
++{
++	struct device_node *np = pdev->dev.of_node;
++	unsigned int proplen;
++	const __be32 *prop;
++	int i;
 +
-+			/* Dynamically fill in a variant's IRQ. */
-+			if (res->flags & IORESOURCE_IRQ)
-+				res->start = res->end = block->irq + j;
++	if (np) {
++		prop = of_get_property(np, "linux,keymap", &proplen);
++		if (!prop) {
++			dev_err(&pdev->dev,
++				"linux,keymap property not defined\n");
++			return -EINVAL;
 +		}
 +
- 		platform_blocks &= ~block->block;
--		ret = stmpe_add_device(stmpe, block->cell, block->irq);
-+		ret = stmpe_add_device(stmpe, block->cell);
- 		if (ret)
- 			return ret;
- 	}
++		for (i = 0; i < proplen / sizeof(u32); i++) {
++			unsigned int key = be32_to_cpup(prop + i);
++
++			keypad->cols |= 1 << KEY_COL(key);
++			keypad->rows |= 1 << KEY_ROW(key);
++		}
++	} else {
++		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
++			unsigned int key = plat->keymap_data->keymap[i];
++
++			keypad->cols |= 1 << KEY_COL(key);
++			keypad->rows |= 1 << KEY_ROW(key);
++		}
++	}
++
++	return 0;
++}
++
++static void __devinit stmpe_keypad_of_probe(struct device_node *np,
++				struct stmpe_keypad_platform_data *plat)
++{
++	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
++	of_property_read_u32(np, "stericsson,scan-count", &plat->scan_count);
++
++	if (of_get_property(np, "stericsson,no-autorepeat", NULL))
++		plat->no_autorepeat = true;
++}
++
+ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+ {
+ 	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+ 	struct stmpe_keypad_platform_data *plat;
++	struct device_node *np = pdev->dev.of_node;
+ 	struct stmpe_keypad *keypad;
+ 	struct input_dev *input;
+ 	int ret;
+ 	int irq;
+-	int i;
+ 
+ 	plat = stmpe->pdata->keypad;
+-	if (!plat)
+-		return -ENODEV;
++	if (!plat) {
++		if (np) {
++			plat = devm_kzalloc(&pdev->dev,
++					sizeof(*plat), GFP_KERNEL);
++			if (!plat)
++				return -ENOMEM;
++
++			stmpe_keypad_of_probe(np, plat);
++		} else
++			return -ENODEV;
++	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+@@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+ 	if (!plat->no_autorepeat)
+ 		__set_bit(EV_REP, input->evbit);
+ 
+-	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
+-		unsigned int key = plat->keymap_data->keymap[i];
+-
+-		keypad->cols |= 1 << KEY_COL(key);
+-		keypad->rows |= 1 << KEY_ROW(key);
+-	}
++	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
+ 
+ 	keypad->stmpe = stmpe;
+ 	keypad->plat = plat;
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index ba157d4..b03cc64 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
+ 
+ static struct mfd_cell stmpe_keypad_cell = {
+ 	.name		= "stmpe-keypad",
++	.of_compatible  = "st,stmpe-keypad",
+ 	.resources	= stmpe_keypad_resources,
+ 	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
+ };
 -- 
 1.7.9.5
 
