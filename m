@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2JEA2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 20:28:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57541 "EHLO mail.zytor.com"
+	id S1754114Ab2JEAd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 20:33:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54016 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab2JEA2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 20:28:00 -0400
-Message-ID: <506E2970.8050603@zytor.com>
-Date: Thu, 04 Oct 2012 17:27:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751911Ab2JEAd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 20:33:26 -0400
+Date: Thu, 4 Oct 2012 17:33:19 -0700
+From: Kees Cook <kees@outflux.net>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: viro@zeniv.linux.org.uk, keescook@chromium.org, levinsasha928@gmail.com,
+        davej@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: prevent use after free in auditing when symlink
+ following was denied
+Message-ID: <20121005003319.GH9092@outflux.net>
+References: <1349395000-12050-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH] MAINTAINERS: Add myself as the SWIOTLB maintainer.
-References: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349395000-12050-1-git-send-email-sasha.levin@oracle.com>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 08:49 AM, Konrad Rzeszutek Wilk wrote:
-> Now that I've an IA64 box on top of the other boxes
-> (IBM with Calgary-X, Intel VT-d, AMD Vi, and AMD GART - that
-> can use SWIOTLB as fallback) I can reliably do regression
-> testing.
->
-> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> CC: Tony Luck <tony.luck@intel.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->   MAINTAINERS |    8 ++++++++
->   1 files changed, 8 insertions(+), 0 deletions(-)
->
+On Thu, Oct 04, 2012 at 07:56:40PM -0400, Sasha Levin wrote:
+> Commit "fs: add link restriction audit reporting" has added auditing of failed
+> attempts to follow symlinks. Unfortunately, the auditing was being done after
+> the struct path structure was released earlier.
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+Thanks for catching that!
 
+Cc: stable@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Kees Cook                                            @outflux.net
