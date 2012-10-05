@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2JEQbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:31:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57875 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932581Ab2JEQW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756326Ab2JEQbj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:31:39 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56275 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932541Ab2JEQW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Oct 2012 12:22:28 -0400
-Message-ID: <1349454169.3106.6.camel@clam>
-Subject: Re: [Cbe-oss-dev] [PATCH 4/5] Rename the drivers/of prom_*
-	functions to of_*
-From: Geoff Levand <geoff@infradead.org>
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Cc: devicetree-discuss@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Date: Fri, 05 Oct 2012 09:22:49 -0700
-In-Reply-To: <506BA9E6.9050309@linux.vnet.ibm.com>
-References: <506B2E63.5090900@linux.vnet.ibm.com>
-	 <506BA9E6.9050309@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 07/32 v3] USB: EHCI: add no_io_watchdog platform_data parameter to ehci-platform
+Date: Fri,  5 Oct 2012 18:20:39 +0200
+Message-Id: <1349454064-11606-8-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
+References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 21:58 -0500, Nathan Fontenot wrote:
-> Rename the prom_*_property routines of the generic OF code to of_*_property.
-> This brings them in line with the naming used by the rest of the OF code.
-> 
-> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/platforms/ps3/os-area.c      |    6 +++---
->  10 files changed, 35 insertions(+), 37 deletions(-)
+Enhance the ehci-platform driver to also accept no_io_watchdog as a platform
+data parameter. When no_io_watchdog is set to 1, the ehci controller will set
+ehci->need_io_watchdog to 0. Since most EHCI controllers do need the I/O
+watchdog to be on, only let those which need it to turn the watchdog off.
 
-The ps3 part looks OK.  Please do build test with ps3_defconfig.
+Make sure that we change need_io_watchdog after the call to ehci_setup()
+because ehci_setup() will unconditionnaly set need_io_watchdog to 1.
 
-Acked-by: Geoff Levand <geoff@infradead.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+Changes in v3:
+- set need_io_watchdog after the call to ehci_setup()
+
+Changes in v2:
+- reworked patch to introduce "no_io_watchdog" instead of "need_io_watchdog"
+- reworded commit message accordingly
+
+
+ drivers/usb/host/ehci-platform.c |    2 ++
+ include/linux/usb/ehci_pdriver.h |    3 +++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 764e010..607adf9 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -38,6 +38,8 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
+ 	if (retval)
+ 		return retval;
+ 
++	if (pdata->no_io_watchdog)
++		ehci->need_io_watchdog = 0;
+ 	if (pdata->port_power_on)
+ 		ehci_port_power(ehci, 1);
+ 	if (pdata->port_power_off)
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index c9d09f8..67ac74b 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -29,6 +29,8 @@
+  *			initialization.
+  * @port_power_off:	set to 1 if the controller needs to be powered down
+  *			after initialization.
++ * @no_io_watchdog:	set to 1 if the controller does not need the I/O
++ *			watchdog to run.
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -41,6 +43,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	port_power_on:1;
+ 	unsigned	port_power_off:1;
++	unsigned	no_io_watchdog:1;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
+-- 
+1.7.9.5
 
