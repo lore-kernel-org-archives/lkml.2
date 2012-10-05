@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2JEKSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:18:22 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62685 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095Ab2JEKSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:18:18 -0400
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: jassisinghbrar@gmail.com, boojin.kim@samsung.com, vinod.koul@intel.com,
-        patches@linaro.org, kgene.kim@samsung.com
-Subject: [PATCH v2 4/4] DMA: PL330: unregister dma_device in module's remove function
-Date: Fri,  5 Oct 2012 15:47:56 +0530
-Message-Id: <1349432276-22919-5-git-send-email-inderpal.singh@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
-References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
+	id S932191Ab2JEKSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:18:39 -0400
+Received: from tundra.namei.org ([65.99.196.166]:58102 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932095Ab2JEKSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 06:18:37 -0400
+Date: Fri, 5 Oct 2012 20:19:03 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kees Cook <keescook@chromium.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/4] security: introduce kernel_module_from_file hook
+In-Reply-To: <1349382154-9804-3-git-send-email-keescook@chromium.org>
+Message-ID: <alpine.LRH.2.02.1210052018330.18216@tundra.namei.org>
+References: <1349382154-9804-1-git-send-email-keescook@chromium.org> <1349382154-9804-3-git-send-email-keescook@chromium.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-unregister dma_device in module's remove function.
+On Thu, 4 Oct 2012, Kees Cook wrote:
 
-Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
----
- drivers/dma/pl330.c |    2 ++
- 1 file changed, 2 insertions(+)
+> Now that kernel module origins can be reasoned about, provide a hook to
+> the LSMs to make policy decisions about the module file. This will let
+> Chrome OS enforce that loadable kernel modules can only come from its
+> read-only hash-verified root filesystem. Other LSMs can, for example,
+> read extended attributes for signatures, etc.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Acked-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Acked-by: Eric Paris <eparis@redhat.com>
+> Acked-by: Mimi Zohar <zohar@us.ibm.com>
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 4b7a34d..e7dc040 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -3017,6 +3017,8 @@ static int __devexit pl330_remove(struct amba_device *adev)
- 			return -EBUSY;
- 	}
- 
-+	dma_async_device_unregister(&pdmac->ddma);
-+
- 	amba_set_drvdata(adev, NULL);
- 
- 	list_for_each_entry_safe(pch, _p, &pdmac->ddma.channels,
+Acked-by: James Morris <james.l.morris@oracle.com>
+
+
 -- 
-1.7.9.5
-
+James Morris
+<jmorris@namei.org>
