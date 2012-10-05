@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab2JEC1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 22:27:36 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60182 "EHLO
+	id S1756592Ab2JECaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 22:30:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60324 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756261Ab2JEC1c (ORCPT
+	with ESMTP id S1756514Ab2JECaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 22:27:32 -0400
+	Thu, 4 Oct 2012 22:30:14 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <506E4571.4090608@jp.fujitsu.com>
-Date: Fri, 5 Oct 2012 11:26:57 +0900
+Message-ID: <506E4616.10904@jp.fujitsu.com>
+Date: Fri, 5 Oct 2012 11:29:42 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
@@ -22,7 +22,8 @@ CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, <rientjes@google.com>,
         <liuj97@gmail.com>, <len.brown@intel.com>, <cl@linux.com>,
         <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
         <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [PATCH 2/10] memory-hotplug : remove /sys/firmware/memmap/X sysfs
+Subject: [PATCH 3/10] memory-hotplug : introduce new function arch_remove_memory()
+ for removing page table depends on architecture
 References: <506E43E0.70507@jp.fujitsu.com>
 In-Reply-To: <506E43E0.70507@jp.fujitsu.com>
 Content-Type: text/plain; charset="ISO-2022-JP"
@@ -31,245 +32,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-sysfs files are created. But there is no code to remove these files. The patch
-implements the function to remove them.
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-Note : The code does not free firmware_map_entry since there is no way to free
-       memory which is allocated by bootmem.
+For removing memory, we need to remove page table. But it depends
+on architecture. So the patch introduce arch_remove_memory() for
+removing page table. Now it only calls __remove_pages().
+
+Note: __remove_pages() for some archtecuture is not implemented
+      (I don't know how to implement it for s390).
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
 CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
 CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> 
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
 ---
- drivers/firmware/memmap.c    |   98 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/firmware-map.h |    6 ++
- mm/memory_hotplug.c          |    7 ++-
- 3 files changed, 108 insertions(+), 3 deletions(-)
+ arch/ia64/mm/init.c            |   18 ++++++++++++++++++
+ arch/powerpc/mm/mem.c          |   12 ++++++++++++
+ arch/s390/mm/init.c            |   12 ++++++++++++
+ arch/sh/mm/init.c              |   17 +++++++++++++++++
+ arch/tile/mm/init.c            |    8 ++++++++
+ arch/x86/mm/init_32.c          |   12 ++++++++++++
+ arch/x86/mm/init_64.c          |   15 +++++++++++++++
+ include/linux/memory_hotplug.h |    1 +
+ mm/memory_hotplug.c            |    1 +
+ 9 files changed, 96 insertions(+)
 
-Index: linux-3.6/drivers/firmware/memmap.c
+Index: linux-3.6/arch/ia64/mm/init.c
 ===================================================================
---- linux-3.6.orig/drivers/firmware/memmap.c	2012-10-04 18:27:05.195500420 +0900
-+++ linux-3.6/drivers/firmware/memmap.c	2012-10-04 18:27:18.901514330 +0900
-@@ -21,6 +21,7 @@
- #include <linux/types.h>
- #include <linux/bootmem.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
+--- linux-3.6.orig/arch/ia64/mm/init.c	2012-10-04 18:27:03.082498276 +0900
++++ linux-3.6/arch/ia64/mm/init.c	2012-10-04 18:28:50.087606867 +0900
+@@ -688,6 +688,24 @@ int arch_add_memory(int nid, u64 start, 
  
- /*
-  * Data types ------------------------------------------------------------------
-@@ -41,6 +42,7 @@ struct firmware_map_entry {
- 	const char		*type;	/* type of the memory range */
- 	struct list_head	list;	/* entry for the linked list */
- 	struct kobject		kobj;   /* kobject for each entry */
-+	unsigned int		bootmem:1; /* allocated from bootmem */
- };
- 
- /*
-@@ -79,7 +81,26 @@ static const struct sysfs_ops memmap_att
- 	.show = memmap_attr_show,
- };
- 
-+
-+static inline struct firmware_map_entry *
-+to_memmap_entry(struct kobject *kobj)
-+{
-+	return container_of(kobj, struct firmware_map_entry, kobj);
-+}
-+
-+static void release_firmware_map_entry(struct kobject *kobj)
-+{
-+	struct firmware_map_entry *entry = to_memmap_entry(kobj);
-+
-+	if (entry->bootmem)
-+		/* There is no way to free memory allocated from bootmem */
-+		return;
-+
-+	kfree(entry);
-+}
-+
- static struct kobj_type memmap_ktype = {
-+	.release	= release_firmware_map_entry,
- 	.sysfs_ops	= &memmap_attr_ops,
- 	.default_attrs	= def_attrs,
- };
-@@ -94,6 +115,7 @@ static struct kobj_type memmap_ktype = {
-  * in firmware initialisation code in one single thread of execution.
-  */
- static LIST_HEAD(map_entries);
-+static DEFINE_SPINLOCK(map_entries_lock);
- 
- /**
-  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
-@@ -118,11 +140,25 @@ static int firmware_map_add_entry(u64 st
- 	INIT_LIST_HEAD(&entry->list);
- 	kobject_init(&entry->kobj, &memmap_ktype);
- 
-+	spin_lock(&map_entries_lock);
- 	list_add_tail(&entry->list, &map_entries);
-+	spin_unlock(&map_entries_lock);
- 
- 	return 0;
- }
- 
-+/**
-+ * firmware_map_remove_entry() - Does the real work to remove a firmware
-+ * memmap entry.
-+ * @entry: removed entry.
-+ **/
-+static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-+{
-+	spin_lock(&map_entries_lock);
-+	list_del(&entry->list);
-+	spin_unlock(&map_entries_lock);
-+}
-+
- /*
-  * Add memmap entry on sysfs
-  */
-@@ -144,6 +180,35 @@ static int add_sysfs_fw_map_entry(struct
- 	return 0;
- }
- 
-+/*
-+ * Remove memmap entry on sysfs
-+ */
-+static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-+{
-+	kobject_put(&entry->kobj);
-+}
-+
-+/*
-+ * Search memmap entry
-+ */
-+
-+static struct firmware_map_entry * __meminit
-+firmware_map_find_entry(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	spin_lock(&map_entries_lock);
-+	list_for_each_entry(entry, &map_entries, list)
-+		if ((entry->start == start) && (entry->end == end) &&
-+		    (!strcmp(entry->type, type))) {
-+			spin_unlock(&map_entries_lock);
-+			return entry;
-+		}
-+
-+	spin_unlock(&map_entries_lock);
-+	return NULL;
-+}
-+
- /**
-  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
-  * memory hotplug.
-@@ -193,9 +258,36 @@ int __init firmware_map_add_early(u64 st
- 	if (WARN_ON(!entry))
- 		return -ENOMEM;
- 
-+	entry->bootmem = 1;
- 	return firmware_map_add_entry(start, end, type, entry);
- }
- 
-+/**
-+ * firmware_map_remove() - remove a firmware mapping entry
-+ * @start: Start of the memory range.
-+ * @end:   End of the memory range.
-+ * @type:  Type of the memory range.
-+ *
-+ * removes a firmware mapping entry.
-+ *
-+ * Returns 0 on success, or -EINVAL if no entry.
-+ **/
-+int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	entry = firmware_map_find_entry(start, end - 1, type);
-+	if (!entry)
-+		return -EINVAL;
-+
-+	firmware_map_remove_entry(entry);
-+
-+	/* remove the memmap entry */
-+	remove_sysfs_fw_map_entry(entry);
-+
-+	return 0;
-+}
-+
- /*
-  * Sysfs functions -------------------------------------------------------------
-  */
-@@ -217,8 +309,10 @@ static ssize_t type_show(struct firmware
- 	return snprintf(buf, PAGE_SIZE, "%s\n", entry->type);
- }
- 
--#define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
--#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-+static inline struct memmap_attribute *to_memmap_attr(struct attribute *attr)
-+{
-+	return container_of(attr, struct memmap_attribute, attr);
-+}
- 
- static ssize_t memmap_attr_show(struct kobject *kobj,
- 				struct attribute *attr, char *buf)
-Index: linux-3.6/include/linux/firmware-map.h
-===================================================================
---- linux-3.6.orig/include/linux/firmware-map.h	2012-10-04 18:27:05.197500422 +0900
-+++ linux-3.6/include/linux/firmware-map.h	2012-10-04 18:27:18.904514333 +0900
-@@ -25,6 +25,7 @@
- 
- int firmware_map_add_early(u64 start, u64 end, const char *type);
- int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-+int firmware_map_remove(u64 start, u64 end, const char *type);
- 
- #else /* CONFIG_FIRMWARE_MEMMAP */
- 
-@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
- 	return 0;
- }
- 
-+static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_FIRMWARE_MEMMAP */
- 
- #endif /* _LINUX_FIRMWARE_MAP_H */
-Index: linux-3.6/mm/memory_hotplug.c
-===================================================================
---- linux-3.6.orig/mm/memory_hotplug.c	2012-10-04 18:27:03.000000000 +0900
-+++ linux-3.6/mm/memory_hotplug.c	2012-10-04 18:28:42.851599524 +0900
-@@ -1043,7 +1043,7 @@ int offline_memory(u64 start, u64 size)
- 	return 0;
- }
- 
--int remove_memory(int nid, u64 start, u64 size)
-+int __ref remove_memory(int nid, u64 start, u64 size)
- {
- 	int ret = 0;
- 	lock_memory_hotplug();
-@@ -1056,8 +1056,13 @@ int remove_memory(int nid, u64 start, u6
- 			"because the memmory range is online\n",
- 			start, start + size);
- 		ret = -EAGAIN;
-+		goto out;
- 	}
- 
-+	/* remove memmap entry */
-+	firmware_map_remove(start, start + size, "System RAM");
-+
-+out:
- 	unlock_memory_hotplug();
  	return ret;
  }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	struct zone *zone;
++	int ret;
++
++	zone = page_zone(pfn_to_page(start_pfn));
++	ret = __remove_pages(zone, start_pfn, nr_pages);
++	if (ret)
++		pr_warn("%s: Problem encountered in __remove_pages() as"
++			" ret=%d\n", __func__,  ret);
++
++	return ret;
++}
++#endif
+ #endif
+ 
+ /*
+Index: linux-3.6/arch/powerpc/mm/mem.c
+===================================================================
+--- linux-3.6.orig/arch/powerpc/mm/mem.c	2012-10-04 18:27:03.084498278 +0900
++++ linux-3.6/arch/powerpc/mm/mem.c	2012-10-04 18:28:50.094606874 +0900
+@@ -133,6 +133,18 @@ int arch_add_memory(int nid, u64 start, 
+ 
+ 	return __add_pages(nid, zone, start_pfn, nr_pages);
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	struct zone *zone;
++
++	zone = page_zone(pfn_to_page(start_pfn));
++	return __remove_pages(zone, start_pfn, nr_pages);
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ /*
+Index: linux-3.6/arch/s390/mm/init.c
+===================================================================
+--- linux-3.6.orig/arch/s390/mm/init.c	2012-10-04 18:27:03.080498274 +0900
++++ linux-3.6/arch/s390/mm/init.c	2012-10-04 18:28:50.104606884 +0900
+@@ -257,4 +257,16 @@ int arch_add_memory(int nid, u64 start, 
+ 		vmem_remove_mapping(start, size);
+ 	return rc;
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	/*
++	 * There is no hardware or firmware interface which could trigger a
++	 * hot memory remove on s390. So there is nothing that needs to be
++	 * implemented.
++	 */
++	return -EBUSY;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+Index: linux-3.6/arch/sh/mm/init.c
+===================================================================
+--- linux-3.6.orig/arch/sh/mm/init.c	2012-10-04 18:27:03.091498285 +0900
++++ linux-3.6/arch/sh/mm/init.c	2012-10-04 18:28:50.116606897 +0900
+@@ -558,4 +558,21 @@ int memory_add_physaddr_to_nid(u64 addr)
+ EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+ #endif
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	struct zone *zone;
++	int ret;
++
++	zone = page_zone(pfn_to_page(start_pfn));
++	ret = __remove_pages(zone, start_pfn, nr_pages);
++	if (unlikely(ret))
++		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
++			ret);
++
++	return ret;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+Index: linux-3.6/arch/tile/mm/init.c
+===================================================================
+--- linux-3.6.orig/arch/tile/mm/init.c	2012-10-04 18:27:03.078498272 +0900
++++ linux-3.6/arch/tile/mm/init.c	2012-10-04 18:28:50.122606903 +0900
+@@ -935,6 +935,14 @@ int remove_memory(u64 start, u64 size)
+ {
+ 	return -EINVAL;
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	/* TODO */
++	return -EBUSY;
++}
++#endif
+ #endif
+ 
+ struct kmem_cache *pgd_cache;
+Index: linux-3.6/arch/x86/mm/init_32.c
+===================================================================
+--- linux-3.6.orig/arch/x86/mm/init_32.c	2012-10-04 18:27:03.089498283 +0900
++++ linux-3.6/arch/x86/mm/init_32.c	2012-10-04 18:28:50.128606909 +0900
+@@ -842,6 +842,18 @@ int arch_add_memory(int nid, u64 start, 
+ 
+ 	return __add_pages(nid, zone, start_pfn, nr_pages);
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	struct zone *zone;
++
++	zone = page_zone(pfn_to_page(start_pfn));
++	return __remove_pages(zone, start_pfn, nr_pages);
++}
++#endif
+ #endif
+ 
+ /*
+Index: linux-3.6/arch/x86/mm/init_64.c
+===================================================================
+--- linux-3.6.orig/arch/x86/mm/init_64.c	2012-10-04 18:27:03.086498280 +0900
++++ linux-3.6/arch/x86/mm/init_64.c	2012-10-04 18:28:50.132606913 +0900
+@@ -675,6 +675,21 @@ int arch_add_memory(int nid, u64 start, 
+ }
+ EXPORT_SYMBOL_GPL(arch_add_memory);
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++int __ref arch_remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long nr_pages = size >> PAGE_SHIFT;
++	struct zone *zone;
++	int ret;
++
++	zone = page_zone(pfn_to_page(start_pfn));
++	ret = __remove_pages(zone, start_pfn, nr_pages);
++	WARN_ON_ONCE(ret);
++
++	return ret;
++}
++#endif
+ #endif /* CONFIG_MEMORY_HOTPLUG */
+ 
+ static struct kcore_list kcore_vsyscall;
+Index: linux-3.6/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.6.orig/include/linux/memory_hotplug.h	2012-10-04 18:27:03.094498288 +0900
++++ linux-3.6/include/linux/memory_hotplug.h	2012-10-04 18:28:50.137606918 +0900
+@@ -85,6 +85,7 @@ extern void __online_page_free(struct pa
+ 
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ extern bool is_pageblock_removable_nolock(struct page *page);
++extern int arch_remove_memory(u64 start, u64 size);
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+ /* reasonably generic interface to expand the physical pages in a zone  */
+Index: linux-3.6/mm/memory_hotplug.c
+===================================================================
+--- linux-3.6.orig/mm/memory_hotplug.c	2012-10-04 18:28:42.851599524 +0900
++++ linux-3.6/mm/memory_hotplug.c	2012-10-04 18:29:50.577668254 +0900
+@@ -1062,6 +1062,7 @@ int __ref remove_memory(int nid, u64 sta
+ 	/* remove memmap entry */
+ 	firmware_map_remove(start, start + size, "System RAM");
+ 
++	arch_remove_memory(start, size);
+ out:
+ 	unlock_memory_hotplug();
+ 	return ret;
 
