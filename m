@@ -1,150 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab2JENPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:15:15 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38297 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755148Ab2JENPB (ORCPT
+	id S1755811Ab2JENQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:16:11 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:34599 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab2JENQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:15:01 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <mjg@redhat.com>, Jan Beulich <jbeulich@suse.com>,
-        x86@kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3/3] x86/kernel: remove tboot 1:1 page table creation code
-Date: Fri,  5 Oct 2012 14:14:32 +0100
-Message-Id: <1349442872-5266-4-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1349442872-5266-1-git-send-email-matt@console-pimps.org>
-References: <1349442872-5266-1-git-send-email-matt@console-pimps.org>
+	Fri, 5 Oct 2012 09:16:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
+References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com>
+	<CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
+Date: Fri, 5 Oct 2012 15:16:08 +0200
+Message-ID: <CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
+Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
+From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+On Fri, Oct 5, 2012 at 2:40 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Fri, Oct 5, 2012 at 2:20 PM, Drasko DRASKOVIC
+> Why not put the above text into the patch commit blurb?
 
-For TXT boot, while Linux kernel trys to shutdown/S3/S4/reboot, it
-need to jump back to tboot code and do TXT teardown work. Previously
-kernel zapped all mem page identity mapping (va=pa) after booting, so
-tboot code mem address was mapped again with identity mapping. Now
-kernel didn't zap the identity mapping page table, so tboot related
-code can remove the remapping code before trapping back now.
+OK, I can add this easily. Makes sense.
 
-Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-Acked-by: Gang Wei <gang.wei@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/kernel/tboot.c | 78 ++++---------------------------------------------
- 1 file changed, 5 insertions(+), 73 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index f84fe00..d4f460f 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -103,71 +103,13 @@ void __init tboot_probe(void)
- 	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
- }
- 
--static pgd_t *tboot_pg_dir;
--static struct mm_struct tboot_mm = {
--	.mm_rb          = RB_ROOT,
--	.pgd            = swapper_pg_dir,
--	.mm_users       = ATOMIC_INIT(2),
--	.mm_count       = ATOMIC_INIT(1),
--	.mmap_sem       = __RWSEM_INITIALIZER(init_mm.mmap_sem),
--	.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
--	.mmlist         = LIST_HEAD_INIT(init_mm.mmlist),
--};
--
- static inline void switch_to_tboot_pt(void)
- {
--	write_cr3(virt_to_phys(tboot_pg_dir));
--}
--
--static int map_tboot_page(unsigned long vaddr, unsigned long pfn,
--			  pgprot_t prot)
--{
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	pte_t *pte;
--
--	pgd = pgd_offset(&tboot_mm, vaddr);
--	pud = pud_alloc(&tboot_mm, pgd, vaddr);
--	if (!pud)
--		return -1;
--	pmd = pmd_alloc(&tboot_mm, pud, vaddr);
--	if (!pmd)
--		return -1;
--	pte = pte_alloc_map(&tboot_mm, NULL, pmd, vaddr);
--	if (!pte)
--		return -1;
--	set_pte_at(&tboot_mm, vaddr, pte, pfn_pte(pfn, prot));
--	pte_unmap(pte);
--	return 0;
--}
--
--static int map_tboot_pages(unsigned long vaddr, unsigned long start_pfn,
--			   unsigned long nr)
--{
--	/* Reuse the original kernel mapping */
--	tboot_pg_dir = pgd_alloc(&tboot_mm);
--	if (!tboot_pg_dir)
--		return -1;
--
--	for (; nr > 0; nr--, vaddr += PAGE_SIZE, start_pfn++) {
--		if (map_tboot_page(vaddr, start_pfn, PAGE_KERNEL_EXEC))
--			return -1;
--	}
--
--	return 0;
--}
--
--static void tboot_create_trampoline(void)
--{
--	u32 map_base, map_size;
--
--	/* Create identity map for tboot shutdown code. */
--	map_base = PFN_DOWN(tboot->tboot_base);
--	map_size = PFN_UP(tboot->tboot_size);
--	if (map_tboot_pages(map_base << PAGE_SHIFT, map_base, map_size))
--		panic("tboot: Error mapping tboot pages (mfns) @ 0x%x, 0x%x\n",
--		      map_base, map_size);
-+#ifdef CONFIG_X86_32
-+	load_cr3(initial_page_table);
-+#else
-+	write_cr3(real_mode_header->trampoline_pgd);
-+#endif
- }
- 
- #ifdef CONFIG_ACPI_SLEEP
-@@ -225,14 +167,6 @@ void tboot_shutdown(u32 shutdown_type)
- 	if (!tboot_enabled())
- 		return;
- 
--	/*
--	 * if we're being called before the 1:1 mapping is set up then just
--	 * return and let the normal shutdown happen; this should only be
--	 * due to very early panic()
--	 */
--	if (!tboot_pg_dir)
--		return;
--
- 	/* if this is S3 then set regions to MAC */
- 	if (shutdown_type == TB_SHUTDOWN_S3)
- 		if (tboot_setup_sleep())
-@@ -343,8 +277,6 @@ static __init int tboot_late_init(void)
- 	if (!tboot_enabled())
- 		return 0;
- 
--	tboot_create_trampoline();
--
- 	atomic_set(&ap_wfs_count, 0);
- 	register_hotcpu_notifier(&tboot_cpu_notifier);
- 
--- 
-1.7.11.4
+> If I understand correctly the below more or less exports
+> struct irq_chip to userspace,
+> trying to hide it by instead exposing a property of the
+> containing struct gpio_chip and it worries me.
 
+No, it should not. It operates only on already exported gpiochip
+(similar to gpio_export_link()).
+It just helps exported GPIO be configured in "interrupt" and not in
+"normal" mode.
+
+>
+> One possible comment is that you shouldn't
+> add this to gpiolib, if you want to mess around with the
+> irq_chip you should create sysfs entries for the irq_chip
+> per se, then we can have a symbolic link from the
+> gpio_chip to its irq_chip in sysfs, and you can follow that
+> to change trigger flanks, right?
+
+I did not found any correlation between kernel space irq_chip and
+gpiolib's internal stuctures describing interrupt.
+
+This patch implementation seems like reasonable solution to me, but
+still leaves possibility for someone to configure GPIO interrupt mode
+internally (within driver) different than it is declared lately to
+sysfs by calling my function...
+
+Otherwise, a pointer to an edge set-up kernel function can be added to
+the gpio_chip structure, but I think it will be slightly more
+complicated, and will fall back to the same thing.
+
+>
+> Part of me doesn't like it when userspace is messing
+> around with this kind of thing. Why can't this be set
+> up from the kernel itself by some jam table?
+>
+> I can understand it if this is some lab board with GPIO
+> or so, if it's some embedded GPIO controller within
+> a laptop or something it surely should be in kernelspace.
+
+Yes, it is intended for embedded devices, where most (if not all) of
+GPIO configuration should be done by the kernel, but also this
+configuration should be appropriately exported to sysfs, so that
+user-space applications could start using it right after the boot.
+
+
+> So please detail your usecase a bit... what is the code
+> daemon etc in userspace poking around at these pins?
+> What is is doing and why?
+
+Right now, sysfs exposes interface like this for GPIO IRQ type configuration :
+
+# cat /sys/class/gpio/gpioX/edge
+none
+# echo rising > /sys/class/gpio/gpioX/edge
+
+This example puts GPIO pin X into "interrupt" mode, and declares it's
+"type" i.e. that it triggers on rising edge.
+
+In the world of embedded, system configuratio which tells which GPIO
+pins should be configured in "interrupt" mode (and what is their
+trigger type) is kept in some format usually known only to the kernel
+driver. We have no need to export this format to the user space, so
+that rc scripts for example would know to parse GPIO configuration and
+execute operations I mentioned above.
+
+To avoid that this is done from the user space, a function accesible
+to kernel is needed.
+
+BR,
+Drasko
