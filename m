@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab2JEQbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:31:39 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56275 "EHLO zmc.proxad.net"
+	id S964782Ab2JEQbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:31:55 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56263 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932541Ab2JEQW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:28 -0400
+	id S932124Ab2JEQW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:26 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 07/32 v3] USB: EHCI: add no_io_watchdog platform_data parameter to ehci-platform
-Date: Fri,  5 Oct 2012 18:20:39 +0200
-Message-Id: <1349454064-11606-8-git-send-email-florian@openwrt.org>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/32 v3] MIPS: Netlogic: use ehci-platform driver
+Date: Fri,  5 Oct 2012 18:20:37 +0200
+Message-Id: <1349454064-11606-6-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -21,62 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance the ehci-platform driver to also accept no_io_watchdog as a platform
-data parameter. When no_io_watchdog is set to 1, the ehci controller will set
-ehci->need_io_watchdog to 0. Since most EHCI controllers do need the I/O
-watchdog to be on, only let those which need it to turn the watchdog off.
-
-Make sure that we change need_io_watchdog after the call to ehci_setup()
-because ehci_setup() will unconditionnaly set need_io_watchdog to 1.
+The EHCI platform driver is suitable for use by the Netlogic XLR platform
+since there is nothing specific that the EHCI XLR platform driver does.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes in v3:
-- set need_io_watchdog after the call to ehci_setup()
+No changes in v3
 
 Changes in v2:
-- reworked patch to introduce "no_io_watchdog" instead of "need_io_watchdog"
-- reworded commit message accordingly
+- really change driver name to "ehci-platform"
+- slightly reworded commit message
 
+ arch/mips/netlogic/xlr/platform.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
- drivers/usb/host/ehci-platform.c |    2 ++
- include/linux/usb/ehci_pdriver.h |    3 +++
- 2 files changed, 5 insertions(+)
-
-diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-index 764e010..607adf9 100644
---- a/drivers/usb/host/ehci-platform.c
-+++ b/drivers/usb/host/ehci-platform.c
-@@ -38,6 +38,8 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
- 	if (retval)
- 		return retval;
+diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+index 71b44d8..144c5c6 100644
+--- a/arch/mips/netlogic/xlr/platform.c
++++ b/arch/mips/netlogic/xlr/platform.c
+@@ -15,6 +15,7 @@
+ #include <linux/serial_8250.h>
+ #include <linux/serial_reg.h>
+ #include <linux/i2c.h>
++#include <linux/usb/ehci_pdriver.h>
  
-+	if (pdata->no_io_watchdog)
-+		ehci->need_io_watchdog = 0;
- 	if (pdata->port_power_on)
- 		ehci_port_power(ehci, 1);
- 	if (pdata->port_power_off)
-diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
-index c9d09f8..67ac74b 100644
---- a/include/linux/usb/ehci_pdriver.h
-+++ b/include/linux/usb/ehci_pdriver.h
-@@ -29,6 +29,8 @@
-  *			initialization.
-  * @port_power_off:	set to 1 if the controller needs to be powered down
-  *			after initialization.
-+ * @no_io_watchdog:	set to 1 if the controller does not need the I/O
-+ *			watchdog to run.
-  *
-  * These are general configuration options for the EHCI controller. All of
-  * these options are activating more or less workarounds for some hardware.
-@@ -41,6 +43,7 @@ struct usb_ehci_pdata {
- 	unsigned	big_endian_mmio:1;
- 	unsigned	port_power_on:1;
- 	unsigned	port_power_off:1;
-+	unsigned	no_io_watchdog:1;
+ #include <asm/netlogic/haldefs.h>
+ #include <asm/netlogic/xlr/iomap.h>
+@@ -123,8 +124,12 @@ static u64 xls_usb_dmamask = ~(u32)0;
+ 		},							\
+ 	}
  
- 	/* Turn on all power and clocks */
- 	int (*power_on)(struct platform_device *pdev);
++static struct usb_ehci_pdata xls_usb_ehci_pdata = {
++	.caps_offset	= 0,
++};
++
+ static struct platform_device xls_usb_ehci_device =
+-			 USB_PLATFORM_DEV("ehci-xls", 0, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ehci-platform", 0, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_0 =
+ 			 USB_PLATFORM_DEV("ohci-xls-0", 1, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_1 =
+@@ -172,6 +177,7 @@ int xls_platform_usb_init(void)
+ 	memres = CPHYSADDR((unsigned long)usb_mmio);
+ 	xls_usb_ehci_device.resource[0].start = memres;
+ 	xls_usb_ehci_device.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ehci_device.dev.platform_data = &xls_usb_ehci_pdata;
+ 
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_0.resource[0].start = memres;
 -- 
 1.7.9.5
 
