@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab2JEKTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:19:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48437 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab2JEKSH (ORCPT
+	id S932132Ab2JEKUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:20:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46474 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab2JEKUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:18:07 -0400
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: jassisinghbrar@gmail.com, boojin.kim@samsung.com, vinod.koul@intel.com,
-        patches@linaro.org, kgene.kim@samsung.com
-Subject: [PATCH v2 2/4] DMA: PL330: Change allocation method to properly free  DMA descriptors
-Date: Fri,  5 Oct 2012 15:47:54 +0530
-Message-Id: <1349432276-22919-3-git-send-email-inderpal.singh@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
-References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
+	Fri, 5 Oct 2012 06:20:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121005093232.GA7333@liondog.tnic>
+References: <CA+bLfK5FPqFvU2xy7xKdV4LkAvmY6GAPFrB-4UBzn-cOunQ6Xg@mail.gmail.com>
+	<CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
+	<20121005093232.GA7333@liondog.tnic>
+Date: Fri, 5 Oct 2012 11:20:20 +0100
+Message-ID: <CA+bLfK7+xpbbJp+1sJBOtjoT2auGpbKsVKoDMgRk95o-Fwm9RQ@mail.gmail.com>
+Subject: Re: interrupt context
+From: Iain Fraser <iainkfraser@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Iain Fraser <iainkfraser@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In probe, memory for multiple DMA descriptors were being allocated at once
-and then it was being split and added into DMA pool one by one. The address
-of this memory allocation is not being saved anywhere. To free this memory,
-the address is required. Initially the first node of the pool will be
-pointed by this address but as we use this pool the descs will shuffle and
-hence we will lose the track of the address.
+Hi,
 
-This patch does following:
+Thanks for the response. But it appears your example illustrates why its bad
+to sleep while you have a lock. Which I understand, what I wanted to know is
+why in interrupt context under no circumstances are you allowed to sleep?
 
-1. Allocates DMA descs one by one and then adds them to pool so that all
-   descs can be fetched and memory freed one by one. This way runtime
-   added descs can also be freed.
-2. Free DMA descs in case of error in probe and in module's remove function
+Btw I have no intention of doing this, I'm just curious. After
+thinking about it further
+I'm starting to think its a "design" decision as opposed to a side effect of the
+kernel implementation.
 
-Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
----
- drivers/dma/pl330.c |   35 +++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
+If you could answer:
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 10c6b6a..bf71ff7 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2541,20 +2541,20 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
- 	if (!pdmac)
- 		return 0;
- 
--	desc = kmalloc(count * sizeof(*desc), flg);
--	if (!desc)
--		return 0;
-+	for (i = 0; i < count; i++) {
-+		desc = kmalloc(sizeof(*desc), flg);
-+		if (!desc)
-+			break;
-+		_init_desc(desc);
- 
--	spin_lock_irqsave(&pdmac->pool_lock, flags);
-+		spin_lock_irqsave(&pdmac->pool_lock, flags);
- 
--	for (i = 0; i < count; i++) {
--		_init_desc(&desc[i]);
--		list_add_tail(&desc[i].node, &pdmac->desc_pool);
--	}
-+		list_add_tail(&desc->node, &pdmac->desc_pool);
- 
--	spin_unlock_irqrestore(&pdmac->pool_lock, flags);
-+		spin_unlock_irqrestore(&pdmac->pool_lock, flags);
-+	}
- 
--	return count;
-+	return i;
- }
- 
- static struct dma_pl330_desc *
-@@ -2857,6 +2857,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	struct dma_pl330_platdata *pdat;
- 	struct dma_pl330_dmac *pdmac;
- 	struct dma_pl330_chan *pch;
-+	struct dma_pl330_desc *desc;
- 	struct pl330_info *pi;
- 	struct dma_device *pd;
- 	struct resource *res;
-@@ -2978,6 +2979,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- probe_err5:
- 	kfree(pdmac->peripherals);
- probe_err4:
-+	while (!list_empty(&pdmac->desc_pool)) {
-+		desc = list_entry(pdmac->desc_pool.next,
-+				struct dma_pl330_desc, node);
-+		list_del(&desc->node);
-+		kfree(desc);
-+	}
- 	pl330_del(pi);
- probe_err3:
- 	free_irq(irq, pi);
-@@ -2994,6 +3001,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
- {
- 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
- 	struct dma_pl330_chan *pch, *_p;
-+	struct dma_pl330_desc *desc;
- 	struct pl330_info *pi;
- 	struct resource *res;
- 	int irq;
-@@ -3015,6 +3023,13 @@ static int __devexit pl330_remove(struct amba_device *adev)
- 		pl330_free_chan_resources(&pch->chan);
- 	}
- 
-+	while (!list_empty(&pdmac->desc_pool)) {
-+		desc = list_entry(pdmac->desc_pool.next,
-+				struct dma_pl330_desc, node);
-+		list_del(&desc->node);
-+		kfree(desc);
-+	}
-+
- 	pi = &pdmac->pif;
- 
- 	pl330_del(pi);
--- 
-1.7.9.5
+"How can the system timer ( obviously in interrupt context ) call
+schedule when it is impossible to sleep/schedule in interrupt context?"
 
+That would help me greatly.
+
+Thanks again
+iain
+
+On Fri, Oct 5, 2012 at 10:32 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Oct 05, 2012 at 09:51:55AM +0100, Iain Fraser wrote:
+>> Hello,
+>>
+>> I understand the interrupts and softirq's run in interrupt context (
+>> as opposed to process context ). But what I
+>> don't understand is why you cannot sleep in interrupt context?
+>>
+>> What I have read it states that it doesn't have a process to schedule
+>> out. But interrupts use the interrupted processes
+>> kernel stack just like a syscall. So surely it is possible to sleep
+>> using that stack. Understandably It would be unfair on the process
+>> that blocked through no fault of its own.
+>>
+>> Also if you are not allowed to sleep / schedule during interrupt
+>> context. Then how does the system timer pre-empt processes by
+>> calling schedule?
+>>
+>> I understand there are many reasons why you shouldn't: irq lines being
+>> disabled, quick completion, etc. But I don't understand
+>> why you cannot.
+>
+> Let's imagine for a second we could sleep in IRQ context and we had some
+> dummy process entity we can schedule out from.
+>
+> So, we schedule out and run another process which enters the kernel and
+> grabs a lock L.
+>
+> At that exact moment, another IRQ on the same line is raised, we execute
+> the same IRQ handler which purely coincidentally starts busy-waiting on
+> the same lock L.
+>
+> How long do you think we'll be busy waiting in IRQ context on that lock?
+>
+> :-)
+>
+> HTH.
+>
+> --
+> Regards/Gruss,
+>     Boris.
