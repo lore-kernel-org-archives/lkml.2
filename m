@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab2JENF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:05:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34707 "EHLO
+	id S1755046Ab2JENG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:06:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34721 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2JENF6 (ORCPT
+	with ESMTP id S1751401Ab2JENGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:05:58 -0400
-Date: Fri, 5 Oct 2012 06:05:38 -0700
+	Fri, 5 Oct 2012 09:06:54 -0400
+Date: Fri, 5 Oct 2012 06:06:34 -0700
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-so7wi2zf3jjzrwcutm2mkz0j@git.kernel.org>
+Message-ID: <tip-i0egmq9r7tzocxo5pmc8jbfi@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, jolsa@redhat.com
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        fengguang.wu@intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, jolsa@redhat.com
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de,
+        fengguang.wu@intel.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix perf_cgroup_switch for sw-events
-Git-Commit-ID: 95cf59ea72331d0093010543b8951bb43f262cac
+Subject: [tip:sched/numa] mm/mpol:
+  Fix potential buffer overflow in mpol_parse_str()
+Git-Commit-ID: b9fb9910378947a2b7d58ca75d805b907929e001
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,59 +28,56 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 06:05:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 06:06:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  95cf59ea72331d0093010543b8951bb43f262cac
-Gitweb:     http://git.kernel.org/tip/95cf59ea72331d0093010543b8951bb43f262cac
+Commit-ID:  b9fb9910378947a2b7d58ca75d805b907929e001
+Gitweb:     http://git.kernel.org/tip/b9fb9910378947a2b7d58ca75d805b907929e001
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 2 Oct 2012 15:41:23 +0200
+AuthorDate: Mon, 1 Oct 2012 15:12:16 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 5 Oct 2012 13:59:07 +0200
+CommitDate: Fri, 5 Oct 2012 14:00:30 +0200
 
-perf: Fix perf_cgroup_switch for sw-events
+mm/mpol: Fix potential buffer overflow in mpol_parse_str()
 
-Jiri reported that he could trigger the WARN_ON_ONCE() in
-perf_cgroup_switch() using sw-events. This is because sw-events share
-a cpuctx with multiple PMUs.
+Wu reported an Smatch error:
 
-Use the ->unique_pmu pointer to limit the pmu iteration to unique
-cpuctx instances.
++ mm/mempolicy.c:2426 mpol_parse_str() error: buffer overflow 'policy_modes' 5 <= 5
 
-Reported-and-Tested-by: Jiri Olsa <jolsa@redhat.com>
+Fix it by growing the array to the right size, but avoid it being a
+valid string for mpol_parse_str() because its not an effective policy.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-so7wi2zf3jjzrwcutm2mkz0j@git.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-i0egmq9r7tzocxo5pmc8jbfi@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ mm/mempolicy.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 81939e8..fd15593 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -372,6 +372,8 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 7b4ff19..e59756a 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2514,7 +2514,8 @@ static const char * const policy_modes[] =
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
  
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		if (cpuctx->unique_pmu != pmu)
-+			continue; /* ensure we process each cpuctx once */
  
- 		/*
- 		 * perf_cgroup_events says at least one
-@@ -395,9 +397,10 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+@@ -2565,7 +2566,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
  
- 			if (mode & PERF_CGROUP_SWIN) {
- 				WARN_ON_ONCE(cpuctx->cgrp);
--				/* set cgrp before ctxsw in to
--				 * allow event_filter_match() to not
--				 * have to pass task around
-+				/*
-+				 * set cgrp before ctxsw in to allow
-+				 * event_filter_match() to not have to pass
-+				 * task around
- 				 */
- 				cpuctx->cgrp = perf_cgroup_from_task(task);
- 				cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
+ 	switch (mode) {
