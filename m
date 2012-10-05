@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2JEOpe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:45:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22669 "EHLO mx1.redhat.com"
+	id S1756180Ab2JEOpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:45:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20238 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756047Ab2JEOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:45:24 -0400
+	id S1755680Ab2JEOpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 10:45:23 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -15,29 +15,17 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/8] perf diff: Add ratio computation way to compare hist entries
-Date: Fri,  5 Oct 2012 16:44:41 +0200
-Message-Id: <1349448287-18919-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 6/8] perf diff: Add -F option to display formula for computation
+Date: Fri,  5 Oct 2012 16:44:45 +0200
+Message-Id: <1349448287-18919-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 References: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding -c option to select computation method with the current
-'Delta' computation as default. Current possible values are of
-this option are: 'delta' and 'ratio'.
-
-Adding 'ratio' as new computation way to compare hist entries.
-If specified the 'Ratio' column is displayed with value 'r'
-computed as:
-
-  r = A->period / B->period
-
-with:
-  - A/B being matching hist entry from first/second file specified
-    (or perf.data/perf.data.old) respectively.
-  - period being the hist entry period value
+Adding -F option to display the formula for specified computation.
+This is mainly to facilitate debugging, but can be useful anyway.
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -49,192 +37,207 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt | 33 +++++++++++++++++++++
- tools/perf/builtin-diff.c              | 52 ++++++++++++++++++++++++++++++++--
- tools/perf/ui/hist.c                   | 28 ++++++++++++++++++
- tools/perf/util/hist.h                 |  1 +
- 4 files changed, 112 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-diff.txt |  4 ++
+ tools/perf/builtin-diff.c              | 67 +++++++++++++++++++++++++++++++++-
+ tools/perf/ui/hist.c                   | 24 +++++++++++-
+ tools/perf/ui/stdio/hist.c             |  2 +-
+ tools/perf/util/hist.h                 |  2 +
+ 5 files changed, 96 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 6ce9585..8fff061 100644
+index 21cc2ef..194f37d 100644
 --- a/tools/perf/Documentation/perf-diff.txt
 +++ b/tools/perf/Documentation/perf-diff.txt
-@@ -76,6 +76,39 @@ OPTIONS
- --baseline-only::
-         Show only items with match in baseline.
+@@ -87,6 +87,10 @@ OPTIONS
+ --period::
+         Show period values for both compared hist entries.
  
-+-c::
-+--compute::
-+        Differential computation selection - delta,ratio (default is delta).
-+        See COMPARISON METHODS section for more info.
++-F::
++--formula::
++        Show formula for given computation.
 +
-+COMPARISON METHODS
-+------------------
-+delta
-+~~~~~
-+If specified the 'Delta' column is displayed with value 'd' computed as:
-+
-+  d = A->period_percent - B->period_percent
-+
-+with:
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period_percent being the % of the hist entry period value within
-+    single data file
-+
-+ratio
-+~~~~~
-+If specified the 'Ratio' column is displayed with value 'r' computed as:
-+
-+  r = A->period / B->period
-+
-+with:
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period being the hist entry period value
-+
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
+ COMPARISON METHODS
+ ------------------
+ delta
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 1063c31..e90c06a 100644
+index 2411dd1..dd9c064 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -26,6 +26,41 @@ static bool  force;
+@@ -25,6 +25,7 @@ static char	  diff__default_sort_order[] = "dso,symbol";
+ static bool  force;
  static bool show_displacement;
+ static bool show_period;
++static bool show_formula;
  static bool show_baseline_only;
+ static bool sort_compute;
  
-+enum {
-+	COMPUTE_DELTA,
-+	COMPUTE_RATIO,
-+	COMPUTE_MAX,
-+};
-+
-+const char *compute_names[COMPUTE_MAX] = {
-+	[COMPUTE_DELTA] = "delta",
-+	[COMPUTE_RATIO] = "ratio",
-+};
-+
-+static int compute;
-+
-+static int setup_compute(const struct option *opt, const char *str,
-+			 int unset __maybe_unused)
+@@ -190,6 +191,62 @@ s64 perf_diff__compute_wdiff(struct hist_entry *he)
+ 	return he->diff.wdiff;
+ }
+ 
++static int formula_delta(struct hist_entry *he, char *buf, size_t size)
 +{
-+	int *cp = (int *) opt->value;
-+	unsigned i;
++	struct hist_entry *pair = he->pair;
 +
-+	if (!str) {
-+		*cp = COMPUTE_DELTA;
-+		return 0;
++	if (!pair)
++		return -1;
++
++	return scnprintf(buf, size,
++			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
++			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
++			  he->stat.period, he->hists->stats.total_period,
++			  pair->stat.period, pair->hists->stats.total_period);
++}
++
++static int formula_ratio(struct hist_entry *he, char *buf, size_t size)
++{
++	struct hist_entry *pair = he->pair;
++	double new_period = he->stat.period;
++	double old_period = pair ? pair->stat.period : 0;
++
++	if (!pair)
++		return -1;
++
++	return scnprintf(buf, size, "%.0F / %.0F", new_period, old_period);
++}
++
++static int formula_wdiff(struct hist_entry *he, char *buf, size_t size)
++{
++	struct hist_entry *pair = he->pair;
++	u64 new_period = he->stat.period;
++	u64 old_period = pair ? pair->stat.period : 0;
++
++	if (!pair)
++		return -1;
++
++	return scnprintf(buf, size,
++		  "(%" PRIu64 " * " "%" PRId64 ") - (%" PRIu64 " * " "%" PRId64 ")",
++		  new_period, compute_wdiff_w2, old_period, compute_wdiff_w1);
++}
++
++int perf_diff__formula(char *buf, size_t size, struct hist_entry *he)
++{
++	switch (compute) {
++	case COMPUTE_DELTA:
++		return formula_delta(he, buf, size);
++	case COMPUTE_RATIO:
++		return formula_ratio(he, buf, size);
++	case COMPUTE_WEIGHTED_DIFF:
++		return formula_wdiff(he, buf, size);
++	default:
++		BUG_ON(1);
 +	}
 +
-+	for (i = 0; i < COMPUTE_MAX; i++)
-+		if (!strcmp(str, compute_names[i])) {
-+			*cp = i;
-+			return 0;
-+		}
-+
-+	pr_err("Failed: '%s' is not computation method "
-+	       "(use 'delta' or 'ratio').\n", str);
-+	return -EINVAL;
++	return -1;
 +}
 +
  static int hists__add_entry(struct hists *self,
  			    struct addr_location *al, u64 period)
  {
-@@ -262,6 +297,9 @@ static const struct option options[] = {
- 		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
- 		    "Show only items with match in baseline"),
-+	OPT_CALLBACK('c', "compute", &compute, "delta,ratio (default delta)",
-+		     "Entries differential computation selection",
-+		     setup_compute),
+@@ -543,6 +600,8 @@ static const struct option options[] = {
+ 		     setup_compute),
+ 	OPT_BOOLEAN('p', "period", &show_period,
+ 		    "Show period values."),
++	OPT_BOOLEAN('F', "formula", &show_formula,
++		    "Show formula."),
  	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
  		    "dump raw trace in ASCII"),
  	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
-@@ -290,9 +328,19 @@ static void ui_init(void)
+@@ -571,7 +630,10 @@ static void ui_init(void)
  	/* No overhead column. */
  	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
  
--	/* Display baseline/delta/displacement columns. */
-+	/* Display baseline/delta/ratio/displacement columns. */
+-	/* Display baseline/delta/ratio/displacement/periods columns. */
++	/*
++	 * Display baseline/delta/ratio/displacement/
++	 * formula/periods columns.
++	 */
  	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
--	perf_hpp__column_enable(PERF_HPP__DELTA, true);
-+
-+	switch (compute) {
-+	case COMPUTE_DELTA:
-+		perf_hpp__column_enable(PERF_HPP__DELTA, true);
-+		break;
-+	case COMPUTE_RATIO:
-+		perf_hpp__column_enable(PERF_HPP__RATIO, true);
-+		break;
-+	default:
-+		BUG_ON(1);
-+	};
  
+ 	switch (compute) {
+@@ -591,6 +653,9 @@ static void ui_init(void)
  	if (show_displacement)
  		perf_hpp__column_enable(PERF_HPP__DISPL, true);
+ 
++	if (show_formula)
++		perf_hpp__column_enable(PERF_HPP__FORMULA, true);
++
+ 	if (show_period) {
+ 		perf_hpp__column_enable(PERF_HPP__PERIOD, true);
+ 		perf_hpp__column_enable(PERF_HPP__PERIOD_BASELINE, true);
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index f5a1e4f..1b633a4 100644
+index 2fadaff..305eb79 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -266,6 +266,33 @@ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+@@ -359,6 +359,27 @@ static int hpp__entry_displ(struct perf_hpp *hpp,
  	return scnprintf(hpp->buf, hpp->size, fmt, buf);
  }
  
-+static int hpp__header_ratio(struct perf_hpp *hpp)
++static int hpp__header_formula(struct perf_hpp *hpp)
 +{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%70s";
 +
-+	return scnprintf(hpp->buf, hpp->size, fmt, "Ratio");
++	return scnprintf(hpp->buf, hpp->size, fmt, "Formula");
 +}
 +
-+static int hpp__width_ratio(struct perf_hpp *hpp __maybe_unused)
++static int hpp__width_formula(struct perf_hpp *hpp __maybe_unused)
 +{
-+	return 14;
++	return 70;
 +}
 +
-+static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
++static int hpp__entry_formula(struct perf_hpp *hpp, struct hist_entry *he)
 +{
-+	struct hist_entry *pair = he->pair;
-+	double new_period = he->stat.period;
-+	double old_period = pair ? pair->stat.period : 0;
-+	double ratio = pair ? new_period / old_period : 0;
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
-+	char buf[32] = " ";
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%-70s";
++	char buf[96] = " ";
 +
-+	if (ratio > 0.0)
-+		scnprintf(buf, sizeof(buf), "%+14.6F", ratio);
-+
++	perf_diff__formula(buf, sizeof(buf), he);
 +	return scnprintf(hpp->buf, hpp->size, fmt, buf);
 +}
 +
- static int hpp__header_displ(struct perf_hpp *hpp)
- {
- 	return scnprintf(hpp->buf, hpp->size, "Displ.");
-@@ -311,6 +338,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	{ .cond = false, HPP__PRINT_FNS(samples) },
- 	{ .cond = false, HPP__PRINT_FNS(period) },
+ #define HPP__COLOR_PRINT_FNS(_name)		\
+ 	.header	= hpp__header_ ## _name,		\
+ 	.width	= hpp__width_ ## _name,		\
+@@ -383,7 +404,8 @@ struct perf_hpp_fmt perf_hpp__format[] = {
  	{ .cond = false, HPP__PRINT_FNS(delta) },
-+	{ .cond = false, HPP__PRINT_FNS(ratio) },
- 	{ .cond = false, HPP__PRINT_FNS(displ) }
+ 	{ .cond = false, HPP__PRINT_FNS(ratio) },
+ 	{ .cond = false, HPP__PRINT_FNS(wdiff) },
+-	{ .cond = false, HPP__PRINT_FNS(displ) }
++	{ .cond = false, HPP__PRINT_FNS(displ) },
++	{ .cond = false, HPP__PRINT_FNS(formula) }
  };
  
+ #undef HPP__COLOR_PRINT_FNS
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index fbd4e32..f0ee204 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -342,7 +342,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
+ 	const char *sep = symbol_conf.field_sep;
+ 	const char *col_width = symbol_conf.col_width_list_str;
+ 	int idx, nr_rows = 0;
+-	char bf[64];
++	char bf[96];
+ 	struct perf_hpp dummy_hpp = {
+ 		.buf	= bf,
+ 		.size	= sizeof(bf),
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 66cb31f..7e4d4c2 100644
+index 5604791..c751624 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -141,6 +141,7 @@ enum {
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
- 	PERF_HPP__DELTA,
-+	PERF_HPP__RATIO,
+@@ -145,6 +145,7 @@ enum {
+ 	PERF_HPP__RATIO,
+ 	PERF_HPP__WEIGHTED_DIFF,
  	PERF_HPP__DISPL,
++	PERF_HPP__FORMULA,
  
  	PERF_HPP__MAX_INDEX
+ };
+@@ -210,4 +211,5 @@ unsigned int hists__sort_list_width(struct hists *self);
+ double perf_diff__compute_delta(struct hist_entry *he);
+ double perf_diff__compute_ratio(struct hist_entry *he);
+ s64 perf_diff__compute_wdiff(struct hist_entry *he);
++int perf_diff__formula(char *buf, size_t size, struct hist_entry *he);
+ #endif	/* __PERF_HIST_H */
 -- 
 1.7.11.4
 
