@@ -1,46 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab2JEVTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 17:19:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53684 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725Ab2JEVTi (ORCPT
+	id S1757448Ab2JEVYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 17:24:18 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:51809 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab2JEVYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 17:19:38 -0400
+	Fri, 5 Oct 2012 17:24:16 -0400
+Subject: [PATCH] crypto: Make VMAC work when blocks aren't aligned
+To: Shane Wang <shane.wang@intel.com>, Joseph Cihula <joseph.cihula@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        LKML <linux-kernel@vger.kernel.org>
+From: Salman Qazi <sqazi@google.com>
+Date: Fri, 05 Oct 2012 14:24:14 -0700
+Message-ID: <20121005212414.31689.25033.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <871uhcsk93.fsf@xmission.com>
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
-	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
-	<20121003165105.GA30214@jshin-Toonie>
-	<CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com>
-	<20121004164630.GB2244@phenom.dumpdata.com>
-	<CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com>
-	<871uhcsk93.fsf@xmission.com>
-Date: Fri, 5 Oct 2012 14:19:37 -0700
-X-Google-Sender-Auth: gTpl4zSbJozsPnKWDR11XVv4svo
-Message-ID: <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com>
-Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 5, 2012 at 2:04 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> Is there a git commit that explains what the 'big range' problem is?
->
-> At least on x86_64 this was recently tested and anywhere below 4G is
-> good, and there is a patch floating around somewhere to remove this
-> issue.
+VMAC implementation, as it is, does not work with blocks that
+are not multiples of 128-bytes.  Furthermore, this is a problem
+when using the implementation on scatterlists, even
+when the complete plain text is 128-byte multiple, as the pieces
+that get passed to vmac_update can be pretty much any size.
 
-patch for kernel or kexec-tools?
+I also added test cases for unaligned blocks.
 
-Yinghai
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ crypto/testmgr.h      |   33 ++++++++++++++++++++++++++++++++-
+ crypto/vmac.c         |   47 +++++++++++++++++++++++++++++++++++++++++++----
+ include/crypto/vmac.h |    2 ++
+ 3 files changed, 77 insertions(+), 5 deletions(-)
+
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index 76d7f6c..f8365e9 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -1707,7 +1707,7 @@ static struct hash_testvec aes_xcbc128_tv_template[] = {
+ 	}
+ };
+ 
+-#define VMAC_AES_TEST_VECTORS	8
++#define VMAC_AES_TEST_VECTORS	11
+ static char vmac_string1[128] = {'\x01', '\x01', '\x01', '\x01',
+ 				'\x02', '\x03', '\x02', '\x02',
+ 				'\x02', '\x04', '\x01', '\x07',
+@@ -1723,6 +1723,19 @@ static char vmac_string3[128] = {'a', 'b', 'c', 'a', 'b', 'c',
+ 				'a', 'b', 'c', 'a', 'b', 'c',
+ 				};
+ 
++static char vmac_string4[17] = {'b', 'c', 'e', 'f',
++				'i', 'j', 'l', 'm',
++				'o', 'p', 'r', 's',
++				't', 'u', 'w', 'x', 'z'};
++
++static char vmac_string5[127] = {'r', 'm', 'b', 't', 'c',
++				 'o', 'l', 'k', ']', '%',
++				 '9', '2', '7', '!', 'A'};
++
++static char vmac_string6[129] = {'p', 't', '*', '7', 'l',
++				 'i', '!', '#', 'w', '0',
++				 'z', '/', '4', 'A', 'n'};
++
+ static struct hash_testvec aes_vmac128_tv_template[] = {
+ 	{
+ 		.key	= "\x00\x01\x02\x03\x04\x05\x06\x07"
+@@ -1776,6 +1789,24 @@ static struct hash_testvec aes_vmac128_tv_template[] = {
+ 		.digest = "\x8b\x32\x8f\xe1\xed\x8f\xfa\xd4",
+ 		.psize  = 128,
+ 		.ksize  = 16,
++	}, {
++		.key = "a09b5cd!f#07K\x00\x00\x00",
++		.plaintext = vmac_string4,
++		.digest = "\xab\xa5\x0f\xea\x42\x4e\xa1\x5f",
++		.psize = sizeof(vmac_string4),
++		.ksize = 16,
++	}, {
++		.key = "a09b5cd!f#07K\x00\x00\x00",
++		.plaintext = vmac_string5,
++		.digest = "\x25\x31\x98\xbc\x1d\xe8\x67\x60",
++		.psize = sizeof(vmac_string5),
++		.ksize = 16,
++	}, {
++		.key = "a09b5cd!f#07K\x00\x00\x00",
++		.plaintext = vmac_string6,
++		.digest = "\xc4\xae\x9b\x47\x95\x65\xeb\x41",
++		.psize = sizeof(vmac_string6),
++		.ksize = 16,
+ 	},
+ };
+ 
+diff --git a/crypto/vmac.c b/crypto/vmac.c
+index f2338ca..2eb11a3 100644
+--- a/crypto/vmac.c
++++ b/crypto/vmac.c
+@@ -375,6 +375,11 @@ static void vhash_update(const unsigned char *m,
+ 	u64 pkh = ctx->polykey[0];
+ 	u64 pkl = ctx->polykey[1];
+ 
++	if (!mbytes)
++		return;
++
++	BUG_ON(mbytes % VMAC_NHBYTES);
++
+ 	mptr = (u64 *)m;
+ 	i = mbytes / VMAC_NHBYTES;  /* Must be non-zero */
+ 
+@@ -454,7 +459,7 @@ do_l3:
+ }
+ 
+ static u64 vmac(unsigned char m[], unsigned int mbytes,
+-			unsigned char n[16], u64 *tagl,
++			const unsigned char n[16], u64 *tagl,
+ 			struct vmac_ctx_t *ctx)
+ {
+ 	u64 *in_n, *out_p;
+@@ -559,8 +564,33 @@ static int vmac_update(struct shash_desc *pdesc, const u8 *p,
+ {
+ 	struct crypto_shash *parent = pdesc->tfm;
+ 	struct vmac_ctx_t *ctx = crypto_shash_ctx(parent);
++	int expand;
++	int min;
++
++	expand = VMAC_NHBYTES - ctx->partial_size > 0 ?
++			VMAC_NHBYTES - ctx->partial_size : 0;
++
++	min = len < expand ? len : expand;
++
++	memcpy(ctx->partial + ctx->partial_size, p, min);
++	ctx->partial_size += min;
++
++	if (len < expand)
++		return 0;
+ 
+-	vhash_update(p, len, &ctx->__vmac_ctx);
++	vhash_update(ctx->partial, VMAC_NHBYTES, &ctx->__vmac_ctx);
++	ctx->partial_size = 0;
++
++	len -= expand;
++	p += expand;
++
++	if (len % VMAC_NHBYTES) {
++		memcpy(ctx->partial, p + len - (len % VMAC_NHBYTES),
++			len % VMAC_NHBYTES);
++		ctx->partial_size = len % VMAC_NHBYTES;
++	}
++
++	vhash_update(p, len - len % VMAC_NHBYTES, &ctx->__vmac_ctx);
+ 
+ 	return 0;
+ }
+@@ -572,10 +602,20 @@ static int vmac_final(struct shash_desc *pdesc, u8 *out)
+ 	vmac_t mac;
+ 	u8 nonce[16] = {};
+ 
+-	mac = vmac(NULL, 0, nonce, NULL, ctx);
++	/* vmac() ends up accessing outside the array bounds that
++	 * we specify.  In appears to access up to the next 2-word
++	 * boundary.  We'll just be uber cautious and zero the
++	 * unwritten bytes in the buffer.
++	 */
++	if (ctx->partial_size) {
++		memset(ctx->partial + ctx->partial_size, 0,
++			VMAC_NHBYTES - ctx->partial_size);
++	}
++	mac = vmac(ctx->partial, ctx->partial_size, nonce, NULL, ctx);
+ 	memcpy(out, &mac, sizeof(vmac_t));
+ 	memset(&mac, 0, sizeof(vmac_t));
+ 	memset(&ctx->__vmac_ctx, 0, sizeof(struct vmac_ctx));
++	ctx->partial_size = 0;
+ 	return 0;
+ }
+ 
+@@ -673,4 +713,3 @@ module_exit(vmac_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("VMAC hash algorithm");
+-
+diff --git a/include/crypto/vmac.h b/include/crypto/vmac.h
+index c4467c5..6b700c7 100644
+--- a/include/crypto/vmac.h
++++ b/include/crypto/vmac.h
+@@ -56,6 +56,8 @@ typedef u64 vmac_t;
+ struct vmac_ctx_t {
+ 	struct crypto_cipher *child;
+ 	struct vmac_ctx __vmac_ctx;
++	u8 partial[VMAC_NHBYTES];	/* partial block */
++	int partial_size;		/* size of the partial block */
+ };
+ 
+ #endif /* __CRYPTO_VMAC_H */
+
