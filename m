@@ -1,37 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab2JET2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:28:05 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52456 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab2JET2C (ORCPT
+	id S1754135Ab2JETdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:33:44 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54966 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab2JETdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:28:02 -0400
-From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Re: 3.4.10 i915 [GM45] regression
-Date: Fri, 05 Oct 2012 21:27:14 +0200
-Message-ID: <3480968.71aklkfOSt@tux200s>
-Organization: Andreas Sturmlechner
-User-Agent: KMail/4.9.2 (Linux/3.6.0-ownage; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <CAKMK7uEuRN1WerdF1KEDzova4Qe_hY20i3N=HeNVwvRYxf6gsw@mail.gmail.com>
-References: <2372445.fuIXicT4H0@tux200s> <6616255.1baV4zcIkN@tux200s> <CAKMK7uEuRN1WerdF1KEDzova4Qe_hY20i3N=HeNVwvRYxf6gsw@mail.gmail.com>
+	Fri, 5 Oct 2012 15:33:41 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <506E451E.1050403@jp.fujitsu.com>
+References: <506E43E0.70507@jp.fujitsu.com> <506E451E.1050403@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 5 Oct 2012 15:27:47 -0400
+X-Google-Sender-Auth: qeWi1XyBECpJIlM4Y04FG5BmsSQ
+Message-ID: <CAHGf_=rVDm-JygjPoLHbmF28Dgd52HFc4-b5KCxhEieG60okuw@mail.gmail.com>
+Subject: Re: [PATCH 1/10] memory-hotplug : check whether memory is offline or
+ not when removing memory
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, wency@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So 3.5 and later really don't seem to have any issue with this patch.
-> I'm as puzzled as ever. Thanks for testing this again.
-> 
+On Thu, Oct 4, 2012 at 10:25 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> When calling remove_memory(), the memory should be offline. If the function
+> is used to online memory, kernel panic may occur.
+>
+> So the patch checks whether memory is offline or not.
 
-Bad news from 3.6: I got a blank screen there too, yesterday. Maybe it had even happened in 3.5 once before I got into testing all those 3.4/3.0 images - at my weekend setup there's an external DVI display that won't be fired up by the X200s anyway if the timing isn't right, so that new bug could go by unnoticed there.
+You don't explain WHY we need the check.
 
-So it seems the trouble still exists in >=3.5, but it happens way, way less often (my laptop boots once or twice per day). I should get my other system back up running to be able to try and SSH into the laptop next time this happens at home - just in case I could provide any useful output?
 
-Best regards
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>
+> ---
+>  drivers/base/memory.c  |   39 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/memory.h |    5 +++++
+>  mm/memory_hotplug.c    |   17 +++++++++++++++--
+>  3 files changed, 59 insertions(+), 2 deletions(-)
+>
+> Index: linux-3.6/drivers/base/memory.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/base/memory.c        2012-10-04 14:22:57.000000000 +0900
+> +++ linux-3.6/drivers/base/memory.c     2012-10-04 14:45:46.653585860 +0900
+> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
+>  }
+>  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>
+> +bool is_memblk_offline(unsigned long start, unsigned long size)
+
+Don't use memblk. Usually memblk mean struct numa_meminfo for x86/numa.
+Maybe memory_range_offlined() is better.
+
+And, this function don't take struct memory_block, then this file may be no good
+place.
+
+And you need to write down function comment.
+
+
+> +{
+> +       struct memory_block *mem = NULL;
+> +       struct mem_section *section;
+> +       unsigned long start_pfn, end_pfn;
+> +       unsigned long pfn, section_nr;
+> +
+> +       start_pfn = PFN_DOWN(start);
+> +       end_pfn = PFN_UP(start + size);
+> +
+> +       for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+> +               section_nr = pfn_to_section_nr(pfn);
+> +               if (!present_section_nr(section_nr))
+> +                       continue;
+> +
+> +               section = __nr_to_section(section_nr);
+> +               /* same memblock? */
+> +               if (mem)
+> +                       if ((section_nr >= mem->start_section_nr) &&
+> +                           (section_nr <= mem->end_section_nr))
+> +                               continue;
+> +
+> +               mem = find_memory_block_hinted(section, mem);
+> +               if (!mem)
+> +                       continue;
+> +               if (mem->state == MEM_OFFLINE)
+> +                       continue;
+> +
+> +               kobject_put(&mem->dev.kobj);
+> +               return false;
+> +       }
+> +
+> +       if (mem)
+> +               kobject_put(&mem->dev.kobj);
+> +
+> +       return true;
+> +}
+> +EXPORT_SYMBOL(is_memblk_offline);
+> +
+>  /*
+>   * register_memory - Setup a sysfs device for a memory block
+>   */
+> Index: linux-3.6/include/linux/memory.h
+> ===================================================================
+> --- linux-3.6.orig/include/linux/memory.h       2012-10-02 18:00:22.000000000 +0900
+> +++ linux-3.6/include/linux/memory.h    2012-10-04 14:44:40.902581028 +0900
+> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
+>  {
+>         return 0;
+>  }
+> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
+> +{
+> +       return false;
+> +}
+>  #else
+>  extern int register_memory_notifier(struct notifier_block *nb);
+>  extern void unregister_memory_notifier(struct notifier_block *nb);
+> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
+>  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+>                                                         struct memory_block *);
+>  extern struct memory_block *find_memory_block(struct mem_section *);
+> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
+>  #define CONFIG_MEM_BLOCK_SIZE  (PAGES_PER_SECTION<<PAGE_SHIFT)
+>  enum mem_add_context { BOOT, HOTPLUG };
+>  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+> Index: linux-3.6/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 14:31:08.000000000 +0900
+> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 14:58:22.449687986 +0900
+> @@ -1045,8 +1045,21 @@ int offline_memory(u64 start, u64 size)
+>
+>  int remove_memory(int nid, u64 start, u64 size)
+>  {
+
+Your remove_memory() don't remove anything. that's strange.
+
+
+> -       /* It is not implemented yet*/
+> -       return 0;
+> +       int ret = 0;
+> +       lock_memory_hotplug();
+> +       /*
+> +        * The memory might become online by other task, even if you offine it.
+> +        * So we check whether the memory has been onlined or not.
+> +        */
+> +       if (!is_memblk_offline(start, size)) {
+> +               pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
+> +                       "because the memmory range is online\n",
+> +                       start, start + size);
+
+No good warning. You should output which memory block can't be
+offlined, I think.
+
+
+> +               ret = -EAGAIN;
+> +       }
+> +
+> +       unlock_memory_hotplug();
+> +       return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(remove_memory);
+>  #else
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
