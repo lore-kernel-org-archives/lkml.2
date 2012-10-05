@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab2JERqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 13:46:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30802 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab2JERql (ORCPT
+	id S1756300Ab2JERtx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 13:49:53 -0400
+Received: from tee.schottelius.org ([77.109.138.222]:46247 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751223Ab2JERtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 13:46:41 -0400
-X-Authority-Analysis: v=2.0 cv=fb8vOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=_Ld--4Lr3LMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=t9ydKhIB5vYA:10 a=pGLkceISAAAA:8 a=TzeAaOVhAAAA:8 a=vikj0InrG-HBPknX5aYA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=UVEM-Fm2KIoA:10 a=VQ7OGjdcjMoYM5RE:21 a=TrR0jtbbByy9Wq9i:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349459199.6755.66.camel@gandalf.local.home>
-Subject: Re: [PATCHv2.5] trace: reuse kbasename() functionality
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 05 Oct 2012 13:46:39 -0400
-In-Reply-To: <CAHp75Vcvw-uc+2srSSTrdcUqU_rTsMS5k7cLrvkRtiLve6aNvw@mail.gmail.com>
-References: <1349253783-21612-7-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1349254399-22742-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1349455743.6755.57.camel@gandalf.local.home>
-	 <CAHp75Vc1a-4LtuTun=urBLvroLqsok4zeW-Fqm-uDK9izmsR6w@mail.gmail.com>
-	 <1349457161.6755.61.camel@gandalf.local.home>
-	 <CAHp75Vcvw-uc+2srSSTrdcUqU_rTsMS5k7cLrvkRtiLve6aNvw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Oct 2012 13:49:52 -0400
+Date: Fri, 5 Oct 2012 19:51:39 +0200
+From: Nico Schottelius <nico-kernel20120920@schottelius.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+        David Rientjes <rientjes@google.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        jfs-discussion@lists.sourceforge.net
+Subject: Re: Out of memory on 3.5 kernels
+Message-ID: <20121005175139.GC831@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-kernel20120920@schottelius.org>,
+	Valdis.Kletnieks@vt.edu, David Rientjes <rientjes@google.com>,
+	Arend van Spriel <arend@broadcom.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+	Dave Kleikamp <shaggy@kernel.org>,
+	jfs-discussion@lists.sourceforge.net
+References: <505B1FA0.6030100@broadcom.com>
+ <20120921194931.GA732@schottelius.org>
+ <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com>
+ <20120926060653.GD16575@schottelius.org>
+ <20120926085708.GA7839@schottelius.org>
+ <20120927055208.GA25252@schottelius.org>
+ <20121003212311.GA14018@schottelius.org>
+ <22962.1349452084@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Disposition: inline
+In-Reply-To: <22962.1349452084@turing-police.cc.vt.edu>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.5.4-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-05 at 20:21 +0300, Andy Shevchenko wrote:
-> On Fri, Oct 5, 2012 at 8:12 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Fri, 2012-10-05 at 20:02 +0300, Andy Shevchenko wrote:
+
+--Kj7319i9nmIyA2yE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hey Valdis,
+
+Valdis.Kletnieks@vt.edu [Fri, Oct 05, 2012 at 11:48:04AM -0400]:
+> On Wed, 03 Oct 2012 23:23:11 +0200, Nico Schottelius said:
+>=20
+> > does anyone of you have a clue so far what may be causing the huge
+> > slab usage?
 > >
-> >> > I don't see kbasename() anywhere. Is this based off of other patches?
-> >> It's introduced by first patch in the series.
-> > Usually a series has the format of:
-> >
-> > [PATCH x/n] ....
-> >
-> > Where x is the patch number and n is the total number of patches. I'm
-> > not sure what a v2.5 is. This is version 2 and a half?
-> Ah, it's an update to patch 6/6. You could see it by
-> Message-Id/In-Reply-To chains.
-> 
+> > I've just found an interesting detail: umounting and cryptsetup
+> > luksClosing frees up the used memory (not sure which one was freeing
+> > up)
+>=20
+> For what it's worth, I'm seeing a similar problem in linux-next on my lap=
+top -
+> trying to run a backup to an external hard drive that has a LUKS partitio=
+n on
+> it will OOM. (For some reason having the external LUKS partition is much =
+more
+> problematic than the LVM-on-LUKS on the internal drive)
 
-OK, that's where the confusion stems from. The original patch 6/6 had in
-the patch:
+Indeed, I also have the internal drive encrypted with LUKS, also jfs
+on it, but the problem only occurs on the external drive.
 
-Cc: Steven Rostedt <rostedt@goodmis.org> (maintainer:TRACING)                                                                                                                       
-Cc: Frederic Weisbecker <fweisbec@gmail.com> (maintainer:TRACING)
+Is there the possibility that the JFS on the external drive got into a
+state that may caus JFS to behave unexpected? If this is true, it would
+explain why it happens only with the external drive and also accross
+kernel versions.
 
-But I neither I nor Frederic were on the actual Cc (I had to open my
-LKML folder to see it). Perhaps whatever tool you used to send the
-patches got confused by the (maintainer:TRACING) line.
+But "good" to hear I am not the only one affected anymore.
 
-Thus, the only thing that ended up in my INBOX was the [PATCHv2.5] one.
+Cheers,
 
--- Steve
+Nico
 
 
+--=20
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+
+--Kj7319i9nmIyA2yE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlBvHisACgkQ19zI5DGHffB0MwCgrfpBRbsEgPDDg9Lw0133tha3
+tL8AoOmJhDbskp7PUTGtHoWOd1C8fR2q
+=o/zS
+-----END PGP SIGNATURE-----
+
+--Kj7319i9nmIyA2yE--
