@@ -1,76 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab2JEKU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:20:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44854 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab2JEKUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:20:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
-   d="scan'208";a="200910203"
-Date: Fri, 5 Oct 2012 13:22:00 +0300
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        davem@davemloft.net, levinsasha928@gmail.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net, bluetooth: don't attempt to free a channel that
- wasn't created
-Message-ID: <20121005102159.GF12229@aemeltch-MOBL1>
-Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>, marcel@holtmann.org,
-	gustavo@padovan.org, johan.hedberg@gmail.com, davem@davemloft.net,
-	levinsasha928@gmail.com, davej@redhat.com,
-	linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-	netdev@vger.kernel.org
-References: <1349395197-12395-1-git-send-email-sasha.levin@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349395197-12395-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932153Ab2JEKVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:21:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51800 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067Ab2JEKVx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 06:21:53 -0400
+Message-ID: <1349432466.14388.25.camel@twins>
+Subject: Re: Seems like "sched: Add missing call to calc_load_exit_idle()"
+ should be reverted in 3.5 branch
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Huacai Chen <chenhc@lemote.com>, Charles Wang <muming.wq@taobao.com>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 05 Oct 2012 12:21:06 +0200
+In-Reply-To: <20121004222755.GC3609@kroah.com>
+References: <CAAhV-H54CJdg+UekpucZ=kOgCY5r5vvYQ+v4VwAMTCv+mCedXA@mail.gmail.com>
+	 <20121004174626.GB14301@kroah.com> <1349375519.14388.16.camel@twins>
+	 <20121004222755.GC3609@kroah.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
+On Thu, 2012-10-04 at 15:27 -0700, Greg Kroah-Hartman wrote:
+> I'm puzzled as well.  Any ideas if I should do anything here or not?
 
-On Thu, Oct 04, 2012 at 07:59:57PM -0400, Sasha Levin wrote:
-> We may currently attempt to free a channel which wasn't created due to
-> an error in the initialization path, this would cause a NULL ptr deref.
-
-Please put oops dump here.
-
-> Introduced in commit 61d6ef3e ("Bluetooth: Make better use of l2cap_chan
-> reference counting").
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  net/bluetooth/l2cap_sock.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-> index 083f2bf..66c295a 100644
-> --- a/net/bluetooth/l2cap_sock.c
-> +++ b/net/bluetooth/l2cap_sock.c
-> @@ -1083,7 +1083,8 @@ static void l2cap_sock_destruct(struct sock *sk)
->  {
->  	BT_DBG("sk %p", sk);
->  
-> -	l2cap_chan_put(l2cap_pi(sk)->chan);
-> +	if (l2cap_pi(sk)->chan)
-> +		l2cap_chan_put(l2cap_pi(sk)->chan);
-
-This does not look right, I suppose you want to put somewhere missing
-chan_hold
-
->  	if (l2cap_pi(sk)->rx_busy_skb) {
->  		kfree_skb(l2cap_pi(sk)->rx_busy_skb);
->  		l2cap_pi(sk)->rx_busy_skb = NULL;
-> -- 
-> 1.7.12
-
-Best regards 
-Andrei Emeltchenko 
+So I think the current v3.5.5 code is fine. I'm just not smart enough to
+figure out how 3.6 got fuzzed, this git thing is confusing as hell.
