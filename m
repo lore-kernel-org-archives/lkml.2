@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab2JEHAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:00:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53469 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2JEHAJ (ORCPT
+	id S1752215Ab2JEHDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:03:41 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49785 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2JEHDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:00:09 -0400
-Message-ID: <506E7619.3010104@monstr.eu>
-Date: Fri, 05 Oct 2012 07:54:33 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 5 Oct 2012 03:03:39 -0400
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 02/11] net: axienet: Add ioctl support
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>  <1349374497-9540-2-git-send-email-monstr@monstr.eu> <1349378262.2817.25.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1349378262.2817.25.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <17383.1349380286@warthog.procyon.org.uk>
+References: <17383.1349380286@warthog.procyon.org.uk>
+Date: Fri, 5 Oct 2012 07:05:43 +0200
+X-Google-Sender-Auth: cUDRM8Uy8K2FgCwKgpcI67ytPnE
+Message-ID: <CAMuHMdWYdKPgVR8hvcXN1qmm7nqCyjWV3NPHzdVHG_H8F20-3w@mail.gmail.com>
+Subject: Re: [GIT PULL] Disintegrate UAPI for m68k
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 09:17 PM, Ben Hutchings wrote:
-> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
->> Allow user to access the MDIO from userspace.
->>
->> Signed-off-by: Michal Simek <monstr@monstr.eu>
->> CC: Anirudha Sarangi <anirudh@xilinx.com>
->> CC: John Linn <John.Linn@xilinx.com>
->> CC: Grant Likely <grant.likely@secretlab.ca>
->> CC: Rob Herring <rob.herring@calxeda.com>
->> CC: David S. Miller <davem@davemloft.net>
->> ---
->>   drivers/net/ethernet/xilinx/xilinx_axienet_main.c |   15 +++++++++++++++
->>   1 files changed, 15 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
->> index 50167ab..a5b41cd 100644
->> --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
->> +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
->> @@ -1053,6 +1053,20 @@ static void axienet_poll_controller(struct net_device *ndev)
->>   }
->>   #endif
->>
->> +/* Ioctl MII Interface */
->> +static int axienet_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
->> +{
->> +	struct axienet_local *priv = netdev_priv(dev);
->> +
->> +	if (!netif_running(dev))
->> +		return -EINVAL;
+On Thu, Oct 4, 2012 at 9:51 PM, David Howells <dhowells@redhat.com> wrote:
+>   git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-m68k
 >
-> Not sure this is the appropriate error code.
+> for you to fetch changes up to b039235da939b28c539b3e1b4566107a9bdbdef8:
 >
->> +	if (!priv->phy_dev)
->> +		return -ENODEV;
+>   UAPI: (Scripted) Disintegrate arch/m68k/include/asm (2012-10-04 18:20:56 +0100)
 >
-> Error code should be EOPNOTSUPP - the device is present but just doesn't
-> support MDIO.
+> ----------------------------------------------------------------
+> David Howells (6):
+>       UAPI: Fix the guards on various asm/unistd.h files
+>       UAPI: Split compound conditionals containing __KERNEL__ in Arm64
+>       Merge remote-tracking branch 'c6x/for-linux-next' into uapi-prep
+>       UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k)
+>       UAPI: (Scripted) Disintegrate include/asm-generic
+>       UAPI: (Scripted) Disintegrate arch/m68k/include/asm
+>
+> Mark Salter (2):
+>       c6x: make dsk6455 the default config
+>       c6x: remove c6x signal.h
 
-ok. Thanks will fix it.
+I assume these c6x and asm-generic changes are the ones you just asked Linus
+to pull? Doesn't it make more sense to ask us (the individual arch maintainers)
+to pull our parts after Linus has pulled the generic part?
 
-Thanks,
-Michal
+Do you want this ("our parts") to go in 3.7 or 3.8?
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
