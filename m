@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab2JEWlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:41:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44227 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757452Ab2JEWlP (ORCPT
+	id S932983Ab2JEWla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:41:30 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45570 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab2JEWlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:41:15 -0400
+	Fri, 5 Oct 2012 18:41:22 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: davem@davemloft.net
-Cc: yoshihiro.shimoda.uh@renesas.com, nobuhiro.iwamatsu.yj@renesas.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
+Cc: mcarlson@broadcom.com, eric.dumazet@gmail.com, mchan@broadcom.com,
+        shuah.khan@hp.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 16/20 V2] drivers/net/ethernet/renesas/sh_eth.c: fix error return code
-Date: Sat,  6 Oct 2012 00:40:52 +0200
-Message-Id: <1349476856-16075-1-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 17/20 V2] drivers/net/ethernet/sun/niu.c: fix error return code
+Date: Sat,  6 Oct 2012 00:40:53 +0200
+Message-Id: <1349476856-16075-2-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349476856-16075-1-git-send-email-peter.senna@gmail.com>
+References: <1349476856-16075-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-The function sh_eth_drv_probe() return 0 for success and negative value
+The function niu_pci_init_one() return 0 for success and negative value
 for most of its internal tests failures. There is one exception
-that is error case going to out_release:. For this error case, the
+that is error case going to err_out_free_res:. For this error case, the
 function abort its success execution path, but returns non negative
 value, making it difficult for a caller function to notice the error.
 
@@ -60,19 +62,19 @@ Change from V1:
         Updated commit message. See:
         http://www.kernelhub.org/?p=2&msg=139319
 
- drivers/net/ethernet/renesas/sh_eth.c |    1 +
+ drivers/net/ethernet/sun/niu.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index bad8f2e..c8bfea0 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -2438,6 +2438,7 @@ static int sh_eth_drv_probe(struct platform_device *pdev)
- 		rtsu = platform_get_resource(pdev, IORESOURCE_MEM, 1);
- 		if (!rtsu) {
- 			dev_err(&pdev->dev, "Not found TSU resource\n");
-+			ret = -ENODEV;
- 			goto out_release;
- 		}
- 		mdp->tsu_addr = ioremap(rtsu->start,
+diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
+index 8419bf3..275b430 100644
+--- a/drivers/net/ethernet/sun/niu.c
++++ b/drivers/net/ethernet/sun/niu.c
+@@ -9788,6 +9788,7 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+ 
+ 	if (!pci_is_pcie(pdev)) {
+ 		dev_err(&pdev->dev, "Cannot find PCI Express capability, aborting\n");
++		err = -ENODEV;
+ 		goto err_out_free_res;
+ 	}
+ 
 
