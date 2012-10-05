@@ -1,102 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2JENQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:16:11 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:34599 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab2JENQJ (ORCPT
+	id S1755865Ab2JENZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:25:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63552 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab2JENZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:16:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
-References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com>
-	<CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
-Date: Fri, 5 Oct 2012 15:16:08 +0200
-Message-ID: <CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
-Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
-From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 5 Oct 2012 09:25:40 -0400
+From: Huacai Chen <chenhc@lemote.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>
+Subject: [PATCH V7 00/15] MIPS: Add Loongson-3 based machines support
+Date: Fri,  5 Oct 2012 21:24:57 +0800
+Message-Id: <1349443512-18340-1-git-send-email-chenhc@lemote.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 5, 2012 at 2:40 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Fri, Oct 5, 2012 at 2:20 PM, Drasko DRASKOVIC
-> Why not put the above text into the patch commit blurb?
+This patchset is for git repository git://git.linux-mips.org/pub/scm/
+ralf/linux. Loongson-3 is a multi-core MIPS family CPU, it is MIPS64
+compatible and has the same IMP field (0x6300) as Loongson-2. These
+patches make Linux kernel support Loongson-3 CPU and Loongson-3 based
+computers (including Laptop, Mini-ITX, All-In-One PC, etc.)
 
-OK, I can add this easily. Makes sense.
+V1 -> V2:
+1, Split the first patch to two patches, one is constant definition and
+   the other is CPU probing, cache initializing, etc.
+2, Remove Kconfig options in the first 9 patches and put all of them in
+   the 10th patch.
+3, Use "make savedefconfig" to generate the new default config file.
+4, Rework serial port support to use PORT and PORT_M macros.
+5, Fix some compile warnings.
 
+V2 -> V3:
+1, Improve cache flushing code (use cpu_has_coherent_cache macro and
+   remove #ifdef clauses).
+2, Improve platform-specific code to correctly set driver's dma_mask/
+   coherent_dma_mask so no longer need workarounds for each driver (
+   SATA, graphics card, sound card, etc.)
+3, Use PCI quirk to provide vgabios and loongson3_read_bios() go away.
+4, Improve CPU hotplug code and split the poweroff failure related code
+   to another patch (this issue affect all MIPS CPU, not only Loongson).
+5, Some other small fixes.
 
-> If I understand correctly the below more or less exports
-> struct irq_chip to userspace,
-> trying to hide it by instead exposing a property of the
-> containing struct gpio_chip and it worries me.
+V3 -> V4:
+1, Include swiotlb.h in radeon_ttm.c if SWIOTLB configured.
+2, Remove "Reviewed-by" in patches which are added by mistake.
+3, Sync the code to upstream.
 
-No, it should not. It operates only on already exported gpiochip
-(similar to gpio_export_link()).
-It just helps exported GPIO be configured in "interrupt" and not in
-"normal" mode.
+V4 -> V5:
+1, Split the drm patch to three patches.
+2, Use platform-specific pincfgs to replace old alsa quirks.
 
->
-> One possible comment is that you shouldn't
-> add this to gpiolib, if you want to mess around with the
-> irq_chip you should create sysfs entries for the irq_chip
-> per se, then we can have a symbolic link from the
-> gpio_chip to its irq_chip in sysfs, and you can follow that
-> to change trigger flanks, right?
+V5 -> V6:
+1, For better management, two non-Loongson-specific patches are sent
+   independently.
+2, Introduce cpu_has_coherent_cache feature and split cache flushing
+   changes to a separate patch.
+3, Remove PRID_IMP_LOONGSON3 and use PRID_IMP_LOONGSON2 since they are
+   the same.
+4, Don't define RTC_ALWAYS_BCD for Loongson-3 since BCD format can be
+   checked by RTC_CONTROL at runtime.
+5, Don't modify dma-default.c for Loongson since it is unnecessary.
+6, Don't define SAREA_MAX since it is useless.
+7, Increase the default boost of internal mic for Lemote A1004.
+8, Fix a #ifdef issue in dma-coherence.h.
+9, Some other small fixes.
 
-I did not found any correlation between kernel space irq_chip and
-gpiolib's internal stuctures describing interrupt.
+V6 -> V7:
+1, Fix boot failure when NR_CPUS is more than present cpus.
+2, Fix error messages after poweroff & reboot.
+3, Update the default config file.
+4, Sync the code to upstream.
 
-This patch implementation seems like reasonable solution to me, but
-still leaves possibility for someone to configure GPIO interrupt mode
-internally (within driver) different than it is declared lately to
-sysfs by calling my function...
+Huacai Chen(15):
+ MIPS: Loongson: Add basic Loongson-3 definition.
+ MIPS: Loongson: Add basic Loongson-3 CPU support.
+ MIPS: Loongson: Introduce and use cpu_has_coherent_cache feature.
+ MIPS: Loongson 3: Add Lemote-3A machtypes definition.
+ MIPS: Loongson: Add UEFI-like firmware interface support.
+ MIPS: Loongson 3: Add HT-linked PCI support.
+ MIPS: Loongson 3: Add IRQ init and dispatch support.
+ MIPS: Loongson 3: Add serial port support.
+ MIPS: Loongson: Add swiotlb to support big memory (>4GB).
+ MIPS: Loongson: Add Loongson-3 Kconfig options.
+ drm: Handle io prot correctly for MIPS.
+ ALSA: HDA: Make hda sound card usable for Loongson.
+ MIPS: Loongson 3: Add Loongson-3 SMP support.
+ MIPS: Loongson 3: Add CPU hotplug support.
+ MIPS: Loongson: Add a Loongson-3 default config file.
 
-Otherwise, a pointer to an edge set-up kernel function can be added to
-the gpio_chip structure, but I think it will be slightly more
-complicated, and will fall back to the same thing.
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+---
+ arch/mips/Kconfig                                  |   27 ++
+ arch/mips/configs/loongson3_defconfig              |  317 ++++++++++++++
+ arch/mips/include/asm/addrspace.h                  |    6 +
+ arch/mips/include/asm/bootinfo.h                   |   24 +-
+ arch/mips/include/asm/cacheflush.h                 |    6 +
+ arch/mips/include/asm/cpu-features.h               |    6 +
+ arch/mips/include/asm/cpu.h                        |    5 +-
+ arch/mips/include/asm/dma-mapping.h                |    5 +
+ arch/mips/include/asm/mach-loongson/boot_param.h   |  151 +++++++
+ .../mips/include/asm/mach-loongson/dma-coherence.h |   19 +
+ arch/mips/include/asm/mach-loongson/irq.h          |   24 +
+ arch/mips/include/asm/mach-loongson/loongson.h     |   26 +-
+ arch/mips/include/asm/mach-loongson/machine.h      |    6 +
+ arch/mips/include/asm/mach-loongson/pci.h          |    5 +
+ arch/mips/include/asm/mach-loongson/spaces.h       |   15 +
+ arch/mips/include/asm/module.h                     |    2 +
+ arch/mips/include/asm/pgtable-bits.h               |    7 +
+ arch/mips/include/asm/smp.h                        |    1 +
+ arch/mips/kernel/Makefile                          |    1 +
+ arch/mips/kernel/cpu-probe.c                       |   14 +-
+ arch/mips/lib/Makefile                             |    1 +
+ arch/mips/loongson/Kconfig                         |   52 +++
+ arch/mips/loongson/Makefile                        |    6 +
+ arch/mips/loongson/Platform                        |    1 +
+ arch/mips/loongson/common/Makefile                 |    5 +
+ arch/mips/loongson/common/dma-swiotlb.c            |  163 +++++++
+ arch/mips/loongson/common/env.c                    |   67 +++-
+ arch/mips/loongson/common/init.c                   |   14 +-
+ arch/mips/loongson/common/machtype.c               |   20 +-
+ arch/mips/loongson/common/mem.c                    |   42 ++
+ arch/mips/loongson/common/pci.c                    |    6 +-
+ arch/mips/loongson/common/reset.c                  |   16 +
+ arch/mips/loongson/common/serial.c                 |   26 +-
+ arch/mips/loongson/common/setup.c                  |    8 +-
+ arch/mips/loongson/common/uart_base.c              |    9 +-
+ arch/mips/loongson/loongson-3/Makefile             |    6 +
+ arch/mips/loongson/loongson-3/irq.c                |   97 +++++
+ arch/mips/loongson/loongson-3/smp.c                |  449 ++++++++++++++++++++
+ arch/mips/loongson/loongson-3/smp.h                |   24 +
+ arch/mips/mm/Makefile                              |    1 +
+ arch/mips/mm/c-r4k.c                               |   83 ++++-
+ arch/mips/mm/tlb-r4k.c                             |    2 +-
+ arch/mips/mm/tlbex.c                               |    1 +
+ arch/mips/pci/Makefile                             |    1 +
+ arch/mips/pci/fixup-loongson3.c                    |   64 +++
+ arch/mips/pci/ops-loongson3.c                      |  104 +++++
+ drivers/gpu/drm/drm_vm.c                           |    2 +-
+ drivers/gpu/drm/ttm/ttm_bo_util.c                  |    2 +-
+ sound/pci/hda/patch_conexant.c                     |   44 ++
+ 49 files changed, 1914 insertions(+), 69 deletions(-)
+ create mode 100644 arch/mips/configs/loongson3_defconfig
+ create mode 100644 arch/mips/include/asm/mach-loongson/boot_param.h
+ create mode 100644 arch/mips/include/asm/mach-loongson/irq.h
+ create mode 100644 arch/mips/include/asm/mach-loongson/spaces.h
+ create mode 100644 arch/mips/loongson/common/dma-swiotlb.c
+ create mode 100644 arch/mips/loongson/loongson-3/Makefile
+ create mode 100644 arch/mips/loongson/loongson-3/irq.c
+ create mode 100644 arch/mips/loongson/loongson-3/smp.c
+ create mode 100644 arch/mips/loongson/loongson-3/smp.h
+ create mode 100644 arch/mips/pci/fixup-loongson3.c
+ create mode 100644 arch/mips/pci/ops-loongson3.c
+-- 
+1.7.7.3
 
->
-> Part of me doesn't like it when userspace is messing
-> around with this kind of thing. Why can't this be set
-> up from the kernel itself by some jam table?
->
-> I can understand it if this is some lab board with GPIO
-> or so, if it's some embedded GPIO controller within
-> a laptop or something it surely should be in kernelspace.
-
-Yes, it is intended for embedded devices, where most (if not all) of
-GPIO configuration should be done by the kernel, but also this
-configuration should be appropriately exported to sysfs, so that
-user-space applications could start using it right after the boot.
-
-
-> So please detail your usecase a bit... what is the code
-> daemon etc in userspace poking around at these pins?
-> What is is doing and why?
-
-Right now, sysfs exposes interface like this for GPIO IRQ type configuration :
-
-# cat /sys/class/gpio/gpioX/edge
-none
-# echo rising > /sys/class/gpio/gpioX/edge
-
-This example puts GPIO pin X into "interrupt" mode, and declares it's
-"type" i.e. that it triggers on rising edge.
-
-In the world of embedded, system configuratio which tells which GPIO
-pins should be configured in "interrupt" mode (and what is their
-trigger type) is kept in some format usually known only to the kernel
-driver. We have no need to export this format to the user space, so
-that rc scripts for example would know to parse GPIO configuration and
-execute operations I mentioned above.
-
-To avoid that this is done from the user space, a function accesible
-to kernel is needed.
-
-BR,
-Drasko
