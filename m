@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab2JENCL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:02:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34643 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2JENCJ (ORCPT
+	id S1753850Ab2JENC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:02:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37657 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab2JENC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:02:09 -0400
-Date: Fri, 5 Oct 2012 06:01:47 -0700
-From: tip-bot for Tang Chen <tangchen@cn.fujitsu.com>
-Message-ID: <tip-5f7865f3e44db4c73fdc454fb2af40806212a7ca@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        wency@cn.fujitsu.com, a.p.zijlstra@chello.nl, tangchen@cn.fujitsu.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        wency@cn.fujitsu.com, a.p.zijlstra@chello.nl, tangchen@cn.fujitsu.com,
-        tglx@linutronix.de
-In-Reply-To: <1348578751-16904-2-git-send-email-tangchen@cn.fujitsu.com>
-References: <1348578751-16904-2-git-send-email-tangchen@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Ensure 'sched_domains_numa_levels'
-  is safe to use in other functions
-Git-Commit-ID: 5f7865f3e44db4c73fdc454fb2af40806212a7ca
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 06:01:54 -0700 (PDT)
+	Fri, 5 Oct 2012 09:02:58 -0400
+Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
+ __alloc_pages_nodemask+0x1d4/0x68c()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: mbizon@freebox.fr
+Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+In-Reply-To: <1349441509.28867.17.camel@sakura.staff.proxad.net>
+References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
+	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
+	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
+	 <1349368171.16011.79.camel@edumazet-glaptop>
+	 <1349422868.21172.38.camel@edumazet-glaptop>
+	 <1349434194.16710.44.camel@sakura.staff.proxad.net>
+	 <1349439732.21172.52.camel@edumazet-glaptop>
+	 <1349441509.28867.17.camel@sakura.staff.proxad.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Oct 2012 15:02:53 +0200
+Message-ID: <1349442173.21172.66.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f7865f3e44db4c73fdc454fb2af40806212a7ca
-Gitweb:     http://git.kernel.org/tip/5f7865f3e44db4c73fdc454fb2af40806212a7ca
-Author:     Tang Chen <tangchen@cn.fujitsu.com>
-AuthorDate: Tue, 25 Sep 2012 21:12:30 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 5 Oct 2012 13:54:46 +0200
+On Fri, 2012-10-05 at 14:51 +0200, Maxime Bizon wrote:
 
-sched: Ensure 'sched_domains_numa_levels' is safe to use in other functions
+> > New convention would be : pass number of needed bytes after current
+> > tail, not after current end.
+> 
+> Fully agree on this
+> 
 
-We should temporarily reset 'sched_domains_numa_levels' to 0 after
-it is reset to 'level' in sched_init_numa(). If it fails to allocate
-memory for array sched_domains_numa_masks[][], the array will contain
-less then 'level' members. This could be dangerous when we use it to
-iterate array sched_domains_numa_masks[][] in other functions.
+Here is the proposal :
 
-This patch set sched_domains_numa_levels to 0 before initializing
-array sched_domains_numa_masks[][], and reset it to 'level' when
-sched_domains_numa_masks[][] is fully initialized.
+Change all occurrences of :
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1348578751-16904-2-git-send-email-tangchen@cn.fujitsu.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+pskb_expand_head(skb, 0, 0, gfp)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c177472..f895fdd 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6122,6 +6122,17 @@ static void sched_init_numa(void)
- 	 * numbers.
- 	 */
- 
-+	/*
-+	 * Here, we should temporarily reset sched_domains_numa_levels to 0.
-+	 * If it fails to allocate memory for array sched_domains_numa_masks[][],
-+	 * the array will contain less then 'level' members. This could be
-+	 * dangerous when we use it to iterate array sched_domains_numa_masks[][]
-+	 * in other functions.
-+	 *
-+	 * We reset it to 'level' at the end of this function.
-+	 */
-+	sched_domains_numa_levels = 0;
+to
+
+pskb_realloc_head(skb, gfp)   
+[ an inline calling a common function ]
+
+
+
+And few other pskb_expand_head() calls a new function
+
+pskb_may_expand_head(skb, nhead, ntail, gfp) 
+[ an inline calling same common function ]
+
+
+nhead : number of needed bytes before [data,tail] portion
+         (might be already < skb_headroom(skb))
+
+ntail : number of needed bytes after [data,tail] portion
+        (might be already > skb_tailroom(skb))
+
+For example, net/xfrm/xfrm_output.c would be like the following :
+
+(Note how all the various ugly tests will be centralized in the common
+function)
+
+And the common function would now know the caller intent.
+
+
+diff --git a/net/xfrm/xfrm_output.c b/net/xfrm/xfrm_output.c
+index 95a338c..15760df 100644
+--- a/net/xfrm/xfrm_output.c
++++ b/net/xfrm/xfrm_output.c
+@@ -24,18 +24,10 @@ static int xfrm_output2(struct sk_buff *skb);
+ static int xfrm_skb_check_space(struct sk_buff *skb)
+ {
+ 	struct dst_entry *dst = skb_dst(skb);
+-	int nhead = dst->header_len + LL_RESERVED_SPACE(dst->dev)
+-		- skb_headroom(skb);
+-	int ntail = dst->dev->needed_tailroom - skb_tailroom(skb);
+-
+-	if (nhead <= 0) {
+-		if (ntail <= 0)
+-			return 0;
+-		nhead = 0;
+-	} else if (ntail < 0)
+-		ntail = 0;
+-
+-	return pskb_expand_head(skb, nhead, ntail, GFP_ATOMIC);
++	int nhead = dst->header_len + LL_RESERVED_SPACE(dst->dev);
++	int ntail = dst->dev->needed_tailroom;
 +
- 	sched_domains_numa_masks = kzalloc(sizeof(void *) * level, GFP_KERNEL);
- 	if (!sched_domains_numa_masks)
- 		return;
-@@ -6176,6 +6187,8 @@ static void sched_init_numa(void)
- 	}
- 
- 	sched_domain_topology = tl;
-+
-+	sched_domains_numa_levels = level;
++	return pskb_may_expand_head(skb, nhead, ntail, GFP_ATOMIC);
  }
- #else
- static inline void sched_init_numa(void)
+ 
+ static int xfrm_output_one(struct sk_buff *skb, int err)
+
+
