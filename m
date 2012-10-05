@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab2JEHWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:22:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60048 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2JEHWw (ORCPT
+	id S1752202Ab2JEHYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:24:38 -0400
+Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:40269
+	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751678Ab2JEHYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:22:52 -0400
-Date: Fri, 5 Oct 2012 00:22:26 -0700
-From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
-Message-ID: <tip-961c79761dda351b5fb263a0654b98daac130b7a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andreas.herrmann3@amd.com, srivatsa.bhat@linux.vnet.ibm.com,
-        shai@scalemp.com, gregkh@suse.de, tglx@linutronix.de,
-        dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andreas.herrmann3@amd.com, srivatsa.bhat@linux.vnet.ibm.com,
-        shai@scalemp.com, gregkh@suse.de, tglx@linutronix.de,
-        dan.carpenter@oracle.com
-In-Reply-To: <20121002083409.GM12398@elgon.mountain>
-References: <20121002083409.GM12398@elgon.mountain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/cache_info: Use ARRAY_SIZE() in amd_l3_attrs(
- )
-Git-Commit-ID: 961c79761dda351b5fb263a0654b98daac130b7a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 5 Oct 2012 03:24:37 -0400
+Message-ID: <506E5C25.1000406@chelsio.com>
+Date: Thu, 04 Oct 2012 21:03:49 -0700
+From: Divy Le Ray <divy@chelsio.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 00:22:33 -0700 (PDT)
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Subject: pull request: linux-firmware: update cxgb4 firmware
+References: <20120928183029.41d151b6@zola.asicdesigners.com>  <506CA7EA.2080505@chelsio.com> <1349408979.16173.28.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1349408979.16173.28.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  961c79761dda351b5fb263a0654b98daac130b7a
-Gitweb:     http://git.kernel.org/tip/961c79761dda351b5fb263a0654b98daac130b7a
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Tue, 2 Oct 2012 11:34:09 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 4 Oct 2012 13:28:08 +0200
+On 10/4/2012 8:49 PM, Ben Hutchings wrote:
+> On Wed, 2012-10-03 at 14:02 -0700, Divy Le Ray wrote:
+>> On 9/28/2012 6:30 PM, Divy Le Ray wrote:
+>>> Hi,
+>>>
+>>> Can you please pull from the following URL?
+>>>       git://git.chelsio.net/pub/git/linux-firmware.git for-upstream
+>> Hi,
+>>
+>> Is there any problem with this pull request?
+> [...]
+>
+> No, it appears David has pulled and pushed out your change.
 
-x86/cache_info: Use ARRAY_SIZE() in amd_l3_attrs()
+Great, thanks a lot!
 
-Using ARRAY_SIZE() is more readable.
+Cheers,
+Divy
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Shai Fultheim <shai@scalemp.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/r/20121002083409.GM12398@elgon.mountain
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 9a7c90d..93c5451 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -991,7 +991,7 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 	if (attrs)
- 		return attrs;
- 
--	n = sizeof (default_attrs) / sizeof (struct attribute *);
-+	n = ARRAY_SIZE(default_attrs);
- 
- 	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		n += 2;
