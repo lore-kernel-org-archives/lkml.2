@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab2JEQIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:08:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45267 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab2JEQIJ (ORCPT
+	id S1756699Ab2JEQNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:13:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42847 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755491Ab2JEQNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:08:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121001213809.GA31155@ZenIV.linux.org.uk>
-References: <20121001213809.GA31155@ZenIV.linux.org.uk>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Fri, 5 Oct 2012 17:07:47 +0100
-X-Google-Sender-Auth: poqSO7nuFhgHjpZrzOUqlVTEdno
-Message-ID: <CAHkRjk6oaZh643hciXyVbvq74KTWgZjfKhyZW1gi8oNEMw3h-A@mail.gmail.com>
-Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 5 Oct 2012 12:13:08 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2] Add of helper for linux,stdout-path
+Date: Fri,  5 Oct 2012 18:12:58 +0200
+Message-Id: <1349453581-1685-1-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+This adds a helper function to match the linux,stdout-path property
+against a struct device and adds support for this property to the i.MX
+serial driver.
 
-On 1 October 2012 22:38, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         Right now the tree lives in
-> git.kernel.org/pub/scm/linux/kernel/git/viro/signal experimental-kernel_thread
-> Some of that had been in -next for a while.
->
->         Folks, help with review, testing and filling the missing bits, please.
+Sascha
 
-I tested this branch with the arm64 kernel and runs ok (I get couple
-of compiler warnings because reparent_to_kthread and
-__set_special_pids are no longer used with the removal of daemonize).
+----------------------------------------------------------------
+Sascha Hauer (3):
+      serial_core: Add helper for matching against linux,stdout-path
+      serial: i.MX: Make console support non optional
+      serial: i.MX: evaluate linux,stdout-path property
 
-I have three arm64 patches on this branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git execve
-
-Catalin Marinas (3):
-      arm64: Use generic kernel_thread() implementation
-      arm64: Use generic kernel_execve() implementation
-      arm64: Use generic sys_execve() implementation
-
- arch/arm64/Kconfig                 |    1 +
- arch/arm64/include/asm/processor.h |    5 --
- arch/arm64/include/asm/syscalls.h  |    3 -
- arch/arm64/include/asm/unistd.h    |    3 +
- arch/arm64/kernel/entry.S          |   28 ++++++++++---
- arch/arm64/kernel/process.c        |   78 +++++++++++------------------------
- arch/arm64/kernel/sys.c            |   65 ------------------------------
- arch/arm64/kernel/sys32.S          |    7 +---
- arch/arm64/kernel/sys_compat.c     |   18 --------
- 9 files changed, 52 insertions(+), 156 deletions(-)
-
--- 
-Catalin
+ drivers/tty/serial/Kconfig       |   16 +---------------
+ drivers/tty/serial/imx.c         |   11 ++++-------
+ drivers/tty/serial/serial_core.c |   30 ++++++++++++++++++++++++++++++
+ include/linux/serial_core.h      |    3 +++
+ 4 files changed, 38 insertions(+), 22 deletions(-)
