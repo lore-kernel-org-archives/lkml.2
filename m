@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab2JEG4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:56:48 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:39162 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab2JEG4q (ORCPT
+	id S1752002Ab2JEG4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:56:53 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52644 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab2JEG4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:56:46 -0400
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Subject: [PATCH 2/3] efi: add efivars kobject to efi sysfs folder
-Message-Id: <1349416496.810874.88263724621.2.gpush@pecola>
-In-Reply-To: <1349416496.810727.310563927016.1.gpush@pecola>
-To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: <glin@suse.com>, Lee@grenadilla.canonical.com, Chun-Yi <jlee@suse.com>,
-        Matthew Garrett <mjg@redhat.com>, Peter Jones <pjones@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-Date: Fri, 05 Oct 2012 13:54:56 +0800
+	Fri, 5 Oct 2012 02:56:51 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-cd-506e6c103f8d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 1/5] perf trace: Setup pager before running
+Date: Fri,  5 Oct 2012 14:02:12 +0900
+Message-Id: <1349413336-26936-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-UEFI variable filesystem need a new mount point, so this patch add
-efivars kobject to efi_kobj for create a /sys/firmware/efi/efivars
-folder.
+Since perf trace emits lots of messages on terminal, it'd better using
+a pager.
 
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/firmware/efivars.c |   11 +++++++++++
- include/linux/efi.h        |    1 +
- 2 files changed, 12 insertions(+)
+ tools/perf/builtin-trace.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 4174f1b..e1253d6 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1487,6 +1487,7 @@ void unregister_efivars(struct efivars *efivars)
- 		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
- 	kfree(efivars->new_var);
- 	kfree(efivars->del_var);
-+	kobject_put(efivars->kobject);
- 	kset_unregister(efivars->kset);
- }
- EXPORT_SYMBOL_GPL(unregister_efivars);
-@@ -1518,6 +1519,13 @@ int register_efivars(struct efivars *efivars,
- 		goto out;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index dec8ced61fb0..9fc4bed8837d 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2,6 +2,7 @@
+ #include "util/evlist.h"
+ #include "util/parse-options.h"
+ #include "util/thread_map.h"
++#include "util/cache.h"
+ #include "event-parse.h"
+ 
+ #include <libaudit.h>
+@@ -336,5 +337,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return err;
  	}
  
-+	efivars->kobject = kobject_create_and_add("efivars", parent_kobj);
-+	if (!efivars->kobject) {
-+		pr_err("efivars: Subsystem registration failed.\n");
-+		error = -ENOMEM;
-+		goto err_unreg_vars;
-+	}
++	setup_pager();
 +
- 	/*
- 	 * Per EFI spec, the maximum storage allocated for both
- 	 * the variable name and variable data is 1024 bytes.
-@@ -1562,6 +1570,9 @@ int register_efivars(struct efivars *efivars,
- 
- 	register_filesystem(&efivarfs_type);
- 
-+err_unreg_vars:
-+	kset_unregister(efivars->kset);
-+
- out:
- 	kfree(variable_name);
- 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 1829a97..c993f54 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -654,6 +654,7 @@ struct efivars {
- 	spinlock_t lock;
- 	struct list_head list;
- 	struct kset *kset;
-+	struct kobject *kobject;
- 	struct bin_attribute *new_var, *del_var;
- 	const struct efivar_operations *ops;
- 	struct efivar_entry *walk_entry;
+ 	return trace__run(&trace);
+ }
+-- 
+1.7.11.4
+
