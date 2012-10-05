@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab2JEP1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:27:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:32935 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753216Ab2JEP1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 11:27:13 -0400
-Message-ID: <1349450831.2008.71.camel@joe-AO722>
-Subject: Re: [PATCH] revert "PCI: log vendor/device ID always"
-From: Joe Perches <joe@perches.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Date: Fri, 05 Oct 2012 08:27:11 -0700
-In-Reply-To: <CAErSpo6=9vdoR=Z83jyDrHAc_4XAL+rHw55=UeXf8C+N=xUHrw@mail.gmail.com>
-References: <1349187780-25692-1-git-send-email-nzimmer@sgi.com>
-	 <CAErSpo7ZQEm9==nsGiH2c_ZG8LPP8MAA8M9xSPyWPtCW2EHUUQ@mail.gmail.com>
-	 <506DB30F.2000704@sgi.com> <1349368662.2008.20.camel@joe-AO722>
-	 <506EE6D5.4010603@sgi.com> <1349446478.2008.66.camel@joe-AO722>
-	 <506EF48B.5070801@sgi.com>
-	 <CAErSpo6=9vdoR=Z83jyDrHAc_4XAL+rHw55=UeXf8C+N=xUHrw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754333Ab2JEP2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:28:34 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:48041 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2JEP2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 11:28:33 -0400
+Date: Fri, 5 Oct 2012 17:28:31 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] Fix bogus "callbacks suppressed" messages
+Message-ID: <20121005152831.GA245@x4>
+References: <20121004092055.GA21028@aftab.osrc.amd.com>
+ <20121004112347.GA245@x4>
+ <20121004115157.GA245@x4>
+ <20121004124025.GC21028@aftab.osrc.amd.com>
+ <20121004131101.GA245@x4>
+ <506EC1AE.6000201@suse.cz>
+ <20121005122741.GB8019@aftab.osrc.amd.com>
+ <20121005125717.GB245@x4>
+ <20121005142639.GA20065@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121005142639.GA20065@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-05 at 09:16 -0600, Bjorn Helgaas wrote:
-> On Fri, Oct 5, 2012 at 8:54 AM, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > On 10/05/2012 09:14 AM, Joe Perches wrote:
-> >> On Fri, 2012-10-05 at 08:55 -0500, Nathan Zimmer wrote:
-> >>> On 10/04/2012 11:37 AM, Joe Perches wrote:
-> >>>> On Thu, 2012-10-04 at 11:02 -0500, Nathan Zimmer wrote:
-> >>>>> At many of our customer sites the log level is set to KERN_DEBUG. It
-> >>>>> helps avoid reboots due to operator impatience.  Machines this large
-> >>>>> take significantly longer then typical to boot and seeing the extra
-> >>>>> messages reassures them that the kernel isn't hung.
-> >>>>
-> >>>> That argues for adding some KERN_INFO "still booting" messages
-> >>>> not logging unnecessary KERN_DEBUG messages.
-> >>>>
-> >>> Actually I would think that argues for reducing boot times on these
-> >>> large systems.
-> >>
-> >> Right.
-> >>
-> >> That's an independent argument, but sure, go ahead
-> >> and do that too.
-[]
-> > Here is output for my workstation a simple 4x box
-> >
-> > -bash-4.1$ dmesg | grep "type [0-9][0-9] class" | wc
-> >      12     108     804
-> > -bash-4.1$ dmesg | wc
-> >     744    6359   49474
-> > Here is some output from one of the biggest boxes.
-> > -bash-4.1$ dmesg | wc
-> >   26503  235414 1811651
-> > -bash-4.1$ dmesg | grep "type [0-9][0-9] class" | wc
-> >   12085 108765  821780
+On 2012.10.05 at 07:26 -0700, Greg Kroah-Hartman wrote:
+> On Fri, Oct 05, 2012 at 02:57:17PM +0200, Markus Trippelsdorf wrote:
+> > On the current git tree one sees messages such as:
+> >  tty_init_dev: 24 callbacks suppressed
+> >  tty_init_dev: 3 callbacks suppressed
+> > 
+> > To fix this we need to look at condition before calling __ratelimit in
+> > the WARN_RATELIMIT macro. While at it remove the superfluous
+> > __WARN_RATELIMIT macros.
+> > 
+> > Original patch is from Joe Perches and Jiri Slaby.
+> > 
+> > Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+> > Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+> > ---
+> >  include/linux/ratelimit.h | 27 +++++++++------------------
+> >  1 file changed, 9 insertions(+), 18 deletions(-)
 > 
-> Many vendors don't expose host bridges that lead to the CPU-related
-> PCI devices because they don't want the OS to muck with them.  We
-> currently blindly probe for these in domain 0, so we find them anyway
-> (I think we should change this behavior).
-> 
-> I'd guess that having all these CPU-related devices around also really
-> clutters up "lspci" output, and of course, consumes memory for all the
-> pci_dev structs in the kernel.  It takes some time to enumerate them
-> all, so avoiding that would speed up boot somewhat.
-> 
-> So I wonder if it might be more useful to figure out how to avoid
-> enumerating those devices in the first place?  The first step would be
-> to stop exposing PNP0A03/PNP0A08 host bridges that lead to them.  As I
-> mentioned, we currently will probably find them anyway via blind
-> probing.  You might be able to avoid that if you could place them in a
-> PCI domain other than 0
+> I don't have a problem with this patch, but I don't understand why it's
+> now showing up.  There haven't been any changes in the ratelimit.h area
+> recently that I can see, so why is this change needed now?  What is in
+> the tty layer that is causing this, just the fact that it's actually
+> being used now?
 
-And in the meantime, maybe something like this and not logging
-at KERN_DEBUG when using verbose_boot would help avoid impatient
-operator reboots.
+See Jiri's recent commit:
 
- drivers/pci/hotplug/sgi_hotplug.c |    4 ++++
- 1 file changed, 4 insertions(+)
+commit 5d4121c04b3577e37e389b3553d442f44bb346d7
+Author: Jiri Slaby <jslaby@suse.cz>
+Date:   Fri Aug 17 14:27:52 2012 +0200
 
-diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
-index f64ca92..b3abd1a 100644
---- a/drivers/pci/hotplug/sgi_hotplug.c
-+++ b/drivers/pci/hotplug/sgi_hotplug.c
-@@ -368,6 +368,10 @@ static int enable_slot(struct hotplug_slot *bss_hotplug_slot)
- 		}
- 	}
+    TTY: check if tty->port is assigned
+    
+    And if not, complain loudly. None in-kernel module should trigger
+    that, but let us find out for sure. On the other hand, all the
+    out-of-tree modules will hit that. Give them some time (maybe one
+    release) to catch up.
+    
+    Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 28c3e86..41e42f1 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1415,6 +1415,10 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
+ 	if (!tty->port)
+ 		tty->port = driver->ports[idx];
  
-+	if (some_verbose_boot_flag)
-+		dev_info(&slot->pci_bus->self->dev, "Testing slot %d\n",
-+			 slot->device_num + 1);
++	WARN_RATELIMIT(!tty->port,
++			"%s: %s driver does not set tty->port. This will crash the kernel later. Fix the driver!\n",
++			__func__, tty->driver->name);
 +
- 	num_funcs = pci_scan_slot(slot->pci_bus,
- 				  PCI_DEVFN(slot->device_num + 1, 0));
- 	if (!num_funcs) {
+ 	/*
+ 	 * Structures all installed ... call the ldisc open routines.
+ 	 * If we fail here just call release_tty to clean up.  No need
 
-
-
+-- 
+Markus
