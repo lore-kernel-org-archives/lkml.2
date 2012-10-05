@@ -1,70 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab2JEOp6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab2JEOpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756310Ab2JEOpx (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Oct 2012 10:45:53 -0400
-Date: Fri, 5 Oct 2012 16:47:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns
-Message-ID: <20121005144729.GA20497@redhat.com>
-References: <1349385662-571743-1-git-send-email-avagin@openvz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349385662-571743-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Received: from mx1.redhat.com ([209.132.183.28]:43987 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756239Ab2JEOpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 10:45:43 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 5/8] perf diff: Add -p option to display period values for hist entries
+Date: Fri,  5 Oct 2012 16:44:44 +0200
+Message-Id: <1349448287-18919-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
+References: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05, Andrew Vagin wrote:
->
-> Here is a stack trace of recursion:
-> free_pid_ns(parent)
->   put_pid_ns(parent)
->     kref_put(&ns->kref, free_pid_ns);
->       free_pid_ns
->
-> This patch turns recursion into loops.
+Adding -p option to show period values for both compared hist
+entries. Showing hist column PERF_HPP__PERIOD and newly added
+hist column PERF_HPP__PERIOD_BASELINE.
 
-I think the patch is correct, a couple of minor nits.
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/Documentation/perf-diff.txt |  4 ++++
+ tools/perf/builtin-diff.c              | 10 +++++++++-
+ tools/perf/ui/hist.c                   | 21 +++++++++++++++++++++
+ tools/perf/util/hist.h                 |  1 +
+ 4 files changed, 35 insertions(+), 1 deletion(-)
 
-> +static inline int __kref_put(struct kref *kref)
-> +{
-> +	return atomic_sub_and_test(1, &kref->refcount);
-
-perhaps atomic_dec_and_test(&kref->refcount) makes more sense?
-
-> +}
-> @@ -138,11 +138,20 @@ void free_pid_ns(struct kref *kref)
->
->  	ns = container_of(kref, struct pid_namespace, kref);
->
-> -	parent = ns->parent;
-> -	destroy_pid_namespace(ns);
-> +	while (1) {
->
-> -	if (parent != NULL)
-> -		put_pid_ns(parent);
-> +		parent = ns->parent;
-> +		destroy_pid_namespace(ns);
-> +
-> +		if (parent == NULL || parent == &init_pid_ns)
-                    ^^^^^^^^^^^^^^
-
-Why ns->parent == NULL is only possible if ns == init_pid_ns, right?
-But in this case we should not be here. The caller verifies that
-initial ns != init_pid_ns, and this loops should stop once we reach
-init_pid_ns.
-
-Oleg.
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fa413ac..21cc2ef 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -83,6 +83,10 @@ OPTIONS
+         on the computation results.
+         See COMPARISON METHODS section for more info.
+ 
++-p::
++--period::
++        Show period values for both compared hist entries.
++
+ COMPARISON METHODS
+ ------------------
+ delta
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index d78e838..2411dd1 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -24,6 +24,7 @@ static char const *input_old = "perf.data.old",
+ static char	  diff__default_sort_order[] = "dso,symbol";
+ static bool  force;
+ static bool show_displacement;
++static bool show_period;
+ static bool show_baseline_only;
+ static bool sort_compute;
+ 
+@@ -540,6 +541,8 @@ static const struct option options[] = {
+ 		     "delta,ratio,wdiff:w1,w2 (default delta)",
+ 		     "Entries differential computation selection",
+ 		     setup_compute),
++	OPT_BOOLEAN('p', "period", &show_period,
++		    "Show period values."),
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
+ 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+@@ -568,7 +571,7 @@ static void ui_init(void)
+ 	/* No overhead column. */
+ 	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
+ 
+-	/* Display baseline/delta/ratio/displacement columns. */
++	/* Display baseline/delta/ratio/displacement/periods columns. */
+ 	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
+ 
+ 	switch (compute) {
+@@ -587,6 +590,11 @@ static void ui_init(void)
+ 
+ 	if (show_displacement)
+ 		perf_hpp__column_enable(PERF_HPP__DISPL, true);
++
++	if (show_period) {
++		perf_hpp__column_enable(PERF_HPP__PERIOD, true);
++		perf_hpp__column_enable(PERF_HPP__PERIOD_BASELINE, true);
++	}
+ }
+ 
+ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 522b4ec..2fadaff 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -228,6 +228,26 @@ static int hpp__entry_period(struct perf_hpp *hpp, struct hist_entry *he)
+ 	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.period);
+ }
+ 
++static int hpp__header_period_baseline(struct perf_hpp *hpp)
++{
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%12s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "Period Base");
++}
++
++static int hpp__width_period_baseline(struct perf_hpp *hpp __maybe_unused)
++{
++	return 12;
++}
++
++static int hpp__entry_period_baseline(struct perf_hpp *hpp, struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	u64 period = pair ? pair->stat.period : 0;
++	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
++
++	return scnprintf(hpp->buf, hpp->size, fmt, period);
++}
+ static int hpp__header_delta(struct perf_hpp *hpp)
+ {
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7s";
+@@ -359,6 +379,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ 	{ .cond = false, HPP__COLOR_PRINT_FNS(overhead_guest_us) },
+ 	{ .cond = false, HPP__PRINT_FNS(samples) },
+ 	{ .cond = false, HPP__PRINT_FNS(period) },
++	{ .cond = false, HPP__PRINT_FNS(period_baseline) },
+ 	{ .cond = false, HPP__PRINT_FNS(delta) },
+ 	{ .cond = false, HPP__PRINT_FNS(ratio) },
+ 	{ .cond = false, HPP__PRINT_FNS(wdiff) },
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ce76f36..5604791 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -140,6 +140,7 @@ enum {
+ 	PERF_HPP__OVERHEAD_GUEST_US,
+ 	PERF_HPP__SAMPLES,
+ 	PERF_HPP__PERIOD,
++	PERF_HPP__PERIOD_BASELINE,
+ 	PERF_HPP__DELTA,
+ 	PERF_HPP__RATIO,
+ 	PERF_HPP__WEIGHTED_DIFF,
+-- 
+1.7.11.4
 
