@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab2JEWla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:41:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45570 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932929Ab2JEWlW (ORCPT
+	id S933002Ab2JEWlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:41:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35108 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932933Ab2JEWlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:41:22 -0400
+	Fri, 5 Oct 2012 18:41:25 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: davem@davemloft.net
-Cc: mcarlson@broadcom.com, eric.dumazet@gmail.com, mchan@broadcom.com,
-        shuah.khan@hp.com, netdev@vger.kernel.org,
+To: mlindner@marvell.com
+Cc: shemminger@vyatta.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 17/20 V2] drivers/net/ethernet/sun/niu.c: fix error return code
-Date: Sat,  6 Oct 2012 00:40:53 +0200
-Message-Id: <1349476856-16075-2-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 20/20 V2] drivers/net/ethernet/marvell/sky2.c: fix error return code
+Date: Sat,  6 Oct 2012 00:40:56 +0200
+Message-Id: <1349476856-16075-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349476856-16075-1-git-send-email-peter.senna@gmail.com>
 References: <1349476856-16075-1-git-send-email-peter.senna@gmail.com>
@@ -25,13 +24,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-The function niu_pci_init_one() return 0 for success and negative value
-for most of its internal tests failures. There is one exception
-that is error case going to err_out_free_res:. For this error case, the
+The function sky2_probe() return 0 for success and negative value
+for most of its internal tests failures. There are two exceptions
+that are error cases going to err_out*:. For this two cases, the
 function abort its success execution path, but returns non negative
-value, making it difficult for a caller function to notice the error.
+value, making it dificult for a caller function to notice the error.
 
-This patch fixes the error case that do not return negative value.
+This patch fixes the error cases that do not return negative values.
 
 This was found by Coccinelle, but the code change was made by hand.
 This patch is not robot generated.
@@ -62,19 +61,31 @@ Change from V1:
         Updated commit message. See:
         http://www.kernelhub.org/?p=2&msg=139319
 
- drivers/net/ethernet/sun/niu.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/marvell/sky2.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/sun/niu.c b/drivers/net/ethernet/sun/niu.c
-index 8419bf3..275b430 100644
---- a/drivers/net/ethernet/sun/niu.c
-+++ b/drivers/net/ethernet/sun/niu.c
-@@ -9788,6 +9788,7 @@ static int __devinit niu_pci_init_one(struct pci_dev *pdev,
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 2b0748d..78946fe 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -4924,6 +4924,7 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
  
- 	if (!pci_is_pcie(pdev)) {
- 		dev_err(&pdev->dev, "Cannot find PCI Express capability, aborting\n");
-+		err = -ENODEV;
- 		goto err_out_free_res;
+ 	if (~reg == 0) {
+ 		dev_err(&pdev->dev, "PCI configuration read error\n");
++		err = -EIO;
+ 		goto err_out;
  	}
  
+@@ -4993,8 +4994,10 @@ static int __devinit sky2_probe(struct pci_dev *pdev,
+ 	hw->st_size = hw->ports * roundup_pow_of_two(3*RX_MAX_PENDING + TX_MAX_PENDING);
+ 	hw->st_le = pci_alloc_consistent(pdev, hw->st_size * sizeof(struct sky2_status_le),
+ 					 &hw->st_dma);
+-	if (!hw->st_le)
++	if (!hw->st_le) {
++		err = -ENOMEM;
+ 		goto err_out_reset;
++	}
+ 
+ 	dev_info(&pdev->dev, "Yukon-2 %s chip revision %d\n",
+ 		 sky2_name(hw->chip_id, buf1, sizeof(buf1)), hw->chip_rev);
 
