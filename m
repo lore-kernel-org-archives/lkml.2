@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab2JEQW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:22:29 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56258 "EHLO zmc.proxad.net"
+	id S932637Ab2JEQWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:22:32 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56278 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932485Ab2JEQWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:24 -0400
+	id S932548Ab2JEQW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:29 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/32 v3] USB: EHCI: remove Loongson 1B EHCI driver.
-Date: Fri,  5 Oct 2012 18:20:36 +0200
-Message-Id: <1349454064-11606-5-git-send-email-florian@openwrt.org>
+Subject: [PATCH 06/32 v3] USB: EHCI: remove Netlogic XLS EHCI driver
+Date: Fri,  5 Oct 2012 18:20:38 +0200
+Message-Id: <1349454064-11606-7-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -21,191 +21,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform code registering the Loongson 1B EHCI driver has now been
-converted to register the ehci-platform driver instead, thus obsoleting the
-ehci-ls1x driver, which can be removed.
+The platform code has been migrated to register the ehci-platform driver, thus
+obsoleting the ehci-xls driver, which can be removed.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-No changes in v3
-
 Changes in v2:
 - reworded commit message
 
- drivers/usb/host/ehci-hcd.c  |    5 --
- drivers/usb/host/ehci-ls1x.c |  147 ------------------------------------------
- 2 files changed, 152 deletions(-)
- delete mode 100644 drivers/usb/host/ehci-ls1x.c
+ drivers/usb/host/ehci-hcd.c |    5 --
+ drivers/usb/host/ehci-xls.c |  142 -------------------------------------------
+ 2 files changed, 147 deletions(-)
+ delete mode 100644 drivers/usb/host/ehci-xls.c
 
 diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 442f774..2f517d9 100644
+index 2f517d9..f2a9982 100644
 --- a/drivers/usb/host/ehci-hcd.c
 +++ b/drivers/usb/host/ehci-hcd.c
-@@ -1319,11 +1319,6 @@ MODULE_LICENSE ("GPL");
- #define        PLATFORM_DRIVER         ehci_mv_driver
+@@ -1309,11 +1309,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_grlib_driver
  #endif
  
--#ifdef CONFIG_MACH_LOONGSON1
--#include "ehci-ls1x.c"
--#define PLATFORM_DRIVER		ehci_ls1x_driver
+-#ifdef CONFIG_CPU_XLR
+-#include "ehci-xls.c"
+-#define PLATFORM_DRIVER		ehci_xls_driver
 -#endif
 -
- #ifdef CONFIG_MIPS_SEAD3
- #include "ehci-sead3.c"
- #define	PLATFORM_DRIVER		ehci_hcd_sead3_driver
-diff --git a/drivers/usb/host/ehci-ls1x.c b/drivers/usb/host/ehci-ls1x.c
+ #ifdef CONFIG_USB_EHCI_MV
+ #include "ehci-mv.c"
+ #define        PLATFORM_DRIVER         ehci_mv_driver
+diff --git a/drivers/usb/host/ehci-xls.c b/drivers/usb/host/ehci-xls.c
 deleted file mode 100644
-index ca75965..0000000
---- a/drivers/usb/host/ehci-ls1x.c
+index 8dc6a22..0000000
+--- a/drivers/usb/host/ehci-xls.c
 +++ /dev/null
-@@ -1,147 +0,0 @@
+@@ -1,142 +0,0 @@
 -/*
-- *  Bus Glue for Loongson LS1X built-in EHCI controller.
+- * EHCI HCD for Netlogic XLS processors.
 - *
-- *  Copyright (c) 2012 Zhang, Keguang <keguang.zhang@gmail.com>
+- * (C) Copyright 2011 Netlogic Microsystems Inc.
 - *
-- *  This program is free software; you can redistribute it and/or modify it
-- *  under the terms of the GNU General Public License version 2 as published
-- *  by the Free Software Foundation.
+- *  Based on various ehci-*.c drivers
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file COPYING in the main directory of this archive for
+- * more details.
 - */
--
 -
 -#include <linux/platform_device.h>
 -
--static int ehci_ls1x_reset(struct usb_hcd *hcd)
+-static int ehci_xls_setup(struct usb_hcd *hcd)
 -{
 -	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--	int ret;
 -
 -	ehci->caps = hcd->regs;
 -
--	ret = ehci_setup(hcd);
--	if (ret)
--		return ret;
--
--	ehci_port_power(ehci, 0);
--
--	return 0;
+-	return ehci_setup(hcd);
 -}
 -
--static const struct hc_driver ehci_ls1x_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "LOONGSON1 EHCI",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-int ehci_xls_probe_internal(const struct hc_driver *driver,
+-	struct platform_device *pdev)
+-{
+-	struct usb_hcd  *hcd;
+-	struct resource *res;
+-	int retval, irq;
 -
--	/*
--	 * generic hardware linkage
--	 */
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
+-	/* Get our IRQ from an earlier registered Platform Resource */
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0) {
+-		dev_err(&pdev->dev, "Found HC with no IRQ. Check %s setup!\n",
+-				dev_name(&pdev->dev));
+-		return -ENODEV;
+-	}
 -
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset			= ehci_ls1x_reset,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
+-	/* Get our Memory Handle */
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "Error: MMIO Handle %s setup!\n",
+-				dev_name(&pdev->dev));
+-		return -ENODEV;
+-	}
+-	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+-	if (!hcd) {
+-		retval = -ENOMEM;
+-		goto err1;
+-	}
 -
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
+-	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = resource_size(res);
 -
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number	= ehci_get_frame,
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+-				driver->description)) {
+-		dev_dbg(&pdev->dev, "controller already in use\n");
+-		retval = -EBUSY;
+-		goto err2;
+-	}
+-	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
 -
--	/*
--	 * root hub support
--	 */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
+-	if (hcd->regs == NULL) {
+-		dev_dbg(&pdev->dev, "error mapping memory\n");
+-		retval = -EFAULT;
+-		goto err3;
+-	}
 -
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+-	if (retval != 0)
+-		goto err4;
+-	return retval;
+-
+-err4:
+-	iounmap(hcd->regs);
+-err3:
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-err2:
+-	usb_put_hcd(hcd);
+-err1:
+-	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev),
+-			retval);
+-	return retval;
+-}
+-
+-static struct hc_driver ehci_xls_hc_driver = {
+-	.description	= hcd_name,
+-	.product_desc	= "XLS EHCI Host Controller",
+-	.hcd_priv_size	= sizeof(struct ehci_hcd),
+-	.irq		= ehci_irq,
+-	.flags		= HCD_USB2 | HCD_MEMORY,
+-	.reset		= ehci_xls_setup,
+-	.start		= ehci_run,
+-	.stop		= ehci_stop,
+-	.shutdown	= ehci_shutdown,
+-
+-	.urb_enqueue	= ehci_urb_enqueue,
+-	.urb_dequeue	= ehci_urb_dequeue,
+-	.endpoint_disable = ehci_endpoint_disable,
+-	.endpoint_reset	= ehci_endpoint_reset,
+-
+-	.get_frame_number = ehci_get_frame,
+-
+-	.hub_status_data = ehci_hub_status_data,
+-	.hub_control	= ehci_hub_control,
+-	.bus_suspend	= ehci_bus_suspend,
+-	.bus_resume	= ehci_bus_resume,
+-	.relinquish_port = ehci_relinquish_port,
+-	.port_handed_over = ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
 -};
 -
--static int ehci_hcd_ls1x_probe(struct platform_device *pdev)
+-static int ehci_xls_probe(struct platform_device *pdev)
 -{
--	struct usb_hcd *hcd;
--	struct resource *res;
--	int irq;
--	int ret;
--
--	pr_debug("initializing loongson1 ehci USB Controller\n");
--
 -	if (usb_disabled())
 -		return -ENODEV;
 -
--	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no IRQ. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--	irq = res->start;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev,
--			"Found HC with no register addr. Check %s setup!\n",
--			dev_name(&pdev->dev));
--		return -ENODEV;
--	}
--
--	hcd = usb_create_hcd(&ehci_ls1x_hc_driver, &pdev->dev,
--				dev_name(&pdev->dev));
--	if (!hcd)
--		return -ENOMEM;
--	hcd->rsrc_start	= res->start;
--	hcd->rsrc_len	= resource_size(res);
--
--	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
--	if (hcd->regs == NULL) {
--		dev_dbg(&pdev->dev, "error mapping memory\n");
--		ret = -EFAULT;
--		goto err_put_hcd;
--	}
--
--	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (ret)
--		goto err_put_hcd;
--
--	return ret;
--
--err_put_hcd:
--	usb_put_hcd(hcd);
--	return ret;
+-	return ehci_xls_probe_internal(&ehci_xls_hc_driver, pdev);
 -}
 -
--static int ehci_hcd_ls1x_remove(struct platform_device *pdev)
+-static int ehci_xls_remove(struct platform_device *pdev)
 -{
 -	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 -
 -	usb_remove_hcd(hcd);
+-	iounmap(hcd->regs);
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
 -	usb_put_hcd(hcd);
--
 -	return 0;
 -}
 -
--static struct platform_driver ehci_ls1x_driver = {
--	.probe = ehci_hcd_ls1x_probe,
--	.remove = ehci_hcd_ls1x_remove,
--	.shutdown = usb_hcd_platform_shutdown,
--	.driver = {
--		.name = "ls1x-ehci",
--		.owner	= THIS_MODULE,
+-MODULE_ALIAS("ehci-xls");
+-
+-static struct platform_driver ehci_xls_driver = {
+-	.probe		= ehci_xls_probe,
+-	.remove		= ehci_xls_remove,
+-	.shutdown	= usb_hcd_platform_shutdown,
+-	.driver		= {
+-		.name = "ehci-xls",
 -	},
 -};
--
--MODULE_ALIAS(PLATFORM_MODULE_PREFIX "ls1x-ehci");
 -- 
 1.7.9.5
 
