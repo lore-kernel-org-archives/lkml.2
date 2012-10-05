@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab2JEWLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:11:07 -0400
+	id S932838Ab2JEWLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:11:16 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:56587 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab2JEWLD (ORCPT
+	with ESMTP id S1757660Ab2JEWLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:11:03 -0400
+	Fri, 5 Oct 2012 18:11:10 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: samuel@sortiz.org
-Cc: irda-users@lists.sourceforge.net, netdev@vger.kernel.org,
+To: davem@davemloft.net
+Cc: danny.kukawka@bisect.de, mcuos.com@gmail.com, joe@perches.com,
+        florian@openwrt.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 11/20 V2] drivers/net/irda/sh_sir.c: fix error return code
-Date: Sat,  6 Oct 2012 00:10:49 +0200
-Message-Id: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 14/20 V2] drivers/net/ethernet/amd/au1000_eth.c: fix error return code
+Date: Sat,  6 Oct 2012 00:10:52 +0200
+Message-Id: <1349475053-11464-4-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
+References: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-The function sh_sir_probe() return 0 for success and negative value
-for most of its internal tests failures. There are two exceptions
-that are error cases going to err_mem_*:. For this two cases, the
+The function au1000_probe() return 0 for success and negative value
+for most of its internal tests failures. There are exceptions
+that are error cases going to err_out:. For this cases, the
 function abort its success execution path, but returns non negative
 value, making it dificult for a caller function to notice the error.
 
@@ -60,30 +63,50 @@ Change from V1:
         Updated commit message. See:
         http://www.kernelhub.org/?p=2&msg=139319
 
- drivers/net/irda/sh_sir.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/amd/au1000_eth.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/irda/sh_sir.c b/drivers/net/irda/sh_sir.c
-index 7951094..624ac19 100644
---- a/drivers/net/irda/sh_sir.c
-+++ b/drivers/net/irda/sh_sir.c
-@@ -741,6 +741,7 @@ static int __devinit sh_sir_probe(struct platform_device *pdev)
- 	self->clk = clk_get(&pdev->dev, clk_name);
- 	if (IS_ERR(self->clk)) {
- 		dev_err(&pdev->dev, "cannot get clock \"%s\"\n", clk_name);
-+		err = -ENODEV;
- 		goto err_mem_3;
+diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
+index 397596b..f195acf 100644
+--- a/drivers/net/ethernet/amd/au1000_eth.c
++++ b/drivers/net/ethernet/amd/au1000_eth.c
+@@ -1174,8 +1174,10 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
+ 		pdev->name, aup->mac_id);
+ 	aup->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+-	if (aup->mii_bus->irq == NULL)
++	if (aup->mii_bus->irq == NULL) {
++		err = -ENOMEM;
+ 		goto err_out;
++	}
+ 
+ 	for (i = 0; i < PHY_MAX_ADDR; ++i)
+ 		aup->mii_bus->irq[i] = PHY_POLL;
+@@ -1190,7 +1192,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 		goto err_mdiobus_reg;
  	}
  
-@@ -760,8 +761,8 @@ static int __devinit sh_sir_probe(struct platform_device *pdev)
- 		goto err_mem_4;
+-	if (au1000_mii_probe(dev) != 0)
++	err = au1000_mii_probe(dev);
++	if (err != 0)
+ 		goto err_out;
  
- 	platform_set_drvdata(pdev, ndev);
--
--	if (request_irq(irq, sh_sir_irq, IRQF_DISABLED, "sh_sir", self)) {
-+	err = request_irq(irq, sh_sir_irq, IRQF_DISABLED, "sh_sir", self);
-+	if (err) {
- 		dev_warn(&pdev->dev, "Unable to attach sh_sir interrupt\n");
- 		goto err_mem_4;
+ 	pDBfree = NULL;
+@@ -1205,6 +1208,7 @@ static int __devinit au1000_probe(struct platform_device *pdev)
  	}
+ 	aup->pDBfree = pDBfree;
+ 
++	err = -ENODEV;
+ 	for (i = 0; i < NUM_RX_DMA; i++) {
+ 		pDB = au1000_GetFreeDB(aup);
+ 		if (!pDB)
+@@ -1213,6 +1217,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 		aup->rx_dma_ring[i]->buff_stat = (unsigned)pDB->dma_addr;
+ 		aup->rx_db_inuse[i] = pDB;
+ 	}
++
++	err = -ENODEV;
+ 	for (i = 0; i < NUM_TX_DMA; i++) {
+ 		pDB = au1000_GetFreeDB(aup);
+ 		if (!pDB)
 
