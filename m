@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2JEOq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:46:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24646 "EHLO mx1.redhat.com"
+	id S1756158Ab2JEOp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:45:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab2JEOp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:45:29 -0400
+	id S1753676Ab2JEOpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 10:45:23 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -13,20 +13,53 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 7/8] perf diff: Include samples without symbol in overall stats
-Date: Fri,  5 Oct 2012 16:44:46 +0200
-Message-Id: <1349448287-18919-8-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
-References: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCHv3 0/8] perf diff: Factor diff command
+Date: Fri,  5 Oct 2012 16:44:39 +0200
+Message-Id: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we omit samples without symbols. This way we get
-different and confusing numbers for samples than from report
-command.
+hi,
+this is v3 of diff command changes proposed in here:
+https://lkml.org/lkml/2012/9/6/344
+
+Half of the previous patchset version (hists related) got already in
+together with changes of Namhyung Kim. This is what remained, plus
+additional small fixies from review.
+
+ - small delta format changes (Namhyung Kim)
+ - better error messages for -c option (Andi Kleen)
+
+Thanks a lot to Andi Kleen, who tested this and provided
+great feedback! I plan to address following in future:
+
+ - bucketizing per line instead of per function
+ - allow diff to specify vmlinux files per data
+ - recognize/compare same functions within 2 different kernels
+ - define groups of callers that have a combined cost including all
+   callees, use this as the diff unit
+   (http://marc.info/?l=linux-kernel&m=134919541904105&w=2)
+
+Attached patches:
+  1/8 perf diff: Add -b option for perf diff to display paired entries only
+  2/8 perf diff: Add ratio computation way to compare hist entries
+  3/8 perf diff: Add option to sort entries based on diff computation
+  4/8 perf diff: Add weighted diff computation way to compare hist entries
+  5/8 perf diff: Add -p option to display period values for hist entries
+  6/8 perf diff: Add -F option to display formula for computation
+  7/8 perf diff: Include samples without symbol in overall stats
+  8/8 perf diff: Display empty space for non paired samples
+
+Available also at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
+  perf/diff1
+
+wbr,
+jirka
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -34,26 +67,15 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-diff.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index dd9c064..b4db513 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -269,7 +269,7 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
- 		return -1;
- 	}
- 
--	if (al.filtered || al.sym == NULL)
-+	if (al.filtered)
- 		return 0;
- 
- 	if (hists__add_entry(&evsel->hists, &al, sample->period)) {
--- 
-1.7.11.4
-
+ tools/perf/Documentation/perf-diff.txt |  60 ++++++++++++++
+ tools/perf/builtin-diff.c              | 401 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/ui/hist.c                   | 134 ++++++++++++++++++++++++++----
+ tools/perf/ui/stdio/hist.c             |   2 +-
+ tools/perf/util/hist.h                 |   8 ++
+ tools/perf/util/sort.h                 |  18 ++++
+ 6 files changed, 600 insertions(+), 23 deletions(-)
