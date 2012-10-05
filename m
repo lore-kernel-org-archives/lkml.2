@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab2JEN1W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:27:22 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53965 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932155Ab2JEN1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:27:16 -0400
-Date: Fri, 5 Oct 2012 09:27:14 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Iain Fraser <iainkfraser@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: interrupt context
-Message-ID: <20121005132714.GB21358@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Iain Fraser <iainkfraser@gmail.com>, linux-kernel@vger.kernel.org
-References: <CA+bLfK5FPqFvU2xy7xKdV4LkAvmY6GAPFrB-4UBzn-cOunQ6Xg@mail.gmail.com>
- <CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
+	id S1756068Ab2JEN2B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:28:01 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:59923 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932634Ab2JEN1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 09:27:19 -0400
+X-IronPort-AV: E=Sophos;i="4.80,541,1344211200"; 
+   d="scan'208";a="14964350"
+Message-ID: <1349443636.20946.96.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 01/11] kexec: introduce kexec_ops struct
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: Jan Beulich <JBeulich@suse.com>, Andrew Cooper <Andrew.Cooper3@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+Date: Fri, 5 Oct 2012 14:27:16 +0100
+In-Reply-To: <20121001113046.GA2942@host-192-168-1-59.local.net-space.pl>
+References: <1348769198-29580-1-git-send-email-daniel.kiper@oracle.com>
+	 <1348769198-29580-2-git-send-email-daniel.kiper@oracle.com>
+	 <5065729C020000780009E63B@nat28.tlf.novell.com>
+	 <20121001113046.GA2942@host-192-168-1-59.local.net-space.pl>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 09:51:55AM +0100, Iain Fraser wrote:
+On Mon, 2012-10-01 at 12:36 +0100, Daniel Kiper wrote:
+> On Fri, Sep 28, 2012 at 08:49:16AM +0100, Jan Beulich wrote:
+> > >>> On 27.09.12 at 20:06, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > > Some kexec/kdump implementations (e.g. Xen PVOPS) on different archs could
+> > > not use default functions or require some changes in behavior of kexec/kdump
+> > > generic code. To cope with that problem kexec_ops struct was introduced.
+> > > It allows a developer to replace all or some functions and control some
+> > > functionality of kexec/kdump generic code.
+> >
+> > I'm not convinced that doing this at the architecture independent
+> > layer is really necessary/desirable. Nevertheless, if that's the right
+> > place, then everything else looks good to me, except for a
+> > cosmetic thing:
 > 
-> I understand the interrupts and softirq's run in interrupt context (
-> as opposed to process context ). But what I
-> don't understand is why you cannot sleep in interrupt context?
+> I do not like this patch, too. However, this is the simplest
+> solution. If you do not do that in that way then you must
+> duplicate most of kernel/kexec.c functionality in architecture
+> depndent files.
 
-Consider what happens with nested locks (and yes, we definitely need
-nested locks).  In order to prevent deadlocks, it is critical to have
-lock ordering; that is, you always take locks in a certain order.  If
-all processes take lock A, and then lock B, etc., then you won't have
-a problem where one process as lock A, and tries to get lock B, and
-another process has lock B, and tries to take lock A, and they wait
-for each other forever.
+It would have been a good idea to CC the maintainer of those files
+directly with at least this patch if not the whole series.
 
-If a process has a lock when it gets interrupted, the interrupt
-handler has no idea what locks may have already been taken.  So if a
-process has taken a mutex (or some other sleeping lock) B, and then
-the interrupt handler tries to take lock A, that's a perscription for
-deadlock.
+If they don't like this approach then there not much point in doing a
+thorough reviewing of the other 10 patches I don't think, since I would
+expect they will be required to change pretty substantially under those
+circumstances.
 
-In addition, you must never sleep while holding a (non-sleeping)
-spinlock.  If the interrupt handler has interrupted a process which is
-holding a spinlock, then it simply may not sleep without triggering
-all sorts of other problems.
+Ian.
 
-> What I have read it states that it doesn't have a process to schedule
-> out. But interrupts use the interrupted processes
-> kernel stack just like a syscall. So surely it is possible to sleep
-> using that stack. Understandably It would be unfair on the process
-> that blocked through no fault of its own.
-> 
-> Also if you are not allowed to sleep / schedule during interrupt
-> context. Then how does the system timer pre-empt processes by
-> calling schedule?
 
-The system timer sets the "need to reschedule" flag for that
-particular process.  Then as the system timer returns from the
-interrupt, there is a common code path which is checked on the way out
-of any interrupt handler or system call.  This code path checks to see
-if the "need to schedule" flag is set, and if so, at that point
-instead of returning to the original process, the kernel will simply
-return to some other process.
-
-I would suggest that you get a good introductory Linux book, such as
-"Linux Kernel Development" by Robert Love.  You might also check out
-the kernelnewbies.org website and mailing list, where you are more
-likely to get answers to basic introductory questions like this.
-
-Regards,
-
-						- Ted
