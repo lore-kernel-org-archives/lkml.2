@@ -1,414 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab2JEHZQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:25:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60089 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab2JEHZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:25:13 -0400
-Date: Fri, 5 Oct 2012 00:24:06 -0700
-From: tip-bot for Vince Weaver <vincent.weaver@maine.edu>
-Message-ID: <tip-e717bf4e4fe8adc519f25c4ff93ee50ed0a36710@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, gorcunov@openvz.org, lawrence.f.meadows@intel.com,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        vincent.weaver@maine.edu, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, lawrence.f.meadows@intel.com,
-        gorcunov@openvz.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        vincent.weaver@maine.edu, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.02.1209261405320.8398@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.02.1209261405320.8398@vincent-weaver-1.um.maine.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86:
-  Add support for Intel Xeon-Phi Knights Corner PMU
-Git-Commit-ID: e717bf4e4fe8adc519f25c4ff93ee50ed0a36710
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752438Ab2JEH0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:26:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53776 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab2JEH0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 03:26:39 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <dmitry.torokhov@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, <sourav.poddar@ti.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <b-cousson@ti.com>, <balbi@ti.com>,
+        <santosh.shilimkar@ti.com>
+Subject: [PATCHv4] Input: keypad: Add smsc ece1099 keypad driver
+Date: Fri, 5 Oct 2012 12:56:26 +0530
+Message-ID: <1349421986-12467-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 00:24:13 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e717bf4e4fe8adc519f25c4ff93ee50ed0a36710
-Gitweb:     http://git.kernel.org/tip/e717bf4e4fe8adc519f25c4ff93ee50ed0a36710
-Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Wed, 26 Sep 2012 14:12:52 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 4 Oct 2012 13:32:37 +0200
+From: G, Manjunath Kondaiah <manjugk@ti.com>
 
-perf/x86: Add support for Intel Xeon-Phi Knights Corner PMU
+SMSC ECE1099 is a keyboard scan or GPIO expansion device.The device
+supports a keypad scan matrix of 23*8.This driver uses this
+device as a keypad driver.
 
-The following patch adds perf_event support for the Xeon-Phi
-PMU, as documented in the "Intel Xeon Phi Coprocessor (codename:
-Knights Corner) Performance Monitoring Units" manual.
+Tested on omap5430 evm with 3.6-rc6 custom kernel.
 
-Even though it is a co-processor, a Phi runs a full Linux
-environment and can support performance counters.
-
-This is just barebones support, it does not add support for
-interesting new features such as the SPFLT intruction that
-allows starting/stopping events without entering the kernel.
-
-The PMU internally is just like that of an original Pentium, but
-a "P6-like" MSR interface is provided.  The interface is
-different enough from a real P6 that it's not easy (or
-practical) to re-use the code in  perf_event_p6.c
-
-Acked-by: Lawrence F Meadows <lawrence.f.meadows@intel.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: eranian@gmail.com
-Cc: Lawrence F <lawrence.f.meadows@intel.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1209261405320.8398@vincent-weaver-1.um.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/x86/include/asm/msr-index.h       |    5 +
- arch/x86/kernel/cpu/Makefile           |    2 +-
- arch/x86/kernel/cpu/perf_event.h       |    2 +
- arch/x86/kernel/cpu/perf_event_intel.c |    2 +
- arch/x86/kernel/cpu/perf_event_knc.c   |  248 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perfctr-watchdog.c |    4 +
- 6 files changed, 262 insertions(+), 1 deletions(-)
+This patch was posted as a series initially
+http://www.spinics.net/lists/linux-omap/msg78772.html
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 957ec87..07f96cb 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -121,6 +121,11 @@
- #define MSR_P6_EVNTSEL0			0x00000186
- #define MSR_P6_EVNTSEL1			0x00000187
+But the parent mfd driver has beeen already picked by mfd maintainer.
+So this patch can now posted as an standalone patch.
+
+v3->v4:
+Fix Dmitry's comments:
+ - Error patch(input_free_device/input_unregister_device).
+ - Few cleanups.
+ - Included INPUT_MATRIXKMAP
+ drivers/input/keyboard/Kconfig               |   12 +
+ drivers/input/keyboard/Makefile              |    1 +
+ drivers/input/keyboard/smsc-ece1099-keypad.c |  303 ++++++++++++++++++++++++++
+ 3 files changed, 316 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/keyboard/smsc-ece1099-keypad.c
+
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index c50fa75..e370b03 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -593,6 +593,18 @@ config KEYBOARD_TWL4030
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called twl4030_keypad.
  
-+#define MSR_KNC_PERFCTR0               0x00000020
-+#define MSR_KNC_PERFCTR1               0x00000021
-+#define MSR_KNC_EVNTSEL0               0x00000028
-+#define MSR_KNC_EVNTSEL1               0x00000029
++config KEYBOARD_SMSC
++       tristate "SMSC ECE1099 keypad support"
++       depends on I2C
++       select INPUT_MATRIXKMAP
++       help
++         Say Y here if your board use the smsc keypad controller
++         for omap5 defconfig. It's safe to say enable this
++         even on boards that don't use the keypad controller.
 +
- /* AMD64 MSRs. Not complete. See the architecture manual for a more
-    complete list. */
- 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index d30a6a9..a0e067d 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -32,7 +32,7 @@ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
- ifdef CONFIG_PERF_EVENTS
- obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd.o
--obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_p4.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o
- endif
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8b6defe..271d257 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -626,6 +626,8 @@ int p4_pmu_init(void);
- 
- int p6_pmu_init(void);
- 
-+int knc_pmu_init(void);
++         To compile this driver as a module, choose M here: the
++         module will be called smsc-ece1099-keypad.
 +
- #else /* CONFIG_CPU_SUP_INTEL */
- 
- static inline void reserve_ds_buffers(void)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 6bca492..324bb52 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1906,6 +1906,8 @@ __init int intel_pmu_init(void)
- 		switch (boot_cpu_data.x86) {
- 		case 0x6:
- 			return p6_pmu_init();
-+		case 0xb:
-+			return knc_pmu_init();
- 		case 0xf:
- 			return p4_pmu_init();
- 		}
-diff --git a/arch/x86/kernel/cpu/perf_event_knc.c b/arch/x86/kernel/cpu/perf_event_knc.c
+ config KEYBOARD_XTKBD
+ 	tristate "XT keyboard"
+ 	select SERIO
+diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+index 44e7600..0f2aa26 100644
+--- a/drivers/input/keyboard/Makefile
++++ b/drivers/input/keyboard/Makefile
+@@ -52,5 +52,6 @@ obj-$(CONFIG_KEYBOARD_TC3589X)		+= tc3589x-keypad.o
+ obj-$(CONFIG_KEYBOARD_TEGRA)		+= tegra-kbc.o
+ obj-$(CONFIG_KEYBOARD_TNETV107X)	+= tnetv107x-keypad.o
+ obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
++obj-$(CONFIG_KEYBOARD_SMSC)            += smsc-ece1099-keypad.o
+ obj-$(CONFIG_KEYBOARD_XTKBD)		+= xtkbd.o
+ obj-$(CONFIG_KEYBOARD_W90P910)		+= w90p910_keypad.o
+diff --git a/drivers/input/keyboard/smsc-ece1099-keypad.c b/drivers/input/keyboard/smsc-ece1099-keypad.c
 new file mode 100644
-index 0000000..7c46bfd
+index 0000000..a4a0dfe
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_knc.c
-@@ -0,0 +1,248 @@
-+/* Driver for Intel Xeon Phi "Knights Corner" PMU */
++++ b/drivers/input/keyboard/smsc-ece1099-keypad.c
+@@ -0,0 +1,303 @@
++/*
++ * SMSC_ECE1099 Keypad driver
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+#include <linux/perf_event.h>
-+#include <linux/types.h>
++#include <linux/i2c.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/input.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/jiffies.h>
++#include <linux/input/matrix_keypad.h>
++#include <linux/delay.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/smsc.h>
++#include <linux/of_gpio.h>
++#include <linux/of.h>
 +
-+#include "perf_event.h"
++#define KEYPRESS_TIME          200
 +
-+static const u64 knc_perfmon_event_map[] =
-+{
-+  [PERF_COUNT_HW_CPU_CYCLES]		= 0x002a,
-+  [PERF_COUNT_HW_INSTRUCTIONS]		= 0x0016,
-+  [PERF_COUNT_HW_CACHE_REFERENCES]	= 0x0028,
-+  [PERF_COUNT_HW_CACHE_MISSES]		= 0x0029,
-+  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x0012,
-+  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x002b,
++struct smsc_keypad {
++	struct smsc *smsc;
++	struct matrix_keymap_data *keymap_data;
++	unsigned int last_key_state[16];
++	unsigned int last_col;
++	unsigned int last_key_ms[16];
++	unsigned short *keymap;
++	struct i2c_client *client;
++	struct input_dev *input;
++	int rows, cols;
++	int row_shift;
++	bool no_autorepeat;
++	unsigned        irq;
++	struct device *dev;
 +};
 +
-+static __initconst u64 knc_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
++static void smsc_kp_scan(struct smsc_keypad *kp)
 +{
-+ [ C(L1D) ] = {
-+	[ C(OP_READ) ] = {
-+		/* On Xeon Phi event "0" is a valid DATA_READ          */
-+		/*   (L1 Data Cache Reads) Instruction.                */
-+		/* We code this as ARCH_PERFMON_EVENTSEL_INT as this   */
-+		/* bit will always be set in x86_pmu_hw_config().      */
-+		[ C(RESULT_ACCESS) ] = ARCH_PERFMON_EVENTSEL_INT,
-+						/* DATA_READ           */
-+		[ C(RESULT_MISS)   ] = 0x0003,	/* DATA_READ_MISS      */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0001,	/* DATA_WRITE          */
-+		[ C(RESULT_MISS)   ] = 0x0004,	/* DATA_WRITE_MISS     */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0011,	/* L1_DATA_PF1         */
-+		[ C(RESULT_MISS)   ] = 0x001c,	/* L1_DATA_PF1_MISS    */
-+	},
-+ },
-+ [ C(L1I ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x000c,	/* CODE_READ          */
-+		[ C(RESULT_MISS)   ] = 0x000e,	/* CODE_CACHE_MISS    */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0,
-+		[ C(RESULT_MISS)   ] = 0x10cb,	/* L2_READ_MISS */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x10cc,	/* L2_WRITE_HIT */
-+		[ C(RESULT_MISS)   ] = 0,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x10fc,	/* L2_DATA_PF2      */
-+		[ C(RESULT_MISS)   ] = 0x10fe,	/* L2_DATA_PF2_MISS */
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = ARCH_PERFMON_EVENTSEL_INT,
-+						/* DATA_READ */
-+						/* see note on L1 OP_READ */
-+		[ C(RESULT_MISS)   ] = 0x0002,	/* DATA_PAGE_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0001,	/* DATA_WRITE */
-+		[ C(RESULT_MISS)   ] = 0x0002,	/* DATA_PAGE_WALK */
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+		[ C(RESULT_MISS)   ] = 0x0,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x000c,	/* CODE_READ */
-+		[ C(RESULT_MISS)   ] = 0x000d,	/* CODE_PAGE_WALK */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+ [ C(BPU ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0012,	/* BRANCHES */
-+		[ C(RESULT_MISS)   ] = 0x002b,	/* BRANCHES_MISPREDICTED */
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
++	struct input_dev *input = kp->input;
++	int i, j;
++	int row, col;
++	int temp, code;
++	unsigned int new_state[16];
++	unsigned int bits_changed;
++	int this_ms;
 +
++	smsc_write(kp->dev, SMSC_KP_INT_MASK, 0x00);
++	smsc_write(kp->dev, SMSC_KP_INT_STAT, 0xFF);
 +
-+static u64 knc_pmu_event_map(int hw_event)
-+{
-+	return knc_perfmon_event_map[hw_event];
++	/* Scan for row and column */
++	for (i = 0; i < kp->cols; i++) {
++		smsc_write(kp->dev, SMSC_KP_OUT, SMSC_KSO_EVAL + i);
++		/* Read Row Status */
++		smsc_read(kp->dev, SMSC_KP_IN, &temp);
++		if (temp == 0xFF)
++			continue;
++
++		col = i;
++		for (j = 0; j < kp->rows; j++) {
++			if ((temp & 0x01) != 0x00) {
++				temp = temp >> 1;
++				continue;
++			}
++
++			row = j;
++			new_state[col] =  (1 << row);
++			bits_changed = kp->last_key_state[col] ^ new_state[col];
++			this_ms = jiffies_to_msecs(jiffies);
++			if (bits_changed != 0 || (!bits_changed &&
++					((this_ms - kp->last_key_ms[col]) >= KEYPRESS_TIME))) {
++				code = MATRIX_SCAN_CODE(row, col, kp->row_shift);
++				input_event(input, EV_MSC, MSC_SCAN, code);
++				input_report_key(input, kp->keymap[code], 1);
++				input_report_key(input, kp->keymap[code], 0);
++				kp->last_key_state[col] = new_state[col];
++				if (kp->last_col != col)
++					kp->last_key_state[kp->last_col] = 0;
++				kp->last_key_ms[col] = this_ms;
++			}
++			temp = temp >> 1;
++		}
++	}
++	input_sync(input);
++
++	smsc_write(kp->dev, SMSC_KP_INT_MASK, 0xFF);
++
++	/* Set up Low Power Mode (Wake-up) (0xFB) */
++	smsc_write(kp->dev, SMSC_WKUP_CTRL, SMSC_KP_SET_LOW_PWR);
++
++	/*Enable Keypad Scan (generate interrupt on key press) (0x40)*/
++	smsc_write(kp->dev, SMSC_KP_OUT, SMSC_KSO_ALL_LOW);
 +}
 +
-+static struct event_constraint knc_event_constraints[] =
++static irqreturn_t do_kp_irq(int irq, void *_kp)
 +{
-+	INTEL_EVENT_CONSTRAINT(0xc3, 0x1),	/* HWP_L2HIT */
-+	INTEL_EVENT_CONSTRAINT(0xc4, 0x1),	/* HWP_L2MISS */
-+	INTEL_EVENT_CONSTRAINT(0xc8, 0x1),	/* L2_READ_HIT_E */
-+	INTEL_EVENT_CONSTRAINT(0xc9, 0x1),	/* L2_READ_HIT_M */
-+	INTEL_EVENT_CONSTRAINT(0xca, 0x1),	/* L2_READ_HIT_S */
-+	INTEL_EVENT_CONSTRAINT(0xcb, 0x1),	/* L2_READ_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcc, 0x1),	/* L2_WRITE_HIT */
-+	INTEL_EVENT_CONSTRAINT(0xce, 0x1),	/* L2_STRONGLY_ORDERED_STREAMING_VSTORES_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xcf, 0x1),	/* L2_WEAKLY_ORDERED_STREAMING_VSTORE_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xd7, 0x1),	/* L2_VICTIM_REQ_WITH_DATA */
-+	INTEL_EVENT_CONSTRAINT(0xe3, 0x1),	/* SNP_HITM_BUNIT */
-+	INTEL_EVENT_CONSTRAINT(0xe6, 0x1),	/* SNP_HIT_L2 */
-+	INTEL_EVENT_CONSTRAINT(0xe7, 0x1),	/* SNP_HITM_L2 */
-+	INTEL_EVENT_CONSTRAINT(0xf1, 0x1),	/* L2_DATA_READ_MISS_CACHE_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf2, 0x1),	/* L2_DATA_WRITE_MISS_CACHE_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf6, 0x1),	/* L2_DATA_READ_MISS_MEM_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xf7, 0x1),	/* L2_DATA_WRITE_MISS_MEM_FILL */
-+	INTEL_EVENT_CONSTRAINT(0xfc, 0x1),	/* L2_DATA_PF2 */
-+	INTEL_EVENT_CONSTRAINT(0xfd, 0x1),	/* L2_DATA_PF2_DROP */
-+	INTEL_EVENT_CONSTRAINT(0xfe, 0x1),	/* L2_DATA_PF2_MISS */
-+	INTEL_EVENT_CONSTRAINT(0xff, 0x1),	/* L2_DATA_HIT_INFLIGHT_PF2 */
-+	EVENT_CONSTRAINT_END
-+};
++	struct smsc_keypad *kp = _kp;
++	int int_status;
 +
-+#define MSR_KNC_IA32_PERF_GLOBAL_STATUS		0x0000002d
-+#define MSR_KNC_IA32_PERF_GLOBAL_OVF_CONTROL	0x0000002e
-+#define MSR_KNC_IA32_PERF_GLOBAL_CTRL		0x0000002f
++	smsc_read(kp->dev, SMSC_KP_INT_STAT, &int_status);
++	if (int_status)
++		smsc_kp_scan(kp);
 +
-+#define KNC_ENABLE_COUNTER0			0x00000001
-+#define KNC_ENABLE_COUNTER1			0x00000002
-+
-+static void knc_pmu_disable_all(void)
-+{
-+	u64 val;
-+
-+	rdmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+	val &= ~(KNC_ENABLE_COUNTER0|KNC_ENABLE_COUNTER1);
-+	wrmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
++	return IRQ_HANDLED;
 +}
 +
-+static void knc_pmu_enable_all(int added)
++#ifdef CONFIG_OF
++static int __devinit smsc_keypad_parse_dt(struct device *dev,
++				struct smsc_keypad *kp)
 +{
-+	u64 val;
++	struct device_node *np = dev->of_node;
 +
-+	rdmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+	val |= (KNC_ENABLE_COUNTER0|KNC_ENABLE_COUNTER1);
-+	wrmsrl(MSR_KNC_IA32_PERF_GLOBAL_CTRL, val);
-+}
++	if (!np) {
++		dev_err(dev, "missing DT data");
++		return -EINVAL;
++	}
 +
-+static inline void
-+knc_pmu_disable_event(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 val;
++	of_property_read_u32(np, "keypad,num-rows", &kp->rows);
++	of_property_read_u32(np, "keypad,num-columns", &kp->cols);
++	if (!kp->rows || !kp->cols) {
++		dev_err(dev, "number of keypad rows/columns not specified\n");
++		return -EINVAL;
++	}
 +
-+	val = hwc->config;
-+	if (cpuc->enabled)
-+		val &= ~ARCH_PERFMON_EVENTSEL_ENABLE;
-+
-+	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
-+}
-+
-+static void knc_pmu_enable_event(struct perf_event *event)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct hw_perf_event *hwc = &event->hw;
-+	u64 val;
-+
-+	val = hwc->config;
-+	if (cpuc->enabled)
-+		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
-+
-+	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
-+}
-+
-+PMU_FORMAT_ATTR(event,	"config:0-7"	);
-+PMU_FORMAT_ATTR(umask,	"config:8-15"	);
-+PMU_FORMAT_ATTR(edge,	"config:18"	);
-+PMU_FORMAT_ATTR(inv,	"config:23"	);
-+PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+
-+static struct attribute *intel_knc_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+	NULL,
-+};
-+
-+static __initconst struct x86_pmu knc_pmu = {
-+	.name			= "knc",
-+	.handle_irq		= x86_pmu_handle_irq,
-+	.disable_all		= knc_pmu_disable_all,
-+	.enable_all		= knc_pmu_enable_all,
-+	.enable			= knc_pmu_enable_event,
-+	.disable		= knc_pmu_disable_event,
-+	.hw_config		= x86_pmu_hw_config,
-+	.schedule_events	= x86_schedule_events,
-+	.eventsel		= MSR_KNC_EVNTSEL0,
-+	.perfctr		= MSR_KNC_PERFCTR0,
-+	.event_map		= knc_pmu_event_map,
-+	.max_events             = ARRAY_SIZE(knc_perfmon_event_map),
-+	.apic			= 1,
-+	.max_period		= (1ULL << 31) - 1,
-+	.version		= 0,
-+	.num_counters		= 2,
-+	/* in theory 40 bits, early silicon is buggy though */
-+	.cntval_bits		= 32,
-+	.cntval_mask		= (1ULL << 32) - 1,
-+	.get_event_constraints	= x86_get_event_constraints,
-+	.event_constraints	= knc_event_constraints,
-+	.format_attrs		= intel_knc_formats_attr,
-+};
-+
-+__init int knc_pmu_init(void)
-+{
-+	x86_pmu = knc_pmu;
-+
-+	memcpy(hw_cache_event_ids, knc_hw_cache_event_ids, 
-+		sizeof(hw_cache_event_ids));
++	if (of_property_read_bool(np, "linux,input-no-autorepeat"))
++		kp->no_autorepeat = true;
 +
 +	return 0;
 +}
-diff --git a/arch/x86/kernel/cpu/perfctr-watchdog.c b/arch/x86/kernel/cpu/perfctr-watchdog.c
-index 966512b..2e8caf0 100644
---- a/arch/x86/kernel/cpu/perfctr-watchdog.c
-+++ b/arch/x86/kernel/cpu/perfctr-watchdog.c
-@@ -56,6 +56,8 @@ static inline unsigned int nmi_perfctr_msr_to_bit(unsigned int msr)
- 		switch (boot_cpu_data.x86) {
- 		case 6:
- 			return msr - MSR_P6_PERFCTR0;
-+		case 11:
-+			return msr - MSR_KNC_PERFCTR0;
- 		case 15:
- 			return msr - MSR_P4_BPU_PERFCTR0;
- 		}
-@@ -82,6 +84,8 @@ static inline unsigned int nmi_evntsel_msr_to_bit(unsigned int msr)
- 		switch (boot_cpu_data.x86) {
- 		case 6:
- 			return msr - MSR_P6_EVNTSEL0;
-+		case 11:
-+			return msr - MSR_KNC_EVNTSEL0;
- 		case 15:
- 			return msr - MSR_P4_BSU_ESCR0;
- 		}
++#else
++static inline int smsc_keypad_parse_dt(struct device *dev,
++				struct smsc_keypad *kp)
++{
++	return -ENOSYS;
++}
++#endif
++
++static int __devinit
++smsc_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct smsc *smsc = dev_get_drvdata(pdev->dev.parent);
++	struct input_dev *input;
++	struct smsc_keypad *kp;
++	int ret = 0;
++	int i, max_keys, row_shift;
++	int irq;
++	int addr;
++
++	kp = devm_kzalloc(dev, sizeof(*kp), GFP_KERNEL);
++
++	input = input_allocate_device();
++	if (!kp || !input) {
++		ret = -ENOMEM;
++		goto err1;
++	}
++
++	ret = smsc_keypad_parse_dt(&pdev->dev, kp);
++	if (ret)
++		goto err1;
++
++	/* Get the debug Device */
++	kp->input = input;
++	kp->smsc = smsc;
++	kp->irq = platform_get_irq(pdev, 0);
++	kp->dev = dev;
++
++	/* setup input device */
++	 __set_bit(EV_KEY, input->evbit);
++
++	/* Enable auto repeat feature of Linux input subsystem */
++	if (!kp->no_autorepeat)
++		__set_bit(EV_REP, input->evbit);
++
++	input_set_capability(input, EV_MSC, MSC_SCAN);
++	input->name             = "SMSC Keypad";
++	input->phys             = "smsc_keypad/input0";
++	input->dev.parent       = &pdev->dev;
++	input->id.bustype       = BUS_HOST;
++	input->id.vendor        = 0x0001;
++	input->id.product       = 0x0001;
++	input->id.version       = 0x0003;
++
++	/* Mask all GPIO interrupts (0x37-0x3B) */
++	for (addr = SMSC_GPIO_INT_MASK_START;
++			addr < SMSC_GPIO_INT_MASK_START + 4; addr++)
++		smsc_write(dev, addr, 0);
++
++	/* Set all outputs high (0x05-0x09) */
++	for (addr = SMSC_GPIO_DATA_OUT_START;
++			addr < SMSC_GPIO_DATA_OUT_START + 4; addr++)
++		smsc_write(dev, addr, 0xff);
++
++	/* Clear all GPIO interrupts (0x32-0x36) */
++	for (addr = SMSC_GPIO_INT_STAT_START;
++			addr < SMSC_GPIO_INT_STAT_START + 4; addr++)
++		smsc_write(dev, addr, 0xff);
++
++	/* Configure the smsc pins as Keyboard scan Input */
++	for (i = 0; i <= kp->rows; i++) {
++		addr = 0x12 + i;
++		smsc_write(dev, addr, SMSC_KP_KSI);
++	}
++
++	/* Configure the smsc pins as Keyboard scan output */
++	for (i = 0; i <= kp->cols; i++) {
++		addr = 0x1A + i;
++		smsc_write(dev, addr, SMSC_KP_KSO);
++	}
++
++	smsc_write(dev, SMSC_KP_INT_STAT, SMSC_KP_SET_HIGH);
++	smsc_write(dev, SMSC_WKUP_CTRL, SMSC_KP_SET_LOW_PWR);
++	smsc_write(dev, SMSC_KP_OUT, SMSC_KSO_ALL_LOW);
++
++	row_shift = get_count_order(kp->cols);
++	max_keys = kp->rows << row_shift;
++
++	kp->row_shift = row_shift;
++	kp->keymap = devm_kzalloc(dev, max_keys * sizeof(kp->keymap[0]),
++					GFP_KERNEL);
++	if (!kp->keymap) {
++		dev_err(&pdev->dev, "Not enough memory for keymap\n");
++		ret = -ENOMEM;
++	}
++
++	ret = matrix_keypad_build_keymap(NULL, NULL, kp->rows,
++			kp->cols, kp->keymap, input);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to build keymap\n");
++		goto err1;
++	}
++
++	/*
++	* This ISR will always execute in kernel thread context because of
++	* the need to access the SMSC over the I2C bus.
++	*/
++	ret = devm_request_threaded_irq(dev, kp->irq, NULL, do_kp_irq,
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT, pdev->name, kp);
++	if (ret) {
++		dev_dbg(&pdev->dev, "request_irq failed for irq no=%d\n",
++			irq);
++		goto err1;
++	}
++
++	/* Enable smsc keypad interrupts */
++	ret = smsc_write(dev, SMSC_KP_INT_MASK, 0xff);
++	if (ret < 0)
++		goto err2;
++
++	ret = input_register_device(input);
++	if (ret) {
++		dev_err(kp->dev,
++			"Unable to register twl4030 keypad device\n");
++		goto err2;
++	}
++
++	return 0;
++
++err2:
++	free_irq(kp->irq, kp);
++err1:
++	input_free_device(input);
++	return ret;
++}
++
++static int __devexit smsc_remove(struct platform_device *pdev)
++{
++	struct smsc_keypad *kp = platform_get_drvdata(pdev);
++	input_unregister_device(kp->input);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id smsc_keypad_dt_match[] = {
++	{ .compatible = "smsc,keypad" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, smsc_keypad_dt_match);
++#endif
++
++static struct platform_driver smsc_driver = {
++	.driver = {
++		.name	= "smsc-keypad",
++		.of_match_table = of_match_ptr(smsc_keypad_dt_match),
++		.owner  = THIS_MODULE,
++	},
++	.probe		= smsc_probe,
++	.remove		= __devexit_p(smsc_remove),
++};
++
++module_platform_driver(smsc_driver);
++
++MODULE_AUTHOR("G Kondaiah Manjunath <manjugk@ti.com>");
++MODULE_DESCRIPTION("SMSC ECE1099 Keypad driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.1
+
