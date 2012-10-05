@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2JEVoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 17:44:00 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63580 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab2JEVn6 (ORCPT
+	id S1757583Ab2JEVoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 17:44:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53589 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754292Ab2JEVoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 17:43:58 -0400
+	Fri, 5 Oct 2012 17:44:03 -0400
+X-Sasl-enc: sQso5FuZkp1WIZPFvLV6wK18HkIoI/ojUq0LmsfpiL6b 1349473442
+Date: Fri, 5 Oct 2012 18:43:58 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: david@lang.hm
+Cc: Emmanuel Benisty <benisty.e@gmail.com>, Kurt H Maier <khm@sdf.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
+ callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use
+ request_firmware_nowait()
+Message-ID: <20121005214358.GA12736@khazad-dum.debian.net>
+References: <fa.90I1W/wmSTgRFXVG67o7Pp3+rKA@ifi.uio.no>
+ <fa.Oszo+r/ZqdTxC2FHqqg+CRVMJ5Y@ifi.uio.no>
+ <fa.CoxzZZId9dJONv353c+pFG/HO8E@ifi.uio.no>
+ <fa.ixJ/7D7BnMK8xp7CwikX7jbmnKU@ifi.uio.no>
+ <fa./ubRQE7P/T+ateohnOKdDxOFhL4@ifi.uio.no>
+ <fa.lpiFTa5CtuIkUf2Z5eJ0YlsNwYI@ifi.uio.no>
+ <20121004145022.GA73321@intma.in>
+ <CA+i8gKLMtvsR8_aXiNr_Dh8oBw__pSn__ExzRyjG80f4L1u2ng@mail.gmail.com>
+ <alpine.DEB.2.02.1210051316180.13407@asgard.lang.hm>
 MIME-Version: 1.0
-In-Reply-To: <877gr4r40b.fsf@xmission.com>
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
-	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
-	<20121003165105.GA30214@jshin-Toonie>
-	<CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com>
-	<20121004164630.GB2244@phenom.dumpdata.com>
-	<CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com>
-	<871uhcsk93.fsf@xmission.com>
-	<CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com>
-	<87ehlcr4et.fsf@xmission.com>
-	<CAE9FiQU_PSv6afXLcQ8ohrn1wqoVttO+u5MA5xBEE4jJRVx9Mw@mail.gmail.com>
-	<877gr4r40b.fsf@xmission.com>
-Date: Fri, 5 Oct 2012 14:43:57 -0700
-X-Google-Sender-Auth: u6J_bD1ElgRtoNCe8XMSlGkNj-Q
-Message-ID: <CAE9FiQUW3uvkooBxqEdSxV7T8h4=5qonoLbJCPGT0kTceqSNRw@mail.gmail.com>
-Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1210051316180.13407@asgard.lang.hm>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 5, 2012 at 2:41 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
->
->> with bzImage or vmlinux?
->
-> bzImage I presume.  Certainly the bzImage has lost it's 896M limit,
-> which is where ultimiately the 896M limite came from.
+On Fri, 05 Oct 2012, david@lang.hm wrote:
+> >On Thu, Oct 4, 2012 at 9:50 PM, Kurt H Maier <khm@sdf.org> wrote:
+> >>On Wed, Oct 03, 2012 at 07:27:01PM +0000, Al Viro wrote:
+> >>>Al, that -><- close to volunteering for maintaining that FPOS kernel-side...
+> >>
+> >>This would be fantastic.
+> >
+> >And that would solve this very much worrying issue [1], quoting:
+> >"(Yes, udev on non-systemd systems is in our eyes a dead end, in case you
+> >haven't noticed it yet. I am looking forward to the day when we can drop
+> >that support entirely.)"
+> >
+> >[1] http://lists.freedesktop.org/archives/systemd-devel/2012-August/006066.html
+> 
+> I think it's worth noting that even though udev 189 was recently
+> released, the not-yet-released Ubuntu 10.10 is going to be including
+> udev 175.
 
-they are using updated kexec-tools ?
+So is Debian.
 
-last time when i checked the code for kexec-tools
-found the 896M problem was from kexec-tools bzimage support.
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
