@@ -1,825 +1,1070 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2JEMDz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 08:03:55 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:50349 "EHLO
+	id S932391Ab2JEME0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 08:04:26 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:50376 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab2JEMDx (ORCPT
+	with ESMTP id S932193Ab2JEMEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 08:03:53 -0400
-X-AuditID: cbfee61a-b7f726d000000ec7-a7-506ecca86b79
+	Fri, 5 Oct 2012 08:04:25 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-0a-506eccc75464
 From: =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>
 To: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
         gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com,
         jooyoung.hwang@samsung.com
-Subject: [PATCH 12/16] f2fs: add core directory operations
-Date: Fri, 05 Oct 2012 21:03:51 +0900
-Message-id: <001301cda2f1$7c46b880$74d42980$%kim@samsung.com>
+Subject: [PATCH 13/16] f2fs: add xattr and acl functionalities
+Date: Fri, 05 Oct 2012 21:04:23 +0900
+Message-id: <001401cda2f1$8f16b320$ad441960$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2i8XNXfiFrUJpCQeiCXHcDl4i1ng==
+Thread-index: Ac2i8Y7vkfvKKU2/RPq5zE3XClEIQg==
 Content-language: ko
-x-cr-hashedpuzzle: D7kq F1sH HXfB TI1/ Ug9T hKFE mpeF uYzb AA/71A== ABjlDg==
- ACilVg== ADJBSQ== AEIi2Q== AEMeQA== AE2kWA==
- AHEaGQ==;8;YwBoAHUAcgAuAGwAZQBlAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAYwBtADIAMgA0AC4AbABlAGUAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBnAHIAZQBnAGsAaABAAGwAaQBuAHUAeABmAG8AdQBuAGQAYQB0AGkAbwBuAC4AbwByAGcAOwBqAGEAZQBnAGUAdQBrAC4AawBpAG0AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAG8AbwB5AG8AdQBuAGcALgBoAHcAYQBuAGcAQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAdAB5AHQAcwBvAEAAbQBpAHQALgBlAGQAdQA7AHYAaQByAG8AQAB6AGUAbgBpAHYALgBsAGkAbgB1AHgALgBvAHIAZwAuAHUAawA=;Sosha1_v1;7;{FBDC9BDA-AEBC-4B98-873D-6A233E8AEBF2};agBhAGUAZwBlAHUAawAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Fri,
- 05 Oct 2012 12:03:37
- GMT;WwBQAEEAVABDAEgAIAAxADIALwAxADYAXQAgAGYAMgBmAHMAOgAgAGEAZABkACAAYwBvAHIAZQAgAGQAaQByAGUAYwB0AG8AcgB5ACAAbwBwAGUAcgBhAHQAaQBvAG4AcwA=
-x-cr-puzzleid: {FBDC9BDA-AEBC-4B98-873D-6A233E8AEBF2}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jAd0VZ/ICDH7PlLC4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZz39NZCxoWMxY8eptA3MD44Emxi5GDg4JAROJPc0sXYycQKaY
-	xIV769m6GLk4hAQWMUoc+vMCLCEkMJ9J4uerJJB6NgELifbL7iA1IgL3GCUuLZvJBFIjLGAl
-	cevtR2YQm0VAVeLH3ydgcV4BW4nFr9axQNiCEj8m32MBmcMsoC4xZUouSJhZQF5i85q3zBDn
-	qEs8+qsLEhYR0JP4uHktC0SJiMS+F+8YQdZKCMxgl+i884gN4mZTiSe7J7NPYBSchWTDLIQN
-	s5BsmIVk1AJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYweH6TGoH48oGi0OMAhyMSjy8
-	CQ9zA4RYE8uKK3MPMUpwMCuJ8FrPzgsQ4k1JrKxKLcqPLyrNSS0+xCjNwaIkztvskRIgJJCe
-	WJKanZpakFoEk2Xi4JRqYKxYsXzxStnZ1w/Gr+rk9j1xhTWO48u99KCldalXw7y3zHXZV8b0
-	/VDSTsVLtVfP3Kst2BEdMV3sgdSOM8duqrM2sykwy/3n9nmxfteKC7mdUgdLbwuZruW9mF5j
-	fsXpqMnabcHVKctV4uZLFC6dtYnRpixjXlh626QpnEqXJvc4Szecu7LvsrESS3FGoqEWc1Fx
-	IgAJ3fCfUwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jAd3jZ/ICDO59Mba4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZV67kFDTeYKz42TOXtYHx+BrGLkZODgkBE4kpu/qZIGwxiQv3
+	1rN1MXJxCAksYpRYsmkVO4Qzn0ni7+UTzF2MHBxsAhYS7ZfdQeIiAvcYJS4tmwnWLSxgJ3Fm
+	6wYwm0VAVaKn/xM7iM0rYCuxaeppNghbUOLH5HssIHOYBdQlpkzJBQkzC8hLbF7zFmy8BFD4
+	0V9dkLCIgJ7E8d032SBKRCT2vXjHOIGRfxaSQbMQBs1CMmgWko4FjCyrGEVTC5ILipPScw31
+	ihNzi0vz0vWS83M3MYLD75nUDsaVDRaHGAU4GJV4eBMe5gYIsSaWFVfmHmKU4GBWEuG1np0X
+	IMSbklhZlVqUH19UmpNafIhRmoNFSZy32SMlQEggPbEkNTs1tSC1CCbLxMEp1cDIcT2v8oWA
+	Ax9/F5Pl3Md7TpTJ798dYbngmfWKy9xMC2eYzNjc+FFLec2kLot51R8qZnNwHzJMCRK35Utu
+	fbrELWjC8s7HOoYxe94fkIvm1ti3wbA4Kv3dZW859b8a8fNnhi5c/9bNtpadd/l0k/mbD7Dx
+	bxMRjdnQp1jR+lVY2oB9c4CWnJUSS3FGoqEWc1FxIgDQnlfuOwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds core functions to find, add, delete, and link dentries.
+This implements xattr and acl functionalities.
 
+- F2FS uses a node page to contain use extended attributes.
+
+Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/dir.c  |  657 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/hash.c |   98 +++++++++
- 2 files changed, 755 insertions(+)
- create mode 100644 fs/f2fs/dir.c
- create mode 100644 fs/f2fs/hash.c
+ fs/f2fs/acl.c   |  402 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/acl.h   |   57 ++++++++
+ fs/f2fs/xattr.c |  387 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/xattr.h |  142 ++++++++++++++++++++
+ 4 files changed, 988 insertions(+)
+ create mode 100644 fs/f2fs/acl.c
+ create mode 100644 fs/f2fs/acl.h
+ create mode 100644 fs/f2fs/xattr.c
+ create mode 100644 fs/f2fs/xattr.h
 
-diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
 new file mode 100644
-index 0000000..edc0610
+index 0000000..f3682a5
 --- /dev/null
-+++ b/fs/f2fs/dir.c
-@@ -0,0 +1,657 @@
++++ b/fs/f2fs/acl.c
+@@ -0,0 +1,402 @@
 +/**
-+ * fs/f2fs/dir.c
++ * fs/f2fs/acl.c
 + *
 + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 + *             http://www.samsung.com/
++ *
++ * Portions of this code from linux/fs/ext2/acl.c
++ *
++ * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/fs.h>
 +#include <linux/f2fs_fs.h>
 +#include "f2fs.h"
++#include "xattr.h"
 +#include "acl.h"
 +
-+static unsigned long dir_blocks(struct inode *inode)
++#define get_inode_mode(i)	((is_inode_flag_set(F2FS_I(i), FI_ACL_MODE)) ? \
++					(F2FS_I(i)->i_acl_mode) : ((i)->i_mode))
++
++static inline size_t f2fs_acl_size(int count)
 +{
-+	return ((unsigned long long) (i_size_read(inode) + PAGE_CACHE_SIZE - 1))
-+							>> PAGE_CACHE_SHIFT;
-+}
-+
-+static unsigned int dir_buckets(unsigned int level)
-+{
-+	if (level < MAX_DIR_HASH_DEPTH / 2)
-+		return 1 << level;
-+	else
-+		return 1 << ((MAX_DIR_HASH_DEPTH / 2) - 1);
-+}
-+
-+static unsigned int bucket_blocks(unsigned int level)
-+{
-+	if (level < MAX_DIR_HASH_DEPTH / 2)
-+		return 2;
-+	else
-+		return 4;
-+}
-+
-+static unsigned char f2fs_filetype_table[F2FS_FT_MAX] = {
-+	[F2FS_FT_UNKNOWN]	= DT_UNKNOWN,
-+	[F2FS_FT_REG_FILE]	= DT_REG,
-+	[F2FS_FT_DIR]		= DT_DIR,
-+	[F2FS_FT_CHRDEV]	= DT_CHR,
-+	[F2FS_FT_BLKDEV]	= DT_BLK,
-+	[F2FS_FT_FIFO]		= DT_FIFO,
-+	[F2FS_FT_SOCK]		= DT_SOCK,
-+	[F2FS_FT_SYMLINK]	= DT_LNK,
-+};
-+
-+#define S_SHIFT 12
-+static unsigned char f2fs_type_by_mode[S_IFMT >> S_SHIFT] = {
-+	[S_IFREG >> S_SHIFT]	= F2FS_FT_REG_FILE,
-+	[S_IFDIR >> S_SHIFT]	= F2FS_FT_DIR,
-+	[S_IFCHR >> S_SHIFT]	= F2FS_FT_CHRDEV,
-+	[S_IFBLK >> S_SHIFT]	= F2FS_FT_BLKDEV,
-+	[S_IFIFO >> S_SHIFT]	= F2FS_FT_FIFO,
-+	[S_IFSOCK >> S_SHIFT]	= F2FS_FT_SOCK,
-+	[S_IFLNK >> S_SHIFT]	= F2FS_FT_SYMLINK,
-+};
-+
-+static void set_de_type(struct f2fs_dir_entry *de, struct inode *inode)
-+{
-+	mode_t mode = inode->i_mode;
-+	de->file_type = f2fs_type_by_mode[(mode & S_IFMT) >> S_SHIFT];
-+}
-+
-+static unsigned long dir_block_index(unsigned int level, unsigned int idx)
-+{
-+	unsigned long i;
-+	unsigned long bidx = 0;
-+
-+	for (i = 0; i < level; i++)
-+		bidx += dir_buckets(i) * bucket_blocks(i);
-+	bidx += idx * bucket_blocks(level);
-+	return bidx;
-+}
-+
-+static bool early_match_name(const char *name, int namelen,
-+			f2fs_hash_t namehash, struct f2fs_dir_entry *de)
-+{
-+	if (le16_to_cpu(de->name_len) != namelen)
-+		return false;
-+
-+	if (le32_to_cpu(de->hash_code) != namehash)
-+		return false;
-+
-+	return true;
-+}
-+
-+static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
-+			const char *name, int namelen, int *max_slots,
-+			f2fs_hash_t namehash, struct page **res_page)
-+{
-+	struct f2fs_dir_entry *de;
-+	unsigned long bit_pos, end_pos, next_pos;
-+	struct f2fs_dentry_block *dentry_blk = kmap(dentry_page);
-+	int slots;
-+
-+	bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+					NR_DENTRY_IN_BLOCK, 0);
-+	while (bit_pos < NR_DENTRY_IN_BLOCK) {
-+		de = &dentry_blk->dentry[bit_pos];
-+		slots = (le16_to_cpu(de->name_len) + F2FS_NAME_LEN - 1) /
-+							F2FS_NAME_LEN;
-+
-+		if (early_match_name(name, namelen, namehash, de)) {
-+			if (!memcmp(dentry_blk->filename[bit_pos],
-+							name, namelen)) {
-+				*res_page = dentry_page;
-+				goto found;
-+			}
-+		}
-+		next_pos = bit_pos + slots;
-+		bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+				NR_DENTRY_IN_BLOCK, next_pos);
-+		if (bit_pos >= NR_DENTRY_IN_BLOCK)
-+			end_pos = NR_DENTRY_IN_BLOCK;
-+		else
-+			end_pos = bit_pos;
-+		if (*max_slots < end_pos - next_pos)
-+			*max_slots = end_pos - next_pos;
-+	}
-+
-+	de = NULL;
-+	kunmap(dentry_page);
-+found:
-+	return de;
-+}
-+
-+static struct f2fs_dir_entry *find_in_level(struct inode *dir,
-+		unsigned int level, const char *name, int namelen,
-+			f2fs_hash_t namehash, struct page **res_page)
-+{
-+	int s = (namelen + F2FS_NAME_LEN - 1) / F2FS_NAME_LEN;
-+	unsigned int nbucket, nblock;
-+	unsigned int bidx, end_block;
-+	struct page *dentry_page;
-+	struct f2fs_dir_entry *de = NULL;
-+	bool room = false;
-+	int max_slots = 0;
-+
-+	BUG_ON(level > MAX_DIR_HASH_DEPTH);
-+
-+	nbucket = dir_buckets(level);
-+	nblock = bucket_blocks(level);
-+
-+	bidx = dir_block_index(level, namehash % nbucket);
-+	end_block = bidx + nblock;
-+
-+	for (; bidx < end_block; bidx++) {
-+		/* no need to allocate new dentry pages to all the indices */
-+		dentry_page = find_data_page(dir, bidx);
-+		if (IS_ERR(dentry_page)) {
-+			room = true;
-+			continue;
-+		}
-+
-+		de = find_in_block(dentry_page, name, namelen,
-+					&max_slots, namehash, res_page);
-+		if (de)
-+			break;
-+
-+		if (max_slots >= s)
-+			room = true;
-+		f2fs_put_page(dentry_page, 0);
-+	}
-+
-+	if (!de && room && F2FS_I(dir)->chash != namehash) {
-+		F2FS_I(dir)->chash = namehash;
-+		F2FS_I(dir)->clevel = level;
-+	}
-+
-+	return de;
-+}
-+
-+/*
-+ * Find an entry in the specified directory with the wanted name.
-+ * It returns the page where the entry was found (as a parameter - res_page),
-+ * and the entry itself. Page is returned mapped and unlocked.
-+ * Entry is guaranteed to be valid.
-+ */
-+struct f2fs_dir_entry *f2fs_find_entry(struct inode *dir,
-+			struct qstr *child, struct page **res_page)
-+{
-+	const char *name = child->name;
-+	int namelen = child->len;
-+	unsigned long npages = dir_blocks(dir);
-+	struct f2fs_dir_entry *de = NULL;
-+	f2fs_hash_t name_hash;
-+	unsigned int max_depth;
-+	unsigned int level;
-+
-+	if (npages == 0)
-+		return NULL;
-+
-+	*res_page = NULL;
-+
-+	name_hash = f2fs_dentry_hash(name, namelen);
-+	max_depth = F2FS_I(dir)->current_depth;
-+
-+	for (level = 0; level < max_depth; level++) {
-+		de = find_in_level(dir, level, name,
-+				namelen, name_hash, res_page);
-+		if (de)
-+			break;
-+	}
-+	if (!de && F2FS_I(dir)->chash != name_hash) {
-+		F2FS_I(dir)->chash = name_hash;
-+		F2FS_I(dir)->clevel = level - 1;
-+	}
-+	return de;
-+}
-+
-+struct f2fs_dir_entry *f2fs_parent_dir(struct inode *dir, struct page **p)
-+{
-+	struct page *page = NULL;
-+	struct f2fs_dir_entry *de = NULL;
-+	struct f2fs_dentry_block *dentry_blk = NULL;
-+
-+	page = get_lock_data_page(dir, 0);
-+	if (IS_ERR(page))
-+		return NULL;
-+
-+	dentry_blk = kmap(page);
-+	de = &dentry_blk->dentry[1];
-+	*p = page;
-+	unlock_page(page);
-+	return de;
-+}
-+
-+void f2fs_set_link(struct inode *dir, struct f2fs_dir_entry *de,
-+		struct page *page, struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
-+
-+	mutex_lock_op(sbi, DENTRY_OPS);
-+	lock_page(page);
-+	wait_on_page_writeback(page);
-+	de->ino = cpu_to_le32(inode->i_ino);
-+	set_de_type(de, inode);
-+	kunmap(page);
-+	set_page_dirty(page);
-+	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
-+	mark_inode_dirty(dir);
-+	f2fs_put_page(page, 1);
-+	mutex_unlock_op(sbi, DENTRY_OPS);
-+}
-+
-+void init_dent_inode(struct dentry *dentry, struct page *ipage)
-+{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	struct f2fs_node *rn;
-+
-+	if (IS_ERR(ipage))
-+		return;
-+
-+	wait_on_page_writeback(ipage);
-+
-+	/* copy dentry info. to this inode page */
-+	rn = (struct f2fs_node *)page_address(ipage);
-+	rn->i.i_pino = cpu_to_le32(dir->i_ino);
-+	rn->i.i_namelen = cpu_to_le32(dentry->d_name.len);
-+	memcpy(rn->i.i_name, dentry->d_name.name, dentry->d_name.len);
-+	set_page_dirty(ipage);
-+}
-+
-+static int init_inode_metadata(struct inode *inode, struct dentry *dentry)
-+{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+
-+	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
-+		int err;
-+		err = new_inode_page(inode, dentry);
-+		if (err)
-+			return err;
-+
-+		if (S_ISDIR(inode->i_mode)) {
-+			err = f2fs_make_empty(inode, dir);
-+			if (err) {
-+				remove_inode_page(inode);
-+				return err;
-+			}
-+		}
-+
-+		err = f2fs_init_acl(inode, dir);
-+		if (err) {
-+			remove_inode_page(inode);
-+			return err;
-+		}
++	if (count <= 4) {
++		return sizeof(struct f2fs_acl_header) +
++			count * sizeof(struct f2fs_acl_entry_short);
 +	} else {
-+		struct page *ipage;
-+		ipage = get_node_page(F2FS_SB(dir->i_sb), inode->i_ino);
-+		if (IS_ERR(ipage))
-+			return PTR_ERR(ipage);
-+		init_dent_inode(dentry, ipage);
-+		f2fs_put_page(ipage, 1);
++		return sizeof(struct f2fs_acl_header) +
++			4 * sizeof(struct f2fs_acl_entry_short) +
++			(count - 4) * sizeof(struct f2fs_acl_entry);
 +	}
-+	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK)) {
-+		inc_nlink(inode);
-+		f2fs_write_inode(inode, NULL);
-+	}
-+	return 0;
 +}
 +
-+static void update_parent_metadata(struct inode *dir, struct inode *inode,
-+						unsigned int current_depth)
++static inline int f2fs_acl_count(size_t size)
 +{
-+	bool need_dir_update = false;
++	ssize_t s;
++	size -= sizeof(struct f2fs_acl_header);
++	s = size - 4 * sizeof(struct f2fs_acl_entry_short);
++	if (s < 0) {
++		if (size % sizeof(struct f2fs_acl_entry_short))
++			return -1;
++		return size / sizeof(struct f2fs_acl_entry_short);
++	} else {
++		if (s % sizeof(struct f2fs_acl_entry))
++			return -1;
++		return s / sizeof(struct f2fs_acl_entry) + 4;
++	}
++}
 +
-+	if (is_inode_flag_set(F2FS_I(inode), FI_NEW_INODE)) {
-+		if (S_ISDIR(inode->i_mode)) {
-+			inc_nlink(dir);
-+			need_dir_update = true;
++static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t size)
++{
++	int i, count;
++	struct posix_acl *acl;
++	struct f2fs_acl_header *hdr = (struct f2fs_acl_header *)value;
++	struct f2fs_acl_entry *entry = (struct f2fs_acl_entry *)(hdr + 1);
++	const char *end = value + size;
++
++	if (hdr->a_version != cpu_to_le32(F2FS_ACL_VERSION))
++		return ERR_PTR(-EINVAL);
++
++	count = f2fs_acl_count(size);
++	if (count < 0)
++		return ERR_PTR(-EINVAL);
++	if (count == 0)
++		return NULL;
++
++	acl = posix_acl_alloc(count, GFP_KERNEL);
++	if (!acl)
++		return ERR_PTR(-ENOMEM);
++
++	for (i = 0; i < count; i++) {
++
++		if ((char *)entry > end)
++			goto fail;
++
++		acl->a_entries[i].e_tag  = le16_to_cpu(entry->e_tag);
++		acl->a_entries[i].e_perm = le16_to_cpu(entry->e_perm);
++
++		switch (acl->a_entries[i].e_tag) {
++		case ACL_USER:
++		case ACL_GROUP:
++			acl->a_entries[i].e_id = le32_to_cpu(entry->e_id);
++			entry = (struct f2fs_acl_entry *)((char *)entry +
++					sizeof(struct f2fs_acl_entry));
++			break;
++		case ACL_USER_OBJ:
++		case ACL_GROUP_OBJ:
++		case ACL_MASK:
++		case ACL_OTHER:
++			acl->a_entries[i].e_id = ACL_UNDEFINED_ID;
++			entry = (struct f2fs_acl_entry *)((char *)entry +
++					sizeof(struct f2fs_acl_entry_short));
++			break;
++		default:
++			goto fail;
 +		}
-+		clear_inode_flag(F2FS_I(inode), FI_NEW_INODE);
 +	}
-+	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
-+	if (F2FS_I(dir)->current_depth != current_depth) {
-+		F2FS_I(dir)->current_depth = current_depth;
-+		need_dir_update = true;
-+	}
-+
-+	if (need_dir_update)
-+		f2fs_write_inode(dir, NULL);
-+	else
-+		mark_inode_dirty(dir);
-+
-+	if (is_inode_flag_set(F2FS_I(inode), FI_INC_LINK))
-+		clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
-+}
-+
-+static int room_for_filename(struct f2fs_dentry_block *dentry_blk, int slots)
-+{
-+	int bit_start = 0;
-+	int zero_start, zero_end;
-+next:
-+	zero_start = find_next_zero_bit_le(&dentry_blk->dentry_bitmap,
-+						NR_DENTRY_IN_BLOCK,
-+						bit_start);
-+	if (zero_start >= NR_DENTRY_IN_BLOCK)
-+		return NR_DENTRY_IN_BLOCK;
-+
-+	zero_end = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+						NR_DENTRY_IN_BLOCK,
-+						zero_start);
-+	if (zero_end - zero_start >= slots)
-+		return zero_start;
-+
-+	bit_start = zero_end + 1;
-+
-+	if (zero_end + 1 >= NR_DENTRY_IN_BLOCK)
-+		return NR_DENTRY_IN_BLOCK;
-+	goto next;
-+}
-+
-+int f2fs_add_link(struct dentry *dentry, struct inode *inode)
-+{
-+	unsigned int bit_pos;
-+	unsigned int level;
-+	unsigned int current_depth;
-+	unsigned long bidx, block;
-+	f2fs_hash_t dentry_hash;
-+	struct f2fs_dir_entry *de;
-+	unsigned int nbucket, nblock;
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	struct page *dentry_page = NULL;
-+	struct f2fs_dentry_block *dentry_blk = NULL;
-+	int slots = (namelen + F2FS_NAME_LEN - 1) / F2FS_NAME_LEN;
-+	int err = 0;
-+	int i;
-+
-+	dentry_hash = f2fs_dentry_hash(name, dentry->d_name.len);
-+	level = 0;
-+	current_depth = F2FS_I(dir)->current_depth;
-+	if (F2FS_I(dir)->chash == dentry_hash) {
-+		level = F2FS_I(dir)->clevel;
-+		F2FS_I(dir)->chash = 0;
-+	}
-+
-+start:
-+	if (current_depth == MAX_DIR_HASH_DEPTH)
-+		return -ENOSPC;
-+
-+	/* Increase the depth, if required */
-+	if (level == current_depth)
-+		++current_depth;
-+
-+	nbucket = dir_buckets(level);
-+	nblock = bucket_blocks(level);
-+
-+	bidx = dir_block_index(level, (dentry_hash % nbucket));
-+
-+	for (block = bidx; block <= (bidx + nblock - 1); block++) {
-+		mutex_lock_op(sbi, DENTRY_OPS);
-+		dentry_page = get_new_data_page(dir, block, true);
-+		if (IS_ERR(dentry_page)) {
-+			mutex_unlock_op(sbi, DENTRY_OPS);
-+			return PTR_ERR(dentry_page);
-+		}
-+
-+		dentry_blk = kmap(dentry_page);
-+		bit_pos = room_for_filename(dentry_blk, slots);
-+		if (bit_pos < NR_DENTRY_IN_BLOCK)
-+			goto add_dentry;
-+
-+		kunmap(dentry_page);
-+		f2fs_put_page(dentry_page, 1);
-+		mutex_unlock_op(sbi, DENTRY_OPS);
-+	}
-+
-+	/* Move to next level to find the empty slot for new dentry */
-+	++level;
-+	goto start;
-+add_dentry:
-+	err = init_inode_metadata(inode, dentry);
-+	if (err)
++	if ((char *)entry != end)
 +		goto fail;
-+
-+	wait_on_page_writeback(dentry_page);
-+
-+	de = &dentry_blk->dentry[bit_pos];
-+	de->hash_code = cpu_to_le32(dentry_hash);
-+	de->name_len = cpu_to_le16(namelen);
-+	memcpy(dentry_blk->filename[bit_pos], name, namelen);
-+	de->ino = cpu_to_le32(inode->i_ino);
-+	set_de_type(de, inode);
-+	for (i = 0; i < slots; i++)
-+		test_and_set_bit_le(bit_pos + i, &dentry_blk->dentry_bitmap);
-+	set_page_dirty(dentry_page);
-+	update_parent_metadata(dir, inode, current_depth);
++	return acl;
 +fail:
-+	kunmap(dentry_page);
-+	f2fs_put_page(dentry_page, 1);
-+	mutex_unlock_op(sbi, DENTRY_OPS);
-+	return err;
++	posix_acl_release(acl);
++	return ERR_PTR(-EINVAL);
 +}
 +
-+/**
-+ * It only removes the dentry from the dentry page,corresponding name
-+ * entry in name page does not need to be touched during deletion.
-+ */
-+void f2fs_delete_entry(struct f2fs_dir_entry *dentry, struct page *page,
-+						struct inode *inode)
++static void *f2fs_acl_to_disk(const struct posix_acl *acl, size_t *size)
 +{
-+	struct	f2fs_dentry_block *dentry_blk;
-+	unsigned int bit_pos;
-+	struct address_space *mapping = page->mapping;
-+	struct inode *dir = mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
-+	int slots = (le16_to_cpu(dentry->name_len) + F2FS_NAME_LEN - 1) /
-+							F2FS_NAME_LEN;
-+	void *kaddr = page_address(page);
++	struct f2fs_acl_header *f2fs_acl;
++	struct f2fs_acl_entry *entry;
 +	int i;
 +
-+	mutex_lock_op(sbi, DENTRY_OPS);
++	f2fs_acl = kmalloc(sizeof(struct f2fs_acl_header) + acl->a_count *
++			sizeof(struct f2fs_acl_entry), GFP_KERNEL);
++	if (!f2fs_acl)
++		return ERR_PTR(-ENOMEM);
 +
-+	lock_page(page);
-+	wait_on_page_writeback(page);
++	f2fs_acl->a_version = cpu_to_le32(F2FS_ACL_VERSION);
++	entry = (struct f2fs_acl_entry *)(f2fs_acl + 1);
 +
-+	dentry_blk = (struct f2fs_dentry_block *)kaddr;
-+	bit_pos = dentry - (struct f2fs_dir_entry *)dentry_blk->dentry;
-+	for (i = 0; i < slots; i++)
-+		test_and_clear_bit_le(bit_pos + i, &dentry_blk->dentry_bitmap);
++	for (i = 0; i < acl->a_count; i++) {
 +
-+	/* Let's check and deallocate this dentry page */
-+	bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+			NR_DENTRY_IN_BLOCK,
-+			0);
-+	kunmap(page); /* kunmap - pair of f2fs_find_entry */
-+	set_page_dirty(page);
++		entry->e_tag  = cpu_to_le16(acl->a_entries[i].e_tag);
++		entry->e_perm = cpu_to_le16(acl->a_entries[i].e_perm);
 +
-+	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+
-+	if (inode && S_ISDIR(inode->i_mode)) {
-+		drop_nlink(dir);
-+		f2fs_write_inode(dir, NULL);
-+	} else {
-+		mark_inode_dirty(dir);
-+	}
-+
-+	if (inode) {
-+		inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME_SEC;
-+		drop_nlink(inode);
-+		if (S_ISDIR(inode->i_mode)) {
-+			drop_nlink(inode);
-+			i_size_write(inode, 0);
++		switch (acl->a_entries[i].e_tag) {
++		case ACL_USER:
++		case ACL_GROUP:
++			entry->e_id = cpu_to_le32(acl->a_entries[i].e_id);
++			entry = (struct f2fs_acl_entry *)((char *)entry +
++					sizeof(struct f2fs_acl_entry));
++			break;
++		case ACL_USER_OBJ:
++		case ACL_GROUP_OBJ:
++		case ACL_MASK:
++		case ACL_OTHER:
++			entry = (struct f2fs_acl_entry *)((char *)entry +
++					sizeof(struct f2fs_acl_entry_short));
++			break;
++		default:
++			goto fail;
 +		}
-+		f2fs_write_inode(inode, NULL);
-+		if (inode->i_nlink == 0)
-+			add_orphan_inode(sbi, inode->i_ino);
 +	}
++	*size = f2fs_acl_size(acl->a_count);
++	return (void *)f2fs_acl;
 +
-+	if (bit_pos == NR_DENTRY_IN_BLOCK) {
-+		loff_t page_offset;
-+		truncate_hole(dir, page->index, page->index + 1);
-+		clear_page_dirty_for_io(page);
-+		ClearPageUptodate(page);
-+		dec_page_count(sbi, F2FS_DIRTY_DENTS);
-+		inode_dec_dirty_dents(dir);
-+		page_offset = page->index << PAGE_CACHE_SHIFT;
-+		f2fs_put_page(page, 1);
-+	} else {
-+		f2fs_put_page(page, 1);
-+	}
-+	mutex_unlock_op(sbi, DENTRY_OPS);
++fail:
++	kfree(f2fs_acl);
++	return ERR_PTR(-EINVAL);
 +}
 +
-+int f2fs_make_empty(struct inode *inode, struct inode *parent)
++struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
 +{
-+	struct page *dentry_page;
-+	struct f2fs_dentry_block *dentry_blk;
-+	struct f2fs_dir_entry *de;
-+	void *kaddr;
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	int name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
++	void *value = NULL;
++	struct posix_acl *acl;
++	int retval;
 +
-+	dentry_page = get_new_data_page(inode, 0, true);
-+	if (IS_ERR(dentry_page))
-+		return PTR_ERR(dentry_page);
++	if (!test_opt(sbi, POSIX_ACL))
++		return NULL;
 +
-+	kaddr = kmap_atomic(dentry_page);
-+	dentry_blk = (struct f2fs_dentry_block *)kaddr;
++	acl = get_cached_acl(inode, type);
++	if (acl != ACL_NOT_CACHED)
++		return acl;
 +
-+	de = &dentry_blk->dentry[0];
-+	de->name_len = cpu_to_le16(1);
-+	de->hash_code = 0;
-+	de->ino = cpu_to_le32(inode->i_ino);
-+	memcpy(dentry_blk->filename[0], ".", 1);
-+	set_de_type(de, inode);
++	if (type == ACL_TYPE_ACCESS)
++		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
 +
-+	de = &dentry_blk->dentry[1];
-+	de->hash_code = 0;
-+	de->name_len = cpu_to_le16(2);
-+	de->ino = cpu_to_le32(parent->i_ino);
-+	memcpy(dentry_blk->filename[1], "..", 2);
-+	set_de_type(de, inode);
++	retval = f2fs_getxattr(inode, name_index, "", NULL, 0);
++	if (retval > 0) {
++		value = kmalloc(retval, GFP_KERNEL);
++		if (!value)
++			return ERR_PTR(-ENOMEM);
++		retval = f2fs_getxattr(inode, name_index, "", value, retval);
++	}
 +
-+	test_and_set_bit_le(0, &dentry_blk->dentry_bitmap);
-+	test_and_set_bit_le(1, &dentry_blk->dentry_bitmap);
-+	kunmap_atomic(kaddr);
-+
-+	set_page_dirty(dentry_page);
-+	f2fs_put_page(dentry_page, 1);
-+	return 0;
-+}
-+
-+bool f2fs_empty_dir(struct inode *dir)
-+{
-+	unsigned long bidx;
-+	struct page *dentry_page;
-+	unsigned int bit_pos;
-+	struct	f2fs_dentry_block *dentry_blk;
-+	unsigned long nblock = dir_blocks(dir);
-+
-+	for (bidx = 0; bidx < nblock; bidx++) {
-+		void *kaddr;
-+		dentry_page = get_lock_data_page(dir, bidx);
-+		if (IS_ERR(dentry_page)) {
-+			if (PTR_ERR(dentry_page) == -ENOENT)
-+				continue;
-+			else
-+				return false;
-+		}
-+
-+		kaddr = kmap_atomic(dentry_page);
-+		dentry_blk = (struct f2fs_dentry_block *)kaddr;
-+		if (bidx == 0)
-+			bit_pos = 2;
++	if (retval < 0) {
++		if (retval == -ENODATA)
++			acl = NULL;
 +		else
-+			bit_pos = 0;
-+		bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+						NR_DENTRY_IN_BLOCK,
-+						bit_pos);
-+		kunmap_atomic(kaddr);
-+
-+		f2fs_put_page(dentry_page, 1);
-+
-+		if (bit_pos < NR_DENTRY_IN_BLOCK)
-+			return false;
++			acl = ERR_PTR(retval);
++	} else {
++		acl = f2fs_acl_from_disk(value, retval);
 +	}
-+	return true;
++	kfree(value);
++	if (!IS_ERR(acl))
++		set_cached_acl(inode, type, acl);
++
++	return acl;
 +}
 +
-+static int f2fs_readdir(struct file *file, void *dirent, filldir_t filldir)
++static int f2fs_set_acl(struct inode *inode, int type, struct posix_acl *acl)
 +{
-+	unsigned long pos = file->f_pos;
-+	struct inode *inode = file->f_dentry->d_inode;
-+	unsigned long npages = dir_blocks(inode);
-+	unsigned char *types = NULL;
-+	unsigned int bit_pos = 0, start_bit_pos = 0;
-+	int over = 0;
-+	struct f2fs_dentry_block *dentry_blk = NULL;
-+	struct f2fs_dir_entry *de = NULL;
-+	struct page *dentry_page = NULL;
-+	unsigned int n = 0;
-+	unsigned char *ptr = NULL;
-+	unsigned char d_type = DT_UNKNOWN;
-+	int slots;
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	int name_index;
++	void *value = NULL;
++	size_t size = 0;
++	int error;
 +
-+	types = f2fs_filetype_table;
-+	bit_pos = (pos % NR_DENTRY_IN_BLOCK);
-+	n = (pos / NR_DENTRY_IN_BLOCK);
++	if (!test_opt(sbi, POSIX_ACL))
++		return 0;
++	if (S_ISLNK(inode->i_mode))
++		return -EOPNOTSUPP;
 +
-+	for ( ; n < npages; n++) {
-+		dentry_page = get_lock_data_page(inode, n);
-+		if (IS_ERR(dentry_page))
-+			continue;
-+
-+		start_bit_pos = bit_pos;
-+		dentry_blk = kmap(dentry_page);
-+		while (bit_pos < NR_DENTRY_IN_BLOCK) {
-+			d_type = DT_UNKNOWN;
-+			bit_pos = find_next_bit_le(&dentry_blk->dentry_bitmap,
-+							NR_DENTRY_IN_BLOCK,
-+							bit_pos);
-+			if (bit_pos >= NR_DENTRY_IN_BLOCK)
-+				break;
-+
-+			de = &dentry_blk->dentry[bit_pos];
-+			if (types && de->file_type < F2FS_FT_MAX)
-+				d_type = types[de->file_type];
-+
-+			ptr = dentry_blk->filename[bit_pos];
-+			over = filldir(dirent,
-+					dentry_blk->filename[bit_pos],
-+					le16_to_cpu(de->name_len),
-+					(n * NR_DENTRY_IN_BLOCK) + bit_pos,
-+					le32_to_cpu(de->ino), d_type);
-+			if (over) {
-+				file->f_pos += bit_pos - start_bit_pos;
-+				goto success;
-+			}
-+			slots = (le16_to_cpu(de->name_len) + F2FS_NAME_LEN - 1)
-+								/ F2FS_NAME_LEN;
-+			bit_pos += slots;
++	switch (type) {
++	case ACL_TYPE_ACCESS:
++		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
++		if (acl) {
++			error = posix_acl_equiv_mode(acl, &inode->i_mode);
++			if (error < 0)
++				return error;
++			set_acl_inode(fi, inode->i_mode);
++			if (error == 0)
++				acl = NULL;
 +		}
-+		bit_pos = 0;
-+		file->f_pos = (n + 1) * NR_DENTRY_IN_BLOCK;
-+		kunmap(dentry_page);
-+		f2fs_put_page(dentry_page, 1);
-+		dentry_page = NULL;
-+	}
-+success:
-+	if (dentry_page && !IS_ERR(dentry_page)) {
-+		kunmap(dentry_page);
-+		f2fs_put_page(dentry_page, 1);
++		break;
++
++	case ACL_TYPE_DEFAULT:
++		name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
++		if (!S_ISDIR(inode->i_mode))
++			return acl ? -EACCES : 0;
++		break;
++
++	default:
++		return -EINVAL;
 +	}
 +
-+	return 0;
++	if (acl) {
++		value = f2fs_acl_to_disk(acl, &size);
++		if (IS_ERR(value)) {
++			cond_clear_inode_flag(fi, FI_ACL_MODE);
++			return (int)PTR_ERR(value);
++		}
++	}
++
++	error = f2fs_setxattr(inode, name_index, "", value, size);
++
++	kfree(value);
++	if (!error)
++		set_cached_acl(inode, type, acl);
++
++	cond_clear_inode_flag(fi, FI_ACL_MODE);
++	return error;
 +}
 +
-+const struct file_operations f2fs_dir_operations = {
-+	.read		= generic_read_dir,
-+	.readdir	= f2fs_readdir,
-+	.fsync		= f2fs_sync_file,
-+	.unlocked_ioctl	= f2fs_ioctl,
++int f2fs_init_acl(struct inode *inode, struct inode *dir)
++{
++	struct posix_acl *acl = NULL;
++	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
++	int error = 0;
++
++	if (!S_ISLNK(inode->i_mode)) {
++		if (test_opt(sbi, POSIX_ACL)) {
++			acl = f2fs_get_acl(dir, ACL_TYPE_DEFAULT);
++			if (IS_ERR(acl))
++				return PTR_ERR(acl);
++		}
++		if (!acl)
++			inode->i_mode &= ~current_umask();
++	}
++
++	if (test_opt(sbi, POSIX_ACL) && acl) {
++
++		if (S_ISDIR(inode->i_mode)) {
++			error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
++			if (error)
++				goto cleanup;
++		}
++		error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
++		if (error < 0)
++			return error;
++		if (error > 0)
++			error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
++	}
++cleanup:
++	posix_acl_release(acl);
++	return error;
++}
++
++int f2fs_acl_chmod(struct inode *inode)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct posix_acl *acl;
++	int error;
++	mode_t mode = get_inode_mode(inode);
++
++	if (!test_opt(sbi, POSIX_ACL))
++		return 0;
++	if (S_ISLNK(mode))
++		return -EOPNOTSUPP;
++
++	acl = f2fs_get_acl(inode, ACL_TYPE_ACCESS);
++	if (IS_ERR(acl) || !acl)
++		return PTR_ERR(acl);
++
++	error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
++	if (error)
++		return error;
++	error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
++	posix_acl_release(acl);
++	return error;
++}
++
++static size_t f2fs_xattr_list_acl(struct dentry *dentry, char *list,
++		size_t list_size, const char *name, size_t name_len, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++	const char *xname = POSIX_ACL_XATTR_DEFAULT;
++	size_t size;
++
++	if (!test_opt(sbi, POSIX_ACL))
++		return 0;
++
++	if (type == ACL_TYPE_ACCESS)
++		xname = POSIX_ACL_XATTR_ACCESS;
++
++	size = strlen(xname) + 1;
++	if (list && size <= list_size)
++		memcpy(list, xname, size);
++	return size;
++}
++
++static int f2fs_xattr_get_acl(struct dentry *dentry, const char *name,
++		void *buffer, size_t size, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++	struct inode *inode = dentry->d_inode;
++	struct posix_acl *acl;
++	int error;
++
++	if (!test_opt(sbi, POSIX_ACL))
++		return -EOPNOTSUPP;
++
++	if (strcmp(name, "") != 0)
++		return -EINVAL;
++
++	acl = f2fs_get_acl(inode, type);
++	if (IS_ERR(acl))
++		return PTR_ERR(acl);
++	if (!acl)
++		return -ENODATA;
++
++	error = posix_acl_to_xattr(acl, buffer, size);
++	posix_acl_release(acl);
++
++	return error;
++}
++
++static int f2fs_xattr_set_acl(struct dentry *dentry, const char *name,
++		const void *value, size_t size, int flags, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++	struct inode *inode = dentry->d_inode;
++	struct posix_acl *acl = NULL;
++	int error;
++
++	if (!test_opt(sbi, POSIX_ACL))
++		return -EOPNOTSUPP;
++
++	if (strcmp(name, "") != 0)
++		return -EINVAL;
++
++	if (!inode_owner_or_capable(inode))
++		return -EPERM;
++
++	if (value) {
++		acl = posix_acl_from_xattr(value, size);
++		if (IS_ERR(acl))
++			return PTR_ERR(acl);
++		if (acl) {
++			error = posix_acl_valid(acl);
++			if (error)
++				goto release_and_out;
++		}
++	} else {
++		acl = NULL;
++	}
++
++	error = f2fs_set_acl(inode, type, acl);
++
++release_and_out:
++	posix_acl_release(acl);
++	return error;
++}
++
++const struct xattr_handler f2fs_xattr_acl_default_handler = {
++	.prefix = POSIX_ACL_XATTR_DEFAULT,
++	.flags = ACL_TYPE_DEFAULT,
++	.list = f2fs_xattr_list_acl,
++	.get = f2fs_xattr_get_acl,
++	.set = f2fs_xattr_set_acl,
 +};
-diff --git a/fs/f2fs/hash.c b/fs/f2fs/hash.c
++
++const struct xattr_handler f2fs_xattr_acl_access_handler = {
++	.prefix = POSIX_ACL_XATTR_ACCESS,
++	.flags = ACL_TYPE_ACCESS,
++	.list = f2fs_xattr_list_acl,
++	.get = f2fs_xattr_get_acl,
++	.set = f2fs_xattr_set_acl,
++};
+diff --git a/fs/f2fs/acl.h b/fs/f2fs/acl.h
 new file mode 100644
-index 0000000..098a196
+index 0000000..c97675e
 --- /dev/null
-+++ b/fs/f2fs/hash.c
-@@ -0,0 +1,98 @@
++++ b/fs/f2fs/acl.h
+@@ -0,0 +1,57 @@
 +/**
-+ * fs/f2fs/hash.c
++ * fs/f2fs/acl.h
 + *
 + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 + *             http://www.samsung.com/
 + *
-+ * Portions of this code from linux/fs/ext3/hash.c
++ * Portions of this code from linux/fs/ext2/acl.h
 + *
-+ * Copyright (C) 2002 by Theodore Ts'o
++ * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/types.h>
-+#include <linux/fs.h>
-+#include <linux/f2fs_fs.h>
-+#include <linux/cryptohash.h>
-+#include <linux/pagemap.h>
++#ifndef __F2FS_ACL_H__
++#define __F2FS_ACL_H__
 +
-+#include "f2fs.h"
++#include <linux/posix_acl_xattr.h>
 +
-+/*
-+ * Hashing code copied from ext3
-+ */
-+#define DELTA 0x9E3779B9
++#define F2FS_ACL_VERSION	0x0001
 +
-+static void TEA_transform(unsigned int buf[4], unsigned int const in[])
++struct f2fs_acl_entry {
++	__le16 e_tag;
++	__le16 e_perm;
++	__le32 e_id;
++};
++
++struct f2fs_acl_entry_short {
++	__le16 e_tag;
++	__le16 e_perm;
++};
++
++struct f2fs_acl_header {
++	__le32 a_version;
++};
++
++#ifdef CONFIG_F2FS_FS_POSIX_ACL
++
++extern struct posix_acl *f2fs_get_acl(struct inode *inode, int type);
++extern int f2fs_acl_chmod(struct inode *inode);
++extern int f2fs_init_acl(struct inode *inode, struct inode *dir);
++#else
++#define f2fs_check_acl	NULL
++#define f2fs_get_acl	NULL
++#define f2fs_set_acl	NULL
++
++static inline int f2fs_acl_chmod(struct inode *inode)
 +{
-+	__u32 sum = 0;
-+	__u32 b0 = buf[0], b1 = buf[1];
-+	__u32 a = in[0], b = in[1], c = in[2], d = in[3];
-+	int n = 16;
-+
-+	do {
-+		sum += DELTA;
-+		b0 += ((b1 << 4)+a) ^ (b1+sum) ^ ((b1 >> 5)+b);
-+		b1 += ((b0 << 4)+c) ^ (b0+sum) ^ ((b0 >> 5)+d);
-+	} while (--n);
-+
-+	buf[0] += b0;
-+	buf[1] += b1;
++	return 0;
 +}
 +
-+static void str2hashbuf(const char *msg, int len, unsigned int *buf, int num)
++static inline int f2fs_init_acl(struct inode *inode, struct inode *dir)
 +{
-+	unsigned pad, val;
-+	int i;
++	return 0;
++}
++#endif
++#endif /* __F2FS_ACL_H__ */
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+new file mode 100644
+index 0000000..5e618b3
+--- /dev/null
++++ b/fs/f2fs/xattr.c
+@@ -0,0 +1,387 @@
++/**
++ * fs/f2fs/xattr.c
++ *
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *             http://www.samsung.com/
++ *
++ * Portions of this code from linux/fs/ext2/xattr.c
++ *
++ * Copyright (C) 2001-2003 Andreas Gruenbacher <agruen@suse.de>
++ *
++ * Fix by Harrison Xing <harrison@mountainviewdata.com>.
++ * Extended attributes for symlinks and special files added per
++ *  suggestion of Luka Renko <luka.renko@hermes.si>.
++ * xattr consolidation Copyright (c) 2004 James Morris <jmorris@redhat.com>,
++ *  Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/rwsem.h>
++#include <linux/f2fs_fs.h>
++#include "f2fs.h"
++#include "xattr.h"
 +
-+	pad = (__u32)len | ((__u32)len << 8);
-+	pad |= pad << 16;
++static size_t f2fs_xattr_generic_list(struct dentry *dentry, char *list,
++		size_t list_size, const char *name, size_t name_len, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++	int total_len, prefix_len = 0;
++	const char *prefix = NULL;
 +
-+	val = pad;
-+	if (len > num * 4)
-+		len = num * 4;
-+	for (i = 0; i < len; i++) {
-+		if ((i % 4) == 0)
-+			val = pad;
-+		val = msg[i] + (val << 8);
-+		if ((i % 4) == 3) {
-+			*buf++ = val;
-+			val = pad;
-+			num--;
++	switch (type) {
++	case F2FS_XATTR_INDEX_USER:
++		if (!test_opt(sbi, XATTR_USER))
++			return -EOPNOTSUPP;
++		prefix = XATTR_USER_PREFIX;
++		prefix_len = XATTR_USER_PREFIX_LEN;
++		break;
++	case F2FS_XATTR_INDEX_TRUSTED:
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++		prefix = XATTR_TRUSTED_PREFIX;
++		prefix_len = XATTR_TRUSTED_PREFIX_LEN;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	total_len = prefix_len + name_len + 1;
++	if (list && total_len <= list_size) {
++		memcpy(list, prefix, prefix_len);
++		memcpy(list+prefix_len, name, name_len);
++		list[prefix_len + name_len] = '\0';
++	}
++	return total_len;
++}
++
++static int f2fs_xattr_generic_get(struct dentry *dentry, const char *name,
++		void *buffer, size_t size, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++
++	switch (type) {
++	case F2FS_XATTR_INDEX_USER:
++		if (!test_opt(sbi, XATTR_USER))
++			return -EOPNOTSUPP;
++		break;
++	case F2FS_XATTR_INDEX_TRUSTED:
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++		break;
++	default:
++		return -EINVAL;
++	}
++	if (strcmp(name, "") == 0)
++		return -EINVAL;
++	return f2fs_getxattr(dentry->d_inode, type, name,
++			buffer, size);
++}
++
++static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
++		const void *value, size_t size, int flags, int type)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
++
++	switch (type) {
++	case F2FS_XATTR_INDEX_USER:
++		if (!test_opt(sbi, XATTR_USER))
++			return -EOPNOTSUPP;
++		break;
++	case F2FS_XATTR_INDEX_TRUSTED:
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++		break;
++	default:
++		return -EINVAL;
++	}
++	if (strcmp(name, "") == 0)
++		return -EINVAL;
++
++	return f2fs_setxattr(dentry->d_inode, type, name, value, size);
++}
++
++const struct xattr_handler f2fs_xattr_user_handler = {
++	.prefix = XATTR_USER_PREFIX,
++	.flags	= F2FS_XATTR_INDEX_USER,
++	.list   = f2fs_xattr_generic_list,
++	.get    = f2fs_xattr_generic_get,
++	.set    = f2fs_xattr_generic_set,
++};
++
++const struct xattr_handler f2fs_xattr_trusted_handler = {
++	.prefix = XATTR_TRUSTED_PREFIX,
++	.flags	= F2FS_XATTR_INDEX_TRUSTED,
++	.list   = f2fs_xattr_generic_list,
++	.get    = f2fs_xattr_generic_get,
++	.set    = f2fs_xattr_generic_set,
++};
++
++static const struct xattr_handler *f2fs_xattr_handler_map[] = {
++	[F2FS_XATTR_INDEX_USER]              = &f2fs_xattr_user_handler,
++#ifdef CONFIG_F2FS_FS_POSIX_ACL
++	[F2FS_XATTR_INDEX_POSIX_ACL_ACCESS]  = &f2fs_xattr_acl_access_handler,
++	[F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT] = &f2fs_xattr_acl_default_handler,
++#endif
++	[F2FS_XATTR_INDEX_TRUSTED]           = &f2fs_xattr_trusted_handler,
++};
++
++const struct xattr_handler *f2fs_xattr_handlers[] = {
++	&f2fs_xattr_user_handler,
++#ifdef CONFIG_F2FS_FS_POSIX_ACL
++	&f2fs_xattr_acl_access_handler,
++	&f2fs_xattr_acl_default_handler,
++#endif
++	&f2fs_xattr_trusted_handler,
++	NULL,
++};
++
++static inline const struct xattr_handler *f2fs_xattr_handler(int name_index)
++{
++	const struct xattr_handler *handler = NULL;
++
++	if (name_index > 0 && name_index < ARRAY_SIZE(f2fs_xattr_handler_map))
++		handler = f2fs_xattr_handler_map[name_index];
++	return handler;
++}
++
++int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
++		void *buffer, size_t buffer_size)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	struct f2fs_xattr_entry *entry;
++	struct page *page;
++	void *base_addr;
++	int error = 0, found = 0;
++	int value_len, name_len;
++
++	if (name == NULL)
++		return -EINVAL;
++	name_len = strlen(name);
++
++	if (!fi->i_xattr_nid)
++		return -ENODATA;
++
++	page = get_node_page(sbi, fi->i_xattr_nid);
++	base_addr = page_address(page);
++
++	list_for_each_xattr(entry, base_addr) {
++		if (entry->e_name_index != name_index)
++			continue;
++		if (entry->e_name_len != name_len)
++			continue;
++		if (!memcmp(entry->e_name, name, name_len)) {
++			found = 1;
++			break;
 +		}
 +	}
-+	if (--num >= 0)
-+		*buf++ = val;
-+	while (--num >= 0)
-+		*buf++ = pad;
-+}
-+
-+f2fs_hash_t f2fs_dentry_hash(const char *name, int len)
-+{
-+	__u32 hash, minor_hash;
-+	f2fs_hash_t f2fs_hash;
-+	const char *p;
-+	__u32 in[8], buf[4];
-+
-+	/* Initialize the default seed for the hash checksum functions */
-+	buf[0] = 0x67452301;
-+	buf[1] = 0xefcdab89;
-+	buf[2] = 0x98badcfe;
-+	buf[3] = 0x10325476;
-+
-+	p = name;
-+	while (len > 0) {
-+		str2hashbuf(p, len, in, 4);
-+		TEA_transform(buf, in);
-+		len -= 16;
-+		p += 16;
++	if (!found) {
++		error = -ENODATA;
++		goto cleanup;
 +	}
-+	hash = buf[0];
-+	minor_hash = buf[1];
 +
-+	f2fs_hash = hash;
-+	f2fs_hash &= ~F2FS_HASH_COL_BIT;
-+	return f2fs_hash;
++	value_len = le16_to_cpu(entry->e_value_size);
++
++	if (buffer && value_len > buffer_size) {
++		error = -ERANGE;
++		goto cleanup;
++	}
++
++	if (buffer) {
++		char *pval = entry->e_name + entry->e_name_len;
++		memcpy(buffer, pval, value_len);
++	}
++	error = value_len;
++
++cleanup:
++	f2fs_put_page(page, 1);
++	return error;
 +}
++
++ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
++{
++	struct inode *inode = dentry->d_inode;
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	struct f2fs_xattr_entry *entry;
++	struct page *page;
++	void *base_addr;
++	int error = 0;
++	size_t rest = buffer_size;
++
++	if (!fi->i_xattr_nid)
++		return 0;
++
++	page = get_node_page(sbi, fi->i_xattr_nid);
++	base_addr = page_address(page);
++
++	list_for_each_xattr(entry, base_addr) {
++		const struct xattr_handler *handler =
++			f2fs_xattr_handler(entry->e_name_index);
++		size_t size;
++
++		if (!handler)
++			continue;
++
++		size = handler->list(dentry, buffer, rest, entry->e_name,
++				entry->e_name_len, handler->flags);
++		if (buffer && size > rest) {
++			error = -ERANGE;
++			goto cleanup;
++		}
++
++		if (buffer)
++			buffer += size;
++		rest -= size;
++	}
++	error = buffer_size - rest;
++cleanup:
++	f2fs_put_page(page, 1);
++	return error;
++}
++
++int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
++					const void *value, size_t value_len)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	struct f2fs_xattr_header *header = NULL;
++	struct f2fs_xattr_entry *here, *last;
++	struct page *page;
++	void *base_addr;
++	int error, found, free, name_len, newsize;
++	char *pval;
++
++	if (name == NULL)
++		return -EINVAL;
++	name_len = strlen(name);
++
++	if (value == NULL)
++		value_len = 0;
++
++	if (name_len > 255 || value_len > MAX_VALUE_LEN)
++		return -ERANGE;
++
++	mutex_lock_op(sbi, NODE_NEW);
++	if (!fi->i_xattr_nid) {
++		/* Allocate new attribute block */
++		struct dnode_of_data dn;
++
++		if (!alloc_nid(sbi, &fi->i_xattr_nid)) {
++			mutex_unlock_op(sbi, NODE_NEW);
++			return -ENOSPC;
++		}
++		set_new_dnode(&dn, inode, NULL, NULL, fi->i_xattr_nid);
++		mark_inode_dirty(inode);
++
++		page = new_node_page(&dn, XATTR_NODE_OFFSET);
++		if (IS_ERR(page)) {
++			alloc_nid_failed(sbi, fi->i_xattr_nid);
++			fi->i_xattr_nid = 0;
++			mutex_unlock_op(sbi, NODE_NEW);
++			return PTR_ERR(page);
++		}
++
++		alloc_nid_done(sbi, fi->i_xattr_nid);
++		base_addr = page_address(page);
++		header = XATTR_HDR(base_addr);
++		header->h_magic = cpu_to_le32(F2FS_XATTR_MAGIC);
++		header->h_refcount = cpu_to_le32(1);
++	} else {
++		/* The inode already has an extended attribute block. */
++		page = get_node_page(sbi, fi->i_xattr_nid);
++		if (IS_ERR(page)) {
++			mutex_unlock_op(sbi, NODE_NEW);
++			return PTR_ERR(page);
++		}
++
++		base_addr = page_address(page);
++		header = XATTR_HDR(base_addr);
++	}
++
++	if (le32_to_cpu(header->h_magic) != F2FS_XATTR_MAGIC) {
++		error = -EIO;
++		goto cleanup;
++	}
++
++	/* find entry with wanted name. */
++	found = 0;
++	list_for_each_xattr(here, base_addr) {
++		if (here->e_name_index != name_index)
++			continue;
++		if (here->e_name_len != name_len)
++			continue;
++		if (!memcmp(here->e_name, name, name_len)) {
++			found = 1;
++			break;
++		}
++	}
++
++	last = here;
++
++	while (!IS_XATTR_LAST_ENTRY(last))
++		last = XATTR_NEXT_ENTRY(last);
++
++	newsize = XATTR_ALIGN(sizeof(struct f2fs_xattr_entry) +
++			name_len + value_len);
++
++	/* 1. Check space */
++	if (value) {
++		/* If value is NULL, it is remove operation.
++		 * In case of update operation, we caculate free.
++		 */
++		free = MIN_OFFSET - ((char *)last - (char *)header);
++		if (found)
++			free = free - ENTRY_SIZE(here);
++
++		if (free < newsize) {
++			error = -ENOSPC;
++			goto cleanup;
++		}
++	}
++
++	/* 2. Remove old entry */
++	if (found) {
++		/* If entry is found, remove old entry.
++		 * If not found, remove operation is not needed.
++		 */
++		struct f2fs_xattr_entry *next = XATTR_NEXT_ENTRY(here);
++		int oldsize = ENTRY_SIZE(here);
++
++		memmove(here, next, (char *)last - (char *)next);
++		last = (struct f2fs_xattr_entry *)((char *)last - oldsize);
++		memset(last, 0, oldsize);
++	}
++
++	/* 3. Write new entry */
++	if (value) {
++		/* Before we come here, old entry is removed.
++		 * We just write new entry. */
++		memset(last, 0, newsize);
++		last->e_name_index = name_index;
++		last->e_name_len = name_len;
++		memcpy(last->e_name, name, name_len);
++		pval = last->e_name + name_len;
++		memcpy(pval, value, value_len);
++		last->e_value_size = cpu_to_le16(value_len);
++	}
++
++	set_page_dirty(page);
++	f2fs_put_page(page, 1);
++
++	if (is_inode_flag_set(fi, FI_ACL_MODE)) {
++		inode->i_mode = fi->i_acl_mode;
++		inode->i_ctime = CURRENT_TIME_SEC;
++		clear_inode_flag(fi, FI_ACL_MODE);
++	}
++	f2fs_write_inode(inode, NULL);
++	mutex_unlock_op(sbi, NODE_NEW);
++
++	return 0;
++cleanup:
++	f2fs_put_page(page, 1);
++	mutex_unlock_op(sbi, NODE_NEW);
++	return error;
++}
+diff --git a/fs/f2fs/xattr.h b/fs/f2fs/xattr.h
+new file mode 100644
+index 0000000..583ca25
+--- /dev/null
++++ b/fs/f2fs/xattr.h
+@@ -0,0 +1,142 @@
++/**
++ * fs/f2fs/xattr.h
++ *
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *             http://www.samsung.com/
++ *
++ * Portions of this code from linux/fs/ext2/xattr.h
++ *
++ * On-disk format of extended attributes for the ext2 filesystem.
++ *
++ * (C) 2001 Andreas Gruenbacher, <a.gruenbacher@computer.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __F2FS_XATTR_H__
++#define __F2FS_XATTR_H__
++
++#include <linux/init.h>
++#include <linux/xattr.h>
++
++/* Magic value in attribute blocks */
++#define F2FS_XATTR_MAGIC                0xF2F52011
++
++/* Maximum number of references to one attribute block */
++#define F2FS_XATTR_REFCOUNT_MAX         1024
++
++/* Name indexes */
++#define F2FS_XATTR_INDEX_USER                   1
++#define F2FS_XATTR_INDEX_POSIX_ACL_ACCESS       2
++#define F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT      3
++#define F2FS_XATTR_INDEX_TRUSTED                4
++#define F2FS_XATTR_INDEX_LUSTRE                 5
++#define F2FS_XATTR_INDEX_SECURITY               6
++
++struct f2fs_xattr_header {
++	__le32  h_magic;        /* magic number for identification */
++	__le32  h_refcount;     /* reference count */
++	__u32   h_reserved[4];  /* zero right now */
++};
++
++struct f2fs_xattr_entry {
++	__u8    e_name_index;
++	__u8    e_name_len;
++	__le16  e_value_size;   /* size of attribute value */
++	char    e_name[0];      /* attribute name */
++};
++
++#define XATTR_HDR(ptr)		((struct f2fs_xattr_header *)(ptr))
++#define XATTR_ENTRY(ptr)	((struct f2fs_xattr_entry *)(ptr))
++#define XATTR_FIRST_ENTRY(ptr)	(XATTR_ENTRY(XATTR_HDR(ptr)+1))
++#define XATTR_ROUND		(3)
++
++#define XATTR_ALIGN(size)	((size + XATTR_ROUND) & ~XATTR_ROUND)
++
++#define ENTRY_SIZE(entry) (XATTR_ALIGN(sizeof(struct f2fs_xattr_entry) + \
++			entry->e_name_len + le16_to_cpu(entry->e_value_size)))
++
++#define XATTR_NEXT_ENTRY(entry)	((struct f2fs_xattr_entry *)((char *)(entry) +\
++			ENTRY_SIZE(entry)))
++
++#define IS_XATTR_LAST_ENTRY(entry) (*(__u32 *)(entry) == 0)
++
++#define list_for_each_xattr(entry, addr) \
++		for (entry = XATTR_FIRST_ENTRY(addr);\
++				!IS_XATTR_LAST_ENTRY(entry);\
++				entry = XATTR_NEXT_ENTRY(entry))
++
++
++#define MIN_OFFSET	XATTR_ALIGN(PAGE_SIZE - \
++			sizeof(struct node_footer) - \
++			sizeof(__u32))
++
++#define MAX_VALUE_LEN	(MIN_OFFSET - sizeof(struct f2fs_xattr_header) - \
++			sizeof(struct f2fs_xattr_entry))
++
++/**
++ * On-disk structure of f2fs_xattr
++ * We use only 1 block for xattr.
++ *
++ * +--------------------+
++ * | f2fs_xattr_header  |
++ * |                    |
++ * +--------------------+
++ * | f2fs_xattr_entry   |
++ * | .e_name_index = 1  |
++ * | .e_name_len = 3    |
++ * | .e_value_size = 14 |
++ * | .e_name = "foo"    |
++ * | "value_of_xattr"   |<- value_offs = e_name + e_name_len
++ * +--------------------+
++ * | f2fs_xattr_entry   |
++ * | .e_name_index = 4  |
++ * | .e_name = "bar"    |
++ * +--------------------+
++ * |                    |
++ * |        Free        |
++ * |                    |
++ * +--------------------+<- MIN_OFFSET
++ * |   node_footer      |
++ * | (nid, ino, offset) |
++ * +--------------------+
++ *
++ **/
++
++#ifdef CONFIG_F2FS_FS_XATTR
++extern const struct xattr_handler f2fs_xattr_user_handler;
++extern const struct xattr_handler f2fs_xattr_trusted_handler;
++extern const struct xattr_handler f2fs_xattr_acl_access_handler;
++extern const struct xattr_handler f2fs_xattr_acl_default_handler;
++
++extern const struct xattr_handler *f2fs_xattr_handlers[];
++
++extern int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
++		const void *value, size_t value_len);
++extern int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
++		void *buffer, size_t buffer_size);
++extern ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
++		size_t buffer_size);
++
++#else
++
++#define f2fs_xattr_handlers	NULL
++static inline int f2fs_setxattr(struct inode *inode, int name_index,
++	const char *name, const void *value, size_t value_len)
++{
++	return -EOPNOTSUPP;
++}
++static inline int f2fs_getxattr(struct inode *inode, int name_index,
++		const char *name, void *buffer, size_t buffer_size)
++{
++	return -EOPNOTSUPP;
++}
++static inline ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
++		size_t buffer_size)
++{
++	return -EOPNOTSUPP;
++}
++#endif
++
++#endif /* __F2FS_XATTR_H__ */
 -- 
 1.7.9.5
 
