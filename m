@@ -1,293 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2JETmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:42:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54966 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab2JETmJ (ORCPT
+	id S1756350Ab2JETnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:43:01 -0400
+Received: from nm8.bullet.mail.sp2.yahoo.com ([98.139.91.78]:37418 "HELO
+	nm8.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751381Ab2JETm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:42:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <506E4571.4090608@jp.fujitsu.com>
-References: <506E43E0.70507@jp.fujitsu.com> <506E4571.4090608@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 5 Oct 2012 15:36:52 -0400
-X-Google-Sender-Auth: hB3ePeGUCFEAA9yoXs1wLJwMXUE
-Message-ID: <CAHGf_=rc9z7OmuH-pamQmPE=dpy3zPX3fXab=-APo2_NX7=KpQ@mail.gmail.com>
-Subject: Re: [PATCH 2/10] memory-hotplug : remove /sys/firmware/memmap/X sysfs
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 5 Oct 2012 15:42:58 -0400
+X-Yahoo-Newman-Id: 729405.93303.bm@omp1012.access.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: xuIG2GoVM1mYLQw_ZXljAbyUi1WkC59S5N7M2HlXtOEF3e5
+ QoQRm6NpmaTTAO4bW9w428XMzBWVmB3jIBH0qPp6W_2SCWNnCc6NzBm9dfiA
+ 6Jy74.8jWLW_2v8rqeZbPOR7gnLLhin0Mh3xeyh2.MXS8ob_Y8DYqo63rtmS
+ nbGKB4.VHRmsYWXO4qFXaFpLK2KPfsQ6BBn.uiBKB1u.puZkLvV.MBjlxigq
+ .9SisNEi0s5DFu0hMtZwWq5ChgBIO5CsjtnhLATnDDS5cPiPSKz3L7vuW6oi
+ hqjphpISciR8HjyNV8M6BV5o4LrT8rq5XGhyJIR6M1RjeqdZ4Dimp7ttUDfb
+ Xo02ExWJVU4VS4VAbikXAfmtfIEYfervfiMztrvCrkxPuLw_syx8NSxkm6i0
+ KxHMvbWcOhuYH_ngGDTWJH0eSXvhQTitFlvlzxOsqJwhqM0wueNiS6g--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+From: danielfsantos@att.net
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: [PATCH v2 01/10] compiler-gcc4.h: Reorder macros based upon gcc ver
+Date: Fri,  5 Oct 2012 14:42:40 -0500
+Message-Id: <1349466169-20637-1-git-send-email-daniel.santos@pobox.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 10:26 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-> sysfs files are created. But there is no code to remove these files. The patch
-> implements the function to remove them.
->
-> Note : The code does not free firmware_map_entry since there is no way to free
->        memory which is allocated by bootmem.
+This helps to keep the file from getting confusing, removes one
+duplicate version check and should encourage future editors to put new
+macros where they belong.
 
-You have to explain why this is ok. I guess the unfreed
-firmware_map_entry is reused
-at next online memory and don't make memory leak, right?
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/compiler-gcc4.h |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 8721704..4506d65 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -13,6 +13,10 @@
+ #define __must_check 		__attribute__((warn_unused_result))
+ #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+ 
++#if __GNUC_MINOR__ > 0
++# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
++#endif
++
+ #if __GNUC_MINOR__ >= 3
+ /* Mark functions as cold. gcc will assume any path leading to a call
+    to them will be unlikely.  This means a lot of manual unlikely()s
+@@ -31,6 +35,12 @@
+ 
+ #define __linktime_error(message) __attribute__((__error__(message)))
+ 
++#ifndef __CHECKER__
++# define __compiletime_warning(message) __attribute__((warning(message)))
++# define __compiletime_error(message) __attribute__((error(message)))
++#endif /* __CHECKER__ */
++#endif /* __GNUC_MINOR__ >= 3 */
++
+ #if __GNUC_MINOR__ >= 5
+ /*
+  * Mark a position in code as unreachable.  This can be used to
+@@ -46,8 +56,7 @@
+ /* Mark a function definition as prohibited from being cloned. */
+ #define __noclone	__attribute__((__noclone__))
+ 
+-#endif
+-#endif
++#endif /* __GNUC_MINOR__ >= 5 */
+ 
+ #if __GNUC_MINOR__ >= 6
+ /*
+@@ -56,10 +65,3 @@
+ #define __visible __attribute__((externally_visible))
+ #endif
+ 
+-#if __GNUC_MINOR__ > 0
+-#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+-#endif
+-#if __GNUC_MINOR__ >= 3 && !defined(__CHECKER__)
+-#define __compiletime_warning(message) __attribute__((warning(message)))
+-#define __compiletime_error(message) __attribute__((error(message)))
+-#endif
+-- 
+1.7.3.4
 
-
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> ---
->  drivers/firmware/memmap.c    |   98 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/firmware-map.h |    6 ++
->  mm/memory_hotplug.c          |    7 ++-
->  3 files changed, 108 insertions(+), 3 deletions(-)
->
-> Index: linux-3.6/drivers/firmware/memmap.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/firmware/memmap.c    2012-10-04 18:27:05.195500420 +0900
-> +++ linux-3.6/drivers/firmware/memmap.c 2012-10-04 18:27:18.901514330 +0900
-> @@ -21,6 +21,7 @@
->  #include <linux/types.h>
->  #include <linux/bootmem.h>
->  #include <linux/slab.h>
-> +#include <linux/mm.h>
->
->  /*
->   * Data types ------------------------------------------------------------------
-> @@ -41,6 +42,7 @@ struct firmware_map_entry {
->         const char              *type;  /* type of the memory range */
->         struct list_head        list;   /* entry for the linked list */
->         struct kobject          kobj;   /* kobject for each entry */
-> +       unsigned int            bootmem:1; /* allocated from bootmem */
-
-Use bool.
-
-
->  };
->
->  /*
-> @@ -79,7 +81,26 @@ static const struct sysfs_ops memmap_att
->         .show = memmap_attr_show,
->  };
->
-> +
-> +static inline struct firmware_map_entry *
-> +to_memmap_entry(struct kobject *kobj)
-> +{
-> +       return container_of(kobj, struct firmware_map_entry, kobj);
-> +}
-> +
-> +static void release_firmware_map_entry(struct kobject *kobj)
-> +{
-> +       struct firmware_map_entry *entry = to_memmap_entry(kobj);
-> +
-> +       if (entry->bootmem)
-> +               /* There is no way to free memory allocated from bootmem */
-> +               return;
-> +
-> +       kfree(entry);
-> +}
-> +
->  static struct kobj_type memmap_ktype = {
-> +       .release        = release_firmware_map_entry,
->         .sysfs_ops      = &memmap_attr_ops,
->         .default_attrs  = def_attrs,
->  };
-> @@ -94,6 +115,7 @@ static struct kobj_type memmap_ktype = {
->   * in firmware initialisation code in one single thread of execution.
->   */
->  static LIST_HEAD(map_entries);
-> +static DEFINE_SPINLOCK(map_entries_lock);
->
->  /**
->   * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
-> @@ -118,11 +140,25 @@ static int firmware_map_add_entry(u64 st
->         INIT_LIST_HEAD(&entry->list);
->         kobject_init(&entry->kobj, &memmap_ktype);
->
-> +       spin_lock(&map_entries_lock);
->         list_add_tail(&entry->list, &map_entries);
-> +       spin_unlock(&map_entries_lock);
->
->         return 0;
->  }
->
-> +/**
-> + * firmware_map_remove_entry() - Does the real work to remove a firmware
-> + * memmap entry.
-> + * @entry: removed entry.
-> + **/
-> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-
-Don't use inline in *.c file. gcc is wise than you.
-
-> +{
-> +       spin_lock(&map_entries_lock);
-> +       list_del(&entry->list);
-> +       spin_unlock(&map_entries_lock);
-> +}
-> +
->  /*
->   * Add memmap entry on sysfs
->   */
-> @@ -144,6 +180,35 @@ static int add_sysfs_fw_map_entry(struct
->         return 0;
->  }
->
-> +/*
-> + * Remove memmap entry on sysfs
-> + */
-> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-> +{
-> +       kobject_put(&entry->kobj);
-> +}
-> +
-> +/*
-> + * Search memmap entry
-> + */
-> +
-> +static struct firmware_map_entry * __meminit
-> +firmware_map_find_entry(u64 start, u64 end, const char *type)
-> +{
-> +       struct firmware_map_entry *entry;
-> +
-> +       spin_lock(&map_entries_lock);
-> +       list_for_each_entry(entry, &map_entries, list)
-> +               if ((entry->start == start) && (entry->end == end) &&
-> +                   (!strcmp(entry->type, type))) {
-> +                       spin_unlock(&map_entries_lock);
-> +                       return entry;
-> +               }
-> +
-> +       spin_unlock(&map_entries_lock);
-> +       return NULL;
-> +}
-> +
->  /**
->   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->   * memory hotplug.
-> @@ -193,9 +258,36 @@ int __init firmware_map_add_early(u64 st
->         if (WARN_ON(!entry))
->                 return -ENOMEM;
->
-> +       entry->bootmem = 1;
->         return firmware_map_add_entry(start, end, type, entry);
->  }
->
-> +/**
-> + * firmware_map_remove() - remove a firmware mapping entry
-> + * @start: Start of the memory range.
-> + * @end:   End of the memory range.
-> + * @type:  Type of the memory range.
-> + *
-> + * removes a firmware mapping entry.
-> + *
-> + * Returns 0 on success, or -EINVAL if no entry.
-> + **/
-> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-
-Remove type argument if this is always passed "System RAM".
-
-> +{
-> +       struct firmware_map_entry *entry;
-> +
-> +       entry = firmware_map_find_entry(start, end - 1, type);
-> +       if (!entry)
-> +               return -EINVAL;
-> +
-> +       firmware_map_remove_entry(entry);
-> +
-> +       /* remove the memmap entry */
-> +       remove_sysfs_fw_map_entry(entry);
-> +
-> +       return 0;
-> +}
-> +
->  /*
->   * Sysfs functions -------------------------------------------------------------
->   */
-> @@ -217,8 +309,10 @@ static ssize_t type_show(struct firmware
->         return snprintf(buf, PAGE_SIZE, "%s\n", entry->type);
->  }
->
-> -#define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
-> -#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-> +static inline struct memmap_attribute *to_memmap_attr(struct attribute *attr)
-> +{
-> +       return container_of(attr, struct memmap_attribute, attr);
-> +}
->
->  static ssize_t memmap_attr_show(struct kobject *kobj,
->                                 struct attribute *attr, char *buf)
-> Index: linux-3.6/include/linux/firmware-map.h
-> ===================================================================
-> --- linux-3.6.orig/include/linux/firmware-map.h 2012-10-04 18:27:05.197500422 +0900
-> +++ linux-3.6/include/linux/firmware-map.h      2012-10-04 18:27:18.904514333 +0900
-> @@ -25,6 +25,7 @@
->
->  int firmware_map_add_early(u64 start, u64 end, const char *type);
->  int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-> +int firmware_map_remove(u64 start, u64 end, const char *type);
->
->  #else /* CONFIG_FIRMWARE_MEMMAP */
->
-> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
->         return 0;
->  }
->
-> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-> +{
-> +       return 0;
-> +}
-> +
->  #endif /* CONFIG_FIRMWARE_MEMMAP */
->
->  #endif /* _LINUX_FIRMWARE_MAP_H */
-> Index: linux-3.6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 18:27:03.000000000 +0900
-> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 18:28:42.851599524 +0900
-> @@ -1043,7 +1043,7 @@ int offline_memory(u64 start, u64 size)
->         return 0;
->  }
->
-> -int remove_memory(int nid, u64 start, u64 size)
-> +int __ref remove_memory(int nid, u64 start, u64 size)
->  {
->         int ret = 0;
->         lock_memory_hotplug();
-> @@ -1056,8 +1056,13 @@ int remove_memory(int nid, u64 start, u6
->                         "because the memmory range is online\n",
->                         start, start + size);
->                 ret = -EAGAIN;
-> +               goto out;
->         }
->
-> +       /* remove memmap entry */
-> +       firmware_map_remove(start, start + size, "System RAM");
-> +
-> +out:
->         unlock_memory_hotplug();
->         return ret;
->  }
-
-
-Other than that, looks ok to me.
