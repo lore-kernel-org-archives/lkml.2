@@ -1,46 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab2JEQVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:21:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41463 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756650Ab2JEQVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:21:03 -0400
-Date: Fri, 5 Oct 2012 09:20:55 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vineet.Gupta1@synopsys.com
-Subject: Re: [PATCH v3] serial/8250/8250_early: Prevent rounding error in
- uartclk
-Message-ID: <20121005162055.GA24092@kroah.com>
-References: <1349267263-21683-1-git-send-email-abrodkin@synopsys.com>
- <20121003133740.69c9dbce@bob.linux.org.uk>
- <506C3532.4020400@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506C3532.4020400@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932431Ab2JEQWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:22:17 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56232 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab2JEQWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:12 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 01/32 v3] USB: EHCI: remove IXP4xx EHCI driver
+Date: Fri,  5 Oct 2012 18:20:33 +0200
+Message-Id: <1349454064-11606-2-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
+References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:53:06PM +0400, Alexey Brodkin wrote:
-> On 03.10.2012 16:37, Alan Cox wrote:
-> >>So the bug had been latent and it only showed up with such low cock
-> >>rates.
-> >
-> >clock ?
-> >
-> >Perhaps Greg can tweak the description as it goes in - otherwise all
-> >fine with me
-> >
-> Sorry for this.
-> Essentially I meant "clock".
-> May do another respin if needed.
+This driver is not registered by any in-tree user. If needed it the EHCI
+driver can be reinstatied using the ehci-platform driver with caps_offset to
+0x100.
 
-Don't worry, I can edit it :)
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+No changes in v3
 
-greg k-h
+Changes in v2:
+- slightly reworded commit message
+
+ drivers/usb/host/ehci-hcd.c    |    5 --
+ drivers/usb/host/ehci-ixp4xx.c |  139 ----------------------------------------
+ 2 files changed, 144 deletions(-)
+ delete mode 100644 drivers/usb/host/ehci-ixp4xx.c
+
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 6bf6c42..442f774 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
+ #define	PLATFORM_DRIVER		ehci_orion_driver
+ #endif
+ 
+-#ifdef CONFIG_ARCH_IXP4XX
+-#include "ehci-ixp4xx.c"
+-#define	PLATFORM_DRIVER		ixp4xx_ehci_driver
+-#endif
+-
+ #ifdef CONFIG_USB_W90X900_EHCI
+ #include "ehci-w90x900.c"
+ #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
+diff --git a/drivers/usb/host/ehci-ixp4xx.c b/drivers/usb/host/ehci-ixp4xx.c
+deleted file mode 100644
+index f224c0a..0000000
+--- a/drivers/usb/host/ehci-ixp4xx.c
++++ /dev/null
+@@ -1,139 +0,0 @@
+-/*
+- * IXP4XX EHCI Host Controller Driver
+- *
+- * Author: Vladimir Barinov <vbarinov@embeddedalley.com>
+- *
+- * Based on "ehci-fsl.c" by Randy Vinson <rvinson@mvista.com>
+- *
+- * 2007 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/platform_device.h>
+-
+-static int ixp4xx_ehci_init(struct usb_hcd *hcd)
+-{
+-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+-	int retval = 0;
+-
+-	ehci->big_endian_desc = 1;
+-	ehci->big_endian_mmio = 1;
+-
+-	ehci->caps = hcd->regs + 0x100;
+-
+-	hcd->has_tt = 1;
+-
+-	retval = ehci_setup(hcd);
+-	if (retval)
+-		return retval;
+-
+-	ehci_port_power(ehci, 0);
+-
+-	return retval;
+-}
+-
+-static const struct hc_driver ixp4xx_ehci_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "IXP4XX EHCI Host Controller",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-	.reset			= ixp4xx_ehci_init,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-	.get_frame_number	= ehci_get_frame,
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-#if defined(CONFIG_PM)
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-#endif
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+-static int ixp4xx_ehci_probe(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd;
+-	const struct hc_driver *driver = &ixp4xx_ehci_hc_driver;
+-	struct resource *res;
+-	int irq;
+-	int retval;
+-
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev,
+-			"Found HC with no IRQ. Check %s setup!\n",
+-			dev_name(&pdev->dev));
+-		return -ENODEV;
+-	}
+-	irq = res->start;
+-
+-	hcd = usb_create_hcd(driver, &pdev->dev, dev_name(&pdev->dev));
+-	if (!hcd) {
+-		retval = -ENOMEM;
+-		goto fail_create_hcd;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev,
+-			"Found HC with no register addr. Check %s setup!\n",
+-			dev_name(&pdev->dev));
+-		retval = -ENODEV;
+-		goto fail_request_resource;
+-	}
+-	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = resource_size(res);
+-
+-	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (hcd->regs == NULL) {
+-		dev_dbg(&pdev->dev, "error mapping memory\n");
+-		retval = -EFAULT;
+-		goto fail_request_resource;
+-	}
+-
+-	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+-	if (retval)
+-		goto fail_request_resource;
+-
+-	return retval;
+-
+-fail_request_resource:
+-	usb_put_hcd(hcd);
+-fail_create_hcd:
+-	dev_err(&pdev->dev, "init %s fail, %d\n", dev_name(&pdev->dev), retval);
+-	return retval;
+-}
+-
+-static int ixp4xx_ehci_remove(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-
+-	usb_remove_hcd(hcd);
+-	usb_put_hcd(hcd);
+-
+-	return 0;
+-}
+-
+-MODULE_ALIAS("platform:ixp4xx-ehci");
+-
+-static struct platform_driver ixp4xx_ehci_driver = {
+-	.probe = ixp4xx_ehci_probe,
+-	.remove = ixp4xx_ehci_remove,
+-	.driver = {
+-		.name = "ixp4xx-ehci",
+-	},
+-};
+-- 
+1.7.9.5
+
