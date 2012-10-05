@@ -1,42 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2JEHom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:44:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2JEHol (ORCPT
+	id S1751844Ab2JEHqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:46:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35878 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2JEHqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:44:41 -0400
-Message-ID: <506E8FD7.5070203@canonical.com>
-Date: Fri, 05 Oct 2012 15:44:23 +0800
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 5 Oct 2012 03:46:51 -0400
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>
-CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, glin@suse.com,
-        Lee@grenadilla.canonical.com, Matthew Garrett <mjg@redhat.com>,
-        Peter Jones <pjones@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 2/3] efi: add efivars kobject to efi sysfs folder
-References: <1349416496.810874.88263724621.2.gpush@pecola> <1349419878.7884.15.camel@linux-s257.site>
-In-Reply-To: <1349419878.7884.15.camel@linux-s257.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <506E059B.40808@zytor.com>
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
+	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+	<CAE9FiQUMMRPb2u13R2b7hHSOTgb4jKcnbAace7T22_GCm=-HxQ@mail.gmail.com>
+	<20121004164551.GA2244@phenom.dumpdata.com>
+	<CAE9FiQWjXhat85JpXhCLApGe62mdCwb2HKhWGLjQdj2ed=6buA@mail.gmail.com>
+	<CAE9FiQVnTqWx808F_CWaiGXT12Y4rfKPOERtSgGb=2t_4T44+A@mail.gmail.com>
+	<506E029E.3000102@zytor.com>
+	<CAE9FiQWPNmsw9OMrdP7Q0JnjGv66PBkAcJQhizUm0Kji-yvw8g@mail.gmail.com>
+	<506E059B.40808@zytor.com>
+Date: Fri, 5 Oct 2012 00:46:49 -0700
+X-Google-Sender-Auth: S0AUq6H8LfVGrAWZoNMfovS0c4s
+Message-ID: <CAE9FiQW2-mZHbBeUZcLY-nyb41TDvr7uonnfdAeAML5rc_ZhfA@mail.gmail.com>
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0015175cd7ea1711b804cb4b13d4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joey,
+--0015175cd7ea1711b804cb4b13d4
+Content-Type: text/plain; charset=ISO-8859-1
 
-> Since more people prefer to use "efivarfs", so, I modified the patch for
-> replace "efivars" to "efivarfs" like following:
+On Thu, Oct 4, 2012 at 2:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> See my other post.  This is bringing up the Kernel Summit algorithm again.
+>
 
-I'd intentionally left this patch as-is. I think that the filesystem 
-should be called "efivarfs", while the directory should be called 
-"efivars". Same style as sysfs -> /sys.
+sure. please check if you are ok with attached one on top of x86/mm2
 
-Cheers,
+Thanks
 
+Yinghai
 
-Jeremy
+--0015175cd7ea1711b804cb4b13d4
+Content-Type: application/octet-stream; name="fix_max_pfn_xx_11.patch"
+Content-Disposition: attachment; filename="fix_max_pfn_xx_11.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h7wzdu1j0
 
+U3ViamVjdDogW1BBVENIXSB4ODY6IGdldCBlYXJseSBwYWdlIHRhYmxlIGZyb20gQlJLCgpzZXQg
+cGd0X2J1ZiBlYXJseSBmcm9tIEJSSywgYW5kIHVzZSBpdCB0byBtYXAgcGFnZSB0YWJsZSBhdCBm
+aXJzdC4KCmFsc28gdXNlIHRoZSBsZWZ0IGF0IGZpcnN0LCB0aGVuIHVzZSBuZXcgZXh0ZW5kIG9u
+ZS4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQog
+YXJjaC94ODYvaW5jbHVkZS9hc20vaW5pdC5oICAgIHwgICAgNCArKysrCiBhcmNoL3g4Ni9pbmNs
+dWRlL2FzbS9wZ3RhYmxlLmggfCAgICAxICsKIGFyY2gveDg2L2tlcm5lbC9zZXR1cC5jICAgICAg
+ICB8ICAgIDIgKysKIGFyY2gveDg2L21tL2luaXQuYyAgICAgICAgICAgICB8ICAgMjMgKysrKysr
+KysrKysrKysrKysrKysrKysKIGFyY2gveDg2L21tL2luaXRfMzIuYyAgICAgICAgICB8ICAgIDgg
+KysrKysrLS0KIGFyY2gveDg2L21tL2luaXRfNjQuYyAgICAgICAgICB8ICAgIDggKysrKysrLS0K
+IDYgZmlsZXMgY2hhbmdlZCwgNDIgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCkluZGV4
+OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oCj09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0t
+IGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaAorKysgbGludXgt
+Mi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaApAQCAtNTk5LDYgKzU5OSw3IEBAIHN0
+YXRpYyBpbmxpbmUgaW50IHBnZF9ub25lKHBnZF90IHBnZCkKIAogZXh0ZXJuIGludCBkaXJlY3Rf
+Z2JwYWdlczsKIHZvaWQgaW5pdF9tZW1fbWFwcGluZyh2b2lkKTsKK3ZvaWQgZWFybHlfYWxsb2Nf
+cGd0X2J1Zih2b2lkKTsKIAogLyogbG9jYWwgcHRlIHVwZGF0ZXMgbmVlZCBub3QgdXNlIHhjaGcg
+Zm9yIGxvY2tpbmcgKi8KIHN0YXRpYyBpbmxpbmUgcHRlX3QgbmF0aXZlX2xvY2FsX3B0ZXBfZ2V0
+X2FuZF9jbGVhcihwdGVfdCAqcHRlcCkKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwv
+c2V0dXAuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvc2V0
+dXAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCkBAIC05NTAsNiArOTUw
+LDggQEAgdm9pZCBfX2luaXQgc2V0dXBfYXJjaChjaGFyICoqY21kbGluZV9wKQogCiAJcmVzZXJ2
+ZV9pYmZ0X3JlZ2lvbigpOwogCisJZWFybHlfYWxsb2NfcGd0X2J1ZigpOworCiAJLyoKIAkgKiBO
+ZWVkIHRvIGNvbmNsdWRlIGJyaywgYmVmb3JlIG1lbWJsb2NrX3g4Nl9maWxsKCkKIAkgKiAgaXQg
+Y291bGQgdXNlIG1lbWJsb2NrX2ZpbmRfaW5fcmFuZ2UsIGNvdWxkIG92ZXJsYXAgd2l0aApJbmRl
+eDogbGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYu
+b3JpZy9hcmNoL3g4Ni9tbS9pbml0LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0LmMK
+QEAgLTIxLDYgKzIxLDEwIEBAIHVuc2lnbmVkIGxvbmcgX19pbml0ZGF0YSBwZ3RfYnVmX3N0YXJ0
+OwogdW5zaWduZWQgbG9uZyBfX21lbWluaXRkYXRhIHBndF9idWZfZW5kOwogdW5zaWduZWQgbG9u
+ZyBfX21lbWluaXRkYXRhIHBndF9idWZfdG9wOwogCit1bnNpZ25lZCBsb25nIF9faW5pdGRhdGEg
+ZWFybHlfcGd0X2J1Zl9zdGFydDsKK3Vuc2lnbmVkIGxvbmcgX19tZW1pbml0ZGF0YSBlYXJseV9w
+Z3RfYnVmX2VuZDsKK3Vuc2lnbmVkIGxvbmcgX19tZW1pbml0ZGF0YSBlYXJseV9wZ3RfYnVmX3Rv
+cDsKKwogaW50IGFmdGVyX2Jvb3RtZW07CiAKIGludCBkaXJlY3RfZ2JwYWdlcwpAQCAtMjkxLDYg
+KzI5NSwxMSBAQCBzdGF0aWMgdm9pZCBfX2luaXQgZmluZF9lYXJseV90YWJsZV9zcGFjCiAJaWYg
+KCFiYXNlKQogCQlwYW5pYygiQ2Fubm90IGZpbmQgc3BhY2UgZm9yIHRoZSBrZXJuZWwgcGFnZSB0
+YWJsZXMiKTsKIAorCWluaXRfbWVtb3J5X21hcHBpbmcoYmFzZSwgYmFzZSArIHRhYmxlcyk7CisJ
+cHJpbnRrKEtFUk5fREVCVUcgImtlcm5lbCBkaXJlY3QgbWFwcGluZyB0YWJsZXMgZnJvbSAlI2xs
+eCB0byAlI2xseCBAIFttZW0gJSMwMTBseC0lIzAxMGx4XVxuIiwKKwkJYmFzZSwgYmFzZSArIHRh
+YmxlcyAtIDEsIGVhcmx5X3BndF9idWZfc3RhcnQgPDwgUEFHRV9TSElGVCwKKwkJKGVhcmx5X3Bn
+dF9idWZfZW5kIDw8IFBBR0VfU0hJRlQpIC0gMSk7CisKIAlwZ3RfYnVmX3N0YXJ0ID0gYmFzZSA+
+PiBQQUdFX1NISUZUOwogCXBndF9idWZfZW5kID0gcGd0X2J1Zl9zdGFydDsKIAlwZ3RfYnVmX3Rv
+cCA9IHBndF9idWZfc3RhcnQgKyAodGFibGVzID4+IFBBR0VfU0hJRlQpOwpAQCAtNDM3LDYgKzQ0
+NiwyMCBAQCB2b2lkIF9faW5pdCBpbml0X21lbV9tYXBwaW5nKHZvaWQpCiAJZWFybHlfbWVtdGVz
+dCgwLCBtYXhfcGZuX21hcHBlZCA8PCBQQUdFX1NISUZUKTsKIH0KIAorUkVTRVJWRV9CUksoZWFy
+bHlfcGd0X2FsbG9jLCAxNjM4NCk7CisKK3ZvaWQgIF9faW5pdCBlYXJseV9hbGxvY19wZ3RfYnVm
+KHZvaWQpCit7CisJdW5zaWduZWQgbG9uZyB0YWJsZXMgPSAxMzg2NDsKKwlwaHlzX2FkZHJfdCBi
+YXNlOworCisJYmFzZSA9IF9fcGEoZXh0ZW5kX2Jyayh0YWJsZXMsIFBBR0VfU0laRSkpOworCisJ
+ZWFybHlfcGd0X2J1Zl9zdGFydCA9IGJhc2UgPj4gUEFHRV9TSElGVDsKKwllYXJseV9wZ3RfYnVm
+X2VuZCA9IGVhcmx5X3BndF9idWZfc3RhcnQ7CisJZWFybHlfcGd0X2J1Zl90b3AgPSBlYXJseV9w
+Z3RfYnVmX3N0YXJ0ICsgKHRhYmxlcyA+PiBQQUdFX1NISUZUKTsKK30KKwogLyoKICAqIGRldm1l
+bV9pc19hbGxvd2VkKCkgY2hlY2tzIHRvIHNlZSBpZiAvZGV2L21lbSBhY2Nlc3MgdG8gYSBjZXJ0
+YWluIGFkZHJlc3MKICAqIGlzIHZhbGlkLiBUaGUgYXJndW1lbnQgaXMgYSBwaHlzaWNhbCBwYWdl
+IG51bWJlci4KSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0XzMyLmMKPT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0vaW5pdF8zMi5jCisrKyBsaW51eC0yLjYv
+YXJjaC94ODYvbW0vaW5pdF8zMi5jCkBAIC02MSwxMCArNjEsMTQgQEAgYm9vbCBfX3JlYWRfbW9z
+dGx5IF9fdm1hbGxvY19zdGFydF9zZXQgPQogCiBzdGF0aWMgX19pbml0IHZvaWQgKmFsbG9jX2xv
+d19wYWdlKHZvaWQpCiB7Ci0JdW5zaWduZWQgbG9uZyBwZm4gPSBwZ3RfYnVmX2VuZCsrOworCXVu
+c2lnbmVkIGxvbmcgcGZuOwogCXZvaWQgKmFkcjsKIAotCWlmIChwZm4gPj0gcGd0X2J1Zl90b3Ap
+CisJaWYgKGVhcmx5X3BndF9idWZfZW5kIDwgZWFybHlfcGd0X2J1Zl90b3ApCisJCXBmbiA9IGVh
+cmx5X3BndF9idWZfZW5kKys7CisJZWxzZSBpZiAocGd0X2J1Zl9lbmQgPCBwZ3RfYnVmX3RvcCkK
+KwkJcGZuID0gcGd0X2J1Zl9lbmQrKzsKKwllbHNlCiAJCXBhbmljKCJhbGxvY19sb3dfcGFnZTog
+cmFuIG91dCBvZiBtZW1vcnkiKTsKIAogCWFkciA9IF9fdmEocGZuICogUEFHRV9TSVpFKTsKSW5k
+ZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKPT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgt
+Mi42Lm9yaWcvYXJjaC94ODYvbW0vaW5pdF82NC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYvbW0v
+aW5pdF82NC5jCkBAIC0zMTgsNyArMzE4LDcgQEAgdm9pZCBfX2luaXQgY2xlYW51cF9oaWdobWFw
+KHZvaWQpCiAKIHN0YXRpYyBfX3JlZiB2b2lkICphbGxvY19sb3dfcGFnZSh1bnNpZ25lZCBsb25n
+ICpwaHlzKQogewotCXVuc2lnbmVkIGxvbmcgcGZuID0gcGd0X2J1Zl9lbmQrKzsKKwl1bnNpZ25l
+ZCBsb25nIHBmbjsKIAl2b2lkICphZHI7CiAKIAlpZiAoYWZ0ZXJfYm9vdG1lbSkgewpAQCAtMzI4
+LDcgKzMyOCwxMSBAQCBzdGF0aWMgX19yZWYgdm9pZCAqYWxsb2NfbG93X3BhZ2UodW5zaWduCiAJ
+CXJldHVybiBhZHI7CiAJfQogCi0JaWYgKHBmbiA+PSBwZ3RfYnVmX3RvcCkKKwlpZiAoZWFybHlf
+cGd0X2J1Zl9lbmQgPCBlYXJseV9wZ3RfYnVmX3RvcCkKKwkJcGZuID0gZWFybHlfcGd0X2J1Zl9l
+bmQrKzsKKwllbHNlIGlmIChwZ3RfYnVmX2VuZCA8IHBndF9idWZfdG9wKQorCQlwZm4gPSBwZ3Rf
+YnVmX2VuZCsrOworCWVsc2UKIAkJcGFuaWMoImFsbG9jX2xvd19wYWdlOiByYW4gb3V0IG9mIG1l
+bW9yeSIpOwogCiAJYWRyID0gZWFybHlfbWVtcmVtYXAocGZuICogUEFHRV9TSVpFLCBQQUdFX1NJ
+WkUpOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL2luaXQuaAo9PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9pbml0LmgKKysrIGxp
+bnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9pbml0LmgKQEAgLTE2LDQgKzE2LDggQEAgZXh0
+ZXJuIHVuc2lnbmVkIGxvbmcgX19pbml0ZGF0YSBwZ3RfYnVmXwogZXh0ZXJuIHVuc2lnbmVkIGxv
+bmcgX19tZW1pbml0ZGF0YSBwZ3RfYnVmX2VuZDsKIGV4dGVybiB1bnNpZ25lZCBsb25nIF9fbWVt
+aW5pdGRhdGEgcGd0X2J1Zl90b3A7CiAKK2V4dGVybiB1bnNpZ25lZCBsb25nIF9faW5pdGRhdGEg
+ZWFybHlfcGd0X2J1Zl9zdGFydDsKK2V4dGVybiB1bnNpZ25lZCBsb25nIF9fbWVtaW5pdGRhdGEg
+ZWFybHlfcGd0X2J1Zl9lbmQ7CitleHRlcm4gdW5zaWduZWQgbG9uZyBfX21lbWluaXRkYXRhIGVh
+cmx5X3BndF9idWZfdG9wOworCiAjZW5kaWYgLyogX0FTTV9YODZfSU5JVF8zMl9IICovCg==
+--0015175cd7ea1711b804cb4b13d4--
