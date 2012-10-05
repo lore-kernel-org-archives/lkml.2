@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab2JEHMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:12:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64594 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab2JEHMa (ORCPT
+	id S1751609Ab2JEHPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:15:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58740 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2JEHPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:12:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <878vbl1ss0.fsf@rustcorp.com.au>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-	<CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
-	<87obki23uv.fsf@rustcorp.com.au>
-	<1349355032.2496.11.camel@falcor>
-	<878vbl1ss0.fsf@rustcorp.com.au>
-Date: Fri, 5 Oct 2012 00:12:29 -0700
-X-Google-Sender-Auth: X4CPS9AWn0Mko301eBJ7wk6N3WA
-Message-ID: <CAGXu5jKDXXX9gib2hEQpTHuLjRwcWAwcUMW5S9MvpMk6PP8r8Q@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-From: Kees Cook <keescook@chromium.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 5 Oct 2012 03:15:50 -0400
+From: Daniel J Blueman <daniel@quora.org>
+To: "Jean Delvare" <khali@linux-fr.org>
+Cc: "Ben Dooks" <ben-linux@fluff.org>, "Wolfram Sang" <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@quora.org>
+Subject: [PATCH] Fix Intel PIIX4 I2C driver build failure
+Date: Fri,  5 Oct 2012 12:21:11 +0800
+Message-Id: <1349410871-17140-1-git-send-email-daniel@quora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 8:50 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
->> Why?  Not only have you had these patches sitting for a while, way
->> before you had the kernel module patches, they've been acked/signed off
->> by Kees, Serge, Eric, and myself.  All security subtree maintainers.
->> The module patches could have easily been built on top of Kees' small
->> patches.  I am really disappointed!
->
-> Me too.
->
-> Linus' merge window opened on Monday 1-10-2012.  One week before that
-> was Monday 24-09-2012, which is the nominal close of my merge window.
->
-> The patches were sent on 21-09 (Friday for you, the weekend my time).
->
-> If I had nothing else to do on Monday, I would have applied it, but we
-> spent the week trying to get the module signing patches into shape :(
->
-> If I take them now, they need to go through linux-next.  That won't
-> happen until Monday.  I want two days in linux-next, so that people who
-> test linux-next get a chance to find issues, so that's Wednesday before
-> I send to Linus, which is getting very late into the merge window.
->
-> And keep adding two days for every trivial issue which is found :(
->
-> It's in my modules-wip branch for 3.8.
+Fix build failure in Intel PIIX4 I2C driver.
 
-Cool; better than not in at all. :) Thanks!
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+---
+ drivers/i2c/busses/i2c-piix4.c |    1 +
+ 1 file changed, 1 insertion(+)
 
--Kees
-
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index ef511df..8bbd6ec 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -37,6 +37,7 @@
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
++#include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/dmi.h>
+ #include <linux/acpi.h>
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.5
+
