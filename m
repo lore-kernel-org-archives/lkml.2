@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab2JEKUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:20:23 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46474 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081Ab2JEKUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:20:21 -0400
+	id S932166Ab2JEKU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:20:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44854 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932067Ab2JEKUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 06:20:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
+   d="scan'208";a="200910203"
+Date: Fri, 5 Oct 2012 13:22:00 +0300
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        davem@davemloft.net, levinsasha928@gmail.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net, bluetooth: don't attempt to free a channel that
+ wasn't created
+Message-ID: <20121005102159.GF12229@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>, marcel@holtmann.org,
+	gustavo@padovan.org, johan.hedberg@gmail.com, davem@davemloft.net,
+	levinsasha928@gmail.com, davej@redhat.com,
+	linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	netdev@vger.kernel.org
+References: <1349395197-12395-1-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20121005093232.GA7333@liondog.tnic>
-References: <CA+bLfK5FPqFvU2xy7xKdV4LkAvmY6GAPFrB-4UBzn-cOunQ6Xg@mail.gmail.com>
-	<CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
-	<20121005093232.GA7333@liondog.tnic>
-Date: Fri, 5 Oct 2012 11:20:20 +0100
-Message-ID: <CA+bLfK7+xpbbJp+1sJBOtjoT2auGpbKsVKoDMgRk95o-Fwm9RQ@mail.gmail.com>
-Subject: Re: interrupt context
-From: Iain Fraser <iainkfraser@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Iain Fraser <iainkfraser@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349395197-12395-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sasha,
 
-Thanks for the response. But it appears your example illustrates why its bad
-to sleep while you have a lock. Which I understand, what I wanted to know is
-why in interrupt context under no circumstances are you allowed to sleep?
+On Thu, Oct 04, 2012 at 07:59:57PM -0400, Sasha Levin wrote:
+> We may currently attempt to free a channel which wasn't created due to
+> an error in the initialization path, this would cause a NULL ptr deref.
 
-Btw I have no intention of doing this, I'm just curious. After
-thinking about it further
-I'm starting to think its a "design" decision as opposed to a side effect of the
-kernel implementation.
+Please put oops dump here.
 
-If you could answer:
+> Introduced in commit 61d6ef3e ("Bluetooth: Make better use of l2cap_chan
+> reference counting").
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  net/bluetooth/l2cap_sock.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+> index 083f2bf..66c295a 100644
+> --- a/net/bluetooth/l2cap_sock.c
+> +++ b/net/bluetooth/l2cap_sock.c
+> @@ -1083,7 +1083,8 @@ static void l2cap_sock_destruct(struct sock *sk)
+>  {
+>  	BT_DBG("sk %p", sk);
+>  
+> -	l2cap_chan_put(l2cap_pi(sk)->chan);
+> +	if (l2cap_pi(sk)->chan)
+> +		l2cap_chan_put(l2cap_pi(sk)->chan);
 
-"How can the system timer ( obviously in interrupt context ) call
-schedule when it is impossible to sleep/schedule in interrupt context?"
+This does not look right, I suppose you want to put somewhere missing
+chan_hold
 
-That would help me greatly.
+>  	if (l2cap_pi(sk)->rx_busy_skb) {
+>  		kfree_skb(l2cap_pi(sk)->rx_busy_skb);
+>  		l2cap_pi(sk)->rx_busy_skb = NULL;
+> -- 
+> 1.7.12
 
-Thanks again
-iain
-
-On Fri, Oct 5, 2012 at 10:32 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Fri, Oct 05, 2012 at 09:51:55AM +0100, Iain Fraser wrote:
->> Hello,
->>
->> I understand the interrupts and softirq's run in interrupt context (
->> as opposed to process context ). But what I
->> don't understand is why you cannot sleep in interrupt context?
->>
->> What I have read it states that it doesn't have a process to schedule
->> out. But interrupts use the interrupted processes
->> kernel stack just like a syscall. So surely it is possible to sleep
->> using that stack. Understandably It would be unfair on the process
->> that blocked through no fault of its own.
->>
->> Also if you are not allowed to sleep / schedule during interrupt
->> context. Then how does the system timer pre-empt processes by
->> calling schedule?
->>
->> I understand there are many reasons why you shouldn't: irq lines being
->> disabled, quick completion, etc. But I don't understand
->> why you cannot.
->
-> Let's imagine for a second we could sleep in IRQ context and we had some
-> dummy process entity we can schedule out from.
->
-> So, we schedule out and run another process which enters the kernel and
-> grabs a lock L.
->
-> At that exact moment, another IRQ on the same line is raised, we execute
-> the same IRQ handler which purely coincidentally starts busy-waiting on
-> the same lock L.
->
-> How long do you think we'll be busy waiting in IRQ context on that lock?
->
-> :-)
->
-> HTH.
->
-> --
-> Regards/Gruss,
->     Boris.
+Best regards 
+Andrei Emeltchenko 
