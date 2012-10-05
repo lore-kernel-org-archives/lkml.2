@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab2JEOvD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:51:03 -0400
-Received: from ns.iliad.fr ([212.27.33.1]:55126 "EHLO ns.iliad.fr"
+	id S1756194Ab2JEOyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:54:07 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:50023 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204Ab2JEOvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:51:01 -0400
-Message-ID: <1349448659.28867.27.camel@sakura.staff.proxad.net>
-Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
- __alloc_pages_nodemask+0x1d4/0x68c()
-From: Maxime Bizon <mbizon@freebox.fr>
-Reply-To: mbizon@freebox.fr
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Date: Fri, 05 Oct 2012 16:50:59 +0200
-In-Reply-To: <1349442173.21172.66.camel@edumazet-glaptop>
-References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
-	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
-	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
-	 <1349368171.16011.79.camel@edumazet-glaptop>
-	 <1349422868.21172.38.camel@edumazet-glaptop>
-	 <1349434194.16710.44.camel@sakura.staff.proxad.net>
-	 <1349439732.21172.52.camel@edumazet-glaptop>
-	 <1349441509.28867.17.camel@sakura.staff.proxad.net>
-	 <1349442173.21172.66.camel@edumazet-glaptop>
-Organization: Freebox
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755257Ab2JEOyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 10:54:04 -0400
+Message-ID: <506EF48B.5070801@sgi.com>
+Date: Fri, 5 Oct 2012 09:54:03 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] revert "PCI: log vendor/device ID always"
+References: <1349187780-25692-1-git-send-email-nzimmer@sgi.com>  <CAErSpo7ZQEm9==nsGiH2c_ZG8LPP8MAA8M9xSPyWPtCW2EHUUQ@mail.gmail.com>  <506DB30F.2000704@sgi.com> <1349368662.2008.20.camel@joe-AO722>  <506EE6D5.4010603@sgi.com> <1349446478.2008.66.camel@joe-AO722>
+In-Reply-To: <1349446478.2008.66.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [128.162.233.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/05/2012 09:14 AM, Joe Perches wrote:
+> On Fri, 2012-10-05 at 08:55 -0500, Nathan Zimmer wrote:
+>> On 10/04/2012 11:37 AM, Joe Perches wrote:
+>>> On Thu, 2012-10-04 at 11:02 -0500, Nathan Zimmer wrote:
+>>>> At many of our customer sites the log level is set to KERN_DEBUG. It
+>>>> helps avoid reboots due to operator impatience.  Machines this large
+>>>> take significantly longer then typical to boot and seeing the extra
+>>>> messages reassures them that the kernel isn't hung.
+>>> That argues for adding some KERN_INFO "still booting" messages
+>>> not logging unnecessary KERN_DEBUG messages.
+>>>
+>> Actually I would think that argues for reducing boot times on these
+>> large systems.
+> Right.
+>
+> That's an independent argument, but sure, go ahead
+> and do that too.
+>
 
-On Fri, 2012-10-05 at 15:02 +0200, Eric Dumazet wrote:
 
-> On Fri, 2012-10-05 at 14:51 +0200, Maxime Bizon wrote:
-> 
-> > > New convention would be : pass number of needed bytes after current
-> > > tail, not after current end.
-> > 
-> > Fully agree on this
-> > 
-> 
-> Here is the proposal :
+Here is output for my workstation a simple 4x box
 
-Looks fine
+-bash-4.1$ dmesg | grep "type [0-9][0-9] class" | wc
+      12     108     804
+-bash-4.1$ dmesg | wc
+     744    6359   49474
 
-What is your plan for the actual pskb_expand_head() code now that you
-will have absolute values for headroom & tailroom ?
 
-Because there will still be callers that have no clue of required
-tailroom (nor further headroom requirement), like skb_cow() in
-vlan_reorder_header().
+Here is some output from one of the biggest boxes.
 
--- 
-Maxime
+-bash-4.1$ dmesg | wc
+   26503  235414 1811651
+-bash-4.1$ dmesg | grep "type [0-9][0-9] class" | wc
+   12085  108765  821780
+
+
 
 
