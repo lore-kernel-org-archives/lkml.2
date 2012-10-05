@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab2JEVDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 17:03:14 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:38872 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab2JEVDI convert rfc822-to-8bit (ORCPT
+	id S964818Ab2JEVEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 17:04:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12885 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275Ab2JEVEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 17:03:08 -0400
-X-Originating-IP: 217.70.178.138
-X-Originating-IP: 173.246.103.110
-Date: Fri, 5 Oct 2012 14:02:59 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+	Fri, 5 Oct 2012 17:04:11 -0400
+X-Authority-Analysis: v=2.0 cv=fb8vOjsF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=l-C6q13x6_kA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Xw4KYig8ptAA:10 a=HZJGGiqLAAAA:8 a=ybZZDoGAAAAA:8 a=cyPSiuf_e5D8SoU7SMMA:9 a=QEXdDO2ut3YA:10 a=HeoGohOdMD0A:10 a=qIVjreYYsbEA:10 a=Rwk2WqX-Gi0r00DO:21 a=E1mVqvkDOLoY0GGT:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349471048.6755.77.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 09/10] bug.h: Add BUILD_BUG_ON_MSG &
+ BUILD_BUG_INTERNAL{,2}
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: danielfsantos@att.net, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Christopher Li <sparse@chrisli.org>,
@@ -24,25 +28,21 @@ To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
-Subject: Re: [PATCH v2 09/10] bug.h: Add BUILD_BUG_ON_MSG &
- BUILD_BUG_INTERNAL{,2}
-Message-ID: <20121005210258.GB7362@jtriplet-mobl1>
-References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
- <1349466169-20637-9-git-send-email-daniel.santos@pobox.com>
- <20121005205858.GB28452@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Date: Fri, 05 Oct 2012 17:04:08 -0400
 In-Reply-To: <20121005205858.GB28452@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+	 <1349466169-20637-9-git-send-email-daniel.santos@pobox.com>
+	 <20121005205858.GB28452@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 10:58:58PM +0200, Borislav Petkov wrote:
+On Fri, 2012-10-05 at 22:58 +0200, Borislav Petkov wrote:
 > On Fri, Oct 05, 2012 at 02:42:48PM -0500, danielfsantos@att.net wrote:
 > > Add BUILD_BUG_ON_MSG which behaves like BUILD_BUG_ON (with optimizations
 > > turned enabled), except that it allows you to specify the error message
@@ -75,6 +75,9 @@ On Fri, Oct 05, 2012 at 10:58:58PM +0200, Borislav Petkov wrote:
 > > +#define CONCAT(a, b) _CONCAT1(a, b)
 > 
 > Let's call the indirection _CONCAT without the "1".
+
+You're stricter than I ;-)
+
 > 
 > > +#define UNIQUIFY(prefix) CONCAT(prefix, __LINE__)
 > > +
@@ -92,11 +95,11 @@ On Fri, Oct 05, 2012 at 10:58:58PM +0200, Borislav Petkov wrote:
 > Ditto. BUILD_BUG_INTERNAL2 should be __BUILD_BUG_INTERNAL and the one
 > calling it _BUILD_BUG_INTERNAL (with one underscore).
 
-Also, you don't need both the BUILD_BUG_INTERNAL and CONCAT/UNIQUIFY
-macros.  My original implementation just used the BUILD_BUG_INTERNAL
-family of macros; if you'd rather rename them, by all means do so, but I
-don't think you need two separate families of multiply-indirect macros.
+I thought about commenting about the '2' too, but figured it's only used
+internally by BUILD_BUG_INTERNAL and was really not too concerned about
+such a trivial thing. It could have been 42 for all I care ;-)
 
+> 
 > > +
 > > +/**
 > > + * BUILD_BUG_ON_MSG - break compile if a condition is true & emit supplied
@@ -113,10 +116,17 @@ don't think you need two separate families of multiply-indirect macros.
 > cc -Wall    macros.c   -o macros
 > macros.c: In function ‘main’:
 > macros.c:22:1: error: ‘__build_bug_on_failed_22’ undeclared (first use in this function)
+> 	^^^^
+> 
+> It is in front of the filename here.
+> 
+> macros.c:22:1: note: each undeclared identifier is reported only once for each function it appears in
+> make: *** [macros] Error 1
 
-Because without that, you end up writing multiple prototypes for the
-same function (__build_bug_on_failed) with different error attributes,
-and GCC will ignore all but the last error attribute it sees, even with
-a scoped prototype.
+I was thinking that the number was added as a safety measure that the
+line number would be shown for all versions of the compiler. I'm not
+sure it is.
 
-- Josh Triplett
+-- Steve
+
+
