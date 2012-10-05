@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab2JEG4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:56:46 -0400
+	id S1751901Ab2JEG4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:56:48 -0400
 Received: from adelie.canonical.com ([91.189.90.139]:39162 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab2JEG4p (ORCPT
+	with ESMTP id S1751569Ab2JEG4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:56:45 -0400
+	Fri, 5 Oct 2012 02:56:46 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 3/3] efi: Handle deletions and size changes in
- efivarfs_write_file
-Message-Id: <1349416496.810982.659496647274.3.gpush@pecola>
+Subject: [PATCH 2/3] efi: add efivars kobject to efi sysfs folder
+Message-Id: <1349416496.810874.88263724621.2.gpush@pecola>
 In-Reply-To: <1349416496.810727.310563927016.1.gpush@pecola>
 To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: <glin@suse.com>, Lee@grenadilla.canonical.com, Chun-Yi <jlee@suse.com>,
@@ -25,102 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A write to an efivarfs file will not always result in a variable of
-'count' size after the EFI SetVariable() call. We may have appended to
-the existing data (ie, with the EFI_VARIABLE_APPEND_WRITE attribute), or
-even have deleted the variable (with an authenticated variable update,
-with a zero datasize).
+From: Lee, Chun-Yi <joeyli.kernel@gmail.com>
 
-This change re-reads the updated variable from firmware, to check for
-size changes and deletions. In the latter case, we need to drop the
-dentry.
+UEFI variable filesystem need a new mount point, so this patch add
+efivars kobject to efi_kobj for create a /sys/firmware/efi/efivars
+folder.
 
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
 ---
- drivers/firmware/efivars.c |   49 +++++++++++++++++++++++++++++--------
- 1 file changed, 39 insertions(+), 10 deletions(-)
+ drivers/firmware/efivars.c |   11 +++++++++++
+ include/linux/efi.h        |    1 +
+ 2 files changed, 12 insertions(+)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index e1253d6..a422de3 100644
+index 4174f1b..e1253d6 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -647,6 +647,7 @@ static ssize_t efivarfs_file_write(struct file *file,
- 	u32 attributes;
- 	struct inode *inode = file->f_mapping->host;
- 	int datasize = count - sizeof(attributes);
-+	unsigned long newdatasize;
- 
- 	if (count < sizeof(attributes))
- 		return -EINVAL;
-@@ -685,32 +686,60 @@ static ssize_t efivarfs_file_write(struct file *file,
- 
- 	switch (status) {
- 	case EFI_SUCCESS:
--		mutex_lock(&inode->i_mutex);
--		i_size_write(inode, count);
--		mutex_unlock(&inode->i_mutex);
- 		break;
- 	case EFI_INVALID_PARAMETER:
- 		count = -EINVAL;
--		break;
-+		goto out;
- 	case EFI_OUT_OF_RESOURCES:
- 		count = -ENOSPC;
--		break;
-+		goto out;
- 	case EFI_DEVICE_ERROR:
- 		count = -EIO;
--		break;
-+		goto out;
- 	case EFI_WRITE_PROTECTED:
- 		count = -EROFS;
--		break;
-+		goto out;
- 	case EFI_SECURITY_VIOLATION:
- 		count = -EACCES;
--		break;
-+		goto out;
- 	case EFI_NOT_FOUND:
- 		count = -ENOENT;
--		break;
-+		goto out;
- 	default:
- 		count = -EINVAL;
--		break;
-+		goto out;
+@@ -1487,6 +1487,7 @@ void unregister_efivars(struct efivars *efivars)
+ 		sysfs_remove_bin_file(&efivars->kset->kobj, efivars->del_var);
+ 	kfree(efivars->new_var);
+ 	kfree(efivars->del_var);
++	kobject_put(efivars->kobject);
+ 	kset_unregister(efivars->kset);
+ }
+ EXPORT_SYMBOL_GPL(unregister_efivars);
+@@ -1518,6 +1519,13 @@ int register_efivars(struct efivars *efivars,
+ 		goto out;
  	}
-+
-+	/*
-+	 * Writing to the variable may have caused a change in size (which
-+	 * could either be an append or an overwrite), or the variable to be
-+	 * deleted. Perform a GetVariable() so we can tell what actually
-+	 * happened.
-+	 */
-+	newdatasize = 0;
-+	status = efivars->ops->get_variable(var->var.VariableName,
-+					    &var->var.VendorGuid,
-+					    NULL, &newdatasize,
-+					    NULL);
-+
-+	if (status == EFI_BUFFER_TOO_SMALL) {
-+		mutex_lock(&inode->i_mutex);
-+		i_size_write(inode, newdatasize + sizeof(attributes));
-+		mutex_unlock(&inode->i_mutex);
-+
-+	} else if (status == EFI_NOT_FOUND) {
-+		spin_lock(&efivars->lock);
-+		list_del(&var->list);
-+		spin_unlock(&efivars->lock);
-+		efivar_unregister(var);
-+		drop_nlink(inode);
-+		dput(file->f_dentry);
-+
-+	} else {
-+		pr_warn("efivarfs: inconsistent EFI variable implementation? "
-+				"status = %lx\n", status);
+ 
++	efivars->kobject = kobject_create_and_add("efivars", parent_kobj);
++	if (!efivars->kobject) {
++		pr_err("efivars: Subsystem registration failed.\n");
++		error = -ENOMEM;
++		goto err_unreg_vars;
 +	}
 +
- out:
- 	kfree(data);
+ 	/*
+ 	 * Per EFI spec, the maximum storage allocated for both
+ 	 * the variable name and variable data is 1024 bytes.
+@@ -1562,6 +1570,9 @@ int register_efivars(struct efivars *efivars,
  
+ 	register_filesystem(&efivarfs_type);
+ 
++err_unreg_vars:
++	kset_unregister(efivars->kset);
++
+ out:
+ 	kfree(variable_name);
+ 
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 1829a97..c993f54 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -654,6 +654,7 @@ struct efivars {
+ 	spinlock_t lock;
+ 	struct list_head list;
+ 	struct kset *kset;
++	struct kobject *kobject;
+ 	struct bin_attribute *new_var, *del_var;
+ 	const struct efivar_operations *ops;
+ 	struct efivar_entry *walk_entry;
