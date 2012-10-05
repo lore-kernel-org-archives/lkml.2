@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab2JEQDu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:03:50 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:48635 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab2JEQDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:03:48 -0400
-Date: Fri, 5 Oct 2012 18:03:36 +0200
-From: Borislav Petkov <bp@amd64.org>
+	id S1756657Ab2JEQGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:06:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32776 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756151Ab2JEQGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:06:34 -0400
+Date: Fri, 5 Oct 2012 09:06:30 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Cc: Borislav Petkov <bp@amd64.org>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
         LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
 Subject: Re: [PATCH] Fix bogus "callbacks suppressed" messages
-Message-ID: <20121005160336.GH24764@aftab.osrc.amd.com>
+Message-ID: <20121005160630.GA15269@kroah.com>
 References: <20121004124025.GC21028@aftab.osrc.amd.com>
  <20121004131101.GA245@x4>
  <506EC1AE.6000201@suse.cz>
@@ -46,17 +47,6 @@ On Fri, Oct 05, 2012 at 05:48:47PM +0200, Markus Trippelsdorf wrote:
 > is guarded by a switch statement and uses WARN_RATELIMIT(1,...). So it
 > could never trigger the bug.
 
-Yes, but you should say "it covers the bug with a brown paper bag
-because the condition is always true."
+Ok, thanks for digging that all up, I'll just merge this in for 3.7.
 
-:-)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+greg k-h
