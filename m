@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab2JEXKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 19:10:47 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62973 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2JEXKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 19:10:45 -0400
+	id S1754371Ab2JEXOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 19:14:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22834 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753033Ab2JEXOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 19:14:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
+   d="scan'208";a="201161934"
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad@linux.intel.com
+Subject: Re: [PATCH 00/33] AutoNUMA27
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+	<20121004113943.be7f92a0.akpm@linux-foundation.org>
+Date: Fri, 05 Oct 2012 16:14:44 -0700
+In-Reply-To: <20121004113943.be7f92a0.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Thu, 4 Oct 2012 11:39:43 -0700")
+Message-ID: <m24nm8wly3.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1595267.JDdDB2dfnM@vostro.rjw.lan>
-References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
-	<1938257.EXdpWtCqiy@vostro.rjw.lan>
-	<CAE9FiQXZqBE6BmQ5v-vDq2E5vmyU5QRNrjjYRYONQu6jiHGD6w@mail.gmail.com>
-	<1595267.JDdDB2dfnM@vostro.rjw.lan>
-Date: Fri, 5 Oct 2012 16:10:43 -0700
-X-Google-Sender-Auth: 44wywy_LSxWpyW9ofebwZAHh4po
-Message-ID: <CAE9FiQXraKirjQgRad2t87SmxsonDupkpE2BM6Ktx8yUdCPPiQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] ACPI: kill acpi_pci_root_start
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 5, 2012 at 4:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday 04 of October 2012 15:46:39 Yinghai Lu wrote:
->> > Your patches seem to affect all devices in the ACPI namespace added after
->> > boot, though, not only host bridges.
->>
->> yes, but it still should be safe.
+Andrew Morton <akpm@linux-foundation.org> writes:
+
+> On Thu,  4 Oct 2012 01:50:42 +0200
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
 >
-> I'm not really sure of that (what about undock/dock, for exmaple?) and it's
-> damn ugly.
-
-only one acpi_driver has .start , that is acpi_pci_root_driver.
-
-should be clean than with .add/start pair.
-
+>> This is a new AutoNUMA27 release for Linux v3.6.
 >
->> > And the problem seems to be that the scanning of the ACPI namespace and
->> > configuring the host bridge are kind of independent operations now.  What
->> > we should do, actually, seems to be something like this:
->> >
->> > (1) Configure the host bridge when discovered (i.e. do what the current
->> >     acpi_pci_root_add() does.
->> > (2) Parse the ACPI namespace under the host bridge (without binding ACPI
->> >     drivers to the struct acpi_device objects created in the process,
->> >     because they are known to correspond to PCI devices).
->> > (3) Run pci_bus_add_devices() for the bridge.
->> >
->> > in one routine.
->>
->> problem is still there. if 1 still has acpi_pci_root_add and pci_acpi_scan_root
->
-> OK, so why don't we do (2) in acpi_pci_root_add(), before pci_acpi_scan_root()
-> is called?
->
->> that scan pci devices. what is need is we need to bind 1 and 3 together.
+> Peter's numa/sched patches have been in -next for a week. 
 
-some one already walk the acpi space, and during that it create
-acpi_device for pci_root
-and then attach driver for that, aka acpi_pci_root_add is executing.
+Did they pass review? I have some doubts.
 
-Now you want to walking the acpi acpi space to create children devices
-before device_add really done for that pci root
-acpi device. ?
+The last time I looked it also broke numactl.
 
-is that some kind of nesting?
+> Guys, what's the plan here?
 
->
-> I don't understand now.  You said previously that we need the ACPI namespace
-> below the bridge to be scanned before (3), so why do you want to do (3) before
-> (2) now?
+Since they are both performance features their ultimate benefit
+is how much faster they make things (and how seldom they make things
+slower)
 
-purpose is calling pci_bus_add_devices in pci_acpi_scan_root.
+IMHO needs a performance shot-out. Run both on the same 10 workloads
+and see who wins. Just a lot of of work. Any volunteers?
 
-Yinghai
+For a change like this I think less regression is actually more
+important than the highest peak numbers.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
