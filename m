@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab2JETn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:43:29 -0400
-Received: from nm39-vm2.bullet.mail.bf1.yahoo.com ([72.30.239.146]:42414 "EHLO
-	nm39-vm2.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754609Ab2JETnY (ORCPT
+	id S1756927Ab2JETnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:43:42 -0400
+Received: from nm20-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.150]:35837 "HELO
+	nm20-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S964787Ab2JETng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:43:24 -0400
-X-Yahoo-Newman-Id: 702828.55233.bm@omp1012.access.mail.mud.yahoo.com
+	Fri, 5 Oct 2012 15:43:36 -0400
+X-Yahoo-Newman-Id: 119548.88533.bm@omp1030.access.mail.mud.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JcnYbFEVM1nbjWB9GKF.zeffP97x5ermyO6ZjXGzB8.F6RC
- 9aDuiBipME771vZk6Pu75qamDdAhkukHqnAi_gGmeavn_CVQPQzNsea.TxKd
- _9hWm_PgrBDypycA0BSURwV5.6Z4zGJYzdYgy3cwrGLxvTmAb_5lsJR._hUk
- CPc0_kXu2Oj.8ia8vWpR3HXUU.Mqk6K_TTVEJ0ob22gkyst.OnOzw0b7LveZ
- 3Ai_vGLVHI1hVz9qonW8yk1ZsLZfB4ISrA_59kSTLqU9WHpwm7ZUr_BY1i10
- 1..ov0HlGSqLneJBlowSTutWdNm4YA6U5XC9Kqp7dbV1w3xqqxGSxiBtf6Db
- Xj_OFMBBUFE.bFOjLDbm0SSiptz6e6MfClzOkRQ3C65ciHdTJSoBF_7kTBQR
- aboEcxJA8Wlh3wWV_m62tIycAJMRzln1vEyATl6xAcXwE2VNIQd9J
+X-YMail-OSG: FNrbDlwVM1nIs2gUh46jTqFxTwRnxrp5IOxIR0WlVp2Cm6e
+ CFzeEL3pd0RwARfX5myvTIWPNr1zn14vVqGw08b9jUXSAeqMdUOdq8nqS5wN
+ n7SRyVZQIHN54rrtE.DnT6dhUOq_kHx2hRgD25M25w13zfVQ0VYUczlOf_Hl
+ VvmQ7sXsXxb1HsqPz60GOnAruajfBWMmjGBaCeso2KxPEKabnq5emiScXavU
+ Tu4bZ.lBEmxR.43dOBHNZFSSonZX1lhkkwnzyRosJ5qLfjE41q7V1YhipntR
+ _oTsR2w3fu5wxYmQ0lJH8g8XY1JVTVLq9UYgx9je2ttJP0ftxnbOakBaEKN3
+ WUPbET2g.Rdbe5YeDFw9_9VOs6aiJgW1rl46Y0HWjDnvnCkGospBxT_Jbpbf
+ mz9CWOlNgTk3EvDDb0Bxh7bQhkJE1kgCydof7gvGB94ZMJJFIZXkO
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>
@@ -33,9 +33,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v2 04/10] bug.h: directly include linux/compiler.h
-Date: Fri,  5 Oct 2012 14:42:43 -0500
-Message-Id: <1349466169-20637-4-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v2 06/10] bug.h: Make BUILD_BUG_ON generate compile-time error
+Date: Fri,  5 Oct 2012 14:42:45 -0500
+Message-Id: <1349466169-20637-6-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
@@ -43,30 +43,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are just including asm/bug.h and expecting that linux/compiler.h will
-eventually be included to define __linktime_error (used in
-BUILD_BUG_ON). This patch includes it directly for clarity and to avoid
-the possibility of changes in <arch>/*/include/asm/bug.h being changed
-or not including linux/compiler.h for some reason. (Later patches will
-in this set use more macros defined in compiler*.h.)
+Negative sized arrays wont create a compile-time error in some cases
+starting with gcc 4.4 (e.g., inlined functions), but gcc 4.3 introduced
+the error function attribute that will.  This patch modifies
+BUILD_BUG_ON to behave like BUILD_BUG already does, using the error
+function attribute so that you don't have to build the entire kernel to
+discover that you have a problem, and then enjoy trying to track it down
+from a link-time error.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/bug.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/linux/bug.h |   24 ++++++++++++++----------
+ 1 files changed, 14 insertions(+), 10 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index aaac4bb..4bd74d8 100644
+index a03c3ef..3d4b564 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -2,6 +2,7 @@
- #define _LINUX_BUG_H
+@@ -43,24 +43,28 @@ struct pt_regs;
+  * @condition: the condition which the compiler should know is false.
+  *
+  * If you have some code which relies on certain constants being equal, or
+- * other compile-time-evaluated condition, you should use BUILD_BUG_ON to
++ * some other compile-time-evaluated condition, you should use BUILD_BUG_ON to
+  * detect if someone changes it.
+  *
+  * The implementation uses gcc's reluctance to create a negative array, but
+  * gcc (as of 4.4) only emits that error for obvious cases (eg. not arguments
+- * to inline functions).  So as a fallback we use the optimizer; if it can't
+- * prove the condition is false, it will cause a link error on the undefined
+- * "__build_bug_on_failed".  This error message can be harder to track down
+- * though, hence the two different methods.
++ * to inline functions).  Luckily, in 4.3 they added the "error" function
++ * attribute just for this type of case.  Thus, we use a negative sized array
++ * (should always create an error pre-gcc-4.4) and then call an undefined
++ * function with the error attribute (should always creates an error 4.3+).  If
++ * for some reason, neither creates a compile-time error, we'll still have a
++ * link-time error, which is harder to track down.
+  */
+ #ifndef __OPTIMIZE__
+ #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+ #else
+-extern int __build_bug_on_failed;
+-#define BUILD_BUG_ON(condition)					\
+-	do {							\
+-		((void)sizeof(char[1 - 2*!!(condition)]));	\
+-		if (condition) __build_bug_on_failed = 1;	\
++#define BUILD_BUG_ON(condition)						\
++	do {								\
++		extern void __build_bug_on_failed(void)			\
++			__compiletime_error("BUILD_BUG_ON failed");	\
++		((void)sizeof(char[1 - 2*!!(condition)]));		\
++		if (condition)						\
++			__build_bug_on_failed();			\
+ 	} while(0)
+ #endif
  
- #include <asm/bug.h>
-+#include <linux/compiler.h>
- 
- enum bug_trap_type {
- 	BUG_TRAP_TYPE_NONE = 0,
 -- 
 1.7.3.4
 
