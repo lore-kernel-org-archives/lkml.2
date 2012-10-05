@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab2JEVeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 17:34:18 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39285 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab2JEVdc (ORCPT
+	id S1757598Ab2JEVeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 17:34:24 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48503 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab2JEVeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 17:33:32 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: samuel@sortiz.org
-Cc: irda-users@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 8/20 V2] drivers/net/irda/pxaficp_ir.c: fix error return code
-Date: Fri,  5 Oct 2012 23:33:05 +0200
-Message-Id: <1349472786-10921-4-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1349472786-10921-1-git-send-email-peter.senna@gmail.com>
-References: <1349472786-10921-1-git-send-email-peter.senna@gmail.com>
+	Fri, 5 Oct 2012 17:34:20 -0400
+Date: Fri, 5 Oct 2012 17:34:54 -0400
+From: Matt Porter <mporter@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>, gururaja.hebbar@ti.com,
+        Sekhar Nori <nsekhar@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alsa Devel List <alsa-devel@alsa-project.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        Daniel Mack <zonque@gmail.com>
+Subject: Re: [PATCH 0/2] Convert davinci ASoC to genalloc SRAM
+Message-ID: <20121005213454.GO11149@beef>
+References: <1349345745-10584-1-git-send-email-mporter@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349345745-10584-1-git-send-email-mporter@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+On Thu, Oct 04, 2012 at 06:15:43AM -0400, Matt Porter wrote:
+> This series converts davinci ASoC to use genalloc and enables
+> that support on DA850. It applies on top of the uio_pruss/genalloc
+> series [1] which allows DaVinci to provide a gen_pool via pdata
+> for driver use.
+> 
+> I've tested this on the AM180x EVM. Note that prior to this,
+> the SRAM paths in the driver were completely unused. I've only
+> enabled ping-pong buffering on the platform I can test as it's
+> best to allow those with DM644x and similar platforms to set the
+> playback/capture sram size to something that's known to work
+> for them.
+> 
+> [1] http://www.spinics.net/lists/arm-kernel/msg198854.html
 
-The function pxa_irda_probe() return 0 for success and negative value
-for most of its internal tests failures. There is one exception
-that is error case going to err_mem_3:. For this error case, the
-function abort its success execution path, but returns non negative
-value, making it difficult for a caller function to notice the error.
+Tested again on top of v4 of the uio_pruss/genalloc series
+http://www.spinics.net/lists/arm-kernel/msg199255.html
+on next-20121005 since there's some conflicts falling out of
+of arm-soc and asoc/sound header move patches on mainline 
+atm.
 
-This patch fixes the error case that do not return negative value.
-
-This was found by Coccinelle, but the code change was made by hand.
-This patch is not robot generated.
-
-A simplified version of the semantic match that finds this problem is
-as follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-
----
-Change from V1:
-        Updated commit message. See:
-        http://www.kernelhub.org/?p=2&msg=139319
-
- drivers/net/irda/pxaficp_ir.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/irda/pxaficp_ir.c b/drivers/net/irda/pxaficp_ir.c
-index 002a442..858de05 100644
---- a/drivers/net/irda/pxaficp_ir.c
-+++ b/drivers/net/irda/pxaficp_ir.c
-@@ -846,8 +846,10 @@ static int pxa_irda_probe(struct platform_device *pdev)
- 		goto err_mem_2;
- 
- 	dev = alloc_irdadev(sizeof(struct pxa_irda));
--	if (!dev)
-+	if (!dev) {
-+		err = -ENOMEM;
- 		goto err_mem_3;
-+	}
- 
- 	SET_NETDEV_DEV(dev, &pdev->dev);
- 	si = netdev_priv(dev);
-
+-Matt
