@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2JEIXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:23:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58211 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab2JEIXJ convert rfc822-to-8bit (ORCPT
+	id S1753939Ab2JEIXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:23:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47737 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab2JEIX1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:23:09 -0400
+	Fri, 5 Oct 2012 04:23:27 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 21/28] leds-lp5521/5523: use lp55xx data structure on
- selftest
-Thread-Topic: [PATCH 21/28] leds-lp5521/5523: use lp55xx data structure on
- selftest
-Thread-Index: Ac2i0qAbzXntZC4wQKWM9/lG5n0hGQ==
-Date: Fri, 5 Oct 2012 08:22:58 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F6417681D@DQHE02.ent.ti.com>
+Subject: [PATCH 22/28] leds-lp5521/5523: clean up unused code
+Thread-Topic: [PATCH 22/28] leds-lp5521/5523: clean up unused code
+Thread-Index: Ac2i0qmuJ2HwnCGDSRCC80Hc5euY/g==
+Date: Fri, 5 Oct 2012 08:23:14 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F6417682E@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -31,157 +29,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The lp5521_chip and lp5523_chip are not used any more.
- The R/W functions are replaced with lp55xx common functions.
-
- LP5521 : Changes on checking the external clock
- The selftest device attribute is created only when the platform data exists.
- So no need to check whether the pdata is NULL or not.
- And just skip read status value in case of external clock mode.
-
- LP5523 : Like LP5521, pdata NULL checking is unnecessary.
+ Old data structures and I2C functions are not used any more.
+ Each driver uses the lp55xx common data and functions.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c |   18 +++++++++++-------
- drivers/leds/leds-lp5523.c |   43 ++++++++++++++++++++-----------------------
- 2 files changed, 31 insertions(+), 30 deletions(-)
+ drivers/leds/leds-lp5521.c |   61 -------------------------------------------
+ drivers/leds/leds-lp5523.c |   62 --------------------------------------------
+ 2 files changed, 123 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 84023e2..71e8d31 100644
+index 71e8d31..f810712 100644
 --- a/drivers/leds/leds-lp5521.c
 +++ b/drivers/leds/leds-lp5521.c
-@@ -398,19 +398,23 @@ static int lp5521_post_init_device(struct lp55xx_chip *chip)
- 	return 0;
+@@ -125,33 +125,6 @@
+ #define LP5521_RUN_G			0x08
+ #define LP5521_RUN_B			0x02
+ 
+-struct lp5521_engine {
+-	int		id;
+-	u8		mode;
+-	u8		prog_page;
+-	u8		engine_mask;
+-};
+-
+-struct lp5521_led {
+-	int			id;
+-	u8			chan_nr;
+-	u8			led_current;
+-	u8			max_current;
+-	struct led_classdev	cdev;
+-	struct work_struct	brightness_work;
+-	u8			brightness;
+-};
+-
+-struct lp5521_chip {
+-	struct lp5521_platform_data *pdata;
+-	struct mutex		lock; /* Serialize control */
+-	struct i2c_client	*client;
+-	struct lp5521_engine	engines[LP5521_MAX_ENGINES];
+-	struct lp5521_led	leds[LP5521_MAX_LEDS];
+-	u8			num_channels;
+-	u8			num_leds;
+-};
+-
+ static inline void lp5521_wait_opmode_done(void)
+ {
+ 	/* operation mode change needs to be longer than 153 us */
+@@ -164,40 +137,6 @@ static inline void lp5521_wait_enable_done(void)
+ 	usleep_range(500, 600);
  }
  
--static int lp5521_run_selftest(struct lp5521_chip *chip, char *buf)
-+static int lp5521_run_selftest(struct lp55xx_chip *chip, char *buf)
+-static inline struct lp5521_led *cdev_to_led(struct led_classdev *cdev)
+-{
+-	return container_of(cdev, struct lp5521_led, cdev);
+-}
+-
+-static inline struct lp5521_chip *engine_to_lp5521(struct lp5521_engine *engine)
+-{
+-	return container_of(engine, struct lp5521_chip,
+-			    engines[engine->id - 1]);
+-}
+-
+-static inline struct lp5521_chip *led_to_lp5521(struct lp5521_led *led)
+-{
+-	return container_of(led, struct lp5521_chip,
+-			    leds[led->id]);
+-}
+-
+-static inline int lp5521_write(struct i2c_client *client, u8 reg, u8 value)
+-{
+-	return i2c_smbus_write_byte_data(client, reg, value);
+-}
+-
+-static int lp5521_read(struct i2c_client *client, u8 reg, u8 *buf)
+-{
+-	s32 ret;
+-
+-	ret = i2c_smbus_read_byte_data(client, reg);
+-	if (ret < 0)
+-		return -EIO;
+-
+-	*buf = ret;
+-	return 0;
+-}
+-
+ static void lp5521_set_led_current(struct lp55xx_led *led, u8 led_current)
  {
-+	struct lp55xx_platform_data *pdata = chip->pdata;
- 	int ret;
- 	u8 status;
- 
--	ret = lp5521_read(chip->client, LP5521_REG_STATUS, &status);
-+	ret = lp55xx_read(chip, LP5521_REG_STATUS, &status);
- 	if (ret < 0)
- 		return ret;
- 
-+	if (pdata->clock_mode != LP55XX_CLOCK_EXT)
-+		return 0;
-+
- 	/* Check that ext clock is really in use if requested */
--	if (chip->pdata && chip->pdata->clock_mode == LP5521_CLOCK_EXT)
--		if  ((status & LP5521_EXT_CLK_USED) == 0)
--			return -EIO;
-+	if  ((status & LP5521_EXT_CLK_USED) == 0)
-+		return -EIO;
-+
- 	return 0;
- }
- 
-@@ -430,8 +434,8 @@ static ssize_t lp5521_selftest(struct device *dev,
- 			       struct device_attribute *attr,
- 			       char *buf)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct lp5521_chip *chip = i2c_get_clientdata(client);
-+	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
-+	struct lp55xx_chip *chip = led->chip;
- 	int ret;
- 
- 	mutex_lock(&chip->lock);
+ 	led->led_current = led_current;
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index cf629fb..9518be4 100644
+index 9518be4..463ab72 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -241,66 +241,63 @@ static ssize_t lp5523_selftest(struct device *dev,
- 			       struct device_attribute *attr,
- 			       char *buf)
+@@ -144,73 +144,11 @@ enum lp5523_chip_id {
+ 	LP55231,
+ };
+ 
+-struct lp5523_engine {
+-	int		id;
+-	u8		mode;
+-	u8		prog_page;
+-	u8		mux_page;
+-	u16		led_mux;
+-	u8		engine_mask;
+-};
+-
+-struct lp5523_led {
+-	int			id;
+-	u8			chan_nr;
+-	u8			led_current;
+-	u8			max_current;
+-	struct led_classdev     cdev;
+-	struct work_struct	brightness_work;
+-	u8			brightness;
+-};
+-
+-struct lp5523_chip {
+-	struct mutex		lock; /* Serialize control */
+-	struct i2c_client	*client;
+-	struct lp5523_engine	engines[LP5523_ENGINES];
+-	struct lp5523_led	leds[LP5523_LEDS];
+-	struct lp5523_platform_data *pdata;
+-	u8			num_channels;
+-	u8			num_leds;
+-};
+-
+ static inline void lp5523_wait_opmode_done(void)
  {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct lp5523_chip *chip = i2c_get_clientdata(client);
-+	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
-+	struct lp55xx_chip *chip = led->chip;
-+	struct lp55xx_platform_data *pdata = chip->pdata;
- 	int i, ret, pos = 0;
--	int led = 0;
- 	u8 status, adc, vdd;
+ 	usleep_range(1000, 2000);
+ }
  
- 	mutex_lock(&chip->lock);
- 
--	ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
-+	ret = lp55xx_read(chip, LP5523_REG_STATUS, &status);
- 	if (ret < 0)
- 		goto fail;
- 
- 	/* Check that ext clock is really in use if requested */
--	if ((chip->pdata) && (chip->pdata->clock_mode == LP5523_CLOCK_EXT))
-+	if (pdata->clock_mode == LP55XX_CLOCK_EXT) {
- 		if  ((status & LP5523_EXT_CLK_USED) == 0)
- 			goto fail;
-+	}
- 
- 	/* Measure VDD (i.e. VBAT) first (channel 16 corresponds to VDD) */
--	lp5523_write(chip->client, LP5523_REG_LED_TEST_CTRL,
--				    LP5523_EN_LEDTEST | 16);
-+	lp55xx_write(chip, LP5523_REG_LED_TEST_CTRL, LP5523_EN_LEDTEST | 16);
- 	usleep_range(3000, 6000); /* ADC conversion time is typically 2.7 ms */
--	ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
-+	ret = lp55xx_read(chip, LP5523_REG_STATUS, &status);
- 	if (!(status & LP5523_LEDTEST_DONE))
- 		usleep_range(3000, 6000); /* Was not ready. Wait little bit */
- 
--	ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &vdd);
-+	ret |= lp55xx_read(chip, LP5523_REG_LED_TEST_ADC, &vdd);
- 	vdd--;	/* There may be some fluctuation in measurement */
- 
--	for (i = 0; i < LP5523_LEDS; i++) {
-+	for (i = 0; i < LP5523_MAX_LEDS; i++) {
- 		/* Skip non-existing channels */
--		if (chip->pdata->led_config[i].led_current == 0)
-+		if (pdata->led_config[i].led_current == 0)
- 			continue;
- 
- 		/* Set default current */
--		lp5523_write(chip->client,
--			LP5523_REG_LED_CURRENT_BASE + i,
--			chip->pdata->led_config[i].led_current);
-+		lp55xx_write(chip, LP5523_REG_LED_CURRENT_BASE + i,
-+			pdata->led_config[i].led_current);
- 
--		lp5523_write(chip->client, LP5523_REG_LED_PWM_BASE + i, 0xff);
-+		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + i, 0xff);
- 		/* let current stabilize 2 - 4ms before measurements start */
- 		usleep_range(2000, 4000);
--		lp5523_write(chip->client,
--			     LP5523_REG_LED_TEST_CTRL,
-+		lp55xx_write(chip, LP5523_REG_LED_TEST_CTRL,
- 			     LP5523_EN_LEDTEST | i);
- 		/* ADC conversion time is 2.7 ms typically */
- 		usleep_range(3000, 6000);
--		ret = lp5523_read(chip->client, LP5523_REG_STATUS, &status);
-+		ret = lp55xx_read(chip, LP5523_REG_STATUS, &status);
- 		if (!(status & LP5523_LEDTEST_DONE))
- 			usleep_range(3000, 6000);/* Was not ready. Wait. */
--		ret |= lp5523_read(chip->client, LP5523_REG_LED_TEST_ADC, &adc);
-+		ret |= lp55xx_read(chip, LP5523_REG_LED_TEST_ADC, &adc);
- 
- 		if (adc >= vdd || adc < LP5523_ADC_SHORTCIRC_LIM)
- 			pos += sprintf(buf + pos, "LED %d FAIL\n", i);
- 
--		lp5523_write(chip->client, LP5523_REG_LED_PWM_BASE + i, 0x00);
-+		lp55xx_write(chip, LP5523_REG_LED_PWM_BASE + i, 0x00);
- 
- 		/* Restore current */
--		lp5523_write(chip->client,
--			LP5523_REG_LED_CURRENT_BASE + i,
--			chip->leds[led].led_current);
-+		lp55xx_write(chip, LP5523_REG_LED_CURRENT_BASE + i,
-+			led->led_current);
- 		led++;
- 	}
- 	if (pos == 0)
+-static inline struct lp5523_led *cdev_to_led(struct led_classdev *cdev)
+-{
+-	return container_of(cdev, struct lp5523_led, cdev);
+-}
+-
+-static inline struct lp5523_chip *engine_to_lp5523(struct lp5523_engine *engine)
+-{
+-	return container_of(engine, struct lp5523_chip,
+-			    engines[engine->id - 1]);
+-}
+-
+-static inline struct lp5523_chip *led_to_lp5523(struct lp5523_led *led)
+-{
+-	return container_of(led, struct lp5523_chip,
+-			    leds[led->id]);
+-}
+-
+-static int lp5523_write(struct i2c_client *client, u8 reg, u8 value)
+-{
+-	return i2c_smbus_write_byte_data(client, reg, value);
+-}
+-
+-static int lp5523_read(struct i2c_client *client, u8 reg, u8 *buf)
+-{
+-	s32 ret = i2c_smbus_read_byte_data(client, reg);
+-
+-	if (ret < 0)
+-		return -EIO;
+-
+-	*buf = ret;
+-	return 0;
+-}
+-
+ static int lp5523_post_init_device(struct lp55xx_chip *chip)
+ {
+ 	int ret;
 -- 
 1.7.9.5
 
