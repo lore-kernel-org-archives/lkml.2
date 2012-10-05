@@ -1,108 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab2JEQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:29:40 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56377 "EHLO zmc.proxad.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932680Ab2JEQWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:51 -0400
+	id S932770Ab2JEQ3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:29:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56336 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932708Ab2JEQ3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:29:41 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
-Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 18/32 v3] ARM: cns3xxx: use OHCI platform driver
-Date: Fri,  5 Oct 2012 18:20:50 +0200
-Message-Id: <1349454064-11606-19-git-send-email-florian@openwrt.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
-References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 31/32] USB: EHCI: make ehci-platform use devm_{ioremap,request_mem_region} helpers
+Date: Fri, 05 Oct 2012 18:28:38 +0200
+Message-ID: <2628717.3gQ4VMN7qb@flexo>
+Organization: OpenWrt
+User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1349454064-11606-32-git-send-email-florian@openwrt.org>
+References: <1349454064-11606-1-git-send-email-florian@openwrt.org> <1349454064-11606-32-git-send-email-florian@openwrt.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the cns3xxx platform to use the ohci-platform driver which
-is now suitable for use.
+FlorianOn Friday 05 October 2012 18:21:03  Fainelli wrote:
+> This patch changes the ehci-platform driver to use the device managed helper
+> functions for requesting memory region and ioremapping memory resources.
+> As a result the error path in the probe function is simplified, and the
+> platform driver remove callback does not longer need to release and iounmap
+> memory resources.
 
-A previous patch converted the cns3xxx platform to use the ehci-platform
-driver, and thus introduced the need to have power_{on,off} callbacks.
-Since both the EHCI and OHCI platform drivers use the same same power_{on,off}
-callbacks now, rename them to cns3xx_usb_power_{on,off} to show that they are
-shared.
+I just realized that I could use devm_request_and_ioremap() instead of these
+two calls. Alan, do you mind dropping these last two patches of my serie
+and me sending an updated version of both of these patches?
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
----
-Changes since v2:
-- improved commit message to give backround on the patch ordering and to
-  understand the commit message
+Thanks!
 
- arch/arm/mach-cns3xxx/cns3420vb.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
-index 906094c..8a00cee8 100644
---- a/arch/arm/mach-cns3xxx/cns3420vb.c
-+++ b/arch/arm/mach-cns3xxx/cns3420vb.c
-@@ -25,6 +25,7 @@
- #include <linux/mtd/physmap.h>
- #include <linux/mtd/partitions.h>
- #include <linux/usb/ehci_pdriver.h>
-+#include <linux/usb/ohci_pdriver.h>
- #include <asm/setup.h>
- #include <asm/mach-types.h>
- #include <asm/hardware/gic.h>
-@@ -127,7 +128,7 @@ static struct resource cns3xxx_usb_ehci_resources[] = {
- 
- static u64 cns3xxx_usb_ehci_dma_mask = DMA_BIT_MASK(32);
- 
--static int csn3xxx_usb_ehci_power_on(struct platform_device *pdev)
-+static int csn3xxx_usb_power_on(struct platform_device *pdev)
- {
- 	/*
- 	 * EHCI and OHCI share the same clock and power,
-@@ -148,7 +149,7 @@ static int csn3xxx_usb_ehci_power_on(struct platform_device *pdev)
- 	return 0;
- }
- 
--static void csn3xxx_usb_ehci_power_off(struct platform_device *pdev)
-+static void csn3xxx_usb_power_off(struct platform_device *pdev)
- {
- 	/*
- 	 * EHCI and OHCI share the same clock and power,
-@@ -162,8 +163,8 @@ static void csn3xxx_usb_ehci_power_off(struct platform_device *pdev)
- 
- static struct usb_ehci_pdata cns3xxx_usb_ehci_pdata = {
- 	.port_power_off	= 1,
--	.power_on	= csn3xxx_usb_ehci_power_on,
--	.power_off	= csn3xxx_usb_ehci_power_off,
-+	.power_on	= csn3xxx_usb_power_on,
-+	.power_off	= csn3xxx_usb_power_off,
- };
- 
- static struct platform_device cns3xxx_usb_ehci_device = {
-@@ -191,13 +192,20 @@ static struct resource cns3xxx_usb_ohci_resources[] = {
- 
- static u64 cns3xxx_usb_ohci_dma_mask = DMA_BIT_MASK(32);
- 
-+static struct usb_ohci_pdata cns3xxx_usb_ohci_pdata = {
-+	.num_ports	= 1,
-+	.power_on	= csn3xxx_usb_power_on,
-+	.power_off	= csn3xxx_usb_power_off,
-+};
-+
- static struct platform_device cns3xxx_usb_ohci_device = {
--	.name          = "cns3xxx-ohci",
-+	.name          = "ohci-platform",
- 	.num_resources = ARRAY_SIZE(cns3xxx_usb_ohci_resources),
- 	.resource      = cns3xxx_usb_ohci_resources,
- 	.dev           = {
- 		.dma_mask          = &cns3xxx_usb_ohci_dma_mask,
- 		.coherent_dma_mask = DMA_BIT_MASK(32),
-+		.platform_data	   = &cns3xxx_usb_ohci_pdata,
- 	},
- };
- 
--- 
-1.7.9.5
-
+> 
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+>  drivers/usb/host/ehci-platform.c |   16 ++++++----------
+>  1 file changed, 6 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+> index 3cb0b1b..ebe92cf 100644
+> --- a/drivers/usb/host/ehci-platform.c
+> +++ b/drivers/usb/host/ehci-platform.c
+> @@ -123,29 +123,27 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
+>  	hcd->rsrc_start = res_mem->start;
+>  	hcd->rsrc_len = resource_size(res_mem);
+>  
+> -	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+> +	if (!devm_request_mem_region(&dev->dev, hcd->rsrc_start,
+> +					hcd->rsrc_len, hcd_name)) {
+>  		dev_err(&dev->dev, "controller already in use");
+>  		err = -EBUSY;
+>  		goto err_put_hcd;
+>  	}
+>  
+> -	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
+> +	hcd->regs = devm_ioremap_nocache(&dev->dev, hcd->rsrc_start,
+> +						hcd->rsrc_len);
+>  	if (!hcd->regs) {
+>  		err = -ENOMEM;
+> -		goto err_release_region;
+> +		goto err_put_hcd;
+>  	}
+>  	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+>  	if (err)
+> -		goto err_iounmap;
+> +		goto err_put_hcd;
+>  
+>  	platform_set_drvdata(dev, hcd);
+>  
+>  	return err;
+>  
+> -err_iounmap:
+> -	iounmap(hcd->regs);
+> -err_release_region:
+> -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+>  err_put_hcd:
+>  	usb_put_hcd(hcd);
+>  err_power:
+> @@ -161,8 +159,6 @@ static int __devexit ehci_platform_remove(struct platform_device *dev)
+>  	struct usb_ehci_pdata *pdata = dev->dev.platform_data;
+>  
+>  	usb_remove_hcd(hcd);
+> -	iounmap(hcd->regs);
+> -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+>  	usb_put_hcd(hcd);
+>  	platform_set_drvdata(dev, NULL);
+>  
+> -- 
+> 1.7.9.5
+> 
