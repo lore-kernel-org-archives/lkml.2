@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2JEITO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:19:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55987 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab2JEITL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:19:11 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-CC: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/28] leds-lp5521/5523: use lp55xx data on _remove
-Thread-Topic: [PATCH 15/28] leds-lp5521/5523: use lp55xx data on _remove
-Thread-Index: Ac2i0hKOD/1/9NM7T1GNEziLjmuG4Q==
-Date: Fri, 5 Oct 2012 08:19:00 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F641767C4@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
+	id S1753811Ab2JEITs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:19:48 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48006 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab2JEITo convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:2>);
+	Fri, 5 Oct 2012 04:19:44 -0400
+Message-Id: <506EB43D020000780009FD4F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 05 Oct 2012 09:19:41 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matt Fleming" <matt@console-pimps.org>
+Cc: <mingo@kernel.org>, <x86@kernel.org>, <mjg@redhat.com>,
+        <linux-efi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86, mm: Include the entire kernel memory map
+ in trampoline_pgd
+References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
+ <1349269157-25956-2-git-send-email-matt@console-pimps.org>
+ <506C4C3A020000780008D041@nat28.tlf.novell.com>
+ <506DFAD8.5060701@zytor.com>
+ <506E9CDC020000780009FD13@nat28.tlf.novell.com>
+ <1349419680.15966.32.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1349419680.15966.32.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The lp55xx_led and lp55xx_chip are used in _probe().
- The lp5521_chip and lp5523_chip are not used any more.
- To avoid the compile error, old variable name is changed.
+>>> On 05.10.12 at 08:48, Matt Fleming <matt@console-pimps.org> wrote:
+> On Fri, 2012-10-05 at 07:39 +0100, Jan Beulich wrote:
+>> >>> On 04.10.12 at 23:08, "H. Peter Anvin" <hpa@zytor.com> wrote:
+>> > On 10/03/2012 06:31 AM, Jan Beulich wrote:
+>> >>>>> Matt Fleming <matt@console-pimps.org> 10/03/12 2:59 PM >>>
+>> >>> +static int insert_identity_mapping(resource_size_t paddr, unsigned long 
+>> > vaddr,
+>> >>> +                    unsigned long size)
+>> >>> +{
+>> >>> +    unsigned long end = vaddr + size;
+>> >>> +    unsigned long next;
+>> >>> +    pgd_t *vpgd, *ppgd;
+>> >>> +
+>> >>> +#ifdef CONFIG_X86_32
+>> >>> +    ppgd = initial_page_table + pgd_index(paddr);
+>> >>> +
+>> >>> +    if (paddr >= PAGE_OFFSET || paddr + size > PAGE_OFFSET)
+>> >>> +        return 1;
+>> >>> +#else
+>> >>> +    ppgd = __va(real_mode_header->trampoline_pgd) + pgd_index(paddr);
+>> >>
+>> >> Missing equivalent code (to the 32-bit one above) here - after all, you're 
+>> > trying
+>> >> to potentially insert a 52-bit physical address into 48-bit virtual space.
+>> >>
+>> > 
+>> > We should have the check, but at least for Linux support we require
+>> > P <= V-2.
+>> 
+>> Not really imo - P <= V - 1 should be sufficient here, as all that is
+>> necessary is that the result represents a 1:1 mapping. Specifically,
+>> there's no constraint to the virtual space limitation of the direct
+>> mapping of RAM.
+> 
+> Just to be clear, I was going to add this check,
+> 
+>         /* Don't map over the guard hole. */
+>         if (paddr >= 0x7fffffffffff || paddr + size > 0x7fffffffffff)
+>                 return 1;
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/leds/leds-lp5521.c |   20 +++++++++++---------
- drivers/leds/leds-lp5523.c |   18 ++++++++++--------
- 2 files changed, 21 insertions(+), 17 deletions(-)
+0x800000000000 would be the right numbers in both cases.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 06e5e76..56157e8 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -609,21 +609,23 @@ err_init:
- 
- static int __devexit lp5521_remove(struct i2c_client *client)
- {
--	struct lp5521_chip *chip = i2c_get_clientdata(client);
-+	struct lp5521_chip *old_chip = i2c_get_clientdata(client);
- 	int i;
-+	struct lp55xx_led *led = i2c_get_clientdata(client);
-+	struct lp55xx_chip *chip = led->chip;
- 
--	lp5521_run_led_pattern(PATTERN_OFF, chip);
-+	lp5521_run_led_pattern(PATTERN_OFF, old_chip);
- 	lp5521_unregister_sysfs(client);
- 
--	for (i = 0; i < chip->num_leds; i++) {
--		led_classdev_unregister(&chip->leds[i].cdev);
--		cancel_work_sync(&chip->leds[i].brightness_work);
-+	for (i = 0; i < old_chip->num_leds; i++) {
-+		led_classdev_unregister(&old_chip->leds[i].cdev);
-+		cancel_work_sync(&old_chip->leds[i].brightness_work);
- 	}
- 
--	if (chip->pdata->enable)
--		chip->pdata->enable(0);
--	if (chip->pdata->release_resources)
--		chip->pdata->release_resources();
-+	if (old_chip->pdata->enable)
-+		old_chip->pdata->enable(0);
-+	if (old_chip->pdata->release_resources)
-+		old_chip->pdata->release_resources();
- 	return 0;
- }
- 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index f40b058..52a9d85 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -590,23 +590,25 @@ err_init:
- 
- static int lp5523_remove(struct i2c_client *client)
- {
--	struct lp5523_chip *chip = i2c_get_clientdata(client);
-+	struct lp5523_chip *old_chip = i2c_get_clientdata(client);
- 	int i;
-+	struct lp55xx_led *led = i2c_get_clientdata(client);
-+	struct lp55xx_chip *chip = led->chip;
- 
- 	/* Disable engine mode */
- 	lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
- 
- 	lp5523_unregister_sysfs(client);
- 
--	for (i = 0; i < chip->num_leds; i++) {
--		led_classdev_unregister(&chip->leds[i].cdev);
--		flush_work(&chip->leds[i].brightness_work);
-+	for (i = 0; i < old_chip->num_leds; i++) {
-+		led_classdev_unregister(&old_chip->leds[i].cdev);
-+		flush_work(&old_chip->leds[i].brightness_work);
- 	}
- 
--	if (chip->pdata->enable)
--		chip->pdata->enable(0);
--	if (chip->pdata->release_resources)
--		chip->pdata->release_resources();
-+	if (old_chip->pdata->enable)
-+		old_chip->pdata->enable(0);
-+	if (old_chip->pdata->release_resources)
-+		old_chip->pdata->release_resources();
- 	return 0;
- }
- 
--- 
-1.7.9.5
+> Since I'm guessing mapping over the guard hole would be bad. 
 
+Really, you just can't map anything there (you'd most likely end
+up mapping something at 0xffff800000000000, and that would
+indeed be bad).
 
-Best Regards,
-Milo
-
+Jan
 
