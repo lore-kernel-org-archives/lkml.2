@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2JEKoY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 06:44:24 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:53494 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755207Ab2JEKoW (ORCPT
+	id S932231Ab2JEKpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 06:45:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55705 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab2JEKpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 06:44:22 -0400
-Message-ID: <506EB9D6.2070000@linux.vnet.ibm.com>
-Date: Fri, 05 Oct 2012 16:13:34 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 5 Oct 2012 06:45:12 -0400
 MIME-Version: 1.0
-To: a.p.zijlstra@chello.nl, mingo@kernel.org
-CC: acme@infradead.org, paulus@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf, cpu hotplug: Run CPU_STARTING notifiers with
- irqs disabled
-References: <20120913144220.3426.22392.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120913144220.3426.22392.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12100510-2000-0000-0000-0000095C570C
+Date: Fri, 5 Oct 2012 12:45:11 +0200
+Message-ID: <CAEk6gTBSJdJhQ=JGnBEj8RqOuxYzuJzqR4X0UAhsayvOVLK6iw@mail.gmail.com>
+Subject: [PATCH][GPIO] Add IRQ edge setter to gpiolib
+From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=bcaec54ee310f4110704cb4d90ba
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2012 08:12 PM, Srivatsa S. Bhat wrote:
-> The CPU_STARTING notifiers are supposed to be run with irqs disabled. But the
-> perf_cpu_notifier() macro invokes them without doing that. Fix it.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
+--bcaec54ee310f4110704cb4d90ba
+Content-Type: text/plain; charset=ISO-8859-1
 
-Any thoughts on this?
+Hi all,
+please find a patch that adds IRQ edge set-up mechanism to sysfs that
+can be called from the kernel.
 
-Regards,
-Srivatsa S. Bhat
+This functionality can be very useful for embedded systems, as it
+permits kernel to do GPIO set-up during boot stage. Configuration
+which defines pins behavior is often kept in NVRAM, and during boot
+stage these structures can be parsed and executed by the kernel, so
+that when user processes already find all sysfs environment ready and
+correctly set-up.
 
-> 
->  include/linux/perf_event.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 7602ccb..cc4574d 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -1346,10 +1346,13 @@ static inline void perf_event_task_tick(void)				{ }
->  do {									\
->  	static struct notifier_block fn##_nb __cpuinitdata =		\
->  		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
-> +	unsigned long flags;						\
->  	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
->  		(void *)(unsigned long)smp_processor_id());		\
-> +	local_irq_save(flags);						\
->  	fn(&fn##_nb, (unsigned long)CPU_STARTING,			\
->  		(void *)(unsigned long)smp_processor_id());		\
-> +	local_irq_restore(flags);					\
->  	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
->  		(void *)(unsigned long)smp_processor_id());		\
->  	register_cpu_notifier(&fn##_nb);				\
-> 
+While at the present it is possible to export GPIO pins to sysfs (and
+correct direction / value), it is not possible to export IRQ
+configuration as well, so this must be done in user space (most often
+via command line). this patch implements missing functionality, so
+that  gpio_sysfs_set_edge() function can be called directly from the
+kernel.
 
+Best regards,
+Drasko
+
+--bcaec54ee310f4110704cb4d90ba
+Content-Type: application/octet-stream; 
+	name="0001-PATCH-GPIO-Add-IRQ-edge-setter-to-gpiolib.patch"
+Content-Disposition: attachment; 
+	filename="0001-PATCH-GPIO-Add-IRQ-edge-setter-to-gpiolib.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h7x5nsqb0
+
+RnJvbSBlYjA3MzEzZmZiNTNiOGVhMDgwZGJjYzc0MDBlMGVjMWE1N2M4MzZlIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEcmFza28gRFJBU0tPVklDIDxkcmFza28uZHJhc2tvdmljQGdt
+YWlsLmNvbT4KRGF0ZTogRnJpLCA1IE9jdCAyMDEyIDExOjU5OjQ3ICswMjAwClN1YmplY3Q6IFtQ
+QVRDSF0gW1BBVENIXVtHUElPXSBBZGQgSVJRIGVkZ2Ugc2V0dGVyIHRvIGdwaW9saWIgU2lnbmVk
+LW9mZi1ieToKIERyYXNrbyBEUkFTS09WSUMgPGRyYXNrby5kcmFza292aWNAZ21haWwuY29tPgoK
+LS0tCiBEb2N1bWVudGF0aW9uL2dwaW8udHh0ICAgICB8ICAgIDMgKysKIGRyaXZlcnMvZ3Bpby9n
+cGlvbGliLmMgICAgIHwgICA3MCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKwogaW5jbHVkZS9hc20tZ2VuZXJpYy9ncGlvLmggfCAgICA1ICsrKwogMyBmaWxlcyBj
+aGFuZ2VkLCA3OCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL0Rv
+Y3VtZW50YXRpb24vZ3Bpby50eHQgYi9Eb2N1bWVudGF0aW9uL2dwaW8udHh0CmluZGV4IGUwOGE4
+ODMuLjhkYjk1ZTEgMTAwNjQ0Ci0tLSBhL0RvY3VtZW50YXRpb24vZ3Bpby50eHQKKysrIGIvRG9j
+dW1lbnRhdGlvbi9ncGlvLnR4dApAQCAtNzEyLDYgKzcxMiw5IEBAIHJlcXVlc3RlZCB1c2luZyBn
+cGlvX3JlcXVlc3QoKToKIAkvKiBjaGFuZ2UgdGhlIHBvbGFyaXR5IG9mIGEgR1BJTyBub2RlIGlu
+IHN5c2ZzICovCiAJaW50IGdwaW9fc3lzZnNfc2V0X2FjdGl2ZV9sb3codW5zaWduZWQgZ3Bpbywg
+aW50IHZhbHVlKTsKIAorCS8qIGNoYW5nZSB0aGUgaXJxIGVkZ2Ugb2YgYSBHUElPIG5vZGUgaW4g
+c3lzZnMgKi8KKwlncGlvX3N5c2ZzX3NldF9lZGdlKHVuc2lnbmVkIGdwaW8sIHVuc2lnbmVkIGlu
+dCBpcnFfdHlwZSk7CisKIEFmdGVyIGEga2VybmVsIGRyaXZlciByZXF1ZXN0cyBhIEdQSU8sIGl0
+IG1heSBvbmx5IGJlIG1hZGUgYXZhaWxhYmxlIGluCiB0aGUgc3lzZnMgaW50ZXJmYWNlIGJ5IGdw
+aW9fZXhwb3J0KCkuICBUaGUgZHJpdmVyIGNhbiBjb250cm9sIHdoZXRoZXIgdGhlCiBzaWduYWwg
+ZGlyZWN0aW9uIG1heSBjaGFuZ2UuICBUaGlzIGhlbHBzIGRyaXZlcnMgcHJldmVudCB1c2Vyc3Bh
+Y2UgY29kZQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncGlvL2dwaW9saWIuYyBiL2RyaXZlcnMvZ3Bp
+by9ncGlvbGliLmMKaW5kZXggNWQ2YzcxZS4uOWIwN2Q2NyAxMDA2NDQKLS0tIGEvZHJpdmVycy9n
+cGlvL2dwaW9saWIuYworKysgYi9kcml2ZXJzL2dwaW8vZ3Bpb2xpYi5jCkBAIC04MjAsNiArODIw
+LDc2IEBAIEVYUE9SVF9TWU1CT0xfR1BMKGdwaW9fZXhwb3J0X2xpbmspOwogCiAKIC8qKgorICog
+Z3Bpb19zeXNmc19zZXRfZWRnZSAtIHNldHMgaXJxIGVkZ2UgdHlwZSBmb3IgYW4gZXhwb3J0ZWQg
+R1BJTyBub2RlCisgKiBAZ3BpbzogZ3BpbyB0byBzZXQtdXAgZWRnZSB0bywgYWxyZWFkeSBleHBv
+cnRlZAorICogQGlycV90eXBlOiBpcnEgdHlwZSB0byBiZSBzZXQKKyAqCisgKiBSZXR1cm5zIHpl
+cm8gb24gc3VjY2VzcywgZWxzZSBhbiBlcnJvci4KKyAqLworaW50IGdwaW9fc3lzZnNfc2V0X2Vk
+Z2UodW5zaWduZWQgZ3BpbywgdW5zaWduZWQgaW50IGlycV90eXBlKQoreworCXN0cnVjdCBncGlv
+X2Rlc2MgICAgICAgICpkZXNjOworCXN0cnVjdCBkZXZpY2UgICAgICAgICAgICpkZXYgPSBOVUxM
+OworCWludCAgICAgICAgICAgICAgICAgICAgIHN0YXR1cyA9IC1FSU5WQUw7CisJdW5zaWduZWQg
+bG9uZyAgICAgICAgICAgdHJpZ2dlcl9mbGFncyA9IDA7CisKKwlpZiAoIWdwaW9faXNfdmFsaWQo
+Z3BpbykpCisJCWdvdG8gZG9uZTsKKworCW11dGV4X2xvY2soJnN5c2ZzX2xvY2spOworCisJZGVz
+YyA9ICZncGlvX2Rlc2NbZ3Bpb107CisKKwlpZiAodGVzdF9iaXQoRkxBR19FWFBPUlQsICZkZXNj
+LT5mbGFncykpIHsKKwkJZGV2ID0gY2xhc3NfZmluZF9kZXZpY2UoJmdwaW9fY2xhc3MsIE5VTEws
+IGRlc2MsIG1hdGNoX2V4cG9ydCk7CisJCWlmIChkZXYgPT0gTlVMTCkgeworCQkJc3RhdHVzID0g
+LUVOT0RFVjsKKwkJCWdvdG8gdW5sb2NrOworCQl9CisJfQorCisJc3dpdGNoIChpcnFfdHlwZSkg
+eworCQljYXNlIElSUV9UWVBFX05PTkU6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFr
+OworCQljYXNlIElSUV9UWVBFX0VER0VfRkFMTElORzoKKwkJCXRyaWdnZXJfZmxhZ3MgPSBCSVQo
+RkxBR19UUklHX0ZBTEwpOworCQkJYnJlYWs7CisJCWNhc2UgSVJRX1RZUEVfRURHRV9SSVNJTkc6
+CisJCQl0cmlnZ2VyX2ZsYWdzID0gQklUKEZMQUdfVFJJR19SSVNFKTsKKwkJCWJyZWFrOworCQlj
+YXNlIElSUV9UWVBFX0VER0VfQk9USDoKKwkJCXRyaWdnZXJfZmxhZ3MgPSBCSVQoRkxBR19UUklH
+X0ZBTEwpIHwgQklUKEZMQUdfVFJJR19SSVNFKTsKKwkJCWJyZWFrOworCQljYXNlIElSUV9UWVBF
+X0xFVkVMX0hJR0g6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFrOworCQljYXNlIElS
+UV9UWVBFX0xFVkVMX0xPVzoKKwkJCXRyaWdnZXJfZmxhZ3MgPSAwOworCQkJYnJlYWs7CisJCWRl
+ZmF1bHQ6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFrOworCX0KKworCWdwaW9fc2V0
+dXBfaXJxKGRlc2MsIGRldiwgMCk7CisJc3RhdHVzID0gZ3Bpb19zZXR1cF9pcnEoZGVzYywgZGV2
+LCB0cmlnZ2VyX2ZsYWdzKTsKKwordW5sb2NrOgorICAgIG11dGV4X3VubG9jaygmc3lzZnNfbG9j
+ayk7CisKK2RvbmU6CisgICAgaWYgKHN0YXR1cykKKyAgICAgICAgcHJfZGVidWcoIiVzOiBncGlv
+JWQgc3RhdHVzICVkXG4iLCBfX2Z1bmNfXywgZ3Bpbywgc3RhdHVzKTsKKworICAgIHJldHVybiBz
+dGF0dXM7Cit9CitFWFBPUlRfU1lNQk9MX0dQTChncGlvX3N5c2ZzX3NldF9lZGdlKTsKKworCisK
+KworLyoqCiAgKiBncGlvX3N5c2ZzX3NldF9hY3RpdmVfbG93IC0gc2V0IHRoZSBwb2xhcml0eSBv
+ZiBncGlvIHN5c2ZzIHZhbHVlCiAgKiBAZ3BpbzogZ3BpbyB0byBjaGFuZ2UKICAqIEB2YWx1ZTog
+bm9uLXplcm8gdG8gdXNlIGFjdGl2ZSBsb3csIGkuZS4gaW52ZXJ0ZWQgdmFsdWVzCmRpZmYgLS1n
+aXQgYS9pbmNsdWRlL2FzbS1nZW5lcmljL2dwaW8uaCBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvZ3Bp
+by5oCmluZGV4IGE5NDMyZmMuLjQ4MjdkZTggMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvYXNtLWdlbmVy
+aWMvZ3Bpby5oCisrKyBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvZ3Bpby5oCkBAIC0yNTIsNiArMjUy
+LDExIEBAIHN0YXRpYyBpbmxpbmUgaW50IGdwaW9fc3lzZnNfc2V0X2FjdGl2ZV9sb3codW5zaWdu
+ZWQgZ3BpbywgaW50IHZhbHVlKQogCXJldHVybiAtRU5PU1lTOwogfQogCitzdGF0aWMgaW5saW5l
+IGludCBncGlvX3N5c2ZzX3NldF9lZGdlKHVuc2lnbmVkIGdwaW8sIHVuc2lnbmVkIGludCBpcnFf
+dHlwZSkKK3sKKwlyZXR1cm4gLUVOT1NZUzsKK30KKwogc3RhdGljIGlubGluZSB2b2lkIGdwaW9f
+dW5leHBvcnQodW5zaWduZWQgZ3BpbykKIHsKIH0KLS0gCjEuNy42Cgo=
+--bcaec54ee310f4110704cb4d90ba--
