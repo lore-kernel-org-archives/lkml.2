@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab2JENG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:06:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34721 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2JENGy (ORCPT
+	id S1755130Ab2JENOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:14:55 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38254 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750847Ab2JENOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:06:54 -0400
-Date: Fri, 5 Oct 2012 06:06:34 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-i0egmq9r7tzocxo5pmc8jbfi@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        akpm@linux-foundation.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        fengguang.wu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de,
-        fengguang.wu@intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm/mpol:
-  Fix potential buffer overflow in mpol_parse_str()
-Git-Commit-ID: b9fb9910378947a2b7d58ca75d805b907929e001
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 5 Oct 2012 09:14:53 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-efi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg@redhat.com>, Jan Beulich <jbeulich@suse.com>,
+        x86@kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v2 0/3] x86/efi: Identity mapping pagetable
+Date: Fri,  5 Oct 2012 14:14:29 +0100
+Message-Id: <1349442872-5266-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.11.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 06:06:40 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b9fb9910378947a2b7d58ca75d805b907929e001
-Gitweb:     http://git.kernel.org/tip/b9fb9910378947a2b7d58ca75d805b907929e001
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 1 Oct 2012 15:12:16 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 5 Oct 2012 14:00:30 +0200
+From: Matt Fleming <matt.fleming@intel.com>
 
-mm/mpol: Fix potential buffer overflow in mpol_parse_str()
+This series upgrades real_mode_header->trampoline_pgd to a proper
+kernel pagetable instead of just mapping the kernel text and module
+space. It also inserts the physical mappings for anything we
+ioremap(), so I/O regions are always accessible via their physical
+addresses whenever this pagetable is loaded, making it a true identity
+mapping.
 
-Wu reported an Smatch error:
+These changes make it suitable for loading when calling virtual EFI
+runtime functions on x86-64. The main benefit of this change is to fix
+the ASUS firmware bug documented here,
 
-+ mm/mempolicy.c:2426 mpol_parse_str() error: buffer overflow 'policy_modes' 5 <= 5
+	 https://lkml.org/lkml/2012/8/7/108
 
-Fix it by growing the array to the right size, but avoid it being a
-valid string for mpol_parse_str() because its not an effective policy.
+but having our own EFI pagetable makes sense anyway. The memory map
+code is easily the most complicatd part of the EFI infrastructure, and
+it's likely that there will be other funky stuff we have to do with
+our memory map as more and more machines ship with various
+implementations of EFI firmware.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-i0egmq9r7tzocxo5pmc8jbfi@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/mempolicy.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Note that we only switch to the identity pagetable for x86-64. I'm
+unaware of any bugs like the above on 32-bit EFI platforms, but we can
+easily adopt the 64-bit scheme if one is discovered.
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 7b4ff19..e59756a 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2514,7 +2514,8 @@ static const char * const policy_modes[] =
- 	[MPOL_PREFERRED]  = "prefer",
- 	[MPOL_BIND]       = "bind",
- 	[MPOL_INTERLEAVE] = "interleave",
--	[MPOL_LOCAL]      = "local"
-+	[MPOL_LOCAL]      = "local",
-+	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
- };
- 
- 
-@@ -2565,7 +2566,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 			break;
- 		}
- 	}
--	if (mode >= MPOL_MAX)
-+	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
- 		goto out;
- 
- 	switch (mode) {
+v2: Based on feedback from Jan Beulich delete the 32-bit changes in
+[PATCH 1/3], they were likely to create more problems than they would
+solve and the identity I/O mappings are unused on 32-bit anyway.
+
+Matt Fleming (2):
+  x86, mm: Include the entire kernel memory map in trampoline_pgd
+  x86, efi: 1:1 pagetable mapping for virtual EFI calls
+
+Xiaoyan Zhang (1):
+  x86/kernel: remove tboot 1:1 page table creation code
+
+ arch/x86/include/asm/efi.h     |  28 ++++++++---
+ arch/x86/kernel/tboot.c        |  78 ++----------------------------
+ arch/x86/mm/init_64.c          |   9 +++-
+ arch/x86/mm/ioremap.c          | 105 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi_64.c |  15 ++++++
+ arch/x86/realmode/init.c       |  17 ++++++-
+ 6 files changed, 169 insertions(+), 83 deletions(-)
+
+-- 
+1.7.11.4
+
