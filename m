@@ -1,302 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab2JESQo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 14:16:44 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:47964 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567Ab2JESQO (ORCPT
+	id S932865Ab2JES2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 14:28:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:65318 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932731Ab2JES23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 14:16:14 -0400
+	Fri, 5 Oct 2012 14:28:29 -0400
+Date: Fri, 5 Oct 2012 11:28:17 -0700 (PDT)
+From: Min Zhang <mzhang@mvista.com>
+X-X-Sender: mzhang@linux-acr3.site
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mlx4: set carrier off after register netdev
+Message-ID: <alpine.LNX.2.00.1210051058420.16216@linux-acr3.site>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1347505915-27984-1-git-send-email-anatol.pomozov@gmail.com>
-References: <1347505915-27984-1-git-send-email-anatol.pomozov@gmail.com>
-Date: Fri, 5 Oct 2012 11:16:12 -0700
-Message-ID: <CAOMFOmWEifGsiq3t93FL6xjPDy1Y0OTJ+h+mek0Q=cn_sb+j2w@mail.gmail.com>
-Subject: Re: [PATCH] fs: Preserve error code in get_empty_filp()
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Cc: Louis Huemiller <lhuemill@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, AlViro
+ifconfig mlx4_en port reported RUNNING even though the link was down.
 
-Is any reason why this change is ignored? For me it looks like a
-straightforward bugfix.
+mlx4_en_init_netdev didn't initialize the dev operstate properly so
+the operstate stayed as default IF_OPER_UNKNOWN, then ifconfig treated
+the UNKNOWN as RUNNING state for backward compatiblity per RFC2863.
 
-A little bit of context for this change. We at Google work on a test
-framework that shows how kernel behaves under memory pressure. In the
-codepath that I am fixing the syscalls return ENFILE error, but in
-fact the correct error would be ENOMEM. get_empty_filp() should
-preserve the original error and not to replace all errors with ENFILE.
+The fix calls netif_carrier_off which is supposed to set operstate
+after register_netdev. Calling it before register_netdev has no effect
+since the dev->state is still NETREG_UNINITIALIZED
 
-On Wed, Sep 12, 2012 at 8:11 PM, Anatol Pomozov
-<anatol.pomozov@gmail.com> wrote:
-> Allocating a file structure in function get_empty_filp() might fail because
-> of several reasons:
->  - not enough memory for file structures
->  - operation is not allowed
->  - user is over its limit
->
-> Currently the function returns NULL in all cases and we loose the exact
-> reason of the error. All callers of get_empty_filp() assume that the function
-> can fail with ENFILE only.
->
-> Return error through pointer. Change all callers to preserve this error code.
->
-> Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-> ---
->  arch/ia64/kernel/perfmon.c |  4 ++--
->  fs/anon_inodes.c           |  5 +++--
->  fs/file_table.c            | 22 ++++++++++++++--------
->  fs/hugetlbfs/inode.c       |  5 +++--
->  fs/namei.c                 |  4 ++--
->  fs/open.c                  |  5 ++---
->  fs/pipe.c                  |  9 ++++++---
->  ipc/shm.c                  |  4 +++-
->  mm/shmem.c                 |  5 +++--
->  net/socket.c               |  4 ++--
->  10 files changed, 40 insertions(+), 27 deletions(-)
->
-> diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-> index 3fa4bc5..da2dcce 100644
-> --- a/arch/ia64/kernel/perfmon.c
-> +++ b/arch/ia64/kernel/perfmon.c
-> @@ -2221,9 +2221,9 @@ pfm_alloc_file(pfm_context_t *ctx)
->         d_add(path.dentry, inode);
->
->         file = alloc_file(&path, FMODE_READ, &pfm_file_ops);
-> -       if (!file) {
-> +       if (IS_ERR(file)) {
->                 path_put(&path);
-> -               return ERR_PTR(-ENFILE);
-> +               return file;
->         }
->
->         file->f_flags = O_RDONLY;
-> diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-> index 28d39fb..73536e3 100644
-> --- a/fs/anon_inodes.c
-> +++ b/fs/anon_inodes.c
-> @@ -160,10 +160,11 @@ struct file *anon_inode_getfile(const char *name,
->
->         d_instantiate(path.dentry, anon_inode_inode);
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, OPEN_FMODE(flags), fops);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto err_dput;
-> +       }
->         file->f_mapping = anon_inode_inode->i_mapping;
->
->         file->f_pos = 0;
-> diff --git a/fs/file_table.c b/fs/file_table.c
-> index 701985e..3b3f4d7 100644
-> --- a/fs/file_table.c
-> +++ b/fs/file_table.c
-> @@ -94,8 +94,8 @@ int proc_nr_files(ctl_table *table, int write,
->  #endif
->
->  /* Find an unused file structure and return a pointer to it.
-> - * Returns NULL, if there are no more free file structures or
-> - * we run out of memory.
-> + * Returns an error pointer if some error happend e.g. we over file
-> + * structures limit, run out of memory or operation is not permitted.
->   *
->   * Be very careful using this.  You are responsible for
->   * getting write access to any mount that you might assign
-> @@ -108,6 +108,7 @@ struct file *get_empty_filp(void)
->         const struct cred *cred = current_cred();
->         static long old_max;
->         struct file * f;
-> +       int error;
->
->         /*
->          * Privileged users can go above max_files
-> @@ -117,17 +118,22 @@ struct file *get_empty_filp(void)
->                  * percpu_counters are inaccurate.  Do an expensive check before
->                  * we go and fail.
->                  */
-> -               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files)
-> +               if (percpu_counter_sum_positive(&nr_files) >= files_stat.max_files) {
-> +                       error = -ENFILE;
->                         goto over;
-> +               }
->         }
->
->         f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
-> -       if (f == NULL)
-> +       if (f == NULL) {
-> +               error = -ENOMEM;
->                 goto fail;
-> +       }
->
->         percpu_counter_inc(&nr_files);
->         f->f_cred = get_cred(cred);
-> -       if (security_file_alloc(f))
-> +       error = security_file_alloc(f);
-> +       if (error)
->                 goto fail_sec;
->
->         INIT_LIST_HEAD(&f->f_u.fu_list);
-> @@ -149,7 +155,7 @@ over:
->  fail_sec:
->         file_free(f);
->  fail:
-> -       return NULL;
-> +       return ERR_PTR(error);
->  }
->
->  /**
-> @@ -173,8 +179,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
->         struct file *file;
->
->         file = get_empty_filp();
-> -       if (!file)
-> -               return NULL;
-> +       if (IS_ERR(file))
-> +               return file;
->
->         file->f_path = *path;
->         file->f_mapping = path->dentry->d_inode->i_mapping;
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index 8349a89..5ec849b 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -984,11 +984,12 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
->         inode->i_size = size;
->         clear_nlink(inode);
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
->                         &hugetlbfs_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto out_dentry; /* inode is already attached */
-> +       }
->
->         return file;
->
-> diff --git a/fs/namei.c b/fs/namei.c
-> index dd1ed1b..0160da0 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2885,8 +2885,8 @@ static struct file *path_openat(int dfd, const char *pathname,
->         int error;
->
->         file = get_empty_filp();
-> -       if (!file)
-> -               return ERR_PTR(-ENFILE);
-> +       if (IS_ERR(file))
-> +               return file;
->
->         file->f_flags = op->open_flag;
->
-> diff --git a/fs/open.c b/fs/open.c
-> index e1f2cdb..cb9a385 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -781,10 +781,9 @@ struct file *dentry_open(const struct path *path, int flags,
->         /* We must always pass in a valid mount pointer. */
->         BUG_ON(!path->mnt);
->
-> -       error = -ENFILE;
->         f = get_empty_filp();
-> -       if (f == NULL)
-> -               return ERR_PTR(error);
-> +       if (IS_ERR(f))
-> +               return f;
->
->         f->f_flags = flags;
->         f->f_path = *path;
-> diff --git a/fs/pipe.c b/fs/pipe.c
-> index 8d85d70..e420908 100644
-> --- a/fs/pipe.c
-> +++ b/fs/pipe.c
-> @@ -1035,16 +1035,19 @@ int create_pipe_files(struct file **res, int flags)
->
->         d_instantiate(path.dentry, inode);
->
-> -       err = -ENFILE;
->         f = alloc_file(&path, FMODE_WRITE, &write_pipefifo_fops);
-> -       if (!f)
-> +       if (IS_ERR(f)) {
-> +               err = PTR_ERR(f);
->                 goto err_dentry;
-> +       }
->
->         f->f_flags = O_WRONLY | (flags & (O_NONBLOCK | O_DIRECT));
->
->         res[0] = alloc_file(&path, FMODE_READ, &read_pipefifo_fops);
-> -       if (!res[0])
-> +       if (IS_ERR(res[0])) {
-> +               err = PTR_ERR(res[0]);
->                 goto err_file;
-> +       }
->
->         path_get(&path);
->         res[0]->f_flags = O_RDONLY | (flags & O_NONBLOCK);
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 00faa05..c8eee21 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -1039,8 +1039,10 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
->                           is_file_hugepages(shp->shm_file) ?
->                                 &shm_file_operations_huge :
->                                 &shm_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               err = PTR_ERR(file);
->                 goto out_free;
-> +       }
->
->         file->private_data = sfd;
->         file->f_mapping = shp->shm_file->f_mapping;
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d4e184e..cd814ee 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2948,11 +2948,12 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
->                 goto put_dentry;
->  #endif
->
-> -       error = -ENFILE;
->         file = alloc_file(&path, FMODE_WRITE | FMODE_READ,
->                   &shmem_file_operations);
-> -       if (!file)
-> +       if (IS_ERR(file)) {
-> +               error = PTR_ERR(file);
->                 goto put_dentry;
-> +       }
->
->         return file;
->
-> diff --git a/net/socket.c b/net/socket.c
-> index edc3c4a..dc1d071 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -369,12 +369,12 @@ static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
->
->         file = alloc_file(&path, FMODE_READ | FMODE_WRITE,
->                   &socket_file_ops);
-> -       if (unlikely(!file)) {
-> +       if (unlikely(IS_ERR(file))) {
->                 /* drop dentry, keep inode */
->                 ihold(path.dentry->d_inode);
->                 path_put(&path);
->                 put_unused_fd(fd);
-> -               return -ENFILE;
-> +               return PTR_ERR(file);
->         }
->
->         sock->file = file;
-> --
-> 1.7.12
->
+Tested by removing the physical link signal to the mellanox 10G port,
+modprobe mlx4_en, then ifconfig up. Verify there is no RUNNING status.
+
+Signed-off-by: Min Zhang <mzhang@mvista.com>
+---
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+index c96113b..8c562f7a 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -1306,12 +1306,12 @@ int mlx4_en_init_netdev(struct mlx4_en_dev *mdev, int port,
+ 
+ 	mdev->pndev[port] = dev;
+ 
+-	netif_carrier_off(dev);
+ 	err = register_netdev(dev);
+ 	if (err) {
+ 		mlx4_err(mdev, "Netdev registration failed for port %d\n", port);
+ 		goto out;
+ 	}
++	netif_carrier_off(dev);
+ 
+ 	en_warn(priv, "Using %d TX rings\n", prof->tx_ring_num);
+ 	en_warn(priv, "Using %d RX rings\n", prof->rx_ring_num);
+-- 
+1.7.7.4
+
