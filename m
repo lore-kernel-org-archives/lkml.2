@@ -1,113 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab2JEXmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 19:42:32 -0400
-Received: from 1wt.eu ([62.212.114.60]:35961 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab2JEXma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 19:42:30 -0400
-Date: Sat, 6 Oct 2012 01:42:18 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org
-Subject: 3.5 regression on i915
-Message-ID: <20121005234218.GC21163@1wt.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.3i
+	id S1755549Ab2JEXtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 19:49:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62077 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab2JEXs5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 19:48:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121005234218.GC21163@1wt.eu>
+References: <20121005234218.GC21163@1wt.eu>
+Date: Sat, 6 Oct 2012 09:48:57 +1000
+Message-ID: <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com>
+Subject: Re: 3.5 regression on i915
+From: Dave Airlie <airlied@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris, Daniel,
+On Sat, Oct 6, 2012 at 9:42 AM, Willy Tarreau <w@1wt.eu> wrote:
+> Chris, Daniel,
+>
+> since version 3.5, my Asus EeePC 1005HA bugs during startx. I didn't
+> have the time to investigate until this evening.
+>
+> I could bisect the commits and found that the following one was merged
+> in 3.5-rc1 and is responsible for these bugs that can reliably be
+> triggered :
+>
+>   1b50247a8ddde4af5aaa0e6bc125615372ce6c16 is the first bad commit
+>   commit 1b50247a8ddde4af5aaa0e6bc125615372ce6c16
+>   Author: Chris Wilson <chris@chris-wilson.co.uk>
+>   Date:   Tue Apr 24 15:47:30 2012 +0100
+>
+>     drm/i915: Remove the list of pinned inactive objects
+>
+>     Simplify object tracking by removing the inactive but pinned list. The
+>     only place where this was used is for counting the available memory,
+>     which is just as easy performed by checking all objects on the rare
+>     occasions it is required (application startup). For ease of debugging,
+>     we keep the reporting of pinned objects through the error-state and
+>     debugfs.
+>
+>     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>
+> I tried to revert it from 3.5.6-rc1 but it does not revert cleanly at all
+> and I'm totall unfamiliar with this code to attempt anything sane at this
+> time of the night.
+>
+> The crash happens here in i915_gem_entervt_ioctl() :
+>
+>     3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
+>     3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+>  -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+>     3662          mutex_unlock(&dev->struct_mutex);
+>
+> More info in the trace below :
+>
+> ------------[ cut here ]------------
+> kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3661!
+> invalid opcode: 0000 [#1] SMP
+> Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss uvcvideo videobuf2_core videodev videobuf2_vmalloc videobuf2_memops uhci_hcd ath9k mac80211 snd_hda_codec_realtek ath9k_common microcode ath9k_hw psmouse serio_raw sg ath cfg80211 atl1c lpc_ich mfd_core ehci_hcd snd_hda_intel snd_hda_codec snd_hwdep snd_pcm rtc_cmos snd_timer snd evdev eeepc_laptop snd_page_alloc sparse_keymap
+>
+> Pid: 2866, comm: X Not tainted 3.5.6-rc1-eeepc #1 ASUSTeK Computer INC. 1005HA/1005HA
+> EIP: 0060:[<c12dc291>] EFLAGS: 00013297 CPU: 0
+> EIP is at i915_gem_entervt_ioctl+0xf1/0x110
+> EAX: f5941df4 EBX: f5940000 ECX: 00000000 EDX: 00020000
+> ESI: f5835400 EDI: 00000000 EBP: f51d7e38 ESP: f51d7e20
+>  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> CR0: 8005003b CR2: b760e0a0 CR3: 351b6000 CR4: 000007d0
+> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> DR6: ffff0ff0 DR7: 00000400
+> Process X (pid: 2866, ti=f51d6000 task=f61af8d0 task.ti=f51d6000)
+> Stack:
+>  00000001 00000000 f5835414 f51d7e84 f5835400 f54f85c0 f51d7f10 c12b530b
+>  00000001 c151b139 c14751b6 c152e030 00000b32 00006459 00000059 0000e200
+>  00000001 00000000 00006459 c159ddd0 c12dc1a0 ffffffea 00000000 00000000
+> Call Trace:
+>  [<c12b530b>] drm_ioctl+0x2eb/0x440
+>  [<c12dc1a0>] ? i915_gem_init+0xe0/0xe0
+>  [<c1052b2b>] ? enqueue_hrtimer+0x1b/0x50
+>  [<c1053321>] ? __hrtimer_start_range_ns+0x161/0x330
+>  [<c10530b3>] ? lock_hrtimer_base+0x23/0x50
+>  [<c1053163>] ? hrtimer_try_to_cancel+0x33/0x70
+>  [<c12b5020>] ? drm_version+0x90/0x90
+>  [<c10ca171>] vfs_ioctl+0x31/0x50
+>  [<c10ca2e4>] do_vfs_ioctl+0x64/0x510
+>  [<c10535de>] ? hrtimer_nanosleep+0x8e/0x100
+>  [<c1052c20>] ? update_rmtp+0x80/0x80
+>  [<c10ca7c9>] sys_ioctl+0x39/0x60
+>  [<c1433949>] syscall_call+0x7/0xb
+> Code: 83 c4 0c 5b 5e 5f 5d c3 c7 44 24 04 2c 05 53 c1 c7 04 24 6f ef 47 c1 e8 6e e0 fd ff c7 83 38 1e 00 00 00 00 00 00 e9 3f ff ff ff <0f> 0b eb fe 0f 0b eb fe 8d b4 26 00 00 00 00 0f 0b eb fe 8d b6
+> EIP: [<c12dc291>] i915_gem_entervt_ioctl+0xf1/0x110 SS:ESP 0068:f51d7e20
+> ---[ end trace dd332ec083cbd513 ]---
+>
+> I have the full dmesg if that can help. I do not have KMS and have not
+> tested 3.6-* yet.
+>
+> $ grep I915 .config
+> CONFIG_DRM_I915=y
+> # CONFIG_DRM_I915_KMS is not set
 
-since version 3.5, my Asus EeePC 1005HA bugs during startx. I didn't
-have the time to investigate until this evening.
+Any reason you don't have KMS, you'll keep hitting these non-kms bugs
+since it has no users anymore really.
 
-I could bisect the commits and found that the following one was merged
-in 3.5-rc1 and is responsible for these bugs that can reliably be
-triggered :
+Granted they'll get fixed, but I suspect its a losing battle over time.
 
-  1b50247a8ddde4af5aaa0e6bc125615372ce6c16 is the first bad commit
-  commit 1b50247a8ddde4af5aaa0e6bc125615372ce6c16
-  Author: Chris Wilson <chris@chris-wilson.co.uk>
-  Date:   Tue Apr 24 15:47:30 2012 +0100
-
-    drm/i915: Remove the list of pinned inactive objects
-    
-    Simplify object tracking by removing the inactive but pinned list. The
-    only place where this was used is for counting the available memory,
-    which is just as easy performed by checking all objects on the rare
-    occasions it is required (application startup). For ease of debugging,
-    we keep the reporting of pinned objects through the error-state and
-    debugfs.
-    
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-I tried to revert it from 3.5.6-rc1 but it does not revert cleanly at all
-and I'm totall unfamiliar with this code to attempt anything sane at this
-time of the night.
-
-The crash happens here in i915_gem_entervt_ioctl() :
-
-    3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
-    3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
- -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
-    3662          mutex_unlock(&dev->struct_mutex);
-
-More info in the trace below :
-
-------------[ cut here ]------------
-kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3661!
-invalid opcode: 0000 [#1] SMP 
-Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss uvcvideo videobuf2_core videodev videobuf2_vmalloc videobuf2_memops uhci_hcd ath9k mac80211 snd_hda_codec_realtek ath9k_common microcode ath9k_hw psmouse serio_raw sg ath cfg80211 atl1c lpc_ich mfd_core ehci_hcd snd_hda_intel snd_hda_codec snd_hwdep snd_pcm rtc_cmos snd_timer snd evdev eeepc_laptop snd_page_alloc sparse_keymap
-
-Pid: 2866, comm: X Not tainted 3.5.6-rc1-eeepc #1 ASUSTeK Computer INC. 1005HA/1005HA
-EIP: 0060:[<c12dc291>] EFLAGS: 00013297 CPU: 0
-EIP is at i915_gem_entervt_ioctl+0xf1/0x110
-EAX: f5941df4 EBX: f5940000 ECX: 00000000 EDX: 00020000
-ESI: f5835400 EDI: 00000000 EBP: f51d7e38 ESP: f51d7e20
- DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-CR0: 8005003b CR2: b760e0a0 CR3: 351b6000 CR4: 000007d0
-DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-DR6: ffff0ff0 DR7: 00000400
-Process X (pid: 2866, ti=f51d6000 task=f61af8d0 task.ti=f51d6000)
-Stack:
- 00000001 00000000 f5835414 f51d7e84 f5835400 f54f85c0 f51d7f10 c12b530b
- 00000001 c151b139 c14751b6 c152e030 00000b32 00006459 00000059 0000e200
- 00000001 00000000 00006459 c159ddd0 c12dc1a0 ffffffea 00000000 00000000
-Call Trace:
- [<c12b530b>] drm_ioctl+0x2eb/0x440
- [<c12dc1a0>] ? i915_gem_init+0xe0/0xe0
- [<c1052b2b>] ? enqueue_hrtimer+0x1b/0x50
- [<c1053321>] ? __hrtimer_start_range_ns+0x161/0x330
- [<c10530b3>] ? lock_hrtimer_base+0x23/0x50
- [<c1053163>] ? hrtimer_try_to_cancel+0x33/0x70
- [<c12b5020>] ? drm_version+0x90/0x90
- [<c10ca171>] vfs_ioctl+0x31/0x50
- [<c10ca2e4>] do_vfs_ioctl+0x64/0x510
- [<c10535de>] ? hrtimer_nanosleep+0x8e/0x100
- [<c1052c20>] ? update_rmtp+0x80/0x80
- [<c10ca7c9>] sys_ioctl+0x39/0x60
- [<c1433949>] syscall_call+0x7/0xb
-Code: 83 c4 0c 5b 5e 5f 5d c3 c7 44 24 04 2c 05 53 c1 c7 04 24 6f ef 47 c1 e8 6e e0 fd ff c7 83 38 1e 00 00 00 00 00 00 e9 3f ff ff ff <0f> 0b eb fe 0f 0b eb fe 8d b4 26 00 00 00 00 0f 0b eb fe 8d b6 
-EIP: [<c12dc291>] i915_gem_entervt_ioctl+0xf1/0x110 SS:ESP 0068:f51d7e20
----[ end trace dd332ec083cbd513 ]---
-
-I have the full dmesg if that can help. I do not have KMS and have not
-tested 3.6-* yet.
-
-$ grep I915 .config
-CONFIG_DRM_I915=y
-# CONFIG_DRM_I915_KMS is not set
-
-Please tell me if you want more info (config, full dmesg, etc... didn't
-want to pollute the list) or if you want me to test any patch. I'm willing
-to help getting this issue fixed.
-
-Thanks,
-Willy
-
+Dave.
