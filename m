@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab2JEQXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:23:19 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56365 "EHLO zmc.proxad.net"
+	id S932809Ab2JEQ10 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:27:26 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56469 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932664Ab2JEQWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:48 -0400
+	id S1756767Ab2JEQXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:23:16 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lennert Buytenhek <kernel@wantstofly.org>, Felipe Balbi <balbi@ti.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 15/32 v2] USB: ohci: merge ohci_finish_controller_resume with ohci_resume
-Date: Fri,  5 Oct 2012 18:20:47 +0200
-Message-Id: <1349454064-11606-16-git-send-email-florian@openwrt.org>
+        Hauke Mehrtens <hauke@hauke-m.de>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 23/32 v3] USB: OHCI: remove OHCI SH platform driver
+Date: Fri,  5 Oct 2012 18:20:55 +0200
+Message-Id: <1349454064-11606-24-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -25,263 +22,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge ohci_finish_controller_resume with ohci_resume as suggested by Alan
-Stern. Since ohci_finish_controller_resume no longer exists, update the
-various OHCI drivers to call ohci_resume() instead. Some drivers used to set
-themselves the bit HCD_FLAG_HW_ACCESSIBLE, which is now handled by
-ohci_resume().
+All users have been converted to use the OHCI platform driver instead, thus
+making ohci-sh obsolete, so remove it.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes since v1:
-- added Nicolas and Jingoo's Acked-by
+No changes in v2 and v3
 
- drivers/usb/host/ohci-at91.c     |    2 +-
- drivers/usb/host/ohci-ep93xx.c   |    2 +-
- drivers/usb/host/ohci-exynos.c   |    5 +----
- drivers/usb/host/ohci-hcd.c      |   41 +++++++++++++++++++++++++++++++++++--
- drivers/usb/host/ohci-hub.c      |   42 --------------------------------------
- drivers/usb/host/ohci-omap.c     |    2 +-
- drivers/usb/host/ohci-platform.c |    2 +-
- drivers/usb/host/ohci-pxa27x.c   |    2 +-
- drivers/usb/host/ohci-s3c2410.c  |    3 +--
- drivers/usb/host/ohci-spear.c    |    2 +-
- drivers/usb/host/ohci-tmio.c     |    2 +-
- 11 files changed, 48 insertions(+), 57 deletions(-)
+ drivers/usb/host/Kconfig    |    6 +-
+ drivers/usb/host/ohci-hcd.c |    5 --
+ drivers/usb/host/ohci-sh.c  |  141 -------------------------------------------
+ 3 files changed, 5 insertions(+), 147 deletions(-)
+ delete mode 100644 drivers/usb/host/ohci-sh.c
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 0bf72f9..908d84a 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -705,7 +705,7 @@ static int ohci_hcd_at91_drv_resume(struct platform_device *pdev)
- 	if (!clocked)
- 		at91_start_clock();
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 86a7995..b05b6aa 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -397,9 +397,13 @@ config USB_OHCI_HCD_SSB
+ 	  If unsure, say N.
  
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- #else
-diff --git a/drivers/usb/host/ohci-ep93xx.c b/drivers/usb/host/ohci-ep93xx.c
-index dbfbd1d..a982f04 100644
---- a/drivers/usb/host/ohci-ep93xx.c
-+++ b/drivers/usb/host/ohci-ep93xx.c
-@@ -194,7 +194,7 @@ static int ohci_hcd_ep93xx_drv_resume(struct platform_device *pdev)
+ config USB_OHCI_SH
+-	bool "OHCI support for SuperH USB controller"
++	bool "OHCI support for SuperH USB controller (DEPRECATED)"
+ 	depends on USB_OHCI_HCD && SUPERH
++	select USB_OHCI_HCD_PLATFORM
+ 	---help---
++	  This option is deprecated now and the driver was removed, use
++	  USB_OHCI_HCD_PLATFORM instead.
++
+ 	  Enables support for the on-chip OHCI controller on the SuperH.
+ 	  If you use the PCI OHCI controller, this option is not necessary.
  
- 	ep93xx_start_hc(&pdev->dev);
- 
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- #endif
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index fc3091b..53c5a989 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -252,10 +252,7 @@ static int exynos_ohci_resume(struct device *dev)
- 	if (pdata && pdata->phy_init)
- 		pdata->phy_init(pdev, S5P_USB_PHY_HOST);
- 
--	/* Mark hardware accessible again as we are out of D3 state by now */
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 
- 	return 0;
- }
 diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index acf8c83..d97dc48 100644
+index d46ccfd..3531614 100644
 --- a/drivers/usb/host/ohci-hcd.c
 +++ b/drivers/usb/host/ohci-hcd.c
-@@ -1005,13 +1005,50 @@ static int __maybe_unused ohci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+@@ -1118,11 +1118,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
+ #endif
  
- static int __maybe_unused ohci_resume(struct usb_hcd *hcd, bool hibernated)
- {
-+	struct ohci_hcd		*ohci = hcd_to_ohci(hcd);
-+	int			port;
-+	bool			need_reinit = false;
-+
- 	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+-#ifdef CONFIG_USB_OHCI_SH
+-#include "ohci-sh.c"
+-#define PLATFORM_DRIVER		ohci_hcd_sh_driver
+-#endif
+-
  
- 	/* Make sure resume from hibernation re-enumerates everything */
- 	if (hibernated)
--		ohci_usb_reset(hcd_to_ohci(hcd));
-+		ohci_usb_reset(ohci);
-+
-+	/* See if the controller is already running or has been reset */
-+	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
-+	if (ohci->hc_control & (OHCI_CTRL_IR | OHCI_SCHED_ENABLES)) {
-+		need_reinit = true;
-+	} else {
-+		switch (ohci->hc_control & OHCI_CTRL_HCFS) {
-+		case OHCI_USB_OPER:
-+		case OHCI_USB_RESET:
-+			need_reinit = true;
-+		}
-+	}
-+
-+	/* If needed, reinitialize and suspend the root hub */
-+	if (need_reinit) {
-+		spin_lock_irq(&ohci->lock);
-+		ohci_rh_resume(ohci);
-+		ohci_rh_suspend(ohci, 0);
-+		spin_unlock_irq(&ohci->lock);
-+	}
-+
-+	/* Normally just turn on port power and enable interrupts */
-+	else {
-+		ohci_dbg(ohci, "powerup ports\n");
-+		for (port = 0; port < ohci->num_ports; port++)
-+			ohci_writel(ohci, RH_PS_PPS,
-+					&ohci->regs->roothub.portstatus[port]);
-+
-+		ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrenable);
-+		ohci_readl(ohci, &ohci->regs->intrenable);
-+		msleep(20);
-+	}
-+
-+	usb_hcd_resume_root_hub(hcd);
- 
--	ohci_finish_controller_resume(hcd);
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/ohci-hub.c b/drivers/usb/host/ohci-hub.c
-index 2f3619e..db09dae 100644
---- a/drivers/usb/host/ohci-hub.c
-+++ b/drivers/usb/host/ohci-hub.c
-@@ -316,48 +316,6 @@ static int ohci_bus_resume (struct usb_hcd *hcd)
- 	return rc;
- }
- 
--/* Carry out the final steps of resuming the controller device */
--static void __maybe_unused ohci_finish_controller_resume(struct usb_hcd *hcd)
+ #ifdef CONFIG_USB_OHCI_HCD_PPC_OF
+ #include "ohci-ppc-of.c"
+diff --git a/drivers/usb/host/ohci-sh.c b/drivers/usb/host/ohci-sh.c
+deleted file mode 100644
+index 76a20c2..0000000
+--- a/drivers/usb/host/ohci-sh.c
++++ /dev/null
+@@ -1,141 +0,0 @@
+-/*
+- * OHCI HCD (Host Controller Driver) for USB.
+- *
+- * Copyright (C) 2008 Renesas Solutions Corp.
+- *
+- * Author : Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; version 2 of the License.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+- *
+- */
+-
+-#include <linux/platform_device.h>
+-
+-static int ohci_sh_start(struct usb_hcd *hcd)
 -{
--	struct ohci_hcd		*ohci = hcd_to_ohci(hcd);
--	int			port;
--	bool			need_reinit = false;
+-	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
 -
--	/* See if the controller is already running or has been reset */
--	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
--	if (ohci->hc_control & (OHCI_CTRL_IR | OHCI_SCHED_ENABLES)) {
--		need_reinit = true;
--	} else {
--		switch (ohci->hc_control & OHCI_CTRL_HCFS) {
--		case OHCI_USB_OPER:
--		case OHCI_USB_RESET:
--			need_reinit = true;
--		}
--	}
--
--	/* If needed, reinitialize and suspend the root hub */
--	if (need_reinit) {
--		spin_lock_irq(&ohci->lock);
--		ohci_rh_resume(ohci);
--		ohci_rh_suspend(ohci, 0);
--		spin_unlock_irq(&ohci->lock);
--	}
--
--	/* Normally just turn on port power and enable interrupts */
--	else {
--		ohci_dbg(ohci, "powerup ports\n");
--		for (port = 0; port < ohci->num_ports; port++)
--			ohci_writel(ohci, RH_PS_PPS,
--					&ohci->regs->roothub.portstatus[port]);
--
--		ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrenable);
--		ohci_readl(ohci, &ohci->regs->intrenable);
--		msleep(20);
--	}
--
--	usb_hcd_resume_root_hub(hcd);
+-	ohci_hcd_init(ohci);
+-	ohci_init(ohci);
+-	ohci_run(ohci);
+-	return 0;
 -}
 -
- /* Carry out polling-, autostop-, and autoresume-related state changes */
- static int ohci_root_hub_state_changes(struct ohci_hcd *ohci, int changed,
- 		int any_connected, int rhsc_status)
-diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
-index f8b2d91..9fab4d8 100644
---- a/drivers/usb/host/ohci-omap.c
-+++ b/drivers/usb/host/ohci-omap.c
-@@ -530,7 +530,7 @@ static int ohci_omap_resume(struct platform_device *dev)
- 	ohci->next_statechange = jiffies;
- 
- 	omap_ohci_clock_power(1);
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index 1caaf65..99d1755 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -203,7 +203,7 @@ static int ohci_platform_resume(struct device *dev)
- 			return err;
- 	}
- 
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
-index 77f4402..8bffde3 100644
---- a/drivers/usb/host/ohci-pxa27x.c
-+++ b/drivers/usb/host/ohci-pxa27x.c
-@@ -591,7 +591,7 @@ static int ohci_hcd_pxa27x_drv_resume(struct device *dev)
- 	/* Select Power Management Mode */
- 	pxa27x_ohci_select_pmm(ohci, inf->port_mode);
- 
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- 
-diff --git a/drivers/usb/host/ohci-s3c2410.c b/drivers/usb/host/ohci-s3c2410.c
-index 664c869..8af53c6 100644
---- a/drivers/usb/host/ohci-s3c2410.c
-+++ b/drivers/usb/host/ohci-s3c2410.c
-@@ -524,8 +524,7 @@ static int ohci_hcd_s3c2410_drv_resume(struct device *dev)
- 
- 	s3c2410_start_hc(pdev, hcd);
- 
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 
- 	return 0;
- }
-diff --git a/drivers/usb/host/ohci-spear.c b/drivers/usb/host/ohci-spear.c
-index fc7305e..d607be3 100644
---- a/drivers/usb/host/ohci-spear.c
-+++ b/drivers/usb/host/ohci-spear.c
-@@ -231,7 +231,7 @@ static int spear_ohci_hcd_drv_resume(struct platform_device *dev)
- 	ohci->next_statechange = jiffies;
- 
- 	spear_start_ohci(ohci_p);
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 	return 0;
- }
- #endif
-diff --git a/drivers/usb/host/ohci-tmio.c b/drivers/usb/host/ohci-tmio.c
-index 60c2b07..2c9ab8f 100644
---- a/drivers/usb/host/ohci-tmio.c
-+++ b/drivers/usb/host/ohci-tmio.c
-@@ -352,7 +352,7 @@ static int ohci_hcd_tmio_drv_resume(struct platform_device *dev)
- 
- 	spin_unlock_irqrestore(&tmio->lock, flags);
- 
--	ohci_finish_controller_resume(hcd);
-+	ohci_resume(hcd, false);
- 
- 	return 0;
- }
+-static const struct hc_driver ohci_sh_hc_driver = {
+-	.description =		hcd_name,
+-	.product_desc =		"SuperH OHCI",
+-	.hcd_priv_size =	sizeof(struct ohci_hcd),
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq =			ohci_irq,
+-	.flags =		HCD_USB11 | HCD_MEMORY,
+-
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.start =		ohci_sh_start,
+-	.stop =			ohci_stop,
+-	.shutdown =		ohci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue =		ohci_urb_enqueue,
+-	.urb_dequeue =		ohci_urb_dequeue,
+-	.endpoint_disable =	ohci_endpoint_disable,
+-
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number =	ohci_get_frame,
+-
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data =	ohci_hub_status_data,
+-	.hub_control =		ohci_hub_control,
+-#ifdef	CONFIG_PM
+-	.bus_suspend =		ohci_bus_suspend,
+-	.bus_resume =		ohci_bus_resume,
+-#endif
+-	.start_port_reset =	ohci_start_port_reset,
+-};
+-
+-/*-------------------------------------------------------------------------*/
+-
+-static int ohci_hcd_sh_probe(struct platform_device *pdev)
+-{
+-	struct resource *res = NULL;
+-	struct usb_hcd *hcd = NULL;
+-	int irq = -1;
+-	int ret;
+-
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "platform_get_resource error.\n");
+-		return -ENODEV;
+-	}
+-
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0) {
+-		dev_err(&pdev->dev, "platform_get_irq error.\n");
+-		return -ENODEV;
+-	}
+-
+-	/* initialize hcd */
+-	hcd = usb_create_hcd(&ohci_sh_hc_driver, &pdev->dev, (char *)hcd_name);
+-	if (!hcd) {
+-		dev_err(&pdev->dev, "Failed to create hcd\n");
+-		return -ENOMEM;
+-	}
+-
+-	hcd->regs = (void __iomem *)res->start;
+-	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = resource_size(res);
+-	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+-	if (ret != 0) {
+-		dev_err(&pdev->dev, "Failed to add hcd\n");
+-		usb_put_hcd(hcd);
+-		return ret;
+-	}
+-
+-	return ret;
+-}
+-
+-static int ohci_hcd_sh_remove(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-
+-	usb_remove_hcd(hcd);
+-	usb_put_hcd(hcd);
+-
+-	return 0;
+-}
+-
+-static struct platform_driver ohci_hcd_sh_driver = {
+-	.probe		= ohci_hcd_sh_probe,
+-	.remove		= ohci_hcd_sh_remove,
+-	.shutdown	= usb_hcd_platform_shutdown,
+-	.driver		= {
+-		.name	= "sh_ohci",
+-		.owner	= THIS_MODULE,
+-	},
+-};
+-
+-MODULE_ALIAS("platform:sh_ohci");
 -- 
 1.7.9.5
 
