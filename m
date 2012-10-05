@@ -1,111 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab2JEQNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:13:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42849 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab2JEQNI (ORCPT
+	id S1756688Ab2JEQRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:17:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55816 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755491Ab2JEQRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:13:08 -0400
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 2/3] serial: i.MX: Make console support non optional
-Date: Fri,  5 Oct 2012 18:13:00 +0200
-Message-Id: <1349453581-1685-3-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1349453581-1685-1-git-send-email-s.hauer@pengutronix.de>
-References: <1349453581-1685-1-git-send-email-s.hauer@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 5 Oct 2012 12:17:46 -0400
+Date: Fri, 5 Oct 2012 09:17:42 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Huacai Chen <chenhc@lemote.com>, Charles Wang <muming.wq@taobao.com>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Seems like "sched: Add missing call to calc_load_exit_idle()"
+ should be reverted in 3.5 branch
+Message-ID: <20121005161742.GA20855@kroah.com>
+References: <CAAhV-H54CJdg+UekpucZ=kOgCY5r5vvYQ+v4VwAMTCv+mCedXA@mail.gmail.com>
+ <20121004174626.GB14301@kroah.com>
+ <1349375519.14388.16.camel@twins>
+ <20121004222755.GC3609@kroah.com>
+ <1349432466.14388.25.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349432466.14388.25.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Traditionally console support is optional for serial drivers. This
-makes it non optional for the i.MX driver since it's not worth
-asking questions for a feature virtually every user of this driver
-wants to have.
+On Fri, Oct 05, 2012 at 12:21:06PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-10-04 at 15:27 -0700, Greg Kroah-Hartman wrote:
+> > I'm puzzled as well.  Any ideas if I should do anything here or not?
+> 
+> So I think the current v3.5.5 code is fine. I'm just not smart enough to
+> figure out how 3.6 got fuzzed, this git thing is confusing as hell.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/tty/serial/Kconfig |   16 +---------------
- drivers/tty/serial/imx.c   |    8 +-------
- 2 files changed, 2 insertions(+), 22 deletions(-)
+Thanks for letting me know, and digging through this, I'll leave things
+as-is.
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 4720b4b..920dd0d 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -515,26 +515,12 @@ config SERIAL_IMX
- 	bool "IMX serial port support"
- 	depends on ARCH_MXC
- 	select SERIAL_CORE
-+	select SERIAL_CORE_CONSOLE
- 	select RATIONAL
- 	help
- 	  If you have a machine based on a Motorola IMX CPU you
- 	  can enable its onboard serial port by enabling this option.
- 
--config SERIAL_IMX_CONSOLE
--	bool "Console on IMX serial port"
--	depends on SERIAL_IMX
--	select SERIAL_CORE_CONSOLE
--	help
--	  If you have enabled the serial port on the Motorola IMX
--	  CPU you can make it the console by answering Y to this option.
--
--	  Even if you say Y here, the currently visible virtual console
--	  (/dev/tty0) will still be used as the system console by default, but
--	  you can alter that using a kernel command line option such as
--	  "console=ttySA0". (Try "man bootparam" or see the documentation of
--	  your boot loader (lilo or loadlin) about how to pass options to the
--	  kernel at boot time.)
--
- config SERIAL_UARTLITE
- 	tristate "Xilinx uartlite serial port support"
- 	depends on PPC32 || MICROBLAZE || MFD_TIMBERDALE
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index e309e8b..3a9337e 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -1192,7 +1192,6 @@ static struct uart_ops imx_pops = {
- 
- static struct imx_port *imx_ports[UART_NR];
- 
--#ifdef CONFIG_SERIAL_IMX_CONSOLE
- static void imx_console_putchar(struct uart_port *port, int ch)
- {
- 	struct imx_port *sport = (struct imx_port *)port;
-@@ -1348,11 +1347,6 @@ static struct console imx_console = {
- 	.data		= &imx_reg,
- };
- 
--#define IMX_CONSOLE	&imx_console
--#else
--#define IMX_CONSOLE	NULL
--#endif
--
- static struct uart_driver imx_reg = {
- 	.owner          = THIS_MODULE,
- 	.driver_name    = DRIVER_NAME,
-@@ -1360,7 +1354,7 @@ static struct uart_driver imx_reg = {
- 	.major          = SERIAL_IMX_MAJOR,
- 	.minor          = MINOR_START,
- 	.nr             = ARRAY_SIZE(imx_ports),
--	.cons           = IMX_CONSOLE,
-+	.cons           = &imx_console,
- };
- 
- static int serial_imx_suspend(struct platform_device *dev, pm_message_t state)
--- 
-1.7.10.4
-
+greg k-h
