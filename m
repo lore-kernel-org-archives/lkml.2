@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab2JEXX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 19:23:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49589 "EHLO mga02.intel.com"
+	id S1754500Ab2JEXmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 19:42:32 -0400
+Received: from 1wt.eu ([62.212.114.60]:35961 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753665Ab2JEXXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 19:23:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
-   d="scan'208";a="221337891"
-Message-ID: <506F6BF2.8030500@intel.com>
-Date: Fri, 05 Oct 2012 16:23:30 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        x86@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
- addresses
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org> <506F3670.4020202@intel.com> <20121005200245.GQ16230@one.firstfloor.org>
-In-Reply-To: <20121005200245.GQ16230@one.firstfloor.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751477Ab2JEXma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 19:42:30 -0400
+Date: Sat, 6 Oct 2012 01:42:18 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: 3.5 regression on i915
+Message-ID: <20121005234218.GC21163@1wt.eu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2012 01:02 PM, Andi Kleen wrote:
->> I was thinking the issue was all of the calls to relatively small
->> functions occurring in quick succession.  The way most of this code is
->> setup it seems like it is one small function call in turn calling
->> another, and then another, and I would imagine the code fragmentation
->> can have a significant negative impact.
-> Maybe. Can you just inline everything and see if it it's faster then?
->
-> This was out of line when the "text cost at all costs" drive was still
-> envogue, but luckily we're not doing  that anymore.
->
-> -Andiu
->
+Chris, Daniel,
 
-Inlining everything did speed things up a bit, but I still didn't reach
-the same speed I achieved using the patch set.  However I did notice the
-resulting swiotlb code was considerably larger.
+since version 3.5, my Asus EeePC 1005HA bugs during startx. I didn't
+have the time to investigate until this evening.
 
-I did a bit more digging and the issue may actually be simple repetition
-of the calls.  By my math it would seem we would end up calling
-is_swiotlb_buffer 3 times per packet in the routing test case, once in
-sync_for_cpu and once for sync_for_device in the Rx cleanup path, and
-once in unmap_page in the Tx cleanup path.  Each call to
-is_swiotlb_buffer will result in 2 calls to __phys_addr.  In freeing the
-skb we end up doing a call to virt_to_head_page which will call
-__phys_addr.  In addition we end up mapping the skb using map_single so
-we end up using __phys_addr to do a virt_to_page translation in the
-xmit_frame_ring path, and then call __phys_addr when we check
-dma_mapping_error.  So in total that ends up being 3 calls to
-is_swiotlb_buffer, and 9 calls to __phys_addr per packet routed.
+I could bisect the commits and found that the following one was merged
+in 3.5-rc1 and is responsible for these bugs that can reliably be
+triggered :
 
-With the patches the is_swiotlb_buffer function, which was 25 lines of
-assembly, is replaced with 8 lines of assembly and becomes inline.  In
-addition we drop the number of calls to __phys_addr from 9 to 2 by
-dropping them all from swiotlb.  By my math I am probably saving about
-120 instructions per packet.  I suspect all of that would probably be
-cutting the number of instructions per packet enough to probably account
-for a 5% difference when you consider I am running at about 1.5Mpps per
-core on a 2.7Ghz processor.
+  1b50247a8ddde4af5aaa0e6bc125615372ce6c16 is the first bad commit
+  commit 1b50247a8ddde4af5aaa0e6bc125615372ce6c16
+  Author: Chris Wilson <chris@chris-wilson.co.uk>
+  Date:   Tue Apr 24 15:47:30 2012 +0100
+
+    drm/i915: Remove the list of pinned inactive objects
+    
+    Simplify object tracking by removing the inactive but pinned list. The
+    only place where this was used is for counting the available memory,
+    which is just as easy performed by checking all objects on the rare
+    occasions it is required (application startup). For ease of debugging,
+    we keep the reporting of pinned objects through the error-state and
+    debugfs.
+    
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+I tried to revert it from 3.5.6-rc1 but it does not revert cleanly at all
+and I'm totall unfamiliar with this code to attempt anything sane at this
+time of the night.
+
+The crash happens here in i915_gem_entervt_ioctl() :
+
+    3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
+    3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+ -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+    3662          mutex_unlock(&dev->struct_mutex);
+
+More info in the trace below :
+
+------------[ cut here ]------------
+kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3661!
+invalid opcode: 0000 [#1] SMP 
+Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss uvcvideo videobuf2_core videodev videobuf2_vmalloc videobuf2_memops uhci_hcd ath9k mac80211 snd_hda_codec_realtek ath9k_common microcode ath9k_hw psmouse serio_raw sg ath cfg80211 atl1c lpc_ich mfd_core ehci_hcd snd_hda_intel snd_hda_codec snd_hwdep snd_pcm rtc_cmos snd_timer snd evdev eeepc_laptop snd_page_alloc sparse_keymap
+
+Pid: 2866, comm: X Not tainted 3.5.6-rc1-eeepc #1 ASUSTeK Computer INC. 1005HA/1005HA
+EIP: 0060:[<c12dc291>] EFLAGS: 00013297 CPU: 0
+EIP is at i915_gem_entervt_ioctl+0xf1/0x110
+EAX: f5941df4 EBX: f5940000 ECX: 00000000 EDX: 00020000
+ESI: f5835400 EDI: 00000000 EBP: f51d7e38 ESP: f51d7e20
+ DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+CR0: 8005003b CR2: b760e0a0 CR3: 351b6000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process X (pid: 2866, ti=f51d6000 task=f61af8d0 task.ti=f51d6000)
+Stack:
+ 00000001 00000000 f5835414 f51d7e84 f5835400 f54f85c0 f51d7f10 c12b530b
+ 00000001 c151b139 c14751b6 c152e030 00000b32 00006459 00000059 0000e200
+ 00000001 00000000 00006459 c159ddd0 c12dc1a0 ffffffea 00000000 00000000
+Call Trace:
+ [<c12b530b>] drm_ioctl+0x2eb/0x440
+ [<c12dc1a0>] ? i915_gem_init+0xe0/0xe0
+ [<c1052b2b>] ? enqueue_hrtimer+0x1b/0x50
+ [<c1053321>] ? __hrtimer_start_range_ns+0x161/0x330
+ [<c10530b3>] ? lock_hrtimer_base+0x23/0x50
+ [<c1053163>] ? hrtimer_try_to_cancel+0x33/0x70
+ [<c12b5020>] ? drm_version+0x90/0x90
+ [<c10ca171>] vfs_ioctl+0x31/0x50
+ [<c10ca2e4>] do_vfs_ioctl+0x64/0x510
+ [<c10535de>] ? hrtimer_nanosleep+0x8e/0x100
+ [<c1052c20>] ? update_rmtp+0x80/0x80
+ [<c10ca7c9>] sys_ioctl+0x39/0x60
+ [<c1433949>] syscall_call+0x7/0xb
+Code: 83 c4 0c 5b 5e 5f 5d c3 c7 44 24 04 2c 05 53 c1 c7 04 24 6f ef 47 c1 e8 6e e0 fd ff c7 83 38 1e 00 00 00 00 00 00 e9 3f ff ff ff <0f> 0b eb fe 0f 0b eb fe 8d b4 26 00 00 00 00 0f 0b eb fe 8d b6 
+EIP: [<c12dc291>] i915_gem_entervt_ioctl+0xf1/0x110 SS:ESP 0068:f51d7e20
+---[ end trace dd332ec083cbd513 ]---
+
+I have the full dmesg if that can help. I do not have KMS and have not
+tested 3.6-* yet.
+
+$ grep I915 .config
+CONFIG_DRM_I915=y
+# CONFIG_DRM_I915_KMS is not set
+
+Please tell me if you want more info (config, full dmesg, etc... didn't
+want to pollute the list) or if you want me to test any patch. I'm willing
+to help getting this issue fixed.
 
 Thanks,
+Willy
 
-Alex
