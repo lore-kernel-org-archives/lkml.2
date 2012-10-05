@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964842Ab2JETn5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:43:57 -0400
-Received: from nm38-vm7.bullet.mail.bf1.yahoo.com ([72.30.239.23]:35641 "EHLO
-	nm38-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964827Ab2JETnw (ORCPT
+	id S932707Ab2JEToE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:44:04 -0400
+Received: from nm27-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.232]:23987 "HELO
+	nm27-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S964827Ab2JETn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:43:52 -0400
-X-Yahoo-Newman-Id: 938303.95489.bm@omp1019.access.mail.mud.yahoo.com
+	Fri, 5 Oct 2012 15:43:58 -0400
+X-Yahoo-Newman-Id: 638313.23044.bm@omp1005.access.mail.sp2.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: soLP6TcVM1l6sTdd.xqb.33X0HRJErLJa3.y8kKl9KXSJjJ
- z9CTxhpQ4UEol6KWOsXNTI1ueQJbw42QvrB8gF_MAXdzNczO2LRwuA3NEKQC
- PthMbzZQ5E8lBdLu8hNWnLpuXZmYXns8jTxzZzq5OAsf58HzTnTaaX8EWQq1
- jCAzvjN31qBJG1Gq5xdzq__kRI1B6E6TXI.MdzL.SXvRkELTexa12nLCIeH4
- wFhm4jXA1Pb3Y0IVedgY34nwvsQQiqC7JftF0MtNrZfSFDVrEsrd624C4kq1
- fIT0z7uM8D_crrcxzaySCQkyEJyMljolwovkjf0ai5pKVdsljh9qA8a3t75M
- 8LOaj_wgP5gWqOF4n_QXfpS3eLium3hlda4nfu0154zSLo3d8rwvmZmDvVGD
- UVzainANOvk.Br94qKkoqvlUTCgxKiN.uVcsrEws2Ln_5KCKtsMXp
+X-YMail-OSG: aSotusQVM1mHTbRtZ6yTohjlmBGWN9nSE67vBnduPRSIK0e
+ ve3.C33zStZnUnNCva_.QHbXfubd5FU.51SOVMJR8Cug51oVj6yQLnxmybyS
+ AMsbV9SHU._RSkqgcKVHQGTSmTD17vlqsWmOqeLivgNQDlMa1iuX0CUn19A8
+ 926KQorXpjy4ZvyISu8WD1MW3S0.9ubA9eS7Pt2H9PIBJBLo3JjoGVhMVo.I
+ kHBAi_Dktq2zdvLPyNxu5Ql1tf7bwRU5iUFGD47KIbgT5.VeIGJx_ZlUAbFj
+ Y.M6pHG9Uo8p.GKtqHKvfqETYVph97Kpfty_ka.4grmx91ilrCWHoRTDjVtn
+ OHQH.7N7AxPEWf9Trw2JuBmHI_vVJDno5FBXy4jeQ0oeSb2ZZ9dzMsvMpMP0
+ d0ReeE_YrsK9u.BXunpPbxoKyI7v1h46ht9of8Vjj7eBY3vG_xnxY
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>
@@ -33,9 +33,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v2 09/10] bug.h: Add BUILD_BUG_ON_MSG & BUILD_BUG_INTERNAL{,2}
-Date: Fri,  5 Oct 2012 14:42:48 -0500
-Message-Id: <1349466169-20637-9-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v2 10/10] bug.h: Convert BUILD_BUG{,_ON} to use BUILD_BUG_ON_MSG
+Date: Fri,  5 Oct 2012 14:42:49 -0500
+Message-Id: <1349466169-20637-10-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
@@ -43,61 +43,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add BUILD_BUG_ON_MSG which behaves like BUILD_BUG_ON (with optimizations
-turned enabled), except that it allows you to specify the error message
-you want emitted as the third parameter.  Under the hood, this relies on
-BUILD_BUG_INTERNAL{,2}, which does the actual work and is pretty-much
-identical to BUILD_BUG_ON.
+Remove duplicate code by converting BUILD_BUG and BUILD_BUG_ON to just
+call BUILD_BUG_ON_MSG.  This not only reduces source code bloat, but
+also prevents the possibility of code being changed for one macro and
+not for the other (which was previously the case for BUILD_BUG and
+BUILD_BUG_ON).
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/bug.h |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ include/linux/bug.h |   17 +++--------------
+ 1 files changed, 3 insertions(+), 14 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index 1b43ea2..91bd9d5 100644
+index 91bd9d5..ee880e5 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -16,6 +16,7 @@ struct pt_regs;
- #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
- #define BUILD_BUG_ON_ZERO(e) (0)
- #define BUILD_BUG_ON_NULL(e) ((void*)0)
-+#define BUILD_BUG_ON_MSG(cond, msg) (0)
- #define BUILD_BUG_ON(condition) (0)
- #define BUILD_BUG() (0)
- #else /* __CHECKER__ */
-@@ -38,6 +39,31 @@ struct pt_regs;
-  */
- #define BUILD_BUG_ON_INVALID(e) ((void)(sizeof((__force long)(e))))
+@@ -84,14 +84,8 @@ struct pt_regs;
+ #ifndef __OPTIMIZE__
+ #define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
+ #else
+-#define BUILD_BUG_ON(condition)						\
+-	do {								\
+-		extern void __build_bug_on_failed(void)			\
+-			__compiletime_error("BUILD_BUG_ON failed");	\
+-		__compiletime_error_fallback(condition);		\
+-		if (condition)						\
+-			__build_bug_on_failed();			\
+-	} while(0)
++#define BUILD_BUG_ON(condition) \
++	BUILD_BUG_ON_MSG(condition, "BUILD_BUG_ON failed: " #condition)
+ #endif
  
-+#define _CONCAT1(a, b) a##b
-+#define CONCAT(a, b) _CONCAT1(a, b)
-+#define UNIQUIFY(prefix) CONCAT(prefix, __LINE__)
-+
-+#define BUILD_BUG_INTERNAL2(condition, msg, fn)			\
-+	do {							\
-+		extern void fn (void) __compiletime_error(msg);	\
-+		__compiletime_error_fallback(condition);	\
-+		if (condition)					\
-+			fn();					\
-+	} while (0)
-+
-+#define BUILD_BUG_INTERNAL(condition, msg, fn) \
-+	BUILD_BUG_INTERNAL2(condition, msg, fn)
-+
-+/**
-+ * BUILD_BUG_ON_MSG - break compile if a condition is true & emit supplied
-+ * 		      error message.
-+ * @condition: the condition which the compiler should know is false.
-+ *
-+ * See BUILD_BUG_ON for description.
-+ */
-+#define BUILD_BUG_ON_MSG(cond, msg) \
-+	BUILD_BUG_INTERNAL(cond, msg, UNIQUIFY(__build_bug_on_failed_))
-+
  /**
-  * BUILD_BUG_ON - break compile if a condition is true.
-  * @condition: the condition which the compiler should know is false.
+@@ -101,12 +95,7 @@ struct pt_regs;
+  * build time, you should use BUILD_BUG to detect if it is
+  * unexpectedly used.
+  */
+-#define BUILD_BUG()						\
+-	do {							\
+-		extern void __build_bug_failed(void)		\
+-			__compiletime_error("BUILD_BUG failed");\
+-		__build_bug_failed();				\
+-	} while (0)
++#define BUILD_BUG() BUILD_BUG_ON_MSG(1, "BUILD_BUG failed")
+ 
+ #endif	/* __CHECKER__ */
+ 
 -- 
 1.7.3.4
 
