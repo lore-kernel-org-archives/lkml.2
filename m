@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab2JEWBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:01:42 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:50485 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2JEWBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:01:39 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org, Cliff Wickman <cpw@sgi.com>
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
-	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
-	<20121003165105.GA30214@jshin-Toonie>
-	<CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com>
-	<20121004164630.GB2244@phenom.dumpdata.com>
-	<CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com>
-	<871uhcsk93.fsf@xmission.com>
-	<CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com>
-	<87ehlcr4et.fsf@xmission.com>
-	<CAE9FiQU_PSv6afXLcQ8ohrn1wqoVttO+u5MA5xBEE4jJRVx9Mw@mail.gmail.com>
-	<877gr4r40b.fsf@xmission.com>
-	<CAE9FiQUW3uvkooBxqEdSxV7T8h4=5qonoLbJCPGT0kTceqSNRw@mail.gmail.com>
-Date: Fri, 05 Oct 2012 15:01:26 -0700
-In-Reply-To: <CAE9FiQUW3uvkooBxqEdSxV7T8h4=5qonoLbJCPGT0kTceqSNRw@mail.gmail.com>
-	(Yinghai Lu's message of "Fri, 5 Oct 2012 14:43:57 -0700")
-Message-ID: <87obkgpoi1.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757608Ab2JEWCb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:02:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab2JEWCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 18:02:30 -0400
+Date: Fri, 5 Oct 2012 18:02:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: tiwai@suse.de
+Subject: alsa lockdep trace.
+Message-ID: <20121005220223.GB2406@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, tiwai@suse.de
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19G8h4UQZgvtAcBQg0cXsbaotSAkUp924U=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Yinghai Lu <yinghai@kernel.org>
-X-Spam-Relay-Country: 
-Subject: 896MB address limit (was: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit)
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Takashi,
+I've been seeing this on one machine since around 3.3 (perhaps earlier, I forget)
+I reported it a while ago, and you had me test some patch that didn't make any
+difference, then it fell off my radar..
 
-I am going to see about merging these two threads.
+	Dave
 
-Yinghai Lu <yinghai@kernel.org> writes:
+=============================================
+[ INFO: possible recursive locking detected ]
+3.6.0+ #31 Not tainted
+---------------------------------------------
+pulseaudio/1022 is trying to acquire lock:
+blocked:  (&(&substream->self_group.lock)->rlock/1){......}, instance: ffff88009befc140, at: [<ffffffffa04ba173>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
 
-> On Fri, Oct 5, 2012 at 2:41 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->>
->>> with bzImage or vmlinux?
->>
->> bzImage I presume.  Certainly the bzImage has lost it's 896M limit,
->> which is where ultimiately the 896M limite came from.
->
-> they are using updated kexec-tools ?
->
-> last time when i checked the code for kexec-tools
-> found the 896M problem was from kexec-tools bzimage support.
+but task is already holding lock:
+held:     (&(&substream->self_group.lock)->rlock/1){......}, instance: ffff88009bee2190, at: [<ffffffffa04ba173>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
 
-Cliff Wickman was the guy at sgi running the tests.
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
-To the best of my knowledge he was runing an up to date kexec-tools and
-was loading a bzImage.  Of course his initial reaction was where did the
-896M limit come from, as he had just updated to a kernel with the limit
-a few weeks ago.
+       CPU0
+       ----
+  lock(&(&substream->self_group.lock)->rlock/1);
+  lock(&(&substream->self_group.lock)->rlock/1);
 
-YH please talk to Cliff directly.
+ *** DEADLOCK ***
 
-Eric
+ May be due to missing lock nesting notation
+
+4 locks on stack by pulseaudio/1022:
+ #0: held:     (snd_pcm_link_rwlock){......}, instance: ffffffffa04c8138, at: [<ffffffffa04baee2>] snd_pcm_drop+0x62/0x110 [snd_pcm]
+ #1: held:     (&(&substream->self_group.lock)->rlock){......}, instance: ffff88009bee60f0, at: [<ffffffffa04baeea>] snd_pcm_drop+0x6a/0x110 [snd_pcm]
+ #2: blocked:  (&(&substream->group->lock)->rlock){......}, instance: ffff8800b4e0dde8, at: [<ffffffffa04ba4ae>] snd_pcm_action+0x3e/0xb0 [snd_pcm]
+ #3: held:     (&(&substream->self_group.lock)->rlock/1){......}, instance: ffff88009bee2190, at: [<ffffffffa04ba173>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+
+stack backtrace:
+Pid: 1022, comm: pulseaudio Not tainted 3.6.0+ #31
+Call Trace:
+ [<ffffffff810d8395>] __lock_acquire+0x6f5/0x1b80
+ [<ffffffff810d7fa7>] ? __lock_acquire+0x307/0x1b80
+ [<ffffffff81021dd3>] ? native_sched_clock+0x13/0x80
+ [<ffffffff810d9ef1>] lock_acquire+0xa1/0x1f0
+ [<ffffffffa04ba173>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+ [<ffffffff816c9e24>] _raw_spin_lock_nested+0x44/0x80
+ [<ffffffffa04ba173>] ? snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+ [<ffffffffa04ba173>] snd_pcm_action_group+0xa3/0x240 [snd_pcm]
+ [<ffffffffa04ba4e1>] snd_pcm_action+0x71/0xb0 [snd_pcm]
+ [<ffffffffa04ba53a>] snd_pcm_stop+0x1a/0x20 [snd_pcm]
+ [<ffffffffa04baf04>] snd_pcm_drop+0x84/0x110 [snd_pcm]
+ [<ffffffffa04bccd8>] snd_pcm_common_ioctl1+0x4f8/0xc00 [snd_pcm]
+ [<ffffffff810d4f4f>] ? lock_release_holdtime.part.26+0xf/0x180
+ [<ffffffffa04bd770>] snd_pcm_playback_ioctl1+0x60/0x2e0 [snd_pcm]
+ [<ffffffffa04bda24>] snd_pcm_playback_ioctl+0x34/0x40 [snd_pcm]
+ [<ffffffff811d9cf9>] do_vfs_ioctl+0x99/0x5a0
+ [<ffffffff812d9b07>] ? file_has_perm+0x97/0xb0
+ [<ffffffff811da291>] sys_ioctl+0x91/0xb0
+ [<ffffffff816d4290>] tracesys+0xdd/0xe2
 
