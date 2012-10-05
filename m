@@ -1,66 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab2JEG5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:57:07 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60840 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab2JEG5E (ORCPT
+	id S1751943Ab2JEG67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:58:59 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:39162 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab2JEG4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:57:04 -0400
-X-AuditID: 9c930179-b7bf9ae000000e4c-d1-506e6c10f886
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 2/5] perf trace: Validate target task/user/cpu argument
-Date: Fri,  5 Oct 2012 14:02:13 +0900
-Message-Id: <1349413336-26936-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1349413336-26936-1-git-send-email-namhyung@kernel.org>
-References: <1349413336-26936-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 5 Oct 2012 02:56:47 -0400
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH 1/3] efi: Add support for a UEFI variable filesystem
+Message-Id: <1349416496.810727.310563927016.1.gpush@pecola>
+To: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: <glin@suse.com>, Lee@grenadilla.canonical.com, Chun-Yi <jlee@suse.com>,
+        Matthew Garrett <mjg@redhat.com>, Peter Jones <pjones@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Fri, 05 Oct 2012 13:54:56 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-Those target options are mutually exclusive so check it before setting
-up target thread/cpu maps.
+The existing EFI variables code only supports variables of up to 1024
+bytes. This limitation existed in version 0.99 of the EFI specification,
+but was removed before any full releases. Since variables can now be
+larger than a single page, sysfs isn't the best interface for this. So,
+instead, let's add a filesystem. Variables can be read, written and
+created, with the first 4 bytes of each variable representing its UEFI
+attributes. The create() method doesn't actually commit to flash since
+zero-length variables can't exist per-spec.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Updates from Jeremy Kerr <jeremy.kerr@canonical.com>.
+
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+
 ---
- tools/perf/builtin-trace.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/firmware/efivars.c |  384 ++++++++++++++++++++++++++++++++++++-
+ include/linux/efi.h        |    5 
+ 2 files changed, 383 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 9fc4bed8837d..7bb7e757c745 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -324,14 +324,21 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_END()
- 	};
- 	int err;
-+	char bf[BUFSIZ];
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 47408e8..4174f1b 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -80,6 +80,10 @@
+ #include <linux/slab.h>
+ #include <linux/pstore.h>
  
- 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
- 	if (argc)
- 		usage_with_options(trace_usage, trace_options);
++#include <linux/fs.h>
++#include <linux/ramfs.h>
++#include <linux/pagemap.h>
++
+ #include <asm/uaccess.h>
  
-+	err = perf_target__validate(&trace.opts.target);
-+	if (err) {
-+		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
-+		printf("%s", bf);
-+		return err;
+ #define EFIVARS_VERSION "0.08"
+@@ -91,6 +95,7 @@ MODULE_LICENSE("GPL");
+ MODULE_VERSION(EFIVARS_VERSION);
+ 
+ #define DUMP_NAME_LEN 52
++#define GUID_LEN 37
+ 
+ /*
+  * The maximum size of VariableName + Data = 1024
+@@ -108,7 +113,6 @@ struct efi_variable {
+ 	__u32         Attributes;
+ } __attribute__((packed));
+ 
+-
+ struct efivar_entry {
+ 	struct efivars *efivars;
+ 	struct efi_variable var;
+@@ -122,6 +126,9 @@ struct efivar_attribute {
+ 	ssize_t (*store)(struct efivar_entry *entry, const char *buf, size_t count);
+ };
+ 
++static struct efivars __efivars;
++static struct efivar_operations ops;
++
+ #define PSTORE_EFI_ATTRIBUTES \
+ 	(EFI_VARIABLE_NON_VOLATILE | \
+ 	 EFI_VARIABLE_BOOTSERVICE_ACCESS | \
+@@ -618,14 +625,380 @@ static struct kobj_type efivar_ktype = {
+ 	.default_attrs = def_attrs,
+ };
+ 
+-static struct pstore_info efi_pstore_info;
+-
+ static inline void
+ efivar_unregister(struct efivar_entry *var)
+ {
+ 	kobject_put(&var->kobj);
+ }
+ 
++static int efivarfs_file_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static ssize_t efivarfs_file_write(struct file *file,
++		const char __user *userbuf, size_t count, loff_t *ppos)
++{
++	struct efivar_entry *var = file->private_data;
++	struct efivars *efivars;
++	efi_status_t status;
++	void *data;
++	u32 attributes;
++	struct inode *inode = file->f_mapping->host;
++	int datasize = count - sizeof(attributes);
++
++	if (count < sizeof(attributes))
++		return -EINVAL;
++
++	data = kmalloc(datasize, GFP_KERNEL);
++
++	if (!data)
++		return -ENOMEM;
++
++	efivars = var->efivars;
++
++	if (copy_from_user(&attributes, userbuf, sizeof(attributes))) {
++		count = -EFAULT;
++		goto out;
 +	}
 +
- 	err = perf_target__parse_uid(&trace.opts.target);
- 	if (err) {
--		char bf[BUFSIZ];
- 		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
- 		printf("%s", bf);
- 		return err;
--- 
-1.7.11.4
-
++	if (attributes & ~(EFI_VARIABLE_MASK)) {
++		count = -EINVAL;
++		goto out;
++	}
++
++	if (copy_from_user(data, userbuf + sizeof(attributes), datasize)) {
++		count = -EFAULT;
++		goto out;
++	}
++
++	if (validate_var(&var->var, data, datasize) == false) {
++		count = -EINVAL;
++		goto out;
++	}
++
++	status = efivars->ops->set_variable(var->var.VariableName,
++					    &var->var.VendorGuid,
++					    attributes, datasize,
++					    data);
++
++	switch (status) {
++	case EFI_SUCCESS:
++		mutex_lock(&inode->i_mutex);
++		i_size_write(inode, count);
++		mutex_unlock(&inode->i_mutex);
++		break;
++	case EFI_INVALID_PARAMETER:
++		count = -EINVAL;
++		break;
++	case EFI_OUT_OF_RESOURCES:
++		count = -ENOSPC;
++		break;
++	case EFI_DEVICE_ERROR:
++		count = -EIO;
++		break;
++	case EFI_WRITE_PROTECTED:
++		count = -EROFS;
++		break;
++	case EFI_SECURITY_VIOLATION:
++		count = -EACCES;
++		break;
++	case EFI_NOT_FOUND:
++		count = -ENOENT;
++		break;
++	default:
++		count = -EINVAL;
++		break;
++	}
++out:
++	kfree(data);
++
++	return count;
++}
++
++static ssize_t efivarfs_file_read(struct file *file, char __user *userbuf,
++		size_t count, loff_t *ppos)
++{
++	struct efivar_entry *var = file->private_data;
++	struct efivars *efivars = var->efivars;
++	efi_status_t status;
++	unsigned long datasize = 0;
++	u32 attributes;
++	void *data;
++	ssize_t size;
++
++	status = efivars->ops->get_variable(var->var.VariableName,
++					    &var->var.VendorGuid,
++					    &attributes, &datasize, NULL);
++
++	if (status != EFI_BUFFER_TOO_SMALL)
++		return 0;
++
++	data = kmalloc(datasize + 4, GFP_KERNEL);
++
++	if (!data)
++		return 0;
++
++	status = efivars->ops->get_variable(var->var.VariableName,
++					    &var->var.VendorGuid,
++					    &attributes, &datasize,
++					    (data + 4));
++
++	if (status != EFI_SUCCESS)
++		return 0;
++
++	memcpy(data, &attributes, 4);
++	size = simple_read_from_buffer(userbuf, count, ppos,
++					data, datasize + 4);
++	kfree(data);
++
++	return size;
++}
++
++static void efivarfs_evict_inode(struct inode *inode)
++{
++	clear_inode(inode);
++}
++
++static const struct super_operations efivarfs_ops = {
++	.statfs = simple_statfs,
++	.drop_inode = generic_delete_inode,
++	.evict_inode = efivarfs_evict_inode,
++	.show_options = generic_show_options,
++};
++
++static struct super_block *efivarfs_sb;
++
++static const struct inode_operations efivarfs_dir_inode_operations;
++
++static const struct file_operations efivarfs_file_operations = {
++	.open	= efivarfs_file_open,
++	.read	= efivarfs_file_read,
++	.write	= efivarfs_file_write,
++	.llseek	= default_llseek,
++};
++
++static struct inode *efivarfs_get_inode(struct super_block *sb,
++				const struct inode *dir, int mode, dev_t dev)
++{
++	struct inode *inode = new_inode(sb);
++
++	if (inode) {
++		inode->i_ino = get_next_ino();
++		inode->i_uid = inode->i_gid = 0;
++		inode->i_mode = mode;
++		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
++		switch (mode & S_IFMT) {
++		case S_IFREG:
++			inode->i_fop = &efivarfs_file_operations;
++			break;
++		case S_IFDIR:
++			inode->i_op = &efivarfs_dir_inode_operations;
++			inode->i_fop = &simple_dir_operations;
++			inc_nlink(inode);
++			break;
++		}
++	}
++	return inode;
++}
++
++static void efivarfs_hex_to_guid(const char *str, efi_guid_t *guid)
++{
++	guid->b[0] = hex_to_bin(str[6]) << 4 | hex_to_bin(str[7]);
++	guid->b[1] = hex_to_bin(str[4]) << 4 | hex_to_bin(str[5]);
++	guid->b[2] = hex_to_bin(str[2]) << 4 | hex_to_bin(str[3]);
++	guid->b[3] = hex_to_bin(str[0]) << 4 | hex_to_bin(str[1]);
++	guid->b[4] = hex_to_bin(str[11]) << 4 | hex_to_bin(str[12]);
++	guid->b[5] = hex_to_bin(str[9]) << 4 | hex_to_bin(str[10]);
++	guid->b[6] = hex_to_bin(str[16]) << 4 | hex_to_bin(str[17]);
++	guid->b[7] = hex_to_bin(str[14]) << 4 | hex_to_bin(str[15]);
++	guid->b[8] = hex_to_bin(str[19]) << 4 | hex_to_bin(str[20]);
++	guid->b[9] = hex_to_bin(str[21]) << 4 | hex_to_bin(str[22]);
++	guid->b[10] = hex_to_bin(str[24]) << 4 | hex_to_bin(str[25]);
++	guid->b[11] = hex_to_bin(str[26]) << 4 | hex_to_bin(str[27]);
++	guid->b[12] = hex_to_bin(str[28]) << 4 | hex_to_bin(str[29]);
++	guid->b[13] = hex_to_bin(str[30]) << 4 | hex_to_bin(str[31]);
++	guid->b[14] = hex_to_bin(str[32]) << 4 | hex_to_bin(str[33]);
++	guid->b[15] = hex_to_bin(str[34]) << 4 | hex_to_bin(str[35]);
++}
++
++static int efivarfs_create(struct inode *dir, struct dentry *dentry,
++			  umode_t mode, bool excl)
++{
++	struct inode *inode = efivarfs_get_inode(dir->i_sb, dir, mode, 0);
++	struct efivars *efivars = &__efivars;
++	struct efivar_entry *var;
++	int namelen, i = 0, err = 0;
++
++	if (dentry->d_name.len < 38)
++		return -EINVAL;
++
++	if (!inode)
++		return -ENOSPC;
++
++	var = kzalloc(sizeof(struct efivar_entry), GFP_KERNEL);
++
++	if (!var)
++		return -ENOMEM;
++
++	namelen = dentry->d_name.len - GUID_LEN;
++
++	efivarfs_hex_to_guid(dentry->d_name.name + namelen + 1,
++			&var->var.VendorGuid);
++
++	for (i = 0; i < namelen; i++)
++		var->var.VariableName[i] = dentry->d_name.name[i];
++
++	var->var.VariableName[i] = '\0';
++
++	inode->i_private = var;
++	var->efivars = efivars;
++	var->kobj.kset = efivars->kset;
++
++	err = kobject_init_and_add(&var->kobj, &efivar_ktype, NULL, "%s",
++			     dentry->d_name.name);
++	if (err)
++		goto out;
++
++	kobject_uevent(&var->kobj, KOBJ_ADD);
++	spin_lock(&efivars->lock);
++	list_add(&var->list, &efivars->list);
++	spin_unlock(&efivars->lock);
++	d_instantiate(dentry, inode);
++	dget(dentry);
++out:
++	if (err)
++		kfree(var);
++	return err;
++}
++
++static int efivarfs_unlink(struct inode *dir, struct dentry *dentry)
++{
++	struct efivar_entry *var = dentry->d_inode->i_private;
++	struct efivars *efivars = var->efivars;
++	efi_status_t status;
++
++	spin_lock(&efivars->lock);
++
++	status = efivars->ops->set_variable(var->var.VariableName,
++					    &var->var.VendorGuid,
++					    0, 0, NULL);
++
++	if (status == EFI_SUCCESS || status == EFI_NOT_FOUND) {
++		list_del(&var->list);
++		spin_unlock(&efivars->lock);
++		efivar_unregister(var);
++		drop_nlink(dir);
++		dput(dentry);
++		return 0;
++	}
++
++	spin_unlock(&efivars->lock);
++	return -EINVAL;
++};
++
++int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
++{
++	struct inode *inode = NULL;
++	struct dentry *root;
++	struct efivar_entry *entry, *n;
++	struct efivars *efivars = &__efivars;
++	int err;
++
++	efivarfs_sb = sb;
++
++	sb->s_maxbytes          = MAX_LFS_FILESIZE;
++	sb->s_blocksize         = PAGE_CACHE_SIZE;
++	sb->s_blocksize_bits    = PAGE_CACHE_SHIFT;
++	sb->s_magic             = PSTOREFS_MAGIC;
++	sb->s_op                = &efivarfs_ops;
++	sb->s_time_gran         = 1;
++
++	inode = efivarfs_get_inode(sb, NULL, S_IFDIR | 0755, 0);
++	if (!inode) {
++		err = -ENOMEM;
++		goto fail;
++	}
++	inode->i_op = &efivarfs_dir_inode_operations;
++
++	root = d_make_root(inode);
++	sb->s_root = root;
++	if (!root) {
++		err = -ENOMEM;
++		goto fail;
++	}
++
++	list_for_each_entry_safe(entry, n, &efivars->list, list) {
++		struct inode *inode;
++		struct dentry *dentry, *root = efivarfs_sb->s_root;
++		char *name;
++		unsigned long size = 0;
++		int len, i;
++
++		len = utf16_strlen(entry->var.VariableName);
++
++		/* GUID plus trailing NULL */
++		name = kmalloc(len + 38, GFP_ATOMIC);
++
++		for (i = 0; i < len; i++)
++			name[i] = entry->var.VariableName[i] & 0xFF;
++
++		name[len] = '-';
++
++		efi_guid_unparse(&entry->var.VendorGuid, name + len + 1);
++
++		name[len+GUID_LEN] = '\0';
++
++		inode = efivarfs_get_inode(efivarfs_sb, root->d_inode,
++					  S_IFREG | 0644, 0);
++		dentry = d_alloc_name(root, name);
++
++		efivars->ops->get_variable(entry->var.VariableName,
++					   &entry->var.VendorGuid,
++					   &entry->var.Attributes,
++					   &size,
++					   NULL);
++
++		mutex_lock(&inode->i_mutex);
++		inode->i_private = entry;
++		i_size_write(inode, size+4);
++		mutex_unlock(&inode->i_mutex);
++		d_add(dentry, inode);
++	}
++
++	return 0;
++fail:
++	iput(inode);
++	return err;
++}
++
++static struct dentry *efivarfs_mount(struct file_system_type *fs_type,
++				    int flags, const char *dev_name, void *data)
++{
++	return mount_single(fs_type, flags, data, efivarfs_fill_super);
++}
++
++static void efivarfs_kill_sb(struct super_block *sb)
++{
++	kill_litter_super(sb);
++	efivarfs_sb = NULL;
++}
++
++static struct file_system_type efivarfs_type = {
++	.name    = "efivarfs",
++	.mount   = efivarfs_mount,
++	.kill_sb = efivarfs_kill_sb,
++};
++
++static const struct inode_operations efivarfs_dir_inode_operations = {
++	.lookup = simple_lookup,
++	.unlink = efivarfs_unlink,
++	.create = efivarfs_create,
++};
++
++static struct pstore_info efi_pstore_info;
++
+ #ifdef CONFIG_PSTORE
+ 
+ static int efi_pstore_open(struct pstore_info *psi)
+@@ -1187,6 +1560,8 @@ int register_efivars(struct efivars *efivars,
+ 		pstore_register(&efivars->efi_pstore_info);
+ 	}
+ 
++	register_filesystem(&efivarfs_type);
++
+ out:
+ 	kfree(variable_name);
+ 
+@@ -1194,9 +1569,6 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(register_efivars);
+ 
+-static struct efivars __efivars;
+-static struct efivar_operations ops;
+-
+ /*
+  * For now we register the efi subsystem with the firmware subsystem
+  * and the vars subsystem with the efi subsystem.  In the future, it
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index ec45ccd..1829a97 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -29,7 +29,12 @@
+ #define EFI_UNSUPPORTED		( 3 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_BAD_BUFFER_SIZE     ( 4 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_BUFFER_TOO_SMALL	( 5 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_NOT_READY		( 6 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_DEVICE_ERROR	( 7 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_WRITE_PROTECTED	( 8 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_OUT_OF_RESOURCES	( 9 | (1UL << (BITS_PER_LONG-1)))
+ #define EFI_NOT_FOUND		(14 | (1UL << (BITS_PER_LONG-1)))
++#define EFI_SECURITY_VIOLATION	(26 | (1UL << (BITS_PER_LONG-1)))
+ 
+ typedef unsigned long efi_status_t;
+ typedef u8 efi_bool_t;
