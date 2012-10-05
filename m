@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab2JEILs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:11:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55641 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2JEILl convert rfc822-to-8bit (ORCPT
+	id S1753381Ab2JEIMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:12:34 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47229 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2JEIM1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:11:41 -0400
+	Fri, 5 Oct 2012 04:12:27 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/28] leds-lp55xx: cleanup init device function
-Thread-Topic: [PATCH 04/28] leds-lp55xx: cleanup init device function
-Thread-Index: Ac2i0QeHZWMEa64NTDC28gDTQIZaew==
-Date: Fri, 5 Oct 2012 08:11:32 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F64176720@DQHE02.ent.ti.com>
+Subject: [PATCH 05/28] leds-lp5521/5523: add post_init_device()
+Thread-Topic: [PATCH 05/28] leds-lp5521/5523: add post_init_device()
+Thread-Index: Ac2i0R8E8fwQ410hQ1S9PwfdtnGP+g==
+Date: Fri, 5 Oct 2012 08:12:13 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F6417672F@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -29,360 +29,387 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- LP5521 and LP5523 devices have same sequence of initializing device.
- (1) Call setup_resources() of platform data
- (2) Call enable()
- (3) Reset the device
- (4) Detect the device using ENABLE register access
+ Device initialization can be divided into two sections.
+ One is common initialization code.
+ The other is the device specific initialization.
 
- Those are merged into one function, lp55xx_init_device().
- The setup_resources(), enable() are moved to this function.
- Reset and detection are handled in this function with chip configuration data.
- The lp55xx_device_config is used for this purpose.
- Two pairs of register address and value are defined in each driver.
- To reset the device  : reset register  (address, value)
- To detect the device : enable register (address, value)
+ Common initialization is handled by the lp55xx_init_device().
+ Chip specific init code is processed by the lp55xx_post_init_device().
+ To configure this feature, the lp55xx_device_config data is used.
+
+ LP5521
+ Reading LP5521_REG_R_CURRENT register and lp5521_configure() are
+ moved to the lp5521_post_init_device() except the engine initialization code.
+ The engine related code is unnecessary here.
+ The lp5521_wait_enable_done() is added for better code readability.
+
+ LP5523
+ The lp5523_configure() is replaced with lp5523_post_init_device().
+ Like LP5521, the checking LED engines is unnecessary during the initialization.
+ To clean up the init code, minimum code remains in the post_init_device().
+
+ LP55XX-COMMON
+ Chip dependent init code is handled after initializing common data.
+ Registered post_init_device() function is called.
+ If the init gets failed, the device should be de-initialized.
+ To handle this error, the lp55xx_deinit_device() is added.
+ For future use, this function is declared as an exported function.
+
+ The Reason of Removing Engine Code during Initialization
+ The engines are used in case of running various LED patterns.
+ Running LED patterns is not mandatory function.
+ Even the engine doesn't work, LED brightness should be controlled.
+ And it takes some time to run engines.
+ To initialize a device more fast, it's required to remove the engine routine.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c        |   65 +++++++++-------------------
- drivers/leds/leds-lp5523.c        |   54 ++++++++---------------
- drivers/leds/leds-lp55xx-common.c |   85 +++++++++++++++++++++++++++++++++++++
+ drivers/leds/leds-lp5521.c        |   82 ++++++++++++++-----------------
+ drivers/leds/leds-lp5523.c        |   97 +++++--------------------------------
+ drivers/leds/leds-lp55xx-common.c |   31 ++++++++++++
  drivers/leds/leds-lp55xx-common.h |    2 +
- 4 files changed, 124 insertions(+), 82 deletions(-)
+ 4 files changed, 83 insertions(+), 129 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 3735038..5beba13 100644
+index 5beba13..0f2bbd5 100644
 --- a/drivers/leds/leds-lp5521.c
 +++ b/drivers/leds/leds-lp5521.c
-@@ -98,6 +98,9 @@
- /* Pattern Mode */
- #define PATTERN_OFF	0
+@@ -128,6 +128,12 @@ struct lp5521_chip {
+ 	u8			num_leds;
+ };
  
-+/* Reset register value */
-+#define LP5521_RESET			0xFF
++static inline void lp5521_wait_enable_done(void)
++{
++	/* it takes more 488 us to update ENABLE register */
++	usleep_range(500, 600);
++}
 +
- struct lp5521_engine {
- 	int		id;
- 	u8		mode;
-@@ -306,26 +309,6 @@ static void lp5521_led_brightness_work(struct work_struct *work)
- 	mutex_unlock(&chip->lock);
+ static inline struct lp5521_led *cdev_to_led(struct led_classdev *cdev)
+ {
+ 	return container_of(cdev, struct lp5521_led, cdev);
+@@ -232,43 +238,48 @@ static int lp5521_set_led_current(struct lp5521_chip *chip, int led, u8 curr)
+ 		    curr);
  }
  
--/* Detect the chip by setting its ENABLE register and reading it back. */
--static int lp5521_detect(struct i2c_client *client)
+-static void lp5521_init_engine(struct lp5521_chip *chip)
 -{
--	int ret;
--	u8 buf;
+-	int i;
+-	for (i = 0; i < ARRAY_SIZE(chip->engines); i++) {
+-		chip->engines[i].id = i + 1;
+-		chip->engines[i].engine_mask = LP5521_ENG_MASK_BASE >> (i * 2);
+-		chip->engines[i].prog_page = i;
+-	}
+-}
 -
--	ret = lp5521_write(client, LP5521_REG_ENABLE, LP5521_ENABLE_DEFAULT);
--	if (ret)
--		return ret;
+-static int lp5521_configure(struct i2c_client *client)
++static int lp5521_post_init_device(struct lp55xx_chip *chip)
+ {
+-	struct lp5521_chip *chip = i2c_get_clientdata(client);
+ 	int ret;
+-	u8 cfg;
++	u8 val;
++
++	/*
++	 * Make sure that the chip is reset by reading back the r channel
++	 * current reg. This is dummy read is required on some platforms -
++	 * otherwise further access to the R G B channels in the
++	 * LP5521_REG_ENABLE register will not have any effect - strange!
++	 */
++	ret = lp55xx_read(chip, LP5521_REG_R_CURRENT, &val);
++	if (ret || val != LP5521_REG_R_CURR_DEFAULT) {
++		dev_err(&chip->cl->dev, "error in resetting chip\n");
++		return ret;
++	}
+ 
+-	lp5521_init_engine(chip);
++	usleep_range(10000, 20000);
+ 
+ 	/* Set all PWMs to direct control mode */
+-	ret = lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
++	ret = lp55xx_write(chip, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
+ 
+-	cfg = chip->pdata->update_config ?
++	val = chip->pdata->update_config ?
+ 		: (LP5521_PWRSAVE_EN | LP5521_CP_MODE_AUTO | LP5521_R_TO_BATT);
+-	ret |= lp5521_write(client, LP5521_REG_CONFIG, cfg);
++
++	ret = lp55xx_write(chip, LP5521_REG_CONFIG, val);
++	if (ret)
++		return ret;
+ 
+ 	/* Initialize all channels PWM to zero -> leds off */
+-	ret |= lp5521_write(client, LP5521_REG_R_PWM, 0);
+-	ret |= lp5521_write(client, LP5521_REG_G_PWM, 0);
+-	ret |= lp5521_write(client, LP5521_REG_B_PWM, 0);
++	lp55xx_write(chip, LP5521_REG_R_PWM, 0);
++	lp55xx_write(chip, LP5521_REG_G_PWM, 0);
++	lp55xx_write(chip, LP5521_REG_B_PWM, 0);
+ 
+ 	/* Set engines are set to run state when OP_MODE enables engines */
+-	ret |= lp5521_write(client, LP5521_REG_ENABLE,
+-			LP5521_ENABLE_RUN_PROGRAM);
 -	/* enable takes 500us. 1 - 2 ms leaves some margin */
 -	usleep_range(1000, 2000);
--	ret = lp5521_read(client, LP5521_REG_ENABLE, &buf);
--	if (ret)
--		return ret;
--	if (buf != LP5521_ENABLE_DEFAULT)
--		return -ENODEV;
++	ret = lp55xx_write(chip, LP5521_REG_ENABLE, LP5521_ENABLE_RUN_PROGRAM);
++	if (ret)
++		return ret;
+ 
+-	return ret;
++	lp5521_wait_enable_done();
++
++	return 0;
+ }
+ 
+ static int lp5521_run_selftest(struct lp5521_chip *chip, char *buf)
+@@ -732,6 +743,7 @@ static struct lp55xx_device_config lp5521_cfg = {
+ 		.addr = LP5521_REG_ENABLE,
+ 		.val  = LP5521_ENABLE_DEFAULT,
+ 	},
++	.post_init_device   = lp5521_post_init_device,
+ };
+ 
+ static int __devinit lp5521_probe(struct i2c_client *client,
+@@ -740,7 +752,6 @@ static int __devinit lp5521_probe(struct i2c_client *client,
+ 	struct lp5521_chip		*old_chip;
+ 	struct lp5521_platform_data	*old_pdata;
+ 	int ret, i, old_led;
+-	u8 buf;
+ 	struct lp55xx_chip *chip;
+ 	struct lp55xx_led *led;
+ 	struct lp55xx_platform_data *pdata = client->dev.platform_data;
+@@ -771,27 +782,8 @@ static int __devinit lp5521_probe(struct i2c_client *client,
+ 	if (ret)
+ 		goto err_init;
+ 
+-	/*
+-	 * Make sure that the chip is reset by reading back the r channel
+-	 * current reg. This is dummy read is required on some platforms -
+-	 * otherwise further access to the R G B channels in the
+-	 * LP5521_REG_ENABLE register will not have any effect - strange!
+-	 */
+-	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
+-	if (ret || buf != LP5521_REG_R_CURR_DEFAULT) {
+-		dev_err(&client->dev, "error in resetting chip\n");
+-		goto fail2;
+-	}
+-	usleep_range(10000, 20000);
+-
+ 	dev_info(&client->dev, "%s programmable led chip found\n", id->name);
+ 
+-	ret = lp5521_configure(client);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "error configuring chip\n");
+-		goto fail1;
+-	}
+-
+ 	/* Initialize leds */
+ 	old_chip->num_channels = old_pdata->num_channels;
+ 	old_chip->num_leds = 0;
+diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+index a602888..c487a91 100644
+--- a/drivers/leds/leds-lp5523.c
++++ b/drivers/leds/leds-lp5523.c
+@@ -181,76 +181,30 @@ static int lp5523_read(struct i2c_client *client, u8 reg, u8 *buf)
+ 	return 0;
+ }
+ 
+-static int lp5523_configure(struct i2c_client *client)
++static int lp5523_post_init_device(struct lp55xx_chip *chip)
+ {
+-	struct lp5523_chip *chip = i2c_get_clientdata(client);
+-	int ret = 0;
+-	u8 status;
++	int ret;
+ 
+-	/* one pattern per engine setting led mux start and stop addresses */
+-	static const u8 pattern[][LP5523_PROGRAM_LENGTH] =  {
+-		{ 0x9c, 0x30, 0x9c, 0xb0, 0x9d, 0x80, 0xd8, 0x00, 0},
+-		{ 0x9c, 0x40, 0x9c, 0xc0, 0x9d, 0x80, 0xd8, 0x00, 0},
+-		{ 0x9c, 0x50, 0x9c, 0xd0, 0x9d, 0x80, 0xd8, 0x00, 0},
+-	};
++	ret = lp55xx_write(chip, LP5523_REG_ENABLE, LP5523_ENABLE);
++	if (ret)
++		return ret;
+ 
+-	ret |= lp5523_write(client, LP5523_REG_ENABLE, LP5523_ENABLE);
+ 	/* Chip startup time is 500 us, 1 - 2 ms gives some margin */
+ 	usleep_range(1000, 2000);
+ 
+-	ret |= lp5523_write(client, LP5523_REG_CONFIG,
++	ret = lp55xx_write(chip, LP5523_REG_CONFIG,
+ 			    LP5523_AUTO_INC | LP5523_PWR_SAVE |
+ 			    LP5523_CP_AUTO | LP5523_AUTO_CLK |
+ 			    LP5523_PWM_PWR_SAVE);
++	if (ret)
++		return ret;
+ 
+ 	/* turn on all leds */
+-	ret |= lp5523_write(client, LP5523_REG_ENABLE_LEDS_MSB, 0x01);
+-	ret |= lp5523_write(client, LP5523_REG_ENABLE_LEDS_LSB, 0xff);
+-
+-	/* hardcode 32 bytes of memory for each engine from program memory */
+-	ret |= lp5523_write(client, LP5523_REG_CH1_PROG_START, 0x00);
+-	ret |= lp5523_write(client, LP5523_REG_CH2_PROG_START, 0x10);
+-	ret |= lp5523_write(client, LP5523_REG_CH3_PROG_START, 0x20);
+-
+-	/* write led mux address space for each channel */
+-	ret |= lp5523_load_program(&chip->engines[0], pattern[0]);
+-	ret |= lp5523_load_program(&chip->engines[1], pattern[1]);
+-	ret |= lp5523_load_program(&chip->engines[2], pattern[2]);
+-
+-	if (ret) {
+-		dev_err(&client->dev, "could not load mux programs\n");
+-		return -1;
+-	}
+-
+-	/* set all engines exec state and mode to run 00101010 */
+-	ret |= lp5523_write(client, LP5523_REG_ENABLE,
+-			    (LP5523_CMD_RUN | LP5523_ENABLE));
+-
+-	ret |= lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_RUN);
+-
+-	if (ret) {
+-		dev_err(&client->dev, "could not start mux programs\n");
+-		return -1;
+-	}
+-
+-	/* Let the programs run for couple of ms and check the engine status */
+-	usleep_range(3000, 6000);
+-	lp5523_read(client, LP5523_REG_STATUS, &status);
+-	status &= LP5523_ENG_STATUS_MASK;
+-
+-	if (status == LP5523_ENG_STATUS_MASK) {
+-		dev_dbg(&client->dev, "all engines configured\n");
+-	} else {
+-		dev_info(&client->dev, "status == %x\n", status);
+-		dev_err(&client->dev, "cound not configure LED engine\n");
+-		return -1;
+-	}
+-
+-	dev_info(&client->dev, "disabling engines\n");
+-
+-	ret |= lp5523_write(client, LP5523_REG_OP_MODE, LP5523_CMD_DISABLED);
++	ret = lp55xx_write(chip, LP5523_REG_ENABLE_LEDS_MSB, 0x01);
++	if (ret)
++		return ret;
+ 
+-	return ret;
++	return lp55xx_write(chip, LP5523_REG_ENABLE_LEDS_LSB, 0xff);
+ }
+ 
+ static int lp5523_set_engine_mode(struct lp5523_engine *engine, u8 mode)
+@@ -808,18 +762,6 @@ static void lp5523_set_mode(struct lp5523_engine *engine, u8 mode)
+ /*--------------------------------------------------------------*/
+ /*			Probe, Attach, Remove			*/
+ /*--------------------------------------------------------------*/
+-static int __init lp5523_init_engine(struct lp5523_engine *engine, int id)
+-{
+-	if (id < 1 || id > LP5523_ENGINES)
+-		return -1;
+-	engine->id = id;
+-	engine->engine_mask = LP5523_ENG_MASK_BASE >> SHIFT_MASK(id);
+-	engine->prog_page = id - 1;
+-	engine->mux_page = id + 2;
 -
 -	return 0;
 -}
 -
- /* Set engine mode and create appropriate sysfs attributes, if required. */
- static int lp5521_set_mode(struct lp5521_engine *engine, u8 mode)
- {
-@@ -739,6 +722,18 @@ static int __devinit lp5521_init_led(struct lp5521_led *led,
- 	return 0;
- }
+ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
+ 			   int chan, struct lp5523_platform_data *pdata,
+ 			   const char *chip_name)
+@@ -879,6 +821,7 @@ static struct lp55xx_device_config lp5523_cfg = {
+ 		.addr = LP5523_REG_ENABLE,
+ 		.val  = LP5523_ENABLE,
+ 	},
++	.post_init_device   = lp5523_post_init_device,
+ };
  
-+/* Chip specific configurations */
-+static struct lp55xx_device_config lp5521_cfg = {
-+	.reset = {
-+		.addr = LP5521_REG_RESET,
-+		.val  = LP5521_RESET,
-+	},
-+	.enable = {
-+		.addr = LP5521_REG_ENABLE,
-+		.val  = LP5521_ENABLE_DEFAULT,
-+	},
-+};
-+
- static int __devinit lp5521_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
-@@ -766,29 +761,15 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 
- 	chip->cl = client;
- 	chip->pdata = pdata;
-+	chip->cfg = &lp5521_cfg;
- 
- 	mutex_init(&chip->lock);
- 
- 	i2c_set_clientdata(client, led);
- 
--	if (old_pdata->setup_resources) {
--		ret = old_pdata->setup_resources();
--		if (ret < 0)
--			return ret;
--	}
--
--	if (old_pdata->enable) {
--		old_pdata->enable(0);
--		usleep_range(1000, 2000); /* Keep enable down at least 1ms */
--		old_pdata->enable(1);
--		usleep_range(1000, 2000); /* 500us abs min. */
--	}
--
--	lp5521_write(client, LP5521_REG_RESET, 0xff);
--	usleep_range(10000, 20000); /*
--				     * Exact value is not available. 10 - 20ms
--				     * appears to be enough for reset.
--				     */
-+	ret = lp55xx_init_device(chip);
-+	if (ret)
-+		goto err_init;
- 
- 	/*
- 	 * Make sure that the chip is reset by reading back the r channel
-@@ -803,13 +784,6 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	}
- 	usleep_range(10000, 20000);
- 
--	ret = lp5521_detect(client);
--
--	if (ret) {
--		dev_err(&client->dev, "Chip not found\n");
--		goto fail2;
--	}
--
- 	dev_info(&client->dev, "%s programmable led chip found\n", id->name);
- 
- 	ret = lp5521_configure(client);
-@@ -861,6 +835,7 @@ fail1:
- 		old_pdata->enable(0);
- 	if (old_pdata->release_resources)
- 		old_pdata->release_resources();
-+err_init:
- 	return ret;
- }
- 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index 91f42fc..a602888 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -87,6 +87,7 @@
- #define LP5523_AUTO_CLK			0x02
- #define LP5523_EN_LEDTEST		0x80
- #define LP5523_LEDTEST_DONE		0x80
-+#define LP5523_RESET			0xFF
- 
- #define LP5523_DEFAULT_CURRENT		50 /* microAmps */
- #define LP5523_PROGRAM_LENGTH		32 /* in bytes */
-@@ -180,23 +181,6 @@ static int lp5523_read(struct i2c_client *client, u8 reg, u8 *buf)
- 	return 0;
- }
- 
--static int lp5523_detect(struct i2c_client *client)
--{
--	int ret;
--	u8 buf;
--
--	ret = lp5523_write(client, LP5523_REG_ENABLE, LP5523_ENABLE);
--	if (ret)
--		return ret;
--	ret = lp5523_read(client, LP5523_REG_ENABLE, &buf);
--	if (ret)
--		return ret;
--	if (buf == 0x40)
--		return 0;
--	else
--		return -ENODEV;
--}
--
- static int lp5523_configure(struct i2c_client *client)
- {
- 	struct lp5523_chip *chip = i2c_get_clientdata(client);
-@@ -885,6 +869,18 @@ static int __devinit lp5523_init_led(struct lp5523_led *led, struct device *dev,
- 	return 0;
- }
- 
-+/* Chip specific configurations */
-+static struct lp55xx_device_config lp5523_cfg = {
-+	.reset = {
-+		.addr = LP5523_REG_RESET,
-+		.val  = LP5523_RESET,
-+	},
-+	.enable = {
-+		.addr = LP5523_REG_ENABLE,
-+		.val  = LP5523_ENABLE,
-+	},
-+};
-+
  static int __devinit lp5523_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
-@@ -911,32 +907,15 @@ static int __devinit lp5523_probe(struct i2c_client *client,
- 
- 	chip->cl = client;
- 	chip->pdata = pdata;
-+	chip->cfg = &lp5523_cfg;
- 
- 	mutex_init(&chip->lock);
- 
- 	i2c_set_clientdata(client, led);
- 
--	if (old_pdata->setup_resources) {
--		ret = old_pdata->setup_resources();
--		if (ret < 0)
--			return ret;
--	}
--
--	if (old_pdata->enable) {
--		old_pdata->enable(0);
--		usleep_range(1000, 2000); /* Keep enable down at least 1ms */
--		old_pdata->enable(1);
--		usleep_range(1000, 2000); /* 500us abs min. */
--	}
--
--	lp5523_write(client, LP5523_REG_RESET, 0xff);
--	usleep_range(10000, 20000); /*
--				     * Exact value is not available. 10 - 20ms
--				     * appears to be enough for reset.
--				     */
--	ret = lp5523_detect(client);
-+	ret = lp55xx_init_device(chip);
- 	if (ret)
--		goto fail1;
-+		goto err_init;
+@@ -919,20 +862,6 @@ static int __devinit lp5523_probe(struct i2c_client *client,
  
  	dev_info(&client->dev, "%s Programmable led chip found\n", id->name);
  
-@@ -999,6 +978,7 @@ fail1:
- 		old_pdata->enable(0);
- 	if (old_pdata->release_resources)
- 		old_pdata->release_resources();
-+err_init:
- 	return ret;
- }
- 
+-	/* Initialize engines */
+-	for (i = 0; i < ARRAY_SIZE(old_chip->engines); i++) {
+-		ret = lp5523_init_engine(&old_chip->engines[i], i + 1);
+-		if (ret) {
+-			dev_err(&client->dev, "error initializing engine\n");
+-			goto fail1;
+-		}
+-	}
+-	ret = lp5523_configure(client);
+-	if (ret < 0) {
+-		dev_err(&client->dev, "error configuring chip\n");
+-		goto fail1;
+-	}
+-
+ 	/* Initialize leds */
+ 	old_chip->num_channels = old_pdata->num_channels;
+ 	old_chip->num_leds = 0;
 diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
-index 58c5fb8..22a9643 100644
+index 22a9643..bab96a4 100644
 --- a/drivers/leds/leds-lp55xx-common.c
 +++ b/drivers/leds/leds-lp55xx-common.c
-@@ -10,6 +10,7 @@
-  * published by the Free Software Foundation.
-  */
+@@ -51,6 +51,16 @@ static int lp55xx_detect_device(struct lp55xx_chip *chip)
+ 	return 0;
+ }
  
-+#include <linux/delay.h>
- #include <linux/i2c.h>
- #include <linux/leds.h>
- #include <linux/module.h>
-@@ -17,6 +18,39 @@
- 
- #include "leds-lp55xx-common.h"
- 
-+static void lp55xx_reset_device(struct lp55xx_chip *chip)
++static int lp55xx_post_init_device(struct lp55xx_chip *chip)
 +{
 +	struct lp55xx_device_config *cfg = chip->cfg;
-+	u8 addr = cfg->reset.addr;
-+	u8 val  = cfg->reset.val;
 +
-+	/* no error checking here because no ACK from the device after reset */
-+	lp55xx_write(chip, addr, val);
-+}
++	if (!cfg->post_init_device)
++		return 0;
 +
-+static int lp55xx_detect_device(struct lp55xx_chip *chip)
-+{
-+	struct lp55xx_device_config *cfg = chip->cfg;
-+	u8 addr = cfg->enable.addr;
-+	u8 val  = cfg->enable.val;
-+	int ret;
-+
-+	ret = lp55xx_write(chip, addr, val);
-+	if (ret)
-+		return ret;
-+
-+	usleep_range(1000, 2000);
-+
-+	ret = lp55xx_read(chip, addr, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val != cfg->enable.val)
-+		return -ENODEV;
-+
-+	return 0;
++	return cfg->post_init_device(chip);
 +}
 +
  int lp55xx_write(struct lp55xx_chip *chip, u8 reg, u8 val)
  {
  	return i2c_smbus_write_byte_data(chip->cl, reg, val);
-@@ -63,3 +97,54 @@ struct lp55xx_led *dev_to_lp55xx_led(struct device *dev)
- 	return cdev_to_lp55xx_led(dev_get_drvdata(dev));
- }
- EXPORT_SYMBOL_GPL(dev_to_lp55xx_led);
-+
-+int lp55xx_init_device(struct lp55xx_chip *chip)
-+{
-+	struct lp55xx_platform_data *pdata;
-+	struct lp55xx_device_config *cfg;
-+	struct device *dev = &chip->cl->dev;
-+	int ret;
-+
-+	WARN_ON(!chip);
-+
-+	pdata = chip->pdata;
-+	cfg = chip->cfg;
-+
-+	if (!pdata || !cfg)
-+		return -EINVAL;
-+
-+	if (pdata->setup_resources) {
-+		ret = pdata->setup_resources();
-+		if (ret < 0) {
-+			dev_err(dev, "setup resoure err: %d\n", ret);
-+			goto err;
-+		}
-+	}
-+
-+	if (pdata->enable) {
-+		pdata->enable(0);
-+		usleep_range(1000, 2000); /* Keep enable down at least 1ms */
-+		pdata->enable(1);
-+		usleep_range(1000, 2000); /* 500us abs min. */
-+	}
-+
-+	lp55xx_reset_device(chip);
-+
-+	/*
-+	 * Exact value is not available. 10 - 20ms
-+	 * appears to be enough for reset.
-+	 */
-+	usleep_range(10000, 20000);
-+
-+	ret = lp55xx_detect_device(chip);
+@@ -142,9 +152,30 @@ int lp55xx_init_device(struct lp55xx_chip *chip)
+ 		goto err;
+ 	}
+ 
++	/* chip specific initialization */
++	ret = lp55xx_post_init_device(chip);
 +	if (ret) {
-+		dev_err(dev, "device detection err: %d\n", ret);
-+		goto err;
++		dev_err(dev, "post init device err: %d\n", ret);
++		goto err_post_init;
 +	}
 +
-+	return 0;
+ 	return 0;
+ 
++err_post_init:
++	lp55xx_deinit_device(chip);
+ err:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(lp55xx_init_device);
 +
-+err:
-+	return ret;
++void lp55xx_deinit_device(struct lp55xx_chip *chip)
++{
++	struct lp55xx_platform_data *pdata = chip->pdata;
++
++	if (pdata->enable)
++		pdata->enable(0);
++
++	if (pdata->release_resources)
++		pdata->release_resources();
 +}
-+EXPORT_SYMBOL_GPL(lp55xx_init_device);
++EXPORT_SYMBOL_GPL(lp55xx_deinit_device);
 diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
-index 91a6afc..0ecc79b 100644
+index 0ecc79b..eb5b691 100644
 --- a/drivers/leds/leds-lp55xx-common.h
 +++ b/drivers/leds/leds-lp55xx-common.h
-@@ -121,4 +121,6 @@ extern int lp55xx_update_bits(struct lp55xx_chip *chip, u8 reg,
+@@ -121,6 +121,8 @@ extern int lp55xx_update_bits(struct lp55xx_chip *chip, u8 reg,
  extern struct lp55xx_led *cdev_to_lp55xx_led(struct led_classdev *cdev);
  extern struct lp55xx_led *dev_to_lp55xx_led(struct device *dev);
  
-+extern int lp55xx_init_device(struct lp55xx_chip *chip);
-+
++/* common device init/deinit functions */
+ extern int lp55xx_init_device(struct lp55xx_chip *chip);
++extern void lp55xx_deinit_device(struct lp55xx_chip *chip);
+ 
  #endif /* __LINUX_LP55XX_COMMON_H */
 -- 
 1.7.9.5
