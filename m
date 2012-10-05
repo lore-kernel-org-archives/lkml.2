@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab2JEO65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:58:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61424 "EHLO
+	id S1756287Ab2JEO4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:56:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54867 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756220Ab2JEO4H (ORCPT
+	with ESMTP id S1756220Ab2JEOz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:56:07 -0400
+	Fri, 5 Oct 2012 10:55:58 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@suse.cz>, linux-pcmcia@lists.infradead.org,
-        Jochen Friedrich <jochen@scram.de>, stable@vger.kernel.org
-Subject: [PATCH 11/16] pcmcia: sharpsl: don't discard sharpsl_pcmcia_ops
-Date: Fri,  5 Oct 2012 16:55:25 +0200
-Message-Id: <1349448930-23976-12-git-send-email-arnd@arndb.de>
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 13/16] ARM: be really quiet when building with 'make -s'
+Date: Fri,  5 Oct 2012 16:55:27 +0200
+Message-Id: <1349448930-23976-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349448930-23976-1-git-send-email-arnd@arndb.de>
 References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:nn8BWbPO460Y2W01upUc5AGLGbxLrVGDwBGKkgYjjp3
- FnZwlHTwnwXvEw1O/XVunK+GyOXI/arIZztHiT0phOdY6lKAgz
- ylBHEJaW5ycKzT2Wm1HHnxy6RV0o6yi7hn5eXjbR/XL7ekgbZW
- 82Fyn5J9h3xSvVc2zBWySavYALbLHSymdCDFevrCze8PTkdksx
- 1TAEY/cb+WbtWyDH2rkPKcpCqfGFyyqtt5Z6j0ZPb/eMpj1/JW
- MTEfmq1wK1HwUjnS8jb9qq3eUMFA14uT+1yP0DusHVw084HCOW
- mvNZ3tIPocrrmHJqwQ17kMWd+wGwFWOrwkhBx8bg7+BdrLST+S
- k1/AF1p1z9/MtGmZdrv666N811RHO5P3I3CcNqaTLrzZnUuMSM
- OtNn2k1xBymH02uetIJcVSgh1o757m+W+8=
+X-Provags-ID: V02:K0:ftXxDaJp4PN0ddyAoNt7sOaXXXWhtkNOxo0xfdoJP2k
+ gpWyxov58UW8Mx4br9Oik8ult3G8IZhzfqUGUM+8DsQ14Womg2
+ drFrbc6cnfvDVi74KyLdiNyEXOoHaR4y4TTvf2xgPTlwK1L0pB
+ 9IZ1tyD8bRw2a8l5pvQv+K/M5a+7octjTFHNNHog/NFIC5JJRV
+ I249/Yr5AeNyrtqddMLIP97fxxki+ZHB9ztDo1If7fQ4ZlxnFY
+ bTaQAU89dYjZsTS5Ffb6meJYOJtuBCywgZ4oylFjXh62v+VaIQ
+ oMAVqUOqUDPDLCZNEFvG/eryi2ikasvXXyeZftthji//q647gI
+ sJ69Kojqt8ZIXmuQxjDsPZgXDBJKTdWlD2c29bXjsuedDrphcf
+ 0UTs6vFZsoUOxjjTpivHwNtImIOrQvYD9o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sharpsl_pcmcia_ops structure gets passed into
-sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
-unlike all other pcmcia drivers that pass their structures
-into platform_device_add_data, which makes a copy.
+Sometimes we want the kernel build process to only print messages
+on errors, e.g. in automated build testing. This uses the "kecho"
+macro that the build system provides to hide a few informational
+messages. Nothing changes for a regular "make" or "make V=1".
 
-This means the gcc warning is valid and the structure
-must not be marked as __initdata.
+Without this patch, building any ARM kernel results in:
+
+  Kernel: arch/arm/boot/Image is ready
+  Kernel: arch/arm/boot/zImage is ready
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Pavel Machek <pavel@suse.cz>
-Cc: linux-pcmcia@lists.infradead.org
-Cc: Jochen Friedrich <jochen@scram.de>
-Cc: stable@vger.kernel.org
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Michal Marek <mmarek@suse.cz>
 ---
- drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/Makefile  |   10 +++++-----
+ arch/arm/tools/Makefile |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pcmcia/pxa2xx_sharpsl.c b/drivers/pcmcia/pxa2xx_sharpsl.c
-index b066273..7dd879c 100644
---- a/drivers/pcmcia/pxa2xx_sharpsl.c
-+++ b/drivers/pcmcia/pxa2xx_sharpsl.c
-@@ -194,7 +194,7 @@ static void sharpsl_pcmcia_socket_suspend(struct soc_pcmcia_socket *skt)
- 	sharpsl_pcmcia_init_reset(skt);
- }
+diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+index c877087..89680f2 100644
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -31,7 +31,7 @@ ifeq ($(CONFIG_XIP_KERNEL),y)
  
--static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
-+static struct pcmcia_low_level sharpsl_pcmcia_ops = {
- 	.owner                  = THIS_MODULE,
- 	.hw_init                = sharpsl_pcmcia_hw_init,
- 	.socket_state           = sharpsl_pcmcia_socket_state,
+ $(obj)/xipImage: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+-	@echo '  Kernel: $@ is ready (physical address: $(CONFIG_XIP_PHYS_ADDR))'
++	$(kecho) '  Kernel: $@ is ready (physical address: $(CONFIG_XIP_PHYS_ADDR))'
+ 
+ $(obj)/Image $(obj)/zImage: FORCE
+ 	@echo 'Kernel configured for XIP (CONFIG_XIP_KERNEL=y)'
+@@ -46,14 +46,14 @@ $(obj)/xipImage: FORCE
+ 
+ $(obj)/Image: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+-	@echo '  Kernel: $@ is ready'
++	$(kecho) '  Kernel: $@ is ready'
+ 
+ $(obj)/compressed/vmlinux: $(obj)/Image FORCE
+ 	$(Q)$(MAKE) $(build)=$(obj)/compressed $@
+ 
+ $(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
+ 	$(call if_changed,objcopy)
+-	@echo '  Kernel: $@ is ready'
++	$(kecho) '  Kernel: $@ is ready'
+ 
+ endif
+ 
+@@ -88,7 +88,7 @@ fi
+ $(obj)/uImage:	$(obj)/zImage FORCE
+ 	@$(check_for_multiple_loadaddr)
+ 	$(call if_changed,uimage)
+-	@echo '  Image $@ is ready'
++	$(kecho) '  Image $@ is ready'
+ 
+ $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
+ 	$(Q)$(MAKE) $(build)=$(obj)/bootp $@
+@@ -96,7 +96,7 @@ $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
+ 
+ $(obj)/bootpImage: $(obj)/bootp/bootp FORCE
+ 	$(call if_changed,objcopy)
+-	@echo '  Kernel: $@ is ready'
++	$(kecho) '  Kernel: $@ is ready'
+ 
+ PHONY += initrd FORCE
+ initrd:
+diff --git a/arch/arm/tools/Makefile b/arch/arm/tools/Makefile
+index 635cb18..cd60a81 100644
+--- a/arch/arm/tools/Makefile
++++ b/arch/arm/tools/Makefile
+@@ -5,6 +5,6 @@
+ #
+ 
+ include/generated/mach-types.h: $(src)/gen-mach-types $(src)/mach-types
+-	@echo '  Generating $@'
++	$(kecho) '  Generating $@'
+ 	@mkdir -p $(dir $@)
+ 	$(Q)$(AWK) -f $^ > $@ || { rm -f $@; /bin/false; }
 -- 
 1.7.10
 
