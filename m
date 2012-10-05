@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964858Ab2JEWLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:11:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55583 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757674Ab2JEWLL (ORCPT
+	id S932891Ab2JEWMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:12:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56587 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757574Ab2JEWLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:11:11 -0400
+	Fri, 5 Oct 2012 18:11:06 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: davem@davemloft.net
-Cc: mcuos.com@gmail.com, axel.lin@gmail.com, netdev@vger.kernel.org,
+To: jitendra.kalsaria@qlogic.com
+Cc: sony.chacko@qlogic.com, linux-driver@qlogic.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 15/20 V2] drivers/net/ethernet/natsemi/xtsonic.c: fix error return code
-Date: Sat,  6 Oct 2012 00:10:53 +0200
-Message-Id: <1349475053-11464-5-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 12/20 V2] drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c: fix error return code
+Date: Sat,  6 Oct 2012 00:10:50 +0200
+Message-Id: <1349475053-11464-2-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
 References: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
@@ -24,10 +24,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-The function sonic_probe1() return 0 for success and negative value
+The function qlcnic_probe() return 0 for success and negative value
 for most of its internal tests failures. There is one exception
-that is error case going to out:. For this error case, the
-function abort its success execution path, but returns non negative
+that is error case going to err_out_free_netdev:. For this error case,
+the function abort its success execution path, but returns non negative
 value, making it difficult for a caller function to notice the error.
 
 This patch fixes the error case that do not return negative value.
@@ -62,19 +62,21 @@ Change from V1:
         Updated commit message. See:
         http://www.kernelhub.org/?p=2&msg=139319
 
- drivers/net/ethernet/natsemi/xtsonic.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/natsemi/xtsonic.c b/drivers/net/ethernet/natsemi/xtsonic.c
-index e01c0a0..7dfe883 100644
---- a/drivers/net/ethernet/natsemi/xtsonic.c
-+++ b/drivers/net/ethernet/natsemi/xtsonic.c
-@@ -205,6 +205,7 @@ static int __init sonic_probe1(struct net_device *dev)
- 	if (lp->descriptors == NULL) {
- 		printk(KERN_ERR "%s: couldn't alloc DMA memory for "
- 				" descriptors.\n", dev_name(lp->device));
-+		err = -ENOMEM;
- 		goto out;
- 	}
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 473ce13..24ad17e 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -1601,7 +1601,8 @@ qlcnic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	adapter->netdev  = netdev;
+ 	adapter->pdev    = pdev;
  
+-	if (qlcnic_alloc_adapter_resources(adapter))
++	err = qlcnic_alloc_adapter_resources(adapter);
++	if (err)
+ 		goto err_out_free_netdev;
+ 
+ 	adapter->dev_rst_time = jiffies;
 
