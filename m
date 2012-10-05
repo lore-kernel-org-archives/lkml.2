@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab2JEJHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:07:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41421 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954Ab2JEJHi convert rfc822-to-8bit (ORCPT
+	id S1755014Ab2JEJIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:08:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33090 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab2JEJID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:07:38 -0400
+	Fri, 5 Oct 2012 05:08:03 -0400
+Date: Fri, 5 Oct 2012 02:07:42 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-139c0815903de1a7865fe1d6beac5e995fefdf46@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1349354994-17853-10-git-send-email-namhyung@kernel.org>
+References: <1349354994-17853-10-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf hists: Add more helpers for hist entry stat
+Git-Commit-ID: 139c0815903de1a7865fe1d6beac5e995fefdf46
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <xm26zk4fbats.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <20120823141422.444396696@google.com> <50602849.70506@cs.tu-berlin.de>
- <xm26zk4fbats.fsf@sword-of-the-dawn.mtv.corp.google.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 5 Oct 2012 02:07:08 -0700
-Message-ID: <CAPM31RJOzCBE6N6v-oRV+O=LC_NVAg6Y6LCgYXYrdOyrpLD2kA@mail.gmail.com>
-Subject: Re: [patch 00/16] sched: per-entity load-tracking
-To: Benjamin Segall <bsegall@google.com>
-Cc: =?ISO-8859-1?Q?Jan_H=2E_Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 02:07:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 24, 2012 at 10:16 AM, Benjamin Segall <bsegall@google.com> wrote:
-> "Jan H. Schönherr" <schnhrr@cs.tu-berlin.de> writes:
->
->> Hi Paul.
->>
->> Am 23.08.2012 16:14, schrieb pjt@google.com:
->>> Please find attached the latest version for CFS load-tracking.
->>
->> Originally, I thought, this series also takes care of
->> the leaf-cfs-runqueue ordering issue described here:
->>
->> http://lkml.org/lkml/2011/7/18/86
->>
->> Now, that I had a closer look, I see that it does not take
->> care of it.
->>
->> Is there still any reason why the leaf_cfs_rq-list must be sorted?
->> Or could we just get rid of the ordering requirement, now?
->
-> Ideally yes, since a parent's __update_cfs_rq_tg_load_contrib and
-> update_cfs_shares still depend on accurate values in
-> runnable_load_avg/blocked_load_avg from its children. That said, nothing
-> should completely fall over, it would make load decay take longer to
-> propogate to the root.
->>
->> (That seems easier than to fix the issue, as I suspect that
->> __update_blocked_averages_cpu() might still punch some holes
->> in the hierarchy in some edge cases.)
->
-> Yeah, I suspect it's possible that the parent ends up with a slightly
-> lower runnable_avg_sum if they're both hovering around the max value
-> since it isn't quite continuous, and it might be the case that this
-> difference is large enough to require one more tick to decay to zero.
+Commit-ID:  139c0815903de1a7865fe1d6beac5e995fefdf46
+Gitweb:     http://git.kernel.org/tip/139c0815903de1a7865fe1d6beac5e995fefdf46
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 4 Oct 2012 21:49:43 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 4 Oct 2012 13:36:18 -0300
 
-OK so coming back to this.  I had a look at this last week and
-realized I'd managed to pervert my original intent.
+perf hists: Add more helpers for hist entry stat
 
-Specifically, the idea here was barring numerical rounding errors
-about LOAD_AVG_MAX we can guarantee a parent's runnable average is
-greater than or equal to its child, since a parent is runnable
-whenever its child is runnable by definition.  Provided we fix up
-possible rounding errors (e.g. with a clamp) this then guarantees
-we'll always remove child nodes before parent.
+Add and use he_stat__add_{period,stat} for calculating hist entry's
+stat.  It will be used for accumulated stats later as well.
 
-So I did this.  Then I thought: oh dear.  When I'd previously proposed
-the above as a resolution for out-of-order removal I had not tackled
-the problem of correct accounting on bandwidth constrained entities.
-It turns out we end up having to "stop" time to handle this
-efficiently / correctly.  But this means that we can then no longer
-depend on the constraint above as the sums on a sub-tree can
-potentially become out of sync.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1349354994-17853-10-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/hist.c |   26 ++++++++++++++++++--------
+ 1 files changed, 18 insertions(+), 8 deletions(-)
 
-So I got back to this again tonight and just spent a few hours tonight
-looking at some alternate approaches to resolve this.  There's a few
-games we can play here but after all of that I now re-realize we still
-won't handle an on-list grand-parent correctly when the parent/child
-are not on tree; and that this is fundamentally an issue with
-enqueue's ordering -- no hole punching from parent before child
-removal required.
-
-I suspect we might want to do a segment splice on enqueue after all.
-Let me sleep on it.
-
-- Paul
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 02476cb..277947a 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -151,6 +151,22 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
+ 	}
+ }
+ 
++static void he_stat__add_period(struct he_stat *he_stat, u64 period)
++{
++	he_stat->period		+= period;
++	he_stat->nr_events	+= 1;
++}
++
++static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
++{
++	dest->period		+= src->period;
++	dest->period_sys	+= src->period_sys;
++	dest->period_us		+= src->period_us;
++	dest->period_guest_sys	+= src->period_guest_sys;
++	dest->period_guest_us	+= src->period_guest_us;
++	dest->nr_events		+= src->nr_events;
++}
++
+ static void hist_entry__decay(struct hist_entry *he)
+ {
+ 	he->stat.period = (he->stat.period * 7) / 8;
+@@ -270,8 +286,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 		cmp = hist_entry__cmp(entry, he);
+ 
+ 		if (!cmp) {
+-			he->stat.period += period;
+-			++he->stat.nr_events;
++			he_stat__add_period(&he->stat, period);
+ 
+ 			/* If the map of an existing hist_entry has
+ 			 * become out-of-date due to an exec() or
+@@ -418,12 +433,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+ 		cmp = hist_entry__collapse(iter, he);
+ 
+ 		if (!cmp) {
+-			iter->stat.period		+= he->stat.period;
+-			iter->stat.period_sys		+= he->stat.period_sys;
+-			iter->stat.period_us		+= he->stat.period_us;
+-			iter->stat.period_guest_sys	+= he->stat.period_guest_sys;
+-			iter->stat.period_guest_us	+= he->stat.period_guest_us;
+-			iter->stat.nr_events		+= he->stat.nr_events;
++			he_stat__add_stat(&iter->stat, &he->stat);
+ 
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
