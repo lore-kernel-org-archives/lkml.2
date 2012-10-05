@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab2JEQaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:30:12 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56365 "EHLO zmc.proxad.net"
+	id S1756662Ab2JEQas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:30:48 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56301 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932677Ab2JEQWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:51 -0400
+	id S932641Ab2JEQWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:40 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 16/32 v3] MIPS: PNX8550: use OHCI platform driver
-Date: Fri,  5 Oct 2012 18:20:48 +0200
-Message-Id: <1349454064-11606-17-git-send-email-florian@openwrt.org>
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/32 v3] ARM: cns3xxx: use ehci platform driver
+Date: Fri,  5 Oct 2012 18:20:42 +0200
+Message-Id: <1349454064-11606-11-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -21,70 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the PNX8550 platform code to register an ohci-platform driver instead
-of ohci-pnx8550 since the ohci-platform is suitable for use.
+This patch converts the cns3xxx platform to use the ehci-platform driver
+instead of the ehci-cns3xxx platform driver.
+
+The ehci-platform driver is provided with power_{on,off} callbacks to ensure
+proper block gating and USB configuration of the EHCI controller.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 No changes in v2 and v3
 
- arch/mips/pnx8550/common/platform.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ arch/arm/mach-cns3xxx/cns3420vb.c |   44 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 43 insertions(+), 1 deletion(-)
 
-diff --git a/arch/mips/pnx8550/common/platform.c b/arch/mips/pnx8550/common/platform.c
-index 5264cc0..0a8faea 100644
---- a/arch/mips/pnx8550/common/platform.c
-+++ b/arch/mips/pnx8550/common/platform.c
-@@ -20,6 +20,7 @@
- #include <linux/serial.h>
- #include <linux/serial_pnx8xxx.h>
- #include <linux/platform_device.h>
-+#include <linux/usb/ohci_pdriver.h>
+diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
+index 2c5fb4c..906094c 100644
+--- a/arch/arm/mach-cns3xxx/cns3420vb.c
++++ b/arch/arm/mach-cns3xxx/cns3420vb.c
+@@ -24,6 +24,7 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/mtd/partitions.h>
++#include <linux/usb/ehci_pdriver.h>
+ #include <asm/setup.h>
+ #include <asm/mach-types.h>
+ #include <asm/hardware/gic.h>
+@@ -32,6 +33,7 @@
+ #include <asm/mach/time.h>
+ #include <mach/cns3xxx.h>
+ #include <mach/irqs.h>
++#include <mach/pm.h>
+ #include "core.h"
+ #include "devices.h"
  
- #include <int.h>
- #include <usb.h>
-@@ -96,12 +97,40 @@ static u64 ohci_dmamask = DMA_BIT_MASK(32);
+@@ -125,13 +127,53 @@ static struct resource cns3xxx_usb_ehci_resources[] = {
  
- static u64 uart_dmamask = DMA_BIT_MASK(32);
+ static u64 cns3xxx_usb_ehci_dma_mask = DMA_BIT_MASK(32);
  
-+static int pnx8550_usb_ohci_power_on(struct platform_device *pdev)
++static int csn3xxx_usb_ehci_power_on(struct platform_device *pdev)
 +{
 +	/*
-+	 * Set register CLK48CTL to enable and 48MHz
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 *
++	 * Set USB AHB INCR length to 16
 +	 */
-+	outl(0x00000003, PCI_BASE | 0x0004770c);
-+
-+	/*
-+	 * Set register CLK12CTL to enable and 48MHz
-+	 */
-+	outl(0x00000003, PCI_BASE | 0x00047710);
-+
-+	udelay(100);
++	if (atomic_inc_return(&usb_pwr_ref) == 1) {
++		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
++		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
++		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
++		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
++			MISC_CHIP_CONFIG_REG);
++	}
 +
 +	return 0;
 +}
 +
-+static void pnx8550_usb_ohci_power_off(struct platform_device *pdev)
++static void csn3xxx_usb_ehci_power_off(struct platform_device *pdev)
 +{
-+	udelay(10);
++	/*
++	 * EHCI and OHCI share the same clock and power,
++	 * resetting twice would cause the 1st controller been reset.
++	 * Therefore only do power up  at the first up device, and
++	 * power down at the last down device.
++	 */
++	if (atomic_dec_return(&usb_pwr_ref) == 0)
++		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
 +}
 +
-+static struct usb_ohci_pdata pnx8550_usb_ohci_pdata = {
-+	.power_on	= pnx8550_usb_ohci_power_on,
-+	.power_off	= pnx8550_usb_ohci_power_off,
++static struct usb_ehci_pdata cns3xxx_usb_ehci_pdata = {
++	.port_power_off	= 1,
++	.power_on	= csn3xxx_usb_ehci_power_on,
++	.power_off	= csn3xxx_usb_ehci_power_off,
 +};
 +
- static struct platform_device pnx8550_usb_ohci_device = {
--	.name		= "pnx8550-ohci",
-+	.name		= "ohci-platform",
- 	.id		= -1,
- 	.dev = {
- 		.dma_mask		= &ohci_dmamask,
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+		.platform_data		= &pnx8550_usb_ohci_pdata,
+ static struct platform_device cns3xxx_usb_ehci_device = {
+-	.name          = "cns3xxx-ehci",
++	.name          = "ehci-platform",
+ 	.num_resources = ARRAY_SIZE(cns3xxx_usb_ehci_resources),
+ 	.resource      = cns3xxx_usb_ehci_resources,
+ 	.dev           = {
+ 		.dma_mask          = &cns3xxx_usb_ehci_dma_mask,
+ 		.coherent_dma_mask = DMA_BIT_MASK(32),
++		.platform_data     = &cns3xxx_usb_ehci_pdata,
  	},
- 	.num_resources	= ARRAY_SIZE(pnx8550_usb_ohci_resources),
- 	.resource	= pnx8550_usb_ohci_resources,
+ };
+ 
 -- 
 1.7.9.5
 
