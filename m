@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab2JEO4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:56:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54679 "EHLO
+	id S1755158Ab2JEO4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:56:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58351 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab2JEO4X (ORCPT
+	with ESMTP id S1756235Ab2JEO4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:56:23 -0400
+	Fri, 5 Oct 2012 10:56:01 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux-samsung-soc@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: [PATCH 15/16] spi/s3c64xx: use correct dma_transfer_direction type
-Date: Fri,  5 Oct 2012 16:55:29 +0200
-Message-Id: <1349448930-23976-16-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Krzysztof Halasa <khc@pm.waw.pl>, Mike Rapoport <mike@compulab.co.il>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH 14/16] ARM: pxa: armcore: fix PCI PIO warnings
+Date: Fri,  5 Oct 2012 16:55:28 +0200
+Message-Id: <1349448930-23976-15-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349448930-23976-1-git-send-email-arnd@arndb.de>
 References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:2aOWXV5bzlX+Eo0mw/vO1uC7Y4ZYB1Uk3pUZiH6CuBp
- QzUlpY4Hhe4tsTKcQXZs4PrE//E6ULRgP0VVmevGRPKHFTlURp
- WNqkH3DGaxYSyF+IjvkCM9lB5FFJl7X5rrBlnUxrGOvJf1dTnc
- F8PbsoScrlT+6W0gsaIigijEXht2cfsQUVG5vLXC9OlYG5/q6g
- uP1VTZffDaZh7g4rTdjF1jEHZxPj9BSnBAr5bdfjIW6cI+q8vq
- fLhmAbTAoTTB7Tr4/uR5F9BlMuHO19r7Skn2kOKRfvqFDGDvV6
- AECIECUX9cjUPZPYFbbaRo3NgHgK5PIfoO3K20FXMCXYgkM4pU
- 3bIjrGmZtwW2+PHdjGR1WjDhBnquyX+rfO+bj6FWuw7ec56bR2
- AaqPOd1/3JGRHjA6K8/orBELqvd9e4MxGI=
+X-Provags-ID: V02:K0:UafO81VGNPEyXx9j+7dMuX0tKIkuxKmzg8Ieoa5rmeo
+ uhEYMEMi5wfURsFitGVPF+lz/oJ/83ZpgaGcEet04H1vWKejnP
+ +HoGXqToYD8ml4Rsrm2fDiek3rNPvNR2W/XdZ60tUtupLFSrU8
+ nPpa+bR/2nUmcYrx5dyrh/V9OhU83GKc9K8vSmpMqm7WiLyRs1
+ 6GCFLOjovuUH2vSsaBH0GlDUt732pzEY/xWPAOtV38ML0VBFK2
+ uCt7i8CDYcznCoqtIWtfJg9oK71azEV+5gLaLdpGeFwYmxIZqr
+ Ux1odSICVGwQhVCo42L4U6GxyyogAKSrjZPr3Nu3W9yTF9QTJ0
+ o4x62sngQDMVKHSpxLBp1KHvibbnNJA4JXg43K2SKQVj7Z4NBF
+ T24Q4pc3/IsZNxwdjzO4eaSgk33OycwAig=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a subtle difference between dma_transfer_direction and
-dma_data_direction: the former is used by the dmaengine framework,
-while the latter is used by the dma-mapping API. Although the
-purpose is comparable, the actual values are different and must
-not be mixed. In this case, the driver just wants to use
-dma_transfer_direction.
+The it8152 PCI host used on the pxa/cm_x2xx machines
+uses the old-style I/O window registration. This should
+eventually get converted to pci_ioremap_io() but for
+now, let's cast the IT8152_IO_BASE constant to an integer
+type to get rid of the warnings.
 
-Without this patch, building s3c6400_defconfig results in:
+Without this patch, building cm_x2xx_defconfig results in:
 
-drivers/spi/spi-s3c64xx.c: In function 's3c64xx_spi_dmacb':
-drivers/spi/spi-s3c64xx.c:239:21: warning: comparison between
-	'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
+arch/arm/common/it8152.c: In function 'it8152_pci_setup':
+arch/arm/common/it8152.c:287:18: warning: assignment makes integer from pointer without a cast [enabled by default]
+arch/arm/common/it8152.c:288:16: warning: assignment makes integer from pointer without a cast [enabled by default]
+arch/arm/common/it8152.c:291:17: warning: assignment makes integer from pointer without a cast [enabled by default]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: spi-devel-general@lists.sourceforge.net
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Mike Rapoport <mike@compulab.co.il>
+Cc: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
 ---
- drivers/spi/spi-s3c64xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/common/it8152.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index d1c8441f..2e44dd6 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -132,7 +132,7 @@
+diff --git a/arch/arm/common/it8152.c b/arch/arm/common/it8152.c
+index c4110d1..001f491 100644
+--- a/arch/arm/common/it8152.c
++++ b/arch/arm/common/it8152.c
+@@ -284,11 +284,17 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
  
- struct s3c64xx_spi_dma_data {
- 	unsigned		ch;
--	enum dma_data_direction direction;
-+	enum dma_transfer_direction direction;
- 	enum dma_ch	dmach;
- 	struct property		*dma_prop;
- };
+ int __init it8152_pci_setup(int nr, struct pci_sys_data *sys)
+ {
+-	it8152_io.start = IT8152_IO_BASE + 0x12000;
+-	it8152_io.end	= IT8152_IO_BASE + 0x12000 + 0x100000;
++	/*
++	 * FIXME: use pci_ioremap_io to remap the IO space here and
++	 * move over to the generic io.h implementation.
++	 * This requires solving the same problem for PXA PCMCIA
++	 * support.
++	 */
++	it8152_io.start = (unsigned long)IT8152_IO_BASE + 0x12000;
++	it8152_io.end	= (unsigned long)IT8152_IO_BASE + 0x12000 + 0x100000;
+ 
+ 	sys->mem_offset = 0x10000000;
+-	sys->io_offset  = IT8152_IO_BASE;
++	sys->io_offset  = (unsigned long)IT8152_IO_BASE;
+ 
+ 	if (request_resource(&ioport_resource, &it8152_io)) {
+ 		printk(KERN_ERR "PCI: unable to allocate IO region\n");
 -- 
 1.7.10
 
