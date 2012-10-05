@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab2JFGTu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 02:19:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63547 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab2JFGTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 02:19:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 07/16] cgroup: fix warning when building without any subsys
-Date: Sat, 6 Oct 2012 06:19:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Li Zefan <lizefan@huawei.com>,
-        Ben Blum <bblum@andrew.cmu.edu>
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-8-git-send-email-arnd@arndb.de> <20121006021451.GA2601@localhost>
-In-Reply-To: <20121006021451.GA2601@localhost>
+	id S1752466Ab2JFG3n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 02:29:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:33691 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab2JFG3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 02:29:41 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, avi@redhat.com,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+In-Reply-To: <506D8DD5.20904@redhat.com>
+References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 05 Oct 2012 15:13:01 +0930
+Message-ID: <87391t1nkq.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210060619.41645.arnd@arndb.de>
-X-Provags-ID: V02:K0:xs8KK3XFUyg92DH1XDOEATvN617AB38M2HtLZdvp29Z
- +76TXdx0z8qUUB17ARkwJLcb0Y0dj6xI02+mvOkG3Kz1jKpwGb
- 8+oh1L9wbHLA2Adard2ufE1M414ErPBl7Mmt+rJlX/KydFxK0A
- CEUd3+pTzDFYxmza2eQHQMZPYWlCZcS2MVL7iA5DkaL53jMFos
- mRsN0SyokGkc/DTo3yhXpI/xJqKKt/4qAdSs9jQKjyxDZSWQTK
- GEwZ7i8wqiYVW+/cPtCgOEs5jnIrcLXhb65S9d9i7EZdtqS2OP
- ytUPFO4QW5feKHd94Gq46BXKqyEjjxgQBodEcpTDmhGTooA4TU
- RpFCBnr+B19FhMIoeuQU=
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 06 October 2012, Tejun Heo wrote:
-> On Fri, Oct 05, 2012 at 04:55:21PM +0200, Arnd Bergmann wrote:
-> > In a configuration where the base cgroup support is enabled but
-> > every single cgroup subsys is turned off, CGROUP_BUILTIN_SUBSYS_COUNT
-> > is zero, which causes the sanity check code in cgroup_load_subsys
-> > to trigger:
-> > 
-> >        BUG_ON(ss->subsys_id >= CGROUP_BUILTIN_SUBSYS_COUNT);
-> >        BUG_ON(subsys[ss->subsys_id] != ss);
-> 
-> CGROUP_BUILTIN_SUBSYS_COUNT is already gone in mainline.  I suppose
-> this is no longer necessary?
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-Ah, you are right. I can confirm the problem is gone, and I'll drop
-the patch.
+> Il 04/10/2012 14:51, Rusty Russell ha scritto:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>> 
+>>> Il 04/10/2012 02:11, Rusty Russell ha scritto:
+>>>>>> There's a reason I haven't done this.  I really, really dislike "my
+>>>>>> implemention isn't broken" feature bits.  We could have an infinite
+>>>>>> number of them, for each bug in each device.
+>>>>>
+>>>>> However, this bug affects (almost) all implementations and (almost) all
+>>>>> devices.  It even makes sense to reserve a transport feature bit for it
+>>>>> instead of a device feature bit.
+>>>>
+>>>> Perhaps, but we have to fix the bugs first!
+>>>
+>>> Yes. :)  Isn't that what mst's patch does?
+>>>
+>>>> As I said, my torture patch broke qemu immediately.  Since noone has
+>>>> leapt onto fixing that, I'll take a look now...
+>>>
+>>> I can look at virtio-scsi.
+>> 
+>> Actually, you can't, see my reply to Anthony...
+>> 
+>> Message-ID: <87lifm1y1n.fsf@rustcorp.com.au>
+>
+>     struct virtio_scsi_req_cmd {
+>         // Read-only
+>         u8 lun[8];
+>         u64 id;
+>         u8 task_attr;
+>         u8 prio;
+>         u8 crn;
+>         char cdb[cdb_size];
+>         char dataout[];
+>         // Write-only part
+>         u32 sense_len;
+>         u32 residual;
+>         u16 status_qualifier;
+>         u8 status;
+>         u8 response;
+>         u8 sense[sense_size];
+>         char datain[];
+>     };
+>
+> where cdb_size and sense_size come from configuration space.  The device
+> right now expects everything before dataout/datain to be in a single
+> descriptor, but that's in no way part of the spec.  Am I missing
+> something egregious?
 
-	Arnd
+Since you wrote it, I hope not :)
+
+That's good.  But virtio_blk's scsi command is insoluble AFAICT.  As I
+said to Anthony, the best rules are "always" and "never", so I'd really
+rather not have to grandfather that in.
+
+Cheers,
+Rusty.
