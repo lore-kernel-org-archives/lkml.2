@@ -1,233 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab2JEVNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 17:13:09 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47480 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932275Ab2JEVNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 17:13:04 -0400
-Date: Fri, 5 Oct 2012 14:12:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Antti P Miettinen <ananaza@iki.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: Add "expedite always" switch
-Message-ID: <20121005211234.GA2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121005.000053.1467384272006747942.apm@brigitte.kvy.fi>
- <20121004213933.GI2464@linux.vnet.ibm.com>
- <20121005.095915.597083345241151143.apm@brigitte.kvy.fi>
+	id S932820Ab2JEVTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 17:19:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53684 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932725Ab2JEVTi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 17:19:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121005.095915.597083345241151143.apm@brigitte.kvy.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12100521-5112-0000-0000-00000D216CFE
+In-Reply-To: <871uhcsk93.fsf@xmission.com>
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org>
+	<1348991844-12285-5-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com>
+	<20121003165105.GA30214@jshin-Toonie>
+	<CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com>
+	<20121004164630.GB2244@phenom.dumpdata.com>
+	<CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com>
+	<871uhcsk93.fsf@xmission.com>
+Date: Fri, 5 Oct 2012 14:19:37 -0700
+X-Google-Sender-Auth: gTpl4zSbJozsPnKWDR11XVv4svo
+Message-ID: <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com>
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 09:59:15AM +0300, Antti P Miettinen wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > b.	Maybe sysfs setting.  Initially, this can be simple "on" and "off",
-> > 	exported with root-only access (like you have above).  If more
-> > 	elaborate use cases appear, this might become the adminstrative
-> > 	override.  The key point is that this needs to go through some
-> > 	sort of separate function (for example, via the KERNEL_ATTR_RW()
-> > 	macro) so that if it needs to change in the future, we can do
-> > 	the change easily.
-> 
-> I did not really envision the module param to be an application
-> interface, more like an administrative interface. For dynamically
-> requesting things on/off you probably want something like PM QoS which
-> does proper book keeping and consolidation but PM QoS for this feels a
-> bit overkill. But I do not think sysfs node is appropriate either for
-> an application interface. I guess module_param_cb() would also achieve
-> the goal of "doing something" upon parameter change. Anyway - below
-> the 0-perm module param + sysfs node version.
+On Fri, Oct 5, 2012 at 2:04 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> Is there a git commit that explains what the 'big range' problem is?
+>
+> At least on x86_64 this was recently tested and anywhere below 4G is
+> good, and there is a patch floating around somewhere to remove this
+> issue.
 
-Queued, thank you!!!  I updated the commit log to read as follows:
+patch for kernel or kexec-tools?
 
-    Add a module parameter to force use of expedited RCU primitives
-    
-    There have been some embedded applications that would benefit from
-    use of expedited grace-period primitives.  In some ways, this is
-    similar to synchronize_net() doing either a normal or an expedited
-    grace period depending on lock state, but with control outside of
-    the kernel.
-    
-    This commit therefore adds rcu_expedited boot and sysfs parameters
-    that cause the kernel to substitute expedited primitives for the
-    normal grace-period primitives.
-
-							Thanx, Paul
-
-> 	--Antti
-> 
-> Add a module parameter for always using expedited RCU primitives.
-> 
-> Signed-off-by: Antti P Miettinen <amiettinen@nvidia.com>
-> ---
->  kernel/ksysfs.c         |   18 ++++++++++++++++++
->  kernel/rcu.h            |    2 ++
->  kernel/rcupdate.c       |    3 +++
->  kernel/rcutiny_plugin.h |    5 ++++-
->  kernel/rcutree.c        |   10 ++++++++--
->  kernel/rcutree_plugin.h |    5 ++++-
->  kernel/srcu.c           |    6 +++++-
->  7 files changed, 44 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-> index 4e316e1..8715a79 100644
-> --- a/kernel/ksysfs.c
-> +++ b/kernel/ksysfs.c
-> @@ -141,6 +141,23 @@ static ssize_t fscaps_show(struct kobject *kobj,
->  }
->  KERNEL_ATTR_RO(fscaps);
-> 
-> +int rcu_expedited;
-> +static ssize_t rcu_expedited_show(struct kobject *kobj,
-> +				  struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%d\n", rcu_expedited);
-> +}
-> +static ssize_t rcu_expedited_store(struct kobject *kobj,
-> +				   struct kobj_attribute *attr,
-> +				   const char *buf, size_t count)
-> +{
-> +	if (kstrtoint(buf, 0, &rcu_expedited))
-> +		return -EINVAL;
-> +
-> +	return count;
-> +}
-> +KERNEL_ATTR_RW(rcu_expedited);
-> +
->  /*
->   * Make /sys/kernel/notes give the raw contents of our kernel .notes section.
->   */
-> @@ -182,6 +199,7 @@ static struct attribute * kernel_attrs[] = {
->  	&kexec_crash_size_attr.attr,
->  	&vmcoreinfo_attr.attr,
->  #endif
-> +	&rcu_expedited_attr.attr,
->  	NULL
->  };
-> 
-> diff --git a/kernel/rcu.h b/kernel/rcu.h
-> index 8ba99cd..20dfba5 100644
-> --- a/kernel/rcu.h
-> +++ b/kernel/rcu.h
-> @@ -109,4 +109,6 @@ static inline bool __rcu_reclaim(char *rn, struct rcu_head *head)
->  	}
->  }
-> 
-> +extern int rcu_expedited;
-> +
->  #endif /* __LINUX_RCU_H */
-> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-> index 29ca1c6..a2cf761 100644
-> --- a/kernel/rcupdate.c
-> +++ b/kernel/rcupdate.c
-> @@ -46,12 +46,15 @@
->  #include <linux/export.h>
->  #include <linux/hardirq.h>
->  #include <linux/delay.h>
-> +#include <linux/module.h>
-> 
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/rcu.h>
-> 
->  #include "rcu.h"
-> 
-> +module_param(rcu_expedited, int, 0);
-> +
->  #ifdef CONFIG_PREEMPT_RCU
-> 
->  /*
-> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-> index 3d01902..f85016a 100644
-> --- a/kernel/rcutiny_plugin.h
-> +++ b/kernel/rcutiny_plugin.h
-> @@ -706,7 +706,10 @@ void synchronize_rcu(void)
->  		return;
-> 
->  	/* Once we get past the fastpath checks, same code as rcu_barrier(). */
-> -	rcu_barrier();
-> +	if (rcu_expedited)
-> +		synchronize_rcu_expedited();
-> +	else
-> +		rcu_barrier();
->  }
->  EXPORT_SYMBOL_GPL(synchronize_rcu);
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 4fb2376..744c117 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -2221,7 +2221,10 @@ void synchronize_sched(void)
->  			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
->  	if (rcu_blocking_is_gp())
->  		return;
-> -	wait_rcu_gp(call_rcu_sched);
-> +	if (rcu_expedited)
-> +		synchronize_sched_expedited();
-> +	else
-> +		wait_rcu_gp(call_rcu_sched);
->  }
->  EXPORT_SYMBOL_GPL(synchronize_sched);
-> 
-> @@ -2242,7 +2245,10 @@ void synchronize_rcu_bh(void)
->  			   "Illegal synchronize_rcu_bh() in RCU-bh read-side critical section");
->  	if (rcu_blocking_is_gp())
->  		return;
-> -	wait_rcu_gp(call_rcu_bh);
-> +	if (rcu_expedited)
-> +		synchronize_rcu_bh_expedited();
-> +	else
-> +		wait_rcu_gp(call_rcu_bh);
->  }
->  EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index f921154..0e9ca8b 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -679,7 +679,10 @@ void synchronize_rcu(void)
->  			   "Illegal synchronize_rcu() in RCU read-side critical section");
->  	if (!rcu_scheduler_active)
->  		return;
-> -	wait_rcu_gp(call_rcu);
-> +	if (rcu_expedited)
-> +		synchronize_rcu_expedited();
-> +	else
-> +		wait_rcu_gp(call_rcu);
->  }
->  EXPORT_SYMBOL_GPL(synchronize_rcu);
-> 
-> diff --git a/kernel/srcu.c b/kernel/srcu.c
-> index 97c465e..d56873c 100644
-> --- a/kernel/srcu.c
-> +++ b/kernel/srcu.c
-> @@ -34,6 +34,8 @@
->  #include <linux/delay.h>
->  #include <linux/srcu.h>
-> 
-> +#include "rcu.h"
-> +
->  /*
->   * Initialize an rcu_batch structure to empty.
->   */
-> @@ -464,7 +466,9 @@ static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
->   */
->  void synchronize_srcu(struct srcu_struct *sp)
->  {
-> -	__synchronize_srcu(sp, SYNCHRONIZE_SRCU_TRYCOUNT);
-> +	__synchronize_srcu(sp, rcu_expedited
-> +			   ? SYNCHRONIZE_SRCU_EXP_TRYCOUNT
-> +			   : SYNCHRONIZE_SRCU_TRYCOUNT);
->  }
->  EXPORT_SYMBOL_GPL(synchronize_srcu);
-> 
-> -- 
-> 1.7.4.1
-> 
-
+Yinghai
