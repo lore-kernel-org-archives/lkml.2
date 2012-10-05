@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab2JEJDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:03:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32998 "EHLO
+	id S1754858Ab2JEJEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:04:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33014 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598Ab2JEJD3 (ORCPT
+	with ESMTP id S1754313Ab2JEJEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:03:29 -0400
-Date: Fri, 5 Oct 2012 02:03:01 -0700
+	Fri, 5 Oct 2012 05:04:30 -0400
+Date: Fri, 5 Oct 2012 02:03:57 -0700
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-41724e4cf6c443d2dc575669b8555f0e2ae427a9@git.kernel.org>
+Message-ID: <tip-1d77822ea6245e89149872405a3844e0778a004a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+        a.p.zijlstra@chello.nl, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1349354994-17853-5-git-send-email-namhyung@kernel.org>
-References: <1349354994-17853-5-git-send-email-namhyung@kernel.org>
+        a.p.zijlstra@chello.nl, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1349354994-17853-6-git-send-email-namhyung@kernel.org>
+References: <1349354994-17853-6-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Removing hists pair argument from output path
-Git-Commit-ID: 41724e4cf6c443d2dc575669b8555f0e2ae427a9
+Subject: [tip:perf/urgent] perf tool: Add hpp interface to enable/
+ disable hpp column
+Git-Commit-ID: 1d77822ea6245e89149872405a3844e0778a004a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,172 +34,184 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 02:03:06 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 02:04:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  41724e4cf6c443d2dc575669b8555f0e2ae427a9
-Gitweb:     http://git.kernel.org/tip/41724e4cf6c443d2dc575669b8555f0e2ae427a9
+Commit-ID:  1d77822ea6245e89149872405a3844e0778a004a
+Gitweb:     http://git.kernel.org/tip/1d77822ea6245e89149872405a3844e0778a004a
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 4 Oct 2012 21:49:38 +0900
+AuthorDate: Thu, 4 Oct 2012 21:49:39 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 4 Oct 2012 13:29:45 -0300
+CommitDate: Thu, 4 Oct 2012 13:30:27 -0300
 
-perf tools: Removing hists pair argument from output path
+perf tool: Add hpp interface to enable/disable hpp column
 
-The hists pointer is now part of the 'struct hist_entry'.
+Adding perf_hpp__column_enable function to enable/disable hists column
+and removing diff command specific stuff 'need_pair and
+show_displacement' from hpp code.
 
-And since the overhead and baseline columns are split now, there's no
-reason to pass it through the output path.
+The diff command now enables/disables columns separately according to
+the user arguments. This will be helpful in future patches where more
+columns are added into diff output.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1349354994-17853-5-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1349354994-17853-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c   |    3 +--
- tools/perf/builtin-report.c |    2 +-
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/ui/hist.c        |    9 +++++----
- tools/perf/ui/stdio/hist.c  |   10 +++-------
- tools/perf/util/hist.h      |    4 ++--
- 6 files changed, 13 insertions(+), 17 deletions(-)
+ tools/perf/builtin-diff.c      |   18 +++++++++++++++++-
+ tools/perf/builtin-report.c    |    2 +-
+ tools/perf/ui/browsers/hists.c |    2 +-
+ tools/perf/ui/gtk/browser.c    |    2 +-
+ tools/perf/ui/hist.c           |   15 ++++++---------
+ tools/perf/ui/setup.c          |    2 +-
+ tools/perf/util/hist.h         |    3 ++-
+ 7 files changed, 29 insertions(+), 15 deletions(-)
 
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 5cb577a..413c65a1b 100644
+index 413c65a1b..a0b531c 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -214,8 +214,7 @@ static int __cmd_diff(void)
- 		first = false;
+@@ -256,6 +256,21 @@ static const struct option options[] = {
+ 	OPT_END()
+ };
  
- 		hists__match(&evsel_old->hists, &evsel->hists);
--		hists__fprintf(&evsel->hists, &evsel_old->hists,
--			       true, 0, 0, stdout);
-+		hists__fprintf(&evsel->hists, true, 0, 0, stdout);
- 	}
++static void ui_init(void)
++{
++	perf_hpp__init();
++
++	/* No overhead column. */
++	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
++
++	/* Display baseline/delta/displacement columns. */
++	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
++	perf_hpp__column_enable(PERF_HPP__DELTA, true);
++
++	if (show_displacement)
++		perf_hpp__column_enable(PERF_HPP__DISPL, true);
++}
++
+ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	sort_order = diff__default_sort_order;
+@@ -278,7 +293,8 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
  
- out_delete:
+-	perf_hpp__init(true, show_displacement);
++	ui_init();
++
+ 	setup_sorting(diff_usage, options);
+ 	setup_pager();
+ 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 6748cac..95e7ea8 100644
+index 95e7ea8..a61725d 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -320,7 +320,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 		const char *evname = perf_evsel__name(pos);
- 
- 		hists__fprintf_nr_sample_events(hists, evname, stdout);
--		hists__fprintf(hists, NULL, true, 0, 0, stdout);
-+		hists__fprintf(hists, true, 0, 0, stdout);
- 		fprintf(stdout, "\n\n");
+@@ -691,7 +691,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		setup_browser(true);
+ 	else {
+ 		use_browser = 0;
+-		perf_hpp__init(false, false);
++		perf_hpp__init();
  	}
  
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 3571158..ff6db80 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -316,7 +316,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 	hists__output_recalc_col_len(&top->sym_evsel->hists,
- 				     top->winsize.ws_row - 3);
- 	putchar('\n');
--	hists__fprintf(&top->sym_evsel->hists, NULL, false,
-+	hists__fprintf(&top->sym_evsel->hists, false,
- 		       top->winsize.ws_row - 4 - printed, win_width, stdout);
- }
+ 	setup_sorting(report_usage, options);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index a21f40b..bbd11c2 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -584,7 +584,7 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
  
+ void hist_browser__init_hpp(void)
+ {
+-	perf_hpp__init(false, false);
++	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+ 				hist_browser__hpp_color_overhead;
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index 7ff99ec..2bc08f6 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -73,7 +73,7 @@ HPP__COLOR_FN(overhead_guest_us, period_guest_us)
+ 
+ void perf_gtk__init_hpp(void)
+ {
+-	perf_hpp__init(false, false);
++	perf_hpp__init();
+ 
+ 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+ 				perf_gtk__hpp_color_overhead;
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 532a601..6b0138e 100644
+index 6b0138e..e8853f7 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -228,16 +228,17 @@ static int hpp__width_delta(struct perf_hpp *hpp __maybe_unused)
+@@ -302,7 +302,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ #undef HPP__COLOR_PRINT_FNS
+ #undef HPP__PRINT_FNS
  
- static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+-void perf_hpp__init(bool need_pair, bool show_displacement)
++void perf_hpp__init(void)
  {
--	struct hists *pair_hists = hpp->ptr;
-+	struct hist_entry *pair = he->pair;
-+	struct hists *pair_hists = pair ? pair->hists : NULL;
- 	u64 old_total, new_total;
- 	double old_percent = 0, new_percent = 0;
- 	double diff;
- 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
- 	char buf[32] = " ";
+ 	if (symbol_conf.show_cpu_utilization) {
+ 		perf_hpp__format[PERF_HPP__OVERHEAD_SYS].cond = true;
+@@ -319,15 +319,12 @@ void perf_hpp__init(bool need_pair, bool show_displacement)
  
--	old_total = pair_hists->stats.total_period;
--	if (old_total > 0 && he->pair)
--		old_percent = 100.0 * he->pair->period / old_total;
-+	old_total = pair_hists ? pair_hists->stats.total_period : 0;
-+	if (old_total > 0 && pair)
-+		old_percent = 100.0 * pair->period / old_total;
+ 	if (symbol_conf.show_total_period)
+ 		perf_hpp__format[PERF_HPP__PERIOD].cond = true;
++}
  
- 	new_total = hpp->total_period;
- 	if (new_total > 0)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 0aa6776..1340c93 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -307,8 +307,7 @@ static size_t hist_entry__callchain_fprintf(struct hist_entry *he,
+-	if (need_pair) {
+-		perf_hpp__format[PERF_HPP__OVERHEAD].cond = false;
+-		perf_hpp__format[PERF_HPP__BASELINE].cond = true;
+-		perf_hpp__format[PERF_HPP__DELTA].cond = true;
+-
+-		if (show_displacement)
+-			perf_hpp__format[PERF_HPP__DISPL].cond = true;
+-	}
++void perf_hpp__column_enable(unsigned col, bool enable)
++{
++	BUG_ON(col >= PERF_HPP__MAX_INDEX);
++	perf_hpp__format[col].cond = enable;
  }
  
- static int hist_entry__fprintf(struct hist_entry *he, size_t size,
--			       struct hists *hists, struct hists *pair_hists,
--			       u64 total_period, FILE *fp)
-+			       struct hists *hists, u64 total_period, FILE *fp)
- {
- 	char bf[512];
- 	int ret;
-@@ -316,7 +315,6 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 		.buf		= bf,
- 		.size		= size,
- 		.total_period	= total_period,
--		.ptr		= pair_hists,
- 	};
- 	bool color = !symbol_conf.field_sep;
+ static inline void advance_hpp(struct perf_hpp *hpp, int inc)
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index bd7d460..ebb4cc1 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -30,7 +30,7 @@ void setup_browser(bool fallback_to_pager)
+ 		if (fallback_to_pager)
+ 			setup_pager();
  
-@@ -335,8 +333,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- 	return ret;
+-		perf_hpp__init(false, false);
++		perf_hpp__init();
+ 		break;
+ 	}
  }
- 
--size_t hists__fprintf(struct hists *hists, struct hists *pair,
--		      bool show_header, int max_rows,
-+size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		      int max_cols, FILE *fp)
- {
- 	struct sort_entry *se;
-@@ -351,7 +348,6 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
--		.ptr	= pair,
- 	};
- 	bool first = true;
- 
-@@ -453,7 +449,7 @@ print_entries:
- 		if (h->filtered)
- 			continue;
- 
--		ret += hist_entry__fprintf(h, max_cols, hists, pair,
-+		ret += hist_entry__fprintf(h, max_cols, hists,
- 					   total_period, fp);
- 
- 		if (max_rows && ++nr_rows >= max_rows)
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index b1a2b9d..b83a226 100644
+index b83a226..a7f69d6 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -98,8 +98,8 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
- void hists__inc_nr_events(struct hists *self, u32 type);
- size_t hists__fprintf_nr_events(struct hists *self, FILE *fp);
+@@ -147,7 +147,8 @@ enum {
+ 	PERF_HPP__MAX_INDEX
+ };
  
--size_t hists__fprintf(struct hists *self, struct hists *pair,
--		      bool show_header, int max_rows, int max_cols, FILE *fp);
-+size_t hists__fprintf(struct hists *self, bool show_header, int max_rows,
-+		      int max_cols, FILE *fp);
+-void perf_hpp__init(bool need_pair, bool show_displacement);
++void perf_hpp__init(void);
++void perf_hpp__column_enable(unsigned col, bool enable);
+ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 				bool color);
  
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
