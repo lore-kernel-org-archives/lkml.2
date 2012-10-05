@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab2JELJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 07:09:16 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:54913 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab2JELJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 07:09:14 -0400
+	id S932294Ab2JELMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 07:12:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932255Ab2JELMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 07:12:20 -0400
+Date: Fri, 5 Oct 2012 13:11:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 29/33] autonuma: page_autonuma
+Message-ID: <20121005111140.GE6793@redhat.com>
+References: <20121004165008.GF25675@redhat.com>
+ <0000013a2cff3c3d-76e00716-2869-4dc8-8717-82f0136018d0-000000@email.amazonses.com>
+ <20121004183819.GM25675@redhat.com>
+ <0000013a2d30ebf2-1a2bb821-92a0-464b-9db0-f960b2fd074d-000000@email.amazonses.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEk6gTBSJdJhQ=JGnBEj8RqOuxYzuJzqR4X0UAhsayvOVLK6iw@mail.gmail.com>
-References: <CAEk6gTBSJdJhQ=JGnBEj8RqOuxYzuJzqR4X0UAhsayvOVLK6iw@mail.gmail.com>
-Date: Fri, 5 Oct 2012 13:09:13 +0200
-Message-ID: <CAEk6gTAxO_6z+KmBgc3ZnqoHwuKYawP1xz7B_zd3LdOL3tkLsQ@mail.gmail.com>
-Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
-From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
-To: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org
-Content-Type: multipart/mixed; boundary=bcaec54ee310edfd4204cb4de6eb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013a2d30ebf2-1a2bb821-92a0-464b-9db0-f960b2fd074d-000000@email.amazonses.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec54ee310edfd4204cb4de6eb
-Content-Type: text/plain; charset=ISO-8859-1
+Hi Christoph,
 
-Looping GPIO maintainers...
+On Thu, Oct 04, 2012 at 07:11:51PM +0000, Christoph Lameter wrote:
+> I did not say anything like that. Still not convinced that autonuma is
+> worth doing and that it is beneficial given the complexity it adds to the
+> kernel. Just wanted to point out that there is a case to be made for
+> adding another word to the page struct.
 
-On Fri, Oct 5, 2012 at 12:45 PM, Drasko DRASKOVIC
-<drasko.draskovic@gmail.com> wrote:
-> Hi all,
-> please find a patch that adds IRQ edge set-up mechanism to sysfs that
-> can be called from the kernel.
->
-> This functionality can be very useful for embedded systems, as it
-> permits kernel to do GPIO set-up during boot stage. Configuration
-> which defines pins behavior is often kept in NVRAM, and during boot
-> stage these structures can be parsed and executed by the kernel, so
-> that when user processes already find all sysfs environment ready and
-> correctly set-up.
->
-> While at the present it is possible to export GPIO pins to sysfs (and
-> correct direction / value), it is not possible to export IRQ
-> configuration as well, so this must be done in user space (most often
-> via command line). this patch implements missing functionality, so
-> that  gpio_sysfs_set_edge() function can be called directly from the
-> kernel.
->
-> Best regards,
-> Drasko
+You've seen the benchmarks, no other solution that exists today solves
+all those cases and never showed a regression compared to
+upstream. Running that much faster is very beneficial in my
+view.
 
---bcaec54ee310edfd4204cb4de6eb
-Content-Type: application/octet-stream; 
-	name="0001-PATCH-GPIO-Add-IRQ-edge-setter-to-gpiolib.patch"
-Content-Disposition: attachment; 
-	filename="0001-PATCH-GPIO-Add-IRQ-edge-setter-to-gpiolib.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h7x6ylth1
+Expecting the admin of a 2 socket system to use hard bindings manually
+is unrealistic, even for a 4 socket is unrealistic.
 
-RnJvbSBlYjA3MzEzZmZiNTNiOGVhMDgwZGJjYzc0MDBlMGVjMWE1N2M4MzZlIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEcmFza28gRFJBU0tPVklDIDxkcmFza28uZHJhc2tvdmljQGdt
-YWlsLmNvbT4KRGF0ZTogRnJpLCA1IE9jdCAyMDEyIDExOjU5OjQ3ICswMjAwClN1YmplY3Q6IFtQ
-QVRDSF0gW1BBVENIXVtHUElPXSBBZGQgSVJRIGVkZ2Ugc2V0dGVyIHRvIGdwaW9saWIgU2lnbmVk
-LW9mZi1ieToKIERyYXNrbyBEUkFTS09WSUMgPGRyYXNrby5kcmFza292aWNAZ21haWwuY29tPgoK
-LS0tCiBEb2N1bWVudGF0aW9uL2dwaW8udHh0ICAgICB8ICAgIDMgKysKIGRyaXZlcnMvZ3Bpby9n
-cGlvbGliLmMgICAgIHwgICA3MCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKwogaW5jbHVkZS9hc20tZ2VuZXJpYy9ncGlvLmggfCAgICA1ICsrKwogMyBmaWxlcyBj
-aGFuZ2VkLCA3OCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL0Rv
-Y3VtZW50YXRpb24vZ3Bpby50eHQgYi9Eb2N1bWVudGF0aW9uL2dwaW8udHh0CmluZGV4IGUwOGE4
-ODMuLjhkYjk1ZTEgMTAwNjQ0Ci0tLSBhL0RvY3VtZW50YXRpb24vZ3Bpby50eHQKKysrIGIvRG9j
-dW1lbnRhdGlvbi9ncGlvLnR4dApAQCAtNzEyLDYgKzcxMiw5IEBAIHJlcXVlc3RlZCB1c2luZyBn
-cGlvX3JlcXVlc3QoKToKIAkvKiBjaGFuZ2UgdGhlIHBvbGFyaXR5IG9mIGEgR1BJTyBub2RlIGlu
-IHN5c2ZzICovCiAJaW50IGdwaW9fc3lzZnNfc2V0X2FjdGl2ZV9sb3codW5zaWduZWQgZ3Bpbywg
-aW50IHZhbHVlKTsKIAorCS8qIGNoYW5nZSB0aGUgaXJxIGVkZ2Ugb2YgYSBHUElPIG5vZGUgaW4g
-c3lzZnMgKi8KKwlncGlvX3N5c2ZzX3NldF9lZGdlKHVuc2lnbmVkIGdwaW8sIHVuc2lnbmVkIGlu
-dCBpcnFfdHlwZSk7CisKIEFmdGVyIGEga2VybmVsIGRyaXZlciByZXF1ZXN0cyBhIEdQSU8sIGl0
-IG1heSBvbmx5IGJlIG1hZGUgYXZhaWxhYmxlIGluCiB0aGUgc3lzZnMgaW50ZXJmYWNlIGJ5IGdw
-aW9fZXhwb3J0KCkuICBUaGUgZHJpdmVyIGNhbiBjb250cm9sIHdoZXRoZXIgdGhlCiBzaWduYWwg
-ZGlyZWN0aW9uIG1heSBjaGFuZ2UuICBUaGlzIGhlbHBzIGRyaXZlcnMgcHJldmVudCB1c2Vyc3Bh
-Y2UgY29kZQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ncGlvL2dwaW9saWIuYyBiL2RyaXZlcnMvZ3Bp
-by9ncGlvbGliLmMKaW5kZXggNWQ2YzcxZS4uOWIwN2Q2NyAxMDA2NDQKLS0tIGEvZHJpdmVycy9n
-cGlvL2dwaW9saWIuYworKysgYi9kcml2ZXJzL2dwaW8vZ3Bpb2xpYi5jCkBAIC04MjAsNiArODIw
-LDc2IEBAIEVYUE9SVF9TWU1CT0xfR1BMKGdwaW9fZXhwb3J0X2xpbmspOwogCiAKIC8qKgorICog
-Z3Bpb19zeXNmc19zZXRfZWRnZSAtIHNldHMgaXJxIGVkZ2UgdHlwZSBmb3IgYW4gZXhwb3J0ZWQg
-R1BJTyBub2RlCisgKiBAZ3BpbzogZ3BpbyB0byBzZXQtdXAgZWRnZSB0bywgYWxyZWFkeSBleHBv
-cnRlZAorICogQGlycV90eXBlOiBpcnEgdHlwZSB0byBiZSBzZXQKKyAqCisgKiBSZXR1cm5zIHpl
-cm8gb24gc3VjY2VzcywgZWxzZSBhbiBlcnJvci4KKyAqLworaW50IGdwaW9fc3lzZnNfc2V0X2Vk
-Z2UodW5zaWduZWQgZ3BpbywgdW5zaWduZWQgaW50IGlycV90eXBlKQoreworCXN0cnVjdCBncGlv
-X2Rlc2MgICAgICAgICpkZXNjOworCXN0cnVjdCBkZXZpY2UgICAgICAgICAgICpkZXYgPSBOVUxM
-OworCWludCAgICAgICAgICAgICAgICAgICAgIHN0YXR1cyA9IC1FSU5WQUw7CisJdW5zaWduZWQg
-bG9uZyAgICAgICAgICAgdHJpZ2dlcl9mbGFncyA9IDA7CisKKwlpZiAoIWdwaW9faXNfdmFsaWQo
-Z3BpbykpCisJCWdvdG8gZG9uZTsKKworCW11dGV4X2xvY2soJnN5c2ZzX2xvY2spOworCisJZGVz
-YyA9ICZncGlvX2Rlc2NbZ3Bpb107CisKKwlpZiAodGVzdF9iaXQoRkxBR19FWFBPUlQsICZkZXNj
-LT5mbGFncykpIHsKKwkJZGV2ID0gY2xhc3NfZmluZF9kZXZpY2UoJmdwaW9fY2xhc3MsIE5VTEws
-IGRlc2MsIG1hdGNoX2V4cG9ydCk7CisJCWlmIChkZXYgPT0gTlVMTCkgeworCQkJc3RhdHVzID0g
-LUVOT0RFVjsKKwkJCWdvdG8gdW5sb2NrOworCQl9CisJfQorCisJc3dpdGNoIChpcnFfdHlwZSkg
-eworCQljYXNlIElSUV9UWVBFX05PTkU6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFr
-OworCQljYXNlIElSUV9UWVBFX0VER0VfRkFMTElORzoKKwkJCXRyaWdnZXJfZmxhZ3MgPSBCSVQo
-RkxBR19UUklHX0ZBTEwpOworCQkJYnJlYWs7CisJCWNhc2UgSVJRX1RZUEVfRURHRV9SSVNJTkc6
-CisJCQl0cmlnZ2VyX2ZsYWdzID0gQklUKEZMQUdfVFJJR19SSVNFKTsKKwkJCWJyZWFrOworCQlj
-YXNlIElSUV9UWVBFX0VER0VfQk9USDoKKwkJCXRyaWdnZXJfZmxhZ3MgPSBCSVQoRkxBR19UUklH
-X0ZBTEwpIHwgQklUKEZMQUdfVFJJR19SSVNFKTsKKwkJCWJyZWFrOworCQljYXNlIElSUV9UWVBF
-X0xFVkVMX0hJR0g6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFrOworCQljYXNlIElS
-UV9UWVBFX0xFVkVMX0xPVzoKKwkJCXRyaWdnZXJfZmxhZ3MgPSAwOworCQkJYnJlYWs7CisJCWRl
-ZmF1bHQ6CisJCQl0cmlnZ2VyX2ZsYWdzID0gMDsKKwkJCWJyZWFrOworCX0KKworCWdwaW9fc2V0
-dXBfaXJxKGRlc2MsIGRldiwgMCk7CisJc3RhdHVzID0gZ3Bpb19zZXR1cF9pcnEoZGVzYywgZGV2
-LCB0cmlnZ2VyX2ZsYWdzKTsKKwordW5sb2NrOgorICAgIG11dGV4X3VubG9jaygmc3lzZnNfbG9j
-ayk7CisKK2RvbmU6CisgICAgaWYgKHN0YXR1cykKKyAgICAgICAgcHJfZGVidWcoIiVzOiBncGlv
-JWQgc3RhdHVzICVkXG4iLCBfX2Z1bmNfXywgZ3Bpbywgc3RhdHVzKTsKKworICAgIHJldHVybiBz
-dGF0dXM7Cit9CitFWFBPUlRfU1lNQk9MX0dQTChncGlvX3N5c2ZzX3NldF9lZGdlKTsKKworCisK
-KworLyoqCiAgKiBncGlvX3N5c2ZzX3NldF9hY3RpdmVfbG93IC0gc2V0IHRoZSBwb2xhcml0eSBv
-ZiBncGlvIHN5c2ZzIHZhbHVlCiAgKiBAZ3BpbzogZ3BpbyB0byBjaGFuZ2UKICAqIEB2YWx1ZTog
-bm9uLXplcm8gdG8gdXNlIGFjdGl2ZSBsb3csIGkuZS4gaW52ZXJ0ZWQgdmFsdWVzCmRpZmYgLS1n
-aXQgYS9pbmNsdWRlL2FzbS1nZW5lcmljL2dwaW8uaCBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvZ3Bp
-by5oCmluZGV4IGE5NDMyZmMuLjQ4MjdkZTggMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvYXNtLWdlbmVy
-aWMvZ3Bpby5oCisrKyBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvZ3Bpby5oCkBAIC0yNTIsNiArMjUy
-LDExIEBAIHN0YXRpYyBpbmxpbmUgaW50IGdwaW9fc3lzZnNfc2V0X2FjdGl2ZV9sb3codW5zaWdu
-ZWQgZ3BpbywgaW50IHZhbHVlKQogCXJldHVybiAtRU5PU1lTOwogfQogCitzdGF0aWMgaW5saW5l
-IGludCBncGlvX3N5c2ZzX3NldF9lZGdlKHVuc2lnbmVkIGdwaW8sIHVuc2lnbmVkIGludCBpcnFf
-dHlwZSkKK3sKKwlyZXR1cm4gLUVOT1NZUzsKK30KKwogc3RhdGljIGlubGluZSB2b2lkIGdwaW9f
-dW5leHBvcnQodW5zaWduZWQgZ3BpbykKIHsKIH0KLS0gCjEuNy42Cgo=
---bcaec54ee310edfd4204cb4de6eb--
+If you've 512 node system well then you can afford to setup everything
+manually and boot with noautonuma, no argument about that.
+
+About the complexity, well there's no simple solution to an hard
+problem. The proof comes from the schednuma crowd that is currently
+copying the AutoNUMA scheduler cpu-follow-memory design at full force
+as we speak.
+
+Thanks,
+Andrea
