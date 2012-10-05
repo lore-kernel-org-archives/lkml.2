@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2JENr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 09:47:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58622 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab2JENr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 09:47:27 -0400
-Date: Fri, 5 Oct 2012 15:47:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        devel@openvz.org, linux-mm@kvack.org,
-        Suleiman Souhlal <suleiman@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v3 04/13] kmem accounting basic infrastructure
-Message-ID: <20121005134723.GD27757@dhcp22.suse.cz>
-References: <20120926195648.GA20342@google.com>
- <50635F46.7000700@parallels.com>
- <20120926201629.GB20342@google.com>
- <50637298.2090904@parallels.com>
- <20120927120806.GA29104@dhcp22.suse.cz>
- <20120927143300.GA4251@mtj.dyndns.org>
- <20120927150950.GG29104@dhcp22.suse.cz>
- <20120930084750.GI10383@mtj.dyndns.org>
- <20121001092756.GA8622@dhcp22.suse.cz>
- <20121003224316.GD19248@localhost>
+	id S1753200Ab2JENvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 09:51:09 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:52247 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751455Ab2JENvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 09:51:07 -0400
+Message-ID: <1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: <monstr@monstr.eu>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 5 Oct 2012 14:51:02 +0100
+In-Reply-To: <506EA9C4.2000609@monstr.eu>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+	  <1349374497-9540-11-git-send-email-monstr@monstr.eu>
+	 <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+	 <506EA9C4.2000609@monstr.eu>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121003224316.GD19248@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-10-12 07:43:16, Tejun Heo wrote:
-[...]
-> > That is right but I think that the current discussion shows that a mixed
-> > (kmem disabled and kmem enabled hierarchies) workloads are far from
-> > being theoretical and a global knob is just too coarse. I am afraid we
+On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
+> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
+> > On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
+> >> Just show current setting in bootlog.
+> > [...]
+> >> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
+> >>   	/* Setup checksum offload, but default to off if not specified */
+> >>   	lp->temac_features = 0;
+> >>   	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
+> >> +	dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
+> >>   	if (p && be32_to_cpu(*p)) {
+> >>   		lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
+> >>   		/* Can checksum TCP/UDP over IPv4. */
+> >>   		ndev->features |= NETIF_F_IP_CSUM;
+> >>   	}
+> >>   	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
+> >> +	dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
+> > [...]
+> >
+> > Is there any particular reason you think this needs to be logged by
+> > default, rather than letting users run ethtool -k?  I suggest using
+> > dev_dbg() instead.
 > 
-> I'm not sure there's much evidence in this thread.  The strongest upto
-> this point seems to be performance overhead / difficulty of general
-> enough implementation.  As for "trusted" workload, what are the
-> inherent benefits of trusting if you don't have to?
-
-One advantage is that you do _not have_ to consider kernel memory
-allocations (which are inherently bound to the kernel version) so the
-sizing is much easier and version independent. If you set a limit to XY
-because you know what you are doing you certainly do not want to regress
-(e.g. because of unnecessary reclaim) just because a certain kernel
-allocation got bigger, right?
-
-> > will see "we want that per hierarchy" requests shortly and that would
-> > just add a new confusion where global knob would complicate it
-> > considerably (do we really want on/off/per_hierarchy global knob?).
+> Ok. I have looked at it and there are missing some bits in ndev->features.
 > 
-> Hmmm?  The global knob is just the same per_hierarchy knob at the
-> root.  It's hierarchical after all.
-
-When you said global knob I imagined mount or boot option. If you want
-to have yet another memory.enable_kmem then IMHO it is much easier to
-use set-accounted semantic (which is hierarchical as well).
-
-> Anyways, as long as the "we silently ignore what happened before being
-> enabled" is gone, I won't fight this anymore.  It isn't broken after
-> all.  
-
-OK, it is good that we settled this.
-
-> But, please think about making things simpler in general, cgroup
-> is riddled with mis-designed complexities and memcg seems to be
-> leading the charge at times.
-
-Yes this is an evolution and it seems that we are slowly getting there.
-
+> Can you please check that my setting is correct?
 > 
-> Thanks.
+> It is SG DMA ip/driver.
+> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
+
+NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
+through the frag_list pointer.
+
+> With two options for csum on RX/TX. They can be selected independently.
+> tx Partial csum over IPv4. -> NETIF_F_IP_CSUM
+> tx Full csum. -> NETIF_F_HW_CSUM
+
+NETIF_F_IP_CSUM means you have hardware checksum generation for TCP/IPv4
+and UDP/IPv4 only (XAE_FEATURE_FULL_TX_CSUM).
+
+NETIF_F_HW_CSUM means you have generic TCP-style checksum generation
+using the csum_start and csum_offset fields of the skb
+(XAE_FEATURE_PARTIAL_TX_CSUM).  By the way, you're actually testing
+XAE_FEATURE_PARTIAL_RX_CSUM in axienet_start_xmit()...
+
+> rx Full csum -> NETIF_F_RXCSUM
+>
+> Is there any option to support partial csum?
+
+There is no need to differentiate these in the device features.  For TX
+the stack needs to know whether to use a software fallback before
+passing the skb to you, but on RX it looks at the ip_summed field of
+each skb you pass up.
+
+Ben.
 
 -- 
-Michal Hocko
-SUSE Labs
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
