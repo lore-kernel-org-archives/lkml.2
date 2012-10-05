@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab2JEAJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 20:09:58 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51995 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752867Ab2JEAJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 20:09:57 -0400
-Message-ID: <1349395795.2008.26.camel@joe-AO722>
-Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
- return code
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: peter.senna@gmail.com, shemminger@vyatta.com, mlindner@marvell.com,
-        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 04 Oct 2012 17:09:55 -0700
-In-Reply-To: <20121004.145419.1859367129463136197.davem@davemloft.net>
-References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
-	 <20121004.142335.1467206545795435493.davem@davemloft.net>
-	 <CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
-	 <20121004.145419.1859367129463136197.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1752271Ab2JEA2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 20:28:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57541 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab2JEA2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 20:28:00 -0400
+Message-ID: <506E2970.8050603@zytor.com>
+Date: Thu, 04 Oct 2012 17:27:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH] MAINTAINERS: Add myself as the SWIOTLB maintainer.
+References: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1349365773-12073-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-04 at 14:54 -0400, David Miller wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> > On Thu, Oct 4, 2012 at 8:23 PM, David Miller <davem@davemloft.net> wrote:
-> >> We want to know the implications of the bug being fixed.
-> >> Does it potentially cause an OOPS?  Bad reference counting and thus
-> >> potential leaks or early frees?
-> >>
-> >> You have to analyze the implications and ramifications of the bug
-> >> being fixed.  We need that information.
+On 10/04/2012 08:49 AM, Konrad Rzeszutek Wilk wrote:
+> Now that I've an IA64 box on top of the other boxes
+> (IBM with Calgary-X, Intel VT-d, AMD Vi, and AMD GART - that
+> can use SWIOTLB as fallback) I can reliably do regression
+> testing.
+>
+> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> CC: Tony Luck <tony.luck@intel.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>   MAINTAINERS |    8 ++++++++
+>   1 files changed, 8 insertions(+), 0 deletions(-)
+>
 
-You are asking for deeper level analysis that may not
-be reasonably possible from the robotic patch fixed
-by a robotic piece of a bit of code correction via a
-static analysis.
-
-> >> It's just "bad error code, this is the script that fixed it, kthx,
-> >> bye" which is pretty much useless for anaylsis.
-
-Which may be all but impossible but for the handful of
-folks that know all the gory/intimate details of the
-original bit of code.
-
-> What does it potentially cause the caller to do?  Will it potentially
-> treat an error as a success and as a result register an object
-> illegally?
-> 
-> Real analysis please.  The text you provided above is basically still
-> robotic and could be used to describe any error code return fix.
-
-Right, it's useful to attempt but may be infeasible in
-practice.
+Acked-by: "H. Peter Anvin" <hpa@zytor.com>
 
 
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
