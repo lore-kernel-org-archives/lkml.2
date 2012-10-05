@@ -1,57 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab2JEUdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 16:33:21 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:58966 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757189Ab2JEUdU convert rfc822-to-8bit (ORCPT
+	id S1757324Ab2JEUhF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 16:37:05 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:60693 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756752Ab2JEUhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 16:33:20 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>
-Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <001401cda2f1$8f16b320$ad441960$%kim@samsung.com>
-Date: Fri, 05 Oct 2012 13:33:13 -0700
-In-Reply-To: <001401cda2f1$8f16b320$ad441960$%kim@samsung.com>
- (=?utf-8?B?Iuq5gOyerOq3uSIncw==?=
-	message of "Fri, 05 Oct 2012 21:04:23 +0900")
-Message-ID: <87a9w0slpy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+n7yshZB4dssEx/QIXMSTpEGX148d+DiM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: =?ISO-8859-1?Q?;=ea=b9=80=ec=9e=ac=ea=b7=b9 <jaegeuk.kim@samsung.com>?=
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 13/16] f2fs: add xattr and acl functionalities
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 5 Oct 2012 16:37:00 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RFC 2/2 v2] gpio-max730x: Add block GPIO API
+Date: Fri,  5 Oct 2012 22:36:27 +0200
+Message-Id: <1349469387-20580-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1349469387-20580-1-git-send-email-stigge@antcom.de>
+References: <1349469387-20580-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-김재극 <jaegeuk.kim@samsung.com> writes:
+This patch adds block GPIO API support to the MAX730x driver.
 
-> This implements xattr and acl functionalities.
->
-> - F2FS uses a node page to contain use extended attributes.
+Due to hardware constraints in this chip, simultaneous access to GPIO lines can
+only be done in groups of 8: GPIOs 0-7, 8-15, 16-23, 24-27. However, setting
+and clearing will be done at once.
 
-Please note the arguments to posix_acl_to_xattr and posix_acl_from_xattr
-have changed, which will cause this patch to fail to compile.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Eric
+---
+ drivers/gpio/gpio-max730x.c |   60 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
+
+--- linux-2.6.orig/drivers/gpio/gpio-max730x.c
++++ linux-2.6/drivers/gpio/gpio-max730x.c
+@@ -146,6 +146,43 @@ static int max7301_get(struct gpio_chip
+ 	return level;
+ }
+ 
++static unsigned max7301_get_block(struct gpio_chip *chip, unsigned mask)
++{
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	int i, j;
++	unsigned result = 0;
++
++	for (i = 0; i < 4; i++) {
++		if ((mask >> (i * 8)) & 0xFF) { /* i/o only if necessary */
++			u8 in_level = ts->read(ts->dev, 0x44 + i * 8);
++			u8 in_mask = 0;
++			u8 out_level = (ts->out_level >> (i * 8 + 4)) & 0xFF;
++			u8 out_mask = 0;
++
++			for (j = 0; j < 8; j++) {
++				int offset = 4 + i * 8 + j;
++				int config = (ts->port_config[offset >> 2] >>
++					      ((offset & 3) << 1)) &
++					PIN_CONFIG_MASK;
++
++				switch (config) {
++				case PIN_CONFIG_OUT:
++					out_mask |= BIT(j);
++					break;
++				case PIN_CONFIG_IN_WO_PULLUP:
++				case PIN_CONFIG_IN_PULLUP:
++					in_mask |= BIT(j);
++				}
++			}
++
++			result |= ((unsigned)(in_level & in_mask) |
++				   (out_level & out_mask)) << (i * 8);
++		}
++	}
++
++	return result & mask;
++}
++
+ static void max7301_set(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct max7301 *ts = container_of(chip, struct max7301, chip);
+@@ -160,6 +197,27 @@ static void max7301_set(struct gpio_chip
+ 	mutex_unlock(&ts->lock);
+ }
+ 
++static
++void max7301_set_block(struct gpio_chip *chip, unsigned mask, unsigned values)
++{
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	unsigned changes;
++	int i;
++
++	mutex_lock(&ts->lock);
++
++	changes = (ts->out_level ^ (values << 4)) & (mask << 4);
++	ts->out_level ^= changes;
++
++	for (i = 0; i < 4; i++) {
++		if ((changes >> (i * 8 + 4)) & 0xFF) /* i/o only on change */
++			ts->write(ts->dev, 0x44 + i * 8,
++				  (ts->out_level >> (i * 8 + 4)) & 0xFF);
++	}
++
++	mutex_unlock(&ts->lock);
++}
++
+ int __devinit __max730x_probe(struct max7301 *ts)
+ {
+ 	struct device *dev = ts->dev;
+@@ -183,8 +241,10 @@ int __devinit __max730x_probe(struct max
+ 
+ 	ts->chip.direction_input = max7301_direction_input;
+ 	ts->chip.get = max7301_get;
++	ts->chip.get_block = max7301_get_block;
+ 	ts->chip.direction_output = max7301_direction_output;
+ 	ts->chip.set = max7301_set;
++	ts->chip.set_block = max7301_set_block;
+ 
+ 	ts->chip.base = pdata->base;
+ 	ts->chip.ngpio = PIN_NUMBER;
