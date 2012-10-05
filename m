@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2JEODY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:03:24 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38166 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab2JEODW (ORCPT
+	id S1755979Ab2JEODz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:03:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51787 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab2JEODy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:03:22 -0400
-Date: Fri, 5 Oct 2012 14:05:19 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org,
-        Andrew Morgan <morgan@kernel.org>
-Subject: Re: [PATCH] proc: don't show nonexistent capabilities
-Message-ID: <20121005140519.GA28890@mail.hallyn.com>
-References: <1349209832-279922-1-git-send-email-avagin@openvz.org>
+	Fri, 5 Oct 2012 10:03:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349209832-279922-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121005132714.GB21358@thunk.org>
+References: <CA+bLfK5FPqFvU2xy7xKdV4LkAvmY6GAPFrB-4UBzn-cOunQ6Xg@mail.gmail.com>
+	<CA+bLfK44cYvhMbrK8ZrZ0BiEo3V=FB2UavCpL1CaRgjKqtN9Yw@mail.gmail.com>
+	<20121005132714.GB21358@thunk.org>
+Date: Fri, 5 Oct 2012 15:03:53 +0100
+Message-ID: <CA+bLfK56qA4YrLS59ps9g8-hvpm3+_i2Ea2EQvedkwVymCmxuA@mail.gmail.com>
+Subject: Re: interrupt context
+From: Iain Fraser <iainkfraser@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Iain Fraser <iainkfraser@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Vagin (avagin@openvz.org):
-> Without this patch it is really hard to interpret a bounding set,
-> if CAP_LAST_CAP is unknown for a current kernel.
+Thanks for the response Ted. I've actual got that book, in fact it is
+the source of this question :) .
 
-To be clear, note that you *can* figure it out using
-prctl(PR_CAPBSET_DROP).  But this is a nice improvement.
+I knew it wasn't a "nice" thing to do to the poor process. But your
+explanation explains why
+its also a dangerous thing so thanks.
 
-> Non-existant capabilities can not be deleted from a bounding set
-> with help of prctl.
-> 
-> E.g.: Here are two examples without/with this patch.
-> CapBnd:	ffffffe0fdecffff
-> CapBnd:	00000000fdecffff
-> 
-> I suggest to hide non-existent capabilities. Here is two reasons.
-> * It's logically and easier for using.
-> * It helps to checkpoint-restore capabilities of tasks, because tasks
-> can be restored on another kernel, where CAP_LAST_CAP is bigger.
-> 
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Also another problem with async sleeping a process, is that you could
+end up causing the idle
+thread to sleep. And end up in a scenario where there are no runnable tasks.
 
-Thanks, Andrew.  I saw your other email about having run LTP, I didn't
-see any problems from userspace either.  Great idea!
+Thanks for the help
+Iain
 
-Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Still it's been like that for so long that, just to be safe, I'm cc:ing
-Andrew Morgan - can you see any problems with this?
-
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> ---
->  include/linux/capability.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/capability.h b/include/linux/capability.h
-> index d10b7ed..1642778 100644
-> --- a/include/linux/capability.h
-> +++ b/include/linux/capability.h
-> @@ -420,7 +420,8 @@ extern const kernel_cap_t __cap_init_eff_set;
->  #else /* HAND-CODED capability initializers */
->  
->  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
-> -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-> +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, \
-> +					CAP_TO_MASK(CAP_LAST_CAP + 1) - 1 } })
->  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
->  				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
->  				    CAP_FS_MASK_B1 } })
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Fri, Oct 5, 2012 at 2:27 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Fri, Oct 05, 2012 at 09:51:55AM +0100, Iain Fraser wrote:
+>>
+>> I understand the interrupts and softirq's run in interrupt context (
+>> as opposed to process context ). But what I
+>> don't understand is why you cannot sleep in interrupt context?
+>
+> Consider what happens with nested locks (and yes, we definitely need
+> nested locks).  In order to prevent deadlocks, it is critical to have
+> lock ordering; that is, you always take locks in a certain order.  If
+> all processes take lock A, and then lock B, etc., then you won't have
+> a problem where one process as lock A, and tries to get lock B, and
+> another process has lock B, and tries to take lock A, and they wait
+> for each other forever.
+>
+> If a process has a lock when it gets interrupted, the interrupt
+> handler has no idea what locks may have already been taken.  So if a
+> process has taken a mutex (or some other sleeping lock) B, and then
+> the interrupt handler tries to take lock A, that's a perscription for
+> deadlock.
+>
+> In addition, you must never sleep while holding a (non-sleeping)
+> spinlock.  If the interrupt handler has interrupted a process which is
+> holding a spinlock, then it simply may not sleep without triggering
+> all sorts of other problems.
+>
+>> What I have read it states that it doesn't have a process to schedule
+>> out. But interrupts use the interrupted processes
+>> kernel stack just like a syscall. So surely it is possible to sleep
+>> using that stack. Understandably It would be unfair on the process
+>> that blocked through no fault of its own.
+>>
+>> Also if you are not allowed to sleep / schedule during interrupt
+>> context. Then how does the system timer pre-empt processes by
+>> calling schedule?
+>
+> The system timer sets the "need to reschedule" flag for that
+> particular process.  Then as the system timer returns from the
+> interrupt, there is a common code path which is checked on the way out
+> of any interrupt handler or system call.  This code path checks to see
+> if the "need to schedule" flag is set, and if so, at that point
+> instead of returning to the original process, the kernel will simply
+> return to some other process.
+>
+> I would suggest that you get a good introductory Linux book, such as
+> "Linux Kernel Development" by Robert Love.  You might also check out
+> the kernelnewbies.org website and mailing list, where you are more
+> likely to get answers to basic introductory questions like this.
+>
+> Regards,
+>
+>                                                 - Ted
