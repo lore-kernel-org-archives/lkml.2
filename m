@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2JEIf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:35:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60709 "EHLO
+	id S1754169Ab2JEIhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:37:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60725 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab2JEIfy (ORCPT
+	with ESMTP id S1752327Ab2JEIhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:35:54 -0400
-Date: Fri, 5 Oct 2012 01:35:37 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-d6e66832a710c0e6d1376e8d39ee108636a177e7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1348824728-14025-13-git-send-email-namhyung@kernel.org>
-References: <1348824728-14025-13-git-send-email-namhyung@kernel.org>
+	Fri, 5 Oct 2012 04:37:05 -0400
+Date: Fri, 5 Oct 2012 01:36:33 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-bpz3axzr4f2cjppf4egm28wf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Convert to HAVE_STRLCPY
-Git-Commit-ID: d6e66832a710c0e6d1376e8d39ee108636a177e7
+Subject: [tip:perf/urgent] perf trace: Use evsel->handler.func
+Git-Commit-ID: ba3d7deeef7fafdab7814e298fa2db0fc63bb5d0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,77 +29,215 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 01:35:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 01:36:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6e66832a710c0e6d1376e8d39ee108636a177e7
-Gitweb:     http://git.kernel.org/tip/d6e66832a710c0e6d1376e8d39ee108636a177e7
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Fri, 28 Sep 2012 18:32:08 +0900
+Commit-ID:  ba3d7deeef7fafdab7814e298fa2db0fc63bb5d0
+Gitweb:     http://git.kernel.org/tip/ba3d7deeef7fafdab7814e298fa2db0fc63bb5d0
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 28 Sep 2012 17:58:36 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 2 Oct 2012 18:36:24 -0300
+CommitDate: Tue, 2 Oct 2012 18:36:25 -0300
 
-perf tools: Convert to HAVE_STRLCPY
+perf trace: Use evsel->handler.func
 
-For similar reason of previous patches, convert NO_STRLCPY to positive
-HAVE_STRLCPY.
+I.e. we don't need to resolve the evsel via the id and then check if it
+is this or that event, just stash the right handler at evsel creation
+time, then use evsel->handler.func() straight away.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1348824728-14025-13-git-send-email-namhyung@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-bpz3axzr4f2cjppf4egm28wf@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile     |    8 +++-----
- tools/perf/util/cache.h |    2 +-
- tools/perf/util/path.c  |    2 +-
- 3 files changed, 5 insertions(+), 7 deletions(-)
+ tools/perf/builtin-trace.c |  132 +++++++++++++++++++++++++++++---------------
+ 1 files changed, 87 insertions(+), 45 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 31a07f9..5216ade 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -743,11 +743,9 @@ ifeq ($(NO_PERF_REGS),0)
- 	BASIC_CFLAGS += -DHAVE_PERF_REGS
- endif
- 
--ifdef NO_STRLCPY
--	BASIC_CFLAGS += -DNO_STRLCPY
--else
--	ifneq ($(call try-cc,$(SOURCE_STRLCPY),),y)
--		BASIC_CFLAGS += -DNO_STRLCPY
-+ifndef NO_STRLCPY
-+	ifeq ($(call try-cc,$(SOURCE_STRLCPY),),y)
-+		BASIC_CFLAGS += -DHAVE_STRLCPY
- 	endif
- endif
- 
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 07aec06..2bd5137 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -107,7 +107,7 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
- 
--#ifdef NO_STRLCPY
-+#ifndef HAVE_STRLCPY
- extern size_t strlcpy(char *dest, const char *src, size_t size);
- #endif
- 
-diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
-index bd74977..a8c4954 100644
---- a/tools/perf/util/path.c
-+++ b/tools/perf/util/path.c
-@@ -22,7 +22,7 @@ static const char *get_perf_dir(void)
- 	return ".";
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 8f113da..76b1202 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -114,10 +114,85 @@ static size_t syscall__fprintf_args(struct syscall *sc, unsigned long *args, FIL
+ 	return printed;
  }
  
--#ifdef NO_STRLCPY
-+#ifndef HAVE_STRLCPY
- size_t strlcpy(char *dest, const char *src, size_t size)
++typedef int (*tracepoint_handler)(struct trace *trace, struct perf_evsel *evsel,
++				  struct perf_sample *sample);
++
++static struct syscall *trace__syscall_info(struct trace *trace,
++					   struct perf_evsel *evsel,
++					   struct perf_sample *sample)
++{
++	int id = perf_evsel__intval(evsel, sample, "id");
++
++	if (id < 0) {
++		printf("Invalid syscall %d id, skipping...\n", id);
++		return NULL;
++	}
++
++	if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL) &&
++	    trace__read_syscall_info(trace, id))
++		goto out_cant_read;
++
++	if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL))
++		goto out_cant_read;
++
++	return &trace->syscalls.table[id];
++
++out_cant_read:
++	printf("Problems reading syscall %d information\n", id);
++	return NULL;
++}
++
++static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
++			    struct perf_sample *sample)
++{
++	void *args;
++	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
++
++	if (sc == NULL)
++		return -1;
++
++	args = perf_evsel__rawptr(evsel, sample, "args");
++	if (args == NULL) {
++		printf("Problems reading syscall arguments\n");
++		return -1;
++	}
++
++	printf("%s(", sc->name);
++	syscall__fprintf_args(sc, args, stdout);
++
++	return 0;
++}
++
++static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
++			   struct perf_sample *sample)
++{
++	int ret;
++	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
++
++	if (sc == NULL)
++		return -1;
++
++	ret = perf_evsel__intval(evsel, sample, "ret");
++
++	if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
++		char bf[256];
++		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
++			   *e = audit_errno_to_name(-ret);
++
++		printf(") = -1 %s %s", e, emsg);
++	} else if (ret == 0 && sc->fmt && sc->fmt->timeout)
++		printf(") = 0 Timeout");
++	else
++		printf(") = %d", ret);
++
++	putchar('\n');
++	return 0;
++}
++
+ static int trace__run(struct trace *trace)
  {
- 	size_t ret = strlen(src);
+ 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+-	struct perf_evsel *evsel, *evsel_enter, *evsel_exit;
++	struct perf_evsel *evsel;
+ 	int err = -1, i, nr_events = 0, before;
+ 
+ 	if (evlist == NULL) {
+@@ -125,21 +200,23 @@ static int trace__run(struct trace *trace)
+ 		goto out;
+ 	}
+ 
+-	evsel_enter = perf_evsel__newtp("raw_syscalls", "sys_enter", 0);
+-	if (evsel_enter == NULL) {
++	evsel = perf_evsel__newtp("raw_syscalls", "sys_enter", 0);
++	if (evsel == NULL) {
+ 		printf("Couldn't read the raw_syscalls:sys_enter tracepoint information!\n");
+ 		goto out_delete_evlist;
+ 	}
+ 
+-	perf_evlist__add(evlist, evsel_enter);
++	evsel->handler.func = trace__sys_enter;
++	perf_evlist__add(evlist, evsel);
+ 
+-	evsel_exit = perf_evsel__newtp("raw_syscalls", "sys_exit", 1);
+-	if (evsel_exit == NULL) {
++	evsel = perf_evsel__newtp("raw_syscalls", "sys_exit", 1);
++	if (evsel == NULL) {
+ 		printf("Couldn't read the raw_syscalls:sys_exit tracepoint information!\n");
+ 		goto out_delete_evlist;
+ 	}
+ 
+-	perf_evlist__add(evlist, evsel_exit);
++	evsel->handler.func = trace__sys_exit;
++	perf_evlist__add(evlist, evsel);
+ 
+ 	err = perf_evlist__create_maps(evlist, &trace->opts.target);
+ 	if (err < 0) {
+@@ -170,9 +247,8 @@ again:
+ 
+ 		while ((event = perf_evlist__mmap_read(evlist, i)) != NULL) {
+ 			const u32 type = event->header.type;
+-			struct syscall *sc;
++			tracepoint_handler handler;
+ 			struct perf_sample sample;
+-			int id;
+ 
+ 			++nr_events;
+ 
+@@ -200,45 +276,11 @@ again:
+ 				continue;
+ 			}
+ 
+-			id = perf_evsel__intval(evsel, &sample, "id");
+-			if (id < 0) {
+-				printf("Invalid syscall %d id, skipping...\n", id);
+-				continue;
+-			}
+-
+-			if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL) &&
+-			    trace__read_syscall_info(trace, id))
+-				continue;
+-
+-			if ((id > trace->syscalls.max || trace->syscalls.table[id].name == NULL))
+-				continue;
+-
+-			sc = &trace->syscalls.table[id];
+-
+ 			if (evlist->threads->map[0] == -1 || evlist->threads->nr > 1)
+ 				printf("%d ", sample.tid);
+ 
+-			if (evsel == evsel_enter) {
+-				void *args = perf_evsel__rawptr(evsel, &sample, "args");
+-
+-				printf("%s(", sc->name);
+-				syscall__fprintf_args(sc, args, stdout);
+-			} else if (evsel == evsel_exit) {
+-				int ret = perf_evsel__intval(evsel, &sample, "ret");
+-
+-				if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
+-					char bf[256];
+-					const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
+-						   *e = audit_errno_to_name(-ret);
+-
+-					printf(") = -1 %s %s", e, emsg);
+-				} else if (ret == 0 && sc->fmt && sc->fmt->timeout)
+-					printf(") = 0 Timeout");
+-				else
+-					printf(") = %d", ret);
+-
+-				putchar('\n');
+-			}
++			handler = evsel->handler.func;
++			handler(trace, evsel, &sample);
+ 		}
+ 	}
+ 
