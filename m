@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2JEItZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:49:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60965 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2JEItX (ORCPT
+	id S1754549Ab2JEItj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:49:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49373 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494Ab2JEItg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:49:23 -0400
-Date: Fri, 5 Oct 2012 01:48:54 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-3gddcwclncio29a7jiey0qtq@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf top: Don't use globals where not needed to
-Git-Commit-ID: be77284226374c75583f36dbbf43203039f6a44c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 01:48:59 -0700 (PDT)
+	Fri, 5 Oct 2012 04:49:36 -0400
+Date: Fri, 5 Oct 2012 01:50:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tim Bird <tim.bird@am.sony.com>
+Subject: Re: [patch 0/3] Turn CONFIG_HOTPLUG always on.
+Message-Id: <20121005015036.0d0b7ebd.akpm@linux-foundation.org>
+In-Reply-To: <20120906202815.GA6732@kroah.com>
+References: <20120904234803.554552301@clark.kroah.org>
+	<20120906202815.GA6732@kroah.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be77284226374c75583f36dbbf43203039f6a44c
-Gitweb:     http://git.kernel.org/tip/be77284226374c75583f36dbbf43203039f6a44c
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 1 Oct 2012 15:20:58 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 2 Oct 2012 18:36:38 -0300
+On Thu, 6 Sep 2012 13:28:16 -0700 Greg KH <gregkh@linuxfoundation.org> wrote:
 
-perf top: Don't use globals where not needed to
+> On Tue, Sep 04, 2012 at 05:01:05PM -0700, Greg Kroah-Hartman wrote:
+> > From: Greg KH <gregkh@linuxfoundation.org>
+> > 
+> > The CONFIG_HOTPLUG variable is tough to turn off, and almost all arches
+> > default to it on.
+> > 
+> > If you turn it off, it saves you a big 200 or so bytes, and then starts
+> > to cause all sorts of problems as the code paths if the option is
+> > disabled is never really tested, and memory segments start to get thrown
+> > away that driver authors assume will always be present.
+> > 
+> > So, as part of trying to get rid of the option entirely, let's just turn
+> > the option always on.
+> > 
+> > Note, to do this properly, I found two duplicate definitions of the
+> > option, in the Tile and Xtensa arch files, this patch series removes
+> > those duplicates first.
+> > 
+> > Anyone object to me just taking these three patches through my
+> > driver-core tree for 3.7?  After this set, I'll start unwinding the
+> > places where CONFIG_HOTPLUG is used and remove the parts that are not
+> > used anymore now that the option can not be turned off.
+> 
+> Given the lack of objection, I've now queued these up for 3.7 and will
+> start unwinding the CONFIG_HOTPLUG mess.
+> 
 
-Some variables were global but used in just one function, so move it to
-where it belongs.
+I wonder if this has had sufficient consideration.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3gddcwclncio29a7jiey0qtq@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+It isn't just 200 bytes, is it?  It's all memory which is marked
+__devinit* and __devexit* - that's a tremendous amount of stuff.  We
+should quantify it.
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e434a16..f0c1c4f 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1159,11 +1159,6 @@ setup:
- 	return 0;
- }
- 
--static const char * const top_usage[] = {
--	"perf top [<options>]",
--	NULL
--};
--
- int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_evsel *pos;
-@@ -1250,6 +1245,10 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('u', "uid", &top.target.uid_str, "user", "user to profile"),
- 	OPT_END()
- 	};
-+	const char * const top_usage[] = {
-+		"perf top [<options>]",
-+		NULL
-+	};
- 
- 	top.evlist = perf_evlist__new(NULL, NULL);
- 	if (top.evlist == NULL)
+It wouldn't surprise me if there are organizations who are using
+CONFIG_HOTPLUG=n effectively.  We regularly bust a gut to save a few
+bytes and for people who really care about this we're here sending them
+backwards a lot further than that.
+
+Tim, do you know?
