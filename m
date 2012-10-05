@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab2JEO4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:56:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64588 "EHLO
+	id S1756448Ab2JEO4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:56:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49773 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab2JEO4Q (ORCPT
+	with ESMTP id S1756438Ab2JEO4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:56:16 -0400
+	Fri, 5 Oct 2012 10:56:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Martin <dave.martin@linaro.org>
-Subject: [PATCH 16/16] ARM: pass -marm to gcc by default for both C and assembler
-Date: Fri,  5 Oct 2012 16:55:30 +0200
-Message-Id: <1349448930-23976-17-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 06/16] mm/slob: use min_t() to compare ARCH_SLAB_MINALIGN
+Date: Fri,  5 Oct 2012 16:55:20 +0200
+Message-Id: <1349448930-23976-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349448930-23976-1-git-send-email-arnd@arndb.de>
 References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:GaMq6vHmG+eNjLso1sAmxumG4Ta56yyIkdrvU13HZA1
- qyjEzu7543Dz05SOGKXldicxER5SgOLDiDhjBqbQ1+4habX3bK
- hAPlMLDI+wKfdYrKC92wruN7gmQ/QrJSivBOj8KvAz+RaOUofw
- zUaS16fhU2uaw5enX1WnEmxNa4GWMGcrOqw1/2lGzlFFGjBo5P
- tyQXIIoYc0iVImIcwSbJETRNG2UzrpgVrjetr+OSQPckIP0qyp
- lYhEGC0aV6bAG5hCwAqgs90lECOjXLqr2MOBbB4cqJ7pcPYqum
- Cvv+pp0WPDe+YYW3bev3R5LbALc6n6W1qDkteNbgwNwWiUfWYI
- KQx+gyvYEiQHNoL7uPjUW3iNPTfxQWfxyXspLNBqV8pLpHMIxQ
- en4lzPcRCUXdQP76dIEYQh0iUexCgO1GPA=
+X-Provags-ID: V02:K0:USz0MW8FHEbHrDYmVpUP3B4yrJ7vIv+hy6kHPEnO/lP
+ HFcGNdSR0qpQvkynOuKo6gDO+SWAur1p8qnQ90xy++yhTlfs2t
+ z3CsjWd6KcjGN0JNPdezFA4bo8Z9KnK/RxBURoh7vYXewTuRwB
+ KCokkUWKHsi1919ZI5qocu2A6lNzmQygOmxbEtS+EONXzXmHvv
+ m2teVjZqVRuQ09CT5Ssh/OS8JmDnAoOC1s+T0/v6ubRASphvob
+ xNTn4DBQcf3Zrwjd/HbkGOy1enoXQKe4R2bd1x1WdYYr4as4Tp
+ V/t+OpsOsayQ9cQcUfEhVKSnvIGsm/ShIF3EXiqKSE8JiJOiOw
+ jyoDoPbpI+Gqc4T6P8J8i6x753jAQ6SMn8jxyGOrnWZsou7KWa
+ 9mRkaMGinIrIvbLpEfqm96F4VbJDj1hPMY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linaro cross toolchain and probably others nowadays default to
-building in THUMB2 mode. When building a kernel for a CPU that does
-not support THUMB2, the compiler complains about incorrect flags.
-We can work around this by setting -marm for all non-T2 builds.
+The definition of ARCH_SLAB_MINALIGN is architecture dependent
+and can be either of type size_t or int. Comparing that value
+with ARCH_KMALLOC_MINALIGN can cause harmless warnings on
+platforms where they are different. Since both are always
+small positive integer numbers, using the size_t type to compare
+them is safe and gets rid of the warning.
 
-Without this patch, building assabet_defconfig results in:
+Without this patch, building ARM collie_defconfig results in:
 
-usr/initramfs_data.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-arch/arm/nwfpe/entry.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-firmware/cis/PCMLM28.cis.gen.S:1:0: warning: target CPU does not support THUMB instructions [enabled by default]
-(and many more)
+mm/slob.c: In function '__kmalloc_node':
+mm/slob.c:431:152: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+mm/slob.c: In function 'kfree':
+mm/slob.c:484:153: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+mm/slob.c: In function 'ksize':
+mm/slob.c:503:153: warning: comparison of distinct pointer types lacks a cast [enabled by default]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
 ---
- arch/arm/Makefile |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ mm/slob.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index a051dfb..4391427 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -21,8 +21,6 @@ endif
- OBJCOPYFLAGS	:=-O binary -R .comment -S
- GZFLAGS		:=-9
- #KBUILD_CFLAGS	+=-pipe
--# Explicitly specifiy 32-bit ARM ISA since toolchain default can be -mthumb:
--KBUILD_CFLAGS	+=$(call cc-option,-marm,)
+diff --git a/mm/slob.c b/mm/slob.c
+index 45d4ca7..497c55e 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -428,7 +428,7 @@ out:
+ void *__kmalloc_node(size_t size, gfp_t gfp, int node)
+ {
+ 	unsigned int *m;
+-	int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
++	int align = max_t(size_t, ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
+ 	void *ret;
  
- # Never generate .eh_frame
- KBUILD_CFLAGS	+= $(call cc-option,-fno-dwarf2-cfi-asm)
-@@ -105,17 +103,20 @@ endif
- ifeq ($(CONFIG_THUMB2_KERNEL),y)
- AFLAGS_AUTOIT	:=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
- AFLAGS_NOWARN	:=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
--CFLAGS_THUMB2	:=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
--AFLAGS_THUMB2	:=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
-+CFLAGS_ISA	:=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
-+AFLAGS_ISA	:=$(CFLAGS_ISA) -Wa$(comma)-mthumb
- # Work around buggy relocation from gas if requested:
- ifeq ($(CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11),y)
- CFLAGS_MODULE	+=-fno-optimize-sibling-calls
- endif
-+else
-+CFLAGS_ISA	:=$(call cc-option,-marm,)
-+AFLAGS_ISA	:=$(CFLAGS_ISA)
- endif
+ 	gfp &= gfp_allowed_mask;
+@@ -481,7 +481,7 @@ void kfree(const void *block)
  
- # Need -Uarm for gcc < 3.x
--KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -msoft-float -Uarm
--KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -msoft-float
-+KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_ISA) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -msoft-float -Uarm
-+KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_ISA) $(arch-y) $(tune-y) -include asm/unified.h -msoft-float
+ 	sp = virt_to_page(block);
+ 	if (PageSlab(sp)) {
+-		int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
++		int align = max_t(size_t, ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
+ 		unsigned int *m = (unsigned int *)(block - align);
+ 		slob_free(m, *m + align);
+ 	} else
+@@ -500,7 +500,7 @@ size_t ksize(const void *block)
  
- CHECKFLAGS	+= -D__arm__
- 
+ 	sp = virt_to_page(block);
+ 	if (PageSlab(sp)) {
+-		int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
++		int align = max_t(size_t, ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
+ 		unsigned int *m = (unsigned int *)(block - align);
+ 		return SLOB_UNITS(*m) * SLOB_UNIT;
+ 	} else
 -- 
 1.7.10
 
