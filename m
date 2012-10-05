@@ -1,59 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab2JEUxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 16:53:47 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:65530 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932918Ab2JEUxm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 16:53:42 -0400
-Message-ID: <1349470415.2819.1.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] mlx4: set carrier off after register netdev
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Min Zhang <mzhang@mvista.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Fri, 5 Oct 2012 21:53:35 +0100
-In-Reply-To: <alpine.LNX.2.00.1210051058420.16216@linux-acr3.site>
-References: <alpine.LNX.2.00.1210051058420.16216@linux-acr3.site>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S964822Ab2JEU7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 16:59:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42565 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964786Ab2JEU7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 16:59:03 -0400
+Date: Fri, 5 Oct 2012 22:58:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: danielfsantos@att.net
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH v2 09/10] bug.h: Add BUILD_BUG_ON_MSG &
+ BUILD_BUG_INTERNAL{,2}
+Message-ID: <20121005205858.GB28452@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Christopher Li <sparse@chrisli.org>,
+	David Daney <david.daney@cavium.com>,
+	David Howells <dhowells@redhat.com>,
+	David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Daniel Santos <daniel.santos@pobox.com>
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+ <1349466169-20637-9-git-send-email-daniel.santos@pobox.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1349466169-20637-9-git-send-email-daniel.santos@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-05 at 11:28 -0700, Min Zhang wrote:
-> ifconfig mlx4_en port reported RUNNING even though the link was down.
+On Fri, Oct 05, 2012 at 02:42:48PM -0500, danielfsantos@att.net wrote:
+> Add BUILD_BUG_ON_MSG which behaves like BUILD_BUG_ON (with optimizations
+> turned enabled), except that it allows you to specify the error message
+> you want emitted as the third parameter.  Under the hood, this relies on
+> BUILD_BUG_INTERNAL{,2}, which does the actual work and is pretty-much
+> identical to BUILD_BUG_ON.
 > 
-> mlx4_en_init_netdev didn't initialize the dev operstate properly so
-> the operstate stayed as default IF_OPER_UNKNOWN, then ifconfig treated
-> the UNKNOWN as RUNNING state for backward compatiblity per RFC2863.
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> ---
+>  include/linux/bug.h |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
 > 
-> The fix calls netif_carrier_off which is supposed to set operstate
-> after register_netdev. Calling it before register_netdev has no effect
-> since the dev->state is still NETREG_UNINITIALIZED
-> 
-> Tested by removing the physical link signal to the mellanox 10G port,
-> modprobe mlx4_en, then ifconfig up. Verify there is no RUNNING status.
-[...]
+> diff --git a/include/linux/bug.h b/include/linux/bug.h
+> index 1b43ea2..91bd9d5 100644
+> --- a/include/linux/bug.h
+> +++ b/include/linux/bug.h
+> @@ -16,6 +16,7 @@ struct pt_regs;
+>  #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+>  #define BUILD_BUG_ON_ZERO(e) (0)
+>  #define BUILD_BUG_ON_NULL(e) ((void*)0)
+> +#define BUILD_BUG_ON_MSG(cond, msg) (0)
+>  #define BUILD_BUG_ON(condition) (0)
+>  #define BUILD_BUG() (0)
+>  #else /* __CHECKER__ */
+> @@ -38,6 +39,31 @@ struct pt_regs;
+>   */
+>  #define BUILD_BUG_ON_INVALID(e) ((void)(sizeof((__force long)(e))))
+>  
+> +#define _CONCAT1(a, b) a##b
+> +#define CONCAT(a, b) _CONCAT1(a, b)
 
-This was supposed to be fixed by:
+Let's call the indirection _CONCAT without the "1".
 
-commit 8f4cccbbd92f2ad0ddbbc498ef7cee2a1c3defe9
-Author: Ben Hutchings <bhutchings@solarflare.com>
-Date:   Mon Aug 20 22:16:51 2012 +0100
+> +#define UNIQUIFY(prefix) CONCAT(prefix, __LINE__)
+> +
+> +#define BUILD_BUG_INTERNAL2(condition, msg, fn)			\
+> +	do {							\
+> +		extern void fn (void) __compiletime_error(msg);	\
+> +		__compiletime_error_fallback(condition);	\
+> +		if (condition)					\
+> +			fn();					\
+> +	} while (0)
+> +
+> +#define BUILD_BUG_INTERNAL(condition, msg, fn) \
+> +	BUILD_BUG_INTERNAL2(condition, msg, fn)
 
-    net: Set device operstate at registration time
+Ditto. BUILD_BUG_INTERNAL2 should be __BUILD_BUG_INTERNAL and the one
+calling it _BUILD_BUG_INTERNAL (with one underscore).
 
-Does that not work for mlx4_en, for some reason?
+> +
+> +/**
+> + * BUILD_BUG_ON_MSG - break compile if a condition is true & emit supplied
+> + * 		      error message.
+> + * @condition: the condition which the compiler should know is false.
+> + *
+> + * See BUILD_BUG_ON for description.
+> + */
+> +#define BUILD_BUG_ON_MSG(cond, msg) \
+> +	BUILD_BUG_INTERNAL(cond, msg, UNIQUIFY(__build_bug_on_failed_))
 
-Ben.
+Btw, why are we adding the line at all? It is issued by gcc anyway:
+
+cc -Wall    macros.c   -o macros
+macros.c: In function ‘main’:
+macros.c:22:1: error: ‘__build_bug_on_failed_22’ undeclared (first use in this function)
+	^^^^
+
+It is in front of the filename here.
+
+macros.c:22:1: note: each undeclared identifier is reported only once for each function it appears in
+make: *** [macros] Error 1
+
+Thanks.
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Regards/Gruss,
+    Boris.
