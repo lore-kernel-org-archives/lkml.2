@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab2JEAHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Oct 2012 20:07:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46559 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab2JEAHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Oct 2012 20:07:53 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use dev_ printks in drivers/adl_pci8164.c
-Date: Fri,  5 Oct 2012 09:07:46 +0900
-Message-Id: <1349395666-6010-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755859Ab2JEAJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Oct 2012 20:09:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51995 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752867Ab2JEAJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Oct 2012 20:09:57 -0400
+Message-ID: <1349395795.2008.26.camel@joe-AO722>
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: peter.senna@gmail.com, shemminger@vyatta.com, mlindner@marvell.com,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 04 Oct 2012 17:09:55 -0700
+In-Reply-To: <20121004.145419.1859367129463136197.davem@davemloft.net>
+References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	 <20121004.142335.1467206545795435493.davem@davemloft.net>
+	 <CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+	 <20121004.145419.1859367129463136197.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+On Thu, 2012-10-04 at 14:54 -0400, David Miller wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> > On Thu, Oct 4, 2012 at 8:23 PM, David Miller <davem@davemloft.net> wrote:
+> >> We want to know the implications of the bug being fixed.
+> >> Does it potentially cause an OOPS?  Bad reference counting and thus
+> >> potential leaks or early frees?
+> >>
+> >> You have to analyze the implications and ramifications of the bug
+> >> being fixed.  We need that information.
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/adl_pci8164.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+You are asking for deeper level analysis that may not
+be reasonably possible from the robotic patch fixed
+by a robotic piece of a bit of code correction via a
+static analysis.
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci8164.c b/drivers/staging/comedi/drivers/adl_pci8164.c
-index 05e06e7..6dbe465 100644
---- a/drivers/staging/comedi/drivers/adl_pci8164.c
-+++ b/drivers/staging/comedi/drivers/adl_pci8164.c
-@@ -89,9 +89,9 @@ static void adl_pci8164_insn_read(struct comedi_device *dev,
- 	}
- 
- 	data[0] = inw(dev->iobase + axis_reg + offset);
--	printk(KERN_DEBUG "comedi: pci8164 %s read -> "
--						  "%04X:%04X on axis %s\n",
--				action, data[0], data[1], axisname);
-+	dev_dbg(dev->class_dev,
-+		  "comedi: pci8164 %s read -> %04X:%04X on axis %s\n",
-+		  action, data[0], data[1], axisname);
- }
- 
- static int adl_pci8164_insn_read_msts(struct comedi_device *dev,
-@@ -170,9 +170,9 @@ static void adl_pci8164_insn_out(struct comedi_device *dev,
- 
- 	outw(data[0], dev->iobase + axis_reg + offset);
- 
--	printk(KERN_DEBUG "comedi: pci8164 %s write -> "
--						"%04X:%04X on axis %s\n",
--				action, data[0], data[1], axisname);
-+	dev_dbg(dev->class_dev,
-+		  "comedi: pci8164 %s write -> %04X:%04X on axis %s\n",
-+		  action, data[0], data[1], axisname);
- 
- }
- 
--- 
-1.7.9.5
+> >> It's just "bad error code, this is the script that fixed it, kthx,
+> >> bye" which is pretty much useless for anaylsis.
+
+Which may be all but impossible but for the handful of
+folks that know all the gory/intimate details of the
+original bit of code.
+
+> What does it potentially cause the caller to do?  Will it potentially
+> treat an error as a success and as a result register an object
+> illegally?
+> 
+> Real analysis please.  The text you provided above is basically still
+> robotic and could be used to describe any error code return fix.
+
+Right, it's useful to attempt but may be infeasible in
+practice.
+
+
 
