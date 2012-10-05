@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab2JEMud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 08:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26769 "EHLO mx1.redhat.com"
+	id S1755732Ab2JEMvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 08:51:52 -0400
+Received: from ns.iliad.fr ([212.27.33.1]:50583 "EHLO ns.iliad.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753674Ab2JEMuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 08:50:32 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAMuHMdWYdKPgVR8hvcXN1qmm7nqCyjWV3NPHzdVHG_H8F20-3w@mail.gmail.com>
-References: <CAMuHMdWYdKPgVR8hvcXN1qmm7nqCyjWV3NPHzdVHG_H8F20-3w@mail.gmail.com> <17383.1349380286@warthog.procyon.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: dhowells@redhat.com, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [GIT PULL] Disintegrate UAPI for m68k
-Date: Fri, 05 Oct 2012 13:50:21 +0100
-Message-ID: <7854.1349441421@warthog.procyon.org.uk>
+	id S1754657Ab2JEMvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 08:51:51 -0400
+Message-ID: <1349441509.28867.17.camel@sakura.staff.proxad.net>
+Subject: Re: kernel 3.2.27 on arm: WARNING: at mm/page_alloc.c:2109
+ __alloc_pages_nodemask+0x1d4/0x68c()
+From: Maxime Bizon <mbizon@freebox.fr>
+Reply-To: mbizon@freebox.fr
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Madore <david+ml@madore.org>, Francois Romieu <romieu@fr.zoreil.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Date: Fri, 05 Oct 2012 14:51:49 +0200
+In-Reply-To: <1349439732.21172.52.camel@edumazet-glaptop>
+References: <20120829002548.GA7063@aldebaran.gro-tsen.net>
+	 <alpine.LSU.2.00.1208311900330.1936@eggly.anvils>
+	 <1349366521.2532.12.camel@sakura.staff.proxad.net>
+	 <1349368171.16011.79.camel@edumazet-glaptop>
+	 <1349422868.21172.38.camel@edumazet-glaptop>
+	 <1349434194.16710.44.camel@sakura.staff.proxad.net>
+	 <1349439732.21172.52.camel@edumazet-glaptop>
+Organization: Freebox
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-> I assume these c6x and asm-generic changes are the ones you just asked Linus
-> to pull?
+On Fri, 2012-10-05 at 14:22 +0200, Eric Dumazet wrote:
 
-Yes.
+> Yes, but the idea of the patch was to _avoid_ next pskb_expand_head()
+> calls...
 
-> Doesn't it make more sense to ask us (the individual arch maintainers) to
-> pull our parts after Linus has pulled the generic part?
+yes but we cannot be sure of that, the caller may not have a good idea
+of the headroom needed for the whole lifetime of the skb
 
-I suppose so.
+it's better to think we will reduce number of calls, not avoid them
 
-> Do you want this ("our parts") to go in 3.7 or 3.8?
+that's why I think doubling the size each time is dangerous, since we
+silently request bigger and bigger allocations if an skb takes an
+unoptimized path
 
-3.7 would be nice, but I know not everyone is willing to pull in this merge
-window.  It might also make sense to wait for (a) Linus to pull those and (b)
-Arnd to pass the asm-generic changes along too.
+> Hmm, 
+> 
+> this changes nothing assuming current_end == skb_end_offset(skb)
+> and current_head = skb->head
 
-The main reason I'd like to get things moved along asap is that the
-preparatory patches get things into a known state upon which these commits can
-be pulled.  However, the state is going to degrade over time as people make
-changes which requires more preparatory patches:-/
+My idea was to leave skb->end at its last position even if we grow
+skb->head.
 
-David
+Since we have a way to know the current allocation size of skb->head,
+further pskb_expand_head() calls to request tailroom would just push
+skb->tail & skb->end together if that fits in current ksize().
+
+I've not looked at recent changes in mainline, since you changed how
+skb->head is managed, that may be totally impossible.
+
+Your proposed changed API change to expand_head will fill this anyway.
+
+> New convention would be : pass number of needed bytes after current
+> tail, not after current end.
+
+Fully agree on this
+
+-- 
+Maxime
+
+
