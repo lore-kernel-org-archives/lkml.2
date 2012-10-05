@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2JEOpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 10:45:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32605 "EHLO mx1.redhat.com"
+	id S1752564Ab2JEOri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 10:47:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16776 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab2JEOpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 10:45:23 -0400
+	id S1755874Ab2JEOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 10:45:24 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -15,17 +15,40 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/8] perf diff: Add -b option for perf diff to display paired entries only
-Date: Fri,  5 Oct 2012 16:44:40 +0200
-Message-Id: <1349448287-18919-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 3/8] perf diff: Add option to sort entries based on diff computation
+Date: Fri,  5 Oct 2012 16:44:42 +0200
+Message-Id: <1349448287-18919-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 References: <1349448287-18919-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding -b option to perf diff command to display only entries
-with match in the baseline.
+Adding support to sort hist entries based on the outcome of selected
+computation. It's now possible to specify '+' as a first character
+of '-c' option value to make such sort.
+
+Example:
+
+  $ perf diff -c ratio -b
+  # Event 'cache-misses'
+  #
+  #   Baseline           Ratio      Shared Object                            Symbol
+  #   ........  ..............  .................  ................................
+  #
+        19.64%            0.69  [kernel.kallsyms]  [k] clear_page
+         0.30%            0.17  [kernel.kallsyms]  [k] mm_alloc
+         0.04%            0.20  [kernel.kallsyms]  [k] kmem_cache_alloc
+
+  $ perf diff -c +ratio -b
+  # Event 'cache-misses'
+  #
+  #   Baseline           Ratio      Shared Object                            Symbol
+  #   ........  ..............  .................  ................................
+  #
+        19.64%            0.69  [kernel.kallsyms]  [k] clear_page
+         0.04%            0.20  [kernel.kallsyms]  [k] kmem_cache_alloc
+         0.30%            0.17  [kernel.kallsyms]  [k] mm_alloc
 
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -37,42 +60,92 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt |  4 ++++
- tools/perf/builtin-diff.c              | 31 +++++++++++++++++++++++++++++--
- 2 files changed, 33 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-diff.txt |   2 +
+ tools/perf/builtin-diff.c              | 137 +++++++++++++++++++++++++++++++++
+ tools/perf/ui/hist.c                   |  29 +++----
+ tools/perf/util/hist.h                 |   2 +
+ tools/perf/util/sort.h                 |  15 ++++
+ 5 files changed, 167 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index ab7f667..6ce9585 100644
+index 8fff061..cff3d9b 100644
 --- a/tools/perf/Documentation/perf-diff.txt
 +++ b/tools/perf/Documentation/perf-diff.txt
-@@ -72,6 +72,10 @@ OPTIONS
- --symfs=<directory>::
-         Look for files with symbols relative to this directory.
+@@ -79,6 +79,8 @@ OPTIONS
+ -c::
+ --compute::
+         Differential computation selection - delta,ratio (default is delta).
++        If '+' is specified as a first character, the output is sorted based
++        on the computation results.
+         See COMPARISON METHODS section for more info.
  
-+-b::
-+--baseline-only::
-+        Show only items with match in baseline.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1]
+ COMPARISON METHODS
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index a0b531c..1063c31 100644
+index e90c06a..e13cfac 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -24,6 +24,7 @@ static char const *input_old = "perf.data.old",
- static char	  diff__default_sort_order[] = "dso,symbol";
+@@ -25,6 +25,7 @@ static char	  diff__default_sort_order[] = "dso,symbol";
  static bool  force;
  static bool show_displacement;
-+static bool show_baseline_only;
+ static bool show_baseline_only;
++static bool sort_compute;
  
+ enum {
+ 	COMPUTE_DELTA,
+@@ -50,6 +51,13 @@ static int setup_compute(const struct option *opt, const char *str,
+ 		return 0;
+ 	}
+ 
++	if (*str == '+') {
++		sort_compute = true;
++		str++;
++		if (!*str)
++			return 0;
++	}
++
+ 	for (i = 0; i < COMPUTE_MAX; i++)
+ 		if (!strcmp(str, compute_names[i])) {
+ 			*cp = i;
+@@ -61,6 +69,34 @@ static int setup_compute(const struct option *opt, const char *str,
+ 	return -EINVAL;
+ }
+ 
++static double get_period_percent(struct hist_entry *he, u64 period)
++{
++	u64 total = he->hists->stats.total_period;
++	return (period * 100.0) / total;
++}
++
++double perf_diff__compute_delta(struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	double new_percent = get_period_percent(he, he->stat.period);
++	double old_percent = pair ? get_period_percent(pair, pair->stat.period) : 0.0;
++
++	he->diff.period_ratio_delta = new_percent - old_percent;
++	he->diff.computed = true;
++	return he->diff.period_ratio_delta;
++}
++
++double perf_diff__compute_ratio(struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	double new_period = he->stat.period;
++	double old_period = pair ? pair->stat.period : 0;
++
++	he->diff.computed = true;
++	he->diff.period_ratio = pair ? (new_period / old_period) : 0;
++	return he->diff.period_ratio;
++}
++
  static int hists__add_entry(struct hists *self,
  			    struct addr_location *al, u64 period)
-@@ -172,6 +173,31 @@ static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
+ {
+@@ -223,6 +259,102 @@ static void hists__baseline_only(struct hists *hists)
  	}
  }
  
-+static void hists__baseline_only(struct hists *hists)
++static void hists__precompute(struct hists *hists)
 +{
 +	struct rb_node *next = rb_first(&hists->entries);
 +
@@ -80,45 +153,206 @@ index a0b531c..1063c31 100644
 +		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
 +
 +		next = rb_next(&he->rb_node);
-+		if (!he->pair) {
-+			rb_erase(&he->rb_node, &hists->entries);
-+			hist_entry__free(he);
++
++		switch (compute) {
++		case COMPUTE_DELTA:
++			perf_diff__compute_delta(he);
++			break;
++		case COMPUTE_RATIO:
++			perf_diff__compute_ratio(he);
++			break;
++		default:
++			BUG_ON(1);
 +		}
 +	}
 +}
 +
-+static void hists__process(struct hists *old, struct hists *new)
++static int64_t cmp_doubles(double l, double r)
 +{
-+	hists__match(old, new);
-+
-+	if (show_baseline_only)
-+		hists__baseline_only(new);
-+
-+	hists__fprintf(new, true, 0, 0, stdout);
++	if (l > r)
++		return -1;
++	else if (l < r)
++		return 1;
++	else
++		return 0;
 +}
 +
- static int __cmd_diff(void)
++static int64_t
++hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
++			int c)
++{
++	switch (c) {
++	case COMPUTE_DELTA:
++	{
++		double l = left->diff.period_ratio_delta;
++		double r = right->diff.period_ratio_delta;
++
++		return cmp_doubles(l, r);
++	}
++	case COMPUTE_RATIO:
++	{
++		double l = left->diff.period_ratio;
++		double r = right->diff.period_ratio;
++
++		return cmp_doubles(l, r);
++	}
++	default:
++		BUG_ON(1);
++	}
++
++	return 0;
++}
++
++static void insert_hist_entry_by_compute(struct rb_root *root,
++					 struct hist_entry *he,
++					 int c)
++{
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct hist_entry *iter;
++
++	while (*p != NULL) {
++		parent = *p;
++		iter = rb_entry(parent, struct hist_entry, rb_node);
++		if (hist_entry__cmp_compute(he, iter, c) < 0)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++
++	rb_link_node(&he->rb_node, parent, p);
++	rb_insert_color(&he->rb_node, root);
++}
++
++static void hists__compute_resort(struct hists *hists)
++{
++	struct rb_root tmp = RB_ROOT;
++	struct rb_node *next = rb_first(&hists->entries);
++
++	while (next != NULL) {
++		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
++
++		next = rb_next(&he->rb_node);
++
++		rb_erase(&he->rb_node, &hists->entries);
++		insert_hist_entry_by_compute(&tmp, he, compute);
++	}
++
++	hists->entries = tmp;
++}
++
+ static void hists__process(struct hists *old, struct hists *new)
  {
- 	int ret, i;
-@@ -213,8 +239,7 @@ static int __cmd_diff(void)
+ 	hists__match(old, new);
+@@ -230,6 +362,11 @@ static void hists__process(struct hists *old, struct hists *new)
+ 	if (show_baseline_only)
+ 		hists__baseline_only(new);
  
- 		first = false;
++	if (sort_compute) {
++		hists__precompute(new);
++		hists__compute_resort(new);
++	}
++
+ 	hists__fprintf(new, true, 0, 0, stdout);
+ }
  
--		hists__match(&evsel_old->hists, &evsel->hists);
--		hists__fprintf(&evsel->hists, true, 0, 0, stdout);
-+		hists__process(&evsel_old->hists, &evsel->hists);
- 	}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 1b633a4..659f2a2 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -242,24 +242,15 @@ static int hpp__width_delta(struct perf_hpp *hpp __maybe_unused)
  
- out_delete:
-@@ -235,6 +260,8 @@ static const struct option options[] = {
- 		    "be more verbose (show symbol address, etc)"),
- 	OPT_BOOLEAN('M', "displacement", &show_displacement,
- 		    "Show position displacement relative to baseline"),
-+	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
-+		    "Show only items with match in baseline"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	struct hist_entry *pair = he->pair;
+-	struct hists *pair_hists = pair ? pair->hists : NULL;
+-	struct hists *hists = he->hists;
+-	u64 old_total, new_total;
+-	double old_percent = 0, new_percent = 0;
+-	double diff;
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
+ 	char buf[32] = " ";
++	double diff;
+ 
+-	old_total = pair_hists ? pair_hists->stats.total_period : 0;
+-	if (old_total > 0 && pair)
+-		old_percent = 100.0 * pair->stat.period / old_total;
+-
+-	new_total = hists->stats.total_period;
+-	if (new_total > 0)
+-		new_percent = 100.0 * he->stat.period / new_total;
++	if (he->diff.computed)
++		diff = he->diff.period_ratio_delta;
++	else
++		diff = perf_diff__compute_delta(he);
+ 
+-	diff = new_percent - old_percent;
+ 	if (fabs(diff) >= 0.01)
+ 		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
+ 
+@@ -280,12 +271,14 @@ static int hpp__width_ratio(struct perf_hpp *hpp __maybe_unused)
+ 
+ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	struct hist_entry *pair = he->pair;
+-	double new_period = he->stat.period;
+-	double old_period = pair ? pair->stat.period : 0;
+-	double ratio = pair ? new_period / old_period : 0;
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
+ 	char buf[32] = " ";
++	double ratio;
++
++	if (he->diff.computed)
++		ratio = he->diff.period_ratio;
++	else
++		ratio = perf_diff__compute_ratio(he);
+ 
+ 	if (ratio > 0.0)
+ 		scnprintf(buf, sizeof(buf), "%+14.6F", ratio);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 7e4d4c2..a7ea28a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -205,4 +205,6 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
+ 
+ unsigned int hists__sort_list_width(struct hists *self);
+ 
++double perf_diff__compute_delta(struct hist_entry *he);
++double perf_diff__compute_ratio(struct hist_entry *he);
+ #endif	/* __PERF_HIST_H */
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5786f32..337aeef 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -52,6 +52,19 @@ struct he_stat {
+ 	u32			nr_events;
+ };
+ 
++struct hist_entry_diff {
++	bool	computed;
++
++	/* PERF_HPP__DISPL */
++	int	displacement;
++
++	/* PERF_HPP__DELTA */
++	double	period_ratio_delta;
++
++	/* PERF_HPP__RATIO */
++	double	period_ratio;
++};
++
+ /**
+  * struct hist_entry - histogram entry
+  *
+@@ -67,6 +80,8 @@ struct hist_entry {
+ 	u64			ip;
+ 	s32			cpu;
+ 
++	struct hist_entry_diff	diff;
++
+ 	/* XXX These two should move to some tree widget lib */
+ 	u16			row_offset;
+ 	u16			nr_rows;
 -- 
 1.7.11.4
 
