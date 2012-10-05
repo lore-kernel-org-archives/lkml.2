@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab2JEGug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 02:50:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39627 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab2JEGue (ORCPT
+	id S1751707Ab2JEGwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 02:52:46 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:37279 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750989Ab2JEGwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 02:50:34 -0400
-Message-ID: <506E771B.2080102@monstr.eu>
-Date: Fri, 05 Oct 2012 07:58:51 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 5 Oct 2012 02:52:45 -0400
+X-IronPort-AV: E=Sophos;i="4.80,538,1344204000"; 
+   d="scan'208";a="175907182"
+Date: Fri, 5 Oct 2012 07:22:03 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: David Miller <davem@davemloft.net>, peter.senna@gmail.com,
+        shemminger@vyatta.com, mlindner@marvell.com,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+In-Reply-To: <1349395795.2008.26.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1210050712590.1958@localhost6.localdomain6>
+References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>  <20121004.142335.1467206545795435493.davem@davemloft.net>  <CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>  <20121004.145419.1859367129463136197.davem@davemloft.net>
+ <1349395795.2008.26.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 08/11] net: ll_temac: Do not use fixed mtu size
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>  <1349374497-9540-8-git-send-email-monstr@monstr.eu> <1349378563.2817.27.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1349378563.2817.27.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2012 09:22 PM, Ben Hutchings wrote:
-> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
->> Use max mtu instead.
-> [...]
+On Thu, 4 Oct 2012, Joe Perches wrote:
+
+> On Thu, 2012-10-04 at 14:54 -0400, David Miller wrote:
+>> From: Peter Senna Tschudin <peter.senna@gmail.com>
+>>> On Thu, Oct 4, 2012 at 8:23 PM, David Miller <davem@davemloft.net> wrote:
+>>>> We want to know the implications of the bug being fixed.
+>>>> Does it potentially cause an OOPS?  Bad reference counting and thus
+>>>> potential leaks or early frees?
+>>>>
+>>>> You have to analyze the implications and ramifications of the bug
+>>>> being fixed.  We need that information.
 >
-> MTU does not include the Ethernet header so I have no idea how this is
-> expected to work...
+> You are asking for deeper level analysis that may not
+> be reasonably possible from the robotic patch fixed
+> by a robotic piece of a bit of code correction via a
+> static analysis.
 
-Right. This is wrong fix. It should be the same as is in axienet.
-There is max_frm_size used which is mtu+header+tailer.
-I will fix it.
+As Peter pointed out, it is not even a robotic fix, if robotic means 
+literally that it was done by a robot.  A tool was used to find a 
+potential problem, and then Peter studied the code to see what fix was 
+appropriate.
 
-Thanks,
-Michal
+In this case, finding out the impact, requires looking up the call chain 
+in all directions to find out what the callers do with the returned value. 
+And understanding the likely impact along the way.  Often the call chain 
+involves function pointers.  This is all possible to do.  And perhaps it 
+would be even more helpful to the consumers of the patch than just having 
+the problem fixed.  But the fact remains that at other places in the 
+function, someone thought it was useful to return an error code, so in the 
+place where the error code return is missing, it seems like a useful fault 
+to fix, whether it has an impact now or might have one later.  The main 
+human analysis required to generate the patch is to be convinced that the 
+given return path really represents an error condition and that the 
+function normally returns the specified kind of value in that case.  If 
+there is some way in which these points are unclear, then the commit
+message should certainly explain the reasoning that was used.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+julia
+
+>
+>>>> It's just "bad error code, this is the script that fixed it, kthx,
+>>>> bye" which is pretty much useless for anaylsis.
+>
+> Which may be all but impossible but for the handful of
+> folks that know all the gory/intimate details of the
+> original bit of code.
+>
+>> What does it potentially cause the caller to do?  Will it potentially
+>> treat an error as a success and as a result register an object
+>> illegally?
+>>
+>> Real analysis please.  The text you provided above is basically still
+>> robotic and could be used to describe any error code return fix.
+>
+> Right, it's useful to attempt but may be infeasible in
+> practice.
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
