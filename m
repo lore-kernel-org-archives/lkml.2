@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab2JERqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 13:46:06 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43000 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab2JERqC (ORCPT
+	id S1756574Ab2JERqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 13:46:25 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:52592 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229Ab2JERqX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 13:46:02 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>
-Subject: [PATCH] Partially revert a1ce39288e6fbef (UAPI: (Scripted) Convert #include "..." to #include <path/...> in kernel system headers)
-Date: Fri,  5 Oct 2012 10:45:30 -0700
-Message-Id: <1349459130-4367-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
+	Fri, 5 Oct 2012 13:46:23 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/16] f2fs: add on-disk layout
+Date: Fri, 5 Oct 2012 19:46:21 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0-tp520; KDE/4.8.4; x86_64; ; )
+Cc: =?utf-8?q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+References: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com> (sfid-20121005_184512_086765_45BFD6B3)
+In-Reply-To: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201210051946.21451.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Am Freitag, 5. Oktober 2012 schrieb 김재극:
+> This adds a header file describing the on-disk layout of f2fs.
+> 
+> Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+> Signed-off-by: Chul Lee <chur.lee@samsung.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  include/linux/f2fs_fs.h |  359 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 359 insertions(+)
+>  create mode 100644 include/linux/f2fs_fs.h
+> 
+> diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+> new file mode 100644
+> index 0000000..b17eeec
+> --- /dev/null
+> +++ b/include/linux/f2fs_fs.h
+> @@ -0,0 +1,359 @@
+> +/**
+> + * include/linux/f2fs_fs.h
+[…]
+> +/*
+> + * For superblock
+> + */
+> +struct f2fs_super_block {
+> +       __le32 magic;           /* Magic Number */
+> +       __le16 major_ver;       /* Major Version */
+> +       __le16 minor_ver;       /* Minor Version */
+> +       __le32 log_sectorsize;  /* log2 (Sector size in bytes) */
+> +       __le32 log_sectors_per_block;   /* log2 (Number of sectors per block */
+> +       __le32 log_blocksize;   /* log2 (Block size in bytes) */
+> +       __le32 log_blocks_per_seg; /* log2 (Number of blocks per segment) */
+> +       __le32 log_segs_per_sec; /* log2 (Number of segments per section) */
+> +       __le32 secs_per_zone; /* Number of sections per zone */
+> +       __le32 checksum_offset; /* Checksum position in this super block */
+> +       __le64 block_count;     /* Total number of blocks */
+> +       __le32 section_count;   /* Total number of sections */
+> +       __le32 segment_count;   /* Total number of segments */
+> +       __le32 segment_count_ckpt; /* Total number of segments
+> +                                     in Checkpoint area */
+> +       __le32 segment_count_sit; /* Total number of segments
+> +                                    in Segment information table */
+> +       __le32 segment_count_nat; /* Total number of segments
+> +                                    in Node address table */
+> +       /*Total number of segments in Segment summary area */
+> +       __le32 segment_count_ssa;
+> +       /* Total number of segments in Main area */
+> +       __le32 segment_count_main;
+> +       __le32 failure_safe_block_distance;
+> +       __le64 segment0_blkaddr;        /* Start block address of Segment 0 */
+> +       __le64 start_segment_checkpoint; /* Start block address of ckpt */
+> +       __le64 sit_blkaddr;     /* Start block address of SIT */
+> +       __le64 nat_blkaddr;     /* Start block address of NAT */
+> +       __le64 ssa_blkaddr;     /* Start block address of SSA */
+> +       __le64 main_blkaddr;    /* Start block address of Main area */
+> +       __le32 root_ino;        /* Root directory inode number */
+> +       __le32 node_ino;        /* node inode number */
+> +       __le32 meta_ino;        /* meta inode number */
+> +       __le32 volume_serial_number;    /* VSN is optional field */
+> +       __le16 volume_name[8];  /* Volume Name. 8 unicode characters */
+> +} __packed;
 
-Syntax errors were introduced into include/linux/libfdt.h by the
-offending commit, revert the changes made to this file.  The kernel
-again compiles, thus restoring harmony and balance to the universe.
+Any reason why volume label is that short?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dave Jones <davej@redhat.com>
----
- include/linux/libfdt.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+If superblock can occupy up to 4096 bytes, i.e. a block, I think a bit
+more space for volume label would fit in there. I count 128 bytes up
+to volume_name. Do other structures need to fit in superblock as well?
 
-diff --git a/include/linux/libfdt.h b/include/linux/libfdt.h
-index a0c3bf6..4c0306c 100644
---- a/include/linux/libfdt.h
-+++ b/include/linux/libfdt.h
-@@ -2,7 +2,7 @@
- #define _INCLUDE_LIBFDT_H_
- 
- #include <linux/libfdt_env.h>
--#include <>
--#include <>
-+#include "../../scripts/dtc/libfdt/fdt.h"
-+#include "../../scripts/dtc/libfdt/libfdt.h"
- 
- #endif /* _INCLUDE_LIBFDT_H_ */
+I believe users easily can hit a limit of 8 unicode characters even for
+USB sticks and SD cards.
+
+Nice to see a flash friendly filesystem which seems to take lots of the
+stuff in account I read at Linaro website about flash devices.
+
 -- 
-1.7.11.4
-
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
