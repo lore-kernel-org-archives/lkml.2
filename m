@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab2JEQWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:22:42 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:56291 "EHLO zmc.proxad.net"
+	id S932634Ab2JEQW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:22:56 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:56334 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab2JEQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:22:38 -0400
+	id S932384Ab2JEQWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 12:22:46 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-mips@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 08/32 v3] MIPS: Alchemy: use the ehci platform driver
-Date: Fri,  5 Oct 2012 18:20:40 +0200
-Message-Id: <1349454064-11606-9-git-send-email-florian@openwrt.org>
+Subject: [PATCH 13/32 v2] USB: ohci: move ohci_pci_{suspend,resume} to ohci-hcd.c
+Date: Fri,  5 Oct 2012 18:20:45 +0200
+Message-Id: <1349454064-11606-14-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349454064-11606-1-git-send-email-florian@openwrt.org>
 References: <1349454064-11606-1-git-send-email-florian@openwrt.org>
@@ -26,97 +21,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the ehci platform driver power_{on,suspend,off} callbacks to perform the
-USB block gate enabling/disabling as what the ehci-au1xxx.c driver does.
-Update the db1200 and db1300 defconfigs to now select the EHCI platform
-driver.
+As suggested by Alan Stern, move the ohci-pci.c ohci_pci_{suspend,resume}
+routines to ohci-hcd.c. Due to their move, also rename them to
+ohci_{suspend,resume} to make it clear they operate on ohci_hcd. Since they
+are not necessarily called, annotate them with __maybe_unused.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-No changes in v3
+Changes since v1:
+- moved ohci_{suspend,resume} out of the #ifdef CONFIG_PM block
+- removed the empty CONFIG_PM #ifdef/endif block in ohci-pci.c
 
-Changes in v2:
-- update impacted alchemy defconfigs accordingly
+ drivers/usb/host/ohci-hcd.c |   39 +++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ohci-pci.c |   47 ++-----------------------------------------
+ 2 files changed, 41 insertions(+), 45 deletions(-)
 
- arch/mips/alchemy/common/platform.c |   23 ++++++++++++++++++++++-
- arch/mips/configs/db1200_defconfig  |    1 +
- arch/mips/configs/db1300_defconfig  |    1 +
- 3 files changed, 24 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
-index c0f3ce6..b9a5f6d 100644
---- a/arch/mips/alchemy/common/platform.c
-+++ b/arch/mips/alchemy/common/platform.c
-@@ -17,6 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
- #include <linux/slab.h>
-+#include <linux/usb/ehci_pdriver.h>
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 36f7ba7..b2fd85f 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -983,6 +983,45 @@ static int ohci_restart (struct ohci_hcd *ohci)
  
- #include <asm/mach-au1x00/au1000.h>
- #include <asm/mach-au1x00/au1xxx_dbdma.h>
-@@ -122,6 +123,25 @@ static void __init alchemy_setup_uarts(int ctype)
- static u64 alchemy_ohci_dmamask = DMA_BIT_MASK(32);
- static u64 __maybe_unused alchemy_ehci_dmamask = DMA_BIT_MASK(32);
+ #endif
  
-+/* Power on callback for the ehci platform driver */
-+static int alchemy_ehci_power_on(struct platform_device *pdev)
++static int __maybe_unused ohci_suspend(struct usb_hcd *hcd, bool do_wakeup)
 +{
-+	return alchemy_usb_control(ALCHEMY_USB_EHCI0, 1);
++	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
++	unsigned long	flags;
++	int		rc = 0;
++
++	/* Root hub was already suspended. Disable irq emission and
++	 * mark HW unaccessible, bail out if RH has been resumed. Use
++	 * the spinlock to properly synchronize with possible pending
++	 * RH suspend or resume activity.
++	 */
++	spin_lock_irqsave (&ohci->lock, flags);
++	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
++		rc = -EINVAL;
++		goto bail;
++	}
++	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
++	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
++
++	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
++ bail:
++	spin_unlock_irqrestore (&ohci->lock, flags);
++
++	return rc;
 +}
 +
-+/* Power off/suspend callback for the ehci platform driver */
-+static void alchemy_ehci_power_off(struct platform_device *pdev)
++
++static int __maybe_unused ohci_resume(struct usb_hcd *hcd, bool hibernated)
 +{
-+	alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
++	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
++
++	/* Make sure resume from hibernation re-enumerates everything */
++	if (hibernated)
++		ohci_usb_reset(hcd_to_ohci(hcd));
++
++	ohci_finish_controller_resume(hcd);
++	return 0;
 +}
 +
-+static struct usb_ehci_pdata alchemy_ehci_pdata = {
-+	.no_io_watchdog	= 1,
-+	.power_on	= alchemy_ehci_power_on,
-+	.power_off	= alchemy_ehci_power_off,
-+	.power_suspend	= alchemy_ehci_power_off,
-+};
-+
- static unsigned long alchemy_ohci_data[][2] __initdata = {
- 	[ALCHEMY_CPU_AU1000] = { AU1000_USB_OHCI_PHYS_ADDR, AU1000_USB_HOST_INT },
- 	[ALCHEMY_CPU_AU1500] = { AU1000_USB_OHCI_PHYS_ADDR, AU1500_USB_HOST_INT },
-@@ -188,9 +208,10 @@ static void __init alchemy_setup_usb(int ctype)
- 		res[1].start = alchemy_ehci_data[ctype][1];
- 		res[1].end = res[1].start;
- 		res[1].flags = IORESOURCE_IRQ;
--		pdev->name = "au1xxx-ehci";
-+		pdev->name = "ehci-platform";
- 		pdev->id = 0;
- 		pdev->dev.dma_mask = &alchemy_ehci_dmamask;
-+		pdev->dev.platform_data = &alchemy_ehci_pdata;
+ /*-------------------------------------------------------------------------*/
  
- 		if (platform_device_register(pdev))
- 			printk(KERN_INFO "Alchemy USB: cannot add EHCI0\n");
-diff --git a/arch/mips/configs/db1200_defconfig b/arch/mips/configs/db1200_defconfig
-index 1f69249..d31ac85 100644
---- a/arch/mips/configs/db1200_defconfig
-+++ b/arch/mips/configs/db1200_defconfig
-@@ -117,6 +117,7 @@ CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
- # CONFIG_USB_DEVICE_CLASS is not set
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_HCD_PLATFORM=y
- CONFIG_USB_EHCI_ROOT_HUB_TT=y
- CONFIG_USB_OHCI_HCD=y
- CONFIG_MMC=y
-diff --git a/arch/mips/configs/db1300_defconfig b/arch/mips/configs/db1300_defconfig
-index 3590ab5..717e7b2 100644
---- a/arch/mips/configs/db1300_defconfig
-+++ b/arch/mips/configs/db1300_defconfig
-@@ -288,6 +288,7 @@ CONFIG_USB_ARCH_HAS_EHCI=y
- CONFIG_USB=y
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_HCD_PLATFORM=y
- CONFIG_USB_EHCI_ROOT_HUB_TT=y
- CONFIG_USB_EHCI_TT_NEWSCHED=y
- CONFIG_USB_OHCI_HCD=y
+ MODULE_AUTHOR (DRIVER_AUTHOR);
+diff --git a/drivers/usb/host/ohci-pci.c b/drivers/usb/host/ohci-pci.c
+index 1843bb6..6afa7dc 100644
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -296,49 +296,6 @@ static int __devinit ohci_pci_start (struct usb_hcd *hcd)
+ 	return ret;
+ }
+ 
+-#ifdef	CONFIG_PM
+-
+-static int ohci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+-{
+-	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
+-	unsigned long	flags;
+-	int		rc = 0;
+-
+-	/* Root hub was already suspended. Disable irq emission and
+-	 * mark HW unaccessible, bail out if RH has been resumed. Use
+-	 * the spinlock to properly synchronize with possible pending
+-	 * RH suspend or resume activity.
+-	 */
+-	spin_lock_irqsave (&ohci->lock, flags);
+-	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
+-		rc = -EINVAL;
+-		goto bail;
+-	}
+-	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+-	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
+-
+-	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+- bail:
+-	spin_unlock_irqrestore (&ohci->lock, flags);
+-
+-	return rc;
+-}
+-
+-
+-static int ohci_pci_resume(struct usb_hcd *hcd, bool hibernated)
+-{
+-	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+-
+-	/* Make sure resume from hibernation re-enumerates everything */
+-	if (hibernated)
+-		ohci_usb_reset(hcd_to_ohci(hcd));
+-
+-	ohci_finish_controller_resume(hcd);
+-	return 0;
+-}
+-
+-#endif	/* CONFIG_PM */
+-
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -362,8 +319,8 @@ static const struct hc_driver ohci_pci_hc_driver = {
+ 	.shutdown =		ohci_shutdown,
+ 
+ #ifdef	CONFIG_PM
+-	.pci_suspend =		ohci_pci_suspend,
+-	.pci_resume =		ohci_pci_resume,
++	.pci_suspend =		ohci_suspend,
++	.pci_resume =		ohci_resume,
+ #endif
+ 
+ 	/*
 -- 
 1.7.9.5
 
