@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab2JEPuz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:50:55 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:50341 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab2JEPuw (ORCPT
+	id S1756618Ab2JEPyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:54:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56426 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461Ab2JEPyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 11:50:52 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Nico Schottelius <nico-kernel20120920@schottelius.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        jfs-discussion@lists.sourceforge.net
-Subject: Re: Out of memory on 3.5 kernels
-In-Reply-To: Your message of "Wed, 03 Oct 2012 23:23:11 +0200."
-             <20121003212311.GA14018@schottelius.org>
-From: Valdis.Kletnieks@vt.edu
-References: <505B1FA0.6030100@broadcom.com> <20120921194931.GA732@schottelius.org> <alpine.DEB.2.00.1209241538310.6356@chino.kir.corp.google.com> <20120926060653.GD16575@schottelius.org> <20120926085708.GA7839@schottelius.org> <20120927055208.GA25252@schottelius.org>
-            <20121003212311.GA14018@schottelius.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1349452084_2935P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 05 Oct 2012 11:48:04 -0400
-Message-ID: <22962.1349452084@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.506F0136.0135,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 5 Oct 2012 11:54:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121005140519.GA28890@mail.hallyn.com>
+References: <1349209832-279922-1-git-send-email-avagin@openvz.org>
+	<20121005140519.GA28890@mail.hallyn.com>
+Date: Fri, 5 Oct 2012 08:54:49 -0700
+X-Google-Sender-Auth: sZrSby9VH04dlXJCVfaYuQiEYnI
+Message-ID: <CALQRfL5ViSfmqG=UdRWquUq26WCp1pZMpUXJ8EgspGW0n32Fkg@mail.gmail.com>
+Subject: Re: [PATCH] proc: don't show nonexistent capabilities
+From: "Andrew G. Morgan" <morgan@kernel.org>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, criu@openvz.org,
+        linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Vagin <avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1349452084_2935P
-Content-Type: text/plain; charset="us-ascii"
-Content-Id: <22610.1349452075.1@turing-police.cc.vt.edu>
+I like the sentiment but have you considered the implications for a
+default system root user trying to set all=eip ? Existing code can do
+this because all bits are accessible by default. If you set the
+bounding set to something less than ~0, then any code that currently
+does this will start to fail in the common case.
 
-On Wed, 03 Oct 2012 23:23:11 +0200, Nico Schottelius said:
+Cheers
 
-> does anyone of you have a clue so far what may be causing the huge
-> slab usage?
+Andrew
+
+On Oct 5, 2012 7:13 AM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
 >
-> I've just found an interesting detail: umounting and cryptsetup
-> luksClosing frees up the used memory (not sure which one was freeing
-> up)
-
-For what it's worth, I'm seeing a similar problem in linux-next on my laptop -
-trying to run a backup to an external hard drive that has a LUKS partition on
-it will OOM. (For some reason having the external LUKS partition is much more
-problematic than the LVM-on-LUKS on the internal drive)
-
-I've started bisecting, and gotten this far:
-
-% git bisect log
-git bisect start
-# bad: [1aa44772a621e8547dc4db41b47c747469fe0ea3] Add linux-next specific files for 20121001
-git bisect bad 1aa44772a621e8547dc4db41b47c747469fe0ea3
-# good: [fea7a08acb13524b47711625eebea40a0ede69a0] Linux 3.6-rc3
-git bisect good fea7a08acb13524b47711625eebea40a0ede69a0
-# good: [526c4d73327f56f83da8b8088fd0b3c7be38c7ae] Merge remote-tracking branch 'regulator/for-next'
-git bisect good 526c4d73327f56f83da8b8088fd0b3c7be38c7ae
-# good: [961d70d88557405c5b7302c7d87752566468f035] Merge remote-tracking branch 'tty/tty-next'
-git bisect good 961d70d88557405c5b7302c7d87752566468f035
-
-(That's as far as I've gotten that I trust, the next bisect hits a different problem where
-connecting the hard drive and *starting* cryptLuks hangs the machine hard, so I'll
-have to finish bisecting that problem first, then return to bisecting this one)
-
-I admit not being sure why you see it on a 3.5 kernel, but I only see it on stuff
-that's after 3.6-rc3.
-
---==_Exmh_1349452084_2935P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUG8BMwdmEQWDXROgAQK/nQ//XMlZSEoXM4kjMizzv2EMI9HzxCJKzxbC
-pfmVWOIkxh/eCNs/3W0oUzKmahslZjwvxTs09HT8tJzsRwBgmCVvOEFkDFW9qzg1
-+daFGrBWGsWEgA306irjnmh+AHEzARE4QkVeQhaphoKv1CqmldWHPjPnzKJsbrg6
-RNmyvF4c3zFpgfE7PKxAWJNWcJnSMv2DVjFg/umy71s5ikILm8n7cRKpmQ5p6SN5
-FPkNlUX/aG6RJ2OpQzmD0yDLPJKu7RTY6qyz2Y0l9IIA7yxYtpyTalNZ+xXRopMK
-LWFKZcz/zOnr0maum3ITPslLLQ4cPRGnzEqnuezWvW1ZeP74Uj18kkk73v2GnVye
-eqX4xQTltD3YrxECaIG9+HKYWZ1buaXB7TPs5Fw02NlIe1pq8qV5W6Rs4oTJm1Dg
-nRpJwuuBl3/i2vaIS6Jw/+yZ8vTcRYBPcVcEnUsKAmGVr6RFAuAJ/SWgVnw2Lj9W
-BVPbrqWgtcVhT6B1D6tRT5FZKfrsal4l+ciBxtYzQH+2drdQTc7hGzwqzWpnEtek
-0E7N84/0S6jh71JaPnOrEC1WufQBgDfLoKguRcW9IPXHWKq7ZNOhdGiKEavVQtHd
-YOu3AuCVsB+xfS8NqmNDAdXrHw1GrMO1JkydsKA59BeXQtIvN+T2NrW/B4vJIUv0
-oVYlfN9GnVw=
-=dT/C
------END PGP SIGNATURE-----
-
---==_Exmh_1349452084_2935P--
-
+> Quoting Andrew Vagin (avagin@openvz.org):
+> > Without this patch it is really hard to interpret a bounding set,
+> > if CAP_LAST_CAP is unknown for a current kernel.
+>
+> To be clear, note that you *can* figure it out using
+> prctl(PR_CAPBSET_DROP).  But this is a nice improvement.
+>
+> > Non-existant capabilities can not be deleted from a bounding set
+> > with help of prctl.
+> >
+> > E.g.: Here are two examples without/with this patch.
+> > CapBnd:       ffffffe0fdecffff
+> > CapBnd:       00000000fdecffff
+> >
+> > I suggest to hide non-existent capabilities. Here is two reasons.
+> > * It's logically and easier for using.
+> > * It helps to checkpoint-restore capabilities of tasks, because tasks
+> > can be restored on another kernel, where CAP_LAST_CAP is bigger.
+> >
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+>
+> Thanks, Andrew.  I saw your other email about having run LTP, I didn't
+> see any problems from userspace either.  Great idea!
+>
+> Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
+>
+> Still it's been like that for so long that, just to be safe, I'm cc:ing
+> Andrew Morgan - can you see any problems with this?
+>
+> > Cc: Pavel Emelyanov <xemul@parallels.com>
+> > Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> > ---
+> >  include/linux/capability.h |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/include/linux/capability.h b/include/linux/capability.h
+> > index d10b7ed..1642778 100644
+> > --- a/include/linux/capability.h
+> > +++ b/include/linux/capability.h
+> > @@ -420,7 +420,8 @@ extern const kernel_cap_t __cap_init_eff_set;
+> >  #else /* HAND-CODED capability initializers */
+> >
+> >  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+> > -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
+> > +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, \
+> > +                                     CAP_TO_MASK(CAP_LAST_CAP + 1) - 1 } })
+> >  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+> >                                   | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+> >                                   CAP_FS_MASK_B1 } })
+> > --
+> > 1.7.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
