@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab2JEWLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 18:11:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54745 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab2JEWLH (ORCPT
+	id S964858Ab2JEWLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 18:11:47 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55583 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757674Ab2JEWLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 18:11:07 -0400
+	Fri, 5 Oct 2012 18:11:11 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: davem@davemloft.net
-Cc: joe@perches.com, dhowells@redhat.com, rick.jones2@hp.com,
-        netdev@pradeepdalvi.com, netdev@vger.kernel.org,
+Cc: mcuos.com@gmail.com, axel.lin@gmail.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 13/20 V2] drivers/net/ethernet/amd/amd8111e.c: fix error return code
-Date: Sat,  6 Oct 2012 00:10:51 +0200
-Message-Id: <1349475053-11464-3-git-send-email-peter.senna@gmail.com>
+Subject: [PATCH 15/20 V2] drivers/net/ethernet/natsemi/xtsonic.c: fix error return code
+Date: Sat,  6 Oct 2012 00:10:53 +0200
+Message-Id: <1349475053-11464-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
 References: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
@@ -25,13 +24,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Senna Tschudin <peter.senna@gmail.com>
 
-The function amd8111e_probe_one() return 0 for success and negative
-value for most of its internal tests failures. There are two exceptions
-that are error cases going to err_free_reg:. For this two cases, the
+The function sonic_probe1() return 0 for success and negative value
+for most of its internal tests failures. There is one exception
+that is error case going to out:. For this error case, the
 function abort its success execution path, but returns non negative
-value, making it dificult for a caller function to notice the error.
+value, making it difficult for a caller function to notice the error.
 
-This patch fixes the error cases that do not return negative values.
+This patch fixes the error case that do not return negative value.
 
 This was found by Coccinelle, but the code change was made by hand.
 This patch is not robot generated.
@@ -63,27 +62,19 @@ Change from V1:
         Updated commit message. See:
         http://www.kernelhub.org/?p=2&msg=139319
 
- drivers/net/ethernet/amd/amd8111e.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/natsemi/xtsonic.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/amd/amd8111e.c b/drivers/net/ethernet/amd/amd8111e.c
-index 64d0d9c..3491d43 100644
---- a/drivers/net/ethernet/amd/amd8111e.c
-+++ b/drivers/net/ethernet/amd/amd8111e.c
-@@ -1845,6 +1845,7 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
- 	if((pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM))==0){
- 		printk(KERN_ERR "amd8111e: No Power Management capability, "
- 		       "exiting.\n");
-+		err = -ENODEV;
- 		goto err_free_reg;
- 	}
- 
-@@ -1852,6 +1853,7 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
- 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) < 0) {
- 		printk(KERN_ERR "amd8111e: DMA not supported,"
- 			"exiting.\n");
-+		err = -ENODEV;
- 		goto err_free_reg;
+diff --git a/drivers/net/ethernet/natsemi/xtsonic.c b/drivers/net/ethernet/natsemi/xtsonic.c
+index e01c0a0..7dfe883 100644
+--- a/drivers/net/ethernet/natsemi/xtsonic.c
++++ b/drivers/net/ethernet/natsemi/xtsonic.c
+@@ -205,6 +205,7 @@ static int __init sonic_probe1(struct net_device *dev)
+ 	if (lp->descriptors == NULL) {
+ 		printk(KERN_ERR "%s: couldn't alloc DMA memory for "
+ 				" descriptors.\n", dev_name(lp->device));
++		err = -ENOMEM;
+ 		goto out;
  	}
  
 
