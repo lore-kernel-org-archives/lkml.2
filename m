@@ -1,183 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2JETdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 15:33:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54966 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab2JETdl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 15:33:41 -0400
+	id S1754308Ab2JETfL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 15:35:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40733 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636Ab2JETfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 15:35:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
+   d="scan'208";a="230497875"
+Message-ID: <506F3670.4020202@intel.com>
+Date: Fri, 05 Oct 2012 12:35:12 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <506E451E.1050403@jp.fujitsu.com>
-References: <506E43E0.70507@jp.fujitsu.com> <506E451E.1050403@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 5 Oct 2012 15:27:47 -0400
-X-Google-Sender-Auth: qeWi1XyBECpJIlM4Y04FG5BmsSQ
-Message-ID: <CAHGf_=rVDm-JygjPoLHbmF28Dgd52HFc4-b5KCxhEieG60okuw@mail.gmail.com>
-Subject: Re: [PATCH 1/10] memory-hotplug : check whether memory is offline or
- not when removing memory
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com
+To: Andi Kleen <andi@firstfloor.org>
+CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        x86@kernel.org, torvalds@linux-foundation.org
+Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
+ addresses
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org>
+In-Reply-To: <m28vbkx3hw.fsf@firstfloor.org>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 10:25 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> When calling remove_memory(), the memory should be offline. If the function
-> is used to online memory, kernel panic may occur.
+On 10/05/2012 09:55 AM, Andi Kleen wrote:
+> Alexander Duyck <alexander.h.duyck@intel.com> writes:
 >
-> So the patch checks whether memory is offline or not.
-
-You don't explain WHY we need the check.
-
-
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> While working on 10Gb/s routing performance I found a significant amount of
+>> time was being spent in the swiotlb DMA handler.  Further digging found that a
+>> significant amount of this was due to the fact that virtual to physical
+>> address translation and calling the function that did it.  It accounted for
+>> nearly 60% of the total overhead.
+> Can you find out why that is? Traditionally virt_to_phys was just a
+> subtraction. Then later on it was a if and a subtraction.
 >
-> ---
->  drivers/base/memory.c  |   39 +++++++++++++++++++++++++++++++++++++++
->  include/linux/memory.h |    5 +++++
->  mm/memory_hotplug.c    |   17 +++++++++++++++--
->  3 files changed, 59 insertions(+), 2 deletions(-)
+> It cannot really be that expensive. Do you have some debugging enabled?
 >
-> Index: linux-3.6/drivers/base/memory.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/base/memory.c        2012-10-04 14:22:57.000000000 +0900
-> +++ linux-3.6/drivers/base/memory.c     2012-10-04 14:45:46.653585860 +0900
-> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
->  }
->  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+> Really virt_to_phys should be fixed. Such fundamental operations
+> shouldn't slow. I don't think hacking up all the users to work
+> around this is the r ight way.
 >
-> +bool is_memblk_offline(unsigned long start, unsigned long size)
-
-Don't use memblk. Usually memblk mean struct numa_meminfo for x86/numa.
-Maybe memory_range_offlined() is better.
-
-And, this function don't take struct memory_block, then this file may be no good
-place.
-
-And you need to write down function comment.
-
-
-> +{
-> +       struct memory_block *mem = NULL;
-> +       struct mem_section *section;
-> +       unsigned long start_pfn, end_pfn;
-> +       unsigned long pfn, section_nr;
-> +
-> +       start_pfn = PFN_DOWN(start);
-> +       end_pfn = PFN_UP(start + size);
-> +
-> +       for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> +               section_nr = pfn_to_section_nr(pfn);
-> +               if (!present_section_nr(section_nr))
-> +                       continue;
-> +
-> +               section = __nr_to_section(section_nr);
-> +               /* same memblock? */
-> +               if (mem)
-> +                       if ((section_nr >= mem->start_section_nr) &&
-> +                           (section_nr <= mem->end_section_nr))
-> +                               continue;
-> +
-> +               mem = find_memory_block_hinted(section, mem);
-> +               if (!mem)
-> +                       continue;
-> +               if (mem->state == MEM_OFFLINE)
-> +                       continue;
-> +
-> +               kobject_put(&mem->dev.kobj);
-> +               return false;
-> +       }
-> +
-> +       if (mem)
-> +               kobject_put(&mem->dev.kobj);
-> +
-> +       return true;
-> +}
-> +EXPORT_SYMBOL(is_memblk_offline);
-> +
->  /*
->   * register_memory - Setup a sysfs device for a memory block
->   */
-> Index: linux-3.6/include/linux/memory.h
-> ===================================================================
-> --- linux-3.6.orig/include/linux/memory.h       2012-10-02 18:00:22.000000000 +0900
-> +++ linux-3.6/include/linux/memory.h    2012-10-04 14:44:40.902581028 +0900
-> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
->  {
->         return 0;
->  }
-> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
-> +{
-> +       return false;
-> +}
->  #else
->  extern int register_memory_notifier(struct notifier_block *nb);
->  extern void unregister_memory_notifier(struct notifier_block *nb);
-> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
->  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->                                                         struct memory_block *);
->  extern struct memory_block *find_memory_block(struct mem_section *);
-> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
->  #define CONFIG_MEM_BLOCK_SIZE  (PAGES_PER_SECTION<<PAGE_SHIFT)
->  enum mem_add_context { BOOT, HOTPLUG };
->  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
-> Index: linux-3.6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 14:31:08.000000000 +0900
-> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 14:58:22.449687986 +0900
-> @@ -1045,8 +1045,21 @@ int offline_memory(u64 start, u64 size)
+> Looking at the code a bit someone (crazy) made it out of line.
+> But that cannot explain that much overhead.
 >
->  int remove_memory(int nid, u64 start, u64 size)
->  {
-
-Your remove_memory() don't remove anything. that's strange.
-
-
-> -       /* It is not implemented yet*/
-> -       return 0;
-> +       int ret = 0;
-> +       lock_memory_hotplug();
-> +       /*
-> +        * The memory might become online by other task, even if you offine it.
-> +        * So we check whether the memory has been onlined or not.
-> +        */
-> +       if (!is_memblk_offline(start, size)) {
-> +               pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
-> +                       "because the memmory range is online\n",
-> +                       start, start + size);
-
-No good warning. You should output which memory block can't be
-offlined, I think.
-
-
-> +               ret = -EAGAIN;
-> +       }
-> +
-> +       unlock_memory_hotplug();
-> +       return ret;
->  }
->  EXPORT_SYMBOL_GPL(remove_memory);
->  #else
 >
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> -Andi
+>
+
+I was thinking the issue was all of the calls to relatively small
+functions occurring in quick succession.  The way most of this code is
+setup it seems like it is one small function call in turn calling
+another, and then another, and I would imagine the code fragmentation
+can have a significant negative impact.
+
+For example just the first patch in the series is enough to see a
+significant performance gain and that is simply due to the fact that
+is_swiotlb_buffer becomes inlined when I built it on my system.  The
+basic idea I had with these patches was to avoid making multiple calls
+in quick succession and instead just to have all the data right there so
+that all of the swiotlb functions don't need to make many external
+calls, at least not until they are actually dealing with bounce buffers
+which are slower due to locking anyway.
+
+Thanks,
+
+Alex
