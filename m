@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206Ab2JEHKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 03:10:23 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48067 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab2JEHKW (ORCPT
+	id S1751382Ab2JEHMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 03:12:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:64594 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab2JEHMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 03:10:22 -0400
-Message-ID: <506E6EB3.7000509@monstr.eu>
-Date: Fri, 05 Oct 2012 07:22:59 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 5 Oct 2012 03:12:30 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, anirudh@xilinx.com,
-        John.Linn@xilinx.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH 01/11] net: axienet: Remove NETIF_F_SG dropping for no
- checksum feature
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu> <20121004.142612.1111166663063631532.davem@davemloft.net>
-In-Reply-To: <20121004.142612.1111166663063631532.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <878vbl1ss0.fsf@rustcorp.com.au>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+	<CAGXu5jJ5Ap18DmAR6T5REgxffeKp08vtuxB7CXxQ66ntXsf0HA@mail.gmail.com>
+	<87obki23uv.fsf@rustcorp.com.au>
+	<1349355032.2496.11.camel@falcor>
+	<878vbl1ss0.fsf@rustcorp.com.au>
+Date: Fri, 5 Oct 2012 00:12:29 -0700
+X-Google-Sender-Auth: X4CPS9AWn0Mko301eBJ7wk6N3WA
+Message-ID: <CAGXu5jKDXXX9gib2hEQpTHuLjRwcWAwcUMW5S9MvpMk6PP8r8Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On 10/04/2012 08:26 PM, David Miller wrote:
+On Thu, Oct 4, 2012 at 8:50 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+>> Why?  Not only have you had these patches sitting for a while, way
+>> before you had the kernel module patches, they've been acked/signed off
+>> by Kees, Serge, Eric, and myself.  All security subtree maintainers.
+>> The module patches could have easily been built on top of Kees' small
+>> patches.  I am really disappointed!
 >
-> Sorry, no.
+> Me too.
 >
-> I've announced on netdev very clearly that net-next submissions are not
-> appropriate at this time and that only pure bug fixes should be submitted.
+> Linus' merge window opened on Monday 1-10-2012.  One week before that
+> was Monday 24-09-2012, which is the nominal close of my merge window.
 >
-> Watch for the announcement on netdev of net-next openning up after the
-> merge window closes, that's when you should resubmit this series.
+> The patches were sent on 21-09 (Friday for you, the weekend my time).
+>
+> If I had nothing else to do on Monday, I would have applied it, but we
+> spent the week trying to get the module signing patches into shape :(
+>
+> If I take them now, they need to go through linux-next.  That won't
+> happen until Monday.  I want two days in linux-next, so that people who
+> test linux-next get a chance to find issues, so that's Wednesday before
+> I send to Linus, which is getting very late into the merge window.
+>
+> And keep adding two days for every trivial issue which is found :(
+>
+> It's in my modules-wip branch for 3.8.
 
-Sorry I should label it as RFC.
+Cool; better than not in at all. :) Thanks!
 
-Thanks,
-Michal
-
+-Kees
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Kees Cook
+Chrome OS Security
