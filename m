@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2JEPyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:54:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56426 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab2JEPyv (ORCPT
+	id S1756404Ab2JEP5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:57:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:46431 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab2JEP5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 11:54:51 -0400
+	Fri, 5 Oct 2012 11:57:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,541,1344211200"; 
+   d="scan'208";a="210434517"
+Message-ID: <506F0370.6050905@citrix.com>
+Date: Fri, 5 Oct 2012 16:57:36 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20121005140519.GA28890@mail.hallyn.com>
-References: <1349209832-279922-1-git-send-email-avagin@openvz.org>
-	<20121005140519.GA28890@mail.hallyn.com>
-Date: Fri, 5 Oct 2012 08:54:49 -0700
-X-Google-Sender-Auth: sZrSby9VH04dlXJCVfaYuQiEYnI
-Message-ID: <CALQRfL5ViSfmqG=UdRWquUq26WCp1pZMpUXJ8EgspGW0n32Fkg@mail.gmail.com>
-Subject: Re: [PATCH] proc: don't show nonexistent capabilities
-From: "Andrew G. Morgan" <morgan@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, criu@openvz.org,
-        linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Vagin <avagin@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] xen-blkfront: handle backend CLOSED without CLOSING
+References: <1348243464-15903-1-git-send-email-david.vrabel@citrix.com> <1348243464-15903-3-git-send-email-david.vrabel@citrix.com> <5061EFB2.1080407@citrix.com> <5069D097.60606@citrix.com> <20121002200255.GA668@phenom.dumpdata.com> <506EC79D.5080206@citrix.com> <506EE6CD020000780009FF4E@nat28.tlf.novell.com>
+In-Reply-To: <506EE6CD020000780009FF4E@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I like the sentiment but have you considered the implications for a
-default system root user trying to set all=eip ? Existing code can do
-this because all bits are accessible by default. If you set the
-bounding set to something less than ~0, then any code that currently
-does this will start to fail in the common case.
+On 05/10/12 12:55, Jan Beulich wrote:
+>>>> On 05.10.12 at 13:42, David Vrabel <david.vrabel@citrix.com> wrote:
+>> On 02/10/12 21:02, Konrad Rzeszutek Wilk wrote:
+>>> On Mon, Oct 01, 2012 at 06:19:19PM +0100, David Vrabel wrote:
+>>>> On 25/09/12 18:53, David Vrabel wrote:
+>>>>> On 21/09/12 17:04, David Vrabel wrote:
+>>>>>> From: David Vrabel <david.vrabel@citrix.com>
+>>>>>>
+>>>>>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
+>>>>>> CLOSED.  If a backend does transition to CLOSED too soon then the
+>>>>>> frontend may not see the CLOSING state and will not properly shutdown.
+>>>>>>
+>>>>>> So, treat an unexpected backend CLOSED state the same as CLOSING.
+>>>>>
+>>>>> Didn't handle the frontend block device being mounted. Updated patch here.
+>>>>
+>>>> Konrad, can you ack this updated patch if you're happy with it.
+>>>
+>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>>
+>>> Or should I just carry it in my for-jens-3.7 bug-fixes queue and ask
+>>> Jen to pull it once rc0 is out?
+>>
+>> This seems easiest, if Jan is happy with the patch.
+> 
+> I see the point of your explanation yesterday, but am still not
+> convinced that the early cleanup in spite of active users of the
+> disk can't cause any problems (like dangling pointers or NULL
+> dereferences).
 
-Cheers
+I tested it some more and it is broken.  Please apply the first version
+instead.
 
-Andrew
+blkfront needs to cancel and complete with an error requests that are
+are still on the ring after the backend has disconnected and it needs to
+complete with an error all requests submitted while disconnected.
+Otherwise, if there is outstanding requests or new requests then
+del_gendisk() blocks waiting for the I/O to complete.
 
-On Oct 5, 2012 7:13 AM, "Serge E. Hallyn" <serge@hallyn.com> wrote:
->
-> Quoting Andrew Vagin (avagin@openvz.org):
-> > Without this patch it is really hard to interpret a bounding set,
-> > if CAP_LAST_CAP is unknown for a current kernel.
->
-> To be clear, note that you *can* figure it out using
-> prctl(PR_CAPBSET_DROP).  But this is a nice improvement.
->
-> > Non-existant capabilities can not be deleted from a bounding set
-> > with help of prctl.
-> >
-> > E.g.: Here are two examples without/with this patch.
-> > CapBnd:       ffffffe0fdecffff
-> > CapBnd:       00000000fdecffff
-> >
-> > I suggest to hide non-existent capabilities. Here is two reasons.
-> > * It's logically and easier for using.
-> > * It helps to checkpoint-restore capabilities of tasks, because tasks
-> > can be restored on another kernel, where CAP_LAST_CAP is bigger.
-> >
-> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
->
-> Thanks, Andrew.  I saw your other email about having run LTP, I didn't
-> see any problems from userspace either.  Great idea!
->
-> Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
->
-> Still it's been like that for so long that, just to be safe, I'm cc:ing
-> Andrew Morgan - can you see any problems with this?
->
-> > Cc: Pavel Emelyanov <xemul@parallels.com>
-> > Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> > ---
-> >  include/linux/capability.h |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/include/linux/capability.h b/include/linux/capability.h
-> > index d10b7ed..1642778 100644
-> > --- a/include/linux/capability.h
-> > +++ b/include/linux/capability.h
-> > @@ -420,7 +420,8 @@ extern const kernel_cap_t __cap_init_eff_set;
-> >  #else /* HAND-CODED capability initializers */
-> >
-> >  # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
-> > -# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-> > +# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, \
-> > +                                     CAP_TO_MASK(CAP_LAST_CAP + 1) - 1 } })
-> >  # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
-> >                                   | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
-> >                                   CAP_FS_MASK_B1 } })
-> > --
-> > 1.7.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+David
