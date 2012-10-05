@@ -1,117 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2JEQgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 12:36:40 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:64954 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2JEQgg (ORCPT
+	id S932484Ab2JEQnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 12:43:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:57556 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab2JEQnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 12:36:36 -0400
-Date: Fri, 5 Oct 2012 12:36:34 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 13/16] ARM: be really quiet when building with 'make
- -s'
-In-Reply-To: <1349448930-23976-14-git-send-email-arnd@arndb.de>
-Message-ID: <alpine.LFD.2.02.1210051236090.16518@xanadu.home>
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-14-git-send-email-arnd@arndb.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 5 Oct 2012 12:43:21 -0400
+Message-ID: <506F0E25.6080309@gmail.com>
+Date: Fri, 05 Oct 2012 11:43:17 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] serial_core: Add helper for matching against linux,stdout-path
+References: <1349453581-1685-1-git-send-email-s.hauer@pengutronix.de> <1349453581-1685-2-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1349453581-1685-2-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Oct 2012, Arnd Bergmann wrote:
+On 10/05/2012 11:12 AM, Sascha Hauer wrote:
+> devicetrees may have a linux,stdout-path property in the chosen
+> node describing the console device. This adds a helper function
+> to match a device against this property so a driver can call
+> add_preferred_console for a matching device.
 
-> Sometimes we want the kernel build process to only print messages
-> on errors, e.g. in automated build testing. This uses the "kecho"
-> macro that the build system provides to hide a few informational
-> messages. Nothing changes for a regular "make" or "make V=1".
+Consoles can be on devices other than uarts, so this should really be
+of_device_is_stdout_path() and in the DT core.
+
 > 
-> Without this patch, building any ARM kernel results in:
-> 
->   Kernel: arch/arm/boot/Image is ready
->   Kernel: arch/arm/boot/zImage is ready
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 > ---
->  arch/arm/boot/Makefile  |   10 +++++-----
->  arch/arm/tools/Makefile |    2 +-
->  2 files changed, 6 insertions(+), 6 deletions(-)
+>  drivers/tty/serial/serial_core.c |   30 ++++++++++++++++++++++++++++++
+>  include/linux/serial_core.h      |    3 +++
+>  2 files changed, 33 insertions(+)
 > 
-> diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
-> index c877087..89680f2 100644
-> --- a/arch/arm/boot/Makefile
-> +++ b/arch/arm/boot/Makefile
-> @@ -31,7 +31,7 @@ ifeq ($(CONFIG_XIP_KERNEL),y)
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index a21dc8e..f4a9f26 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/serial_core.h>
+>  #include <linux/delay.h>
+>  #include <linux/mutex.h>
+> +#include <linux/of.h>
 >  
->  $(obj)/xipImage: vmlinux FORCE
->  	$(call if_changed,objcopy)
-> -	@echo '  Kernel: $@ is ready (physical address: $(CONFIG_XIP_PHYS_ADDR))'
-> +	$(kecho) '  Kernel: $@ is ready (physical address: $(CONFIG_XIP_PHYS_ADDR))'
+>  #include <asm/irq.h>
+>  #include <asm/uaccess.h>
+> @@ -2540,6 +2541,35 @@ void uart_insert_char(struct uart_port *port, unsigned int status,
+>  }
+>  EXPORT_SYMBOL_GPL(uart_insert_char);
 >  
->  $(obj)/Image $(obj)/zImage: FORCE
->  	@echo 'Kernel configured for XIP (CONFIG_XIP_KERNEL=y)'
-> @@ -46,14 +46,14 @@ $(obj)/xipImage: FORCE
+> +#ifdef CONFIG_OF
+> +/**
+> + * of_uart_is_stdoutpath - check if this device matches the linux,stdout-path
+> + *                         property
+> + *
+> + * Check if this device matches the linux,stdout-path property
+> + * in the chosen node. return true if yes, false otherwise.
+> + */
+> +int of_uart_is_stdoutpath(struct device *dev)
+> +{
+> +	struct device_node *dn;
+> +	const char *name;
+> +
+> +	name = of_get_property(of_chosen, "linux,stdout-path", NULL);
+> +	if (name == NULL)
+> +		return 0;
+> +
+> +	dn = of_find_node_by_path(name);
+> +	if (!dn)
+> +		return 0;
+> +
+> +	if (dn == dev->of_node)
+
+I know I said use struct device, but since only device_node ptr is
+needed you should just use that. Then the function is usable if you only
+have the device_node ptr.
+
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(of_uart_is_stdoutpath);
+> +#endif
+> +
+>  EXPORT_SYMBOL(uart_write_wakeup);
+>  EXPORT_SYMBOL(uart_register_driver);
+>  EXPORT_SYMBOL(uart_unregister_driver);
+> diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+> index 0253c20..35a61f6 100644
+> --- a/include/linux/serial_core.h
+> +++ b/include/linux/serial_core.h
+> @@ -560,6 +560,9 @@ static inline int uart_handle_break(struct uart_port *port)
+>  					 (cflag) & CRTSCTS || \
+>  					 !((cflag) & CLOCAL))
 >  
->  $(obj)/Image: vmlinux FORCE
->  	$(call if_changed,objcopy)
-> -	@echo '  Kernel: $@ is ready'
-> +	$(kecho) '  Kernel: $@ is ready'
+> +/* check if a device matches the linux,stdout-path property */
+> +int of_uart_is_stdoutpath(struct device *dev);
+
+Need an empty version for !CONFIG_OF?
+
+Rob
+
+> +
+>  #endif
 >  
->  $(obj)/compressed/vmlinux: $(obj)/Image FORCE
->  	$(Q)$(MAKE) $(build)=$(obj)/compressed $@
->  
->  $(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
->  	$(call if_changed,objcopy)
-> -	@echo '  Kernel: $@ is ready'
-> +	$(kecho) '  Kernel: $@ is ready'
->  
->  endif
->  
-> @@ -88,7 +88,7 @@ fi
->  $(obj)/uImage:	$(obj)/zImage FORCE
->  	@$(check_for_multiple_loadaddr)
->  	$(call if_changed,uimage)
-> -	@echo '  Image $@ is ready'
-> +	$(kecho) '  Image $@ is ready'
->  
->  $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
->  	$(Q)$(MAKE) $(build)=$(obj)/bootp $@
-> @@ -96,7 +96,7 @@ $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
->  
->  $(obj)/bootpImage: $(obj)/bootp/bootp FORCE
->  	$(call if_changed,objcopy)
-> -	@echo '  Kernel: $@ is ready'
-> +	$(kecho) '  Kernel: $@ is ready'
->  
->  PHONY += initrd FORCE
->  initrd:
-> diff --git a/arch/arm/tools/Makefile b/arch/arm/tools/Makefile
-> index 635cb18..cd60a81 100644
-> --- a/arch/arm/tools/Makefile
-> +++ b/arch/arm/tools/Makefile
-> @@ -5,6 +5,6 @@
->  #
->  
->  include/generated/mach-types.h: $(src)/gen-mach-types $(src)/mach-types
-> -	@echo '  Generating $@'
-> +	$(kecho) '  Generating $@'
->  	@mkdir -p $(dir $@)
->  	$(Q)$(AWK) -f $^ > $@ || { rm -f $@; /bin/false; }
-> -- 
-> 1.7.10
+>  #endif /* LINUX_SERIAL_CORE_H */
 > 
