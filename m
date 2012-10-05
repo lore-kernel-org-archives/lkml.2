@@ -1,448 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2JEJG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 05:06:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33056 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab2JEJGY (ORCPT
+	id S1754899Ab2JEJHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 05:07:01 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40724 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754313Ab2JEJG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 05:06:24 -0400
-Date: Fri, 5 Oct 2012 02:05:49 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-b24c28f794e1821c1bba3ef7e9e948ab77ee00ac@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
-In-Reply-To: <1349354994-17853-8-git-send-email-namhyung@kernel.org>
-References: <1349354994-17853-8-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf hists: Introduce struct he_stat
-Git-Commit-ID: b24c28f794e1821c1bba3ef7e9e948ab77ee00ac
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 5 Oct 2012 05:06:57 -0400
+Message-ID: <506EA240.3090104@linux.vnet.ibm.com>
+Date: Fri, 05 Oct 2012 14:32:56 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 02:05:56 -0700 (PDT)
+To: Avi Kivity <avi@redhat.com>
+CC: Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921115942.27611.67488.sendpatchset@codeblue> <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com> <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com> <506D83EE.2020303@redhat.com>
+In-Reply-To: <506D83EE.2020303@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100509-2000-0000-0000-0000095C118E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b24c28f794e1821c1bba3ef7e9e948ab77ee00ac
-Gitweb:     http://git.kernel.org/tip/b24c28f794e1821c1bba3ef7e9e948ab77ee00ac
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 4 Oct 2012 21:49:41 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 4 Oct 2012 13:34:22 -0300
+On 10/04/2012 06:11 PM, Avi Kivity wrote:
+> On 10/04/2012 12:49 PM, Raghavendra K T wrote:
+>> On 10/03/2012 10:35 PM, Avi Kivity wrote:
+>>> On 10/03/2012 02:22 PM, Raghavendra K T wrote:
+>>>>> So I think it's worth trying again with ple_window of 20000-40000.
+>>>>>
+>>>>
+>>>> Hi Avi,
+>>>>
+>>>> I ran different benchmarks increasing ple_window, and results does not
+>>>> seem to be encouraging for increasing ple_window.
+>>>
+>>> Thanks for testing! Comments below.
+>>>
+>>>> Results:
+>>>> 16 core PLE machine with 16 vcpu guest.
+>>>>
+>>>> base kernel = 3.6-rc5 + ple handler optimization patch
+>>>> base_pleopt_8k = base kernel + ple window = 8k
+>>>> base_pleopt_16k = base kernel + ple window = 16k
+>>>> base_pleopt_32k = base kernel + ple window = 32k
+>>>>
+>>>>
+>>>> Percentage improvements of benchmarks w.r.t base_pleopt with
+>>>> ple_window = 4096
+>>>>
+>>>>          base_pleopt_8k    base_pleopt_16k    base_pleopt_32k
+>>>> -----------------------------------------------------------------
+>>>>
+>>>> kernbench_1x    -5.54915    -15.94529    -44.31562
+>>>> kernbench_2x    -7.89399    -17.75039    -37.73498
+>>>
+>>> So, 44% degradation even with no overcommit?  That's surprising.
+>>
+>> Yes. Kernbench was run with #threads = #vcpu * 2 as usual. Is it
+>> spending 8 times the original ple_window cycles for 16 vcpus
+>> significant?
+>
+> A PLE exit when not overcommitted cannot do any good, it is better to
+> spin in the guest rather that look for candidates on the host.  In fact
+> when we benchmark we often disable PLE completely.
+>
+>>
+>>>
+>>>> I also got perf top output to analyse the difference. Difference comes
+>>>> because of flushtlb (and also spinlock).
+>>>
+>>> That's in the guest, yes?
+>>
+>> Yes. Perf is in guest.
+>>
+>>>
+>>>>
+>>>> Ebizzy run for 4k ple_window
+>>>> -  87.20%  [kernel]  [k] arch_local_irq_restore
+>>>>      - arch_local_irq_restore
+>>>>         - 100.00% _raw_spin_unlock_irqrestore
+>>>>            + 52.89% release_pages
+>>>>            + 47.10% pagevec_lru_move_fn
+>>>> -   5.71%  [kernel]  [k] arch_local_irq_restore
+>>>>      - arch_local_irq_restore
+>>>>         + 86.03% default_send_IPI_mask_allbutself_phys
+>>>>         + 13.96% default_send_IPI_mask_sequence_phys
+>>>> -   3.10%  [kernel]  [k] smp_call_function_many
+>>>>        smp_call_function_many
+>>>>
+>>>>
+>>>> Ebizzy run for 32k ple_window
+>>>>
+>>>> -  91.40%  [kernel]  [k] arch_local_irq_restore
+>>>>      - arch_local_irq_restore
+>>>>         - 100.00% _raw_spin_unlock_irqrestore
+>>>>            + 53.13% release_pages
+>>>>            + 46.86% pagevec_lru_move_fn
+>>>> -   4.38%  [kernel]  [k] smp_call_function_many
+>>>>        smp_call_function_many
+>>>> -   2.51%  [kernel]  [k] arch_local_irq_restore
+>>>>      - arch_local_irq_restore
+>>>>         + 90.76% default_send_IPI_mask_allbutself_phys
+>>>>         + 9.24% default_send_IPI_mask_sequence_phys
+>>>>
+>>>
+>>> Both the 4k and the 32k results are crazy.  Why is
+>>> arch_local_irq_restore() so prominent?  Do you have a very high
+>>> interrupt rate in the guest?
+>>
+>> How to measure if I have high interrupt rate in guest?
+>>  From /proc/interrupt numbers I am not able to judge :(
+>
+> 'vmstat 1'
+>
 
-perf hists: Introduce struct he_stat
+Thanks you. 'll save this. Apart from in,cs I think r: The number of 
+processes waiting for run time, would be useful for me in vmstat.
 
-The struct he_stat is for separating out statistics data of a hist
-entry.  It is required for later changes.
+>>
+>> I went back and got the results on a 32 core machine with 32 vcpu guest.
+>> Strangely, I got result supporting the claim that increasing ple_window
+>> helps for non-overcommitted scenario.
+>>
+>> 32 core 32 vcpu guest 1x scenarios.
+>>
+>> ple_gap = 0
+>> kernbench: Elapsed Time 38.61
+>> ebizzy: 7463 records/s
+>>
+>> ple_window = 4k
+>> kernbench: Elapsed Time 43.5067
+>> ebizzy:    2528 records/s
+>>
+>> ple_window = 32k
+>> kernebench : Elapsed Time 39.4133
+>> ebizzy: 7196 records/s
+>
+> So maybe something was wrong with the first measurement.
 
-It's just a mechanical change and should have no functional differences.
+May be I was not clear. The first time I had run on x240 (sandybridge)
+16 core cpu,
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1349354994-17853-8-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/browsers/hists.c |    8 +++---
- tools/perf/ui/gtk/browser.c    |    2 +-
- tools/perf/ui/hist.c           |   30 +++++++++++-----------
- tools/perf/ui/stdio/hist.c     |    2 +-
- tools/perf/util/hist.c         |   52 +++++++++++++++++++++------------------
- tools/perf/util/sort.h         |   16 +++++++----
- 6 files changed, 59 insertions(+), 51 deletions(-)
+Then ran on 32 core x3850 to confirm the perf top results.
+But yes both had
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index d359795..0568536 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -570,7 +570,7 @@ static int hist_browser__hpp_color_ ## _name(struct perf_hpp *hpp,	\
- 					     struct hist_entry *he)	\
- {									\
- 	struct hists *hists = he->hists;				\
--	double percent = 100.0 * he->_field / hists->stats.total_period;\
-+	double percent = 100.0 * he->stat._field / hists->stats.total_period; \
- 	*(double *)hpp->ptr = percent;					\
- 	return scnprintf(hpp->buf, hpp->size, "%6.2f%%", percent);	\
- }
-@@ -982,7 +982,7 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 		folded_sign = hist_entry__folded(he);
- 
- 	hist_entry__sort_snprintf(he, s, sizeof(s), browser->hists);
--	percent = (he->period * 100.0) / browser->hists->stats.total_period;
-+	percent = (he->stat.period * 100.0) / browser->hists->stats.total_period;
- 
- 	if (symbol_conf.use_callchain)
- 		printed += fprintf(fp, "%c ", folded_sign);
-@@ -990,10 +990,10 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 	printed += fprintf(fp, " %5.2f%%", percent);
- 
- 	if (symbol_conf.show_nr_samples)
--		printed += fprintf(fp, " %11u", he->nr_events);
-+		printed += fprintf(fp, " %11u", he->stat.nr_events);
- 
- 	if (symbol_conf.show_total_period)
--		printed += fprintf(fp, " %12" PRIu64, he->period);
-+		printed += fprintf(fp, " %12" PRIu64, he->stat.period);
- 
- 	printed += fprintf(fp, "%s\n", rtrim(s));
- 
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 3cbb1d6..4125c62 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -50,7 +50,7 @@ static int perf_gtk__hpp_color_ ## _name(struct perf_hpp *hpp,			\
- 					 struct hist_entry *he)			\
- {										\
- 	struct hists *hists = he->hists;					\
--	double percent = 100.0 * he->_field / hists->stats.total_period;	\
-+	double percent = 100.0 * he->stat._field / hists->stats.total_period;	\
- 	const char *markup;							\
- 	int ret = 0;								\
- 										\
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 7f04339..f5a1e4f 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -19,7 +19,7 @@ static int hpp__width_overhead(struct perf_hpp *hpp __maybe_unused)
- static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period / hists->stats.total_period;
- 
- 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);
- }
-@@ -27,7 +27,7 @@ static int hpp__color_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- static int hpp__entry_overhead(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-@@ -48,7 +48,7 @@ static int hpp__width_overhead_sys(struct perf_hpp *hpp __maybe_unused)
- static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_sys / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
- 
- 	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
- }
-@@ -56,7 +56,7 @@ static int hpp__color_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
- static int hpp__entry_overhead_sys(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_sys / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_sys / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-@@ -77,7 +77,7 @@ static int hpp__width_overhead_us(struct perf_hpp *hpp __maybe_unused)
- static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_us / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
- 
- 	return percent_color_snprintf(hpp->buf, hpp->size, "%6.2f%%", percent);
- }
-@@ -85,7 +85,7 @@ static int hpp__color_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
- static int hpp__entry_overhead_us(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_us / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_us / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : "%6.2f%%";
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-@@ -105,7 +105,7 @@ static int hpp__color_overhead_guest_sys(struct perf_hpp *hpp,
- 					 struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_guest_sys / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
- 
- 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
- }
-@@ -114,7 +114,7 @@ static int hpp__entry_overhead_guest_sys(struct perf_hpp *hpp,
- 					 struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_guest_sys / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_guest_sys / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-@@ -134,7 +134,7 @@ static int hpp__color_overhead_guest_us(struct perf_hpp *hpp,
- 					struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_guest_us / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
- 
- 	return percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%% ", percent);
- }
-@@ -143,7 +143,7 @@ static int hpp__entry_overhead_guest_us(struct perf_hpp *hpp,
- 					struct hist_entry *he)
- {
- 	struct hists *hists = he->hists;
--	double percent = 100.0 * he->period_guest_us / hists->stats.total_period;
-+	double percent = 100.0 * he->stat.period_guest_us / hists->stats.total_period;
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%% ";
- 
- 	return scnprintf(hpp->buf, hpp->size, fmt, percent);
-@@ -167,7 +167,7 @@ static double baseline_percent(struct hist_entry *he)
- 
- 	if (pair) {
- 		u64 total_period = pair_hists->stats.total_period;
--		u64 base_period  = pair->period;
-+		u64 base_period  = pair->stat.period;
- 
- 		percent = 100.0 * base_period / total_period;
- 	}
-@@ -206,7 +206,7 @@ static int hpp__entry_samples(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%11" PRIu64;
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, he->nr_events);
-+	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.nr_events);
- }
- 
- static int hpp__header_period(struct perf_hpp *hpp)
-@@ -225,7 +225,7 @@ static int hpp__entry_period(struct perf_hpp *hpp, struct hist_entry *he)
- {
- 	const char *fmt = symbol_conf.field_sep ? "%" PRIu64 : "%12" PRIu64;
- 
--	return scnprintf(hpp->buf, hpp->size, fmt, he->period);
-+	return scnprintf(hpp->buf, hpp->size, fmt, he->stat.period);
- }
- 
- static int hpp__header_delta(struct perf_hpp *hpp)
-@@ -253,11 +253,11 @@ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
- 
- 	old_total = pair_hists ? pair_hists->stats.total_period : 0;
- 	if (old_total > 0 && pair)
--		old_percent = 100.0 * pair->period / old_total;
-+		old_percent = 100.0 * pair->stat.period / old_total;
- 
- 	new_total = hists->stats.total_period;
- 	if (new_total > 0)
--		new_percent = 100.0 * he->period / new_total;
-+		new_percent = 100.0 * he->stat.period / new_total;
- 
- 	diff = new_percent - old_percent;
- 	if (fabs(diff) >= 0.01)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 850c6d2..fbd4e32 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -271,7 +271,7 @@ static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
- {
- 	switch (callchain_param.mode) {
- 	case CHAIN_GRAPH_REL:
--		return callchain__fprintf_graph(fp, &he->sorted_chain, he->period,
-+		return callchain__fprintf_graph(fp, &he->sorted_chain, he->stat.period,
- 						left_margin);
- 		break;
- 	case CHAIN_GRAPH_ABS:
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 040f34c..3197f3f 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -135,16 +135,16 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
- {
- 	switch (cpumode) {
- 	case PERF_RECORD_MISC_KERNEL:
--		he->period_sys += period;
-+		he->stat.period_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_USER:
--		he->period_us += period;
-+		he->stat.period_us += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_KERNEL:
--		he->period_guest_sys += period;
-+		he->stat.period_guest_sys += period;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_USER:
--		he->period_guest_us += period;
-+		he->stat.period_guest_us += period;
- 		break;
- 	default:
- 		break;
-@@ -153,13 +153,13 @@ static void hist_entry__add_cpumode_period(struct hist_entry *he,
- 
- static void hist_entry__decay(struct hist_entry *he)
- {
--	he->period = (he->period * 7) / 8;
--	he->nr_events = (he->nr_events * 7) / 8;
-+	he->stat.period = (he->stat.period * 7) / 8;
-+	he->stat.nr_events = (he->stat.nr_events * 7) / 8;
- }
- 
- static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- {
--	u64 prev_period = he->period;
-+	u64 prev_period = he->stat.period;
- 
- 	if (prev_period == 0)
- 		return true;
-@@ -167,9 +167,9 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 	hist_entry__decay(he);
- 
- 	if (!he->filtered)
--		hists->stats.total_period -= prev_period - he->period;
-+		hists->stats.total_period -= prev_period - he->stat.period;
- 
--	return he->period == 0;
-+	return he->stat.period == 0;
- }
- 
- static void __hists__decay_entries(struct hists *hists, bool zap_user,
-@@ -223,7 +223,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 
- 	if (he != NULL) {
- 		*he = *template;
--		he->nr_events = 1;
-+		he->stat.nr_events = 1;
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 		if (symbol_conf.use_callchain)
-@@ -238,7 +238,7 @@ static void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
- 	if (!h->filtered) {
- 		hists__calc_col_len(hists, h);
- 		++hists->nr_entries;
--		hists->stats.total_period += h->period;
-+		hists->stats.total_period += h->stat.period;
- 	}
- }
- 
-@@ -270,8 +270,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		cmp = hist_entry__cmp(entry, he);
- 
- 		if (!cmp) {
--			he->period += period;
--			++he->nr_events;
-+			he->stat.period += period;
-+			++he->stat.nr_events;
- 
- 			/* If the map of an existing hist_entry has
- 			 * become out-of-date due to an exec() or
-@@ -321,7 +321,9 @@ struct hist_entry *__hists__add_branch_entry(struct hists *self,
- 		.cpu	= al->cpu,
- 		.ip	= bi->to.addr,
- 		.level	= al->level,
--		.period	= period,
-+		.stat = {
-+			.period	= period,
-+		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.branch_info = bi,
-@@ -344,7 +346,9 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 		.cpu	= al->cpu,
- 		.ip	= al->addr,
- 		.level	= al->level,
--		.period	= period,
-+		.stat = {
-+			.period	= period,
-+		},
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 		.hists	= self,
-@@ -412,12 +416,12 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 		cmp = hist_entry__collapse(iter, he);
- 
- 		if (!cmp) {
--			iter->period		+= he->period;
--			iter->period_sys	+= he->period_sys;
--			iter->period_us		+= he->period_us;
--			iter->period_guest_sys	+= he->period_guest_sys;
--			iter->period_guest_us	+= he->period_guest_us;
--			iter->nr_events		+= he->nr_events;
-+			iter->stat.period		+= he->stat.period;
-+			iter->stat.period_sys		+= he->stat.period_sys;
-+			iter->stat.period_us		+= he->stat.period_us;
-+			iter->stat.period_guest_sys	+= he->stat.period_guest_sys;
-+			iter->stat.period_guest_us	+= he->stat.period_guest_us;
-+			iter->stat.nr_events		+= he->stat.nr_events;
- 
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-@@ -520,7 +524,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
- 
--		if (he->period > iter->period)
-+		if (he->stat.period > iter->stat.period)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
-@@ -581,8 +585,8 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
- 	if (h->ms.unfolded)
- 		hists->nr_entries += h->nr_rows;
- 	h->row_offset = 0;
--	hists->stats.total_period += h->period;
--	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->nr_events;
-+	hists->stats.total_period += h->stat.period;
-+	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
- 
- 	hists__calc_col_len(hists, h);
- }
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index f070b52..5786f32 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -43,6 +43,15 @@ extern struct sort_entry sort_sym_from;
- extern struct sort_entry sort_sym_to;
- extern enum sort_type sort__first_dimension;
- 
-+struct he_stat {
-+	u64			period;
-+	u64			period_sys;
-+	u64			period_us;
-+	u64			period_guest_sys;
-+	u64			period_guest_us;
-+	u32			nr_events;
-+};
-+
- /**
-  * struct hist_entry - histogram entry
-  *
-@@ -52,16 +61,11 @@ extern enum sort_type sort__first_dimension;
- struct hist_entry {
- 	struct rb_node		rb_node_in;
- 	struct rb_node		rb_node;
--	u64			period;
--	u64			period_sys;
--	u64			period_us;
--	u64			period_guest_sys;
--	u64			period_guest_us;
-+	struct he_stat		stat;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	u64			ip;
- 	s32			cpu;
--	u32			nr_events;
- 
- 	/* XXX These two should move to some tree widget lib */
- 	u16			row_offset;
+[    0.018997] Performance Events: Broken PMU hardware detected, using 
+software events only.
+
+problem as rightly pointed by you and PeterZ.
+
+after -cpu host, I see that is fixed on x240,
+
+[    0.017997] Performance Events: 16-deep LBR, SandyBridge events, 
+Intel PMU driver.
+[    0.018868] NMI watchdog: enabled on all CPUs, permanently consumes 
+one hw-PMU counter.
+
+So I 'll try it on x240 again.
+
+( Some how mx3850 -cpu host resulted in
+[    0.026995] Performance Events: unsupported p6 CPU model 26 no PMU 
+driver, software events only.
+I think qemu needs some fix as pointed in
+http://www.mail-archive.com/kvm@vger.kernel.org/msg55836.html
+
+
+>
+>>
+>>
+>> perf top for ebizzy for above:
+>> ple_gap = 0
+>> -  84.74%  [kernel]  [k] arch_local_irq_restore
+>>     - arch_local_irq_restore
+>>        - 100.00% _raw_spin_unlock_irqrestore
+>>           + 50.96% release_pages
+>>           + 49.02% pagevec_lru_move_fn
+>> -   6.57%  [kernel]  [k] arch_local_irq_restore
+>>     - arch_local_irq_restore
+>>        + 92.54% default_send_IPI_mask_allbutself_phys
+>>        + 7.46% default_send_IPI_mask_sequence_phys
+>> -   1.54%  [kernel]  [k] smp_call_function_many
+>>       smp_call_function_many
+>
+> Again the numbers are ridiculously high for arch_local_irq_restore.
+> Maybe there's a bad perf/kvm interaction when we're injecting an
+> interrupt, I can't believe we're spending 84% of the time running the
+> popf instruction.
+>
+>>
+>> ple_window = 32k
+>> -  84.47%  [kernel]  [k] arch_local_irq_restore
+>>     + arch_local_irq_restore
+>> -   6.46%  [kernel]  [k] arch_local_irq_restore
+>>     - arch_local_irq_restore
+>>        + 93.51% default_send_IPI_mask_allbutself_phys
+>>        + 6.49% default_send_IPI_mask_sequence_phys
+>> -   1.80%  [kernel]  [k] smp_call_function_many
+>>     - smp_call_function_many
+>>        + 99.98% native_flush_tlb_others
+>>
+>>
+>> ple_window = 4k
+>> -  91.35%  [kernel]  [k] arch_local_irq_restore
+>>     - arch_local_irq_restore
+>>        - 100.00% _raw_spin_unlock_irqrestore
+>>           + 53.19% release_pages
+>>           + 46.81% pagevec_lru_move_fn
+>> -   3.90%  [kernel]  [k] smp_call_function_many
+>>       smp_call_function_many
+>> -   2.94%  [kernel]  [k] arch_local_irq_restore
+>>     - arch_local_irq_restore
+>>        + 93.12% default_send_IPI_mask_allbutself_phys
+>>        + 6.88% default_send_IPI_mask_sequence_phys
+>>
+>> Let me know if I can try something here..
+>> /me confused :(
+>>
+>
+> I'm even more confused.  Please try 'perf kvm' from the host, it does
+> fewer dirty tricks with the PMU and so may be more accurate.
+>
+
+I will try with host perf kvm this time..
+
