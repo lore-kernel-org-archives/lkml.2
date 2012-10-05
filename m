@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab2JEIW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 04:22:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47690 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2JEIW0 convert rfc822-to-8bit (ORCPT
+	id S1753865Ab2JEIWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 04:22:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56141 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753506Ab2JEIWr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 04:22:26 -0400
+	Fri, 5 Oct 2012 04:22:47 -0400
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Bryan Wu <bryan.wu@canonical.com>
 CC: Richard Purdie <rpurdie@rpsys.net>,
         "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 19/28] leds-lp5521/5523: use lp55xx common deinit device
- function
-Thread-Topic: [PATCH 19/28] leds-lp5521/5523: use lp55xx common deinit
- device function
-Thread-Index: Ac2i0n82tizrU0iCSXC5jJ/e8jx0vA==
-Date: Fri, 5 Oct 2012 08:22:02 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F64176806@DQHE02.ent.ti.com>
+Subject: [PATCH 20/28] leds-lp55xx: support device specific attibutes
+Thread-Topic: [PATCH 20/28] leds-lp55xx: support device specific attibutes
+Thread-Index: Ac2i0pO2eznTGTh7QNmjImCVvZtAcQ==
+Date: Fri, 5 Oct 2012 08:22:37 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F64176815@DQHE02.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -31,65 +29,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Use lp55xx common function to release the device.
- Unnecessary old code lines are removed.
+ LP55xx family chips have a selftest device attribute.
+ To maintain this sysfs, chip specific attribute is configurable.
+ Eventually those are created on registering the sysfs with common dev attrs.
+ Furthermore, this patch makes adding device attributes simple in each driver.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp5521.c |    6 +-----
- drivers/leds/leds-lp5523.c |    6 +-----
- 2 files changed, 2 insertions(+), 10 deletions(-)
+ drivers/leds/leds-lp5521.c        |    2 +-
+ drivers/leds/leds-lp5523.c        |    2 +-
+ drivers/leds/leds-lp55xx-common.c |   15 ++++++++++++++-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 8aa4a90..67d492c 100644
+index 67d492c..84023e2 100644
 --- a/drivers/leds/leds-lp5521.c
 +++ b/drivers/leds/leds-lp5521.c
-@@ -528,7 +528,6 @@ err_init:
- 
- static int __devexit lp5521_remove(struct i2c_client *client)
- {
--	struct lp5521_chip *old_chip = i2c_get_clientdata(client);
- 	struct lp55xx_led *led = i2c_get_clientdata(client);
- 	struct lp55xx_chip *chip = led->chip;
- 
-@@ -536,11 +535,8 @@ static int __devexit lp5521_remove(struct i2c_client *client)
- 
- 	lp55xx_unregister_sysfs(chip);
- 	lp55xx_unregister_leds(led, chip);
-+	lp55xx_deinit_device(chip);
- 
--	if (old_chip->pdata->enable)
--		old_chip->pdata->enable(0);
--	if (old_chip->pdata->release_resources)
--		old_chip->pdata->release_resources();
- 	return 0;
+@@ -440,7 +440,6 @@ static ssize_t lp5521_selftest(struct device *dev,
+ 	return sprintf(buf, "%s\n", ret ? "FAIL" : "OK");
  }
  
+-/* device attributes */
+ static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
+ 
+ static struct attribute *lp5521_attributes[] = {
+@@ -468,6 +467,7 @@ static struct lp55xx_device_config lp5521_cfg = {
+ 	.set_led_current    = lp5521_set_led_current,
+ 	.run_engine         = lp5521_run_engine,
+ 	.firmware_cb        = lp5521_firmware_loaded,
++	.dev_attr_group     = &lp5521_group,
+ };
+ 
+ static int __devinit lp5521_probe(struct i2c_client *client,
 diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index b029a09..5c4f6df 100644
+index 5c4f6df..cf629fb 100644
 --- a/drivers/leds/leds-lp5523.c
 +++ b/drivers/leds/leds-lp5523.c
-@@ -583,7 +583,6 @@ err_init:
- 
- static int lp5523_remove(struct i2c_client *client)
- {
--	struct lp5523_chip *old_chip = i2c_get_clientdata(client);
- 	struct lp55xx_led *led = i2c_get_clientdata(client);
- 	struct lp55xx_chip *chip = led->chip;
- 
-@@ -591,11 +590,8 @@ static int lp5523_remove(struct i2c_client *client)
- 
- 	lp55xx_unregister_sysfs(chip);
- 	lp55xx_unregister_leds(led, chip);
-+	lp55xx_deinit_device(chip);
- 
--	if (old_chip->pdata->enable)
--		old_chip->pdata->enable(0);
--	if (old_chip->pdata->release_resources)
--		old_chip->pdata->release_resources();
- 	return 0;
+@@ -491,7 +491,6 @@ static void lp5523_firmware_loaded(struct lp55xx_chip *chip)
+ 	lp5523_update_program_memory(chip, fw->data, fw->size);
  }
  
+-/* device attributes */
+ static DEVICE_ATTR(selftest, S_IRUGO, lp5523_selftest, NULL);
+ 
+ static struct attribute *lp5523_attributes[] = {
+@@ -523,6 +522,7 @@ static struct lp55xx_device_config lp5523_cfg = {
+ 	.set_led_current    = lp5523_set_led_current,
+ 	.run_engine         = lp5523_run_engine,
+ 	.firmware_cb        = lp5523_firmware_loaded,
++	.dev_attr_group     = &lp5523_group,
+ };
+ 
+ static int __devinit lp5523_probe(struct i2c_client *client,
+diff --git a/drivers/leds/leds-lp55xx-common.c b/drivers/leds/leds-lp55xx-common.c
+index af3fb49..98d66af 100644
+--- a/drivers/leds/leds-lp55xx-common.c
++++ b/drivers/leds/leds-lp55xx-common.c
+@@ -489,14 +489,27 @@ EXPORT_SYMBOL_GPL(lp55xx_unregister_leds);
+ int lp55xx_register_sysfs(struct lp55xx_chip *chip)
+ {
+ 	struct device *dev = &chip->cl->dev;
++	struct lp55xx_device_config *cfg = chip->cfg;
++	int ret;
++
++	/* add common attributes and device specific attribute(s) */
++
++	ret = sysfs_create_group(&dev->kobj, &lp55xx_dev_attr_group);
++	if (ret)
++		return ret;
+ 
+-	return sysfs_create_group(&dev->kobj, &lp55xx_dev_attr_group);
++	return cfg->dev_attr_group ?
++		sysfs_create_group(&dev->kobj, cfg->dev_attr_group) : 0;
+ }
+ EXPORT_SYMBOL_GPL(lp55xx_register_sysfs);
+ 
+ void lp55xx_unregister_sysfs(struct lp55xx_chip *chip)
+ {
+ 	struct device *dev = &chip->cl->dev;
++	struct lp55xx_device_config *cfg = chip->cfg;
++
++	if (cfg->dev_attr_group)
++		sysfs_remove_group(&dev->kobj, cfg->dev_attr_group);
+ 
+ 	sysfs_remove_group(&dev->kobj, &lp55xx_dev_attr_group);
+ }
 -- 
 1.7.9.5
 
