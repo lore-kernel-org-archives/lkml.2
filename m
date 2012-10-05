@@ -1,393 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab2JEL4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 07:56:11 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:41157 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab2JEL4I (ORCPT
+	id S932252Ab2JEL4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 07:56:21 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52175 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755644Ab2JEL4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 07:56:08 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-60-506ecad7757d
-From: =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>
-To: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com,
-        jooyoung.hwang@samsung.com
-Subject: [PATCH 01/16] f2fs: add document
-Date: Fri, 05 Oct 2012 20:56:06 +0900
-Message-id: <000801cda2f0$672214f0$35663ed0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2i8Gb/PIK1vcH/RPe2SqzJI7At2w==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t9jQd3rp/ICDNreC1pc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M1oV97AWz6iuWHzrF3MD4IaaLkZNDQsBEYt/2iewQtpjEhXvr
-	2boYuTiEBKYzSnw6fokJJCEkMJ9J4v5f1y5GDg42AQuJ9svuIDUiAvcYJS4tmwlWIyygKXF/
-	3RUwm0VAVWL9lVmsIPW8ArYSB44rgoR5BQQlfky+xwISZhZQl5gyJRckzCwgL7F5zVtmkLAE
-	UPjRX12QsIiAnsTJSzvZIUpEJPa9eMc4gZF/FpJBsxAGzUIyaBaSjgWMLKsYRVMLkguKk9Jz
-	jfSKE3OLS/PS9ZLzczcxggPvmfQOxlUNFocYBTgYlXh4BZ7lBgixJpYVV+YeYpTgYFYS4bWe
-	nRcgxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvEwSnVwLhGLWot
-	X5FVVlaA1ocbV/WUWR5qHr1zbZJoi+QLkQWC4eJyjCXflY/tO8x7xuz0lw9TOhelrJtqfG4a
-	u8j1yateVP2wfvA62sZ9k35qV95/K1nXtburkjq433kuL/3mZtdxfbO2w/cfT7Q9w1g2HzCX
-	1+ROm7tfpvvI+dVca4V6Ztm7yodNe6LEUpyRaKjFXFScCACkAKu3OAIAAA==
+	Fri, 5 Oct 2012 07:56:18 -0400
+Message-ID: <506ECAB2.2050005@linux.vnet.ibm.com>
+Date: Fri, 05 Oct 2012 17:25:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-scsi@vger.kernel.org,
+        James.Bottomley@hansenpartnership.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>
+Subject: Re: [qla2xxx] INFO: possible irq lock inversion dependency detected
+References: <506D80C2.5040405@linux.vnet.ibm.com> <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz> <506DAE41.6040007@linux.vnet.ibm.com> <1349376255.740.11.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1349376255.740.11.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100511-9264-0000-0000-0000027359AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a document describing the mount options, proc entries, usage, and
-design of Flash-Friendly File System, namely F2FS.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- Documentation/filesystems/00-INDEX |    2 +
- Documentation/filesystems/f2fs.txt |  314 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 316 insertions(+)
- create mode 100644 Documentation/filesystems/f2fs.txt
+Hi Nicholas,
 
-diff --git a/Documentation/filesystems/00-INDEX b/Documentation/filesystems/00-INDEX
-index 8c624a1..ce5fd46 100644
---- a/Documentation/filesystems/00-INDEX
-+++ b/Documentation/filesystems/00-INDEX
-@@ -48,6 +48,8 @@ ext4.txt
- 	- info, mount options and specifications for the Ext4 filesystem.
- files.txt
- 	- info on file management in the Linux kernel.
-+f2fs.txt
-+	- info and mount options for the F2FS filesystem.
- fuse.txt
- 	- info on the Filesystem in User SpacE including mount options.
- gfs2.txt
-diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-new file mode 100644
-index 0000000..cd3f846
---- /dev/null
-+++ b/Documentation/filesystems/f2fs.txt
-@@ -0,0 +1,314 @@
-+================================================================================
-+WHAT IS Flash-Friendly File System (F2FS)?
-+================================================================================
-+
-+NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
-+been widely being used for ranging from mobile to server systems. Since they are
-+known to have different characteristics from the conventional rotational disks,
-+a file system, an upper layer to the storage device, should adapt to the changes
-+from the sketch.
-+
-+F2FS is a file system exploiting NAND flash memory-based storage devices, which
-+is based on Log-structured File System (LFS). The design has been focused on
-+addressing the fundamental issues in LFS, which are snowball effect of wandering
-+tree and high cleaning overhead.
-+
-+Since a NAND flash memory-based storage device shows different characteristic
-+according to its internal geometry or flash memory management scheme aka FTL,
-+F2FS and its tools support various parameters not only for configuring on-disk
-+layout, but also for selecting allocation and cleaning algorithms.
-+
-+The file system formatting tool, "mkfs.f2fs", is available from the following
-+download page:		http://sourceforge.net/projects/f2fs-tools/
-+
-+================================================================================
-+MOUNT OPTIONS
-+================================================================================
-+
-+background_gc_off      Turn off the cleaning operation, aka garbage collection,
-+		       in background triggered when I/O subsystem is idle.
-+disable_roll_forward   Disable the roll-forward recovery routine during SPOR.
-+discard                Issue discard/TRIM commands when a segment is cleaned.
-+no_heap                Disable heap-style segment allocation in which finds free
-+                       segments for data from the beginning of main area, while
-+		       for node from the end of main area.
-+nouser_xattr           Disable Extened User Attributes. Note: xattr is enabled
-+                       by default if CONFIG_F2FS_FS_XATTR is selected.
-+noacl                  Disable POSIX Access Control List. Note: acl is enabled
-+                       by default if CONFIG_F2FS_FS_POSIX_ACL is selected.
-+
-+================================================================================
-+PROC ENTRIES
-+================================================================================
-+
-+/proc/fs/f2fs/ contains information about partitions mounted as f2fs. For each
-+partition, a corresponding directory, named as its device name, is provided with
-+the following proc entries.
-+
-+- f2fs_stat	major file system information managed by f2fs currently
-+- f2fs_sit_stat	average SIT information about whole segments
-+- f2fs_mem_stat	current memory footprint consumed by f2fs
-+
-+e.g., in /proc/fs/f2fs/sdb1/
-+
-+================================================================================
-+USAGE
-+================================================================================
-+
-+1. Download userland tools
-+
-+2. Insmod f2fs.ko module:
-+ # insmod f2fs.ko
-+
-+3. Check the directory trying to mount
-+ # mkdir /mnt/f2fs
-+
-+4. Format the block device, and then mount as f2fs
-+ # mkfs.f2fs -l label /dev/block_device
-+ # mount -t f2fs /dev/block_device /mnt/f2fs
-+
-+================================================================================
-+DESIGN
-+================================================================================
-+
-+On-disk Layout
-+--------------
-+
-+F2FS divides whole volume into a number of segments each of which size is 2MB by
-+default. A section is composed of consecutive segments, and a zone consists of a
-+set of sections.
-+
-+F2FS maintains logically six log areas. Except SB, all the log areas are managed
-+in a unit of multiple segments. SB is located at the beggining of the partition,
-+and there exist two superblocks to avoid file system crash. Other file system
-+metadata such as CP, NAT, SIT, and SSA are located in front part of the volume.
-+Main area contains file and directory data including their indices.
-+
-+Each area manages the following contents.
-+- CP		File system information, bitmaps for valid NAT/SIT sets, orphan
-+		inode lists, and summary entries of current active segments.
-+- NAT		Block address table for all the node blocks stored in Main area.
-+- SIT		Segment information such as valid block count and bitmap for the
-+		validity of all the blocks.
-+- SSA		Summary entries which contains the owner information of all the
-+		data and node blocks stored in Main area.
-+- Main		Node and data blocks.
-+
-+In order to avoid misalignment between file system and flash-based storage, F2FS
-+aligns the start block address of CP with the segment size. Also, it aligns the
-+start block address of Main area with the zone size by reserving some segments
-+in SSA area.
-+
-+                                            align with the zone size <-|
-+                 |-> align with the segment size
-+     _________________________________________________________________________
-+    |            |            |    Node     |   Segment   |   Segment  |      |
-+    | Superblock | Checkpoint |   Address   |    Info.    |   Summary  | Main |
-+    |    (SB)    |   (CP)     | Table (NAT) | Table (SIT) | Area (SSA) |      |
-+    |____________|_____2______|______N______|______N______|______N_____|__N___|
-+                                                                       .      .
-+                                                             .                .
-+                                                 .                            .
-+                                    ._________________________________________.
-+                                    |_Segment_|_..._|_Segment_|_..._|_Segment_|
-+                                    .           .
-+                                    ._________._________
-+                                    |_section_|__...__|_
-+                                    .            .
-+		                    .________.
-+	                            |__zone__|
-+
-+
-+File System Metadata Structure
-+------------------------------
-+
-+F2FS adopts the checkpointing scheme to maintain file system consistency. At the
-+mount time, F2FS first tries to find the last valid checkpoint data by scanning
-+CP area. In order to reduce the scanning time, F2FS uses only two copies of CP.
-+One of them always indicates the last valid data, which is called as shadow copy
-+mechanism. In addition to CP, NAT and SIT also adopts the shadow copy mechanism.
-+
-+For file system consistency, each CP points which NAT and SIT copies are valid,
-+as shown as below.
-+
-+  +--------+----------+---------+
-+  |   CP   |    NAT   |   SIT   |
-+  +--------+----------+---------+
-+  .         .          .          .
-+  .            .              .              .
-+  .               .                 .                 .
-+  +-------+-------+--------+--------+--------+--------+
-+  | CP #0 | CP #1 | NAT #0 | NAT #1 | SIT #0 | SIT #1 |
-+  +-------+-------+--------+--------+--------+--------+
-+     |             ^                          ^
-+     |             |                          |
-+     `----------------------------------------'
-+
-+Index Structure
-+---------------
-+
-+The key data structure to manage the data locations is a "node". As similar as
-+traditional file structures, F2FS has three types of node: inode, direct node,
-+indirect node. F2FS assigns 4KB to an inode block where contains 929 data block
-+indices, two direct node pointers, two indirect node pointers, and one double
-+indirect node pointer as described below. One direct node block contains 1018
-+data blocks, and one indirect node block contains also 1018 node blocks. Thus,
-+One inode block (i.e., a file) covers:
-+  4KB * (929 + 2 * 1018 + 2 * 1018 * 1018 + 1018 * 1018 * 1018) := 3.94TB.
-+
-+   Inode block (4KB)
-+     |- data (929)
-+     |- direct node (2)
-+     |          `- data (1018)
-+     |- indirect node (2)
-+     |            `- direct node (1018)
-+     |                       `- data (1018)
-+     `- triple indirect node (1)
-+                         `- indirect node (1018)
-+			              `- direct node (1018)
-+	                                         `- data (1018)
-+
-+Note that, all the node blocks are mapped by NAT, which means the location of
-+each node is translated by the NAT table. In the consideration of the wandering
-+tree problem, F2FS is able to cut off the propagation of node updates caused by
-+leaf data writes.
-+
-+Directory Structure
-+-------------------
-+
-+A directory entry occupies 11 bytes, which consists of the following attributes.
-+
-+- hash		hash value of the file name
-+- ino		inode number
-+- len		the length of file name
-+- type		file type such as directory, symlink, etc
-+
-+A dentry block consists of 214 dentry slots and file names. There-in bitmap is
-+used to represent whether each dentry is valid or not. A dentry block occupies
-+4KB with the following composition.
-+
-+  Dentry Block(4 K) = bitmap (27 bytes) + reserved (3 bytes) +
-+	              dentries(11 * 214 bytes) + file name (8 * 214 bytes)
-+
-+                         [Bucket]
-+             +--------------------------------+
-+             |dentry block 1 | dentry block 2 |
-+             +--------------------------------+
-+             .               .
-+       .                             .
-+  .       [Dentry Block Structure: 4KB]       .
-+  +--------+----------+----------+------------+
-+  | bitmap | reserved | dentries | file names |
-+  +--------+----------+----------+------------+
-+  [Dentry Block: 4KB] .   .
-+		 .               .
-+            .                          .
-+            +------+------+-----+------+
-+            | hash | ino  | len | type |
-+            +------+------+-----+------+
-+            [Dentry Structure: 11 bytes]
-+
-+F2FS implements multi-level hash tables for directory structure. Each level has
-+a hash table with dedicated number of hash buckets as shown below. Note that,
-+"A(2B)" means a bucket includes 2 data blocks.
-+
-+----------------------
-+A : bucket
-+B : block
-+N : MAX_DIR_HASH_DEPTH
-+----------------------
-+
-+level #0   | A(2B)
-+           |
-+level #1   | A(2B) - A(2B)
-+           |
-+level #2   | A(2B) - A(2B) - A(2B) - A(2B)
-+     .     |   .       .       .       .
-+level #N/2 | A(2B) - A(2B) - A(2B) - A(2B) - A(2B) - ... - A(2B)
-+     .     |   .       .       .       .
-+level #N   | A(4B) - A(4B) - A(4B) - A(4B) - A(4B) - ... - A(4B)
-+
-+The number of blocks and buckets are determined by,
-+
-+                            ,- 2, if n < MAX_DIR_HASH_DEPTH / 2,
-+  # of blocks in level #n = |
-+                            `- 4, Otherwise
-+
-+                             ,- 2^n, if n < MAX_DIR_HASH_DEPTH / 2,
-+  # of buckets in level #n = |
-+                             `- 2^((MAX_DIR_HASH_DEPTH / 2) - 1), Otherwise
-+
-+When F2FS finds a file name in a directory, at first a hash value of the file
-+name is calculated. Then, F2FS scans the hash table in level #0 to find the
-+dentry consisting of the file name and its inode number. If not found, F2FS
-+scans the next hash table in level #1. In this way, F2FS scans hash tables in
-+each levels incrementally from 1 to N. In each levels, F2FS needs to scan only
-+one bucket determined by the follow equation, which shows O(log(# of files))
-+complexity.
-+
-+  bucket number to scan in level #n = (hash value) % (# of buckets in level #n)
-+
-+In the case of file creation, F2FS finds an empty consecutive slots that covers
-+the file name. F2FS searches the empty slots in the hash tables of whole levels
-+from 1 to N in the same way as the lookup operation.
-+
-+The following figure shows an example of two cases holding children.
-+       --------------> Dir <--------------
-+       |                                 |
-+    child                             child
-+
-+    child - child                     [hole] - child
-+
-+    child - child - child             [hole] - [hole] - child
-+
-+   Case 1:                           Case 2:
-+   Number of children = 6,           Number of children = 3,
-+   File size = 7                     File size = 7
-+
-+Default Block Allocation
-+------------------------
-+
-+In runtime, F2FS manages six active logs inside "Main" area: Hot/Warm/Cold node
-+and Hot/Warm/Cold data.
-+
-+- Hot node	contains direct node blocks of directories.
-+- Warm node	contains direct node blocks except hot node blocks.
-+- Cold node	contains indirect node blocks
-+- Hot data	contains dentry blocks
-+- Warm data	contains data blocks except hot and cold data blocks
-+- Cold data	contains multimedia data or migrated data blocks
-+
-+LFS has two schemes for free space management: threaded log and copy-and-compac-
-+tion. The copy-and-compaction scheme, aka cleaning, is well-suited for devices
-+showing very good sequential write performance, since free segments are served
-+all the time for writing new data. However, it suffers from cleaning overhead
-+under high utilization. Contrarily, the threaded log scheme suffers from random
-+writes, but no cleaning process is needed. F2FS adopts a hybrid scheme where the
-+copy-and-compaction scheme is adopted by default, but the policy is dynamically
-+changed to the threaded log scheme according to the file system status.
-+
-+In order to align F2FS with underlying flash-based storages, F2FS allocates a
-+segment in a unit of section. F2FS expects that the section size would be the
-+same as the unit size of garbage collection in FTL. Furthermore, with respect
-+to the mapping granularity in FTL, F2FS allocates each sections of the active
-+logs from different zones as much as possible, since FTL can write the data in
-+the active logs into one allocation unit according to its mapping granularity.
-+
-+Cleaning process
-+----------------
-+
-+F2FS does cleaning both on demand and in the background. On-demand cleaning is
-+triggered when there are not enough free segments to serve VFS calls. Background
-+cleaner is operated by a kernel thread, and triggers the cleaning job when the
-+system is idle.
-+
-+F2FS supports two victim selection policies: greedy and cost-benefit algorithms.
-+In greedy algorithm, F2FS selects a victim segment having the smallest number of
-+valid blocks. In cost-benefit algorithm, F2FS selects a victim segment according
-+to the segment age and the number of valid blocks in order to address log block
-+thrashing problem in greedy algorithm. F2FS adopts greedy algorithm for on-demand
-+cleaner, while background cleaner adopts cost-benefit algorithm.
-+
-+In order to identify what the data in the victim segment are valid or not, F2FS
-+manages a bitmap. Each bit represents the validity of a block, and the bitmap is
-+composed of a bit stream covering whole blocks in main area.
--- 
-1.7.9.5
+On 10/05/2012 12:14 AM, Nicholas A. Bellinger wrote:
+> On Thu, 2012-10-04 at 21:11 +0530, Srivatsa S. Bhat wrote:
+>> Hi Jiri,
+>>
+>> Thanks for taking a look!
+> 
+> Hi Srivatsa & Jiri,
+> 
+>>  
+>>> This seems to be real. You should be seeing that since 3.5-rc1 already 
+>>> though ... ?
+>>>
+>>> Does the patch below fix that?
+>>>
+>>
+>> Yes, it does, thanks! But 3.6-rc kernels were booting fine as far as I remember.
+>> I'll check again and get back tomorrow.
+>>
+> 
+> Thanks for testing with v3.7-rc0 code !
+> 
+> Cc'ing the Qlogic folks here, as this irq lock inversion warning appears
+> to be regression from v3.7-rc1 qla2xxx (initiator) LLD changes that went
+> in recently via scsi.git.
+> 
 
+Actually Jiri is right - I am seeing this with 3.5-rc1 kernel also. So its not
+a regression from this merge window.. it was there all along!
 
+Regards,
+Srivatsa S. Bhat
 
-
----
-Jaegeuk Kim
-Samsung
-
-
+> 
+>>>
+>>> From: Jiri Kosina <jkosina@suse.cz>
+>>> Subject: [PATCH] [SCSI] qla2xxx: fix potential deadlock on ha->hardware_lock
+>>>
+>>> Lockdep reports:
+>>>
+>>> === [ cut here ] ===
+>>>  =========================================================
+>>>  [ INFO: possible irq lock inversion dependency detected ]
+>>>  3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
+>>>  ---------------------------------------------------------
+>>>  qla2xxx_1_dpc/368 just changed the state of lock:
+>>>   (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+>>>  but this lock was taken by another, HARDIRQ-safe lock in the past:
+>>>   (&(&ha->hardware_lock)->rlock){-.....}
+>>>
+>>> and interrupts could create inverse lock ordering between them.
+>>>
+>>> other info that might help us debug this:
+>>>  Possible interrupt unsafe locking scenario:
+>>>
+>>>        CPU0                    CPU1
+>>>        ----                    ----
+>>>   lock(&(&ha->vport_slock)->rlock);
+>>>                                local_irq_disable();
+>>>                                lock(&(&ha->hardware_lock)->rlock);
+>>>                                lock(&(&ha->vport_slock)->rlock);
+>>>   <Interrupt>
+>>>     lock(&(&ha->hardware_lock)->rlock);
+>>> === [ cut here ] ===
+>>>
+>>> Fix the potential deadlock by disabling IRQs while holding ha->vport_slock.
+>>>
+>>> Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>>
+>> Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>
+>> Regards,
+>> Srivatsa S. Bhat
+>>
+>>> ---
+>>>  drivers/scsi/qla2xxx/qla_init.c |    5 +++--
+>>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+>>> index 799a58b..48fca47 100644
+>>> --- a/drivers/scsi/qla2xxx/qla_init.c
+>>> +++ b/drivers/scsi/qla2xxx/qla_init.c
+>>> @@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>>>  	uint8_t       domain;
+>>>  	char		connect_type[22];
+>>>  	struct qla_hw_data *ha = vha->hw;
+>>> +	unsigned long flags;
+>>>
+>>>  	/* Get host addresses. */
+>>>  	rval = qla2x00_get_adapter_id(vha,
+>>> @@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>>>  	vha->d_id.b.area = area;
+>>>  	vha->d_id.b.al_pa = al_pa;
+>>>
+>>> -	spin_lock(&ha->vport_slock);
+>>> +	spin_lock_irqsave(&ha->vport_slock, flags);
+>>>  	qlt_update_vp_map(vha, SET_AL_PA);
+>>> -	spin_unlock(&ha->vport_slock);
+>>> +	spin_unlock_irqrestore(&ha->vport_slock, flags);
+>>>
+>>>  	if (!vha->flags.init_done)
+>>>  		ql_log(ql_log_info, vha, 0x2010,
+>>>
+>>
 
