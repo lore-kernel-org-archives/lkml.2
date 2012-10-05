@@ -1,390 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab2JEPXL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 11:23:11 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46020 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab2JEPXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 11:23:06 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tools: Fix ordering with unstable tsc
-Date: Fri,  5 Oct 2012 09:22:59 -0600
-Message-Id: <1349450579-18092-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	id S1753958Ab2JEPXV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 11:23:21 -0400
+Received: from 8bytes.org ([85.214.48.195]:55957 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753617Ab2JEPXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 11:23:17 -0400
+Date: Fri, 5 Oct 2012 17:23:12 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Updates for v3.7-rc1
+Message-ID: <20121005152312.GA4649@8bytes.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Oct  5 17:23:13 2012
+X-DSPAM-Confidence: 0.9989
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 506efb6122971976618682
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rebased to acme's perf/core branch. Changed realloc to handle failure.
-Remainder is based on what Frederic posted in February.
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On a system with a TSC considered as unstable, one can encounter this
-kind of warning:
+Hi Linus,
 
-     $ perf sched rec pong 2
-     $ perf sched lat
-     Warning: Timestamp below last timeslice flush
+The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
 
-This happens when trace events trigger with a potentially high period,
-such as sched_stat_sleep, sched_stat_runtime, sched_stat_wait, etc...
-The perf event core then implement that weight by sending as many events
-as the given period. For example as many as the time the task has been
-sleeping in sched_stat_sleep event.
+  Linux 3.6 (2012-09-30 16:47:46 -0700)
 
-If this happens while irqs are disabled with an unstable tsc and this takes
-more time than a jiffy, then the timestamps of the events get stuck to
-the value of that next jiffy because sched_clock_local() bounds the timestamp
-to that maximum. The local timer tick is supposed to update that boundary but
-it can't given that irqs are disabled.
+are available in the git repository at:
 
-We can then meet this kind of scenario in perf record:
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-updates-v3.7-rc1
 
-===== CPU 0 =====      ==== CPU 1 ====
+for you to fetch changes up to 009487258399cb4f431992919fa0f386d1b74ceb:
 
-              PASS n
-     ...                    ...
-      1                      1
-      1                      2
-      1                      3 <-- max recorded
+  Merge branches 'dma-debug', 'iommu/fixes', 'arm/tegra', 'arm/exynos', 'x86/amd', 'x86/vt-d' and 'x86/amd-irq-remapping' into next (2012-10-02 14:40:03 +0200)
 
-           finished round event
-            PASS n + 1
+----------------------------------------------------------------
 
-      1                      4
-      1                      5
-      1                      6
+IOMMU Updates for Linux v3.7-rc1
 
-           finished round event
-            PASS n + 2
+This time the IOMMU updates contain a bunch of fixes and cleanups to
+various IOMMU drivers and the DMA debug code. New features are the
+code for IRQ remapping support with the AMD IOMMU (preperation for that
+was already merged in the last release) and a debugfs interface to
+export some statistics in the NVidia Tegra IOMMU driver.
 
-      1                      7
-     ...                    ...
+----------------------------------------------------------------
+Alex Williamson (1):
+      intel-iommu: Default to non-coherent for domains unattached to iommus
 
-CPU 0 is stuck sending events with irqs disabled and with the stale
-timestamp. When we do the events reordering for perf script for example,
-we flush all the events before timestamp 3 when we reach PASS n + 2,
-considering we can't anymore have timestamps below 3 now.
-But we still do have timestamps below 3 on PASS n + 2.
+Borislav Petkov (1):
+      iommu/amd: Fix features reporting
 
-To solve that issue, instead of considering that timestamps are globally
-monotonic, we assume they are locally monotonic. Instead of recording
-the max timestamp on each pass, we check the max one per CPU on each
-pass and keep the smallest over these as the new barrier up to which
-we flush the events on the PASS n + 2. This still relies on a bit of
-global monotonicity because if some CPU doesn't have events in PASS n,
-we expect it not to have event in PASS n + 2 past the barrier recorded
-in PASS n. So this is still not a totally robust ordering but it's still
-better than what we had before.
+Dan Carpenter (1):
+      iommu/amd: Fix possible use after free in get_irq_table()
 
-The only way to have a deterministic and solid ordering will be to use
-per cpu perf.data files.
+Frank Arnold (1):
+      iommu/amd: Fix some typos
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: https://lkml.org/lkml/2012/2/18/53
----
- tools/perf/util/evsel.c   |    5 +-
- tools/perf/util/session.c |  161 +++++++++++++++++++++++++++++++++------------
- tools/perf/util/session.h |    3 +-
- 3 files changed, 126 insertions(+), 43 deletions(-)
+Hiroshi Doyu (2):
+      iommu/tegra: smmu: debugfs for TLB/PTC statistics
+      iommu/tegra: smmu: Use debugfs_create_dir for directory
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ffdd94e..b6ca970 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -471,9 +471,12 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 	if (opts->raw_samples) {
- 		attr->sample_type	|= PERF_SAMPLE_TIME;
- 		attr->sample_type	|= PERF_SAMPLE_RAW;
--		attr->sample_type	|= PERF_SAMPLE_CPU;
- 	}
- 
-+	/* Need to know the CPU for tools that need to order events */
-+	if (attr->sample_type & PERF_SAMPLE_TIME)
-+		attr->sample_type	|= PERF_SAMPLE_CPU;
-+
- 	if (opts->no_delay) {
- 		attr->watermark = 0;
- 		attr->wakeup_events = 1;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8cdd232..7df586b 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -695,6 +695,8 @@ static void perf_session_free_sample_buffers(struct perf_session *session)
- 		list_del(&sq->list);
- 		free(sq);
- 	}
-+
-+	free(os->last_cpu_timestamp);
- }
- 
- static int perf_session_deliver_event(struct perf_session *session,
-@@ -755,57 +757,91 @@ static int flush_sample_queue(struct perf_session *s,
- }
- 
- /*
-- * When perf record finishes a pass on every buffers, it records this pseudo
-- * event.
-- * We record the max timestamp t found in the pass n.
-- * Assuming these timestamps are monotonic across cpus, we know that if
-- * a buffer still has events with timestamps below t, they will be all
-- * available and then read in the pass n + 1.
-- * Hence when we start to read the pass n + 2, we can safely flush every
-- * events with timestamps below t.
-+ * We make the assumption that timestamps are not globally monotonic but locally
-+ * non-strictly monotonic. In practice, this is because if we are dealing with a
-+ * machine with unstable TSC, the kernel bounds the result of the tsc between
-+ * last_tick_time < tsc < next_tick_time. Thus, if a CPU disables interrupts for more
-+ * than one jiffy, all of its timestamps will be equal to next_tick_time after we
-+ * cross that jiffy, without any further progress whereas the other CPU continue
-+ * with normal timestamps. This can happen if a CPU sends crazillions of events
-+ * while interrupts are disabled. But there are potentially other random scenarios
-+ * with unstable TSC that drives us to assume the monotonicity of time only per CPU
-+ * and not globally.
-+ *
-+ * To solve this, when perf record finishes a round of write on every buffers, it
-+ * records a pseudo event named "finished round". The frame of events that happen
-+ * between two finished rounds is called a "pass".
-+ * We record the max timestamp T[cpu] per CPU found over the events in the pass n.
-+ * Then when we finish a round, we iterate over these T[cpu]and keep the smallest
-+ * one: min(T).
-+ *
-+ * Assuming these timestamps are locally monotonic (non strictly), we can flush all
-+ * queued events having a timestamp below min(T) when we start to process PASS n + 1.
-+ * But we actually wait until we start PASS n + 2 in case a CPU did not have any
-+ * event in PASS n but came in PASS n + 1 with events below min(T). We truly
-+ * hope no CPU will come with events below min(T) after pass n + 1. This
-+ * heuristicly rely on some minimal global consistancy. This should work in most
-+ * real world case, the only way to ensure a truly safe ordering with regular
-+ * flush will be to switch to per CPU record files.
-  *
-- *    ============ PASS n =================
-- *       CPU 0         |   CPU 1
-- *                     |
-- *    cnt1 timestamps  |   cnt2 timestamps
-- *          1          |         2
-- *          2          |         3
-- *          -          |         4  <--- max recorded
-+ *    ========================== PASS n ============================
-+ *       CPU 0                   |   CPU 1
-+ *                               |
-+ *    cnt1 timestamps            |   cnt2 timestamps
-+ *          1                    |         2
-+ *          2 <--- max recorded  |         3
-+ *          -                    |         4 <--- max recorded
-+ *                          min(T) = 2
-  *
-- *    ============ PASS n + 1 ==============
-- *       CPU 0         |   CPU 1
-- *                     |
-- *    cnt1 timestamps  |   cnt2 timestamps
-- *          3          |         5
-- *          4          |         6
-- *          5          |         7 <---- max recorded
-+ *    ========================== PASS n + 1 ========================
-+ *       CPU 0                   |   CPU 1
-+ *                               |
-+ *    cnt1 timestamps            |   cnt2 timestamps
-+ *          3                    |         5
-+ *          4                    |         6
-+ *          5 <--- max record    |         7 <---- max recorded
-+ *                          min(T) = 5
-  *
-- *      Flush every events below timestamp 4
-+ *                Flush every events below timestamp 2
-  *
-- *    ============ PASS n + 2 ==============
-- *       CPU 0         |   CPU 1
-- *                     |
-- *    cnt1 timestamps  |   cnt2 timestamps
-- *          6          |         8
-- *          7          |         9
-- *          -          |         10
-+ *    ========================== PASS n + 2 ========================
-+ *       CPU 0                   |   CPU 1
-+ *                               |
-+ *    cnt1 timestamps            |   cnt2 timestamps
-+ *          6                    |         8
-+ *          7                    |         9
-+ *          -                    |         10
-  *
-- *      Flush every events below timestamp 7
-- *      etc...
-+ *  Flush every events below timestamp 5, etc...
-  */
-+
- static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event __maybe_unused,
- 				  struct perf_session *session)
- {
--	int ret = flush_sample_queue(session, tool);
--	if (!ret)
--		session->ordered_samples.next_flush = session->ordered_samples.max_timestamp;
-+	unsigned int i, ret;
-+	u64 min = ULLONG_MAX;
-+	struct ordered_samples *os = &session->ordered_samples;
-+
-+	ret = flush_sample_queue(session, tool);
-+
-+	for (i = 0; i < session->nr_cpus; i++) {
-+		if (os->last_cpu_timestamp[i] < min)
-+			min = os->last_cpu_timestamp[i];
-+
-+		os->last_cpu_timestamp[i] = ULLONG_MAX;
-+	}
-+
-+	if (min != ULLONG_MAX)
-+		os->next_flush = min;
- 
- 	return ret;
- }
- 
- /* The queue is ordered by time */
--static void __queue_event(struct sample_queue *new, struct perf_session *s)
-+static void __queue_event(struct sample_queue *new,
-+			  struct perf_session *s,
-+			  int cpu)
- {
- 	struct ordered_samples *os = &s->ordered_samples;
- 	struct sample_queue *sample = os->last_sample;
-@@ -814,10 +850,10 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 
- 	++os->nr_samples;
- 	os->last_sample = new;
-+	os->last_cpu_timestamp[cpu] = timestamp;
- 
- 	if (!sample) {
- 		list_add(&new->list, &os->samples);
--		os->max_timestamp = timestamp;
- 		return;
- 	}
- 
-@@ -831,7 +867,6 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 			p = sample->list.next;
- 			if (p == &os->samples) {
- 				list_add_tail(&new->list, &os->samples);
--				os->max_timestamp = timestamp;
- 				return;
- 			}
- 			sample = list_entry(p, struct sample_queue, list);
-@@ -850,7 +885,39 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 	}
- }
- 
--#define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct sample_queue))
-+static int alloc_cpus_timestamp_array(struct perf_session *s,
-+				      struct perf_sample *sample,
-+				      struct ordered_samples *os)
-+{
-+	int i;
-+	int nr_cpus;
-+	void *last;
-+
-+	if (sample->cpu < s->nr_cpus)
-+		return 0;
-+
-+	nr_cpus = sample->cpu + 1;
-+
-+	if (!os->last_cpu_timestamp) {
-+		last = os->last_cpu_timestamp;
-+		os->last_cpu_timestamp = realloc(os->last_cpu_timestamp,
-+						 sizeof(u64) * nr_cpus);
-+	}
-+	if (!os->last_cpu_timestamp) {
-+		if (last)
-+			free(last);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = s->nr_cpus; i < nr_cpus; i++)
-+		os->last_cpu_timestamp[i] = ULLONG_MAX;
-+
-+	s->nr_cpus = nr_cpus;
-+
-+	return 0;
-+}
-+
-+#define MAX_SAMPLE_BUFFER	(1024 * 1024 / sizeof(struct sample_queue))
- 
- static int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 				    struct perf_sample *sample, u64 file_offset)
-@@ -859,6 +926,12 @@ static int perf_session_queue_event(struct perf_session *s, union perf_event *ev
- 	struct list_head *sc = &os->sample_cache;
- 	u64 timestamp = sample->time;
- 	struct sample_queue *new;
-+	int err;
-+
-+	if (!(perf_evlist__sample_type(s->evlist) & PERF_SAMPLE_CPU)) {
-+		pr_err("Warning: Need to record CPU on samples for ordering\n");
-+		return -EINVAL;
-+	}
- 
- 	if (!timestamp || timestamp == ~0ULL)
- 		return -ETIME;
-@@ -868,13 +941,19 @@ static int perf_session_queue_event(struct perf_session *s, union perf_event *ev
- 		return -EINVAL;
- 	}
- 
-+	err = alloc_cpus_timestamp_array(s, sample, os);
-+	if (err)
-+		return err;
-+
- 	if (!list_empty(sc)) {
- 		new = list_entry(sc->next, struct sample_queue, list);
- 		list_del(&new->list);
- 	} else if (os->sample_buffer) {
- 		new = os->sample_buffer + os->sample_buffer_idx;
--		if (++os->sample_buffer_idx == MAX_SAMPLE_BUFFER)
-+		if (++os->sample_buffer_idx == MAX_SAMPLE_BUFFER) {
-+			pr_debug("sample buffer index hit maximum\n");
- 			os->sample_buffer = NULL;
-+		}
- 	} else {
- 		os->sample_buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
- 		if (!os->sample_buffer)
-@@ -888,7 +967,7 @@ static int perf_session_queue_event(struct perf_session *s, union perf_event *ev
- 	new->file_offset = file_offset;
- 	new->event = event;
- 
--	__queue_event(new, s);
-+	__queue_event(new, s, sample->cpu);
- 
- 	return 0;
- }
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index aab414f..13cc305 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -16,7 +16,7 @@ struct thread;
- struct ordered_samples {
- 	u64			last_flush;
- 	u64			next_flush;
--	u64			max_timestamp;
-+	u64			*last_cpu_timestamp;
- 	struct list_head	samples;
- 	struct list_head	sample_cache;
- 	struct list_head	to_free;
-@@ -45,6 +45,7 @@ struct perf_session {
- 	int			cwdlen;
- 	char			*cwd;
- 	struct ordered_samples	ordered_samples;
-+	unsigned int		nr_cpus;
- 	char			filename[1];
- };
- 
--- 
-1.7.10.1
+Joerg Roedel (18):
+      iommu/amd: Keep track of HPET and IOAPIC device ids
+      iommu/amd: Add slab-cache for irq remapping tables
+      iommu/amd: Allocate data structures to keep track of irq remapping tables
+      iommu/amd: Check if IOAPIC information is correct
+      iommu/amd: Split device table initialization into irq and dma part
+      iommu/amd: Make sure IOMMU is not considered to translate itself
+      iommu/amd: Add IRTE invalidation routine
+      iommu/amd: Add routines to manage irq remapping tables
+      iommu/amd: Add IOAPIC remapping routines
+      iommu/amd: Implement MSI routines for interrupt remapping
+      iommu/amd: Add call-back routine for HPET MSI
+      iommu/amd: Add initialization routines for AMD interrupt remapping
+      iommu/amd: Make sure irq remapping still works on dma init failure
+      iommu/irq: Use amd_iommu_irq_ops if supported
+      iommu/amd: Print message to system log when irq remapping is enabled
+      iommu/amd: Report irq remapping through IOMMU-API
+      iommu/amd: Remove obsolete comment line
+      Merge branches 'dma-debug', 'iommu/fixes', 'arm/tegra', 'arm/exynos', 'x86/amd', 'x86/vt-d' and 'x86/amd-irq-remapping' into next
+
+Shuah Khan (1):
+      dma-debug: Remove local BUS_NOTIFY_UNBOUND_DRIVER define
+
+Stephen Warren (1):
+      dma: tegra: move smmu.h into SMMU driver
+
+Wei Yongjun (2):
+      iommu/amd: remove duplicated include from amd_iommu_init.c
+      iommu/exynos: use list_del_init instead of list_del/INIT_LIST_HEAD
+
+ arch/arm/mach-tegra/include/mach/smmu.h |   63 ----
+ drivers/iommu/Kconfig                   |    2 +-
+ drivers/iommu/amd_iommu.c               |  514 ++++++++++++++++++++++++++++++-
+ drivers/iommu/amd_iommu_init.c          |  253 +++++++++++++--
+ drivers/iommu/amd_iommu_proto.h         |    8 +
+ drivers/iommu/amd_iommu_types.h         |   59 +++-
+ drivers/iommu/exynos-iommu.c            |    3 +-
+ drivers/iommu/intel-iommu.c             |    4 +-
+ drivers/iommu/irq_remapping.c           |    5 +
+ drivers/iommu/irq_remapping.h           |    6 +
+ drivers/iommu/tegra-smmu.c              |  261 +++++++++++++++-
+ lib/dma-debug.c                         |    5 -
+ 12 files changed, 1071 insertions(+), 112 deletions(-)
+ delete mode 100644 arch/arm/mach-tegra/include/mach/smmu.h
+
+Please pull.
+
+Regards,
+
+	Joerg
+
+
+--SLDf9lqlvOQaIe6s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQbvtfAAoJECvwRC2XARrjUisP/2Xiq0Slg7N0pLLSN2x+n/F1
+2ZWPsdCsa50RTt8eqcikvc11KOFlmX69+Y2w9lqrFpZlLzpUaNBu3jqikdudDDRR
+wfqEuL5g43orl0ig19zRikT0cHd9X6iqLbQG22nxp3K6txsw1L8xH2BtU5PHF9A6
+Wbv3EatRtECqKt/TTBaXa56UjFA2FCKm1gvx62af41AjMjawVBWouzNYSRfQO+5f
+m/eQAUbRR29xnShFWLf0dPsIJFxPlMhEp/Hlrkbp1C1NUkvhoPmTiF8QScj2nLix
+2VINYWN0TsLII6ytlMxzdzEo1NypIQ0FmkzE9FSotbtgJa/JK1GazWWhXDU8/z1a
+3bhja/ohnCw+K8OC0S45DSEmyq6kcKwrr1con8JBOsE/krRM5CD2jMWfNgytYllK
+bmKQYI9Murna9LnefXIrz6OcMyzorrGTmDA2PTu2qrnuxHgAclOx/bvOcpacJ97O
+hwS44XnXo2ip1RtA+IhhLGbm4M7HuBxIWYHDouKKuYXN/KQSP0raNtfl1VAhSZ4O
+igZGxxtf+HMNXK7ccgqO8Rv7W6TqW9mu/Ql4EnL/WFfLAaiC9oxsUKAw4glMd6Q9
+6CTpB2FYKoARDGdJmiQBDdHSDOz14eVDmYQM+ByfMo/xNlGOQsW9NQwryGn0u8bm
+w024t2im9nrJNArFEhkc
+=MT7o
+-----END PGP SIGNATURE-----
+
+--SLDf9lqlvOQaIe6s--
+
 
