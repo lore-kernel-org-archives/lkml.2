@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab2JEMqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 08:46:23 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41949 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab2JEMqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 08:46:22 -0400
-From: Huacai Chen <chenhc@lemote.com>
-To: Alex Deucher <alexander.deucher@amd.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>
-Subject: =?UTF-8?q?=5BPATCH=20V3=5D=20drm/radeon=3A=20Include=20swiotlb=2Eh=20if=20SWIOTLB=20configured?=
-Date: Fri,  5 Oct 2012 20:45:56 +0800
-Message-Id: <1349441156-30936-1-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755706Ab2JEMud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 08:50:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753674Ab2JEMuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 08:50:32 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAMuHMdWYdKPgVR8hvcXN1qmm7nqCyjWV3NPHzdVHG_H8F20-3w@mail.gmail.com>
+References: <CAMuHMdWYdKPgVR8hvcXN1qmm7nqCyjWV3NPHzdVHG_H8F20-3w@mail.gmail.com> <17383.1349380286@warthog.procyon.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: dhowells@redhat.com, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [GIT PULL] Disintegrate UAPI for m68k
+Date: Fri, 05 Oct 2012 13:50:21 +0100
+Message-ID: <7854.1349441421@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When SWIOTLB is configured, if without this patch kernel compilation
-fails with such error messages:
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-drivers/gpu/drm/radeon/radeon_ttm.c: In function 'radeon_ttm_tt_populate':
-drivers/gpu/drm/radeon/radeon_ttm.c:606:2: error: implicit declaration of function 'swiotlb_nr_tbl'
-drivers/gpu/drm/radeon/radeon_ttm.c:607:3: warning: passing argument 2 of 'ttm_dma_populate' from incompatible pointer type
-include/drm/ttm/ttm_page_alloc.h:81:12: note: expected 'struct device *' but argument is of type 'struct device *'
-drivers/gpu/drm/radeon/radeon_ttm.c: In function 'radeon_ttm_tt_unpopulate':
-drivers/gpu/drm/radeon/radeon_ttm.c:653:3: warning: passing argument 2 of 'ttm_dma_unpopulate' from incompatible pointer type
-include/drm/ttm/ttm_page_alloc.h:82:13: note: expected 'struct device *' but argument is of type 'struct device *'
+> I assume these c6x and asm-generic changes are the ones you just asked Linus
+> to pull?
 
-V2:
-1, Add compilation error messages;
-2, Make the From: address the same as Signed-off-by address.
+Yes.
 
-V3:
-1, Send to Alex Deucher since this is radeon specific;
-2, Add Reviewed-by email addresses.
+> Doesn't it make more sense to ask us (the individual arch maintainers) to
+> pull our parts after Linus has pulled the generic part?
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: dri-devel@lists.freedesktop.org
----
- drivers/gpu/drm/radeon/radeon_ttm.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+I suppose so.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
-index 5b71c71..fc3ac22 100644
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -41,6 +41,10 @@
- #include "radeon_reg.h"
- #include "radeon.h"
- 
-+#ifdef CONFIG_SWIOTLB
-+#include <linux/swiotlb.h>
-+#endif
-+
- #define DRM_FILE_PAGE_OFFSET (0x100000000ULL >> PAGE_SHIFT)
- 
- static int radeon_ttm_debugfs_init(struct radeon_device *rdev);
--- 
-1.7.7.3
+> Do you want this ("our parts") to go in 3.7 or 3.8?
 
+3.7 would be nice, but I know not everyone is willing to pull in this merge
+window.  It might also make sense to wait for (a) Linus to pull those and (b)
+Arnd to pass the asm-generic changes along too.
+
+The main reason I'd like to get things moved along asap is that the
+preparatory patches get things into a known state upon which these commits can
+be pulled.  However, the state is going to degrade over time as people make
+changes which requires more preparatory patches:-/
+
+David
