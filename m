@@ -1,75 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab2JFXvv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 19:51:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33690 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2JFXvu (ORCPT
+	id S1751828Ab2JGAAJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 20:00:09 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50355 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab2JGAAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 19:51:50 -0400
-Date: Sun, 7 Oct 2012 10:51:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: Re: Please add back the asm-generic tree to linux-next
-Message-Id: <20121007105139.bbb7f7603147965546c41309@canb.auug.org.au>
-In-Reply-To: <201210061254.45804.arnd@arndb.de>
-References: <201210061254.45804.arnd@arndb.de>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sun__7_Oct_2012_10_51_39_+1100_dTok+ebBH90ODHpV"
+	Sat, 6 Oct 2012 20:00:06 -0400
+Message-ID: <5070C5F7.8030302@gmail.com>
+Date: Sun, 07 Oct 2012 07:59:51 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mike Yoknis <mike.yoknis@hp.com>
+CC: mgorman@suse.de, mingo@redhat.com, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org, mmarek@suse.cz, tglx@linutronix.de,
+        hpa@zytor.com, arnd@arndb.de, sam@ravnborg.org, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
+References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+In-Reply-To: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__7_Oct_2012_10_51_39_+1100_dTok+ebBH90ODHpV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Arnd,
-
-On Sat, 6 Oct 2012 12:54:45 +0000 Arnd Bergmann <arnd@arndb.de> wrote:
+On 10/03/2012 10:56 PM, Mike Yoknis wrote:
+> memmap_init_zone() loops through every Page Frame Number (pfn),
+> including pfn values that are within the gaps between existing
+> memory sections.  The unneeded looping will become a boot
+> performance issue when machines configure larger memory ranges
+> that will contain larger and more numerous gaps.
 >
-> I haven't used my asm-generic git tree for the last year, but now I have =
-some
-> patches in it again. I was (ab)using the arm-soc tree for now to get the
-> few patches into linux-next, but the URL is still listed in the MAINTAINE=
-RS
-> file and I should really be using that one, since it is mostly unrelated
-> to the arm-soc work.
->=20
-> Pleas add
-> git://git.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic.git master
+> The code will skip across invalid sections to reduce the
+> number of loops executed.
 
-OK, I have added that back.  You used to use the "next" branch (which no
-longer exists) but are now using the master branch, correct?
+looks reasonable to me.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+> ---
+>   arch/x86/include/asm/mmzone_32.h     |    2 ++
+>   arch/x86/include/asm/page_32.h       |    1 +
+>   arch/x86/include/asm/page_64_types.h |    3 ++-
+>   include/asm-generic/page.h           |    1 +
+>   include/linux/mmzone.h               |    6 ++++++
+>   mm/page_alloc.c                      |    5 ++++-
+>   6 files changed, 16 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
+> index eb05fb3..73c5c74 100644
+> --- a/arch/x86/include/asm/mmzone_32.h
+> +++ b/arch/x86/include/asm/mmzone_32.h
+> @@ -48,6 +48,8 @@ static inline int pfn_to_nid(unsigned long pfn)
+>   #endif
+>   }
+>   
+> +#define next_pfn_try(pfn)	((pfn)+1)
+> +
+>   static inline int pfn_valid(int pfn)
+>   {
+>   	int nid = pfn_to_nid(pfn);
+> diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
+> index da4e762..e2c4cfc 100644
+> --- a/arch/x86/include/asm/page_32.h
+> +++ b/arch/x86/include/asm/page_32.h
+> @@ -19,6 +19,7 @@ extern unsigned long __phys_addr(unsigned long);
+>   
+>   #ifdef CONFIG_FLATMEM
+>   #define pfn_valid(pfn)		((pfn) < max_mapnr)
+> +#define next_pfn_try(pfn)	((pfn)+1)
+>   #endif /* CONFIG_FLATMEM */
+>   
+>   #ifdef CONFIG_X86_USE_3DNOW
+> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+> index 320f7bb..02d82e5 100644
+> --- a/arch/x86/include/asm/page_64_types.h
+> +++ b/arch/x86/include/asm/page_64_types.h
+> @@ -69,7 +69,8 @@ extern void init_extra_mapping_wb(unsigned long phys, unsigned long size);
+>   #endif	/* !__ASSEMBLY__ */
+>   
+>   #ifdef CONFIG_FLATMEM
+> -#define pfn_valid(pfn)          ((pfn) < max_pfn)
+> +#define pfn_valid(pfn)		((pfn) < max_pfn)
+> +#define next_pfn_try(pfn)	((pfn)+1)
+>   #endif
+>   
+>   #endif /* _ASM_X86_PAGE_64_DEFS_H */
+> diff --git a/include/asm-generic/page.h b/include/asm-generic/page.h
+> index 37d1fe2..316200d 100644
+> --- a/include/asm-generic/page.h
+> +++ b/include/asm-generic/page.h
+> @@ -91,6 +91,7 @@ extern unsigned long memory_end;
+>   #endif
+>   
+>   #define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET && ((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
+> +#define next_pfn_try(pfn)	((pfn)+1)
+>   
+>   #define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
+>   				((void *)(kaddr) < (void *)memory_end))
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index f7d88ba..04d3c39 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -1166,6 +1166,12 @@ static inline int pfn_valid(unsigned long pfn)
+>   		return 0;
+>   	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+>   }
+> +
+> +static inline unsigned long next_pfn_try(unsigned long pfn)
+> +{
+> +	/* Skip entire section, because all of it is invalid. */
+> +	return section_nr_to_pfn(pfn_to_section_nr(pfn) + 1);
+> +}
+>   #endif
+>   
+>   static inline int pfn_present(unsigned long pfn)
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 5b6b6b1..dd2af8b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3798,8 +3798,11 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
+>   		 * exist on hotplugged memory.
+>   		 */
+>   		if (context == MEMMAP_EARLY) {
+> -			if (!early_pfn_valid(pfn))
+> +			if (!early_pfn_valid(pfn)) {
+> +				pfn = next_pfn_try(pfn);
+> +				pfn--;
+>   				continue;
+> +			}
+>   			if (!early_pfn_in_nid(pfn, nid))
+>   				continue;
+>   		}
 
---Signature=_Sun__7_Oct_2012_10_51_39_+1100_dTok+ebBH90ODHpV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQcMQLAAoJEECxmPOUX5FEypYQAJIbdVwGUfowV7kzUZQYeoTK
-REv8q7yhQdVjC2b0zcvAAxbpOONcBSBUprd/t/5t2ufQiGsWEqXGxix/RjwVRAxo
-xNQlolqG6fXAZ0ZyzFPLLCQtkCVXdMLfIcYbDCiACWiwFJxKp7d0VwXE+ijTzjWP
-rqQTV5TpcSVjPiGjim6AsSf6a5e611OXGPFsP77yOAnJzNzQtoJWbDJQQgipoMks
-5Z3KvXz2+xrGuE6eJ+ZH5yPOJr9DIRA5AH2lR7/TS9HewUGERy4R1M1YqGW9Qe08
-Sm+f7g7CgZBsP/bysO9saWHlUu3bvM2/te1k6fKJeR34rwYmZ/lWAVbIp0YUdu+Y
-jU6HVacE4R9V13inmi4FL766ke1+W5feq87Q/ZwC2HbQThPlWDwbKP4dHDymUezn
-q/hDBEFwTOXed25aoKq6mvt2M99Rkf9Z6N7Sduqq30n/Tb+O5EsRhYSHWMPQ5lbf
-uvMXcHTMGIjtcXD2+iOw+1K69U46UlwU28s1FHwaRjLdIo+kdJxTzWv9iZP9zXHw
-lpDjQe6GxY/r7LXxW71WTklZt9JXvFKV8nTMhHOzaXvtqJHKN8B1ZSaEQhlS3M+H
-VSaC2ERvZGchheIviiUvR/zcWVVVgJ9ZzCE0Q/okwZ22GLMir1Yj/MvJSBlBteRI
-215iXZsyEY7e/qjqHPlS
-=NPiB
------END PGP SIGNATURE-----
-
---Signature=_Sun__7_Oct_2012_10_51_39_+1100_dTok+ebBH90ODHpV--
