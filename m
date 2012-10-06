@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab2JFHn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 03:43:58 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45677 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab2JFHn5 (ORCPT
+	id S1753249Ab2JFHpB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 03:45:01 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47076 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab2JFHo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 03:43:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121006072704.GA22465@1wt.eu>
-References: <20121005234218.GC21163@1wt.eu>
-	<CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com>
-	<20121005235845.GE21163@1wt.eu>
-	<20121006072704.GA22465@1wt.eu>
-Date: Sat, 6 Oct 2012 03:43:56 -0400
-Message-ID: <CAPM=9twQb7BUe6cAD-5THBBP-eYAU56__V5UXNn2qfqdFkVwmA@mail.gmail.com>
-Subject: Re: 3.5 regression on i915
-From: Dave Airlie <airlied@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 6 Oct 2012 03:44:59 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/3] x86: pre mapping page table to make xen happy.
+Date: Sat,  6 Oct 2012 00:44:26 -0700
+Message-Id: <1349509469-11475-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <CAE9FiQV_xVsHN_+6ui_Vgnn6tk8UBOEKL+0XnoEN9VLw3gcOXA@mail.gmail.com>
+References: <CAE9FiQV_xVsHN_+6ui_Vgnn6tk8UBOEKL+0XnoEN9VLw3gcOXA@mail.gmail.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 6, 2012 at 3:27 AM, Willy Tarreau <w@1wt.eu> wrote:
-> On Sat, Oct 06, 2012 at 01:58:45AM +0200, Willy Tarreau wrote:
->> On Sat, Oct 06, 2012 at 09:48:57AM +1000, Dave Airlie wrote:
->> > Any reason you don't have KMS, you'll keep hitting these non-kms bugs
->> > since it has no users anymore really.
->> >
->> > Granted they'll get fixed, but I suspect its a losing battle over time.
->>
->> Well, back in old times every time I tried to enable it, I only ran into
->> problems so I got used to disable it, which made sense since it didn't
->> bring me any benefit.
->
-> OK I found why in the end. When I enable KMS, my X server fails to start
-> and segfaults in intel_drv.so. So I think that the comment in Kconfig
-> below is quite appropriate :
+on top of tip/x86/mm2
 
-Okay are you running a really old userspace? just wondering what could
-cause this.
+also remove early_ioremap in page table accessing.
 
-Dave.
+
+Yinghai Lu (3):
+  x86: get early page table from BRK
+  x86, mm: Don't clear page table if next range is ram
+  x86, mm: Remove early_memremap workaround for page table accessing
+
+ arch/x86/include/asm/init.h    |    4 ++
+ arch/x86/include/asm/pgtable.h |    1 +
+ arch/x86/kernel/setup.c        |    2 +
+ arch/x86/mm/init.c             |   25 ++++++++++++
+ arch/x86/mm/init_32.c          |    8 +++-
+ arch/x86/mm/init_64.c          |   85 ++++++++++++++--------------------------
+ 6 files changed, 67 insertions(+), 58 deletions(-)
+
+-- 
+1.7.7
+
