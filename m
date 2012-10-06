@@ -1,172 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab2JFAex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 20:34:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8549 "EHLO mga09.intel.com"
+	id S1754356Ab2JFAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 20:36:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43131 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab2JFAd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 20:33:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
-   d="scan'208";a="221373601"
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH 5/7] swiotlb: Use physical addresses for
-	swiotlb_tbl_unmap_single
-To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        fujita.tomonori@lab.ntt.co.jp
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Fri, 05 Oct 2012 17:34:15 -0700
-Message-ID: <20121006003415.2561.10233.stgit@gitlad.jf.intel.com>
-In-Reply-To: <20121006000746.2561.67407.stgit@gitlad.jf.intel.com>
-References: <20121006000746.2561.67407.stgit@gitlad.jf.intel.com>
-User-Agent: StGIT/0.14.2
+	id S1752948Ab2JFAgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 20:36:23 -0400
+Message-ID: <506F7CF5.2070904@zytor.com>
+Date: Fri, 05 Oct 2012 17:36:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org> <1348991844-12285-5-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com> <20121003165105.GA30214@jshin-Toonie> <CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com> <20121004164630.GB2244@phenom.dumpdata.com> <CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com> <871uhcsk93.fsf@xmission.com> <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com> <87ehlcr4et.fsf@xmission.com> <506F78A2.3050408@zytor.com> <87zk40mokt.fsf@xmission.com>
+In-Reply-To: <87zk40mokt.fsf@xmission.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that the unmap functionality also uses physical
-addresses.  This helps to further reduce the use of virt_to_phys and
-phys_to_virt functions.
+On 10/05/2012 05:28 PM, Eric W. Biederman wrote:
+>>
+>> Seriously, any case where we can't load anywhere in physical ram on x86-64 is a
+>> bug.  i386 is another matter.
+>
+> As I recall there are data structures like the IDT that only have a
+> 32bit base address.
+>
 
-In order to clarify things since we now have 2 physical addresses in use
-inside of swiotlb_tbl_unmap_single I am renaming phys to orig_addr, and
-dma_addr to tlb_addr.  This way is should be clear that orig_addr is
-contained within io_orig_addr and tlb_addr is an address within the
-io_tlb_addr buffer.
+Not true.  The only one I know of is memory for the trampoline which has 
+to be below 1M.  The < 1M space is already handled specially for good 
+reason.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
+> According to the bzImage header we don't support ramdisks above 4G.
+> I think we also have a 32bit address for the kernel command line
+> in the bzImage header.
 
- drivers/xen/swiotlb-xen.c |    4 ++--
- include/linux/swiotlb.h   |    3 ++-
- lib/swiotlb.c             |   37 +++++++++++++++++++------------------
- 3 files changed, 23 insertions(+), 21 deletions(-)
+There are pointers in the bzImage header, that is true.  We can fix that 
+problem, though, at least for entry via the 64-bit entry point.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 8a6035a..4cedc28 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -364,7 +364,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * Ensure that the address returned is DMA'ble
- 	 */
- 	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
-+		swiotlb_tbl_unmap_single(dev, map, size, dir);
- 		dev_addr = 0;
- 	}
- 	return dev_addr;
-@@ -388,7 +388,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
--		swiotlb_tbl_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
-+		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
- 		return;
- 	}
- 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 1995f3e..291643c 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -43,7 +43,8 @@ extern phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
- 					  phys_addr_t phys, size_t size,
- 					  enum dma_data_direction dir);
- 
--extern void swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr,
-+extern void swiotlb_tbl_unmap_single(struct device *hwdev,
-+				     phys_addr_t tlb_addr,
- 				     size_t size, enum dma_data_direction dir);
- 
- extern void swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr,
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 98d5733..f37050f 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -511,20 +511,20 @@ phys_addr_t map_single(struct device *hwdev, phys_addr_t phys, size_t size,
- /*
-  * dma_addr is the kernel virtual address of the bounce buffer to unmap.
-  */
--void
--swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
--			enum dma_data_direction dir)
-+void swiotlb_tbl_unmap_single(struct device *hwdev, phys_addr_t tlb_addr,
-+			      size_t size, enum dma_data_direction dir)
- {
- 	unsigned long flags;
- 	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
--	int index = (dma_addr - (char *)phys_to_virt(io_tlb_addr)) >> IO_TLB_SHIFT;
--	phys_addr_t phys = io_tlb_orig_addr[index];
-+	int index = (tlb_addr - io_tlb_addr) >> IO_TLB_SHIFT;
-+	phys_addr_t orig_addr = io_tlb_orig_addr[index];
- 
- 	/*
- 	 * First, sync the memory before unmapping the entry
- 	 */
- 	if (phys && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
--		swiotlb_bounce(phys, dma_addr, size, DMA_FROM_DEVICE);
-+		swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
-+			       size, DMA_FROM_DEVICE);
- 
- 	/*
- 	 * Return the buffer to the free list by setting the corresponding
-@@ -617,17 +617,18 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 
- 		ret = phys_to_virt(paddr);
- 		dev_addr = phys_to_dma(hwdev, paddr);
--	}
- 
--	/* Confirm address can be DMA'd by device */
--	if (dev_addr + size - 1 > dma_mask) {
--		printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
--		       (unsigned long long)dma_mask,
--		       (unsigned long long)dev_addr);
-+		/* Confirm address can be DMA'd by device */
-+		if (dev_addr + size - 1 > dma_mask) {
-+			printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
-+			       (unsigned long long)dma_mask,
-+			       (unsigned long long)dev_addr);
- 
--		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
--		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
--		return NULL;
-+			/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
-+			swiotlb_tbl_unmap_single(hwdev, paddr,
-+						 size, DMA_TO_DEVICE);
-+			return NULL;
-+		}
- 	}
- 
- 	*dma_handle = dev_addr;
-@@ -648,7 +649,7 @@ swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 		free_pages((unsigned long)vaddr, get_order(size));
- 	else
- 		/* DMA_TO_DEVICE to avoid memcpy in swiotlb_tbl_unmap_single */
--		swiotlb_tbl_unmap_single(hwdev, vaddr, size, DMA_TO_DEVICE);
-+		swiotlb_tbl_unmap_single(hwdev, paddr, size, DMA_TO_DEVICE);
- }
- EXPORT_SYMBOL(swiotlb_free_coherent);
- 
-@@ -712,7 +713,7 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 
- 	/* Ensure that the address returned is DMA'ble */
- 	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
-+		swiotlb_tbl_unmap_single(dev, map, size, dir);
- 		return phys_to_dma(dev, io_tlb_overflow_buffer);
- 	}
- 
-@@ -736,7 +737,7 @@ static void unmap_single(struct device *hwdev, dma_addr_t dev_addr,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	if (is_swiotlb_buffer(paddr)) {
--		swiotlb_tbl_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
-+		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
- 		return;
- 	}
- 
+> In the case of kdump in particular there is a need for DMAable
+> memory and in general that means memory below 4G.  So as long
+> as we only support one memory extent for kdump it makes sense
+> for that segment to be below 4G.
+
+"In general" meaning "no iotlb"?  In that case you have some unknown 
+address space restriction which may or may not be 4G...
+
+> For a normal x86_64 kernel which gets to use most of the memory it
+> definitely should be loadable anywhere in memory.
+
+Yes.  We should fix problems, like the limitations in the boot_params 
+structure.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
