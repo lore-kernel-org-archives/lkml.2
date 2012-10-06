@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab2JFNTW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 09:19:22 -0400
-Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:55579 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab2JFNSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 09:18:47 -0400
-From: Yann Cantin <yann.cantin@laposte.net>
-To: linux-input@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [ebeam PATCH v2 0/2] new eBeam input driver
-Date: Sat,  6 Oct 2012 15:14:45 +0200
-Message-Id: <1349529287-23193-1-git-send-email-yann.cantin@laposte.net>
-X-Mailer: git-send-email 1.7.10
+	id S1755784Ab2JFNUL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 09:20:11 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:52025 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750965Ab2JFNUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 09:20:07 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: david@lang.hm
+Subject: Re: Minimal jitter = good desktop.
+References: <op.wlqe9kw36426ze@localhost.localdomain>
+ <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
+Date: Sat, 06 Oct 2012 15:19:58 +0200
+Cc: linux-kernel@vger.kernel.org
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wlrdzkqh6426ze@localhost.localdomain>
+In-reply-to: <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In the context of os-jitter, delay/latency is measured as jitter.
 
-New USB input driver for eBeam devices.
+Peace Be With You.
 
-Currently supported (tested) :
-- Luidia eBeam classic projection and edge projection models
-- Nec "interactive solution" NP01Wi1 & NP01Wi2 accessories.
+On Sat, 06 Oct 2012 03:06:57 +0200, <david@lang.hm> wrote:
 
-Patch 1 to blacklist the devices for hid generic-usb.
-
-Patch 2 is the actual driver.
-
-Change from v1 : the driver don't send coordinates outside the specified
-ranges when calibrated.
-
-The module run fine with a 3.3.6 and a 3.5.0 kernel, both x86_32 and 64.
-
-Thanks for your help.
-
-
+> less jitter != less latency
+>
+> you could (in theory) eliminate jitter by delaying every keypress  
+> processed for exactly 1 second by having the code paths that process  
+> keypresses faster insert delays before implementing the results.
+>
+> that would result in zero jitter, but horrific latency.
+>
+> latency is how long it takes to do something, jitter is how much the  
+> latency varies.
+>
+> normally, if you optimize for one you make the other worse.
+>
+> If you optimize for latency, you try to finish everything as soon as you  
+> can. Since some things take longer than others, jitter increases.
+>
+> David Lang
+>
+> On Sat, 6 Oct 2012, Uwaysi Bin Kareem wrote:
+>
+>> Reducing jitter seems central for many things.
+>> First of all keypresses seem faster. (less jitter = less latency).
+>> Doom 3 and similar jittersensitive OpenGL applications run smoothly,  
+>> and better than windows. Doom 3 was also my main app to get running  
+>> well, and measuring jitter in the signalpath of OpenGL improved the  
+>> overall computing experience.
+>>
+>> Even youtube videos who are not synced to refresh, with a refresh of  
+>> 60, and a videofps of 30, runs quite well.  
+>> http://paradoxuncreated.com/Blog/wordpress/?p=3221
+>>
+>> System is responsive, and I have only had one problem, and that is  
+>> packing seems not to work at the moment.
+>>
+>> For a fast test in Ubuntu, try  
+>> http://paradoxuncreated.com/Blog/wordpress/?p=2268
+>>
+>> Definately a recommended config on the desktop.
+>>
+>> Peace Be With You.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
