@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab2JFSwl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 14:52:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32967 "EHLO mx1.redhat.com"
+	id S1754550Ab2JFS4V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:56:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2962 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab2JFSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 14:52:37 -0400
-Date: Sat, 6 Oct 2012 20:53:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() +
-	register() race
-Message-ID: <20121006185337.GA14697@redhat.com>
-References: <20120930194119.GA11278@redhat.com> <20120930194211.GA11333@redhat.com> <20121006093311.GB9145@linux.vnet.ibm.com> <20121006172531.GB9819@redhat.com> <20121006173719.GA9143@linux.vnet.ibm.com>
+	id S1751699Ab2JFS4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 14:56:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,545,1344236400"; 
+   d="scan'208";a="202476995"
+Message-ID: <50707ECD.2070300@zytor.com>
+Date: Sat, 06 Oct 2012 11:56:13 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121006173719.GA9143@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>, konrad.wilk@oracle.com,
+        tglx@linutronix.de, mingo@redhat.com, rob@landley.net,
+        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
+        shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
+ addresses
+References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org> <506F3670.4020202@intel.com> <20121005200245.GQ16230@one.firstfloor.org> <506F6BF2.8030500@intel.com> <20121006175751.GS16230@one.firstfloor.org>
+In-Reply-To: <20121006175751.GS16230@one.firstfloor.org>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06, Srikar Dronamraju wrote:
->
-> >
-> > for the future changes... (say, we can remove bp if consumers do not
-> > want to trace this task). Not sure it makes sense to change it right
-> > now.
-> >
-> > So. Should I leave this patch as is? Or do you want me to move this
-> > check into handler_chain() and make it return "bool restart"?
->
-> Lets keep it as is for now.
->
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On 10/06/2012 10:57 AM, Andi Kleen wrote:
+> 
+> Maybe it's just me, but that's somehow sad for one if() and a su
+> btraction
+> 
+> BTW __pa used to be a simple subtraction, the if () was just added to
+> handle the few call sites for x86-64 that do __pa(&text_symbol).
+> Maybe we should just go back to the old __pa_symbol() for those cases,
+> then __pa could be the simple subtraction it used to was again
+> and it could be inlined and everyone would be happy.
+> 
 
-Thanks...
+I wonder how much the double-mapping actually buys us, if we could get a
+PIE-type memory model that doesn't try to create GOT references.
 
-But I am starting to think that I misunderstood your comment, you
-did not suggest to add this check into skip_sstep() as I wrongly
-thought.
+We would unambiguously lose out the cases where we currently can do
+symbol(index) but I wonder how much the impact actually is.
 
-And yes, I agree it would be more clean to move it out from
-find_active_uprobe() and avoid put_uprobe && clear_swbp....
+The advantage would be that it would give us way more room to do kernel
+space ASR.
 
-So how about v2 below?
-
-------------------------------------------------------------------------------
-[PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() + register() race
-
-Strictly speaking this race was added by me in 56bb4cf6. However
-I think that this bug is just another indication that we should
-move copy_insn/uprobe_analyze_insn code from install_breakpoint()
-to uprobe_register(), there are a lot of other reasons for that.
-Until then, add a hack to close the race.
-
-A task can hit uprobe U1, but before it calls find_uprobe() this
-uprobe can be unregistered *AND* another uprobe U2 can be added to
-uprobes_tree at the same inode/offset. In this case handle_swbp()
-will use the not-fully-initialized U2, in particular its arch.insn
-for xol.
-
-Add the additional !UPROBE_COPY_INSN check into handle_swbp(),
-if this flag is not set we simply restart as if the new uprobe was
-not inserted yet. This is not very nice, we need barriers, but we
-will remove this hack when we change uprobe_register().
-
-Note: with or without this patch install_breakpoint() can race with
-itself, yet another reson to kill UPROBE_COPY_INSN altogether. And
-even the usage of uprobe->flags is not safe. See the next patches.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/events/uprobes.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index cfa22c4..dbbca3a 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -596,6 +596,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 		BUG_ON((uprobe->offset & ~PAGE_MASK) +
- 				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
- 
-+		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
- 
-@@ -1436,6 +1437,14 @@ static void handle_swbp(struct pt_regs *regs)
- 		}
- 		return;
- 	}
-+	/*
-+	 * TODO: move copy_insn/etc into _register and remove this hack.
-+	 * After we hit the bp, _unregister + _register can install the
-+	 * new and not-yet-analyzed uprobe at the same address, restart.
-+	 */
-+	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
-+	if (unlikely(!(uprobe->flags & UPROBE_COPY_INSN)))
-+		goto restart;
- 
- 	utask = current->utask;
- 	if (!utask) {
--- 
-1.5.5.1
+	-hpa
 
 
