@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab2JFNFj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 09:05:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57391 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754313Ab2JFNFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 09:05:37 -0400
-Date: Sat, 6 Oct 2012 15:05:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH v4] trace,x86: add x86 irq vector tracepoints
-Message-ID: <20121006130532.GB11120@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Seiji Aguchi <seiji.aguchi@hds.com>,
-	"Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-	"x86@kernel.org" <x86@kernel.org>,
-	"dle-develop@lists.sourceforge.net" <dle-develop@lists.sourceforge.net>,
-	Satoru Moriya <satoru.moriya@hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com>
- <50612729.2080307@zytor.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>
- <50650A7E.90807@zytor.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D413869FD7@USINDEM103.corp.hds.com>
- <1349446428.6755.56.camel@gandalf.local.home>
- <506F7849.2080805@zytor.com>
- <1349492261.6755.87.camel@gandalf.local.home>
+	id S1755103Ab2JFNGS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 09:06:18 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53989 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2JFNGR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 09:06:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1349492261.6755.87.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349525982.2008.86.camel@joe-AO722>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+	<1349496603-20775-3-git-send-email-cheiny@synaptics.com>
+	<1349525982.2008.86.camel@joe-AO722>
+Date: Sat, 6 Oct 2012 09:06:16 -0400
+Message-ID: <CAHdPZaOTwAvuhLj6wmUaFnx9CxjwZNM0QEFzu2p+jaC7jAdAig@mail.gmail.com>
+Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Christopher Heiny <cheiny@synaptics.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 10:57:41PM -0400, Steven Rostedt wrote:
-> > The problem I'm seeing is the constant "oh, just a little bit more."  My
-> > experience over the years is that there is always demand for "just one
-> > more debug feature", each of which has negible cost, because they always
-> > use the previous thing as a baseline... noone ever looks at the grand
-> > total cost of the package (and by the time that happens, it is too late.)
-> 
-> Now I can turn this back at you ;-)  We can implement the simple "just
-> add the tracepoints in the code" first, and then later implement the
-> table swap version and we can say "hey! we just made the code faster!".
+On Sat, Oct 6, 2012 at 8:19 AM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2012-10-05 at 21:09 -0700, Christopher Heiny wrote:
+> []
+>
+> Just some trivial comments:
+>
+>> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
+> []
+>> @@ -0,0 +1,1529 @@
+> []
+>> +static ssize_t delay_write(struct file *filp, const char __user *buffer,
+>> +                        size_t size, loff_t *offset) {
+>> +     struct driver_debugfs_data *data = filp->private_data;
+>> +     struct rmi_device_platform_data *pdata =
+>> +                     data->rmi_dev->phys->dev->platform_data;
+>> +     int retval;
+>> +     char local_buf[size];
+>> +     unsigned int new_read_delay;
+>> +     unsigned int new_write_delay;
+>> +     unsigned int new_block_delay;
+>> +     unsigned int new_pre_delay;
+>> +     unsigned int new_post_delay;
+>> +
+>> +     retval = copy_from_user(local_buf, buffer, size);
+>> +     if (retval)
+>> +             return -EFAULT;
+>> +
+>> +     retval = sscanf(local_buf, "%u %u %u %u %u", &new_read_delay,
+>> +                     &new_write_delay, &new_block_delay,
+>> +                     &new_pre_delay, &new_post_delay);
+>> +     if (retval != 5) {
+>> +             dev_err(&data->rmi_dev->dev,
+>> +                     "Incorrect number of values provided for delay.");
+>> +             return -EINVAL;
+>> +     }
+>> +     if (new_read_delay < 0) {
+>
+> These are unnecessary tests as unsigned values are never < 0.
+>
 
-I absolutely agree with hpa here - it's like he's reading my mind. The
-sum of the total cost of all those features simply and surely slows down
-the kernel with time and if we don't pay attention, we might get bogged
-down with fat no matter the IPC improvements hw guys give us. Which are
-not endless, btw, in case someone wonders.
+Nope.
 
-What I'm missing with all those patches on LKML is: here's a patch that
-doesn't add a new feature but gives us n% improv with this and that
-workload. I wish we had more of those instead of the gazillion new
-features each 3 months.
+1 main()
+  2 {
+  3         char buf[100] = "1 -2";
+  4         int t, t2;
+  5
+  6         sscanf(buf, "%u %u", &t, &t2);
+  7
+  8         if (t > 0) {
+  9                 printf("greater\n");
+ 10         }
+ 11
+ 12         if (t2 > 0) {
+ 13                 printf("greater\n");
+ 14         } else {
+ 15                 printf("lesser\n");
+ 16         }
+ 17 }
 
-> > tracepoints in particular are something I'm getting concerned about,
-> > because they are one of those things that turn kernel internals into an
-> > ABI, which means misdesigned tracepoints can actually make kernel
-> > internal changes very hard to do.  The cost of those kinds of issues go
-> > up over time as the strain between where we'd like the code to be vs.
-> > where the code is increases.
-> 
-> Honestly, I'm extremely concerned about this too. In fact, I've bitched
-> about this so many times in the past, but it just fell to deaf ears:
-> 
-> http://lwn.net/Articles/412685/
-> http://lwn.net/Articles/415591/
-> http://lwn.net/Articles/416665/
-> http://lwn.net/Articles/416684/
 
-Absolutely agreed too. This is why we had such a long discussion about
-the RAS tracepoint format recently, for example.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
