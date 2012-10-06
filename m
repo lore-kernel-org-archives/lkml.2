@@ -1,58 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab2JFS4V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 14:56:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2962 "EHLO mga02.intel.com"
+	id S1755558Ab2JFS6s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:58:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38670 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab2JFS4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 14:56:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,545,1344236400"; 
-   d="scan'208";a="202476995"
-Message-ID: <50707ECD.2070300@zytor.com>
-Date: Sat, 06 Oct 2012 11:56:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753304Ab2JFS6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 14:58:46 -0400
+Date: Sat, 6 Oct 2012 20:59:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
+Message-ID: <20121006185949.GA15592@redhat.com>
+References: <20120930194119.GA11278@redhat.com> <20120930194217.GA11340@redhat.com> <20121006094528.GC9145@linux.vnet.ibm.com> <20121006171010.GA9819@redhat.com> <20121006173849.GB9143@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Alexander Duyck <alexander.h.duyck@intel.com>, konrad.wilk@oracle.com,
-        tglx@linutronix.de, mingo@redhat.com, rob@landley.net,
-        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
-        shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, x86@kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
- addresses
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org> <506F3670.4020202@intel.com> <20121005200245.GQ16230@one.firstfloor.org> <506F6BF2.8030500@intel.com> <20121006175751.GS16230@one.firstfloor.org>
-In-Reply-To: <20121006175751.GS16230@one.firstfloor.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121006173849.GB9143@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2012 10:57 AM, Andi Kleen wrote:
-> 
-> Maybe it's just me, but that's somehow sad for one if() and a su
-> btraction
-> 
-> BTW __pa used to be a simple subtraction, the if () was just added to
-> handle the few call sites for x86-64 that do __pa(&text_symbol).
-> Maybe we should just go back to the old __pa_symbol() for those cases,
-> then __pa could be the simple subtraction it used to was again
-> and it could be inlined and everyone would be happy.
-> 
+On 10/06, Srikar Dronamraju wrote:
+>
+> Yeah prepare_uprobe() looks good for me.
+>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-I wonder how much the double-mapping actually buys us, if we could get a
-PIE-type memory model that doesn't try to create GOT references.
+OK, renamed.
 
-We would unambiguously lose out the cases where we currently can do
-symbol(index) but I wonder how much the impact actually is.
+The next patches updated accordinly, I hope I can keep your acks.
 
-The advantage would be that it would give us way more room to do kernel
-space ASR.
+------------------------------------------------------------------------------
+[PATCH] uprobes: Introduce prepare_uprobe()
 
-	-hpa
+Preparation. Extract the copy_insn/arch_uprobe_analyze_insn code
+from install_breakpoint() into the new helper, prepare_uprobe().
+
+And move uprobe->flags defines from uprobes.h to uprobes.c, nobody
+else can use them anyway.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ include/linux/uprobes.h |   10 --------
+ kernel/events/uprobes.c |   60 ++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 41 insertions(+), 29 deletions(-)
+
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 18d839d..2459457 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -35,16 +35,6 @@ struct inode;
+ # include <asm/uprobes.h>
+ #endif
+ 
+-/* flags that denote/change uprobes behaviour */
+-
+-/* Have a copy of original instruction */
+-#define UPROBE_COPY_INSN	0x1
+-
+-/* Dont run handlers when first register/ last unregister in progress*/
+-#define UPROBE_RUN_HANDLER	0x2
+-/* Can skip singlestep */
+-#define UPROBE_SKIP_SSTEP	0x4
+-
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+ 	/*
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index dbbca3a..d6fa332 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -78,6 +78,13 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+  */
+ static atomic_t uprobe_events = ATOMIC_INIT(0);
+ 
++/* Have a copy of original instruction */
++#define UPROBE_COPY_INSN	0x1
++/* Dont run handlers when first register/ last unregister in progress*/
++#define UPROBE_RUN_HANDLER	0x2
++/* Can skip singlestep */
++#define UPROBE_SKIP_SSTEP	0x4
++
+ struct uprobe {
+ 	struct rb_node		rb_node;	/* node in the rb tree */
+ 	atomic_t		ref;
+@@ -563,6 +570,37 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
+ 	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
+ }
+ 
++static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
++				struct mm_struct *mm, unsigned long vaddr)
++{
++	int ret = 0;
++
++	if (uprobe->flags & UPROBE_COPY_INSN)
++		return ret;
++
++	ret = copy_insn(uprobe, file);
++	if (ret)
++		goto out;
++
++	ret = -ENOTSUPP;
++	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
++		goto out;
++
++	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
++	if (ret)
++		goto out;
++
++	/* write_opcode() assumes we don't cross page boundary */
++	BUG_ON((uprobe->offset & ~PAGE_MASK) +
++			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
++
++	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
++	uprobe->flags |= UPROBE_COPY_INSN;
++
++ out:
++	return ret;
++}
++
+ static int
+ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 			struct vm_area_struct *vma, unsigned long vaddr)
+@@ -580,25 +618,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 	if (!uprobe->consumers)
+ 		return 0;
+ 
+-	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
+-		ret = copy_insn(uprobe, vma->vm_file);
+-		if (ret)
+-			return ret;
+-
+-		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+-			return -ENOTSUPP;
+-
+-		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
+-		if (ret)
+-			return ret;
+-
+-		/* write_opcode() assumes we don't cross page boundary */
+-		BUG_ON((uprobe->offset & ~PAGE_MASK) +
+-				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+-
+-		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+-		uprobe->flags |= UPROBE_COPY_INSN;
+-	}
++	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
++	if (ret)
++		return ret;
+ 
+ 	/*
+ 	 * set MMF_HAS_UPROBES in advance for uprobe_pre_sstep_notifier(),
+-- 
+1.5.5.1
 
 
