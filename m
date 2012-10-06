@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2JFRVO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 13:21:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14739 "EHLO mga01.intel.com"
+	id S1755287Ab2JFRYO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 13:24:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26136 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755081Ab2JFRVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 13:21:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,545,1344236400"; 
-   d="scan'208";a="230755949"
-Message-ID: <50706885.1030908@linux.intel.com>
-Date: Sun, 07 Oct 2012 01:21:09 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: fengguang.wu@intel.com, netdev@vger.kernel.org,
+	id S1753764Ab2JFRYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 13:24:08 -0400
+Date: Sat, 6 Oct 2012 19:25:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: Re: [net:master 1/9] pch_gbe_main.c:(.text+0x510370): undefined reference
- to `pch_ch_control_write'
-References: <50701EEC.7080805@linux.intel.com>	<20121006.092207.1280541690613202532.davem@davemloft.net>	<50703B1B.2040705@linux.intel.com> <20121006.102132.1497404004255213029.davem@davemloft.net>
-In-Reply-To: <20121006.102132.1497404004255213029.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() +
+	register() race
+Message-ID: <20121006172531.GB9819@redhat.com>
+References: <20120930194119.GA11278@redhat.com> <20120930194211.GA11333@redhat.com> <20121006093311.GB9145@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121006093311.GB9145@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 10/06/2012 10:21 PM, David Miller wrote:
-> From: Haicheng Li<haicheng.li@linux.intel.com>
-> Date: Sat, 06 Oct 2012 22:07:23 +0800
+On 10/06, Srikar Dronamraju wrote:
 >
->> On 10/06/2012 09:22 PM, David Miller wrote:
->>> From: Haicheng Li<haicheng.li@linux.intel.com>
->>> Date: Sat, 06 Oct 2012 20:07:08 +0800
->>>
->>>> The failure is due to the CONFIG_PPS is not set there, consequently
->>>> CONFIG_PTP_1588_CLOCK can not be set as =y anyway.
->>>>
->>>> So David's patch of "da1586461e53a4dd045738cce309ab488970f0ef [1/9]
->>>> pch_gbe: Fix PTP dependencies" is buggy. Furthermore, I think using
->>>> "selects" to resolve such dependency issue is not good idea as it
->>>> won't visit the dependencies.
->>>>
->>>> David, I would still suggest to take my original patch:
->>>> https://lkml.org/lkml/2012/9/28/70
->>>>
->>>> + depends on PTP_1588_CLOCK_PCH&&   (PCH_GBE=m || PTP_1588_CLOCK_PCH=y)
->>>>
->>>> or simply like:
->>>
->>> This is all very rediculous if you ask me.
->>>
->>> Why should the user have to know a detail like the underlying
->>> PTP chip type just to enable PTP on his networking card?
->>>
->>> Because that is what you are making him do with your change.
->>>
->>> Select removed the necessity of the user having to know these
->>> things.
->> However it possibly breaks the build...
->>
->> IMHO, the reason why the dependency of PCH_PTP becomes so tricky is
->> that the code of these two modules call the functions of each other
->> (bad code structure?). To fix it neatly, either we restructure the
->> code or just simply make it:
->> + depends on PTP_1588_CLOCK_PCH=y
->>
->> For PCH_GBE=m case, it does be able to pass the build test, but I'm
->> afraid it won't be smoothly workable via "insmod" due to the
->> codependency of these two when PCH_PTP is enabled.
+> * Oleg Nesterov <oleg@redhat.com> [2012-09-30 21:42:11]:
 >
-> Then why does it work for IXGBE and others who use select?
+> > @@ -1391,6 +1392,16 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+> >  	if (!uprobe && test_and_clear_bit(MMF_RECALC_UPROBES, &mm->flags))
+> >  		mmf_recalc_uprobes(mm);
+> >  	up_read(&mm->mmap_sem);
+> > +	/*
+> > +	 * TODO: move copy_insn/etc into _register and remove this hack.
+> > +	 * After we hit the bp, _unregister + _register can install the
+> > +	 * new and not-yet-analyzed uprobe at the same address, restart.
+> > +	 */
+> > +	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+> > +	if (uprobe && unlikely(!(uprobe->flags & UPROBE_COPY_INSN))) {
+> > +		uprobe = NULL;
+> > +		*is_swbp = 0;
+> > +	}
+> >
+> >  	return uprobe;
+> >  }
+>
+> Should we be adding this check handle_swbp() around can_skip_step()?
+>
+> The earliest we access arch.insn is in can_skip_step. So we give some
+> more time for the instruction to be copied.
 
-They explicitly select all the possible dependencies if they are bug-free (I 
-didn't strictly check them).
+handle_swbp:
 
-Take IXGBE_PTP as example, it explicitly selects PPS, and also depends on 
-EXPERIMENTAL:
-config IXGBE_PTP
-         bool "PTP Clock Support"
-         default n
-         depends on IXGBE && EXPERIMENTAL
-         select PPS
-         select PTP_1588_CLOCK
+	if (can_skip_sstep(uprobe, regs))
+		goto out;
 
-So if you stick to use "select" as the convention of such build issue fixing, 
-fengguang's build failure would be fixed by:
-	+ depends on EXPERIMENTAL
-	+ select PPS
-	+ select PTP_1588_CLOCK
+but if we hit a non-UPROBE_COPY_INSN uprobe, we need "goto restart".
 
-would you prefer this way?
+> Also it will probably be a little cleaner, (Not having to drop a uprobe
+> reference, not having to reset is_swbp.)
+
+We can change handler_chain() (which also checks UPROBE_RUN_HANDLER)
+to return "bool restart", not sure this will be more clean.
+
+And if we change handler_chain(), I think it should return bitmask,
+
+	for (uc = uprobe->consumers; uc; uc = uc->next)
+		ret |= uc->handler(...);
+
+	return ret;
+
+for the future changes... (say, we can remove bp if consumers do not
+want to trace this task). Not sure it makes sense to change it right
+now.
+
+So. Should I leave this patch as is? Or do you want me to move this
+check into handler_chain() and make it return "bool restart"?
+
+Oleg.
 
