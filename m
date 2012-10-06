@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab2JFTyy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 15:54:54 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:20065 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab2JFTyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 15:54:51 -0400
-Date: Sat, 6 Oct 2012 21:54:16 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        fabien.andre@gmail.com, scott.liu@emc.com.tw,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification 
- implementation
-Message-ID: <20121006215416.5fdbb6ef@endymion.delvare>
-In-Reply-To: <20121003164306.GA18529@core.coreip.homeip.net>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>
-	<20121003164306.GA18529@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755654Ab2JFT4h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 15:56:37 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25178 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab2JFT4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 15:56:35 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] pidns: remove recursion from free_pid_ns (v3)
+Date: Sat,  6 Oct 2012 23:56:33 +0400
+Message-Id: <1349553393-902065-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Oct 2012 09:43:12 -0700, Dmitry Torokhov wrote:
-> On Fri, Sep 14, 2012 at 03:41:43PM +0200, benjamin.tissoires wrote:
-> > +	}
-> > +
-> > +	do {
-> > +		ret = i2c_transfer(client->adapter, msg, msg_num);
-> > +		if (ret > 0)
-> > +			break;
-> > +		tries--;
-> > +		dev_dbg(&client->dev, "retrying i2chid_command:%d (%d)\n",
-> > +			command, tries);
-> > +	} while (tries > 0);
-> > +
-> > +	if (wait && ret > 0) {
-> > +		if (debug)
-> > +			dev_err(&client->dev, "%s: waiting....\n", __func__);
-> > +		if (!wait_event_timeout(ihid->wait,
-> > +				!test_bit(I2C_HID_RESET_PENDING, &ihid->flags),
-> > +				msecs_to_jiffies(5000)))
-> > +			ret = -ENODATA;
-> > +		if (debug)
-> > +			dev_err(&client->dev, "%s: finished.\n", __func__);
-> 
-> Why do we have error level messages with debug? I know dev_dbg is
-> compiled out if !DEBUG, but there must be a better way. Maybe define
-> i2c_hid_dbg() via dev_printk() and also check debug condition there?
+Here is a stack trace of recursion:
+free_pid_ns(parent)
+  put_pid_ns(parent)
+    kref_put(&ns->kref, free_pid_ns);
+      free_pid_ns
 
-dev_dbg() is compiled out if !DEBUG only if CONFIG_DYNAMIC_DEBUG isn't
-set. These days I think every developer want to enable this option.
+This patch turns recursion into loops.
 
+pidns can be nested many times, so in case of recursion
+a simple user space program can provoke a kernel panic
+due to exceed of a kernel stack.
+
+v2: * don't check parent on NULL
+    * use atomic_dec_and_test(&kref->refcount)
+v3: Fix coding style issue
+
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/linux/kref.h   |   12 ++++++++++++
+ kernel/pid_namespace.c |   16 ++++++++++++----
+ 2 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 65af688..2844262 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+ 	return kref_sub(kref, 1, release);
+ }
+ 
++/**
++ * kref_put - decrement refcount for object.
++ * @kref: object.
++ *
++ * Decrement the refcount.
++ * Return 1 if refcount is zero.
++ */
++static inline int __kref_put(struct kref *kref)
++{
++	return atomic_dec_and_test(&kref->refcount);
++}
++
+ static inline int kref_put_mutex(struct kref *kref,
+ 				 void (*release)(struct kref *kref),
+ 				 struct mutex *lock)
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index 6144bab..b051fa6 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -138,11 +138,19 @@ void free_pid_ns(struct kref *kref)
+ 
+ 	ns = container_of(kref, struct pid_namespace, kref);
+ 
+-	parent = ns->parent;
+-	destroy_pid_namespace(ns);
++	while (1) {
++		parent = ns->parent;
++		destroy_pid_namespace(ns);
+ 
+-	if (parent != NULL)
+-		put_pid_ns(parent);
++		if (parent == &init_pid_ns)
++			break;
++
++		/* kref_put cannot be used for avoiding recursion */
++		if (__kref_put(&parent->kref) == 0)
++			break;
++
++		ns = parent;
++	}
+ }
+ 
+ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
 -- 
-Jean Delvare
+1.7.1
+
