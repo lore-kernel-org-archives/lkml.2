@@ -1,197 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab2JFBsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 21:48:04 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39444 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab2JFBsB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 21:48:01 -0400
-Subject: [GIT PULL] target updates for v3.7-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Hannes Reinecke <mail@hannes-reinecke.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Oct 2012 18:47:40 -0700
-Message-ID: <1349488060.9312.117.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752970Ab2JFBzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 21:55:07 -0400
+Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:45984
+	"EHLO relay" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751319Ab2JFBzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 21:55:04 -0400
+From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+To: andrey.smrinov@convergeddevices.net
+Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/6] A driver for Si476x series of chips
+Date: Fri,  5 Oct 2012 18:54:56 -0700
+Message-Id: <1349488502-11293-1-git-send-email-andrey.smirnov@convergeddevices.net>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
+This is a second version of the patchset originaly posted here:
+https://lkml.org/lkml/2012/9/13/590
 
-Here are the target pending updates for v3.7-rc1 code.  Please go ahead
-and pull from:
+To save everyone's time I'll repost the original description of it:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-Things have been calm for the most part with no new fabric drivers in
-flight for v3.7 (we're up to eight now !), so this update is primarily
-focused on addressing a few long-standing items within target-core and
-iscsi-target fabric code.
+This patchset contains a driver for a Silicon Laboratories 476x series
+of radio tuners. The driver itself is implemented as an MFD devices
+comprised of three parts: 1. Core device that provides all the other
+devices with basic functionality and locking scheme. 2. Radio device
+that translates between V4L2 subsystem requests into Core device
+commands. 3. Codec device that does similar to the earlier described
+task, but for ALSA SoC subsystem.
 
-The highlights include:
+This driver has been tested to work in two different sytems: 1. A
+ custom Tegra-based ARM board(design is based on Harmony board)
+ running linux kernel 3.1.10 kernel 2. A standalone USB-connected
+ board that has a dedicated Cortex M3 working as a transparent USB to
+ I2C bridge which was connected to a off-the-shelf x86-64 laptop
+ running Ubuntu with 3.2.0 kernel.
 
-- target: Simplify fabric sense data length handling (roland)
-- qla2xxx: Fix endianness of task management response code (roland)
-- target: fix truncation of mode data, support zero allocation length (paolo)
-- target: Properly support zero-length commands in normal processing path
-          (paolo)
-- iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT
-                PDU (ronnie + nab)
-- iscsi-target: Add explicit set of cache_dynamic_acls=1 for TPG demo-mode
-                (ronnie + nab)
-- target/file: Re-enable optional fd_buffered_io=1 operation (nab + hch)
-- iscsi-target: Add MaxXmitDataSegmenthLength forr target -> initiator
-                MDRSL declaration (nab)
-- target: Add target_submit_cmd_map_sgls for SGL fabric memory
-                 passthrough (nab + hch)
-- tcm_loop: Convert I/O path to use target_submit_cmd_map_sgls (hch + nab)
-- tcm_vhost: Convert I/O path to use target_submit_cmd_map_sgls (nab + hch)
+As far as SubmitChecklist is concerned following criteria should be
+satisfied: 2b, 3, 5, 7, 9, 10
 
-The last series for adding a new target_submit_cmd_map_sgls() fabric
-caller (as requested by hch) that accepts pre-allocated SGL memory
-(using existing logic), along with converting tcm_loop + tcm_vhost has
-only been in -next for the last days, but has gotten enough review
-+testing and is clear enough a mechanical change that I think it's
-reasonable to merge for -rc1 code.
 
-Thanks again to everyone who contributed this round!  Extra special
-thanks to Roland (PureStorage) for tracking down the qla2xxx target TMR
-response code endian issue, and to Paolo (Redhat) for resolving the long
-standing zero-length CDB issues within target-core between virtual and
-pSCSI backends.
+Now it is made against git.linuxtv.org/media_tree.git repository
+instead of linux-stable.
 
-Thank you,
+I tried to take into account all the flaws pointed by Mark and Hans,
+but since the amount of changes I had to made was not trivial I
+wouldn't be surprized if I missed something that was shown to me. I
+would like to appologize in advance if this patchset contains some
+unfixed problems pointed out in the previous version.
 
---nab
+Andrey Smirnov (6):
+  Add header files and Kbuild plumbing for SI476x MFD core
+  Add the main bulk of core driver for SI476x code
+  Add commands abstraction layer for SI476X MFD
+  Add chip properties handling code for SI476X MFD
+  Add a V4L2 driver for SI476X MFD
+  Add a codec driver for SI476X MFD
 
-Andy Grover (3):
-  target: Remove request_module for target_core_stgt
-  target: Cleanup transport_subsystem_check_init
-  target/sbp: Remove strict param from sbp_parse_wwn
+ drivers/media/radio/Kconfig        |   17 +
+ drivers/media/radio/Makefile       |    1 +
+ drivers/media/radio/radio-si476x.c | 1159 ++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig                |   14 +
+ drivers/mfd/Makefile               |    3 +
+ drivers/mfd/si476x-cmd.c           | 1493 ++++++++++++++++++++++++++++++++++++
+ drivers/mfd/si476x-i2c.c           |  974 +++++++++++++++++++++++
+ drivers/mfd/si476x-prop.c          |  477 ++++++++++++
+ include/linux/mfd/si476x-core.h    |  529 +++++++++++++
+ include/media/si476x.h             |  449 +++++++++++
+ sound/soc/codecs/Kconfig           |    4 +
+ sound/soc/codecs/Makefile          |    2 +
+ sound/soc/si476x.c                 |  255 ++++++
+ 13 files changed, 5377 insertions(+)
+ create mode 100644 drivers/media/radio/radio-si476x.c
+ create mode 100644 drivers/mfd/si476x-cmd.c
+ create mode 100644 drivers/mfd/si476x-i2c.c
+ create mode 100644 drivers/mfd/si476x-prop.c
+ create mode 100644 include/linux/mfd/si476x-core.h
+ create mode 100644 include/media/si476x.h
+ create mode 100644 sound/soc/si476x.c
 
-Christoph Hellwig (5):
-  iscsit: mark various functions static
-  iscsit: remove incorrect unlock in iscsit_build_sendtargets_resp
-  iscsit: add missing endianess conversion in iscsit_check_inaddr_any
-  iscsit: use the itt_t abstract type
-  iscsit: proper endianess conversions
-
-Dan Carpenter (3):
-  target/usb-gadget: remove duplicate initialization
-  target/usb-gadget: strlen() doesn't count the terminator
-  target/iscsi: precedence bug in iscsit_set_dataout_sequence_values()
-
-Masanari Iida (1):
-  target: Fix minor spelling typos in drivers/target
-
-Nicholas Bellinger (16):
-  target/iblock: Use match_strlcpy for Opt_udev_path string assignment
-  target/rd: Allow WriteCacheEnabled=1 operation with rd_mcp backends
-  target: Drop se_subsystem_api->[write_cache,fua_write]_emulated flags
-  iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT
-    PDU
-  target/file: Re-enable optional fd_buffered_io=1 operation
-  iscsi-target: Add base MaxXmitDataSegmentLength code
-  iscsi-target: Enable MaxXmitDataSegmentLength operation in login path
-  iscsi-target: Convert incoming PDU payload checks to
-    MaxXmitDataSegmentLength
-  iscsi-target: Add MaxXmitDataSegmentLength connection recovery check
-  iscsi-target: Change iscsi_target_seq_pdu_list.c to honor
-    MaxXmitDataSegmentLength
-  iscsi-target: Add explicit set of cache_dynamic_acls=1 for TPG
-    demo-mode
-  target: Add target_submit_cmd_map_sgls for SGL fabric memory
-    passthrough
-  tcm_loop: Convert I/O path to use target_submit_cmd_map_sgls
-  target: Add control CDB READ payload zero work-around
-  tcm_vhost: Convert I/O path to use target_submit_cmd_map_sgls
-  iscsi-target: Bump defaults for nopin_timeout +
-    nopin_response_timeout values
-
-Paolo Bonzini (5):
-  target: support zero allocation length in INQUIRY
-  target: fix truncation of mode data, support zero allocation length
-  target: support zero allocation length in SBC commands
-  target: do not submit a zero-bio I/O request
-  target: go through normal processing for all zero-length commands
-
-Peter Senna Tschudin (1):
-  target: fix return code in target_core_init_configfs error path
-
-Roland Dreier (4):
-  target: Remove unused target_core_fabric_ops.get_fabric_sense_len
-    method
-  target: Simplify fabric sense data length handling
-  target/iscsi: Don't log "iSCSI Login negotiation failed." twice
-  qla2xxx: Fix endianness of task management response code
-
-Wei Yongjun (6):
-  tcm_fc: remove unused including <generated/utsrelease.h>
-  target: remove unused including <generated/utsrelease.h>
-  target: use list_move_tail instead of list_del/list_add_tail
-  tcm_fc: move the dereference below the NULL test
-  target: move the dereference below the NULL test
-  sbp-target: fix return value check in sbp_register_configfs()
-
- Documentation/target/tcm_mod_builder.py          |   16 --
- drivers/infiniband/ulp/srpt/ib_srpt.c            |   12 -
- drivers/scsi/qla2xxx/qla_target.c                |    2 +-
- drivers/scsi/qla2xxx/tcm_qla2xxx.c               |   15 --
- drivers/target/iscsi/iscsi_target.c              |  196 ++++++++---------
- drivers/target/iscsi/iscsi_target.h              |    5 +
- drivers/target/iscsi/iscsi_target_configfs.c     |   42 +---
- drivers/target/iscsi/iscsi_target_core.h         |   15 +-
- drivers/target/iscsi/iscsi_target_erl0.c         |   94 ++++----
- drivers/target/iscsi/iscsi_target_erl1.c         |    4 +-
- drivers/target/iscsi/iscsi_target_erl1.h         |    4 +-
- drivers/target/iscsi/iscsi_target_erl2.c         |    9 +-
- drivers/target/iscsi/iscsi_target_erl2.h         |    2 +-
- drivers/target/iscsi/iscsi_target_login.c        |   20 +--
- drivers/target/iscsi/iscsi_target_nego.c         |   31 +--
- drivers/target/iscsi/iscsi_target_parameters.c   |   71 +++++-
- drivers/target/iscsi/iscsi_target_parameters.h   |    7 +-
- drivers/target/iscsi/iscsi_target_seq_pdu_list.c |   61 +++---
- drivers/target/iscsi/iscsi_target_tmr.c          |   31 ++-
- drivers/target/iscsi/iscsi_target_tpg.c          |   12 +
- drivers/target/iscsi/iscsi_target_tq.c           |    6 +-
- drivers/target/iscsi/iscsi_target_tq.h           |    1 -
- drivers/target/iscsi/iscsi_target_util.c         |   16 +-
- drivers/target/iscsi/iscsi_target_util.h         |    8 +-
- drivers/target/loopback/tcm_loop.c               |   74 +------
- drivers/target/sbp/sbp_target.c                  |   27 +--
- drivers/target/target_core_alua.c                |    2 +-
- drivers/target/target_core_configfs.c            |   18 +-
- drivers/target/target_core_device.c              |   16 +-
- drivers/target/target_core_fabric_configfs.c     |    1 -
- drivers/target/target_core_fabric_lib.c          |    8 +-
- drivers/target/target_core_file.c                |   43 +++-
- drivers/target/target_core_file.h                |    1 +
- drivers/target/target_core_iblock.c              |   17 +-
- drivers/target/target_core_pr.c                  |   14 +-
- drivers/target/target_core_pscsi.c               |    2 +-
- drivers/target/target_core_sbc.c                 |   23 ++-
- drivers/target/target_core_spc.c                 |   48 +---
- drivers/target/target_core_stat.c                |    1 -
- drivers/target/target_core_tpg.c                 |    2 +-
- drivers/target/target_core_transport.c           |  268 ++++++++++++---------
- drivers/target/tcm_fc/tfc_cmd.c                  |    1 -
- drivers/target/tcm_fc/tfc_conf.c                 |   12 -
- drivers/target/tcm_fc/tfc_io.c                   |    4 +-
- drivers/target/tcm_fc/tfc_sess.c                 |    1 -
- drivers/usb/gadget/tcm_usb_gadget.c              |   15 +--
- drivers/vhost/tcm_vhost.c                        |   81 ++------
- drivers/vhost/tcm_vhost.h                        |    8 +
- include/target/target_core_backend.h             |    3 -
- include/target/target_core_fabric.h              |    5 +-
- 50 files changed, 640 insertions(+), 735 deletions(-)
+-- 
+1.7.9.5
 
