@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab2JFNUL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 09:20:11 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:52025 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab2JFNUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 09:20:07 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: david@lang.hm
-Subject: Re: Minimal jitter = good desktop.
-References: <op.wlqe9kw36426ze@localhost.localdomain>
- <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
-Date: Sat, 06 Oct 2012 15:19:58 +0200
-Cc: linux-kernel@vger.kernel.org
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wlrdzkqh6426ze@localhost.localdomain>
-In-reply-to: <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1755676Ab2JFNWN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 09:22:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35957 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab2JFNWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 09:22:11 -0400
+Date: Sat, 06 Oct 2012 09:22:07 -0400 (EDT)
+Message-Id: <20121006.092207.1280541690613202532.davem@davemloft.net>
+To: haicheng.li@linux.intel.com
+Cc: fengguang.wu@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net:master 1/9] pch_gbe_main.c:(.text+0x510370): undefined
+ reference to `pch_ch_control_write'
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50701EEC.7080805@linux.intel.com>
+References: <20121006075954.GA29618@localhost>
+	<50701EEC.7080805@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the context of os-jitter, delay/latency is measured as jitter.
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Sat, 06 Oct 2012 20:07:08 +0800
 
-Peace Be With You.
+> The failure is due to the CONFIG_PPS is not set there, consequently
+> CONFIG_PTP_1588_CLOCK can not be set as =y anyway.
+> 
+> So David's patch of "da1586461e53a4dd045738cce309ab488970f0ef [1/9]
+> pch_gbe: Fix PTP dependencies" is buggy. Furthermore, I think using
+> "selects" to resolve such dependency issue is not good idea as it
+> won't visit the dependencies.
+> 
+> David, I would still suggest to take my original patch:
+> https://lkml.org/lkml/2012/9/28/70
+> 
+> + depends on PTP_1588_CLOCK_PCH && (PCH_GBE=m || PTP_1588_CLOCK_PCH=y)
+> 
+> or simply like:
 
-On Sat, 06 Oct 2012 03:06:57 +0200, <david@lang.hm> wrote:
+This is all very rediculous if you ask me.
 
-> less jitter != less latency
->
-> you could (in theory) eliminate jitter by delaying every keypress  
-> processed for exactly 1 second by having the code paths that process  
-> keypresses faster insert delays before implementing the results.
->
-> that would result in zero jitter, but horrific latency.
->
-> latency is how long it takes to do something, jitter is how much the  
-> latency varies.
->
-> normally, if you optimize for one you make the other worse.
->
-> If you optimize for latency, you try to finish everything as soon as you  
-> can. Since some things take longer than others, jitter increases.
->
-> David Lang
->
-> On Sat, 6 Oct 2012, Uwaysi Bin Kareem wrote:
->
->> Reducing jitter seems central for many things.
->> First of all keypresses seem faster. (less jitter = less latency).
->> Doom 3 and similar jittersensitive OpenGL applications run smoothly,  
->> and better than windows. Doom 3 was also my main app to get running  
->> well, and measuring jitter in the signalpath of OpenGL improved the  
->> overall computing experience.
->>
->> Even youtube videos who are not synced to refresh, with a refresh of  
->> 60, and a videofps of 30, runs quite well.  
->> http://paradoxuncreated.com/Blog/wordpress/?p=3221
->>
->> System is responsive, and I have only had one problem, and that is  
->> packing seems not to work at the moment.
->>
->> For a fast test in Ubuntu, try  
->> http://paradoxuncreated.com/Blog/wordpress/?p=2268
->>
->> Definately a recommended config on the desktop.
->>
->> Peace Be With You.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Why should the user have to know a detail like the underlying
+PTP chip type just to enable PTP on his networking card?
+
+Because that is what you are making him do with your change.
+
+Select removed the necessity of the user having to know these
+things.
