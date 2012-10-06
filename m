@@ -1,211 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab2JFRKh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 13:10:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18276 "EHLO mx1.redhat.com"
+	id S1754938Ab2JFROD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 13:14:03 -0400
+Received: from surya.ncl.res.in ([14.139.126.12]:49268 "EHLO surya.ncl.res.in"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753762Ab2JFRKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 13:10:36 -0400
-Date: Sat, 6 Oct 2012 19:10:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
-Message-ID: <20121006171010.GA9819@redhat.com>
-References: <20120930194119.GA11278@redhat.com> <20120930194217.GA11340@redhat.com> <20121006094528.GC9145@linux.vnet.ibm.com>
+	id S1753762Ab2JFRN7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 13:13:59 -0400
+X-Greylist: delayed 7455 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Oct 2012 13:13:59 EDT
+From: "Kedar B. Batkulwar" <kb.batkulwar@ncl.res.in>
+Subject: RE-ACTIVATE YOUR EMAIL ACCOUNT.
+Thread-Topic: RE-ACTIVATE YOUR EMAIL ACCOUNT.
+Thread-Index: Ac2j06VtcaYOgmgbTGGLTqI0c0rssg==
+Date: Sat, 6 Oct 2012 15:02:47 +0000
+Message-ID: <EEF64ABF5899414F9B79C1B7A07E63F50CAFE535@mailsrv01.ncl.res.in>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [115.242.137.155]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121006094528.GC9145@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2012-09-30 21:42:17]:
->
-> > +static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
-> > +				struct mm_struct *mm, unsigned long vaddr)
-> > +{
-> > +	int ret = 0;
-> > +
-> > +	if (uprobe->flags & UPROBE_COPY_INSN)
-> > +		return ret;
-> > +
-> > +	ret = copy_insn(uprobe, file);
-> > +	if (ret)
-> > +		goto out;
-> > +
-> > +	ret = -ENOTSUPP;
-> > +	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
-> > +		goto out;
-> > +
-> > +	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
-> > +	if (ret)
-> > +		goto out;
-> > +
-> > +	/* write_opcode() assumes we don't cross page boundary */
-> > +	BUG_ON((uprobe->offset & ~PAGE_MASK) +
-> > +			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-> > +
-> > +	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
-> > +	uprobe->flags |= UPROBE_COPY_INSN;
-> > +	ret = 0;
-> > + out:
-> > +	return ret;
-> > +}
-> > +
->
-> 2 nits:
->  why do we need to reset ret before out label? I think its redudant.
->  arch_uprobe_analyze_insn() should have set it to 0 already. No?
-
-OK,
-
-> blank line above out:
-
-OK, see the updated patch below.
-
-> Currently only extern functions start with uprobe_ but we already have
-> copy_insn, and __copy_insn, So can think of any names for
-> uprobe_copy_insn.
-
-Yes ;) plus it is not only "copy", it does _analyze
-
-> Not sure test_and_copy_insn() is a good alternative.
-
-perhaps prepare_uprobe()... But I agree with any naming, just tell me
-what you prefer and I'll update the patch again.
-
-==============================================================================
-[PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
-
-Preparation. Extract the copy_insn/arch_uprobe_analyze_insn code
-from install_breakpoint() into the new helper, uprobe_copy_insn().
-
-And move uprobe->flags defines from uprobes.h to uprobes.c, nobody
-else can use them anyway.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/uprobes.h |   10 --------
- kernel/events/uprobes.c |   60 ++++++++++++++++++++++++++++++++---------------
- 2 files changed, 41 insertions(+), 29 deletions(-)
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 18d839d..2459457 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -35,16 +35,6 @@ struct inode;
- # include <asm/uprobes.h>
- #endif
- 
--/* flags that denote/change uprobes behaviour */
--
--/* Have a copy of original instruction */
--#define UPROBE_COPY_INSN	0x1
--
--/* Dont run handlers when first register/ last unregister in progress*/
--#define UPROBE_RUN_HANDLER	0x2
--/* Can skip singlestep */
--#define UPROBE_SKIP_SSTEP	0x4
--
- struct uprobe_consumer {
- 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
- 	/*
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index dd44311..98b60bc 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -78,6 +78,13 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
-  */
- static atomic_t uprobe_events = ATOMIC_INIT(0);
- 
-+/* Have a copy of original instruction */
-+#define UPROBE_COPY_INSN	0x1
-+/* Dont run handlers when first register/ last unregister in progress*/
-+#define UPROBE_RUN_HANDLER	0x2
-+/* Can skip singlestep */
-+#define UPROBE_SKIP_SSTEP	0x4
-+
- struct uprobe {
- 	struct rb_node		rb_node;	/* node in the rb tree */
- 	atomic_t		ref;
-@@ -563,6 +570,37 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
- 	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
-+static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
-+				struct mm_struct *mm, unsigned long vaddr)
-+{
-+	int ret = 0;
-+
-+	if (uprobe->flags & UPROBE_COPY_INSN)
-+		return ret;
-+
-+	ret = copy_insn(uprobe, file);
-+	if (ret)
-+		goto out;
-+
-+	ret = -ENOTSUPP;
-+	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
-+		goto out;
-+
-+	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
-+	if (ret)
-+		goto out;
-+
-+	/* write_opcode() assumes we don't cross page boundary */
-+	BUG_ON((uprobe->offset & ~PAGE_MASK) +
-+			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-+
-+	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
-+	uprobe->flags |= UPROBE_COPY_INSN;
-+
-+ out:
-+	return ret;
-+}
-+
- static int
- install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			struct vm_area_struct *vma, unsigned long vaddr)
-@@ -580,25 +618,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	if (!uprobe->consumers)
- 		return 0;
- 
--	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
--		ret = copy_insn(uprobe, vma->vm_file);
--		if (ret)
--			return ret;
--
--		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
--			return -ENOTSUPP;
--
--		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
--		if (ret)
--			return ret;
--
--		/* write_opcode() assumes we don't cross page boundary */
--		BUG_ON((uprobe->offset & ~PAGE_MASK) +
--				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
--
--		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
--		uprobe->flags |= UPROBE_COPY_INSN;
--	}
-+	ret = uprobe_copy_insn(uprobe, vma->vm_file, mm, vaddr);
-+	if (ret)
-+		return ret;
- 
- 	/*
- 	 * set MMF_HAS_UPROBES in advance for uprobe_pre_sstep_notifier(),
--- 
-1.5.5.1
 
 
 
+
+Dear Email User;
+
+You have exceeded the limit of 23432 storage on your mailbox set by your
+WEB SERVICE/Administrator, and you will be having problems in sending
+and receiving mails Until You Re-Validate. You have to update by clicking on
+the below link and fill out the information to validate your account.
+
+Please Click the link Below or copy paste to your browser To Validate Your
+Mailbox
+
+http://www.ricardok.com.br/phpFormGen/use/filter/form1.html
+
+Warning!!!
+Failure to do this, will result in limited access to your mailbox.
+failure to update your account within Three days of this update
+notification, your account will be closed permanently.
+
+Sincerely,
+System Administrator®
+
+________________________________
+
+Disclaimer:
+
+This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
