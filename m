@@ -1,164 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2JFS6s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 14:58:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753304Ab2JFS6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 14:58:46 -0400
-Date: Sat, 6 Oct 2012 20:59:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
-Message-ID: <20121006185949.GA15592@redhat.com>
-References: <20120930194119.GA11278@redhat.com> <20120930194217.GA11340@redhat.com> <20121006094528.GC9145@linux.vnet.ibm.com> <20121006171010.GA9819@redhat.com> <20121006173849.GB9143@linux.vnet.ibm.com>
+	id S1755687Ab2JFS7a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:59:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51370 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab2JFS71 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 14:59:27 -0400
+Date: Sat, 6 Oct 2012 19:59:21 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: ????????? <jaegeuk.kim@samsung.com>
+Cc: "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Message-ID: <20121006185921.GI2616@ZenIV.linux.org.uk>
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121006173849.GB9143@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06, Srikar Dronamraju wrote:
->
-> Yeah prepare_uprobe() looks good for me.
->
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On Fri, Oct 05, 2012 at 09:03:09PM +0900, ????????? wrote:
+> +static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+> +						bool excl)
+> +{
+> +	struct super_block *sb = dir->i_sb;
+> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+> +	struct inode *inode;
+> +	nid_t ino = 0;
+> +	int err;
+> +
+> +	if (dentry->d_name.len > F2FS_MAX_NAME_LEN)
+> +		return -ENAMETOOLONG;
 
-OK, renamed.
+Pointless - failing those on ->lookup() with ENAMETOOLONG is enough.
+The same goes for all entry creation methods.
 
-The next patches updated accordinly, I hope I can keep your acks.
+> +	if (inode->i_nlink >= F2FS_LINK_MAX)
+> +		return -EMLINK;
 
-------------------------------------------------------------------------------
-[PATCH] uprobes: Introduce prepare_uprobe()
+Just set ->s_max_links and be done with that.
 
-Preparation. Extract the copy_insn/arch_uprobe_analyze_insn code
-from install_breakpoint() into the new helper, prepare_uprobe().
+> +	if (dir->i_nlink >= F2FS_LINK_MAX)
+> +		return err;
 
-And move uprobe->flags defines from uprobes.h to uprobes.c, nobody
-else can use them anyway.
+Ditto.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- include/linux/uprobes.h |   10 --------
- kernel/events/uprobes.c |   60 ++++++++++++++++++++++++++++++++---------------
- 2 files changed, 41 insertions(+), 29 deletions(-)
+> +		if (old_dir_entry) {
+> +			err = -EMLINK;
+> +			if (new_dir->i_nlink >= F2FS_LINK_MAX)
+> +				goto out_dir;
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 18d839d..2459457 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -35,16 +35,6 @@ struct inode;
- # include <asm/uprobes.h>
- #endif
- 
--/* flags that denote/change uprobes behaviour */
--
--/* Have a copy of original instruction */
--#define UPROBE_COPY_INSN	0x1
--
--/* Dont run handlers when first register/ last unregister in progress*/
--#define UPROBE_RUN_HANDLER	0x2
--/* Can skip singlestep */
--#define UPROBE_SKIP_SSTEP	0x4
--
- struct uprobe_consumer {
- 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
- 	/*
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index dbbca3a..d6fa332 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -78,6 +78,13 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
-  */
- static atomic_t uprobe_events = ATOMIC_INIT(0);
- 
-+/* Have a copy of original instruction */
-+#define UPROBE_COPY_INSN	0x1
-+/* Dont run handlers when first register/ last unregister in progress*/
-+#define UPROBE_RUN_HANDLER	0x2
-+/* Can skip singlestep */
-+#define UPROBE_SKIP_SSTEP	0x4
-+
- struct uprobe {
- 	struct rb_node		rb_node;	/* node in the rb tree */
- 	atomic_t		ref;
-@@ -563,6 +570,37 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
- 	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
-+static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
-+				struct mm_struct *mm, unsigned long vaddr)
-+{
-+	int ret = 0;
-+
-+	if (uprobe->flags & UPROBE_COPY_INSN)
-+		return ret;
-+
-+	ret = copy_insn(uprobe, file);
-+	if (ret)
-+		goto out;
-+
-+	ret = -ENOTSUPP;
-+	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
-+		goto out;
-+
-+	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
-+	if (ret)
-+		goto out;
-+
-+	/* write_opcode() assumes we don't cross page boundary */
-+	BUG_ON((uprobe->offset & ~PAGE_MASK) +
-+			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-+
-+	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
-+	uprobe->flags |= UPROBE_COPY_INSN;
-+
-+ out:
-+	return ret;
-+}
-+
- static int
- install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 			struct vm_area_struct *vma, unsigned long vaddr)
-@@ -580,25 +618,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	if (!uprobe->consumers)
- 		return 0;
- 
--	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
--		ret = copy_insn(uprobe, vma->vm_file);
--		if (ret)
--			return ret;
--
--		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
--			return -ENOTSUPP;
--
--		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
--		if (ret)
--			return ret;
--
--		/* write_opcode() assumes we don't cross page boundary */
--		BUG_ON((uprobe->offset & ~PAGE_MASK) +
--				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
--
--		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
--		uprobe->flags |= UPROBE_COPY_INSN;
--	}
-+	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
-+	if (ret)
-+		return ret;
- 
- 	/*
- 	 * set MMF_HAS_UPROBES in advance for uprobe_pre_sstep_notifier(),
--- 
-1.5.5.1
-
-
+... and here as well.
