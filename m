@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab2JFBzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 21:55:42 -0400
-Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:45998
+	id S1756999Ab2JFBzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 21:55:37 -0400
+Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:46004
 	"EHLO relay" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751686Ab2JFBzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751608Ab2JFBzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Oct 2012 21:55:04 -0400
 From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
 To: andrey.smrinov@convergeddevices.net
 Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
         broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/6] Add commands abstraction layer for SI476X MFD
-Date: Fri,  5 Oct 2012 18:54:59 -0700
-Message-Id: <1349488502-11293-4-git-send-email-andrey.smirnov@convergeddevices.net>
+Subject: [PATCH v2 4/6] Add chip properties handling code for SI476X MFD
+Date: Fri,  5 Oct 2012 18:55:00 -0700
+Message-Id: <1349488502-11293-5-git-send-email-andrey.smirnov@convergeddevices.net>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349488502-11293-1-git-send-email-andrey.smirnov@convergeddevices.net>
 References: <1349488502-11293-1-git-send-email-andrey.smirnov@convergeddevices.net>
@@ -21,24 +21,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds all the functions used for exchanging commands with
-the chip.
+This patch adds code related to manipulation of the properties of
+SI476X chips.
 
 Signed-off-by: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
 ---
- drivers/mfd/si476x-cmd.c | 1493 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 1493 insertions(+)
- create mode 100644 drivers/mfd/si476x-cmd.c
+ drivers/mfd/si476x-prop.c |  477 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 477 insertions(+)
+ create mode 100644 drivers/mfd/si476x-prop.c
 
-diff --git a/drivers/mfd/si476x-cmd.c b/drivers/mfd/si476x-cmd.c
+diff --git a/drivers/mfd/si476x-prop.c b/drivers/mfd/si476x-prop.c
 new file mode 100644
-index 0000000..f11cf58
+index 0000000..d633c08
 --- /dev/null
-+++ b/drivers/mfd/si476x-cmd.c
-@@ -0,0 +1,1493 @@
++++ b/drivers/mfd/si476x-prop.c
+@@ -0,0 +1,477 @@
 +/*
-+ * include/media/si476x-cmd.c -- Subroutines implementing command
-+ * protocol of si476x series of chips
++ * include/media/si476x-prop.c -- Subroutines to manipulate with
++ * properties of si476x chips
 + *
 + * Copyright (C) 2012 Innovative Converged Devices(ICD)
 + *
@@ -52,1483 +52,467 @@ index 0000000..f11cf58
 + * WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 + * General Public License for more details.
-+ *
 + */
 +#include <linux/module.h>
-+#include <linux/completion.h>
-+#include <linux/delay.h>
-+#include <linux/atomic.h>
-+#include <linux/i2c.h>
-+#include <linux/device.h>
-+#include <linux/gpio.h>
-+#include <linux/videodev2.h>
 +
 +#include <media/si476x.h>
 +#include <linux/mfd/si476x-core.h>
 +
-+#define msb(x)                  ((u8)((u16) x >> 8))
-+#define lsb(x)                  ((u8)((u16) x &  0x00FF))
 +
++enum si476x_common_receiver_properties {
++	SI476X_PROP_INT_CTL_ENABLE			= 0x0000,
++	SI476X_PROP_DIGITAL_IO_INPUT_SAMPLE_RATE	= 0x0200,
++	SI476X_PROP_DIGITAL_IO_INPUT_FORMAT		= 0x0201,
++	SI476X_PROP_DIGITAL_IO_OUTPUT_SAMPLE_RATE	= 0x0202,
++	SI476X_PROP_DIGITAL_IO_OUTPUT_FORMAT		= 0x0203,
 +
++	SI476X_PROP_AUDIO_ANALOG_VOLUME			= 0x0300,
++	SI476X_PROP_AUDIO_MUTE				= 0x0301,
 +
-+#define CMD_POWER_UP				0x01
-+#define CMD_POWER_UP_A10_NRESP			1
-+#define CMD_POWER_UP_A10_NARGS			5
++	SI476X_PROP_ZIF_OUTPUT_CFG			= 0x0600,
 +
-+#define CMD_POWER_UP_A20_NRESP			1
-+#define CMD_POWER_UP_A20_NARGS			5
++	SI476X_PROP_SEEK_BAND_BOTTOM			= 0x1100,
++	SI476X_PROP_SEEK_BAND_TOP			= 0x1101,
++	SI476X_PROP_SEEK_FREQUENCY_SPACING		= 0x1102,
 +
-+#define POWER_UP_DELAY_MS			110
++	SI476X_PROP_VALID_MAX_TUNE_ERROR		= 0x2000,
++	SI476X_PROP_VALID_SNR_THRESHOLD			= 0x2003,
 +
-+#define CMD_POWER_DOWN				0x11
-+#define CMD_POWER_DOWN_A10_NRESP		1
-+
-+#define CMD_POWER_DOWN_A20_NRESP		1
-+#define CMD_POWER_DOWN_A20_NARGS		1
-+
-+#define CMD_FUNC_INFO				0x12
-+#define CMD_FUNC_INFO_NRESP			7
-+
-+#define CMD_SET_PROPERTY			0x13
-+#define CMD_SET_PROPERTY_NARGS			5
-+#define CMD_SET_PROPERTY_NRESP			1
-+
-+#define CMD_GET_PROPERTY			0x14
-+#define CMD_GET_PROPERTY_NARGS			3
-+#define CMD_GET_PROPERTY_NRESP			4
-+
-+#define CMD_AGC_STATUS				0x17
-+#define CMD_AGC_STATUS_NRESP_A10		2
-+#define CMD_AGC_STATUS_NRESP_A20                6
-+
-+#define PIN_CFG_BYTE(x) (0x7F & (x))
-+#define CMD_DIG_AUDIO_PIN_CFG			0x18
-+#define CMD_DIG_AUDIO_PIN_CFG_NARGS		4
-+#define CMD_DIG_AUDIO_PIN_CFG_NRESP		5
-+
-+#define CMD_ZIF_PIN_CFG				0x19
-+#define CMD_ZIF_PIN_CFG_NARGS			4
-+#define CMD_ZIF_PIN_CFG_NRESP			5
-+
-+#define CMD_IC_LINK_GPO_CTL_PIN_CFG		0x1A
-+#define CMD_IC_LINK_GPO_CTL_PIN_CFG_NARGS	4
-+#define CMD_IC_LINK_GPO_CTL_PIN_CFG_NRESP	5
-+
-+#define CMD_ANA_AUDIO_PIN_CFG			0x1B
-+#define CMD_ANA_AUDIO_PIN_CFG_NARGS		1
-+#define CMD_ANA_AUDIO_PIN_CFG_NRESP		2
-+
-+#define CMD_INTB_PIN_CFG			0x1C
-+#define CMD_INTB_PIN_CFG_NARGS			2
-+#define CMD_INTB_PIN_CFG_A10_NRESP		6
-+#define CMD_INTB_PIN_CFG_A20_NRESP		3
-+
-+#define CMD_FM_TUNE_FREQ			0x30
-+#define CMD_FM_TUNE_FREQ_A10_NARGS		5
-+#define CMD_FM_TUNE_FREQ_A20_NARGS		3
-+#define CMD_FM_TUNE_FREQ_NRESP			1
-+
-+#define CMD_FM_RSQ_STATUS			0x32
-+
-+#define CMD_FM_RSQ_STATUS_A10_NARGS		1
-+#define CMD_FM_RSQ_STATUS_A10_NRESP		17
-+#define CMD_FM_RSQ_STATUS_A30_NARGS		1
-+#define CMD_FM_RSQ_STATUS_A30_NRESP		23
-+
-+
-+#define CMD_FM_SEEK_START			0x31
-+#define CMD_FM_SEEK_START_NARGS			1
-+#define CMD_FM_SEEK_START_NRESP			1
-+
-+#define CMD_FM_RDS_STATUS			0x36
-+#define CMD_FM_RDS_STATUS_NARGS			1
-+#define CMD_FM_RDS_STATUS_NRESP			16
-+
-+#define CMD_FM_RDS_BLOCKCOUNT			0x37
-+#define CMD_FM_RDS_BLOCKCOUNT_NARGS		1
-+#define CMD_FM_RDS_BLOCKCOUNT_NRESP		8
-+
-+#define CMD_FM_PHASE_DIVERSITY			0x38
-+#define CMD_FM_PHASE_DIVERSITY_NARGS		1
-+#define CMD_FM_PHASE_DIVERSITY_NRESP		1
-+
-+#define CMD_FM_PHASE_DIV_STATUS			0x39
-+#define CMD_FM_PHASE_DIV_STATUS_NRESP		2
-+
-+#define CMD_AM_TUNE_FREQ			0x40
-+#define CMD_AM_TUNE_FREQ_NARGS			3
-+#define CMD_AM_TUNE_FREQ_NRESP			1
-+
-+#define CMD_AM_RSQ_STATUS			0x42
-+#define CMD_AM_RSQ_STATUS_NARGS			1
-+#define CMD_AM_RSQ_STATUS_NRESP			13
-+
-+#define CMD_AM_SEEK_START			0x41
-+#define CMD_AM_SEEK_START_NARGS			1
-+#define CMD_AM_SEEK_START_NRESP			1
-+
-+
-+#define CMD_AM_ACF_STATUS			0x45
-+#define CMD_AM_ACF_STATUS_NRESP			6
-+#define CMD_AM_ACF_STATUS_NARGS			1
-+
-+#define CMD_FM_ACF_STATUS			0x35
-+#define CMD_FM_ACF_STATUS_NRESP			8
-+#define CMD_FM_ACF_STATUS_NARGS			1
-+
-+#define CMD_MAX_ARGS_COUNT			(10)
-+
-+
-+enum si476x_acf_status_report_bits {
-+	SI476X_ACF_BLEND_INT	= (1 << 4),
-+	SI476X_ACF_HIBLEND_INT	= (1 << 3),
-+	SI476X_ACF_HICUT_INT	= (1 << 2),
-+	SI476X_ACF_CHBW_INT	= (1 << 1),
-+	SI476X_ACF_SOFTMUTE_INT	= (1 << 0),
-+
-+	SI476X_ACF_SMUTE	= (1 << 0),
-+	SI476X_ACF_SMATTN	= 0b11111,
-+	SI476X_ACF_PILOT	= (1 << 7),
-+	SI476X_ACF_STBLEND	= ~SI476X_ACF_PILOT,
++	SI476X_PROP_VALID_RSSI_THRESHOLD		= 0x2004,
 +};
 +
-+enum si476x_agc_status_report_bits {
-+	SI476X_AGC_MXHI		= (1 << 5),
-+	SI476X_AGC_MXLO		= (1 << 4),
-+	SI476X_AGC_LNAHI	= (1 << 3),
-+	SI476X_AGC_LNALO	= (1 << 2),
++enum si476x_am_receiver_properties {
++	SI476X_PROP_AUDIO_PWR_LINE_FILTER		= 0x0303,
 +};
 +
-+enum si476x_errors {
-+	SI476X_ERR_BAD_COMMAND		= 0x10,
-+	SI476X_ERR_BAD_ARG1		= 0x11,
-+	SI476X_ERR_BAD_ARG2		= 0x12,
-+	SI476X_ERR_BAD_ARG3		= 0x13,
-+	SI476X_ERR_BAD_ARG4		= 0x14,
-+	SI476X_ERR_BUSY			= 0x18,
-+	SI476X_ERR_BAD_INTERNAL_MEMORY  = 0x20,
-+	SI476X_ERR_BAD_PATCH		= 0x30,
-+	SI476X_ERR_BAD_BOOT_MODE	= 0x31,
-+	SI476X_ERR_BAD_PROPERTY		= 0x40,
++enum si476x_fm_receiver_properties {
++	SI476X_PROP_AUDIO_DEEMPHASIS				= 0x0302,
++
++	SI476X_PROP_FM_VALID_RSSI_TIME				= 0x2001,
++	SI476X_PROP_FM_VALID_SNR_TIME				= 0x2002,
++	SI476X_PROP_FM_VALID_AF_TIME				= 0x2007,
++
++	SI476X_PROP_FM_RDS_INTERRUPT_SOURCE			= 0x4000,
++	SI476X_PROP_FM_RDS_INTERRUPT_FIFO_COUNT			= 0x4001,
++	SI476X_PROP_FM_RDS_CONFIG				= 0x4002,
 +};
 +
++struct si476x_property_range {
++	u16 low, high;
++};
 +
-+static int si476x_core_parse_and_nag_about_error(struct si476x_core *core)
++static bool __element_is_in_array(u16 element, const u16 array[], size_t size)
 +{
-+	int err;
-+	char *cause;
-+	u8 buffer[2];
++	int i;
 +
-+	if (core->revision != SI476X_REVISION_A10) {
-+		err = si476x_i2c_xfer(core, SI476X_I2C_RECV,
-+				      buffer, sizeof(buffer));
-+		if (err == sizeof(buffer)) {
-+			switch (buffer[1]) {
-+			case SI476X_ERR_BAD_COMMAND:
-+				cause = "Bad command";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_ARG1:
-+				cause = "Bad argument #1";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_ARG2:
-+				cause = "Bad argument #2";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_ARG3:
-+				cause = "Bad argument #3";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_ARG4:
-+				cause = "Bad argument #4";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BUSY:
-+				cause = "Chip is busy";
-+				err = -EBUSY;
-+				break;
-+			case SI476X_ERR_BAD_INTERNAL_MEMORY:
-+				cause = "Bad internal memory";
-+				err = -EIO;
-+				break;
-+			case SI476X_ERR_BAD_PATCH:
-+				cause = "Bad patch";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_BOOT_MODE:
-+				cause = "Bad boot mode";
-+				err = -EINVAL;
-+				break;
-+			case SI476X_ERR_BAD_PROPERTY:
-+				cause = "Bad property";
-+				err = -EINVAL;
-+				break;
-+			default:
-+				cause = "Unknown";
-+				err = -EIO;
-+			}
++	for (i = 0; i < size; i++)
++		if (element == array[i])
++			return true;
 +
-+			dev_err(&core->client->dev,
-+				"[Chip error status]: %s\n", cause);
-+		} else {
-+			dev_err(&core->client->dev,
-+				"Failed to fetch error code\n");
-+			err = (err >= 0) ? -EIO : err;
-+		}
-+	} else {
-+		err = -EIO;
-+	}
-+
-+	return err;
++	return false;
 +}
 +
-+/**
-+ * __core_send_command() - sends a command to si476x and waits its
-+ * response
-+ * @core:    si476x_device structure for the device we are
-+ *            communicating with
-+ * @command:  command id
-+ * @args:     command arguments we are sending
-+ * @argn:     actual size of @args
-+ * @response: buffer to place the expected response from the device
-+ * @respn:    actual size of @response
-+ * @usecs:    amount of time to wait before reading the response (in
-+ *            usecs)
-+ *
-+ * Function returns 0 on succsess and negative error code on
-+ * failure
-+ */
-+static int __core_send_command(struct si476x_core *core,
-+				    const u8 command,
-+				    const u8 args[],
-+				    const int argn,
-+				    u8 resp[],
-+				    const int respn,
-+				    const int usecs)
++static bool __element_is_in_range(u16 element,
++				  const struct si476x_property_range range[],
++				  size_t size)
 +{
-+	struct i2c_client *client = core->client;
++	int i;
++
++	for (i = 0; i < size; i++)
++		if (element <= range[i].high && element >= range[i].low)
++			return true;
++
++	return false;
++}
++
++static bool si476x_core_is_valid_property_a10(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x0000,
++		0x0500, 0x0501,
++		0x0600,
++		0x0709, 0x070C, 0x070D, 0x70E, 0x710,
++		0x718,		/* FIXME: Magic property */
++		0x1207, 0x1208,
++		0x2007,
++		0x2300,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x0200, 0x0203 },
++		{ 0x0300, 0x0303 },
++		{ 0x0400, 0x0404 },
++		{ 0x0700, 0x0707 },
++		{ 0x1100, 0x1102 },
++		{ 0x1200, 0x1204 },
++		{ 0x1300, 0x1306 },
++		{ 0x2000, 0x2005 },
++		{ 0x2100, 0x2104 },
++		{ 0x2106, 0x2106 },
++		{ 0x2200, 0x220E },
++		{ 0x3100, 0x3104 },
++		{ 0x3207, 0x320F },
++		{ 0x3300, 0x3304 },
++		{ 0x3500, 0x3517 },
++		{ 0x3600, 0x3617 },
++		{ 0x3700, 0x3717 },
++		{ 0x4000, 0x4003 },
++	};
++
++	return	__element_is_in_range(property, valid_ranges,
++				     ARRAY_SIZE(valid_ranges)) ||
++		__element_is_in_array(property, valid_properties,
++				      ARRAY_SIZE(valid_properties));
++}
++
++static bool si476x_core_is_valid_property_a20(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x071B,
++		0x1006,
++		0x2210,
++		0x3401,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x2215, 0x2219 },
++	};
++
++	return	si476x_core_is_valid_property_a10(core, property) ||
++		__element_is_in_range(property, valid_ranges,
++				      ARRAY_SIZE(valid_ranges))  ||
++		__element_is_in_array(property, valid_properties,
++				      ARRAY_SIZE(valid_properties));
++}
++
++static bool si476x_core_is_valid_property_a30(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x071C, 0x071D,
++		0x1007, 0x1008,
++		0x220F, 0x2214,
++		0x2301,
++		0x3105, 0x3106,
++		0x3402,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x0405, 0x0411 },
++		{ 0x2008, 0x200B },
++		{ 0x2220, 0x2223 },
++		{ 0x3100, 0x3106 },
++	};
++
++	return	si476x_core_is_valid_property_a20(core, property) ||
++		__element_is_in_range(property, valid_ranges,
++				      ARRAY_SIZE(valid_ranges)) ||
++		__element_is_in_array(property, valid_properties,
++				      ARRAY_SIZE(valid_properties));
++}
++
++typedef bool (*valid_property_pred_t) (struct si476x_core *, u16);
++
++bool si476x_core_is_valid_property(struct si476x_core *core, u16 property)
++{
++	static const valid_property_pred_t is_valid_property[] = {
++		[SI476X_REVISION_A10] = si476x_core_is_valid_property_a10,
++		[SI476X_REVISION_A20] = si476x_core_is_valid_property_a20,
++		[SI476X_REVISION_A30] = si476x_core_is_valid_property_a30,
++	};
++
++	BUG_ON(core->revision > SI476X_REVISION_A30 ||
++	       core->revision == -1);
++	return is_valid_property[core->revision](core, property);
++}
++EXPORT_SYMBOL_GPL(si476x_core_is_valid_property);
++
++bool si476x_core_is_readonly_property(struct si476x_core *core, u16 property)
++{
++	BUG_ON(core->revision > SI476X_REVISION_A30 ||
++	       core->revision == -1);
++
++	switch (core->revision) {
++	case SI476X_REVISION_A10:
++		return (property == 0x3200);
++	case SI476X_REVISION_A20:
++		return (property == 0x1006 ||
++			property == 0x2210 ||
++			property == 0x3200);
++	case SI476X_REVISION_A30:
++		return false;
++	}
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(si476x_core_is_readonly_property);
++
++int si476x_core_set_int_ctl_enable(struct si476x_core *core,
++				   enum si476x_interrupt_flags flags)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_INT_CTL_ENABLE, flags);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_int_ctl_enable);
++
++
++int si476x_core_set_audio_pwr_line_filter(struct si476x_core *core,
++					bool enable,
++					enum si476x_power_grid_type power_grid,
++					int harmonics_count)
++{
++	const u16 value = (enable << 9) | (power_grid << 8) | harmonics_count;
++
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_AUDIO_PWR_LINE_FILTER,
++					    value);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_audio_pwr_line_filter);
++
++int si476x_core_get_audio_pwr_line_filter(struct si476x_core *core)
++{
++	return si476x_core_cmd_get_property(core,
++					    SI476X_PROP_AUDIO_PWR_LINE_FILTER);
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_audio_pwr_line_filter);
++
++int si476x_core_set_frequency_spacing(struct si476x_core *core, int spacing)
++{
++	/* FIXME: Magic numbers */
++	if (0 < spacing && spacing <= 310000)
++		return si476x_core_cmd_set_property(core,
++					SI476X_PROP_SEEK_FREQUENCY_SPACING,
++					hz_to_si476x(core, spacing));
++	else
++		return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_frequency_spacing);
++
++int si476x_core_get_frequency_spacing(struct si476x_core *core)
++{
++	int value;
++	value = si476x_core_cmd_get_property(core,
++					SI476X_PROP_SEEK_FREQUENCY_SPACING);
++	if (value >= 0)
++		value = si476x_to_hz(core, value);
++
++	return value;
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_frequency_spacing);
++
++int si476x_core_set_seek_band_top(struct si476x_core *core,
++				  int top)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_SEEK_BAND_TOP,
++					    hz_to_si476x(core, top));
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_seek_band_top);
++
++int si476x_core_get_seek_band_top(struct si476x_core *core)
++{
++	int value;
++	value = si476x_core_cmd_get_property(core,
++					     SI476X_PROP_SEEK_BAND_TOP);
++	if (value >= 0)
++		value = si476x_to_hz(core, value);
++
++	return value;
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_seek_band_top);
++
++int si476x_core_set_seek_band_bottom(struct si476x_core *core,
++				     int bottom)
++{
++	return si476x_core_cmd_set_property(core,
++					   SI476X_PROP_SEEK_BAND_BOTTOM,
++					    hz_to_si476x(core, bottom));
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_seek_band_bottom);
++
++int si476x_core_get_seek_band_bottom(struct si476x_core *core)
++{
++	int value;
++	value = si476x_core_cmd_get_property(core,
++					     SI476X_PROP_SEEK_BAND_BOTTOM);
++	if (value >= 0)
++		value = si476x_to_hz(core, value);
++
++	return value;
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_seek_band_bottom);
++
++int si476x_core_set_audio_deemphasis(struct si476x_core *core,
++				     int deemphasis)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_AUDIO_DEEMPHASIS,
++					    deemphasis);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_audio_deemphasis);
++
++int si476x_core_get_audio_deemphasis(struct si476x_core *core)
++{
++	int value;
++	value = si476x_core_cmd_get_property(core,
++					     SI476X_PROP_AUDIO_DEEMPHASIS);
++	if (value >= 0)
++		value = si476x_to_hz(core, value);
++
++	return value;
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_audio_deemphasis);
++
++int si476x_core_set_fm_rds_interrupt_fifo_count(struct si476x_core *core,
++						int count)
++{
++	return si476x_core_cmd_set_property(core,
++				       SI476X_PROP_FM_RDS_INTERRUPT_FIFO_COUNT,
++				       count);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_fm_rds_interrupt_fifo_count);
++
++int si476x_core_set_rds_interrupt_source(struct si476x_core *core,
++				    enum si476x_rdsint_sources sources)
++{
++	return si476x_core_cmd_set_property(core,
++				       SI476X_PROP_FM_RDS_INTERRUPT_SOURCE,
++				       sources);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_rds_interrupt_source);
++
++int si476x_core_set_digital_io_input_sample_rate(struct si476x_core *core,
++					    u16 rate)
++{
++	return si476x_core_cmd_set_property(core,
++				SI476X_PROP_DIGITAL_IO_INPUT_SAMPLE_RATE,
++				rate);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_digital_io_input_sample_rate);
++
++int si476x_core_disable_digital_audio(struct si476x_core *core)
++{
++	return si476x_core_set_digital_io_input_sample_rate(core, 0);
++}
++EXPORT_SYMBOL_GPL(si476x_core_disable_digital_audio);
++
++int si476x_core_set_valid_snr_threshold(struct si476x_core *core, int threshold)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_VALID_SNR_THRESHOLD,
++					    threshold);
++
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_valid_snr_threshold);
++
++int si476x_core_get_valid_snr_threshold(struct si476x_core *core)
++{
++	return si476x_core_cmd_get_property(core,
++					    SI476X_PROP_VALID_SNR_THRESHOLD);
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_valid_snr_threshold);
++
++int si476x_core_set_valid_rssi_threshold(struct si476x_core *core,
++					 int threshold)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_VALID_RSSI_THRESHOLD,
++					    threshold);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_valid_rssi_threshold);
++
++int si476x_core_get_valid_rssi_threshold(struct si476x_core *core)
++{
++	return si476x_core_cmd_get_property(core,
++					    SI476X_PROP_VALID_RSSI_THRESHOLD);
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_valid_rssi_threshold);
++
++int si476x_core_set_valid_max_tune_error(struct si476x_core *core, int value)
++{
++	return si476x_core_cmd_set_property(core,
++					    SI476X_PROP_VALID_MAX_TUNE_ERROR,
++					    value);
++}
++EXPORT_SYMBOL_GPL(si476x_core_set_valid_max_tune_error);
++
++int si476x_core_get_valid_max_tune_error(struct si476x_core *core)
++{
++	return si476x_core_cmd_get_property(core,
++					    SI476X_PROP_VALID_MAX_TUNE_ERROR);
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_valid_max_tune_error);
++
++
++#define SI476X_RDSEN 0x1
++
++int si476x_core_get_rds_reception(struct si476x_core *core)
++{
++	int property = si476x_core_cmd_get_property(core,
++						    SI476X_PROP_FM_RDS_CONFIG);
++
++	return (property < 0) ? property : (property & SI476X_RDSEN);
++}
++EXPORT_SYMBOL_GPL(si476x_core_get_rds_reception);
++
++static int __set_rdsen(struct si476x_core *core, bool rdsen)
++{
++	int property = si476x_core_cmd_get_property(core,
++					   SI476X_PROP_FM_RDS_CONFIG);
++	if (property >= 0) {
++		property = (rdsen) ?
++			(property | SI476X_RDSEN) :
++			(property & ~SI476X_RDSEN);
++
++		return si476x_core_cmd_set_property(core,
++						    SI476X_PROP_FM_RDS_CONFIG,
++						    property);
++	} else {
++		return property;
++	}
++}
++
++int si476x_core_set_rds_reception(struct si476x_core *core, int enable)
++{
 +	int err;
-+	u8  data[CMD_MAX_ARGS_COUNT + 1];
 +
-+	if (argn > CMD_MAX_ARGS_COUNT) {
-+		err = -ENOMEM;
-+		goto exit;
++	if (enable) {
++		err = si476x_core_set_fm_rds_interrupt_fifo_count(core,
++							core->rds_fifo_depth);
++		if (err < 0) {
++			dev_err(&core->client->dev, "Failed to set RDS FIFO " \
++				"count\n");
++			goto exit;
++		}
++
++		err = si476x_core_set_rds_interrupt_source(core,
++							   SI476X_RDSRECV);
++		if (err < 0) {
++			dev_err(&core->client->dev,
++				"Failed to set RDS interrupt sources\n");
++			goto exit;
++		}
++
++		/* Drain RDS FIFO befor enabling RDS processing */
++		err = si476x_core_cmd_fm_rds_status(core, false,
++						    true, true, NULL);
++		if (err < 0) {
++			dev_err(&core->client->dev,
++				"Failed to drain RDS queue\n");
++			goto exit;
++		}
++
++		err = __set_rdsen(core, true);
++	} else {
++		err = __set_rdsen(core, false);
 +	}
 +
-+	if (!client->adapter) {
-+		err = -ENODEV;
-+		goto exit;
-+	}
-+
-+	/* First send the command and its arguments */
-+	data[0] = command;
-+	memcpy(&data[1], args, argn);
-+	DBG_BUFFER(&client->dev, "Command:\n", data, argn + 1);
-+
-+	err = si476x_i2c_xfer(core, SI476X_I2C_SEND, (char *) data, argn + 1);
-+	if (err != argn + 1) {
-+		dev_err(&core->client->dev,
-+			"Error while sending command 0x%02x\n",
-+			command);
-+		err = (err >= 0) ? -EIO : err;
-+		goto exit;
-+	}
-+	/* Set CTS to zero only after the command is send to avoid
-+	 * possible racing conditions when working in polling mode */
-+	atomic_set(&core->cts, 0);
-+
-+	if (!wait_event_timeout(core->command,
-+				atomic_read(&core->cts),
-+				usecs_to_jiffies(usecs) + 1))
-+		dev_warn(&core->client->dev,
-+			 "(%s) [CMD 0x%02x] Device took too much time to answer.\n",
-+			 __func__, command);
-+
-+	/*
-+	  When working in polling mode, for some reason the tuner will
-+	  report CTS bit as being set in the first status byte read,
-+	  but all the consequtive ones will return zros until the
-+	  tuner is actually completed the POWER_UP command. To
-+	  workaround that we wait for second CTS to be reported
-+	 */
-+	if (unlikely(!core->client->irq && command == CMD_POWER_UP)) {
-+		if (!wait_event_timeout(core->command,
-+					atomic_read(&core->cts),
-+					usecs_to_jiffies(usecs) + 1))
-+			dev_warn(&core->client->dev,
-+				 "(%s) Power up took too much time.\n",
-+				 __func__);
-+	}
-+
-+	/* Then get the response */
-+	err = si476x_i2c_xfer(core, SI476X_I2C_RECV, resp, respn);
-+	if (err != respn) {
-+		dev_err(&core->client->dev,
-+			"Error while reading response for command 0x%02x\n",
-+			command);
-+		err = (err >= 0) ? -EIO : err;
-+		goto exit;
-+	}
-+	DBG_BUFFER(&client->dev, "Response:\n", resp, respn);
-+
-+	err = 0;
-+
-+	if (resp[0] & SI476X_ERR) {
-+		dev_err(&core->client->dev, "[CMD 0x%02x] Chip set error flag\n", command);
-+		err = si476x_core_parse_and_nag_about_error(core);
-+		goto exit;
-+	}
-+
-+	if (!(resp[0] & SI476X_CTS))
-+		err = -EBUSY;
 +exit:
 +	return err;
 +}
-+
-+#define CORE_SEND_COMMAND(core, cmd, args, resp, timeout)		\
-+	__core_send_command(core, cmd, args,				\
-+			    ARRAY_SIZE(args),				\
-+			    resp, ARRAY_SIZE(resp),			\
-+			    timeout)
-+
-+static int si476x_cmd_clear_stc(struct si476x_core *core)
-+{
-+	int err;
-+	struct si476x_rsq_status_args args = {
-+		.primary	= false,
-+		.rsqack		= false,
-+		.attune		= false,
-+		.cancel		= false,
-+		.stcack		= true,
-+	};
-+
-+	switch(core->power_up_parameters.func) {
-+	case SI476X_FUNC_FM_RECEIVER:
-+		err = si476x_core_cmd_fm_rsq_status(core, &args, NULL);
-+		break;
-+	case SI476X_FUNC_AM_RECEIVER:
-+		err = si476x_core_cmd_am_rsq_status(core, &args, NULL);
-+		break;
-+	default:
-+		err = -EINVAL;
-+	}
-+
-+	return err;
-+}
-+
-+static int si476x_cmd_tune_seek_freq(struct si476x_core *core,
-+				     uint8_t cmd,
-+				     const uint8_t args[], size_t argn,
-+				     uint8_t *resp, size_t respn)
-+{
-+	int err;
-+
-+
-+	atomic_set(&core->stc, 0);
-+	err = __core_send_command(core, cmd, args, argn,
-+				  resp, respn,
-+				  atomic_read(&core->timeouts.command));
-+	if (!err) {
-+		wait_event_killable(core->tuning,
-+				    atomic_read(&core->stc));
-+		si476x_cmd_clear_stc(core);
-+	}
-+
-+	return err;
-+}
-+
-+/**
-+ * si476x_cmd_func_info() - send 'FUNC_INFO' command to the device
-+ * @core: device to send the command to
-+ * @info:  struct si476x_func_info to fill all the information
-+ *         returned by the command
-+ *
-+ * The command requests the firmware and patch version for currently
-+ * loaded firmware (dependent on the function of the device FM/AM/WB)
-+ *
-+ * Function returns 0 on succsess and negative error code on
-+ * failure
-+ */
-+int si476x_core_cmd_func_info(struct si476x_core *core,
-+			      struct si476x_func_info *info)
-+{
-+	int err;
-+	u8  resp[CMD_FUNC_INFO_NRESP];
-+
-+	err = __core_send_command(core, CMD_FUNC_INFO,
-+				  NULL, 0,
-+				  resp, ARRAY_SIZE(resp),
-+				  atomic_read(&core->timeouts.command));
-+
-+	info->firmware.major    = resp[1];
-+	info->firmware.minor[0] = resp[2];
-+	info->firmware.minor[1] = resp[3];
-+
-+	info->patch_id = ((u16) resp[4] << 8) | resp[5];
-+	info->func     = resp[6];
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_func_info);
-+
-+/**
-+ * si476x_cmd_set_property() - send 'SET_PROPERTY' command to the device
-+ * @core:    device to send the command to
-+ * @property: property address
-+ * @value:    property value
-+ *
-+ * Function returns 0 on succsess and negative error code on
-+ * failure
-+ */
-+int si476x_core_cmd_set_property(struct si476x_core *core,
-+				 u16 property, u16 value)
-+{
-+	u8       resp[CMD_SET_PROPERTY_NRESP];
-+	const u8 args[CMD_SET_PROPERTY_NARGS] = {
-+		0x00,
-+		msb(property),
-+		lsb(property),
-+		msb(value),
-+		lsb(value),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_SET_PROPERTY,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_set_property);
-+
-+/**
-+ * si476x_cmd_get_property() - send 'GET_PROPERTY' command to the device
-+ * @core:    device to send the command to
-+ * @property: property address
-+ *
-+ * Function return the value of property as u16 on success or a
-+ * negative error on failure
-+ */
-+int si476x_core_cmd_get_property(struct si476x_core *core, u16 property)
-+{
-+	int err;
-+	u8       resp[CMD_GET_PROPERTY_NRESP];
-+	const u8 args[CMD_GET_PROPERTY_NARGS] = {
-+		0x00,
-+		msb(property),
-+		lsb(property),
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_GET_PROPERTY,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+	if (err < 0)
-+		return err;
-+	else
-+		return be16_to_cpup((__be16 *)(resp + 2));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_get_property);
-+
-+/**
-+ * si476x_cmd_dig_audio_pin_cfg() - send 'DIG_AUDIO_PIN_CFG' command to
-+ * the device
-+ * @core: device to send the command to
-+ * @dclk:  DCLK pin function configuration:
-+ *	   #SI476X_DCLK_NOOP     - do not modify the behaviour
-+ *         #SI476X_DCLK_TRISTATE - put the pin in tristate condition,
-+ *                                 enable 1MOhm pulldown
-+ *         #SI476X_DCLK_DAUDIO   - set the pin to be a part of digital
-+ *                                 audio interface
-+ * @dfs:   DFS pin function configuration:
-+ *         #SI476X_DFS_NOOP      - do not modify the behaviour
-+ *         #SI476X_DFS_TRISTATE  - put the pin in tristate condition,
-+ *                             enable 1MOhm pulldown
-+ *      SI476X_DFS_DAUDIO    - set the pin to be a part of digital
-+ *                             audio interface
-+ * @dout - DOUT pin function configuration:
-+ *      SI476X_DOUT_NOOP       - do not modify the behaviour
-+ *      SI476X_DOUT_TRISTATE   - put the pin in tristate condition,
-+ *                               enable 1MOhm pulldown
-+ *      SI476X_DOUT_I2S_OUTPUT - set this pin to be digital out on I2S
-+ *                               port 1
-+ *      SI476X_DOUT_I2S_INPUT  - set this pin to be digital in on I2S
-+ *                               port 1
-+ * @xout - XOUT pin function configuration:
-+ *	SI476X_XOUT_NOOP        - do not modify the behaviour
-+ *      SI476X_XOUT_TRISTATE    - put the pin in tristate condition,
-+ *                                enable 1MOhm pulldown
-+ *      SI476X_XOUT_I2S_INPUT   - set this pin to be digital in on I2S
-+ *                                port 1
-+ *      SI476X_XOUT_MODE_SELECT - set this pin to be the input that
-+ *                                selects the mode of the I2S audio
-+ *                                combiner (analog or HD)
-+ *                                [SI4761/63/65/67 Only]
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_dig_audio_pin_cfg(struct  si476x_core *core,
-+				      enum si476x_dclk_config dclk,
-+				      enum si476x_dfs_config  dfs,
-+				      enum si476x_dout_config dout,
-+				      enum si476x_xout_config xout)
-+{
-+	u8       resp[CMD_DIG_AUDIO_PIN_CFG_NRESP];
-+	const u8 args[CMD_DIG_AUDIO_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(dclk),
-+		PIN_CFG_BYTE(dfs),
-+		PIN_CFG_BYTE(dout),
-+		PIN_CFG_BYTE(xout),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_DIG_AUDIO_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_dig_audio_pin_cfg);
-+
-+/**
-+ * si476x_cmd_zif_pin_cfg - send 'ZIF_PIN_CFG_COMMAND'
-+ * @core - device to send the command to
-+ * @iqclk - IQCL pin function configuration:
-+ *       SI476X_IQCLK_NOOP     - do not modify the behaviour
-+ *       SI476X_IQCLK_TRISTATE - put the pin in tristate condition,
-+ *                               enable 1MOhm pulldown
-+ *       SI476X_IQCLK_IQ       - set pin to be a part of I/Q interace
-+ *                               in master mode
-+ * @iqfs - IQFS pin function configuration:
-+ *       SI476X_IQFS_NOOP     - do not modify the behaviour
-+ *       SI476X_IQFS_TRISTATE - put the pin in tristate condition,
-+ *                              enable 1MOhm pulldown
-+ *       SI476X_IQFS_IQ       - set pin to be a part of I/Q interace
-+ *                              in master mode
-+ * @iout - IOUT pin function configuration:
-+ *       SI476X_IOUT_NOOP     - do not modify the behaviour
-+ *       SI476X_IOUT_TRISTATE - put the pin in tristate condition,
-+ *                              enable 1MOhm pulldown
-+ *       SI476X_IOUT_OUTPUT   - set pin to be I out
-+ * @qout - QOUT pin function configuration:
-+ *       SI476X_QOUT_NOOP     - do not modify the behaviour
-+ *       SI476X_QOUT_TRISTATE - put the pin in tristate condition,
-+ *                              enable 1MOhm pulldown
-+ *       SI476X_QOUT_OUTPUT   - set pin to be Q out
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_zif_pin_cfg(struct si476x_core *core,
-+				enum si476x_iqclk_config iqclk,
-+				enum si476x_iqfs_config iqfs,
-+				enum si476x_iout_config iout,
-+				enum si476x_qout_config qout)
-+{
-+	u8       resp[CMD_ZIF_PIN_CFG_NRESP];
-+	const u8 args[CMD_ZIF_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(iqclk),
-+		PIN_CFG_BYTE(iqfs),
-+		PIN_CFG_BYTE(iout),
-+		PIN_CFG_BYTE(qout),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_ZIF_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_zif_pin_cfg);
-+
-+/**
-+ * si476x_cmd_ic_link_gpo_ctl_pin_cfg - send
-+ * 'IC_LINK_GPIO_CTL_PIN_CFG' comand to the device
-+ * @core - device to send the command to
-+ * @icin - ICIN pin function configuration:
-+ *      SI476X_ICIN_NOOP      - do not modify the behaviour
-+ *      SI476X_ICIN_TRISTATE  - put the pin in tristate condition,
-+ *                              enable 1MOhm pulldown
-+ *      SI476X_ICIN_GPO1_HIGH - set pin to be an output, drive it high
-+ *      SI476X_ICIN_GPO1_LOW  - set pin to be an output, drive it low
-+ *      SI476X_ICIN_IC_LINK   - set the pin to be a part of Inter-Chip link
-+ * @icip - ICIP pin function configuration:
-+ *      SI476X_ICIP_NOOP      - do not modify the behaviour
-+ *      SI476X_ICIP_TRISTATE  - put the pin in tristate condition,
-+ *                              enable 1MOhm pulldown
-+ *      SI476X_ICIP_GPO1_HIGH - set pin to be an output, drive it high
-+ *      SI476X_ICIP_GPO1_LOW  - set pin to be an output, drive it low
-+ *      SI476X_ICIP_IC_LINK   - set the pin to be a part of Inter-Chip link
-+ * @icon - ICON pin function configuration:
-+ *      SI476X_ICON_NOOP     - do not modify the behaviour
-+ *      SI476X_ICON_TRISTATE - put the pin in tristate condition,
-+ *                             enable 1MOhm pulldown
-+ *      SI476X_ICON_I2S      - set the pin to be a part of audio
-+ *                             interface in slave mode (DCLK)
-+ *      SI476X_ICON_IC_LINK  - set the pin to be a part of Inter-Chip link
-+ * @icop - ICOP pin function configuration:
-+ *      SI476X_ICOP_NOOP     - do not modify the behaviour
-+ *      SI476X_ICOP_TRISTATE - put the pin in tristate condition,
-+ *                             enable 1MOhm pulldown
-+ *      SI476X_ICOP_I2S      - set the pin to be a part of audio
-+ *                             interface in slave mode (DOUT)
-+ *                             [Si4761/63/65/67 Only]
-+ *      SI476X_ICOP_IC_LINK  - set the pin to be a part of Inter-Chip link
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_ic_link_gpo_ctl_pin_cfg(struct si476x_core *core,
-+					    enum si476x_icin_config icin,
-+					    enum si476x_icip_config icip,
-+					    enum si476x_icon_config icon,
-+					    enum si476x_icop_config icop)
-+{
-+	u8       resp[CMD_IC_LINK_GPO_CTL_PIN_CFG_NRESP];
-+	const u8 args[CMD_IC_LINK_GPO_CTL_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(icin),
-+		PIN_CFG_BYTE(icip),
-+		PIN_CFG_BYTE(icon),
-+		PIN_CFG_BYTE(icop),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_IC_LINK_GPO_CTL_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_ic_link_gpo_ctl_pin_cfg);
-+
-+/**
-+ * si476x_cmd_ana_audio_pin_cfg - send 'ANA_AUDIO_PIN_CFG' to the
-+ * device
-+ * @core - device to send the command to
-+ * @lrout - LROUT pin function configuration:
-+ *       SI476X_LROUT_NOOP     - do not modify the behaviour
-+ *       SI476X_LROUT_TRISTATE - put the pin in tristate condition,
-+ *                               enable 1MOhm pulldown
-+ *       SI476X_LROUT_AUDIO    - set pin to be audio output
-+ *       SI476X_LROUT_MPX      - set pin to be MPX output
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_ana_audio_pin_cfg(struct si476x_core *core,
-+				      enum si476x_lrout_config lrout)
-+{
-+	u8       resp[CMD_ANA_AUDIO_PIN_CFG_NRESP];
-+	const u8 args[CMD_ANA_AUDIO_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(lrout),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_ANA_AUDIO_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_ana_audio_pin_cfg);
-+
-+
-+/**
-+ * si476x_cmd_intb_pin_cfg - send 'INTB_PIN_CFG' command to the device
-+ * @core - device to send the command to
-+ * @intb - INTB pin function configuration:
-+ *      SI476X_INTB_NOOP     - do not modify the behaviour
-+ *      SI476X_INTB_TRISTATE - put the pin in tristate condition,
-+ *                             enable 1MOhm pulldown
-+ *      SI476X_INTB_DAUDIO   - set pin to be a part of digital
-+ *                             audio interface in slave mode
-+ *      SI476X_INTB_IRQ      - set pin to be an interrupt request line
-+ * @a1 - A1 pin function configuration:
-+ *      SI476X_A1_NOOP     - do not modify the behaviour
-+ *      SI476X_A1_TRISTATE - put the pin in tristate condition,
-+ *                           enable 1MOhm pulldown
-+ *      SI476X_A1_IRQ      - set pin to be an interrupt request line
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+static int si476x_core_cmd_intb_pin_cfg_a10(struct si476x_core *core,
-+					    enum si476x_intb_config intb,
-+					    enum si476x_a1_config a1)
-+{
-+	u8       resp[CMD_INTB_PIN_CFG_A10_NRESP];
-+	const u8 args[CMD_INTB_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(intb),
-+		PIN_CFG_BYTE(a1),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_INTB_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+
-+static int si476x_core_cmd_intb_pin_cfg_a20(struct si476x_core *core,
-+					    enum si476x_intb_config intb,
-+					    enum si476x_a1_config a1)
-+{
-+	u8       resp[CMD_INTB_PIN_CFG_A20_NRESP];
-+	const u8 args[CMD_INTB_PIN_CFG_NARGS] = {
-+		PIN_CFG_BYTE(intb),
-+		PIN_CFG_BYTE(a1),
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_INTB_PIN_CFG,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+
-+
-+
-+/**
-+ * si476x_cmd_am_rsq_status - send 'FM_TUNE_FREQ' command to the
-+ * device
-+ * @core  - device to send the command to
-+ * @rsqack - if set command clears RSQINT, SNRINT, SNRLINT, RSSIHINT,
-+ *           RSSSILINT, BLENDINT, MULTHINT and MULTLINT
-+ * @attune - when set the values in the status report are the values
-+ *           that were calculated at tune
-+ * @cancel - abort ongoing seek/tune opertation
-+ * @stcack - clear the STCINT bin in status register
-+ * @report - all signal quality information retured by the command
-+ *           (if NULL then the output of the command is ignored)
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_am_rsq_status(struct si476x_core *core,
-+				  struct si476x_rsq_status_args *rsqargs,
-+				  struct si476x_rsq_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_AM_RSQ_STATUS_NRESP];
-+	const u8 args[CMD_AM_RSQ_STATUS_NARGS] = {
-+		rsqargs->rsqack << 3 | rsqargs->attune << 2 |
-+		rsqargs->cancel << 1 | rsqargs->stcack,
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_AM_RSQ_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (report) {
-+		report->snrhint		= 0b00001000 & resp[1];
-+		report->snrlint		= 0b00000100 & resp[1];
-+		report->rssihint	= 0b00000010 & resp[1];
-+		report->rssilint	= 0b00000001 & resp[1];
-+
-+		report->bltf		= 0b10000000 & resp[2];
-+		report->snr_ready	= 0b00100000 & resp[2];
-+		report->rssiready	= 0b00001000 & resp[2];
-+		report->afcrl		= 0b00000010 & resp[2];
-+		report->valid		= 0b00000001 & resp[2];
-+
-+		report->readfreq	= be16_to_cpup((__be16 *)(resp + 3));
-+		report->freqoff		= resp[5];
-+		report->rssi		= resp[6];
-+		report->snr		= resp[7];
-+		report->lassi		= resp[9];
-+		report->hassi		= resp[10];
-+		report->mult		= resp[11];
-+		report->dev		= resp[12];
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_am_rsq_status);
-+
-+int si476x_core_cmd_fm_acf_status(struct si476x_core *core,
-+			     struct si476x_acf_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_ACF_STATUS_NRESP];
-+	const u8 args[CMD_FM_ACF_STATUS_NARGS] = {
-+		0x0,
-+	};
-+
-+	if (!report)
-+		return -EINVAL;
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_ACF_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (!err) {
-+		report->blend_int	= resp[1] & SI476X_ACF_BLEND_INT;
-+		report->hblend_int	= resp[1] & SI476X_ACF_HIBLEND_INT;
-+		report->hicut_int	= resp[1] & SI476X_ACF_HICUT_INT;
-+		report->chbw_int	= resp[1] & SI476X_ACF_CHBW_INT;
-+		report->softmute_int	= resp[1] & SI476X_ACF_SOFTMUTE_INT;
-+		report->smute		= resp[2] & SI476X_ACF_SMUTE;
-+		report->smattn		= resp[3] & SI476X_ACF_SMATTN;
-+		report->chbw		= resp[4];
-+		report->hicut		= resp[5];
-+		report->hiblend		= resp[6];
-+		report->pilot		= resp[7] & SI476X_ACF_PILOT;
-+		report->stblend		= resp[7] & SI476X_ACF_STBLEND;
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_acf_status);
-+
-+int si476x_core_cmd_am_acf_status(struct si476x_core *core,
-+				  struct si476x_acf_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_AM_ACF_STATUS_NRESP];
-+	const u8 args[CMD_AM_ACF_STATUS_NARGS] = {
-+		0x0,
-+	};
-+
-+	if (!report)
-+		return -EINVAL;
-+
-+	err = CORE_SEND_COMMAND(core, CMD_AM_ACF_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (!err) {
-+		report->blend_int	= resp[1] & SI476X_ACF_BLEND_INT;
-+		report->hblend_int	= resp[1] & SI476X_ACF_HIBLEND_INT;
-+		report->hicut_int	= resp[1] & SI476X_ACF_HICUT_INT;
-+		report->chbw_int	= resp[1] & SI476X_ACF_CHBW_INT;
-+		report->softmute_int	= resp[1] & SI476X_ACF_SOFTMUTE_INT;
-+		report->smute		= resp[2] & SI476X_ACF_SMUTE;
-+		report->smattn		= resp[3] & SI476X_ACF_SMATTN;
-+		report->chbw		= resp[4];
-+		report->hicut		= resp[5];
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_am_acf_status);
-+
-+
-+/**
-+ * si476x_cmd_fm_seek_start - send 'FM_SEEK_START' command to the
-+ * device
-+ * @core  - device to send the command to
-+ * @seekup - if set the direction of the search is 'up'
-+ * @wrap   - if set seek wraps when hitting band limit
-+ *
-+ * This function begins search for a valid station. The station is
-+ * considered valid when 'FM_VALID_SNR_THRESHOLD' and
-+ * 'FM_VALID_RSSI_THRESHOLD' and 'FM_VALID_MAX_TUNE_ERROR' criteria
-+ * are met.
-+} *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_fm_seek_start(struct si476x_core *core,
-+				  bool seekup, bool wrap)
-+{
-+	u8       resp[CMD_FM_SEEK_START_NRESP];
-+	const u8 args[CMD_FM_SEEK_START_NARGS] = {
-+		seekup << 3 | wrap << 2,
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core, CMD_FM_SEEK_START,
-+					 args, sizeof(args), resp, sizeof(resp));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_seek_start);
-+
-+/**
-+ * si476x_cmd_fm_rds_status - send 'FM_RDS_STATUS' command to the
-+ * device
-+ * @core - device to send the command to
-+ * @status_only - if set the data is not removed from RDSFIFO,
-+ *                RDSFIFOUSED is not decremented and data in all the
-+ *                rest RDS data contains the last valid info received
-+ * @mtfifo if set the command clears RDS receive FIFO
-+ * @intack if set the command clards the RDSINT bit.
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_fm_rds_status(struct si476x_core *core,
-+				  bool status_only,
-+				  bool mtfifo,
-+				  bool intack,
-+				  struct si476x_rds_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_RDS_STATUS_NRESP];
-+	const u8 args[CMD_FM_RDS_STATUS_NARGS] = {
-+		status_only << 2 | mtfifo << 1 | intack,
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_RDS_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (!err && report) {
-+		report->rdstpptyint	= 0b00010000 & resp[1];
-+		report->rdspiint	= 0b00001000 & resp[1];
-+		report->rdssyncint	= 0b00000010 & resp[1];
-+		report->rdsfifoint	= 0b00000001 & resp[1];
-+
-+		report->tpptyvalid	= 0b00010000 & resp[2];
-+		report->pivalid		= 0b00001000 & resp[2];
-+		report->rdssync		= 0b00000010 & resp[2];
-+		report->rdsfifolost	= 0b00000001 & resp[2];
-+
-+		report->tp		= 0b00100000 & resp[3];
-+		report->pty		= 0b00011111 & resp[3];
-+
-+		report->pi		= be16_to_cpup((__be16 *)(resp + 4));
-+		report->rdsfifoused	= resp[6];
-+
-+		report->ble[V4L2_RDS_BLOCK_A]	= 0b11000000 & resp[7];
-+		report->ble[V4L2_RDS_BLOCK_B]	= 0b00110000 & resp[7];
-+		report->ble[V4L2_RDS_BLOCK_C]	= 0b00001100 & resp[7];
-+		report->ble[V4L2_RDS_BLOCK_D]	= 0b00000011 & resp[7];
-+
-+		report->rds[V4L2_RDS_BLOCK_A].block = V4L2_RDS_BLOCK_A;
-+		report->rds[V4L2_RDS_BLOCK_A].msb = resp[8];
-+		report->rds[V4L2_RDS_BLOCK_A].lsb = resp[9];
-+
-+		report->rds[V4L2_RDS_BLOCK_B].block = V4L2_RDS_BLOCK_B;
-+		report->rds[V4L2_RDS_BLOCK_B].msb = resp[10];
-+		report->rds[V4L2_RDS_BLOCK_B].lsb = resp[11];
-+
-+		report->rds[V4L2_RDS_BLOCK_C].block = V4L2_RDS_BLOCK_C;
-+		report->rds[V4L2_RDS_BLOCK_C].msb = resp[12];
-+		report->rds[V4L2_RDS_BLOCK_C].lsb = resp[13];
-+
-+		report->rds[V4L2_RDS_BLOCK_D].block = V4L2_RDS_BLOCK_D;
-+		report->rds[V4L2_RDS_BLOCK_D].msb = resp[14];
-+		report->rds[V4L2_RDS_BLOCK_D].lsb = resp[15];
-+	}
-+
-+	return err;
-+}
-+
-+int si476x_core_cmd_fm_rds_blockcount(struct si476x_core *core,
-+				bool clear,
-+				struct si476x_rds_blockcount_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_RDS_BLOCKCOUNT_NRESP];
-+	const u8 args[CMD_FM_RDS_BLOCKCOUNT_NARGS] = {
-+		clear,
-+	};
-+
-+	if (!report)
-+		return -EINVAL;
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_RDS_BLOCKCOUNT,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (!err) {
-+		report->expected	= be16_to_cpup((__be16 *)(resp + 2));
-+		report->received	= be16_to_cpup((__be16 *)(resp + 4));
-+		report->uncorrectable	= be16_to_cpup((__be16 *)(resp + 6));
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_rds_blockcount);
-+
-+int si476x_core_cmd_fm_phase_diversity(struct si476x_core *core,
-+				       enum si476x_phase_diversity_mode mode)
-+{
-+	u8       resp[CMD_FM_PHASE_DIVERSITY_NRESP];
-+	const u8 args[CMD_FM_PHASE_DIVERSITY_NARGS] = {
-+		mode & 0b111,
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_FM_PHASE_DIVERSITY,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_phase_diversity);
-+/**
-+ * si476x_core_cmd_fm_phase_div_status() - get the phase diversity
-+ * status
-+ *
-+ * @core: si476x device
-+ *
-+ * NOTE caller must hold core lock
-+ *
-+ * Function returns the value of the status bit in case of success and
-+ * negative error code in case of failre.
-+ */
-+int si476x_core_cmd_fm_phase_div_status(struct si476x_core *core)
-+{
-+	int err;
-+	u8 resp[CMD_FM_PHASE_DIV_STATUS_NRESP];
-+
-+	err = __core_send_command(core, CMD_FM_PHASE_DIV_STATUS,
-+				  NULL, 0,
-+				  resp, ARRAY_SIZE(resp),
-+				  atomic_read(&core->timeouts.command));
-+
-+	return (err < 0) ? err : resp[1];
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_phase_div_status);
-+
-+
-+/**
-+ * si476x_cmd_am_seek_start - send 'FM_SEEK_START' command to the
-+ * device
-+ * @core  - device to send the command to
-+ * @seekup - if set the direction of the search is 'up'
-+ * @wrap   - if set seek wraps when hitting band limit
-+ *
-+ * This function begins search for a valid station. The station is
-+ * considered valid when 'FM_VALID_SNR_THRESHOLD' and
-+ * 'FM_VALID_RSSI_THRESHOLD' and 'FM_VALID_MAX_TUNE_ERROR' criteria
-+ * are met.
-+ *
-+ * Function returns 0 on success and negative error code on failure
-+ */
-+int si476x_core_cmd_am_seek_start(struct si476x_core *core,
-+				  bool seekup, bool wrap)
-+{
-+	u8       resp[CMD_AM_SEEK_START_NRESP];
-+	const u8 args[CMD_AM_SEEK_START_NARGS] = {
-+		seekup << 3 | wrap << 2,
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core,  CMD_AM_SEEK_START,
-+					 args, sizeof(args), resp, sizeof(resp));
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_am_seek_start);
-+
-+
-+
-+static int si476x_core_cmd_power_up_a10(struct si476x_core *core,
-+					struct si476x_power_up_args *puargs)
-+{
-+	u8       resp[CMD_POWER_UP_A10_NRESP];
-+	const bool intsel = (core->pinmux.a1 == SI476X_A1_IRQ);
-+	const bool ctsen  = (core->client->irq != 0);
-+	const u8 args[CMD_POWER_UP_A10_NARGS] = {
-+		0xF7,		/* Reserved, always 0xF7 */
-+		0x3F & puargs->xcload,	/* First two bits are reserved to be
-+				 * zeros */
-+		ctsen << 7 | intsel << 6 | 0x07, /* Last five bits
-+						   * are reserved to
-+						   * be written as 0x7 */
-+		puargs->func << 4 | puargs->freq,
-+		0x11,		/* Reserved, always 0x11 */
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_POWER_UP,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.power_up));
-+}
-+
-+static int si476x_core_cmd_power_up_a20(struct si476x_core *core,
-+				 struct si476x_power_up_args *puargs)
-+{
-+	u8       resp[CMD_POWER_UP_A20_NRESP];
-+	const bool intsel = (core->pinmux.a1 == SI476X_A1_IRQ);
-+	const bool ctsen  = (core->client->irq != 0);
-+	const u8 args[CMD_POWER_UP_A20_NARGS] = {
-+		puargs->ibias6x << 7 | puargs->xstart,
-+		0x3F & puargs->xcload,	/* First two bits are reserved to be
-+					 * zeros */
-+		ctsen << 7 | intsel << 6 | puargs->fastboot << 5 |
-+		puargs->xbiashc << 3 | puargs->xbias,
-+		puargs->func << 4 | puargs->freq,
-+		0x10 | puargs->xmode,
-+	};
-+
-+	return CORE_SEND_COMMAND(core, CMD_POWER_UP,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.power_up));
-+}
-+
-+static int si476x_core_cmd_power_down_a10(struct si476x_core *core,
-+					  struct si476x_power_down_args *pdargs)
-+{
-+	u8 resp[CMD_POWER_DOWN_A10_NRESP];
-+
-+	return __core_send_command(core, CMD_POWER_DOWN,
-+				   NULL, 0,
-+				   resp, ARRAY_SIZE(resp),
-+				   atomic_read(&core->timeouts.command));
-+}
-+
-+static int si476x_core_cmd_power_down_a20(struct si476x_core *core,
-+					  struct si476x_power_down_args *pdargs)
-+{
-+	u8 resp[CMD_POWER_DOWN_A20_NRESP];
-+	const u8 args[CMD_POWER_DOWN_A20_NARGS] = {
-+		pdargs->xosc,
-+	};
-+	return CORE_SEND_COMMAND(core, CMD_POWER_DOWN,
-+				 args, resp,
-+				 atomic_read(&core->timeouts.command));
-+}
-+
-+static int si476x_core_cmd_am_tune_freq_a10(struct si476x_core *core,
-+					struct si476x_tune_freq_args *tuneargs)
-+{
-+
-+	const int am_freq = tuneargs->freq;
-+	u8       resp[CMD_AM_TUNE_FREQ_NRESP];
-+	const u8 args[CMD_AM_TUNE_FREQ_NARGS] = {
-+		(tuneargs->hd << 6),
-+		msb(am_freq),
-+		lsb(am_freq),
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core, CMD_AM_TUNE_FREQ, args,
-+					 sizeof(args),
-+					 resp, sizeof(resp));
-+}
-+
-+static int si476x_core_cmd_am_tune_freq_a20(struct si476x_core *core,
-+					struct si476x_tune_freq_args *tuneargs)
-+{
-+	const int am_freq = tuneargs->freq;
-+	u8       resp[CMD_AM_TUNE_FREQ_NRESP];
-+	const u8 args[CMD_AM_TUNE_FREQ_NARGS] = {
-+		(tuneargs->zifsr << 6) | (tuneargs->injside & 0b11),
-+		msb(am_freq),
-+		lsb(am_freq),
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core, CMD_AM_TUNE_FREQ, args, sizeof(args),
-+					 resp, sizeof(resp));
-+}
-+
-+static int si476x_core_cmd_fm_rsq_status_a10(struct si476x_core *core,
-+					struct si476x_rsq_status_args *rsqargs,
-+					struct si476x_rsq_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_RSQ_STATUS_A10_NRESP];
-+	const u8 args[CMD_FM_RSQ_STATUS_A10_NARGS] = {
-+		rsqargs->rsqack << 3 | rsqargs->attune << 2 |
-+		rsqargs->cancel << 1 | rsqargs->stcack,
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_RSQ_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (report && !err) {
-+		report->multhint	= 0b10000000 & resp[1];
-+		report->multlint	= 0b01000000 & resp[1];
-+		report->snrhint		= 0b00001000 & resp[1];
-+		report->snrlint		= 0b00000100 & resp[1];
-+		report->rssihint	= 0b00000010 & resp[1];
-+		report->rssilint	= 0b00000001 & resp[1];
-+
-+		report->bltf		= 0b10000000 & resp[2];
-+		report->snr_ready	= 0b00100000 & resp[2];
-+		report->rssiready	= 0b00001000 & resp[2];
-+		report->afcrl		= 0b00000010 & resp[2];
-+		report->valid		= 0b00000001 & resp[2];
-+
-+		report->readfreq	= be16_to_cpup((__be16 *)(resp + 3));
-+		report->freqoff		= resp[5];
-+		report->rssi		= resp[6];
-+		report->snr		= resp[7];
-+		report->lassi		= resp[9];
-+		report->hassi		= resp[10];
-+		report->mult		= resp[11];
-+		report->dev		= resp[12];
-+		report->readantcap	= be16_to_cpup((__be16 *)(resp + 13));
-+		report->assi		= resp[15];
-+		report->usn		= resp[16];
-+	}
-+
-+	return err;
-+}
-+
-+static int si476x_core_cmd_fm_rsq_status_a20(struct si476x_core *core,
-+					struct si476x_rsq_status_args *rsqargs,
-+					struct si476x_rsq_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_RSQ_STATUS_A10_NRESP];
-+
-+	const u8 args[CMD_FM_RSQ_STATUS_A30_NARGS] = {
-+		rsqargs->primary << 4 | rsqargs->rsqack << 3 |
-+		rsqargs->attune  << 2 | rsqargs->cancel << 1 |
-+		rsqargs->stcack,
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_RSQ_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (report && !err) {
-+		report->multhint	= 0b10000000 & resp[1];
-+		report->multlint	= 0b01000000 & resp[1];
-+		report->snrhint		= 0b00001000 & resp[1];
-+		report->snrlint		= 0b00000100 & resp[1];
-+		report->rssihint	= 0b00000010 & resp[1];
-+		report->rssilint	= 0b00000001 & resp[1];
-+
-+		report->bltf		= 0b10000000 & resp[2];
-+		report->snr_ready	= 0b00100000 & resp[2];
-+		report->rssiready	= 0b00001000 & resp[2];
-+		report->afcrl		= 0b00000010 & resp[2];
-+		report->valid		= 0b00000001 & resp[2];
-+
-+		report->readfreq	= be16_to_cpup((__be16 *)(resp + 3));
-+		report->freqoff		= resp[5];
-+		report->rssi		= resp[6];
-+		report->snr		= resp[7];
-+		report->lassi		= resp[9];
-+		report->hassi		= resp[10];
-+		report->mult		= resp[11];
-+		report->dev		= resp[12];
-+		report->readantcap	= be16_to_cpup((__be16 *)(resp + 13));
-+		report->assi		= resp[15];
-+		report->usn		= resp[16];
-+	}
-+
-+	return err;
-+}
-+
-+
-+static int si476x_core_cmd_fm_rsq_status_a30(struct si476x_core *core,
-+					struct si476x_rsq_status_args *rsqargs,
-+					struct si476x_rsq_status_report *report)
-+{
-+	int err;
-+	u8       resp[CMD_FM_RSQ_STATUS_A30_NRESP];
-+	const u8 args[CMD_FM_RSQ_STATUS_A30_NARGS] = {
-+		rsqargs->primary << 4 | rsqargs->rsqack << 3 |
-+		rsqargs->attune << 2 | rsqargs->cancel << 1 |
-+		rsqargs->stcack,
-+	};
-+
-+	err = CORE_SEND_COMMAND(core, CMD_FM_RSQ_STATUS,
-+				args, resp,
-+				atomic_read(&core->timeouts.command));
-+
-+	if (report && !err) {
-+		report->multhint	= 0b10000000 & resp[1];
-+		report->multlint	= 0b01000000 & resp[1];
-+		report->snrhint		= 0b00001000 & resp[1];
-+		report->snrlint		= 0b00000100 & resp[1];
-+		report->rssihint	= 0b00000010 & resp[1];
-+		report->rssilint	= 0b00000001 & resp[1];
-+
-+		report->bltf		= 0b10000000 & resp[2];
-+		report->snr_ready	= 0b00100000 & resp[2];
-+		report->rssiready	= 0b00001000 & resp[2];
-+		report->injside         = 0b00000100 & resp[2];
-+		report->afcrl		= 0b00000010 & resp[2];
-+		report->valid		= 0b00000001 & resp[2];
-+
-+		report->readfreq	= be16_to_cpup((__be16 *)(resp + 3));
-+		report->freqoff		= resp[5];
-+		report->rssi		= resp[6];
-+		report->snr		= resp[7];
-+		report->issi		= resp[8];
-+		report->lassi		= resp[9];
-+		report->hassi		= resp[10];
-+		report->mult		= resp[11];
-+		report->dev		= resp[12];
-+		report->readantcap	= be16_to_cpup((__be16 *)(resp + 13));
-+		report->assi		= resp[15];
-+		report->usn		= resp[16];
-+
-+		report->pilotdev	= resp[17];
-+		report->rdsdev		= resp[18];
-+		report->assidev		= resp[19];
-+		report->strongdev	= resp[20];
-+		report->rdspi		= be16_to_cpup((__be16 *)(resp + 21));
-+	}
-+
-+	return err;
-+}
-+
-+static int si476x_core_cmd_fm_tune_freq_a10(struct si476x_core *core,
-+					struct si476x_tune_freq_args *tuneargs)
-+{
-+	u8       resp[CMD_FM_TUNE_FREQ_NRESP];
-+	const u8 args[CMD_FM_TUNE_FREQ_A10_NARGS] = {
-+		(tuneargs->hd << 6) | (tuneargs->tunemode << 4)
-+		| (tuneargs->smoothmetrics << 2),
-+		msb(tuneargs->freq),
-+		lsb(tuneargs->freq),
-+		msb(tuneargs->antcap),
-+		lsb(tuneargs->antcap)
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core, CMD_FM_TUNE_FREQ, args, sizeof(args),
-+					 resp, sizeof(resp));
-+}
-+
-+static int si476x_core_cmd_fm_tune_freq_a20(struct si476x_core *core,
-+					struct si476x_tune_freq_args *tuneargs)
-+{
-+	u8       resp[CMD_FM_TUNE_FREQ_NRESP];
-+	const u8 args[CMD_FM_TUNE_FREQ_A20_NARGS] = {
-+		(tuneargs->hd << 6) | (tuneargs->tunemode << 4)
-+		|  (tuneargs->smoothmetrics << 2) | (tuneargs->injside),
-+		msb(tuneargs->freq),
-+		lsb(tuneargs->freq),
-+	};
-+
-+	return si476x_cmd_tune_seek_freq(core, CMD_FM_TUNE_FREQ, args, sizeof(args),
-+					 resp, sizeof(resp));
-+}
-+
-+static int si476x_core_cmd_agc_status_a20(struct si476x_core *core,
-+					struct si476x_agc_status_report *report)
-+{
-+	int err;
-+	u8 resp[CMD_AGC_STATUS_NRESP_A20];
-+
-+	if (!report)
-+		return -EINVAL;
-+
-+	err = __core_send_command(core, CMD_AGC_STATUS,
-+				  NULL, 0,
-+				  resp, ARRAY_SIZE(resp),
-+				  atomic_read(&core->timeouts.command));
-+	if (!err) {
-+		report->mxhi		= resp[1] & SI476X_AGC_MXHI;
-+		report->mxlo		= resp[1] & SI476X_AGC_MXLO;
-+		report->lnahi		= resp[1] & SI476X_AGC_LNAHI;
-+		report->lnalo		= resp[1] & SI476X_AGC_LNALO;
-+		report->fmagc1		= resp[2];
-+		report->fmagc2		= resp[3];
-+		report->pgagain		= resp[4];
-+		report->fmwblang	= resp[5];
-+	}
-+
-+	return err;
-+}
-+
-+static int si476x_core_cmd_agc_status_a10(struct si476x_core *core,
-+					struct si476x_agc_status_report *report)
-+{
-+	int err;
-+	u8 resp[CMD_AGC_STATUS_NRESP_A10];
-+
-+	if (!report)
-+		return -EINVAL;
-+
-+	err = __core_send_command(core, CMD_AGC_STATUS,
-+				  NULL, 0,
-+				  resp, ARRAY_SIZE(resp),
-+				  atomic_read(&core->timeouts.command));
-+	if (!err) {
-+		report->mxhi	= resp[1] & SI476X_AGC_MXHI;
-+		report->mxlo	= resp[1] & SI476X_AGC_MXLO;
-+		report->lnahi	= resp[1] & SI476X_AGC_LNAHI;
-+		report->lnalo	= resp[1] & SI476X_AGC_LNALO;
-+	}
-+
-+	return err;
-+}
-+
-+static struct {
-+	int (*power_up) (struct si476x_core *,
-+			 struct si476x_power_up_args *);
-+	int (*power_down) (struct si476x_core *,
-+			   struct si476x_power_down_args *);
-+
-+	tune_freq_func_t fm_tune_freq;
-+	tune_freq_func_t am_tune_freq;
-+
-+	int (*fm_rsq_status)(struct si476x_core *,
-+			     struct si476x_rsq_status_args *,
-+			     struct si476x_rsq_status_report *);
-+
-+	int (*agc_status)(struct si476x_core *,
-+			  struct si476x_agc_status_report *);
-+	int (*intb_pin_cfg)(struct si476x_core *core,
-+			    enum si476x_intb_config intb,
-+			    enum si476x_a1_config a1);
-+} si476x_cmds_vtable[] = {
-+	[SI476X_REVISION_A10] = {
-+		.power_up	= si476x_core_cmd_power_up_a10,
-+		.power_down	= si476x_core_cmd_power_down_a10,
-+		.fm_tune_freq	= si476x_core_cmd_fm_tune_freq_a10,
-+		.am_tune_freq	= si476x_core_cmd_am_tune_freq_a10,
-+		.fm_rsq_status	= si476x_core_cmd_fm_rsq_status_a10,
-+		.agc_status	= si476x_core_cmd_agc_status_a10,
-+		.intb_pin_cfg   = si476x_core_cmd_intb_pin_cfg_a10,
-+	},
-+	[SI476X_REVISION_A20] = {
-+		.power_up	= si476x_core_cmd_power_up_a20,
-+		.power_down	= si476x_core_cmd_power_down_a20,
-+		.fm_tune_freq	= si476x_core_cmd_fm_tune_freq_a20,
-+		.am_tune_freq	= si476x_core_cmd_am_tune_freq_a20,
-+		.fm_rsq_status	= si476x_core_cmd_fm_rsq_status_a20,
-+		.agc_status	= si476x_core_cmd_agc_status_a20,
-+		.intb_pin_cfg   = si476x_core_cmd_intb_pin_cfg_a20,
-+	},
-+	[SI476X_REVISION_A30] = {
-+		.power_up	= si476x_core_cmd_power_up_a20,
-+		.power_down	= si476x_core_cmd_power_down_a20,
-+		.fm_tune_freq	= si476x_core_cmd_fm_tune_freq_a20,
-+		.am_tune_freq	= si476x_core_cmd_am_tune_freq_a20,
-+		.fm_rsq_status	= si476x_core_cmd_fm_rsq_status_a30,
-+		.agc_status	= si476x_core_cmd_agc_status_a20,
-+		.intb_pin_cfg   = si476x_core_cmd_intb_pin_cfg_a20,
-+	},
-+};
-+
-+int si476x_core_cmd_power_up(struct si476x_core *core,
-+			     struct si476x_power_up_args *args)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].power_up(core, args);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_power_up);
-+
-+int si476x_core_cmd_power_down(struct si476x_core *core,
-+			       struct si476x_power_down_args *args)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].power_down(core, args);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_power_down);
-+
-+int si476x_core_cmd_fm_tune_freq(struct si476x_core *core,
-+				 struct si476x_tune_freq_args *args)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].fm_tune_freq(core, args);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_tune_freq);
-+
-+int si476x_core_cmd_am_tune_freq(struct si476x_core *core,
-+				 struct si476x_tune_freq_args *args)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].am_tune_freq(core, args);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_am_tune_freq);
-+
-+int si476x_core_cmd_fm_rsq_status(struct si476x_core *core,
-+				  struct si476x_rsq_status_args *args,
-+				  struct si476x_rsq_status_report *report)
-+
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].fm_rsq_status(core, args,
-+								report);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_fm_rsq_status);
-+
-+int si476x_core_cmd_agc_status(struct si476x_core *core,
-+				  struct si476x_agc_status_report *report)
-+
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return si476x_cmds_vtable[core->revision].agc_status(core, report);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_agc_status);
-+
-+int si476x_core_cmd_intb_pin_cfg(struct si476x_core *core,
-+			    enum si476x_intb_config intb,
-+			    enum si476x_a1_config a1)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+
-+	return si476x_cmds_vtable[core->revision].intb_pin_cfg(core, intb, a1);
-+}
-+EXPORT_SYMBOL_GPL(si476x_core_cmd_intb_pin_cfg);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Andrey Smirnov <andrey.smirnov@convergeddevices.net>");
-+MODULE_DESCRIPTION("API for command exchange for si476x");
++EXPORT_SYMBOL_GPL(si476x_core_set_rds_reception);
 -- 
 1.7.9.5
 
