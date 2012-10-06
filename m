@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2JFG3n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 02:29:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:33691 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab2JFG3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 02:29:41 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, avi@redhat.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-In-Reply-To: <506D8DD5.20904@redhat.com>
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 05 Oct 2012 15:13:01 +0930
-Message-ID: <87391t1nkq.fsf@rustcorp.com.au>
+	id S1752310Ab2JFGpY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 02:45:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60681 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2JFGpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 02:45:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Julian Anastasov <ja@ssi.bg>
+Subject: Re: [PATCH 08/16] ipvs: fix ip_vs_set_timeout debug messages
+Date: Sat, 6 Oct 2012 06:45:04 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org
+References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-9-git-send-email-arnd@arndb.de> <alpine.LFD.2.00.1210052305190.1639@ja.ssi.bg>
+In-Reply-To: <alpine.LFD.2.00.1210052305190.1639@ja.ssi.bg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210060645.05225.arnd@arndb.de>
+X-Provags-ID: V02:K0:Vb6VrbmzCH10HtmGcnUOEWerJ6HNRDUNbKR7UIly73C
+ c9r6YCj+v/stUxXael3ulR8SoQ456jDauo/Q/CpQZx9AglAsac
+ PrQbt+9uQC7jfubAIAO6QnTc/psdYcOPBBIJvF1sz0gllKGoNX
+ /BpxWiNc2Y+vlexKarKWW3gb34TSfWvbAverSfGNk0GSL8mppB
+ AJDKtdVZTZDfFFbgiNERagz0zqM5+636fho+DmESFlLYxIGxEV
+ e2dZxrANQXLpUydMsOhSDyRYbTCYen8pj9aZ6X7C4TrLv+1oPc
+ z2Vvzzo2/C/00FtOPSr9iyhbifxTfI3RInOyPV7zq0JJ5nW9y7
+ Lcgv5chtnjzrtsit7a1g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
+On Friday 05 October 2012, Julian Anastasov wrote:
+> 
+> 	Hello,
+> 
+> On Fri, 5 Oct 2012, Arnd Bergmann wrote:
+> 
+> > The ip_vs_set_timeout function sets timeouts for TCP and UDP, which
+> > can be enabled independently at compile time. The debug message
+> > always prints both timeouts that are passed into the function,
+> > but if one is disabled, the message will show uninitialized data.
+> > 
+> > This splits the debug message into two separte IP_VS_DBG statements
+> > that are in the same #ifdef section to ensure we only print the
+> > text about what is actually going on.
+> > 
+> > Without this patch, building ARM ixp4xx_defconfig results in:
+> 
+> 	Are there any CONFIG_IP_VS_PROTO_xxx options in this
+> default config? It is a waste of memory if IPVS is compiled
+> without any protocols.
 
-> Il 04/10/2012 14:51, Rusty Russell ha scritto:
->> Paolo Bonzini <pbonzini@redhat.com> writes:
->> 
->>> Il 04/10/2012 02:11, Rusty Russell ha scritto:
->>>>>> There's a reason I haven't done this.  I really, really dislike "my
->>>>>> implemention isn't broken" feature bits.  We could have an infinite
->>>>>> number of them, for each bug in each device.
->>>>>
->>>>> However, this bug affects (almost) all implementations and (almost) all
->>>>> devices.  It even makes sense to reserve a transport feature bit for it
->>>>> instead of a device feature bit.
->>>>
->>>> Perhaps, but we have to fix the bugs first!
->>>
->>> Yes. :)  Isn't that what mst's patch does?
->>>
->>>> As I said, my torture patch broke qemu immediately.  Since noone has
->>>> leapt onto fixing that, I'll take a look now...
->>>
->>> I can look at virtio-scsi.
->> 
->> Actually, you can't, see my reply to Anthony...
->> 
->> Message-ID: <87lifm1y1n.fsf@rustcorp.com.au>
->
->     struct virtio_scsi_req_cmd {
->         // Read-only
->         u8 lun[8];
->         u64 id;
->         u8 task_attr;
->         u8 prio;
->         u8 crn;
->         char cdb[cdb_size];
->         char dataout[];
->         // Write-only part
->         u32 sense_len;
->         u32 residual;
->         u16 status_qualifier;
->         u8 status;
->         u8 response;
->         u8 sense[sense_size];
->         char datain[];
->     };
->
-> where cdb_size and sense_size come from configuration space.  The device
-> right now expects everything before dataout/datain to be in a single
-> descriptor, but that's in no way part of the spec.  Am I missing
-> something egregious?
+They all appear to be turned off:
 
-Since you wrote it, I hope not :)
+$ grep CONFIG_IP_VS obj-tmp/.config
+CONFIG_IP_VS=m
+CONFIG_IP_VS_DEBUG=y
+CONFIG_IP_VS_TAB_BITS=12
+# CONFIG_IP_VS_PROTO_TCP is not set
+# CONFIG_IP_VS_PROTO_UDP is not set
+# CONFIG_IP_VS_PROTO_AH_ESP is not set
+# CONFIG_IP_VS_PROTO_ESP is not set
+# CONFIG_IP_VS_PROTO_AH is not set
+# CONFIG_IP_VS_PROTO_SCTP is not set
+CONFIG_IP_VS_RR=m
+CONFIG_IP_VS_WRR=m
+CONFIG_IP_VS_LC=m
+CONFIG_IP_VS_WLC=m
+CONFIG_IP_VS_LBLC=m
+CONFIG_IP_VS_LBLCR=m
+CONFIG_IP_VS_DH=m
+CONFIG_IP_VS_SH=m
+# CONFIG_IP_VS_SED is not set
+# CONFIG_IP_VS_NQ is not set
+CONFIG_IP_VS_SH_TAB_BITS=8
 
-That's good.  But virtio_blk's scsi command is insoluble AFAICT.  As I
-said to Anthony, the best rules are "always" and "never", so I'd really
-rather not have to grandfather that in.
+> > net/netfilter/ipvs/ip_vs_ctl.c: In function 'ip_vs_genl_set_cmd':
+> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.udp_timeout' may be used uninitialized in this function [-Wuninitialized]
+> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.udp_timeout' was declared here
+> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_fin_timeout' may be used uninitialized in this function [-Wuninitialized]
+> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_fin_timeout' was declared here
+> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_timeout' may be used uninitialized in this function [-Wuninitialized]
+> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_timeout' was declared here
+> 
+> 	There are many __ip_vs_get_timeouts callers but
+> just one calls memset(&t, 0, sizeof(t)) before that,
+> problem only for ip_vs_genl_set_config and ip_vs_set_timeout.
+> 
+> 	To be safe, can we move this memset into
+> __ip_vs_get_timeouts instead of playing games with defines?:
+> 
+> 	memset(t, 0, sizeof(*t));
+> 
+> 	This debug message will be more precise in showing the
+> changed values if we replace the __ip_vs_get_timeouts 
+> call in ip_vs_genl_set_config with memset(&t, 0, sizeof(t)).
+> Then we will see 0 for values that are not changed/supported.
 
-Cheers,
-Rusty.
+8<-----
+ipvs: initialize returned data in do_ip_vs_get_ctl
+
+As reported by a gcc warning, the do_ip_vs_get_ctl does not initalize
+all the members of the ip_vs_timeout_user structure it returns if
+at least one of the TCP or UDP protocols is disabled for ipvs. 
+
+This makes sure that the data is always initialized, before it is
+returned as a response to IPVS_CMD_GET_CONFIG or printed as a
+debug message in IPVS_CMD_SET_CONFIG.
+
+Without this patch, building ARM ixp4xx_defconfig results in:
+
+net/netfilter/ipvs/ip_vs_ctl.c: In function 'ip_vs_genl_set_cmd':
+net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.udp_timeout' may be used uninitialized in this function [-Wuninitialized]
+net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.udp_timeout' was declared here
+net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_fin_timeout' may be used uninitialized in this function [-Wuninitialized]
+net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_fin_timeout' was declared here
+net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_timeout' may be used uninitialized in this function [-Wuninitialized]
+net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_timeout' was declared here
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index 2770f85..3995d2e 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -2590,6 +2588,7 @@ __ip_vs_get_timeouts(struct net *net, struct ip_vs_timeout_user *u)
+ #if defined(CONFIG_IP_VS_PROTO_TCP) || defined(CONFIG_IP_VS_PROTO_UDP)
+ 	struct ip_vs_proto_data *pd;
+ #endif
++	memset(u, 0, sizeof (*u));
+ 
+ #ifdef CONFIG_IP_VS_PROTO_TCP
+ 	pd = ip_vs_proto_data_get(net, IPPROTO_TCP);
+@@ -2768,7 +2767,6 @@ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
+ 	{
+ 		struct ip_vs_timeout_user t;
+ 
+-		memset(&t, 0, sizeof(t));
+ 		__ip_vs_get_timeouts(net, &t);
+ 		if (copy_to_user(user, &t, sizeof(t)) != 0)
+ 			ret = -EFAULT;
