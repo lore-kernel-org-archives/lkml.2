@@ -1,143 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab2JFFwm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 01:52:42 -0400
+	id S1752617Ab2JFFxN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 01:53:13 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:34629 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab2JFFwk (ORCPT
+	with ESMTP id S1752490Ab2JFFxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 01:52:40 -0400
+	Sat, 6 Oct 2012 01:53:08 -0400
 From: YAMANE Toshiaki <yamanetoshi@gmail.com>
 To: Greg Kroah-Hartman <greg@kroah.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>,
         Frank Mori Hess <fmhess@users.sourceforge.net>,
         linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use dev_ printks in drivers/quatech_daqp_cs.c
-Date: Sat,  6 Oct 2012 14:52:34 +0900
-Message-Id: <1349502754-8775-1-git-send-email-yamanetoshi@gmail.com>
+Subject: [PATCH] staging/comedi: Use dev_ printks in rtd520.c
+Date: Sat,  6 Oct 2012 14:53:02 +0900
+Message-Id: <1349502782-8809-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_notice(netdev, ... then dev_notice(dev, ... then pr_notice(...  to printk(KERN_NOTICE ...
-
-and added pr_fmt.
+fixed below checkpatch warning.
+-Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
 Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- drivers/staging/comedi/drivers/quatech_daqp_cs.c |   34 ++++++++++------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-index 3e276f7..d15bd8a 100644
---- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-+++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-@@ -47,6 +47,8 @@ Status: works
- Devices: [Quatech] DAQP-208 (daqp), DAQP-308
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include "../comedidev.h"
- #include <linux/semaphore.h>
- 
-@@ -195,8 +197,8 @@ static struct comedi_driver driver_daqp = {
- 
- static void daqp_dump(struct comedi_device *dev)
- {
--	printk(KERN_INFO "DAQP: status %02x; aux status %02x\n",
--	       inb(dev->iobase + DAQP_STATUS), inb(dev->iobase + DAQP_AUX));
-+	dev_info(dev->class_dev, "status %02x; aux status %02x\n",
-+		 inb(dev->iobase + DAQP_STATUS), inb(dev->iobase + DAQP_AUX));
- }
- 
- static void hex_dump(char *str, void *ptr, int len)
-@@ -255,33 +257,29 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
- 	int status;
- 
- 	if (local == NULL) {
--		printk(KERN_WARNING
--		       "daqp_interrupt(): irq %d for unknown device.\n", irq);
-+		pr_warn("irq %d for unknown device.\n", irq);
- 		return IRQ_NONE;
- 	}
- 
- 	dev = local->dev;
- 	if (dev == NULL) {
--		printk(KERN_WARNING "daqp_interrupt(): NULL comedi_device.\n");
-+		pr_warn("NULL comedi_device.\n");
- 		return IRQ_NONE;
- 	}
- 
- 	if (!dev->attached) {
--		printk(KERN_WARNING
--		       "daqp_interrupt(): struct comedi_device not yet attached.\n");
-+		pr_warn("struct comedi_device not yet attached.\n");
- 		return IRQ_NONE;
- 	}
- 
- 	s = local->s;
- 	if (s == NULL) {
--		printk(KERN_WARNING
--		       "daqp_interrupt(): NULL comedi_subdevice.\n");
-+		pr_warn("NULL comedi_subdevice.\n");
- 		return IRQ_NONE;
- 	}
- 
- 	if ((struct local_info_t *)s->private != local) {
--		printk(KERN_WARNING
--		       "daqp_interrupt(): invalid comedi_subdevice.\n");
-+		pr_warn("invalid comedi_subdevice.\n");
- 		return IRQ_NONE;
- 	}
- 
-@@ -331,8 +329,8 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
+diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+index 41d24b0..d7ed26a 100644
+--- a/drivers/staging/comedi/drivers/rtd520.c
++++ b/drivers/staging/comedi/drivers/rtd520.c
+@@ -507,15 +507,14 @@ static int rtd520_probe_fifo_depth(struct comedi_device *dev)
  		}
- 
- 		if (loop_limit <= 0) {
--			printk(KERN_WARNING
--			       "loop_limit reached in daqp_interrupt()\n");
-+			dev_warn(dev->class_dev,
-+				 "loop_limit reached in daqp_interrupt()\n");
- 			daqp_ai_cancel(dev, s);
- 			s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
- 		}
-@@ -736,8 +734,8 @@ static int daqp_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	while (--counter
- 	       && (inb(dev->iobase + DAQP_STATUS) & DAQP_STATUS_EVENTS)) ;
- 	if (!counter) {
--		printk(KERN_ERR
--		       "daqp: couldn't clear interrupts in status register\n");
-+		dev_err(dev->class_dev,
-+			"couldn't clear interrupts in status register\n");
- 		return -1;
  	}
+ 	if (i == limit) {
+-		printk(KERN_INFO "\ncomedi: %s: failed to probe fifo size.\n",
+-		       DRV_NAME);
++		dev_info(dev->class_dev, "failed to probe fifo size.\n");
+ 		return -EIO;
+ 	}
+ 	writel(0, devpriv->las0 + LAS0_ADC_FIFO_CLEAR);
+ 	if (fifo_size != 0x400 && fifo_size != 0x2000) {
+-		printk
+-		    (KERN_INFO "\ncomedi: %s: unexpected fifo size of %i, expected 1024 or 8192.\n",
+-		     DRV_NAME, fifo_size);
++		dev_info(dev->class_dev,
++			 "unexpected fifo size of %i, expected 1024 or 8192.\n",
++			 fifo_size);
+ 		return -EIO;
+ 	}
+ 	return fifo_size;
+@@ -1600,7 +1599,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	int index;
+ #endif
  
-@@ -852,8 +850,8 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (ret)
+-	printk(KERN_INFO "comedi%d: rtd520 attaching.\n", dev->minor);
++	dev_info(dev->class_dev, "rtd520 attaching.\n");
+ 
+ #if defined(CONFIG_COMEDI_DEBUG) && defined(USE_DMA)
+ 	/* You can set this a load time: modprobe comedi comedi_debug=1 */
+@@ -1626,7 +1625,8 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	ret = comedi_pci_enable(pcidev, DRV_NAME);
+ 	if (ret < 0) {
+-		printk(KERN_INFO "Failed to enable PCI device and request regions.\n");
++		dev_info(dev->class_dev,
++			 "Failed to enable PCI device and request regions.\n");
  		return ret;
- 
--	printk(KERN_INFO "comedi%d: attaching daqp%d (io 0x%04lx)\n",
--	       dev->minor, it->options[0], dev->iobase);
-+	dev_info(dev->class_dev, "attaching daqp%d (io 0x%04lx)\n",
-+		 it->options[0], dev->iobase);
- 
- 	s = &dev->subdevices[0];
- 	dev->read_subdev = s;
-@@ -958,7 +956,7 @@ static int daqp_cs_attach(struct pcmcia_device *link)
- 		if (dev_table[i] == NULL)
- 			break;
- 	if (i == MAX_DEV) {
--		printk(KERN_NOTICE "daqp_cs: no devices available\n");
-+		dev_notice(&link->dev, "no devices available\n");
- 		return -ENODEV;
  	}
+ 	dev->iobase = 1;	/* the "detach" needs this */
+@@ -1653,8 +1653,9 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		pci_read_config_byte(pcidev,
+ 				     PCI_LATENCY_TIMER, &pci_latency);
+ 		if (pci_latency < 32) {
+-			printk(KERN_INFO "%s: PCI latency changed from %d to %d\n",
+-			       dev->board_name, pci_latency, 32);
++			dev_info(dev->class_dev,
++				 "PCI latency changed from %d to %d\n",
++				 pci_latency, 32);
+ 			pci_write_config_byte(pcidev,
+ 					      PCI_LATENCY_TIMER, 32);
+ 		} else {
+@@ -1675,7 +1676,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 
+ 	/* Show board configuration */
+-	printk(KERN_INFO "%s:", dev->board_name);
++	dev_info(dev->class_dev, "%s:", dev->board_name);
+ 
+ 	ret = comedi_alloc_subdevices(dev, 4);
+ 	if (ret)
+@@ -1767,7 +1768,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return ret;
+ 	}
+ 	dev->irq = pcidev->irq;
+-	printk(KERN_INFO "( irq=%u )", dev->irq);
++	dev_info(dev->class_dev, "( irq=%u )", dev->irq);
+ 
+ 	ret = rtd520_probe_fifo_depth(dev);
+ 	if (ret < 0)
+@@ -1844,7 +1845,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		/* set DMA trigger source */
+ 		writel(DMAS_ADFIFO_HALF_FULL, devpriv->las0 + LAS0_DMA0_SRC);
+ 	} else {
+-		printk(KERN_INFO "( no IRQ->no DMA )");
++		dev_info(dev->class_dev, "( no IRQ->no DMA )");
+ 	}
+ #endif /* USE_DMA */
  
 -- 
 1.7.9.5
