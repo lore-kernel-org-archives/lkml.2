@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab2JFPgY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:36:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35570 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2JFPgP (ORCPT
+	id S1756162Ab2JFPgf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:36:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55513 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab2JFPgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:36:15 -0400
+	Sat, 6 Oct 2012 11:36:31 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -22,9 +22,9 @@ Cc: Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
         "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v3 26/28] ACPI/processor: save parsed APIC ID in processor driver data structure
-Date: Sat,  6 Oct 2012 23:27:34 +0800
-Message-Id: <1349537256-21670-27-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v3 27/28] x86: simplify _acpi_map_lsapic()
+Date: Sat,  6 Oct 2012 23:27:35 +0800
+Message-Id: <1349537256-21670-28-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
 References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
@@ -32,285 +32,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance ACPI processor driver to save parsed APIC ID in processor driver
-data structure, and avoid reparsing again in _acpi_map_lsapic().
-This change also makes fake CPU hotplug possible because we have no
-dependency on _MAT method now.
+Simplify implementation of function _acpi_map_lsapic().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- arch/ia64/kernel/acpi.c         |   38 ++++----------------------------------
- arch/x86/kernel/acpi/boot.c     |   38 +++-----------------------------------
- drivers/acpi/internal.h         |    2 ++
- drivers/acpi/processor_core.c   |   26 +++++++++++++++++++++-----
- drivers/acpi/processor_driver.c |   15 +++++++++------
- include/acpi/processor.h        |    1 +
- include/linux/acpi.h            |    2 +-
- 7 files changed, 41 insertions(+), 81 deletions(-)
+ arch/x86/include/asm/mpspec.h |    2 +-
+ arch/x86/kernel/acpi/boot.c   |   44 +++++++++--------------------------------
+ arch/x86/kernel/apic/apic.c   |    8 +++++---
+ 3 files changed, 15 insertions(+), 39 deletions(-)
 
-diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-index 44057885..f0da941 100644
---- a/arch/ia64/kernel/acpi.c
-+++ b/arch/ia64/kernel/acpi.c
-@@ -880,40 +880,10 @@ __init void prefill_possible_map(void)
- 		set_cpu_possible(i, true);
- }
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index 3e2f42a..f1d6487 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -94,7 +94,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
+ #define default_get_smp_config x86_init_uint_noop
+ #endif
  
--static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
-+static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
- {
--	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
--	union acpi_object *obj;
--	struct acpi_madt_local_sapic *lsapic;
- 	cpumask_t tmp_map;
--	int cpu, physid;
--
--	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
--		return -EINVAL;
--
--	if (!buffer.length || !buffer.pointer)
--		return -EINVAL;
--
--	obj = buffer.pointer;
--	if (obj->type != ACPI_TYPE_BUFFER)
--	{
--		kfree(buffer.pointer);
--		return -EINVAL;
--	}
--
--	lsapic = (struct acpi_madt_local_sapic *)obj->buffer.pointer;
--
--	if ((lsapic->header.type != ACPI_MADT_TYPE_LOCAL_SAPIC) ||
--	    (!(lsapic->lapic_flags & ACPI_MADT_ENABLED))) {
--		kfree(buffer.pointer);
--		return -EINVAL;
--	}
--
--	physid = ((lsapic->id << 8) | (lsapic->eid));
--
--	kfree(buffer.pointer);
--	buffer.length = ACPI_ALLOCATE_BUFFER;
--	buffer.pointer = NULL;
-+	int cpu;
- 
- 	cpumask_complement(&tmp_map, cpu_present_mask);
- 	cpu = cpumask_first(&tmp_map);
-@@ -932,9 +902,9 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
- }
- 
- /* wrapper to silence section mismatch warning */
--int __ref acpi_map_lsapic(acpi_handle handle, int *pcpu)
-+int __ref acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
- {
--	return _acpi_map_lsapic(handle, pcpu);
-+	return _acpi_map_lsapic(handle, physid, pcpu);
- }
- EXPORT_SYMBOL(acpi_map_lsapic);
- 
+-void __cpuinit generic_processor_info(int apicid, int version);
++int __cpuinit generic_processor_info(int apicid, int version);
+ #ifdef CONFIG_ACPI
+ extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index e651f7a..5e76952 100644
+index 5e76952..f354446 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -608,44 +608,12 @@ static void __cpuinit acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
- #endif
+@@ -195,24 +195,24 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
+ 	return 0;
  }
  
--static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
-+static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
+-static void __cpuinit acpi_register_lapic(int id, u8 enabled)
++static int __cpuinit acpi_register_lapic(int id, u8 enabled)
  {
--	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
--	union acpi_object *obj;
--	struct acpi_madt_local_apic *lapic;
- 	cpumask_var_t tmp_map, new_map;
--	u8 physid;
+ 	unsigned int ver = 0;
+ 
+ 	if (id >= (MAX_LOCAL_APIC-1)) {
+ 		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
+-		return;
++		return -1;
+ 	}
+ 
+ 	if (!enabled) {
+ 		++disabled_cpus;
+-		return;
++		return -1;
+ 	}
+ 
+ 	if (boot_cpu_physical_apicid != -1U)
+ 		ver = apic_version[boot_cpu_physical_apicid];
+ 
+-	generic_processor_info(id, ver);
++	return generic_processor_info(id, ver);
+ }
+ 
+ static int __init
+@@ -610,44 +610,19 @@ static void __cpuinit acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
+ 
+ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
+ {
+-	cpumask_var_t tmp_map, new_map;
  	int cpu;
- 	int retval = -ENOMEM;
+-	int retval = -ENOMEM;
  
--	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
--		return -EINVAL;
+-	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
+-		goto out;
 -
--	if (!buffer.length || !buffer.pointer)
--		return -EINVAL;
+-	if (!alloc_cpumask_var(&new_map, GFP_KERNEL))
+-		goto free_tmp_map;
 -
--	obj = buffer.pointer;
--	if (obj->type != ACPI_TYPE_BUFFER ||
--	    obj->buffer.length < sizeof(*lapic)) {
--		kfree(buffer.pointer);
--		return -EINVAL;
--	}
+-	cpumask_copy(tmp_map, cpu_present_mask);
+-	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
 -
--	lapic = (struct acpi_madt_local_apic *)obj->buffer.pointer;
--
--	if (lapic->header.type != ACPI_MADT_TYPE_LOCAL_APIC ||
--	    !(lapic->lapic_flags & ACPI_MADT_ENABLED)) {
--		kfree(buffer.pointer);
--		return -EINVAL;
--	}
--
--	physid = lapic->id;
--
--	kfree(buffer.pointer);
--	buffer.length = ACPI_ALLOCATE_BUFFER;
--	buffer.pointer = NULL;
--	lapic = NULL;
--
- 	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
- 		goto out;
+-	/*
+-	 * If acpi_register_lapic successfully generates a new logical cpu
+-	 * number, then the following will get us exactly what was mapped
+-	 */
+-	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
+-	if (cpumask_empty(new_map)) {
++	cpu = acpi_register_lapic(physid, ACPI_MADT_ENABLED);
++	if (cpu == -1) {
+ 		printk ("Unable to map lapic to logical cpu number\n");
+-		retval = -EINVAL;
+-		goto free_new_map;
++		return -EINVAL;
+ 	}
  
-@@ -683,9 +651,9 @@ out:
+ 	acpi_processor_set_pdc(handle);
+-
+-	cpu = cpumask_first(new_map);
+ 	acpi_map_cpu2node(handle, cpu, physid);
+-
+ 	*pcpu = cpu;
+-	retval = 0;
+-
+-free_new_map:
+-	free_cpumask_var(new_map);
+-free_tmp_map:
+-	free_cpumask_var(tmp_map);
+-out:
+-	return retval;
++
++	return 0;
  }
  
  /* wrapper to silence section mismatch warning */
--int __ref acpi_map_lsapic(acpi_handle handle, int *pcpu)
-+int __ref acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
+@@ -665,7 +640,6 @@ int acpi_unmap_lsapic(int cpu)
+ 
+ 	return (0);
+ }
+-
+ EXPORT_SYMBOL(acpi_unmap_lsapic);
+ #endif				/* CONFIG_ACPI_HOTPLUG_CPU */
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b17416e..9fdc293 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2030,7 +2030,7 @@ void disconnect_bsp_APIC(int virt_wire_setup)
+ 	apic_write(APIC_LVT1, value);
+ }
+ 
+-void __cpuinit generic_processor_info(int apicid, int version)
++int __cpuinit generic_processor_info(int apicid, int version)
  {
--	return _acpi_map_lsapic(handle, pcpu);
-+	return _acpi_map_lsapic(handle, physid, pcpu);
- }
- EXPORT_SYMBOL(acpi_map_lsapic);
+ 	int cpu, max = nr_cpu_ids;
+ 	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
+@@ -2050,7 +2050,7 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
  
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 6f0632d..036dba11 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -47,6 +47,8 @@ int acpi_bus_init_power(struct acpi_device *device);
- 
- int acpi_wakeup_device_init(void);
- void acpi_early_processor_set_pdc(void);
-+int acpi_get_apicid(acpi_handle handle, int type, u32 acpi_id);
-+int acpi_map_cpuid(int apic_id, u32 acpi_id);
- 
- /* --------------------------------------------------------------------------
-                                   Embedded Controller
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index eff7222..21217e5 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -163,16 +163,23 @@ exit:
- 	return apic_id;
- }
- 
--int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
-+int acpi_get_apicid(acpi_handle handle, int type, u32 acpi_id)
- {
--#ifdef CONFIG_SMP
--	int i;
--#endif
--	int apic_id = -1;
-+	int apic_id;
- 
- 	apic_id = map_mat_entry(handle, type, acpi_id);
- 	if (apic_id == -1)
- 		apic_id = map_madt_entry(type, acpi_id);
-+
-+	return apic_id;
-+}
-+
-+int acpi_map_cpuid(int apic_id, u32 acpi_id)
-+{
-+#ifdef CONFIG_SMP
-+	int i;
-+#endif
-+
- 	if (apic_id == -1) {
- 		/*
- 		 * On UP processor, there is no _MAT or MADT table.
-@@ -212,6 +219,15 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
- #endif
- 	return -1;
- }
-+
-+int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
-+{
-+	int apic_id;
-+
-+	apic_id = acpi_get_apicid(handle, type, acpi_id);
-+
-+	return acpi_map_cpuid(apic_id, acpi_id);
-+}
- EXPORT_SYMBOL_GPL(acpi_get_cpuid);
- 
- static bool __init processor_physically_present(acpi_handle handle)
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 51e3993..2346b81 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -57,6 +57,7 @@
- #include <acpi/acpi_drivers.h>
- #include <acpi/processor.h>
- #include <acpi/acpi_hotplug.h>
-+#include "internal.h"
- 
- #define PREFIX "ACPI: "
- 
-@@ -303,7 +304,8 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 		device_declaration = 1;
- 		pr->acpi_id = value;
+ 		disabled_cpus++;
+-		return;
++		return -1;
  	}
--	cpu_index = acpi_get_cpuid(pr->handle, device_declaration, pr->acpi_id);
-+	pr->apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
-+	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
  
- 	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
- 	if (!cpu0_initialized && (cpu_index == -1) &&
-@@ -689,7 +691,7 @@ static int acpi_processor_get_dev_info(struct acpi_device *device,
- static int acpi_processor_pre_configure(struct acpi_device *device,
- 					struct acpihp_cancel_context *ctx)
- {
--	int result;
-+	int result = -EINVAL;
- 	struct acpi_processor *pr;
+ 	if (num_processors >= nr_cpu_ids) {
+@@ -2061,7 +2061,7 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
  
- 	if (!device || !acpi_driver_data(device))
-@@ -698,9 +700,11 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
+ 		disabled_cpus++;
+-		return;
++		return -1;
+ 	}
  
- 	/* Generate CPUID for hot-added CPUs */
- 	if (pr->id == -1) {
--		result = acpi_map_lsapic(device->handle, &pr->id);
-+		if (pr->apic_id == -1)
-+			goto out;
-+		result = acpi_map_lsapic(device->handle, pr->apic_id, &pr->id);
- 		if (result)
--			goto out_unlock;
-+			goto out;
- 		BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
- 		result = arch_register_cpu(pr->id, 1);
- 		if (result)
-@@ -720,8 +724,7 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
- out_unmap:
- 	acpi_unmap_lsapic(pr->id);
- 	pr->id = -1;
--out_unlock:
--	put_online_cpus();
-+out:
- 
- 	return result;
+ 	num_processors++;
+@@ -2106,6 +2106,8 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ #endif
+ 	set_cpu_possible(cpu, true);
+ 	set_cpu_present(cpu, true);
++
++	return cpu;
  }
-diff --git a/include/acpi/processor.h b/include/acpi/processor.h
-index ae7d94e..da65f1f 100644
---- a/include/acpi/processor.h
-+++ b/include/acpi/processor.h
-@@ -200,6 +200,7 @@ struct acpi_processor_flags {
- struct acpi_processor {
- 	acpi_handle handle;
- 	u32 acpi_id;
-+	int apic_id;
- 	u32 id;
- 	u32 pblk;
- 	int performance_platform_limit;
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 90be989..774ce2b 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -101,7 +101,7 @@ void acpi_numa_arch_fixup(void);
  
- #ifdef CONFIG_ACPI_HOTPLUG_CPU
- /* Arch dependent functions for cpu hotplug support */
--int acpi_map_lsapic(acpi_handle handle, int *pcpu);
-+int acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu);
- int acpi_unmap_lsapic(int cpu);
- #endif /* CONFIG_ACPI_HOTPLUG_CPU */
- 
+ int hard_smp_processor_id(void)
 -- 
 1.7.9.5
 
