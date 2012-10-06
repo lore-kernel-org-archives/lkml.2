@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab2JFJD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 05:03:59 -0400
-Received: from chandra.ncl.res.in ([59.163.216.11]:54936 "EHLO
-	chandra.ncl.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab2JFJD5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 05:03:57 -0400
-X-Greylist: delayed 1649 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Oct 2012 05:03:56 EDT
-From: "Darbha  Srinivas" <d.srinivas@ncl.res.in>
-Subject: You have exceeded the limit of 23432 Email Account.
-Thread-Topic: You have exceeded the limit of 23432 Email Account.
-Thread-Index: Ac2jnOY4CCU+ORXeTTWYQFgp54Ndxw==
-Date: Sat, 6 Oct 2012 08:30:54 +0000
-Message-ID: <5981E97FAE827D48BDA7E173ECCD1BE37FB925@mailsrv01.ncl.res.in>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [115.184.43.213]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	id S1755294Ab2JFJEK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 05:04:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25128 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755145Ab2JFJEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 05:04:06 -0400
+Message-Id: <275ffc$6skdfn@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,543,1344236400"; 
+   d="scan'208";a="231355895"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: 3.5 regression on i915
+To: Willy Tarreau <w@1wt.eu>
+Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20121006084258.GB22618@1wt.eu>
+References: <20121005234218.GC21163@1wt.eu> <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com> <20121005235845.GE21163@1wt.eu> <20121006072704.GA22465@1wt.eu> <CAPM=9twQb7BUe6cAD-5THBBP-eYAU56__V5UXNn2qfqdFkVwmA@mail.gmail.com> <20121006075956.GF21163@1wt.eu> <051c15$4i14fm@AZSMGA002.ch.intel.com> <20121006084258.GB22618@1wt.eu>
+Date: Sat, 06 Oct 2012 10:04:00 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 6 Oct 2012 10:42:58 +0200, Willy Tarreau <w@1wt.eu> wrote:
+> On Sat, Oct 06, 2012 at 09:24:35AM +0100, Chris Wilson wrote:
+> > More likely X is segfaulting for another reason altogether. Can you
+> > please attach the stacktrace (with symbols!) and see if another
+> > bisection is required?
+> 
+> Yes, here it is.
+> 
+> (EE) intel(0): Failed to initialize kernel memory manager
+> 
+> Backtrace:
+> 0: X(xf86SigHandler+0x7e) [0x80d8b5e]
+> 1: [0xffffe400]
+> 2: /usr/lib/xorg/modules/drivers//intel_drv.so(i830_allocator_init+0x332) [0xb73756e2]
 
+Drat, that is:
 
+commit 7bb6fb8dd958ae773ac205282e3c0b56c22e01ed
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Apr 24 08:22:52 2012 +0200
 
-Dear Email User;
+    drm/i915: disallow gem ums init ioctl for kms
+    
+    This ioctl used in a kms driver is only useful to create massive
+    havoc.
 
-You have exceeded the limit of 23432 storage on your mailbox set by your
-WEB SERVICE/Administrator, and you will be having problems in sending
-and receiving mails Until You Re-Validate. You have to update by clicking on
-the below link and fill out the information to validate your account.
+Can't see just why -intel crashes, but I presume it is during the
+i830_free_memory along that path.
 
-Please Click the link Below or copy paste to your browser To Validate Your
-Mailbox
+Anyway, looks like that patch needs to be reverted.
+-Chris
 
-http://www.customclassicsoh.com/customform/use/filter/form1.html
-
-Warning!!!
-Failure to do this, will result in limited access to your mailbox.
-failure to update your account within Three days of this update
-notification, your account will be closed permanently.
-
-Sincerely,
-System Administrator®
-
-________________________________
-
-Disclaimer:
-
-This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
+-- 
+Chris Wilson, Intel Open Source Technology Centre
