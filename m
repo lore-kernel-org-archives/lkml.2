@@ -1,148 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2JFGpY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 02:45:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60681 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab2JFGpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 02:45:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Julian Anastasov <ja@ssi.bg>
-Subject: Re: [PATCH 08/16] ipvs: fix ip_vs_set_timeout debug messages
-Date: Sat, 6 Oct 2012 06:45:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-9-git-send-email-arnd@arndb.de> <alpine.LFD.2.00.1210052305190.1639@ja.ssi.bg>
-In-Reply-To: <alpine.LFD.2.00.1210052305190.1639@ja.ssi.bg>
+	id S1751942Ab2JFGyq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 02:54:46 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53846 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab2JFGyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 02:54:44 -0400
+Date: Sat, 6 Oct 2012 12:25:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes: Kill set_swbp()->is_swbp_at_addr()
+Message-ID: <20121006065511.GC27781@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120923201921.GA27424@redhat.com>
+ <20120923201945.GA27446@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210060645.05225.arnd@arndb.de>
-X-Provags-ID: V02:K0:Vb6VrbmzCH10HtmGcnUOEWerJ6HNRDUNbKR7UIly73C
- c9r6YCj+v/stUxXael3ulR8SoQ456jDauo/Q/CpQZx9AglAsac
- PrQbt+9uQC7jfubAIAO6QnTc/psdYcOPBBIJvF1sz0gllKGoNX
- /BpxWiNc2Y+vlexKarKWW3gb34TSfWvbAverSfGNk0GSL8mppB
- AJDKtdVZTZDfFFbgiNERagz0zqM5+636fho+DmESFlLYxIGxEV
- e2dZxrANQXLpUydMsOhSDyRYbTCYen8pj9aZ6X7C4TrLv+1oPc
- z2Vvzzo2/C/00FtOPSr9iyhbifxTfI3RInOyPV7zq0JJ5nW9y7
- Lcgv5chtnjzrtsit7a1g=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120923201945.GA27446@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12100606-3534-0000-0000-00000D8050F3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 October 2012, Julian Anastasov wrote:
+* Oleg Nesterov <oleg@redhat.com> [2012-09-23 22:19:45]:
+
+> A separate patch for better documentation.
 > 
-> 	Hello,
+> set_swbp()->is_swbp_at_addr() is not needed for correctness, it is
+> harmless to do the unnecessary __replace_page(old_page, new_page)
+> when these 2 pages are identical.
 > 
-> On Fri, 5 Oct 2012, Arnd Bergmann wrote:
+> And it can not be counted as optimization. mmap/register races are
+> very unlikely, while in the likely case is_swbp_at_addr() adds the
+> extra get_user_pages() even if the caller is uprobe_mmap(current->mm)
+> and returns false.
 > 
-> > The ip_vs_set_timeout function sets timeouts for TCP and UDP, which
-> > can be enabled independently at compile time. The debug message
-> > always prints both timeouts that are passed into the function,
-> > but if one is disabled, the message will show uninitialized data.
-> > 
-> > This splits the debug message into two separte IP_VS_DBG statements
-> > that are in the same #ifdef section to ensure we only print the
-> > text about what is actually going on.
-> > 
-> > Without this patch, building ARM ixp4xx_defconfig results in:
+> Note also that the semantics/usage of is_swbp_at_addr() in uprobe.c
+> is confusing. set_swbp() uses it to detect the case when this insn
+> was already modified by uprobes, that is why it should always compare
+> the opcode with UPROBE_SWBP_INSN even if the hardware (like powerpc)
+> has other trap insns. It doesn't matter if this "int3" was in fact
+> installed by gdb or application itself, we are going to "steal" this
+> breakpoint anyway and execute the original insn from vm_file even if
+> it no longer matches the memory.
 > 
-> 	Are there any CONFIG_IP_VS_PROTO_xxx options in this
-> default config? It is a waste of memory if IPVS is compiled
-> without any protocols.
-
-They all appear to be turned off:
-
-$ grep CONFIG_IP_VS obj-tmp/.config
-CONFIG_IP_VS=m
-CONFIG_IP_VS_DEBUG=y
-CONFIG_IP_VS_TAB_BITS=12
-# CONFIG_IP_VS_PROTO_TCP is not set
-# CONFIG_IP_VS_PROTO_UDP is not set
-# CONFIG_IP_VS_PROTO_AH_ESP is not set
-# CONFIG_IP_VS_PROTO_ESP is not set
-# CONFIG_IP_VS_PROTO_AH is not set
-# CONFIG_IP_VS_PROTO_SCTP is not set
-CONFIG_IP_VS_RR=m
-CONFIG_IP_VS_WRR=m
-CONFIG_IP_VS_LC=m
-CONFIG_IP_VS_WLC=m
-CONFIG_IP_VS_LBLC=m
-CONFIG_IP_VS_LBLCR=m
-CONFIG_IP_VS_DH=m
-CONFIG_IP_VS_SH=m
-# CONFIG_IP_VS_SED is not set
-# CONFIG_IP_VS_NQ is not set
-CONFIG_IP_VS_SH_TAB_BITS=8
-
-> > net/netfilter/ipvs/ip_vs_ctl.c: In function 'ip_vs_genl_set_cmd':
-> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.udp_timeout' may be used uninitialized in this function [-Wuninitialized]
-> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.udp_timeout' was declared here
-> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_fin_timeout' may be used uninitialized in this function [-Wuninitialized]
-> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_fin_timeout' was declared here
-> > net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_timeout' may be used uninitialized in this function [-Wuninitialized]
-> > net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_timeout' was declared here
+> OTOH, handle_swbp()->find_active_uprobe() uses is_swbp_at_addr() to
+> figure out whether we need to send SIGTRAP or not if we can not find
+> uprobe, so in this case it should return true for all trap variants,
+> not only for UPROBE_SWBP_INSN.
 > 
-> 	There are many __ip_vs_get_timeouts callers but
-> just one calls memset(&t, 0, sizeof(t)) before that,
-> problem only for ip_vs_genl_set_config and ip_vs_set_timeout.
+> This patch removes set_swbp()->is_swbp_at_addr(), the next patches
+> will remove it from set_orig_insn() which is similar to set_swbp()
+> in this respect. So the only caller will be handle_swbp() and we
+> can make its semantics clear.
 > 
-> 	To be safe, can we move this memset into
-> __ip_vs_get_timeouts instead of playing games with defines?:
-> 
-> 	memset(t, 0, sizeof(*t));
-> 
-> 	This debug message will be more precise in showing the
-> changed values if we replace the __ip_vs_get_timeouts 
-> call in ip_vs_genl_set_config with memset(&t, 0, sizeof(t)).
-> Then we will see 0 for values that are not changed/supported.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-8<-----
-ipvs: initialize returned data in do_ip_vs_get_ctl
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-As reported by a gcc warning, the do_ip_vs_get_ctl does not initalize
-all the members of the ip_vs_timeout_user structure it returns if
-at least one of the TCP or UDP protocols is disabled for ipvs. 
-
-This makes sure that the data is always initialized, before it is
-returned as a response to IPVS_CMD_GET_CONFIG or printed as a
-debug message in IPVS_CMD_SET_CONFIG.
-
-Without this patch, building ARM ixp4xx_defconfig results in:
-
-net/netfilter/ipvs/ip_vs_ctl.c: In function 'ip_vs_genl_set_cmd':
-net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.udp_timeout' may be used uninitialized in this function [-Wuninitialized]
-net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.udp_timeout' was declared here
-net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_fin_timeout' may be used uninitialized in this function [-Wuninitialized]
-net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_fin_timeout' was declared here
-net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_timeout' may be used uninitialized in this function [-Wuninitialized]
-net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_timeout' was declared here
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-index 2770f85..3995d2e 100644
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -2590,6 +2588,7 @@ __ip_vs_get_timeouts(struct net *net, struct ip_vs_timeout_user *u)
- #if defined(CONFIG_IP_VS_PROTO_TCP) || defined(CONFIG_IP_VS_PROTO_UDP)
- 	struct ip_vs_proto_data *pd;
- #endif
-+	memset(u, 0, sizeof (*u));
- 
- #ifdef CONFIG_IP_VS_PROTO_TCP
- 	pd = ip_vs_proto_data_get(net, IPPROTO_TCP);
-@@ -2768,7 +2767,6 @@ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
- 	{
- 		struct ip_vs_timeout_user t;
- 
--		memset(&t, 0, sizeof(t));
- 		__ip_vs_get_timeouts(net, &t);
- 		if (copy_to_user(user, &t, sizeof(t)) != 0)
- 			ret = -EFAULT;
