@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab2JFIc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 04:32:57 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51013 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab2JFIcx (ORCPT
+	id S1754027Ab2JFIgG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 04:36:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48609 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab2JFIgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 04:32:53 -0400
-Message-ID: <506FEB24.4010902@gmail.com>
-Date: Sat, 06 Oct 2012 10:26:12 +0200
+	Sat, 6 Oct 2012 04:36:02 -0400
+Message-ID: <506FEBE3.5000504@gmail.com>
+Date: Sat, 06 Oct 2012 10:29:23 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
 To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/22] hfs: drop vmtruncate
+CC: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 11/22] hpfs: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,15 +27,16 @@ Removed vmtruncate.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/hfs/inode.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+ fs/hpfs/file.c  |    8 +++++---
+ fs/hpfs/inode.c |    5 ++++-
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index 0b35903..e0b2c23 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -47,8 +47,11 @@ static int hfs_write_begin(struct file *file, struct address_space *mapping,
- 				&HFS_I(mapping->host)->phys_size);
+diff --git a/fs/hpfs/file.c b/fs/hpfs/file.c
+index 89d2a58..895871a 100644
+--- a/fs/hpfs/file.c
++++ b/fs/hpfs/file.c
+@@ -117,8 +117,11 @@ static int hpfs_write_begin(struct file *file, struct address_space *mapping,
+ 				&hpfs_i(mapping->host)->mmu_private);
  	if (unlikely(ret)) {
  		loff_t isize = mapping->host->i_size;
 -		if (pos + len > isize)
@@ -44,45 +44,35 @@ index 0b35903..e0b2c23 100644
 +		if ((pos + len > isize) &&
 +			inode_newsize_ok(mapping->host, isize) == 0) {
 +			truncate_setsize(mapping->host, isize);
-+			hfs_file_truncate(mapping->host);
++			hpfs_truncate(mapping->host);
 +		}
  	}
  
  	return ret;
-@@ -134,8 +137,10 @@ static ssize_t hfs_direct_IO(int rw, struct kiocb *iocb,
- 		loff_t isize = i_size_read(inode);
- 		loff_t end = offset + iov_length(iov, nr_segs);
+@@ -166,6 +169,5 @@ const struct file_operations hpfs_file_ops =
  
--		if (end > isize)
--			vmtruncate(inode, isize);
-+		if ((end > isize) && inode_newsize_ok(inode, isize) == 0) {
-+			truncate_setsize(inode, isize);
-+			hfs_file_truncate(inode);
-+		}
- 	}
+ const struct inode_operations hpfs_file_iops =
+ {
+-	.truncate	= hpfs_truncate,
+ 	.setattr	= hpfs_setattr,
+ };
+diff --git a/fs/hpfs/inode.c b/fs/hpfs/inode.c
+index 804a9a8..5dc06c8 100644
+--- a/fs/hpfs/inode.c
++++ b/fs/hpfs/inode.c
+@@ -277,9 +277,12 @@ int hpfs_setattr(struct dentry *dentry, struct iattr *attr)
  
- 	return ret;
-@@ -617,9 +622,12 @@ int hfs_inode_setattr(struct dentry *dentry, struct iattr * attr)
+ 	if ((attr->ia_valid & ATTR_SIZE) &&
  	    attr->ia_size != i_size_read(inode)) {
- 		inode_dio_wait(inode);
- 
 -		error = vmtruncate(inode, attr->ia_size);
 +		error = inode_newsize_ok(inode, attr->ia_size);
  		if (error)
- 			return error;
+ 			goto out_unlock;
 +
 +		truncate_setsize(inode, attr->ia_size);
-+		hfs_file_truncate(inode);
++		hpfs_truncate(inode);
  	}
  
  	setattr_copy(inode, attr);
-@@ -668,7 +676,6 @@ static const struct file_operations hfs_file_operations = {
- 
- static const struct inode_operations hfs_file_inode_operations = {
- 	.lookup		= hfs_file_lookup,
--	.truncate	= hfs_file_truncate,
- 	.setattr	= hfs_inode_setattr,
- 	.setxattr	= hfs_setxattr,
- 	.getxattr	= hfs_getxattr,
 -- 
 1.7.3.4
