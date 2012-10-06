@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab2JFXGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 19:06:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46556 "EHLO mail.skyhub.de"
+	id S1751416Ab2JFXKp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 19:10:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56552 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab2JFXGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 19:06:04 -0400
-Date: Sun, 7 Oct 2012 01:05:59 +0200
+	id S1750749Ab2JFXKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 19:10:44 -0400
+Date: Sun, 7 Oct 2012 01:10:41 +0200
 From: Borislav Petkov <bp@alien8.de>
 To: danielfsantos@att.net
 Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -24,7 +24,7 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
 Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Message-ID: <20121006230559.GA3278@liondog.tnic>
+Message-ID: <20121006231041.GB3278@liondog.tnic>
 Mail-Followup-To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
 	LKML <linux-kernel@vger.kernel.org>,
 	Andi Kleen <ak@linux.intel.com>,
@@ -46,6 +46,7 @@ References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 In-Reply-To: <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -60,12 +61,24 @@ On Fri, Oct 05, 2012 at 02:42:42PM -0500, danielfsantos@att.net wrote:
 > 
 > Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 > Acked-by: David Rientjes <rientjes@google.com>
+> ---
 
-Looks correct to me:
+[ … ]
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+> index 4506d65..bbfeb13 100644
+> --- a/include/linux/compiler-gcc4.h
+> +++ b/include/linux/compiler-gcc4.h
+> @@ -4,7 +4,7 @@
+>  
+>  /* GCC 4.1.[01] miscompiles __weak */
+>  #ifdef __KERNEL__
+> -# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
+> +# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
+>  //#  error Your version of gcc miscompiles the __weak directive
 
-Thanks.
+Did I miss something again? This "error" preprocessor function is
+commented out here? Why?
 
 -- 
 Regards/Gruss,
