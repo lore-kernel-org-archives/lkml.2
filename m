@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab2JFMNN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 08:13:13 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:50770 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab2JFMNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 08:13:09 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 6 Oct 2012 14:12:56 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: Simon Kirby <sim@hostway.ca>, linux-kernel@vger.kernel.org
-Subject: [PATCH] firewire: cdev: fix user memory corruption (i386 userland
- on amd64 kernel)
-Message-ID: <20121006141256.6adc4afc@stein>
-In-Reply-To: <20121005203220.21fbd20a@stein>
-References: <20121005082250.GA21132@hostway.ca>
-	<20121005203220.21fbd20a@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1755760Ab2JFMTo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 08:19:44 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52727 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751088Ab2JFMTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 08:19:43 -0400
+Message-ID: <1349525982.2008.86.camel@joe-AO722>
+Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
+From: Joe Perches <joe@perches.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Date: Sat, 06 Oct 2012 05:19:42 -0700
+In-Reply-To: <1349496603-20775-3-git-send-email-cheiny@synaptics.com>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+	 <1349496603-20775-3-git-send-email-cheiny@synaptics.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix two bugs of the /dev/fw* character device concerning the
-FW_CDEV_IOC_GET_INFO ioctl with nonzero fw_cdev_get_info.bus_reset.
-(Practically all /dev/fw* clients issue this ioctl right after opening
-the device.)
+On Fri, 2012-10-05 at 21:09 -0700, Christopher Heiny wrote:
+[]
 
-Both bugs are caused by sizeof(struct fw_cdev_event_bus_reset) being 36
-without natural alignment and 40 with natural alignment.
+Just some trivial comments:
 
- 1) Memory corruption, affecting i386 userland on amd64 kernel:
-    Userland reserves a 36 bytes large buffer, kernel writes 40 bytes.
-    This has been first found and reported against libraw1394 if
-    compiled with gcc 4.7 which happens to order libraw1394's stack such
-    that the bug became visible as data corruption.
+> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
+[]
+> @@ -0,0 +1,1529 @@
+[]
+> +static ssize_t delay_write(struct file *filp, const char __user *buffer,
+> +			   size_t size, loff_t *offset) {
+> +	struct driver_debugfs_data *data = filp->private_data;
+> +	struct rmi_device_platform_data *pdata =
+> +			data->rmi_dev->phys->dev->platform_data;
+> +	int retval;
+> +	char local_buf[size];
+> +	unsigned int new_read_delay;
+> +	unsigned int new_write_delay;
+> +	unsigned int new_block_delay;
+> +	unsigned int new_pre_delay;
+> +	unsigned int new_post_delay;
+> +
+> +	retval = copy_from_user(local_buf, buffer, size);
+> +	if (retval)
+> +		return -EFAULT;
+> +
+> +	retval = sscanf(local_buf, "%u %u %u %u %u", &new_read_delay,
+> +			&new_write_delay, &new_block_delay,
+> +			&new_pre_delay, &new_post_delay);
+> +	if (retval != 5) {
+> +		dev_err(&data->rmi_dev->dev,
+> +			"Incorrect number of values provided for delay.");
+> +		return -EINVAL;
+> +	}
+> +	if (new_read_delay < 0) {
 
- 2) Information leak, affecting all kernel architectures except i386:
-    4 bytes of random kernel stack data were leaked to userspace.
+These are unnecessary tests as unsigned values are never < 0.
 
-Hence limit the respective copy_to_user() to the 32-bit aligned size of
-struct fw_cdev_event_bus_reset.
+> +		dev_err(&data->rmi_dev->dev,
+> +			"Byte delay must be positive microseconds.\n");
+> +		return -EINVAL;
+> +	}
+> +	if (new_write_delay < 0) {
 
-Reported-by: Simon Kirby <sim@hostway.ca>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: stable@kernel.org
----
- drivers/firewire/core-cdev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+etc.
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -473,8 +473,8 @@ static int ioctl_get_info(struct client
- 	client->bus_reset_closure = a->bus_reset_closure;
- 	if (a->bus_reset != 0) {
- 		fill_bus_reset_event(&bus_reset, client);
--		ret = copy_to_user(u64_to_uptr(a->bus_reset),
--				   &bus_reset, sizeof(bus_reset));
-+		/* unaligned size of bus_reset is 36 bytes */
-+		ret = copy_to_user(u64_to_uptr(a->bus_reset), &bus_reset, 36);
- 	}
- 	if (ret == 0 && list_empty(&client->link))
- 		list_add_tail(&client->link, &client->device->client_list);
+> +static ssize_t phys_read(struct file *filp, char __user *buffer, size_t size,
+> +		    loff_t *offset) {
+> +	struct driver_debugfs_data *data = filp->private_data;
+> +	struct rmi_phys_info *info = &data->rmi_dev->phys->info;
+> +	int retval;
+> +	char local_buf[size];
+
+size comes from where?  possible stack overflow?
+
+> +static ssize_t irq_debug_write(struct file *filp, const char __user *buffer,
+> +			   size_t size, loff_t *offset) {
+> +	int retval;
+> +	char local_buf[size];
+
+here too
+
+[]
+
+> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
+> +{
+[]
+> +	list_for_each_entry(entry, &data->rmi_functions.list, list)
+> +		if (entry->irq_mask)
+> +			process_one_interrupt(entry, irq_status,
+> +					      data);
+
+style nit, it'd be nicer with braces.
+
+> diff --git a/drivers/input/rmi4/rmi_driver.h b/drivers/input/rmi4/rmi_driver.h
+[]
+> @@ -0,0 +1,438 @@
+
+> +
+> +#define tricat(x, y, z) tricat_(x, y, z)
+> +
+> +#define tricat_(x, y, z) x##y##z
+
+I think these tricat macros are merely obfuscating
+and don't need to be used.
 
 
--- 
-Stefan Richter
--=====-===-- =-=- --==-
-http://arcgraph.de/sr/
