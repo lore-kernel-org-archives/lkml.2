@@ -1,139 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2JFHp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 03:45:27 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36734 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2JFHpU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 03:45:20 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/3] x86, mm: Remove early_memremap workaround for page table accessing
-Date: Sat,  6 Oct 2012 00:44:29 -0700
-Message-Id: <1349509469-11475-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1349509469-11475-1-git-send-email-yinghai@kernel.org>
-References: <CAE9FiQV_xVsHN_+6ui_Vgnn6tk8UBOEKL+0XnoEN9VLw3gcOXA@mail.gmail.com>
- <1349509469-11475-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1753290Ab2JFIAM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 04:00:12 -0400
+Received: from 1wt.eu ([62.212.114.60]:35980 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704Ab2JFIAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 04:00:08 -0400
+Date: Sat, 6 Oct 2012 09:59:56 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
+Subject: Re: 3.5 regression on i915
+Message-ID: <20121006075956.GF21163@1wt.eu>
+References: <20121005234218.GC21163@1wt.eu> <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com> <20121005235845.GE21163@1wt.eu> <20121006072704.GA22465@1wt.eu> <CAPM=9twQb7BUe6cAD-5THBBP-eYAU56__V5UXNn2qfqdFkVwmA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9twQb7BUe6cAD-5THBBP-eYAU56__V5UXNn2qfqdFkVwmA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not needed anymore after premaping page table buf and not clear initial page
-table wrongly.
+On Sat, Oct 06, 2012 at 03:43:56AM -0400, Dave Airlie wrote:
+> On Sat, Oct 6, 2012 at 3:27 AM, Willy Tarreau <w@1wt.eu> wrote:
+> > On Sat, Oct 06, 2012 at 01:58:45AM +0200, Willy Tarreau wrote:
+> >> On Sat, Oct 06, 2012 at 09:48:57AM +1000, Dave Airlie wrote:
+> >> > Any reason you don't have KMS, you'll keep hitting these non-kms bugs
+> >> > since it has no users anymore really.
+> >> >
+> >> > Granted they'll get fixed, but I suspect its a losing battle over time.
+> >>
+> >> Well, back in old times every time I tried to enable it, I only ran into
+> >> problems so I got used to disable it, which made sense since it didn't
+> >> bring me any benefit.
+> >
+> > OK I found why in the end. When I enable KMS, my X server fails to start
+> > and segfaults in intel_drv.so. So I think that the comment in Kconfig
+> > below is quite appropriate :
+> 
+> Okay are you running a really old userspace? just wondering what could
+> cause this.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/init_64.c |   38 ++++----------------------------------
- 1 files changed, 4 insertions(+), 34 deletions(-)
+yes, my Xorg is 1.4.2 and xf86-video-intel is 2.7.1.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 0348a02..e59c94f 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -333,36 +333,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 	else
- 		panic("alloc_low_page: ran out of memory");
- 
--	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
-+	adr = __va(pfn * PAGE_SIZE);
- 	clear_page(adr);
- 	*phys  = pfn * PAGE_SIZE;
- 	return adr;
- }
- 
--static __ref void *map_low_page(void *virt)
--{
--	void *adr;
--	unsigned long phys, left;
--
--	if (after_bootmem)
--		return virt;
--
--	phys = __pa(virt);
--	left = phys & (PAGE_SIZE - 1);
--	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
--	adr = (void *)(((unsigned long)adr) | left);
--
--	return adr;
--}
--
--static __ref void unmap_low_page(void *adr)
--{
--	if (after_bootmem)
--		return;
--
--	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-@@ -435,10 +411,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-+				pte = (pte_t *)pmd_page_vaddr(*pmd);
- 				last_map_addr = phys_pte_init(pte, address,
- 								end, prot);
--				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -474,7 +449,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 
- 		pte = alloc_low_page(&pte_phys);
- 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
--		unmap_low_page(pte);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-@@ -509,10 +483,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				pmd = map_low_page(pmd_offset(pud, 0));
-+				pmd = pmd_offset(pud, 0);
- 				last_map_addr = phys_pmd_init(pmd, addr, end,
- 							 page_size_mask, prot);
--				unmap_low_page(pmd);
- 				__flush_tlb_all();
- 				continue;
- 			}
-@@ -548,7 +521,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		pmd = alloc_low_page(&pmd_phys);
- 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
- 					      prot);
--		unmap_low_page(pmd);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pud_populate(&init_mm, pud, __va(pmd_phys));
-@@ -584,17 +556,15 @@ kernel_physical_mapping_init(unsigned long start,
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-+			pud = (pud_t *)pgd_page_vaddr(*pgd);
- 			last_map_addr = phys_pud_init(pud, __pa(start),
- 						 __pa(end), page_size_mask);
--			unmap_low_page(pud);
- 			continue;
- 		}
- 
- 		pud = alloc_low_page(&pud_phys);
- 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
- 						 page_size_mask);
--		unmap_low_page(pud);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pgd_populate(&init_mm, pgd, __va(pud_phys));
--- 
-1.7.7
+I have additional information, I retested with 3.4.12 with and without KMS :
+
+   3.4.12, no KMS : X works fine
+   3.4.12, KMS    : X works fine but some garbage follows the mouse pointer
+                    on the external display
+   3.5.x   no KMS : kernel BUG
+   3.5.x   KMS    : X server segfaults in intel driver
+
+So in fact, both the KMS/non-KMS confs have regressed in 3.5 on this setup.
+
+It is possible that the commit which removed the list of pinned inactive
+objects (1b50247a) has uncovered another long-time bug.
+
+Regards,
+Willy
 
