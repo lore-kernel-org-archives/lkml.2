@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab2JEX65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 19:58:57 -0400
-Received: from 1wt.eu ([62.212.114.60]:35970 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab2JEX6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 19:58:55 -0400
-Date: Sat, 6 Oct 2012 01:58:45 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
-Subject: Re: 3.5 regression on i915
-Message-ID: <20121005235845.GE21163@1wt.eu>
-References: <20121005234218.GC21163@1wt.eu> <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1756327Ab2JFADY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 20:03:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57528 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132Ab2JFADX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 20:03:23 -0400
+Date: Fri, 5 Oct 2012 17:02:59 -0700 (PDT)
+From: Min Zhang <mzhang@mvista.com>
+X-X-Sender: mzhang@linux-acr3.site
+To: Ben Hutchings <bhutchings@solarflare.com>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mlx4: set carrier off after register netdev
+In-Reply-To: <1349470415.2819.1.camel@bwh-desktop.uk.solarflarecom.com>
+Message-ID: <alpine.LNX.2.00.1210051701030.17958@linux-acr3.site>
+References: <alpine.LNX.2.00.1210051058420.16216@linux-acr3.site> <1349470415.2819.1.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 09:48:57AM +1000, Dave Airlie wrote:
-> Any reason you don't have KMS, you'll keep hitting these non-kms bugs
-> since it has no users anymore really.
+
+On Fri, 5 Oct 2012, Ben Hutchings wrote:
+
+> On Fri, 2012-10-05 at 11:28 -0700, Min Zhang wrote:
+> > ifconfig mlx4_en port reported RUNNING even though the link was down.
+> > 
+> > mlx4_en_init_netdev didn't initialize the dev operstate properly so
+> > the operstate stayed as default IF_OPER_UNKNOWN, then ifconfig treated
+> > the UNKNOWN as RUNNING state for backward compatiblity per RFC2863.
+> > 
+> > The fix calls netif_carrier_off which is supposed to set operstate
+> > after register_netdev. Calling it before register_netdev has no effect
+> > since the dev->state is still NETREG_UNINITIALIZED
+> > 
+> > Tested by removing the physical link signal to the mellanox 10G port,
+> > modprobe mlx4_en, then ifconfig up. Verify there is no RUNNING status.
+> [...]
 > 
-> Granted they'll get fixed, but I suspect its a losing battle over time.
+> This was supposed to be fixed by:
+> 
+> commit 8f4cccbbd92f2ad0ddbbc498ef7cee2a1c3defe9
+> Author: Ben Hutchings <bhutchings@solarflare.com>
+> Date:   Mon Aug 20 22:16:51 2012 +0100
+> 
+>     net: Set device operstate at registration time
+> 
+> Does that not work for mlx4_en, for some reason?
+> 
+> Ben.
+> 
+> -- 
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+>
 
-Well, back in old times every time I tried to enable it, I only ran into
-problems so I got used to disable it, which made sense since it didn't
-bring me any benefit.
-
-I can retry with it if needed, but if we consider that it is necessary,
-then we should probably not allow it to be disabled anymore, since my
-working 3.4 config fails on 3.5 with "make oldconfig".
-
-Willy
-
+Indeed, commit 8f4cccbbd92f2ad0ddbbc498ef7cee2a1c3defe9 does fix the issue 
+in mlx4. I didn't have the newest net/core. Therefore ignore my mlx4 fix. 
