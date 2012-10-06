@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab2JFPgv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:36:51 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55513 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab2JFPgn (ORCPT
+	id S1756118Ab2JFPhm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:37:42 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38710 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab2JFPdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:36:43 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        Gong Chen <gong.chen@linux.intel.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v3 28/28] ACPI/processor: serialize call to acpi_map/unmap_lsapic
-Date: Sat,  6 Oct 2012 23:27:36 +0800
-Message-Id: <1349537256-21670-29-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
-References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
+	Sat, 6 Oct 2012 11:33:32 -0400
+Date: Sat, 6 Oct 2012 12:33:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf tools: Fix ordering with unstable tsc
+Message-ID: <20121006153326.GH23354@infradead.org>
+References: <1349450579-18092-1-git-send-email-dsahern@gmail.com>
+ <50704B74.5090703@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50704B74.5090703@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a mutex to serialize call to acpi_map/unmap_lsapic.
+Em Sat, Oct 06, 2012 at 09:17:08AM -0600, David Ahern escreveu:
+> Hi Arnaldo,
+> 
+> Something with your recent changes (last month) is causing perf to
+> segfault with this patch. Ignore for now; I'll repost when I can
+> figure it out.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- drivers/acpi/processor_driver.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+Ok, I was waiting anyway for Frédéric and others to do some review on
+it,
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 2346b81..9fc20b4 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -108,6 +108,7 @@ static struct acpi_driver acpi_processor_driver = {
- 	.drv.pm = &acpi_processor_pm,
- };
- 
-+static DEFINE_MUTEX(acpi_processor_mutex);
- static DEFINE_PER_CPU(void *, processor_device_array);
- 
- DEFINE_PER_CPU(struct acpi_processor *, processors);
-@@ -668,7 +669,9 @@ static void acpi_processor_reset(struct acpi_device *device, struct acpi_process
- 	acpi_processor_unlink(device, pr);
- 	put_online_cpus();
- 	arch_unregister_cpu(pr->id);
-+	mutex_lock(&acpi_processor_mutex);
- 	acpi_unmap_lsapic(pr->id);
-+	mutex_unlock(&acpi_processor_mutex);
- 	pr->id = -1;
- }
- 
-@@ -702,7 +705,9 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
- 	if (pr->id == -1) {
- 		if (pr->apic_id == -1)
- 			goto out;
-+		mutex_lock(&acpi_processor_mutex);
- 		result = acpi_map_lsapic(device->handle, pr->apic_id, &pr->id);
-+		mutex_unlock(&acpi_processor_mutex);
- 		if (result)
- 			goto out;
- 		BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
-@@ -722,7 +727,9 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
- 	return 0;
- 
- out_unmap:
-+	mutex_lock(&acpi_processor_mutex);
- 	acpi_unmap_lsapic(pr->id);
-+	mutex_unlock(&acpi_processor_mutex);
- 	pr->id = -1;
- out:
- 
--- 
-1.7.9.5
+Thanks!
 
+- Arnaldo
