@@ -1,201 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab2JFEM3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 00:12:29 -0400
-Received: from [12.239.217.82] ([12.239.217.82]:59761 "EHLO
-	brontomerus.synaptics.com" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750899Ab2JFEKm (ORCPT
+	id S1751540Ab2JFE25 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 00:28:57 -0400
+Received: from nm22.bullet.mail.bf1.yahoo.com ([98.139.212.181]:37930 "EHLO
+	nm22.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751101Ab2JFE2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 00:10:42 -0400
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [RFC PATCH 04/06] input/rmi4: Config files and makefiles
-Date: Fri,  5 Oct 2012 21:10:01 -0700
-Message-Id: <1349496603-20775-5-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+	Sat, 6 Oct 2012 00:28:53 -0400
+X-Yahoo-Newman-Id: 7282.14020.bm@smtp104.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: RRiXqEkVM1krRGJEbguoyW6x1keV7C.MbPWVtedRUUCo1TX
+ 0Q2faFgNPdtyde4OqykViXHBJV5ntW_Wyi.MFD0Zeku9cjYSIk4kCxfxYlv4
+ NSNDNh4VYhpSkSu22F97_EQs7fXpBAFAm_AonUmU1tHWPgQ4fR7b9Ay7d8zU
+ k6GXHhOPxzS8Tw.K5UnIcvFQYpwunVLqpP1f5yX5Uy4KVsqTIhc9LPthzU7B
+ gJWjw4geg1ghVXYsSSv3bpzUPiVTuJKjsVW0Bw0kOtCZELdot5d16NnO65y5
+ 6bjnAjl62qeWigsgw14WYOeuCVUMgvg4tu8LbN._9ThWbqlaK0V6hRDd3aYm
+ GmMjcmlplxRw5b78tfLsrBTDJTn85qpGuvKBIvsAm9GXPe2R_eRz1I.moGLt
+ HQme6BO7TVP84wJgpoQeS5IBUTQIrfLPrY5hkJYDjS9hmPWz48g--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <506FB381.4030605@att.net>
+Date: Fri, 05 Oct 2012 23:28:49 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH v2 07/10] compiler.h, bug.h: Prevent double error messages
+ with BUILD_BUG{,_ON}
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-7-git-send-email-daniel.santos@pobox.com> <20121005205922.GA7362@jtriplet-mobl1>
+In-Reply-To: <20121005205922.GA7362@jtriplet-mobl1>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not much to say here, except that we've reduced the number of different
-Kconfig options, which will hopefully make it easier to configure RMI4
-support in kernels.
+On 10/05/2012 03:59 PM, Josh Triplett wrote:
+> On Fri, Oct 05, 2012 at 02:42:46PM -0500, danielfsantos@att.net wrote:
+>> --- a/include/linux/compiler.h
+>> +++ b/include/linux/compiler.h
+>> @@ -296,6 +296,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+>>  #endif
+>>  #ifndef __compiletime_error
+>>  # define __compiletime_error(message)
+>> +# define __compiletime_error_fallback(condition) \
+>> +	 ((void)sizeof(char[1 - 2*!!(condition)]))
+>> +#endif
+>> +#ifndef __compiletime_error_fallback
+>> +# define __compiletime_error_fallback(condition) (void)(0)
+>
+> Might want to use do { } while (0) here, to force the use of a
+> semicolon and avoid the use of __compiletime_error_fallback in an
+> expression.
+Sure!  But while we're here, we may want to consider a few other macros
+in bug.h.  These two are intended to be used as an expression:
 
+#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
+#define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
 
-Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+They are using a different technique to generate the compile-time error,
+perhaps because the negative sized array wasn't always working past gcc
+4.4? Either way, perhaps these can become
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Cc: Joeri de Gram <j.de.gram@gmail.com>
+#define BUILD_BUG_ON_ZERO(e) ({BUILD_BUG_ON(e); 0;})
+#define BUILD_BUG_ON_NULL(e) ({BUILD_BUG_ON(e); (void*)0;})
 
----
+This would again give us our cute error message.  However, I don't know
+when this style of expression began to be supported (I know it's a gcc
+extension), but I'm guessing it's pre gcc 3.2 because it's used in
+kernel.h.  Also:
 
- drivers/input/Kconfig       |    2 +
- drivers/input/Makefile      |    2 +
- drivers/input/rmi4/Kconfig  |   86 +++++++++++++++++++++++++++++++++++++++++++
- drivers/input/rmi4/Makefile |   26 +++++++++++++
- 4 files changed, 116 insertions(+), 0 deletions(-)
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n)            \
+        BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
-diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-index 55f7e57..2c543c0 100644
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -188,6 +188,8 @@ source "drivers/input/touchscreen/Kconfig"
+can become:
 
- source "drivers/input/misc/Kconfig"
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n)                         \
+        BUILD_BUG_ON_MSG((n) == 0 || (((n) & ((n) - 1)) != 0), \
+                         #n " not a power of two")
 
-+source "drivers/input/rmi4/Kconfig"
-+
- endif
+I think the only thing that would leave unfinished is the __OPTIMIZE__ check
+in the BUILD_BUG_ON definition.  This is a throw-back to the days before
+BUILD_BUG_ON_NON_CONST (oops, that's still in another patch set).  Well, if
+you look at version 1 of this patch set, you'll see that it has that check,
+since __builtin_constant_p never returns one in an unoptimized build.
+However, that's a bit more work because we will need to examine every use of
+BUILD_BUG_ON and __builtin_constant_p.  I only found 2-3 last time I looked,
+one of which was commented outwith the remark that it "breaks in funny
+ways",
+which we certainly already know about __builtin_constant_p.  Another was a
+pretty complicated expression, but I'll have to look them up again.
 
- menu "Hardware I/O ports"
-diff --git a/drivers/input/Makefile b/drivers/input/Makefile
-index 5ca3f63..571515a 100644
---- a/drivers/input/Makefile
-+++ b/drivers/input/Makefile
-@@ -24,4 +24,6 @@ obj-$(CONFIG_INPUT_TABLET)	+= tablet/
- obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
- obj-$(CONFIG_INPUT_MISC)	+= misc/
+Please let me know what you think.
 
-+obj-y += rmi4/
-+
- obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
-diff --git a/drivers/input/rmi4/Kconfig b/drivers/input/rmi4/Kconfig
-new file mode 100644
-index 0000000..fa12638
---- /dev/null
-+++ b/drivers/input/rmi4/Kconfig
-@@ -0,0 +1,86 @@
-+#
-+# RMI4 configuration
-+#
-+config RMI4_BUS
-+	bool "Synaptics RMI4 bus support"
-+	help
-+	  Say Y here if you want to support the Synaptics RMI4 bus.  This is
-+	  required for all RMI4 device support.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_DEBUG
-+	bool "RMI4 Debugging"
-+	depends on RMI4_BUS
-+	help
-+	  Say Y here to enable debug feature in the RMI4 driver.
-+
-+	  Note that the RMI4 driver debug features can generate a lot of
-+	  output (potentially clogging up your dmesg output) and generally
-+	  slow down driver operation.  It's recommended to enable them only
-+	  if you are actively developing/debugging RMI4 features.
-+
-+	  If unsure, say N.
-+
-+config RMI4_I2C
-+	bool "RMI4 I2C Support"
-+	depends on RMI4_BUS && I2C
-+	help
-+	  Say Y here if you want to support RMI4 devices connected to an I2C
-+	  bus.
-+
-+	  If unsure, say Y.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_GENERIC
-+	bool "RMI4 Generic driver"
-+	depends on RMI4_BUS
-+	help
-+	  Say Y here if you want to support generic RMI4 devices.
-+
-+	  This is pretty much required if you want to do anything useful with
-+	  your RMI device.
-+
-+	  This feature is not currently available as a loadable module.
-+
-+config RMI4_F11
-+	tristate "RMI4 Function 11 (2D pointing)"
-+	depends on RMI4_BUS && RMI4_GENERIC
-+	help
-+	  Say Y here if you want to add support for RMI4 function 11.
-+
-+	  Function 11 provides 2D multifinger pointing for touchscreens and
-+	  touchpads.  For sensors that support relative pointing, F11 also
-+	  provides mouse input.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called rmi-f11.
-+
-+config RMI4_F11_PEN
-+	bool "RMI4 F11 Pen Support"
-+	depends on RMI4_F11
-+	help
-+	  Say Y here to add support for pen input to RMI4 function 11.
-+
-+	  If this feature is enabled, when pen inputs are detected they
-+	  will be reported to the input stream as MT_TOOL_PEN.  Otherwise,
-+	  pens will be treated the same as fingers.
-+
-+	  Not all UI implementations deal gracefully with pen discrimination.
-+	  If your system is not recognizing pen touches and you know your
-+	  sensor supports pen input, you probably want to turn this feature
-+	  off.
-+
-+config RMI4_VIRTUAL_BUTTON
-+	tristate "RMI4 Vitual Button"
-+	depends on RMI4_F11
-+	help
-+	  Say Y here if you want to add support for RMI4 virtual button to F11.
-+
-+	  The virtual button feature implement the virtual button device in
-+	  certain RMI4 touch sensors.
-+
-+	  This works only if your sensor supports F11 gestures.
-diff --git a/drivers/input/rmi4/Makefile b/drivers/input/rmi4/Makefile
-new file mode 100644
-index 0000000..1480689
---- /dev/null
-+++ b/drivers/input/rmi4/Makefile
-@@ -0,0 +1,26 @@
-+obj-$(CONFIG_RMI4_BUS) += rmi_bus.o
-+obj-$(CONFIG_RMI4_I2C) += rmi_i2c.o
-+obj-$(CONFIG_RMI4_GENERIC) += rmi_driver.o rmi_f01.o
-+obj-$(CONFIG_RMI4_F11) += rmi_f11.o
-+
-+ccflags-$(CONFIG_RMI4_DEBUG) += -DDEBUG
-+
-+ifeq ($(KERNELRELEASE),)
-+
-+# KERNELDIR ?= /home/<AndroidKernelDirectory>
-+PWD := $(shell pwd)
-+
-+.PHONY: build clean
-+
-+build:
-+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-+
-+clean:
-+	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c
-+else
-+
-+$(info Building with KERNELRELEASE = ${KERNELRELEASE})
-+obj-m +=    rmi_dev.o
-+
-+endif
-+
+Daniel
