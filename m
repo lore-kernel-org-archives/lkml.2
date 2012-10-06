@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab2JFOAW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 10:00:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48303 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab2JFOAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 10:00:20 -0400
-Message-ID: <507039D1.3010307@gmail.com>
-Date: Sat, 06 Oct 2012 16:01:53 +0200
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1752707Ab2JFOH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 10:07:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25486 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750993Ab2JFOH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 10:07:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,543,1344236400"; 
+   d="scan'208";a="230725566"
+Message-ID: <50703B1B.2040705@linux.intel.com>
+Date: Sat, 06 Oct 2012 22:07:23 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
-CC: lee.jones@linaro.org, arnd@arndb.de, anton.vorontsov@linaro.org,
-        linus.walleij@stericsson.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH 1/4] mfd: ab8500: add devicetree support for fuelgauge
-References: <1349064513-31301-1-git-send-email-rajanikanth.hv@stericsson.com> <1349064513-31301-2-git-send-email-rajanikanth.hv@stericsson.com>
-In-Reply-To: <1349064513-31301-2-git-send-email-rajanikanth.hv@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: fengguang.wu@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net:master 1/9] pch_gbe_main.c:(.text+0x510370): undefined reference
+ to `pch_ch_control_write'
+References: <20121006075954.GA29618@localhost>	<50701EEC.7080805@linux.intel.com> <20121006.092207.1280541690613202532.davem@davemloft.net>
+In-Reply-To: <20121006.092207.1280541690613202532.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/06/2012 09:22 PM, David Miller wrote:
+> From: Haicheng Li<haicheng.li@linux.intel.com>
+> Date: Sat, 06 Oct 2012 20:07:08 +0800
+>
+>> The failure is due to the CONFIG_PPS is not set there, consequently
+>> CONFIG_PTP_1588_CLOCK can not be set as =y anyway.
+>>
+>> So David's patch of "da1586461e53a4dd045738cce309ab488970f0ef [1/9]
+>> pch_gbe: Fix PTP dependencies" is buggy. Furthermore, I think using
+>> "selects" to resolve such dependency issue is not good idea as it
+>> won't visit the dependencies.
+>>
+>> David, I would still suggest to take my original patch:
+>> https://lkml.org/lkml/2012/9/28/70
+>>
+>> + depends on PTP_1588_CLOCK_PCH&&  (PCH_GBE=m || PTP_1588_CLOCK_PCH=y)
+>>
+>> or simply like:
+>
+> This is all very rediculous if you ask me.
+>
+> Why should the user have to know a detail like the underlying
+> PTP chip type just to enable PTP on his networking card?
+>
+> Because that is what you are making him do with your change.
+>
+> Select removed the necessity of the user having to know these
+> things.
+However it possibly breaks the build...
 
-On 10/01/2012 06:08 AM, Rajanikanth H.V wrote:
-> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
-> 
-> - This patch adds device tree support for fuelguage driver
-> - optimize bm devices platform_data usage and of_probe(...)
->   Note: of_probe() routine for battery managed devices is made
->   common across all bm drivers.
-[...]
-> +int __devinit
-> +bmdevs_of_probe(struct device *dev,
-> +		struct device_node *np,
-> +		struct abx500_bm_plat_data *pdata)
-> +{
-> +	int	i, ret = 0, thermistor = NTC_INTERNAL;
-> +	const	__be32 *ph;
-> +	const	char *bat_tech;
-> +	struct	abx500_bm_data		 *bat;
-> +	struct	abx500_battery_type	 *btype;
-> +	struct  device_node		 *np_bat_supply;
-> +	struct  abx500_bmdevs_plat_data  *plat_data = pdata->bmdev_pdata;
-> +
-> +	/* get phandle to 'supplied-to' node */
-> +	ph = of_get_property(np, "supplied-to", &plat_data->num_supplicants);
-> +	if (ph == NULL) {
-> +		dev_err(dev, "no supplied_to property specified\n");
-> +		return -EINVAL;
-> +	}
-> +	plat_data->num_supplicants /= sizeof(int);
-> +	plat_data->supplied_to =
-> +		devm_kzalloc(dev, plat_data->num_supplicants *
-> +			sizeof(const char *), GFP_KERNEL);
-> +	if (plat_data->supplied_to == NULL) {
-> +		dev_err(dev, "%s no mem for supplied-to\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +	for (i = 0; i < plat_data->num_supplicants; ++i) {
-> +		np_bat_supply = of_find_node_by_phandle(be32_to_cpup(ph) + i);
-> +		if (np_bat_supply == NULL) {
-> +			dev_err(dev, "invalid supplied_to property\n");
-> +			return -EINVAL;
-> +		}
-> +		ret = of_property_read_string(np_bat_supply, "interface-name",
-> +				(const char **)(plat_data->supplied_to + i));
-> +		if (ret < 0) {
-> +			of_node_put(np_bat_supply);
-> +			dev_err(dev, "supply/interface name not found\n");
-> +			return ret;
-> +		}
+IMHO, the reason why the dependency of PCH_PTP becomes so tricky is that the 
+code of these two modules call the functions of each other (bad code 
+structure?). To fix it neatly, either we restructure the code or just simply 
+make it:
++ depends on PTP_1588_CLOCK_PCH=y
 
-If an error is encountered here, of_node_put() should be called for all
-nodes previously referenced with of_find_node_by_phandle (or
-of_parse_phandle, as Lee suggested).
-Also, if I'm not mistaken we have a leak here, because the refcount of
-these nodes is never decremented, not even in the driver remove routine.
+For PCH_GBE=m case, it does be able to pass the build test, but I'm afraid it 
+won't be smoothly workable via "insmod" due to the codependency of these two 
+when PCH_PTP is enabled.
 
-[...]
-> @@ -2446,18 +2444,47 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
->  {
->  	int i, irq;
->  	int ret = 0;
-> -	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
-> +	struct abx500_bm_plat_data *plat_data
-> +				= pdev->dev.platform_data;
-> +	struct device_node *np	= pdev->dev.of_node;
->  	struct ab8500_fg *di;
->  
-> +	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
-> +	if (!di) {
-> +		dev_err(&pdev->dev, "%s no mem for ab8500_fg\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +	if (np) {
-> +		if (!plat_data) {
-> +			plat_data =
-> +			devm_kzalloc(&pdev->dev, sizeof(*plat_data),
-> +					GFP_KERNEL);
-> +			if (!plat_data) {
-> +				dev_err(&pdev->dev,
-> +					"%s no mem for plat_data\n", __func__);
-> +				return -ENOMEM;
-> +			}
-> +			plat_data->bmdev_pdata = devm_kzalloc(&pdev->dev,
-> +				sizeof(*plat_data->bmdev_pdata), GFP_KERNEL);
-> +			if (!plat_data->bmdev_pdata) {
-> +				dev_err(&pdev->dev,
-> +					"%s no mem for pdata->fg\n",
-> +					__func__);
-> +				return -ENOMEM;
-> +			}
-> +		}
-> +		ret = bmdevs_of_probe(&pdev->dev, np, plat_data);
-
-I think it's better to move allocation of bmdev_pdata and corresponding
-error check to bmdevs_of_probe(), because this code is shared by all
-battery management drivers.
-
---
-Francesco
