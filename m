@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2JFBDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 21:03:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43275 "EHLO mail.zytor.com"
+	id S1753744Ab2JFBHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 21:07:06 -0400
+Received: from mail.lang.hm ([64.81.33.126]:34030 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825Ab2JFBDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 21:03:40 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <87d30wmnrc.fsf@xmission.com>
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org> <1348991844-12285-5-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com> <20121003165105.GA30214@jshin-Toonie> <CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com> <20121004164630.GB2244@phenom.dumpdata.com> <CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com> <871uhcsk93.fsf@xmission.com> <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com> <87ehlcr4et.fsf@xmission.com> <CAE9FiQU_PSv6afXLcQ8ohrn1wqoVttO+u5MA5xBEE4jJRVx9Mw@mail.gmail.com> <877gr4r40b.fsf@xmission.com> <506F78C9.1000803@zytor.com> <87d30wmnrc.fsf@xmission.com>
+	id S1750825Ab2JFBHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 21:07:04 -0400
+Date: Fri, 5 Oct 2012 18:06:57 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Minimal jitter = good desktop.
+In-Reply-To: <op.wlqe9kw36426ze@localhost.localdomain>
+Message-ID: <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
+References: <op.wlqe9kw36426ze@localhost.localdomain>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 05 Oct 2012 18:02:19 -0700
-To: ebiederm@xmission.com
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <047b1c66-b3a0-4a25-b691-8ead19b7446e@email.android.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That disappeared 10 years ago...
+less jitter != less latency
 
-ebiederm@xmission.com wrote:
+you could (in theory) eliminate jitter by delaying every keypress 
+processed for exactly 1 second by having the code paths that process 
+keypresses faster insert delays before implementing the results.
 
->"H. Peter Anvin" <hpa@zytor.com> writes:
->
->> On 10/05/2012 02:41 PM, Eric W. Biederman wrote:
->>> Yinghai Lu <yinghai@kernel.org> writes:
->>>
->>>> with bzImage or vmlinux?
->>>
->>> bzImage I presume.  Certainly the bzImage has lost it's 896M limit,
->>> which is where ultimiately the 896M limite came from.
->>>
->>
->> ~896M (actually comes from i386, not from bzImage...
->
->Right it was 1G - VMALLLOC_SIZE.
->
->At some point that affected the boot protocol as the maximum address we
->could load ramdisks.
->
->Eric
+that would result in zero jitter, but horrific latency.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+latency is how long it takes to do something, jitter is how much the 
+latency varies.
+
+normally, if you optimize for one you make the other worse.
+
+If you optimize for latency, you try to finish everything as soon as you 
+can. Since some things take longer than others, jitter increases.
+
+David Lang
+
+On Sat, 6 Oct 2012, Uwaysi Bin Kareem wrote:
+
+> Reducing jitter seems central for many things.
+> First of all keypresses seem faster. (less jitter = less latency).
+> Doom 3 and similar jittersensitive OpenGL applications run smoothly, and 
+> better than windows. Doom 3 was also my main app to get running well, and 
+> measuring jitter in the signalpath of OpenGL improved the overall computing 
+> experience.
+>
+> Even youtube videos who are not synced to refresh, with a refresh of 60, and 
+> a videofps of 30, runs quite well. 
+> http://paradoxuncreated.com/Blog/wordpress/?p=3221
+>
+> System is responsive, and I have only had one problem, and that is packing 
+> seems not to work at the moment.
+>
+> For a fast test in Ubuntu, try 
+> http://paradoxuncreated.com/Blog/wordpress/?p=2268
+>
+> Definately a recommended config on the desktop.
+>
+> Peace Be With You.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
