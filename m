@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab2JFIn2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 04:43:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34107 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab2JFInP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 04:43:15 -0400
-Message-Id: <b94cdc$6rvo8m@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,543,1344236400"; 
-   d="scan'208";a="230678806"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: 3.5 regression on i915
-To: Willy Tarreau <w@1wt.eu>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@gmail.com>
-In-Reply-To: <20121006082016.GA22618@1wt.eu>
-References: <20121005234218.GC21163@1wt.eu> <b94cdc$6rvjl8@fmsmga001.fm.intel.com> <20121006082016.GA22618@1wt.eu>
-Date: Sat, 06 Oct 2012 09:43:08 +0100
+	id S1754597Ab2JFIpK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 04:45:10 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:53965 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab2JFIpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 04:45:05 -0400
+Message-ID: <506FEE02.3080706@gmail.com>
+Date: Sat, 06 Oct 2012 10:38:26 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
+MIME-Version: 1.0
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 20/22] vfs: drop vmtruncate
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Oct 2012 10:20:16 +0200, Willy Tarreau <w@1wt.eu> wrote:
-> Hi Chris,
-> 
-> On Sat, Oct 06, 2012 at 09:04:34AM +0100, Chris Wilson wrote:
-> > > The crash happens here in i915_gem_entervt_ioctl() :
-> > > 
-> > >     3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
-> > >     3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
-> > >  -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
-> > >     3662          mutex_unlock(&dev->struct_mutex);
-> > 
-> > That BUG_ON there is silly and can simply be removed. The check is to
-> > verify that no batches were submitted to the kernel whilst the UMS/GEM
-> > client was suspended - to which the BUG_ONs are a crude approximation.
-> > Furthermore, the checks are too late, since it means we attempted to
-> > program the hardware whilst it was in an invalid state, the BUG_ONs are
-> > the least of your concerns at that point.
-> 
-> Excellent, that fixed it ! X still segfaults when KMS is used, but
-> I expect more of a pure user-space issue here since there is nothing
-> in dmesg.
-> 
-> Would some of you accept the following patch and tag it for -stable ?
+Removed vmtruncate.
 
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
--Chris
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/libfs.c         |    2 --
+ include/linux/fs.h |    1 -
+ 2 files changed, 0 insertions(+), 3 deletions(-)
 
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 7cc37ca..c8fe267 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -369,8 +369,6 @@ int simple_setattr(struct dentry *dentry, struct iattr *iattr)
+ 	struct inode *inode = dentry->d_inode;
+ 	int error;
+ 
+-	WARN_ON_ONCE(inode->i_op->truncate);
+-
+ 	error = inode_change_ok(inode, iattr);
+ 	if (error)
+ 		return error;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index ca6d8c8..b3d8fa3 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1826,7 +1826,6 @@ struct inode_operations {
+ 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
+ 	int (*rename) (struct inode *, struct dentry *,
+ 			struct inode *, struct dentry *);
+-	void (*truncate) (struct inode *);
+ 	int (*setattr) (struct dentry *, struct iattr *);
+ 	int (*getattr) (struct vfsmount *mnt, struct dentry *, struct kstat *);
+ 	int (*setxattr) (struct dentry *, const char *,const void *,size_t,int);
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.3.4
