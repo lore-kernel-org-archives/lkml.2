@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2JFRUa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 13:20:30 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38286 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2JFRU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 13:20:29 -0400
-Message-ID: <5070685A.1060605@paintedocean.com>
-Date: Sat, 06 Oct 2012 10:20:26 -0700
-From: Neil Salstrom <salstrom@paintedocean.com>
-Reply-To: salstrom@paintedocean.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0a2
+	id S1755551Ab2JFRVO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 13:21:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14739 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755081Ab2JFRVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 13:21:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,545,1344236400"; 
+   d="scan'208";a="230755949"
+Message-ID: <50706885.1030908@linux.intel.com>
+Date: Sun, 07 Oct 2012 01:21:09 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120306 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: 3.6.0 kernel BUG at fs/dcache.c:967 during shutdown / restart
-References: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
-In-Reply-To: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
-X-Forwarded-Message-Id: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
+To: David Miller <davem@davemloft.net>
+CC: fengguang.wu@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net:master 1/9] pch_gbe_main.c:(.text+0x510370): undefined reference
+ to `pch_ch_control_write'
+References: <50701EEC.7080805@linux.intel.com>	<20121006.092207.1280541690613202532.davem@davemloft.net>	<50703B1B.2040705@linux.intel.com> <20121006.102132.1497404004255213029.davem@davemloft.net>
+In-Reply-To: <20121006.102132.1497404004255213029.davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,92 +28,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-I've not submitted a kernel bug before but I've read the bug reporting 
-pages.  I'll try to do my best and if you need more information please 
-let me know.  Please feel free to cc me on the answer or if you have 
-questions.
 
-I'm using Linux Mint 13 (64 bit) on AMD hardware with a self compiled 
-3.6.0 kernel for my MythTV HTPC.
+On 10/06/2012 10:21 PM, David Miller wrote:
+> From: Haicheng Li<haicheng.li@linux.intel.com>
+> Date: Sat, 06 Oct 2012 22:07:23 +0800
+>
+>> On 10/06/2012 09:22 PM, David Miller wrote:
+>>> From: Haicheng Li<haicheng.li@linux.intel.com>
+>>> Date: Sat, 06 Oct 2012 20:07:08 +0800
+>>>
+>>>> The failure is due to the CONFIG_PPS is not set there, consequently
+>>>> CONFIG_PTP_1588_CLOCK can not be set as =y anyway.
+>>>>
+>>>> So David's patch of "da1586461e53a4dd045738cce309ab488970f0ef [1/9]
+>>>> pch_gbe: Fix PTP dependencies" is buggy. Furthermore, I think using
+>>>> "selects" to resolve such dependency issue is not good idea as it
+>>>> won't visit the dependencies.
+>>>>
+>>>> David, I would still suggest to take my original patch:
+>>>> https://lkml.org/lkml/2012/9/28/70
+>>>>
+>>>> + depends on PTP_1588_CLOCK_PCH&&   (PCH_GBE=m || PTP_1588_CLOCK_PCH=y)
+>>>>
+>>>> or simply like:
+>>>
+>>> This is all very rediculous if you ask me.
+>>>
+>>> Why should the user have to know a detail like the underlying
+>>> PTP chip type just to enable PTP on his networking card?
+>>>
+>>> Because that is what you are making him do with your change.
+>>>
+>>> Select removed the necessity of the user having to know these
+>>> things.
+>> However it possibly breaks the build...
+>>
+>> IMHO, the reason why the dependency of PCH_PTP becomes so tricky is
+>> that the code of these two modules call the functions of each other
+>> (bad code structure?). To fix it neatly, either we restructure the
+>> code or just simply make it:
+>> + depends on PTP_1588_CLOCK_PCH=y
+>>
+>> For PCH_GBE=m case, it does be able to pass the build test, but I'm
+>> afraid it won't be smoothly workable via "insmod" due to the
+>> codependency of these two when PCH_PTP is enabled.
+>
+> Then why does it work for IXGBE and others who use select?
 
-Kernel version: Linux version 3.6.0 (gcc version 4.6.3 (Ubuntu/Linaro 
-4.6.3-1ubuntu5) ) #1 SMP Tue Oct 2 15:34:46 PDT 2012
+They explicitly select all the possible dependencies if they are bug-free (I 
+didn't strictly check them).
 
-CPU: model name      : AMD A6-3500 APU with Radeon(tm) HD Graphics
+Take IXGBE_PTP as example, it explicitly selects PPS, and also depends on 
+EXPERIMENTAL:
+config IXGBE_PTP
+         bool "PTP Clock Support"
+         default n
+         depends on IXGBE && EXPERIMENTAL
+         select PPS
+         select PTP_1588_CLOCK
 
-If you need any other system variables please let me know and I can get 
-those as well.
+So if you stick to use "select" as the convention of such build issue fixing, 
+fengguang's build failure would be fixed by:
+	+ depends on EXPERIMENTAL
+	+ select PPS
+	+ select PTP_1588_CLOCK
 
-Upon shutdown or restart (from either the hard button on the case or a 
-"sudo shutdown -r now" the system crashes and does not actually shut 
-down.  I can ssh in to the system and a dmesg shows the following:
-
-[102792.710563] ------------[ cut here ]------------
-[102792.710564] kernel BUG at fs/dcache.c:967!
-[102792.710566] invalid opcode: 0000 [#1] SMP
-[102792.710568] Modules linked in: nls_utf8 udf crc_itu_t nfsv4 
-binfmt_misc nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc 
-snd_hda_codec_hdmi xfs nvidia(PO) rc_imon_mce imon rc_core 
-snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq_midi snd_hwdep 
-snd_rawmidi snd_pcm psmouse snd_seq_midi_event snd_seq serio_raw 
-snd_seq_device snd_timer snd soundcore snd_page_alloc f71882fg r8169 
-ahci libahci
-[102792.710587] CPU 0
-[102792.710590] Pid: 29771, comm: umount Tainted: P           O 3.6.0 #1 
-System manufacturer System Product Name/F1A55-M LX PLUS
-[102792.710592] RIP: 0010:[<ffffffff8116c606>] [<ffffffff8116c606>] 
-shrink_dcache_for_umount_subtree+0x1e6/0x1f0
-[102792.710598] RSP: 0018:ffff880118f6dd98  EFLAGS: 00010296
-[102792.710600] RAX: 000000000000005d RBX: ffff88011092acc0 RCX: 
-00000000000013ae
-[102792.710601] RDX: 0000000000004663 RSI: 0000000000000046 RDI: 
-ffffffff81bbf9bc
-[102792.710602] RBP: ffff880118f6ddb8 R08: 000000000000000a R09: 
-0000000000000000
-[102792.710604] R10: 000000000000039a R11: 0000000000000399 R12: 
-ffff880110a5c900
-[102792.710605] R13: ffff880118fa9d00 R14: ffff880118fa9d30 R15: 
-ffff8801180c9000
-[102792.710607] FS:  00007f9cc4c16800(0000) GS:ffff88011ec00000(0000) 
-knlGS:0000000000000000
-[102792.710608] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[102792.710609] CR2: 00007f9cc4241120 CR3: 0000000117993000 CR4: 
-00000000000007f0
-[102792.710611] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-0000000000000000
-[102792.710612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
-0000000000000400
-[102792.710614] Process umount (pid: 29771, threadinfo ffff880118f6c000, 
-task ffff88007b8edb00)
-[102792.710614] Stack:
-[102792.710616]  ffff8801180c9350 ffff880110a5c6c0 ffff8801180c9000 
-ffffffffa0d0f3c0
-[102792.710618]  ffff880118f6ddd8 ffffffff8116de93 0000000000000001 
-ffff8801180c9000
-[102792.710620]  ffff880118f6de08 ffffffff811583bc ffff880110a5c760 
-0000000000000014
-[102792.710622] Call Trace:
-[102792.710626]  [<ffffffff8116de93>] shrink_dcache_for_umount+0x33/0x60
-[102792.710629]  [<ffffffff811583bc>] generic_shutdown_super+0x2c/0xf0
-[102792.710632]  [<ffffffff81158516>] kill_anon_super+0x16/0x30
-[102792.710634]  [<ffffffff81158557>] kill_litter_super+0x27/0x30
-[102792.710650]  [<ffffffffa0d094a9>] rpc_kill_sb+0x99/0xc0 [sunrpc]
-[102792.710653]  [<ffffffff8115877c>] deactivate_locked_super+0x3c/0xa0
-[102792.710655]  [<ffffffff8115938e>] deactivate_super+0x4e/0x70
-[102792.710658]  [<ffffffff81174416>] mntput_no_expire+0x106/0x160
-[102792.710661]  [<ffffffff8117543e>] sys_umount+0x6e/0x3b0
-[102792.710664]  [<ffffffff81583d96>] system_call_fastpath+0x1a/0x1f
-[102792.710665] Code: 00 00 48 8b 40 28 4c 8b 08 48 8b 43 30 48 85 c0 74 
-04 48 8b 50 40 48 89 34 24 48 c7 c7 48 69 7c 81 48 89 de 31 c0 e8 09 62 
-40 00 <0f> 0b 0f 0b 66 0f 1f 44 00 00 55 48 89 e5 41 54 53 66 66 66 66
-[102792.710686] RIP  [<ffffffff8116c606>] 
-shrink_dcache_for_umount_subtree+0x1e6/0x1f0
-[102792.710689]  RSP <ffff880118f6dd98>
-[102792.710705] ---[ end trace 6cebf99f8c65907b ]---
-
-Thank you,
-
-Neil
-
-
+would you prefer this way?
 
