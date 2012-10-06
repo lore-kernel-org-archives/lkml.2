@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab2JFPaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:30:09 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60149 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab2JFP36 (ORCPT
+	id S1753091Ab2JFPaU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:30:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63060 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2JFPaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:29:58 -0400
+	Sat, 6 Oct 2012 11:30:13 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -21,11 +21,10 @@ Cc: Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
         Len Brown <lenb@kernel.org>,
         "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Gaohuai Han <hangaohuai@huawei.com>
-Subject: [RFC PATCH v3 03/28] ACPIHP: detect ACPI hotplug slots by checking ACPI _EJ0 method
-Date: Sat,  6 Oct 2012 23:27:11 +0800
-Message-Id: <1349537256-21670-4-git-send-email-jiang.liu@huawei.com>
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [RFC PATCH v3 04/28] ACPIHP: implement a fake ACPI system device hotplug slot enumerator
+Date: Sat,  6 Oct 2012 23:27:12 +0800
+Message-Id: <1349537256-21670-5-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
 References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
@@ -33,66 +32,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a default mechanism to detect and manage ACPI
-system device hotplug slots based on standard ACPI interfaces.
-1) Detech hotplug slot by checking existence of _EJ0 and _STA methods.
-2) Power off a slot by evaluating _EJ0 method.
+This patch implements a fake ACPI system device hotplug slot enumerator,
+which could be used to test and verify hotplug logic on platforms with
+hardware hotplug capabilities.
 
-It's the default hotplug slot enumerating mechanism, platform specifc
-drivers may provide advanced implementation to override the default
-implementation.
+The fake slot enumerator will be enabled by passing module parameter
+"fake_slot=value". The encoding of "value" is:
+0x1: fake ACPI CONTAINER device as hotplug slot
+0x2: fake ACPI memory device as hotplug slot
+0x4: fake ACPI Processor object or Processor device as hotplug slot
+0x8: fake ACPI PCI host bridge device as hotplug slot.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/Makefile   |    1 +
- drivers/acpi/hotplug/acpihp.h   |    1 +
- drivers/acpi/hotplug/slot.c     |    1 +
- drivers/acpi/hotplug/slot_ej0.c |  153 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 156 insertions(+)
- create mode 100644 drivers/acpi/hotplug/slot_ej0.c
+ drivers/acpi/Kconfig             |    9 ++
+ drivers/acpi/hotplug/Makefile    |    1 +
+ drivers/acpi/hotplug/acpihp.h    |    3 +
+ drivers/acpi/hotplug/slot.c      |    3 +
+ drivers/acpi/hotplug/slot_fake.c |  177 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 193 insertions(+)
+ create mode 100644 drivers/acpi/hotplug/slot_fake.c
 
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 915a25e..5a5a3e5 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -348,6 +348,15 @@ config ACPI_HOTPLUG_SLOT
+ 	  To compile this driver as a module, choose M here:
+ 	  the module will be called acpihp_slot.
+ 
++config ACPI_HOTPLUG_SLOT_FAKE
++	bool "Fake Hotplug Slot Enumerator"
++	depends on ACPI_HOTPLUG_SLOT
++	default y
++	help
++	  Enable the fake ACPI system device hotplug slot enumerator, which
++	  could be used to test hotplug functionalities on hardware platforms
++	  with out system device hotplug capabilities.
++
+ config ACPI_CONTAINER
+ 	tristate "Container and Module Devices (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
 diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-index 2cbb03c..5420ae7 100644
+index 5420ae7..c19b350 100644
 --- a/drivers/acpi/hotplug/Makefile
 +++ b/drivers/acpi/hotplug/Makefile
-@@ -7,3 +7,4 @@ acpihp-y					= core.o
- 
+@@ -8,3 +8,4 @@ acpihp-y					= core.o
  obj-$(CONFIG_ACPI_HOTPLUG_SLOT)			+= acpihp_slot.o
  acpihp_slot-y					= slot.o
-+acpihp_slot-y					+= slot_ej0.o
+ acpihp_slot-y					+= slot_ej0.o
++acpihp_slot-$(CONFIG_ACPI_HOTPLUG_SLOT_FAKE)	+= slot_fake.o
 diff --git a/drivers/acpi/hotplug/acpihp.h b/drivers/acpi/hotplug/acpihp.h
-index 7467895..278c8c2 100644
+index 278c8c2..7c49eab 100644
 --- a/drivers/acpi/hotplug/acpihp.h
 +++ b/drivers/acpi/hotplug/acpihp.h
-@@ -28,5 +28,6 @@
- #include <acpi/acpi_hotplug.h>
+@@ -29,5 +29,8 @@
  
  extern struct acpi_device *acpi_root;
-+extern struct acpihp_slot_ops acpihp_slot_ej0;
+ extern struct acpihp_slot_ops acpihp_slot_ej0;
++#ifdef	CONFIG_ACPI_HOTPLUG_SLOT_FAKE
++extern struct acpihp_slot_ops acpihp_slot_fake;
++#endif
  
  #endif
 diff --git a/drivers/acpi/hotplug/slot.c b/drivers/acpi/hotplug/slot.c
-index a230fc7..8fdae61 100644
+index 8fdae61..38f39dc 100644
 --- a/drivers/acpi/hotplug/slot.c
 +++ b/drivers/acpi/hotplug/slot.c
-@@ -43,6 +43,7 @@ static struct acpihp_slot_ops *slot_ops_curr;
-  * The first entry whose init() method returns success will be used.
+@@ -44,6 +44,9 @@ static struct acpihp_slot_ops *slot_ops_curr;
   */
  static struct acpihp_slot_ops *slot_ops_array[] = {
-+	&acpihp_slot_ej0,
+ 	&acpihp_slot_ej0,
++#ifdef	CONFIG_ACPI_HOTPLUG_SLOT_FAKE
++	&acpihp_slot_fake,
++#endif
  	NULL
  };
  
-diff --git a/drivers/acpi/hotplug/slot_ej0.c b/drivers/acpi/hotplug/slot_ej0.c
+diff --git a/drivers/acpi/hotplug/slot_fake.c b/drivers/acpi/hotplug/slot_fake.c
 new file mode 100644
-index 0000000..caaa25e
+index 0000000..512e09b
 --- /dev/null
-+++ b/drivers/acpi/hotplug/slot_ej0.c
-@@ -0,0 +1,153 @@
++++ b/drivers/acpi/hotplug/slot_fake.c
+@@ -0,0 +1,177 @@
 +/*
 + * Copyright (C) 2012 Huawei Tech. Co., Ltd.
-+ * Copyright (C) 2012 Gaohuai Han <hangaohuai@huawei.com>
 + * Copyright (C) 2012 Jiang Liu <jiang.liu@huawei.com>
 + *
 + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,24 +140,34 @@ index 0000000..caaa25e
 +#include <linux/acpi.h>
 +#include <acpi/acpi.h>
 +#include <acpi/acpi_hotplug.h>
++#include "acpihp.h"
 +
-+static acpi_status acpihp_slot_ej0_capable(acpi_handle handle)
++struct acpihp_slot_fake_data {
++	bool enabled;
++};
++
++/*
++ * Encoding of the fake_slot parameter:
++ * 0x1: fake ACPI CONTAINER device as hotplug slot
++ * 0x2: fake ACPI memory device as hotplug slot
++ * 0x4: fake ACPI Processor object or Processor device as hotplug slot
++ * 0x8: fake ACPI PCI host bridge device as hotplug slot.
++ * The above encoding must be kept in consistence with definition of
++ * 'enum acpihp_dev_type'.
++ */
++int acpihp_fake_slot;
++module_param_named(fake_slot, acpihp_fake_slot, int, S_IRUGO);
++MODULE_PARM_DESC(fake_slot, "fake ACPI hotplug slots, 0x1 for CONTAINER, 0x2 for memory, 0x4 for CPU, 0x8 for PCI host bridge.");
++
++static acpi_status acpihp_slot_fake_init(void)
 +{
-+	acpi_handle tmp;
-+
-+	/* Assume a device object with _EJ0 and _STA has a hotplug slot. */
-+	if (ACPI_FAILURE(acpi_get_handle(handle, "_EJ0", &tmp)))
-+		return AE_ERROR;
-+	if (ACPI_FAILURE(acpi_get_handle(handle, METHOD_NAME__STA, &tmp)))
-+		return AE_ERROR;
-+
-+	return AE_OK;
++	return acpihp_fake_slot ? AE_OK : AE_ERROR;
 +}
 +
 +static acpi_status
-+acpihp_slot_ej0_check(acpi_handle handle, u32 lvl, void *context, void **rv)
++acpihp_slot_fake_check(acpi_handle handle, u32 lvl, void *context, void **rv)
 +{
-+	acpi_status rc = AE_OK;
++	int *valid = (int *)rv;
 +	enum acpihp_dev_type type;
 +
 +	if (!acpihp_dev_get_type(handle, &type)) {
@@ -141,107 +175,122 @@ index 0000000..caaa25e
 +		case ACPIHP_DEV_TYPE_CPU:
 +		case ACPIHP_DEV_TYPE_MEM:
 +		case ACPIHP_DEV_TYPE_HOST_BRIDGE:
-+		case ACPIHP_DEV_TYPE_CONTAINER:
-+			if (ACPI_SUCCESS(acpihp_slot_ej0_capable(handle))) {
-+				*(int *)rv = 1;
-+				rc = AE_CTRL_TERMINATE;
-+			} else if (type == ACPIHP_DEV_TYPE_HOST_BRIDGE) {
-+				rc = AE_CTRL_DEPTH;
-+			}
-+			break;
++			*valid = 1;
++			return AE_CTRL_TERMINATE;
 +		default:
 +			break;
 +		}
 +	}
 +
-+	return rc;
++	return AE_OK;
 +}
 +
-+static acpi_status acpihp_slot_ej0_init(void)
++static acpi_status acpihp_slot_fake_capable(acpi_handle handle)
 +{
-+	int cap = 0;
++	int valid = 0;
++	acpi_status rc;
++	unsigned long long sta;
++	enum acpihp_dev_type type;
 +
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-+			ACPI_UINT32_MAX, acpihp_slot_ej0_check,
-+			NULL, NULL, (void **)&cap);
-+	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
-+			ACPI_UINT32_MAX, acpihp_slot_ej0_check,
-+			NULL, NULL, (void **)&cap);
++	/* Only care about CPU, memory, PCI host bridge and CONTAINER */
++	if (acpihp_dev_get_type(handle, &type))
++		return AE_ERROR;
++	if (type == ACPIHP_DEV_TYPE_CPU || type == ACPIHP_DEV_TYPE_MEM ||
++	    type == ACPIHP_DEV_TYPE_HOST_BRIDGE) {
++		if (acpihp_fake_slot & (1 << (type - 1)))
++			valid = 1;
++	} else if (type == ACPIHP_DEV_TYPE_CONTAINER &&
++		   acpihp_fake_slot & (1 << (type - 1))) {
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
++				ACPI_UINT32_MAX, acpihp_slot_fake_check,
++				NULL, NULL, (void **)&valid);
++		acpi_walk_namespace(ACPI_TYPE_PROCESSOR, handle,
++				ACPI_UINT32_MAX, acpihp_slot_fake_check,
++				NULL, NULL, (void **)&valid);
++	}
++	if (valid == 0)
++		return AE_ERROR;
 +
-+	return cap ? AE_OK : AE_ERROR;
-+}
-+
-+static void acpihp_slot_ej0_fini(void)
-+{
-+}
-+
-+static acpi_status acpihp_slot_ej0_create(struct acpihp_slot *slot)
-+{
-+	/*
-+	 * Assume device objects with _EJ0 are capable of:
-+	 * ONLINE, OFFLINE, POWEROFF, HOTPLUG
-+	 */
-+	slot->capabilities = ACPIHP_SLOT_CAP_ONLINE | ACPIHP_SLOT_CAP_OFFLINE |
-+			     ACPIHP_SLOT_CAP_POWEROFF | ACPIHP_SLOT_CAP_HOTPLUG;
++	/* Check whether device is present and enabled. */
++	rc = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
++	if (rc == AE_NOT_FOUND)
++		sta = ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED;
++	else if (ACPI_FAILURE(rc))
++		sta = 0;
++	else if (sta & ACPI_STA_DEVICE_FUNCTIONING)
++		sta |= ACPI_STA_DEVICE_ENABLED;
++	if (!(sta & ACPI_STA_DEVICE_PRESENT) ||
++	    !(sta & ACPI_STA_DEVICE_ENABLED))
++		return AE_ERROR;
 +
 +	return AE_OK;
++}
++
++static acpi_status acpihp_slot_fake_create(struct acpihp_slot *slot)
++{
++	struct acpihp_slot_fake_data *data;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return AE_ERROR;
++
++	data->enabled = true;
++	slot->slot_data = data;
++	slot->capabilities = ACPIHP_SLOT_CAP_ONLINE | ACPIHP_SLOT_CAP_OFFLINE;
++
++	return AE_OK;
++}
++
++static void acpihp_slot_fake_destroy(struct acpihp_slot *slot)
++{
++	struct acpihp_slot_fake_data *data = slot->slot_data;
++
++	slot->slot_data = NULL;
++	kfree(data);
 +}
 +
 +static acpi_status
-+acpihp_slot_ej0_get_status(struct acpihp_slot *slot, u64 *status)
++acpihp_slot_fake_get_status(struct acpihp_slot *slot, u64 *status)
 +{
-+	acpi_status rc;
++	struct acpihp_slot_fake_data *data = slot->slot_data;
 +
-+	rc = acpi_evaluate_integer(slot->handle, METHOD_NAME__STA,
-+				   NULL, status);
-+	if (ACPI_FAILURE(rc))
-+		ACPIHP_SLOT_DEBUG(slot, "fails to evaluate _STA method\n");
-+
-+	return rc;
-+}
-+
-+static acpi_status acpihp_slot_ej0_poweroff(struct acpihp_slot *slot)
-+{
-+	acpi_status status;
-+	unsigned long long sta;
-+	union acpi_object arg;
-+	struct acpi_object_list arg_list;
-+	acpi_handle handle = slot->handle;
-+
-+	arg_list.count = 1;
-+	arg_list.pointer = &arg;
-+	arg.type = ACPI_TYPE_INTEGER;
-+	arg.integer.value = 1;
-+	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_SLOT_WARN(slot, "fails to power off.\n");
-+		return status;
-+	}
-+
-+	status = acpi_evaluate_integer(handle, METHOD_NAME__STA, NULL, &sta);
-+	if (ACPI_FAILURE(status)) {
-+		ACPIHP_SLOT_WARN(slot, "fails to evaluate _STA method\n");
-+		return status;
-+	}
-+
-+	if (sta & (ACPI_STA_DEVICE_FUNCTIONING | ACPI_STA_DEVICE_ENABLED)) {
-+		ACPIHP_SLOT_WARN(slot,
-+			 "object is still active after executing _EJ0.\n");
-+		return AE_ERROR;
-+	}
++	if (data->enabled)
++		*status = ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED |
++			  ACPI_STA_DEVICE_FUNCTIONING;
++	else
++		*status = ACPI_STA_DEVICE_PRESENT;
 +
 +	return AE_OK;
 +}
 +
-+struct acpihp_slot_ops acpihp_slot_ej0 = {
++static acpi_status acpihp_slot_fake_poweron(struct acpihp_slot *slot)
++{
++	struct acpihp_slot_fake_data *data = slot->slot_data;
++
++	data->enabled = true;
++
++	return AE_OK;
++}
++
++static acpi_status acpihp_slot_fake_poweroff(struct acpihp_slot *slot)
++{
++	struct acpihp_slot_fake_data *data = slot->slot_data;
++
++	data->enabled = false;
++
++	return AE_OK;
++}
++
++struct acpihp_slot_ops acpihp_slot_fake = {
 +	.owner = THIS_MODULE,
-+	.desc = "Detect Hotplug Slots by Checking ACPI _EJ0 Method",
-+	.init = acpihp_slot_ej0_init,
-+	.fini = acpihp_slot_ej0_fini,
-+	.check = acpihp_slot_ej0_capable,
-+	.create = acpihp_slot_ej0_create,
-+	.poweroff = acpihp_slot_ej0_poweroff,
-+	.get_status = acpihp_slot_ej0_get_status,
++	.desc = "Fake ACPI System Device Hotplug Slots for Testing",
++	.init = acpihp_slot_fake_init,
++	.check = acpihp_slot_fake_capable,
++	.create = acpihp_slot_fake_create,
++	.destroy = acpihp_slot_fake_destroy,
++	.poweron = acpihp_slot_fake_poweron,
++	.poweroff = acpihp_slot_fake_poweroff,
++	.get_status = acpihp_slot_fake_get_status,
 +};
 -- 
 1.7.9.5
