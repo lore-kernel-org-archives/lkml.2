@@ -1,184 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab2JFNyM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 09:54:12 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56302 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750883Ab2JFNyJ convert rfc822-to-8bit (ORCPT
+	id S1751963Ab2JFOAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 10:00:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48303 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab2JFOAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 09:54:09 -0400
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=utf-8
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-In-Reply-To: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-Date: Sat, 6 Oct 2012 17:54:04 +0400
-Cc: Al Viro <viro@zeniv.linux.org.uk>, tytso@mit.edu,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-To: jaegeuk.kim@samsung.com
-X-Mailer: Apple Mail (2.1085)
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
+	Sat, 6 Oct 2012 10:00:20 -0400
+Message-ID: <507039D1.3010307@gmail.com>
+Date: Sat, 06 Oct 2012 16:01:53 +0200
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+CC: lee.jones@linaro.org, arnd@arndb.de, anton.vorontsov@linaro.org,
+        linus.walleij@stericsson.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCH 1/4] mfd: ab8500: add devicetree support for fuelgauge
+References: <1349064513-31301-1-git-send-email-rajanikanth.hv@stericsson.com> <1349064513-31301-2-git-send-email-rajanikanth.hv@stericsson.com>
+In-Reply-To: <1349064513-31301-2-git-send-email-rajanikanth.hv@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+Hi,
 
-> From:	 	김재극 <jaegeuk.kim@samsung.com>
-> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
-> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file system
-> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
+On 10/01/2012 06:08 AM, Rajanikanth H.V wrote:
+> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
 > 
-> This is a new patch set for the f2fs file system.
-> 
-> What is F2FS?
-> =============
-> 
-> NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
-> been widely being used for ranging from mobile to server systems. Since they are
-> known to have different characteristics from the conventional rotational disks,
-> a file system, an upper layer to the storage device, should adapt to the changes
-> from the sketch.
-> 
-> F2FS is a new file system carefully designed for the NAND flash memory-based storage
-> devices. We chose a log structure file system approach, but we tried to adapt it
-> to the new form of storage. Also we remedy some known issues of the very old log
-> structured file system, such as snowball effect of wandering tree and high cleaning
-> overhead.
-> 
-> Because a NAND-based storage device shows different characteristics according to
-> its internal geometry or flash memory management scheme aka FTL, we add various
-> parameters not only for configuring on-disk layout, but also for selecting allocation
-> and cleaning algorithms.
-> 
+> - This patch adds device tree support for fuelguage driver
+> - optimize bm devices platform_data usage and of_probe(...)
+>   Note: of_probe() routine for battery managed devices is made
+>   common across all bm drivers.
+[...]
+> +int __devinit
+> +bmdevs_of_probe(struct device *dev,
+> +		struct device_node *np,
+> +		struct abx500_bm_plat_data *pdata)
+> +{
+> +	int	i, ret = 0, thermistor = NTC_INTERNAL;
+> +	const	__be32 *ph;
+> +	const	char *bat_tech;
+> +	struct	abx500_bm_data		 *bat;
+> +	struct	abx500_battery_type	 *btype;
+> +	struct  device_node		 *np_bat_supply;
+> +	struct  abx500_bmdevs_plat_data  *plat_data = pdata->bmdev_pdata;
+> +
+> +	/* get phandle to 'supplied-to' node */
+> +	ph = of_get_property(np, "supplied-to", &plat_data->num_supplicants);
+> +	if (ph == NULL) {
+> +		dev_err(dev, "no supplied_to property specified\n");
+> +		return -EINVAL;
+> +	}
+> +	plat_data->num_supplicants /= sizeof(int);
+> +	plat_data->supplied_to =
+> +		devm_kzalloc(dev, plat_data->num_supplicants *
+> +			sizeof(const char *), GFP_KERNEL);
+> +	if (plat_data->supplied_to == NULL) {
+> +		dev_err(dev, "%s no mem for supplied-to\n", __func__);
+> +		return -ENOMEM;
+> +	}
+> +	for (i = 0; i < plat_data->num_supplicants; ++i) {
+> +		np_bat_supply = of_find_node_by_phandle(be32_to_cpup(ph) + i);
+> +		if (np_bat_supply == NULL) {
+> +			dev_err(dev, "invalid supplied_to property\n");
+> +			return -EINVAL;
+> +		}
+> +		ret = of_property_read_string(np_bat_supply, "interface-name",
+> +				(const char **)(plat_data->supplied_to + i));
+> +		if (ret < 0) {
+> +			of_node_put(np_bat_supply);
+> +			dev_err(dev, "supply/interface name not found\n");
+> +			return ret;
+> +		}
 
-What about F2FS performance? Could you share benchmarking results of the new file system?
+If an error is encountered here, of_node_put() should be called for all
+nodes previously referenced with of_find_node_by_phandle (or
+of_parse_phandle, as Lee suggested).
+Also, if I'm not mistaken we have a leak here, because the refcount of
+these nodes is never decremented, not even in the driver remove routine.
 
-It is very interesting the case of aged file system. How is GC's implementation efficient? Could you share benchmarking results for the very aged file system state?
+[...]
+> @@ -2446,18 +2444,47 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+>  {
+>  	int i, irq;
+>  	int ret = 0;
+> -	struct abx500_bm_plat_data *plat_data = pdev->dev.platform_data;
+> +	struct abx500_bm_plat_data *plat_data
+> +				= pdev->dev.platform_data;
+> +	struct device_node *np	= pdev->dev.of_node;
+>  	struct ab8500_fg *di;
+>  
+> +	di = devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
+> +	if (!di) {
+> +		dev_err(&pdev->dev, "%s no mem for ab8500_fg\n", __func__);
+> +		return -ENOMEM;
+> +	}
+> +	if (np) {
+> +		if (!plat_data) {
+> +			plat_data =
+> +			devm_kzalloc(&pdev->dev, sizeof(*plat_data),
+> +					GFP_KERNEL);
+> +			if (!plat_data) {
+> +				dev_err(&pdev->dev,
+> +					"%s no mem for plat_data\n", __func__);
+> +				return -ENOMEM;
+> +			}
+> +			plat_data->bmdev_pdata = devm_kzalloc(&pdev->dev,
+> +				sizeof(*plat_data->bmdev_pdata), GFP_KERNEL);
+> +			if (!plat_data->bmdev_pdata) {
+> +				dev_err(&pdev->dev,
+> +					"%s no mem for pdata->fg\n",
+> +					__func__);
+> +				return -ENOMEM;
+> +			}
+> +		}
+> +		ret = bmdevs_of_probe(&pdev->dev, np, plat_data);
 
-With the best regards,
-Vyacheslav Dubeyko.
+I think it's better to move allocation of bmdev_pdata and corresponding
+error check to bmdevs_of_probe(), because this code is shared by all
+battery management drivers.
 
-> Patch set
-> =========
-> 
-> The patch #1 adds a document to Documentation/filesystems/.
-> The patch #2 adds a header file of on-disk layout to include/linux/.
-> The patches #3-#15 adds f2fs source files to fs/f2fs/.
-> The Last patch, patch #16, updates Makefile and Kconfig.
-> 
-> mkfs.f2fs
-> =========
-> 
-> The file system formatting tool, "mkfs.f2fs", is available from the following
-> download page:		
-> http://sourceforge.net/projects/f2fs-tools/
-> 
-> 
-> Usage
-> =====
-> 
-> If you'd like to experience f2fs, simply:
-> # mkfs.f2fs /dev/sdb1
-> # mount -t f2fs /dev/sdb1 /mnt/f2fs
-> 
-> Short log
-> =========
-> 
-> Jaegeuk Kim (16):
->  f2fs: add document
->  f2fs: add on-disk layout
->  f2fs: add superblock and major in-memory structure
->  f2fs: add super block operations
->  f2fs: add checkpoint operations
->  f2fs: add node operations
->  f2fs: add segment operations
->  f2fs: add file operations
->  f2fs: add address space operations for data
->  f2fs: add core inode operations
->  f2fs: add inode operations for special inodes
->  f2fs: add core directory operations
->  f2fs: add xattr and acl functionalities
->  f2fs: add garbage collection functions
->  f2fs: add recovery routines for roll-forward
->  f2fs: update Kconfig and Makefile
-> 
-> Documentation/filesystems/00-INDEX |    2 +
-> Documentation/filesystems/f2fs.txt |  314 +++++++
-> fs/Kconfig                         |    1 +
-> fs/Makefile                        |    1 +
-> fs/f2fs/Kconfig                    |   55 ++
-> fs/f2fs/Makefile                   |    6 +
-> fs/f2fs/acl.c                      |  402 ++++++++
-> fs/f2fs/acl.h                      |   57 ++
-> fs/f2fs/checkpoint.c               |  791 ++++++++++++++++
-> fs/f2fs/data.c                     |  700 ++++++++++++++
-> fs/f2fs/dir.c                      |  657 +++++++++++++
-> fs/f2fs/f2fs.h                     |  981 ++++++++++++++++++++
-> fs/f2fs/file.c                     |  643 +++++++++++++
-> fs/f2fs/gc.c                       | 1140 +++++++++++++++++++++++
-> fs/f2fs/gc.h                       |  203 +++++
-> fs/f2fs/hash.c                     |   98 ++
-> fs/f2fs/inode.c                    |  258 ++++++
-> fs/f2fs/namei.c                    |  549 +++++++++++
-> fs/f2fs/node.c                     | 1773 ++++++++++++++++++++++++++++++++++++
-> fs/f2fs/node.h                     |  331 +++++++
-> fs/f2fs/recovery.c                 |  372 ++++++++
-> fs/f2fs/segment.c                  | 1755 +++++++++++++++++++++++++++++++++++
-> fs/f2fs/segment.h                  |  627 +++++++++++++
-> fs/f2fs/super.c                    |  550 +++++++++++
-> fs/f2fs/xattr.c                    |  387 ++++++++
-> fs/f2fs/xattr.h                    |  142 +++
-> include/linux/f2fs_fs.h            |  359 ++++++++
-> 27 files changed, 13154 insertions(+)
-> create mode 100644 Documentation/filesystems/f2fs.txt
-> create mode 100644 fs/f2fs/Kconfig
-> create mode 100644 fs/f2fs/Makefile
-> create mode 100644 fs/f2fs/acl.c
-> create mode 100644 fs/f2fs/acl.h
-> create mode 100644 fs/f2fs/checkpoint.c
-> create mode 100644 fs/f2fs/data.c
-> create mode 100644 fs/f2fs/dir.c
-> create mode 100644 fs/f2fs/f2fs.h
-> create mode 100644 fs/f2fs/file.c
-> create mode 100644 fs/f2fs/gc.c
-> create mode 100644 fs/f2fs/gc.h
-> create mode 100644 fs/f2fs/hash.c
-> create mode 100644 fs/f2fs/inode.c
-> create mode 100644 fs/f2fs/namei.c
-> create mode 100644 fs/f2fs/node.c
-> create mode 100644 fs/f2fs/node.h
-> create mode 100644 fs/f2fs/recovery.c
-> create mode 100644 fs/f2fs/segment.c
-> create mode 100644 fs/f2fs/segment.h
-> create mode 100644 fs/f2fs/super.c
-> create mode 100644 fs/f2fs/xattr.c
-> create mode 100644 fs/f2fs/xattr.h
-> create mode 100644 include/linux/f2fs_fs.h
-> 
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
-> 
-> ---
-> Jaegeuk Kim
-> Samsung
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  
-> http://vger.kernel.org/majordomo-info.html
-> 
-> Please read the FAQ at http://www.tux.org/lkml/
-> 
-
+--
+Francesco
