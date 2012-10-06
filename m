@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab2JFPaU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:30:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63060 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab2JFPaN (ORCPT
+	id S1753533Ab2JFPad (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:30:33 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51177 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab2JFPa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:30:13 -0400
+	Sat, 6 Oct 2012 11:30:27 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -22,9 +22,9 @@ Cc: Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
         "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v3 04/28] ACPIHP: implement a fake ACPI system device hotplug slot enumerator
-Date: Sat,  6 Oct 2012 23:27:12 +0800
-Message-Id: <1349537256-21670-5-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH v3 05/28] ACPI: introduce interfaces to manage ACPI device reference count
+Date: Sat,  6 Oct 2012 23:27:13 +0800
+Message-Id: <1349537256-21670-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
 References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
@@ -32,266 +32,411 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a fake ACPI system device hotplug slot enumerator,
-which could be used to test and verify hotplug logic on platforms with
-hardware hotplug capabilities.
+Function acpi_bus_get_device() return an ACPI device without holding a
+reference count the device, which is not safe to ACPI hotplug operations.
 
-The fake slot enumerator will be enabled by passing module parameter
-"fake_slot=value". The encoding of "value" is:
-0x1: fake ACPI CONTAINER device as hotplug slot
-0x2: fake ACPI memory device as hotplug slot
-0x4: fake ACPI Processor object or Processor device as hotplug slot
-0x8: fake ACPI PCI host bridge device as hotplug slot.
+So change acpi_bus_get_device() to hold a reference count on the returned
+ACPI device and introduces acpi_get_device()/acpi_put_device() to manage
+ACPI device reference count.
+
+This patch is still incomplete, need to check and modify all callers of
+acpi_bus_get_device().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
 ---
- drivers/acpi/Kconfig             |    9 ++
- drivers/acpi/hotplug/Makefile    |    1 +
- drivers/acpi/hotplug/acpihp.h    |    3 +
- drivers/acpi/hotplug/slot.c      |    3 +
- drivers/acpi/hotplug/slot_fake.c |  177 ++++++++++++++++++++++++++++++++++++++
- 5 files changed, 193 insertions(+)
- create mode 100644 drivers/acpi/hotplug/slot_fake.c
+ drivers/acpi/bus.c                     |   22 +++++++++++++++++++---
+ drivers/acpi/internal.h                |    3 +++
+ drivers/acpi/scan.c                    |    6 ++++++
+ drivers/gpu/drm/i915/intel_opregion.c  |    2 ++
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |    1 +
+ drivers/pci/hotplug/acpiphp_glue.c     |    9 +++++++--
+ drivers/pci/hotplug/acpiphp_ibm.c      |    5 ++++-
+ drivers/pci/hotplug/sgi_hotplug.c      |    6 +++++-
+ drivers/platform/x86/thinkpad_acpi.c   |    2 ++
+ drivers/pnp/pnpacpi/core.c             |   23 ++++++++++-------------
+ include/acpi/acpi_bus.h                |   16 +++++++++++++++-
+ 11 files changed, 74 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 915a25e..5a5a3e5 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -348,6 +348,15 @@ config ACPI_HOTPLUG_SLOT
- 	  To compile this driver as a module, choose M here:
- 	  the module will be called acpihp_slot.
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index e059695..1f85b0b 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -89,26 +89,42 @@ static struct dmi_system_id dsdt_dmi_table[] __initdata = {
+                                 Device Management
+    -------------------------------------------------------------------------- */
  
-+config ACPI_HOTPLUG_SLOT_FAKE
-+	bool "Fake Hotplug Slot Enumerator"
-+	depends on ACPI_HOTPLUG_SLOT
-+	default y
-+	help
-+	  Enable the fake ACPI system device hotplug slot enumerator, which
-+	  could be used to test hotplug functionalities on hardware platforms
-+	  with out system device hotplug capabilities.
+-int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
++bool acpi_bus_has_device(acpi_handle handle)
+ {
+-	acpi_status status = AE_OK;
++	acpi_status status;
++	struct acpi_device *device = NULL;
 +
- config ACPI_CONTAINER
- 	tristate "Container and Module Devices (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL
-diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-index 5420ae7..c19b350 100644
---- a/drivers/acpi/hotplug/Makefile
-+++ b/drivers/acpi/hotplug/Makefile
-@@ -8,3 +8,4 @@ acpihp-y					= core.o
- obj-$(CONFIG_ACPI_HOTPLUG_SLOT)			+= acpihp_slot.o
- acpihp_slot-y					= slot.o
- acpihp_slot-y					+= slot_ej0.o
-+acpihp_slot-$(CONFIG_ACPI_HOTPLUG_SLOT_FAKE)	+= slot_fake.o
-diff --git a/drivers/acpi/hotplug/acpihp.h b/drivers/acpi/hotplug/acpihp.h
-index 278c8c2..7c49eab 100644
---- a/drivers/acpi/hotplug/acpihp.h
-+++ b/drivers/acpi/hotplug/acpihp.h
-@@ -29,5 +29,8 @@
++	down_read(&acpi_device_data_handler_sem);
++	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)&device);
++	up_read(&acpi_device_data_handler_sem);
++
++	return ACPI_SUCCESS(status) && device;
++}
++EXPORT_SYMBOL(acpi_bus_has_device);
  
- extern struct acpi_device *acpi_root;
- extern struct acpihp_slot_ops acpihp_slot_ej0;
-+#ifdef	CONFIG_ACPI_HOTPLUG_SLOT_FAKE
-+extern struct acpihp_slot_ops acpihp_slot_fake;
-+#endif
++int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
++{
++	acpi_status status;
  
+ 	if (!device)
+ 		return -EINVAL;
+ 
+ 	/* TBD: Support fixed-feature devices */
+ 
++	down_read(&acpi_device_data_handler_sem);
+ 	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)device);
+ 	if (ACPI_FAILURE(status) || !*device) {
++		up_read(&acpi_device_data_handler_sem);
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No context for object [%p]\n",
+ 				  handle));
+ 		return -ENODEV;
++	} else {
++		get_device(&(*device)->dev);
++		up_read(&acpi_device_data_handler_sem);
+ 	}
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL(acpi_bus_get_device);
+ 
+ acpi_status acpi_bus_get_status_handle(acpi_handle handle,
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index ca75b9c..70843c0 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -93,4 +93,7 @@ static inline int suspend_nvs_save(void) { return 0; }
+ static inline void suspend_nvs_restore(void) {}
  #endif
-diff --git a/drivers/acpi/hotplug/slot.c b/drivers/acpi/hotplug/slot.c
-index 8fdae61..38f39dc 100644
---- a/drivers/acpi/hotplug/slot.c
-+++ b/drivers/acpi/hotplug/slot.c
-@@ -44,6 +44,9 @@ static struct acpihp_slot_ops *slot_ops_curr;
-  */
- static struct acpihp_slot_ops *slot_ops_array[] = {
- 	&acpihp_slot_ej0,
-+#ifdef	CONFIG_ACPI_HOTPLUG_SLOT_FAKE
-+	&acpihp_slot_fake,
-+#endif
- 	NULL
- };
  
-diff --git a/drivers/acpi/hotplug/slot_fake.c b/drivers/acpi/hotplug/slot_fake.c
-new file mode 100644
-index 0000000..512e09b
---- /dev/null
-+++ b/drivers/acpi/hotplug/slot_fake.c
-@@ -0,0 +1,177 @@
-+/*
-+ * Copyright (C) 2012 Huawei Tech. Co., Ltd.
-+ * Copyright (C) 2012 Jiang Liu <jiang.liu@huawei.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or (at
-+ *  your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
++extern struct rw_semaphore acpi_device_data_handler_sem;
++void acpi_bus_data_handler(acpi_handle handle, void *context);
 +
-+#include <linux/acpi.h>
-+#include <acpi/acpi.h>
-+#include <acpi/acpi_hotplug.h>
-+#include "acpihp.h"
+ #endif /* _ACPI_INTERNAL_H_ */
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index d1ecca2..a1d5188 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -10,6 +10,7 @@
+ #include <linux/signal.h>
+ #include <linux/kthread.h>
+ #include <linux/dmi.h>
++#include <linux/sem.h>
+ 
+ #include <acpi/acpi_drivers.h>
+ 
+@@ -32,6 +33,7 @@ static LIST_HEAD(acpi_device_list);
+ static LIST_HEAD(acpi_bus_id_list);
+ DEFINE_MUTEX(acpi_device_lock);
+ LIST_HEAD(acpi_wakeup_device_list);
++DECLARE_RWSEM(acpi_device_data_handler_sem);
+ 
+ struct acpi_device_bus_id{
+ 	char bus_id[15];
+@@ -552,7 +554,9 @@ static void acpi_device_unregister(struct acpi_device *device, int type)
+ 	list_del(&device->wakeup_list);
+ 	mutex_unlock(&acpi_device_lock);
+ 
++	down_write(&acpi_device_data_handler_sem);
+ 	acpi_detach_data(device->handle, acpi_bus_data_handler);
++	up_write(&acpi_device_data_handler_sem);
+ 
+ 	acpi_device_remove_files(device);
+ 	device_unregister(&device->dev);
+@@ -1215,8 +1219,10 @@ static int acpi_device_set_context(struct acpi_device *device)
+ 	if (!device->handle)
+ 		return 0;
+ 
++	down_write(&acpi_device_data_handler_sem);
+ 	status = acpi_attach_data(device->handle,
+ 				  acpi_bus_data_handler, device);
++	up_write(&acpi_device_data_handler_sem);
+ 	if (ACPI_SUCCESS(status))
+ 		return 0;
+ 
+diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+index 18bd0af..da7dd48 100644
+--- a/drivers/gpu/drm/i915/intel_opregion.c
++++ b/drivers/gpu/drm/i915/intel_opregion.c
+@@ -359,6 +359,8 @@ static void intel_didl_outputs(struct drm_device *dev)
+ 		}
+ 	}
+ 
++	acpi_device_put(acpi_dev);
 +
-+struct acpihp_slot_fake_data {
-+	bool enabled;
-+};
+ 	if (!acpi_video_bus) {
+ 		pr_warn("No ACPI video bus found\n");
+ 		return;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index 26ebffe..69d2e22 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -417,6 +417,7 @@ nouveau_acpi_edid(struct drm_device *dev, struct drm_connector *connector)
+ 		return -ENODEV;
+ 
+ 	ret = acpi_video_get_edid(acpidev, type, -1, &edid);
++	acpi_device_put(acpidev);
+ 	if (ret < 0)
+ 		return ret;
+ 
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 3d6d4fd..1016c38 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -749,11 +749,13 @@ static int acpiphp_bus_add(struct acpiphp_func *func)
+ 		 * the bus then re-add it...
+ 		 */
+ 		ret_val = acpi_bus_trim(device, 1);
++		acpi_device_put(device);
+ 		dbg("acpi_bus_trim return %x\n", ret_val);
+ 	}
+ 
+ 	ret_val = acpi_bus_add(&device, pdevice, func->handle,
+ 		ACPI_BUS_TYPE_DEVICE);
++	acpi_device_put(pdevice);
+ 	if (ret_val) {
+ 		dbg("error adding bus, %x\n",
+ 			-ret_val);
+@@ -785,6 +787,8 @@ static int acpiphp_bus_trim(acpi_handle handle)
+ 	if (retval)
+ 		err("cannot remove from acpi list\n");
+ 
++	acpi_device_put(device);
 +
-+/*
-+ * Encoding of the fake_slot parameter:
-+ * 0x1: fake ACPI CONTAINER device as hotplug slot
-+ * 0x2: fake ACPI memory device as hotplug slot
-+ * 0x4: fake ACPI Processor object or Processor device as hotplug slot
-+ * 0x8: fake ACPI PCI host bridge device as hotplug slot.
-+ * The above encoding must be kept in consistence with definition of
-+ * 'enum acpihp_dev_type'.
-+ */
-+int acpihp_fake_slot;
-+module_param_named(fake_slot, acpihp_fake_slot, int, S_IRUGO);
-+MODULE_PARM_DESC(fake_slot, "fake ACPI hotplug slots, 0x1 for CONTAINER, 0x2 for memory, 0x4 for CPU, 0x8 for PCI host bridge.");
+ 	return retval;
+ }
+ 
+@@ -1146,8 +1150,10 @@ static void handle_bridge_insertion(acpi_handle handle, u32 type)
+ 	}
+ 	if (acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE)) {
+ 		err("cannot add bridge to acpi list\n");
++		acpi_device_put(pdevice);
+ 		return;
+ 	}
++	acpi_device_put(pdevice);
+ 	if (!acpiphp_configure_bridge(handle) &&
+ 		!acpi_bus_start(device))
+ 		add_bridge(handle);
+@@ -1224,7 +1230,6 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
+ 	char objname[64];
+ 	struct acpi_buffer buffer = { .length = sizeof(objname),
+ 				      .pointer = objname };
+-	struct acpi_device *device;
+ 	int num_sub_bridges = 0;
+ 	struct acpiphp_hp_work *hp_work;
+ 	acpi_handle handle;
+@@ -1234,7 +1239,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
+ 	handle = hp_work->handle;
+ 	type = hp_work->type;
+ 
+-	if (acpi_bus_get_device(handle, &device)) {
++	if (!acpi_bus_has_device(handle)) {
+ 		/* This bridge must have just been physically inserted */
+ 		handle_bridge_insertion(handle, type);
+ 		goto out;
+diff --git a/drivers/pci/hotplug/acpiphp_ibm.c b/drivers/pci/hotplug/acpiphp_ibm.c
+index c35e8ad..ecd4b8d 100644
+--- a/drivers/pci/hotplug/acpiphp_ibm.c
++++ b/drivers/pci/hotplug/acpiphp_ibm.c
+@@ -450,7 +450,7 @@ static int __init ibm_acpiphp_init(void)
+ 	}
+ 	if (acpiphp_register_attention(&ibm_attention_info)) {
+ 		retval = -ENODEV;
+-		goto init_return;
++		goto put_device;
+ 	}
+ 
+ 	ibm_note.device = device;
+@@ -471,6 +471,8 @@ static int __init ibm_acpiphp_init(void)
+ 
+ init_cleanup:
+ 	acpiphp_unregister_attention(&ibm_attention_info);
++put_device:
++	acpi_device_put(device);
+ init_return:
+ 	return retval;
+ }
+@@ -493,6 +495,7 @@ static void __exit ibm_acpiphp_exit(void)
+ 		err("%s: Notification handler removal failed\n", __func__);
+ 	/* remove the /sys entries */
+ 	sysfs_remove_bin_file(sysdir, &ibm_apci_table_attr);
++	acpi_device_put(ibm_note.device);
+ }
+ 
+ module_init(ibm_acpiphp_init);
+diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
+index f64ca92..b02c99e 100644
+--- a/drivers/pci/hotplug/sgi_hotplug.c
++++ b/drivers/pci/hotplug/sgi_hotplug.c
+@@ -462,6 +462,8 @@ static int enable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 				}
+ 			}
+ 		}
 +
-+static acpi_status acpihp_slot_fake_init(void)
++		acpi_device_put(pdevice);
+ 	}
+ 
+ 	/* Call the driver for the new device */
+@@ -538,8 +540,10 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 
+ 				ret = acpi_bus_get_device(chandle,
+ 							  &device);
+-				if (ACPI_SUCCESS(ret))
++				if (ACPI_SUCCESS(ret)) {
+ 					acpi_bus_trim(device, 1);
++					acpi_device_put(device);
++				}
+ 			}
+ 		}
+ 
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 52daaa8..56e421a 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -782,6 +782,7 @@ static int __init setup_acpi_notify(struct ibm_struct *ibm)
+ 			pr_err("acpi_install_notify_handler(%s) failed: %s\n",
+ 			       ibm->name, acpi_format_exception(status));
+ 		}
++		acpi_device_put(ibm->acpi->device);
+ 		return -ENODEV;
+ 	}
+ 	ibm->flags.acpi_notify_installed = 1;
+@@ -8464,6 +8465,7 @@ static void ibm_exit(struct ibm_struct *ibm)
+ 		acpi_remove_notify_handler(*ibm->acpi->handle,
+ 					   ibm->acpi->type,
+ 					   dispatch_acpi_notify);
++		acpi_device_put(ibm->acpi->device);
+ 		ibm->flags.acpi_notify_installed = 0;
+ 	}
+ 
+diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+index 507a8e2..0c5c0f4 100644
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -82,7 +82,6 @@ static int pnpacpi_get_resources(struct pnp_dev *dev)
+ 
+ static int pnpacpi_set_resources(struct pnp_dev *dev)
+ {
+-	struct acpi_device *acpi_dev;
+ 	acpi_handle handle;
+ 	struct acpi_buffer buffer;
+ 	int ret;
+@@ -90,7 +89,7 @@ static int pnpacpi_set_resources(struct pnp_dev *dev)
+ 	pnp_dbg(&dev->dev, "set resources\n");
+ 
+ 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
++	if (!handle || !acpi_bus_has_device(handle)) {
+ 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
+ 		return -ENODEV;
+ 	}
+@@ -113,14 +112,13 @@ static int pnpacpi_set_resources(struct pnp_dev *dev)
+ 
+ static int pnpacpi_disable_resources(struct pnp_dev *dev)
+ {
+-	struct acpi_device *acpi_dev;
+ 	acpi_handle handle;
+ 	int ret;
+ 
+ 	dev_dbg(&dev->dev, "disable resources\n");
+ 
+ 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
++	if (!handle || !acpi_bus_has_device(handle)) {
+ 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
+ 		return 0;
+ 	}
+@@ -138,11 +136,10 @@ static int pnpacpi_disable_resources(struct pnp_dev *dev)
+ #ifdef CONFIG_ACPI_SLEEP
+ static bool pnpacpi_can_wakeup(struct pnp_dev *dev)
+ {
+-	struct acpi_device *acpi_dev;
+ 	acpi_handle handle;
+ 
+ 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
++	if (!handle || !acpi_bus_has_device(handle)) {
+ 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
+ 		return false;
+ 	}
+@@ -152,12 +149,11 @@ static bool pnpacpi_can_wakeup(struct pnp_dev *dev)
+ 
+ static int pnpacpi_suspend(struct pnp_dev *dev, pm_message_t state)
+ {
+-	struct acpi_device *acpi_dev;
+ 	acpi_handle handle;
+ 	int error = 0;
+ 
+ 	handle = DEVICE_ACPI_HANDLE(&dev->dev);
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
++	if (!handle || !acpi_bus_has_device(handle)) {
+ 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
+ 		return 0;
+ 	}
+@@ -190,11 +186,10 @@ static int pnpacpi_suspend(struct pnp_dev *dev, pm_message_t state)
+ 
+ static int pnpacpi_resume(struct pnp_dev *dev)
+ {
+-	struct acpi_device *acpi_dev;
+ 	acpi_handle handle = DEVICE_ACPI_HANDLE(&dev->dev);
+ 	int error = 0;
+ 
+-	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &acpi_dev))) {
++	if (!handle || !acpi_bus_has_device(handle)) {
+ 		dev_dbg(&dev->dev, "ACPI device not found in %s!\n", __func__);
+ 		return -ENODEV;
+ 	}
+@@ -310,10 +305,12 @@ static acpi_status __init pnpacpi_add_device_handler(acpi_handle handle,
+ {
+ 	struct acpi_device *device;
+ 
+-	if (!acpi_bus_get_device(handle, &device))
+-		pnpacpi_add_device(device);
+-	else
++	if (acpi_bus_get_device(handle, &device))
+ 		return AE_CTRL_DEPTH;
++
++	pnpacpi_add_device(device);
++	acpi_device_put(device);
++
+ 	return AE_OK;
+ }
+ 
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index bde976e..0a109fc 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -349,8 +349,22 @@ extern void unregister_acpi_bus_notifier(struct notifier_block *nb);
+  * External Functions
+  */
+ 
++static inline struct acpi_device *acpi_device_get(struct acpi_device *d)
 +{
-+	return acpihp_fake_slot ? AE_OK : AE_ERROR;
++	if (d)
++		get_device(&d->dev);
++
++	return d;
 +}
 +
-+static acpi_status
-+acpihp_slot_fake_check(acpi_handle handle, u32 lvl, void *context, void **rv)
++static inline void acpi_device_put(struct acpi_device *d)
 +{
-+	int *valid = (int *)rv;
-+	enum acpihp_dev_type type;
-+
-+	if (!acpihp_dev_get_type(handle, &type)) {
-+		switch (type) {
-+		case ACPIHP_DEV_TYPE_CPU:
-+		case ACPIHP_DEV_TYPE_MEM:
-+		case ACPIHP_DEV_TYPE_HOST_BRIDGE:
-+			*valid = 1;
-+			return AE_CTRL_TERMINATE;
-+		default:
-+			break;
-+		}
-+	}
-+
-+	return AE_OK;
++	if (d)
++		put_device(&d->dev);
 +}
 +
-+static acpi_status acpihp_slot_fake_capable(acpi_handle handle)
-+{
-+	int valid = 0;
-+	acpi_status rc;
-+	unsigned long long sta;
-+	enum acpihp_dev_type type;
-+
-+	/* Only care about CPU, memory, PCI host bridge and CONTAINER */
-+	if (acpihp_dev_get_type(handle, &type))
-+		return AE_ERROR;
-+	if (type == ACPIHP_DEV_TYPE_CPU || type == ACPIHP_DEV_TYPE_MEM ||
-+	    type == ACPIHP_DEV_TYPE_HOST_BRIDGE) {
-+		if (acpihp_fake_slot & (1 << (type - 1)))
-+			valid = 1;
-+	} else if (type == ACPIHP_DEV_TYPE_CONTAINER &&
-+		   acpihp_fake_slot & (1 << (type - 1))) {
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-+				ACPI_UINT32_MAX, acpihp_slot_fake_check,
-+				NULL, NULL, (void **)&valid);
-+		acpi_walk_namespace(ACPI_TYPE_PROCESSOR, handle,
-+				ACPI_UINT32_MAX, acpihp_slot_fake_check,
-+				NULL, NULL, (void **)&valid);
-+	}
-+	if (valid == 0)
-+		return AE_ERROR;
-+
-+	/* Check whether device is present and enabled. */
-+	rc = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
-+	if (rc == AE_NOT_FOUND)
-+		sta = ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED;
-+	else if (ACPI_FAILURE(rc))
-+		sta = 0;
-+	else if (sta & ACPI_STA_DEVICE_FUNCTIONING)
-+		sta |= ACPI_STA_DEVICE_ENABLED;
-+	if (!(sta & ACPI_STA_DEVICE_PRESENT) ||
-+	    !(sta & ACPI_STA_DEVICE_ENABLED))
-+		return AE_ERROR;
-+
-+	return AE_OK;
-+}
-+
-+static acpi_status acpihp_slot_fake_create(struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_fake_data *data;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return AE_ERROR;
-+
-+	data->enabled = true;
-+	slot->slot_data = data;
-+	slot->capabilities = ACPIHP_SLOT_CAP_ONLINE | ACPIHP_SLOT_CAP_OFFLINE;
-+
-+	return AE_OK;
-+}
-+
-+static void acpihp_slot_fake_destroy(struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_fake_data *data = slot->slot_data;
-+
-+	slot->slot_data = NULL;
-+	kfree(data);
-+}
-+
-+static acpi_status
-+acpihp_slot_fake_get_status(struct acpihp_slot *slot, u64 *status)
-+{
-+	struct acpihp_slot_fake_data *data = slot->slot_data;
-+
-+	if (data->enabled)
-+		*status = ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED |
-+			  ACPI_STA_DEVICE_FUNCTIONING;
-+	else
-+		*status = ACPI_STA_DEVICE_PRESENT;
-+
-+	return AE_OK;
-+}
-+
-+static acpi_status acpihp_slot_fake_poweron(struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_fake_data *data = slot->slot_data;
-+
-+	data->enabled = true;
-+
-+	return AE_OK;
-+}
-+
-+static acpi_status acpihp_slot_fake_poweroff(struct acpihp_slot *slot)
-+{
-+	struct acpihp_slot_fake_data *data = slot->slot_data;
-+
-+	data->enabled = false;
-+
-+	return AE_OK;
-+}
-+
-+struct acpihp_slot_ops acpihp_slot_fake = {
-+	.owner = THIS_MODULE,
-+	.desc = "Fake ACPI System Device Hotplug Slots for Testing",
-+	.init = acpihp_slot_fake_init,
-+	.check = acpihp_slot_fake_capable,
-+	.create = acpihp_slot_fake_create,
-+	.destroy = acpihp_slot_fake_destroy,
-+	.poweron = acpihp_slot_fake_poweron,
-+	.poweroff = acpihp_slot_fake_poweroff,
-+	.get_status = acpihp_slot_fake_get_status,
-+};
++bool acpi_bus_has_device(acpi_handle handle);
+ int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device);
+-void acpi_bus_data_handler(acpi_handle handle, void *context);
+ acpi_status acpi_bus_get_status_handle(acpi_handle handle,
+ 				       unsigned long long *sta);
+ int acpi_bus_get_status(struct acpi_device *device);
 -- 
 1.7.9.5
 
