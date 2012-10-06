@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2JFPbb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:31:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33589 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2JFPb2 (ORCPT
+	id S1751497Ab2JFPbr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:31:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44906 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab2JFPbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:31:28 -0400
+	Sat, 6 Oct 2012 11:31:42 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Yinghai Lu <yinghai@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
@@ -21,10 +21,11 @@ Cc: Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
         Len Brown <lenb@kernel.org>,
         "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v3 07/28] ACPIHP: use klist to manage ACPI devices connecting to a slot
-Date: Sat,  6 Oct 2012 23:27:15 +0800
-Message-Id: <1349537256-21670-8-git-send-email-jiang.liu@huawei.com>
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        Gaohuai Han <hangaohuai@huawei.com>
+Subject: [RFC PATCH v3 08/28] ACPIHP: add callbacks into acpi_device_ops to support new hotplug framework
+Date: Sat,  6 Oct 2012 23:27:16 +0800
+Message-Id: <1349537256-21670-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
 References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com>
@@ -32,216 +33,241 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI devices connecting to an ACPI hotplug slot are divided into groups
-according to device types. Those devices will be configured/unconfigured
-in order of device types when hot-adding/hot-removing system devices.
+Add new callbacks into struct acpi_device_ops to provide better error handling,
+error recover and operation cancellation for ACPI based system device hotplug.
 
-For example, when hot-adding a computer node with CPUs, memory, PCI host
-bridges, IOAPICs, the order optimized for performance should be:
-memory -> CPU -> IOAPIC -> PCI host bridge.
+There are three major operations and each major operation is divided into
+three steps.
+1) pre_configure, configure, post_configure
+	add an ACPI device into running system and rollback if error happens
+	cancelled by user.
+2) pre_release, release, post_release
+	reclaim an ACPI device from running system and rollback if error
+	happens or cancelled by user. It's important to privode a mechanism
+	to cancel memory hot-removal operations because it's may take very
+	long or even endless time to reclaim a memory device.
+3) pre_unconfigure, unconfigure, post_unconfigure
+	remove an ACPI device from running system and release all resources
+	associated with it.
 
-It relies on klist to manage and protect ACPI devices connecting to
-an ACPI hotplug slot.
+There's another callback to query status and information about the ACPI device.
 
-Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
+Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/core.c |  115 +++++++++++++++++++++++++++++++++++++++++++
- include/acpi/acpi_hotplug.h |   27 ++++++++++
- 2 files changed, 142 insertions(+)
+ drivers/acpi/hotplug/device.c |   93 +++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h       |    3 ++
+ include/acpi/acpi_hotplug.h   |   64 ++++++++++++++++++++++++++++
+ 3 files changed, 160 insertions(+)
 
-diff --git a/drivers/acpi/hotplug/core.c b/drivers/acpi/hotplug/core.c
-index 081b27f..1e6dbc8 100644
---- a/drivers/acpi/hotplug/core.c
-+++ b/drivers/acpi/hotplug/core.c
-@@ -114,6 +114,23 @@ static char *acpihp_dev_ioapic_ids[] = {
- 	NULL
- };
+diff --git a/drivers/acpi/hotplug/device.c b/drivers/acpi/hotplug/device.c
+index fb0451f..d566522 100644
+--- a/drivers/acpi/hotplug/device.c
++++ b/drivers/acpi/hotplug/device.c
+@@ -1,6 +1,7 @@
+ /*
+  * Copyright (C) 2012 Huawei Tech. Co., Ltd.
+  * Copyright (C) 2012 Jiang Liu <jiang.liu@huawei.com>
++ * Copyright (C) 2012 Hanjun Guo <guohanjun@huawei.com>
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  *
+@@ -27,6 +28,98 @@
+ #include <acpi/acpi_hotplug.h>
+ #include "acpihp.h"
  
-+static void acpihp_dev_node_get(struct klist_node *lp)
++int acpihp_dev_get_info(struct acpi_device *device,
++			struct acpihp_dev_info *info)
 +{
-+	struct acpihp_dev_node *dp;
++	int ret = -ENOSYS;
 +
-+	dp = container_of(lp, struct acpihp_dev_node, node);
-+	get_device(dp->dev);
-+}
++	acpihp_dev_get_type(device->handle, &info->type);
 +
-+static void acpihp_dev_node_put(struct klist_node *lp)
-+{
-+	struct acpihp_dev_node *dp;
++	device_lock(&device->dev);
++	if (device->driver && device->driver->ops.hp_ops &&
++	    device->driver->ops.hp_ops->get_info)
++		ret = device->driver->ops.hp_ops->get_info(device, info);
++	else
++#if 0
++		/* Turn on this once all system devices have been converted
++		 * to the new hotplug framework
++		 */
++		info->status |= ACPIHP_DEV_STATUS_IRREMOVABLE;
++#else
++		ret = 0;
++#endif
 +
-+	dp = container_of(lp, struct acpihp_dev_node, node);
-+	put_device(dp->dev);
-+	kfree(dp);
-+}
-+
- static void acpihp_slot_release(struct device *dev)
- {
- 	struct acpihp_slot *slot = to_acpihp_slot(dev);
-@@ -123,6 +140,7 @@ static void acpihp_slot_release(struct device *dev)
- 
- struct acpihp_slot *acpihp_create_slot(acpi_handle handle, char *name)
- {
-+	int i;
- 	struct acpihp_slot *slot;
- 
- 	if (name && strlen(name) >= ACPIHP_SLOT_NAME_MAX_SIZE) {
-@@ -139,6 +157,9 @@ struct acpihp_slot *acpihp_create_slot(acpi_handle handle, char *name)
- 	slot->handle = handle;
- 	INIT_LIST_HEAD(&slot->slot_list);
- 	INIT_LIST_HEAD(&slot->drvdata_list);
-+	for (i = ACPIHP_DEV_TYPE_UNKNOWN; i < ACPIHP_DEV_TYPE_MAX; i++)
-+		klist_init(&slot->dev_lists[i],
-+			   &acpihp_dev_node_get, &acpihp_dev_node_put);
- 	if (name)
- 		strncpy(slot->name, name, sizeof(slot->name) - 1);
- 	mutex_init(&slot->slot_mutex);
-@@ -402,6 +423,100 @@ acpi_status acpihp_slot_poweroff(struct acpihp_slot *slot)
- }
- EXPORT_SYMBOL_GPL(acpihp_slot_poweroff);
- 
-+/* Insert an ACPI device onto a hotplug slot's device list. */
-+int acpihp_slot_add_device(struct acpihp_slot *slot, enum acpihp_dev_type type,
-+			   enum acpihp_dev_state state, struct device *dev)
-+{
-+	struct acpihp_dev_node *np;
-+
-+	if (type < ACPIHP_DEV_TYPE_UNKNOWN || type >= ACPIHP_DEV_TYPE_MAX) {
-+		ACPIHP_DEBUG("device type %d is invalid.\n", type);
-+		return -EINVAL;
-+	} else if (slot == NULL) {
-+		ACPIHP_DEBUG("invalid parameter, slot is NULL.\n");
-+		return -EINVAL;
-+	} else if (dev == NULL) {
-+		ACPIHP_SLOT_DEBUG(slot, "invalid parameter, dev is NULL.\n");
-+		return -EINVAL;
-+	}
-+
-+	np = kzalloc(sizeof(*np), GFP_KERNEL);
-+	if (np == NULL) {
-+		ACPIHP_SLOT_WARN(slot, "fails to allocate memory.\n");
-+		return -ENOMEM;
-+	}
-+
-+	np->dev = dev;
-+	np->state = state;
-+	mutex_init(&np->lock);
-+	klist_add_tail(&np->node, &slot->dev_lists[type]);
-+	ACPIHP_SLOT_DEBUG(slot, "add device %s to klist.\n", dev_name(dev));
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpihp_slot_add_device);
-+
-+/* Remove an ACPI device from a hotplug slot's device list. */
-+int acpihp_slot_remove_device(struct acpihp_slot *slot,
-+			      enum acpihp_dev_type type, struct device *dev)
-+{
-+	int ret = -ENOENT;
-+	struct klist_iter iter;
-+	struct klist_node *ip;
-+	struct acpihp_dev_node *np;
-+
-+	if (type < ACPIHP_DEV_TYPE_UNKNOWN || type >= ACPIHP_DEV_TYPE_MAX) {
-+		ACPIHP_DEBUG("device type %d is invalid.\n", type);
-+		return -EINVAL;
-+	} else if (slot == NULL) {
-+		ACPIHP_DEBUG("invalid parameter, slot is NULL.\n");
-+		return -EINVAL;
-+	} else if (dev == NULL) {
-+		ACPIHP_SLOT_DEBUG(slot, "invalid parameter, dev is NULL.\n");
-+		return -EINVAL;
-+	}
-+
-+	klist_iter_init(&slot->dev_lists[type], &iter);
-+	while ((ip = klist_next(&iter)) != NULL) {
-+		np = container_of(ip, struct acpihp_dev_node, node);
-+		if (np->dev == dev) {
-+			ACPIHP_SLOT_DEBUG(slot,
-+					  "remove device %s from klist.\n",
-+					  dev_name(dev));
-+			klist_del(&np->node);
-+			ret = 0;
-+			break;
-+		}
-+	}
-+	klist_iter_exit(&iter);
++	if (device->driver)
++		info->status |= ACPIHP_DEV_STATUS_ATTACHED;
++	device_unlock(&device->dev);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(acpihp_slot_remove_device);
++EXPORT_SYMBOL_GPL(acpihp_dev_get_info);
 +
-+/* Remove all ACPI devices from the list */
-+int acpihp_remove_device_list(struct klist *dev_list)
-+{
-+	struct klist_iter iter;
-+	struct klist_node *ip;
-+	struct acpihp_dev_node *np;
++#define	ACPIHP_DEFINE_FUNC1(method, def, err, type) \
++int acpihp_dev_##method(struct acpi_device *device, type val) \
++{ \
++	int ret; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		ret = device->driver->ops.hp_ops->method(device, val); \
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
 +
-+	if (dev_list == NULL) {
-+		ACPIHP_DEBUG("invalid parameter, dev_list is NULL.\n");
-+		return -EINVAL;
-+	}
++#define	ACPIHP_DEFINE_FUNC2(method, def, err, type) \
++int acpihp_dev_##method(struct acpi_device *device, type val) \
++{ \
++	int ret = 0; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		device->driver->ops.hp_ops->method(device, val); \
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
 +
-+	klist_iter_init(dev_list, &iter);
-+	while ((ip = klist_next(&iter)) != NULL) {
-+		np = container_of(ip, struct acpihp_dev_node, node);
-+		klist_del(&np->node);
-+	}
-+	klist_iter_exit(&iter);
++#define	ACPIHP_DEFINE_FUNC3(method, def, err) \
++int acpihp_dev_##method(struct acpi_device *device) \
++{ \
++	int ret = 0; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		device->driver->ops.hp_ops->method(device);\
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpihp_remove_device_list);
++ACPIHP_DEFINE_FUNC1(pre_configure, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(configure, 0, -ENOSYS, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC2(post_configure, 0, 0, enum acpihp_dev_post_cmd);
 +
- /* SYSFS interfaces */
- static ssize_t acpihp_slot_object_show(struct device *d,
- 		struct device_attribute *attr, char *buf)
-diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
-index 5025a16..2e7011e 100644
---- a/include/acpi/acpi_hotplug.h
-+++ b/include/acpi/acpi_hotplug.h
-@@ -47,6 +47,24 @@ enum acpihp_dev_type {
- 	ACPIHP_DEV_TYPE_MAX
++ACPIHP_DEFINE_FUNC1(pre_release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC2(post_release, 0, 0, enum acpihp_dev_post_cmd);
++
++ACPIHP_DEFINE_FUNC3(pre_unconfigure, 0, 0);
++ACPIHP_DEFINE_FUNC3(unconfigure, 0, -ENOSYS);
++ACPIHP_DEFINE_FUNC3(post_unconfigure, 0, 0);
++
+ /*
+  * When creating ACPI devices for hot-added system devices connecting to slot,
+  * don't cross the slot boundary. Otherwise it will cause inconsistence
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 8136dd7..6f9fdf2 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -138,6 +138,9 @@ struct acpi_device_ops {
+ 	acpi_op_bind bind;
+ 	acpi_op_unbind unbind;
+ 	acpi_op_notify notify;
++#ifdef	CONFIG_ACPI_HOTPLUG
++	struct acpihp_dev_ops *hp_ops;
++#endif	/* CONFIG_ACPI_HOTPLUG */
  };
  
-+enum acpihp_dev_state {
-+	DEVICE_STATE_UNKOWN = 0x00,
-+	DEVICE_STATE_CONNECTED,
-+	DEVICE_STATE_PRE_CONFIGURE,
-+	DEVICE_STATE_CONFIGURED,
-+	DEVICE_STATE_PRE_RELEASE,
-+	DEVICE_STATE_RELEASED,
-+	DEVICE_STATE_PRE_UNCONFIGURE,
-+	DEVICE_STATE_MAX
+ #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
+diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
+index 2e7011e..fd46997 100644
+--- a/include/acpi/acpi_hotplug.h
++++ b/include/acpi/acpi_hotplug.h
+@@ -65,6 +65,51 @@ struct acpihp_dev_node {
+ 	struct klist_node	node;
+ };
+ 
++/* Status of system devices. */
++#define	ACPIHP_DEV_STATUS_ATTACHED	0x1 /* Device driver attached */
++#define	ACPIHP_DEV_STATUS_STARTED	0x2 /* Device started */
++#define	ACPIHP_DEV_STATUS_IRREMOVABLE	0x10000 /* Device can't be removed */
++#define	ACPIHP_DEV_STATUS_FAULT		0x20000 /* Device in fault status */
++
++struct acpihp_dev_info {
++	enum acpihp_dev_type		type;
++	uint32_t			status;
 +};
 +
-+struct acpihp_dev_node {
-+	struct device		*dev;
-+	enum acpihp_dev_state	state;
-+	struct mutex		lock;
-+	struct klist_node	node;
++/* Rollback or commit changes in post_{confiure|release} */
++enum acpihp_dev_post_cmd {
++	ACPIHP_DEV_POST_CMD_ROLLBACK,
++	ACPIHP_DEV_POST_CMD_COMMIT
++};
++
++/*
++ * ACPI system device drivers may check cancellations of hotplug operations
++ * by invoking the callback.
++ */
++struct acpihp_cancel_context {
++	int (*check_cancel)(struct acpihp_cancel_context *ctx);
++};
++
++/*
++ * Callback hooks provided by ACPI device drivers to support system device
++ * hotplug. To support hotplug, an ACPI system device driver should implement
++ * configure(), unconfigure() and get_info() at minimal.
++ */
++struct acpihp_dev_ops {
++	int (*get_info)(struct acpi_device *, struct acpihp_dev_info *info);
++	int (*pre_configure)(struct acpi_device *,
++			     struct acpihp_cancel_context *);
++	int (*configure)(struct acpi_device *, struct acpihp_cancel_context *);
++	void (*post_configure)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	int (*pre_release)(struct acpi_device *,
++			   struct acpihp_cancel_context *);
++	int (*release)(struct acpi_device *, struct acpihp_cancel_context *);
++	void (*post_release)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	void (*pre_unconfigure)(struct acpi_device *);
++	void (*unconfigure)(struct acpi_device *);
++	void (*post_unconfigure)(struct acpi_device *);
 +};
 +
  /*
   * ACPI hotplug slot is an abstraction of receptacles where a group of
   * system devices could be attached, just like PCI slot in PCI hotplug.
-@@ -190,6 +208,15 @@ typedef acpi_status (*acpihp_walk_device_cb)(struct acpi_device *acpi_device,
- extern int acpihp_walk_devices(acpi_handle handle, acpihp_walk_device_cb cb,
- 			       void *argp);
+@@ -166,6 +211,25 @@ extern int acpihp_register_class(void);
+ /* Unregister the ACPI hotplug slot class driver */
+ extern void acpihp_unregister_class(void);
  
-+extern int acpihp_slot_add_device(struct acpihp_slot *slot,
-+				  enum acpihp_dev_type type,
-+				  enum acpihp_dev_state state,
-+				  struct device *dev);
-+extern int acpihp_slot_remove_device(struct acpihp_slot *slot,
-+				     enum acpihp_dev_type type,
-+				     struct device *dev);
-+extern int acpihp_remove_device_list(struct klist *dev_list);
++/* Interfaces to invoke the ACPI device driver's hotplug hooks. */
++extern int acpihp_dev_get_info(struct acpi_device *device,
++			       struct acpihp_dev_info *info);
++extern int acpihp_dev_pre_configure(struct acpi_device *device,
++				    struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_configure(struct acpi_device *device,
++				struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_configure(struct acpi_device *device,
++				     enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_release(struct acpi_device *device,
++				  struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_release(struct acpi_device *device,
++			      struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_release(struct acpi_device *device,
++				   enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_post_unconfigure(struct acpi_device *device);
 +
- extern int acpihp_debug;
- 
- #define ACPIHP_WARN(fmt, ...) \
+ /* Utility routines */
+ extern int acpihp_dev_get_type(acpi_handle handle, enum acpihp_dev_type *type);
+ extern bool acpihp_dev_match_ids(struct acpi_device_info *infop, char **ids);
 -- 
 1.7.9.5
 
