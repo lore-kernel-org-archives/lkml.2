@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2JFIvb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 04:51:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42925 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab2JFIvZ (ORCPT
+	id S1755018Ab2JFIxL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 04:53:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51954 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754287Ab2JFIxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 04:51:25 -0400
-Message-ID: <506FF10A.8030600@monstr.eu>
-Date: Sat, 06 Oct 2012 10:51:22 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sat, 6 Oct 2012 04:53:08 -0400
+Date: Sat, 6 Oct 2012 09:53:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: silence GCC warning
+Message-ID: <20121006085306.GB8590@opensource.wolfsonmicro.com>
+References: <1349000155.1553.27.camel@x61.thuisdomein>
+ <20121001100321.GB4360@opensource.wolfsonmicro.com>
+ <64681.1349223065@turing-police.cc.vt.edu>
+ <1349249016.1414.55.camel@x61.thuisdomein>
+ <59004.1349475644@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for microblaze
-References: <17386.1349380289@warthog.procyon.org.uk>
-In-Reply-To: <17386.1349380289@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <59004.1349475644@turing-police.cc.vt.edu>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Fri, Oct 05, 2012 at 06:20:44PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 03 Oct 2012 09:23:36 +0200, Paul Bolle said:
 
-On 10/04/2012 09:51 PM, David Howells wrote:
-> Can you merge the following branch into the microblaze tree please.
->
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
->
-> Note that there are some fixup patches which are at the base of the branch
-> aimed at you, plus all arches get the asm-generic branch merged in too.
->
-> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
->
->    Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
->
-> are available in the git repository at:
->
->
->    git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-microblaze
+> > That is another way to silence GCC here.
 
+> That's probably a preferable approach - that way, if a bogus val_count gets
+> passed in, the caller will be informed of the fact.  Which is a lot better than
+> just papering over the warning.
 
-I have added this to our internal testing repository and I will start to do some tests.
-
-I expect your intention is to merge this to mainline in current merge window, right?
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+As I hinted earlier if someone were to send me a patch...
