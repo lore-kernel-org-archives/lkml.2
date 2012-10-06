@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab2JFWVW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 18:21:22 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:37819 "EHLO twin.jikos.cz"
+	id S1751258Ab2JFXGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 19:06:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46556 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab2JFWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 18:21:21 -0400
-Date: Sun, 7 Oct 2012 00:21:05 +0200
-From: David Sterba <dave@jikos.cz>
-To: ????????? <jaegeuk.kim@samsung.com>
-Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Subject: Re: [PATCH 02/16] f2fs: add on-disk layout
-Message-ID: <20121006222104.GA4405@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: ????????? <jaegeuk.kim@samsung.com>,
-	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>,
-	gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-	chur.lee@samsung.com, cm224.lee@samsung.com,
-	jooyoung.hwang@samsung.com
-References: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
+	id S1750749Ab2JFXGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 19:06:04 -0400
+Date: Sun, 7 Oct 2012 01:05:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: danielfsantos@att.net
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
+Message-ID: <20121006230559.GA3278@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Christopher Li <sparse@chrisli.org>,
+	David Daney <david.daney@cavium.com>,
+	David Howells <dhowells@redhat.com>,
+	David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Daniel Santos <daniel.santos@pobox.com>
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+ <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+In-Reply-To: <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 08:56:44PM +0900, ????????? wrote:
-> +struct node_footer {
-> +	__le32 nid;		/* node id */
-> +	__le32 ino;		/* inode nunmber */
-> +	__le32 cold:1;		/* cold mark */
-> +	__le32 fsync:1;		/* fsync mark */
-> +	__le32 dentry:1;	/* dentry mark */
-> +	__le32 offset:29;	/* offset in inode's node space */
+On Fri, Oct 05, 2012 at 02:42:42PM -0500, danielfsantos@att.net wrote:
+> Using GCC_VERSION reduces complexity, is easier to read and is GCC's
+> recommended mechanism for doing version checks. (Just don't ask me why
+> they didn't define it in the first place.)  This also makes it easy to
+> merge compiler-gcc{,3,4}.h should somebody want to.
+> 
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> Acked-by: David Rientjes <rientjes@google.com>
 
-A bitfield for a on-disk structure? This will have endianity issues,
-(but I don't know if you intend to support big-endian). It's not enough
-to use cpu_to_le* as in
+Looks correct to me:
 
-fill_node_footer(...) {
+Acked-by: Borislav Petkov <bp@alien8.de>
 
-	rn->footer.offset = cpu_to_le32(ofs);
+Thanks.
 
-}
-
-because the bitfield inside the structure will be already defined
-reversed. The cpu_to_le macro will only convert value of 'ofs' but will
-place it to different bits than it would on a little-endian arch.
-
-There are macros to define bitfields in an endian-neutral way (or do it
-by #ifdefs though it also involves duplicating the item names), or you
-can alternatively use two structs fr disk-only and memory-only access,
-the disk one stores __le32 with value combined of all and the in-memory
-gets set up properly and will look like your current version of the
-structure.
-
-(More about not using bitfields http://yarchive.net/comp/linux/bitfields.html)
-
-> +	__le64 cp_ver;		/* checkpoint version */
-> +	__le32 next_blkaddr;	/* next node page block address */
-> +} __packed;
-> +
-
-
-david
+-- 
+Regards/Gruss,
+    Boris.
