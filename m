@@ -1,64 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054Ab2JFNxl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 09:53:41 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60083 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2JFNxk (ORCPT
+	id S1752347Ab2JFNyM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 09:54:12 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56302 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750883Ab2JFNyJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 09:53:40 -0400
-Subject: Re: [REGRESSION] Kernel 3.6 drops network packets instead of
- forwarding
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Chini, Georg (HP App Services)" <georg.chini@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <B3A09DD14C7DC341B8B4D309FE5DD1BE1513FA4B@G2W2525.americas.hpqcorp.net>
-References: <B3A09DD14C7DC341B8B4D309FE5DD1BE1513FA4B@G2W2525.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Oct 2012 15:53:36 +0200
-Message-ID: <1349531616.21172.1069.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 6 Oct 2012 09:54:09 -0400
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=utf-8
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+Date: Sat, 6 Oct 2012 17:54:04 +0400
+Cc: Al Viro <viro@zeniv.linux.org.uk>, tytso@mit.edu,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+To: jaegeuk.kim@samsung.com
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-06 at 11:52 +0000, Chini, Georg (HP App Services) wrote:
-> Hello,
+Hi Jaegeuk,
+
+> From:	 	김재극 <jaegeuk.kim@samsung.com>
+> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
+> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file system
+> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
 > 
-> I have a network issue with kernel 3.6. My machine is set
-> up as router and with 3.6 it sometimes silently drops reply
-> packets instead of forwarding.
-> Example tcpdump on the router for ping www.heise.de from a
-> machine in my network (NAT is done elsewhere):
+> This is a new patch set for the f2fs file system.
 > 
-> 12:37:54.746627 IP 192.168.255.150 > 193.99.144.85: ICMP echo request, id 16414, seq 1, length 64 (eth0)
-> 12:37:54.746681 IP 192.168.255.150 > 193.99.144.85: ICMP echo request, id 16414, seq 1, length 64 (GRE tunnel)
-> 12:37:54.782195 IP 193.99.144.85 > 192.168.255.150: ICMP echo reply, id 16414, seq 1, length 64 (GRE tunnel)
-> 12:37:54.782335 IP 193.99.144.85 > 192.168.255.150: ICMP echo reply, id 16414, seq 1, length 64 (eth0)
-> 12:37:55.785974 IP 192.168.255.150 > 193.99.144.85: ICMP echo request, id 16416, seq 1, length 64 (eth0)
-> 12:37:55.786023 IP 192.168.255.150 > 193.99.144.85: ICMP echo request, id 16416, seq 1, length 64 (GRE tunnel)
-> 12:37:55.822529 IP 193.99.144.85 > 192.168.255.150: ICMP echo reply, id 16416, seq 1, length 64 (GRE tunnel)
-> NO forwarded packet on eth0
+> What is F2FS?
+> =============
 > 
-> Then this goes on for an arbitrary period (between a few seconds and
-> more then half an hour) and suddenly returns to normal. During that
-> time no communication is possible between a host on my network and
-> any external host. Connections from the router itself still work.
-> With kernel 3.4.3 everything works fine. Had the same issue with
-> -rc6 and -rc7.
+> NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
+> been widely being used for ranging from mobile to server systems. Since they are
+> known to have different characteristics from the conventional rotational disks,
+> a file system, an upper layer to the storage device, should adapt to the changes
+> from the sketch.
 > 
-> There are no messages in the logs. Any idea what might cause this
-> or how I can debug it any further?
-> I will supply more details on my setup if needed. Please CC me in
-> your reply as I am not subscribed to the list.
+> F2FS is a new file system carefully designed for the NAND flash memory-based storage
+> devices. We chose a log structure file system approach, but we tried to adapt it
+> to the new form of storage. Also we remedy some known issues of the very old log
+> structured file system, such as snowball effect of wandering tree and high cleaning
+> overhead.
+> 
+> Because a NAND-based storage device shows different characteristics according to
+> its internal geometry or flash memory management scheme aka FTL, we add various
+> parameters not only for configuring on-disk layout, but also for selecting allocation
+> and cleaning algorithms.
+> 
 
-Looks like the bug fixed by : 
+What about F2FS performance? Could you share benchmarking results of the new file system?
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f4ef85bbda96324785097356336bc79cdd37db0a
+It is very interesting the case of aged file system. How is GC's implementation efficient? Could you share benchmarking results for the very aged file system state?
 
-(David Miller will send it to stable team shortly)
+With the best regards,
+Vyacheslav Dubeyko.
 
-
+> Patch set
+> =========
+> 
+> The patch #1 adds a document to Documentation/filesystems/.
+> The patch #2 adds a header file of on-disk layout to include/linux/.
+> The patches #3-#15 adds f2fs source files to fs/f2fs/.
+> The Last patch, patch #16, updates Makefile and Kconfig.
+> 
+> mkfs.f2fs
+> =========
+> 
+> The file system formatting tool, "mkfs.f2fs", is available from the following
+> download page:		
+> http://sourceforge.net/projects/f2fs-tools/
+> 
+> 
+> Usage
+> =====
+> 
+> If you'd like to experience f2fs, simply:
+> # mkfs.f2fs /dev/sdb1
+> # mount -t f2fs /dev/sdb1 /mnt/f2fs
+> 
+> Short log
+> =========
+> 
+> Jaegeuk Kim (16):
+>  f2fs: add document
+>  f2fs: add on-disk layout
+>  f2fs: add superblock and major in-memory structure
+>  f2fs: add super block operations
+>  f2fs: add checkpoint operations
+>  f2fs: add node operations
+>  f2fs: add segment operations
+>  f2fs: add file operations
+>  f2fs: add address space operations for data
+>  f2fs: add core inode operations
+>  f2fs: add inode operations for special inodes
+>  f2fs: add core directory operations
+>  f2fs: add xattr and acl functionalities
+>  f2fs: add garbage collection functions
+>  f2fs: add recovery routines for roll-forward
+>  f2fs: update Kconfig and Makefile
+> 
+> Documentation/filesystems/00-INDEX |    2 +
+> Documentation/filesystems/f2fs.txt |  314 +++++++
+> fs/Kconfig                         |    1 +
+> fs/Makefile                        |    1 +
+> fs/f2fs/Kconfig                    |   55 ++
+> fs/f2fs/Makefile                   |    6 +
+> fs/f2fs/acl.c                      |  402 ++++++++
+> fs/f2fs/acl.h                      |   57 ++
+> fs/f2fs/checkpoint.c               |  791 ++++++++++++++++
+> fs/f2fs/data.c                     |  700 ++++++++++++++
+> fs/f2fs/dir.c                      |  657 +++++++++++++
+> fs/f2fs/f2fs.h                     |  981 ++++++++++++++++++++
+> fs/f2fs/file.c                     |  643 +++++++++++++
+> fs/f2fs/gc.c                       | 1140 +++++++++++++++++++++++
+> fs/f2fs/gc.h                       |  203 +++++
+> fs/f2fs/hash.c                     |   98 ++
+> fs/f2fs/inode.c                    |  258 ++++++
+> fs/f2fs/namei.c                    |  549 +++++++++++
+> fs/f2fs/node.c                     | 1773 ++++++++++++++++++++++++++++++++++++
+> fs/f2fs/node.h                     |  331 +++++++
+> fs/f2fs/recovery.c                 |  372 ++++++++
+> fs/f2fs/segment.c                  | 1755 +++++++++++++++++++++++++++++++++++
+> fs/f2fs/segment.h                  |  627 +++++++++++++
+> fs/f2fs/super.c                    |  550 +++++++++++
+> fs/f2fs/xattr.c                    |  387 ++++++++
+> fs/f2fs/xattr.h                    |  142 +++
+> include/linux/f2fs_fs.h            |  359 ++++++++
+> 27 files changed, 13154 insertions(+)
+> create mode 100644 Documentation/filesystems/f2fs.txt
+> create mode 100644 fs/f2fs/Kconfig
+> create mode 100644 fs/f2fs/Makefile
+> create mode 100644 fs/f2fs/acl.c
+> create mode 100644 fs/f2fs/acl.h
+> create mode 100644 fs/f2fs/checkpoint.c
+> create mode 100644 fs/f2fs/data.c
+> create mode 100644 fs/f2fs/dir.c
+> create mode 100644 fs/f2fs/f2fs.h
+> create mode 100644 fs/f2fs/file.c
+> create mode 100644 fs/f2fs/gc.c
+> create mode 100644 fs/f2fs/gc.h
+> create mode 100644 fs/f2fs/hash.c
+> create mode 100644 fs/f2fs/inode.c
+> create mode 100644 fs/f2fs/namei.c
+> create mode 100644 fs/f2fs/node.c
+> create mode 100644 fs/f2fs/node.h
+> create mode 100644 fs/f2fs/recovery.c
+> create mode 100644 fs/f2fs/segment.c
+> create mode 100644 fs/f2fs/segment.h
+> create mode 100644 fs/f2fs/super.c
+> create mode 100644 fs/f2fs/xattr.c
+> create mode 100644 fs/f2fs/xattr.h
+> create mode 100644 include/linux/f2fs_fs.h
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
+> 
+> ---
+> Jaegeuk Kim
+> Samsung
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  
+> http://vger.kernel.org/majordomo-info.html
+> 
+> Please read the FAQ at http://www.tux.org/lkml/
+> 
 
