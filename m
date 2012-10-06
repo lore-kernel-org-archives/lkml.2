@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab2JFSCU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 14:02:20 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:53985 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760Ab2JFSCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 14:02:19 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: el_es <el.es.cr@gmail.com>
-Subject: Re: Minimal jitter = good desktop.
-References: <op.wlqe9kw36426ze@localhost.localdomain>
- <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm>
- <op.wlrdzkqh6426ze@localhost.localdomain>
- <loom.20121006T164640-362@post.gmane.org>
-Date: Sat, 06 Oct 2012 20:02:16 +0200
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wlrq12q96426ze@localhost.localdomain>
-In-reply-to: <loom.20121006T164640-362@post.gmane.org>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1752883Ab2JFSGi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:06:38 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63904 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2JFSGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 14:06:36 -0400
+Message-ID: <1349546786.12699.36.camel@kjgkr>
+Subject: Re: [PATCH 10/16] f2fs: add core inode operations
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: =?euc-kr?Q?=B1=E8=C0=E7=B1=D8?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Date: Sun, 07 Oct 2012 03:06:26 +0900
+In-Reply-To: <87mx00slyj.fsf@xmission.com>
+References: <001101cda2f1$50a23c40$f1e6b4c0$%kim@samsung.com>
+	 <87mx00slyj.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is really simple, and I don`t care about top posting, down posting,  
-in the middle comments or whatever. Do whatehver you like, and have no  
-other rule that what is in your soul. That is what drives ultimately  
-society. Look up Aristotle natural-law. Which actually is based in divine  
-nature.
+2012-10-05 (금), 13:28 -0700, Eric W. Biederman:
+> 김재극 <jaegeuk.kim@samsung.com> writes:
+> 
+> > This adds core functions to get, read, write, and evict an inode.
+> 
+> As is this code won't compile if user namespace support is enabled.
+> Suggested fixes below.
 
-Now jitter, is really easy. Jitter-sensitive OpenGL applications will show  
-visible jitter. Doom 3 is extremely sensitive. I have tried to make it run  
-well many times, but it wasn`t until I became aware of more unintuitive  
-behaviour not according to theory with some settings, and I started trying  
-reversing them. And then I found 90hz to be optimal, and giving a  
-perfectly running doom 3. Someone actually suggested I try 10000hz BFS  
-patch, because "it would reduce latency." Which I did. But then I also  
-tried 20hz, and there was little difference on BFS. Ultimately I arrived  
-at 90hz with CFS, and tweaking it`s granularity a bit, and it worked well.  
-(Better than BFS). So in that case, JITTER is solved. Also a lot of  
-low-jitter configs use low hz. So that seems to back it up. And everything  
-on my computer seems to be running better. Smoother, more responsive. Even  
-the ads in my browser ;(
+Ok, I'll check this out.
+Thanks,
 
-I also appreciate those who can measure small jitter in the uS range, and  
-mitigate it. But I would also like for those, to check if a simple  
-hold-logic would be better. For the 10ms filter I mentioned. Say hold for  
-1ms at 0, and then to regular peak values. It seems that would be a better  
-filter. This just me being a perfectionist ofcourse.
-
-So yes, according to the general definition of "os-jitter" it seems highly  
-reduced.
-
-I don`t know at all why you are mentioning opengl calls. Obviously games,  
-do run quite well. Atleast now. It is also going to be great to test new  
-games coming, and keep iterating knowledge and tuning. Also ofcourse  
-OpenGL is a great part of Wayland, and I hear more h/w is used there, and  
-hopefully it doesn`t stop performance in games, so one can have an  
-effectful desktop, without worrying about game-performance. Some of the  
-GUI in doom3, running completely smooth, shows some great potential for  
-GUI-ideas aswell :)
-
-Peace Be With You.
-
-On Sat, 06 Oct 2012 16:53:16 +0200, el_es <el.es.cr@gmail.com> wrote:
-
-> Uwaysi Bin Kareem <uwaysi.bin.kareem <at> paradoxuncreated.com> writes:
->
-> [sorry for cutting out the context], but it's been topposted]
->
-> But the problem is, we cannot measure 'jitter' directly.
-> There is no reliable benchmark that produces results adherent
-> to what someones' definition of 'jitter' is.
->
-> At software level we only have a notion of latency, and that
-> leads to jitter as david said, but as the kernel is not real-time,
-> you cannot guarantee every opengl command/fb transfer will be finished
-> in time for next frame to be drawn.
->
-> Maybe if someone could get the information of % finished frames
-> (or % dropped frames) within one slice of userspace, that would
-> be something to build on, but it's still a derivative and with
-> unknown bias level.
->
-> Lukasz
->
+> 
+> Eric
+> 
+> 
+> > +static int do_read_inode(struct inode *inode)
+> > +{
+> > +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > +	struct f2fs_inode_info *fi = F2FS_I(inode);
+> > +	struct page *node_page;
+> > +	struct f2fs_node *rn;
+> > +	struct f2fs_inode *ri;
+> > +
+> > +	/* Check if ino is within scope */
+> > +	check_nid_range(sbi, inode->i_ino);
+> > +
+> > +	node_page = get_node_page(sbi, inode->i_ino);
+> > +	if (IS_ERR(node_page))
+> > +		return PTR_ERR(node_page);
+> > +
+> > +	rn = page_address(node_page);
+> > +	ri = &(rn->i);
+> > +
+> > +	inode->i_mode = le16_to_cpu(ri->i_mode);
+> > +	inode->i_uid = le32_to_cpu(ri->i_uid);
+> > +	inode->i_gid = le32_to_cpu(ri->i_gid);
+> 
+> Could you make this:
+> 	i_uid_write(inode, le32_to_cpu(ri->i_uid));
+> 	i_gid_write(inode, le32_to_cpu(ri->i_gid));
+> 
+> > +	set_nlink(inode, le32_to_cpu(ri->i_links));
+> > +	inode->i_size = le64_to_cpu(ri->i_size);
+> > +	inode->i_blocks = le64_to_cpu(ri->i_blocks);
+> > +
+> > +	inode->i_atime.tv_sec = le32_to_cpu(ri->i_atime);
+> > +	inode->i_ctime.tv_sec = le32_to_cpu(ri->i_ctime);
+> > +	inode->i_mtime.tv_sec = le32_to_cpu(ri->i_mtime);
+> > +	inode->i_atime.tv_nsec = 0;
+> > +	inode->i_ctime.tv_nsec = 0;
+> > +	inode->i_mtime.tv_nsec = 0;
+> > +	fi->current_depth = le32_to_cpu(ri->current_depth);
+> > +	fi->i_xattr_nid = le32_to_cpu(ri->i_xattr_nid);
+> > +	fi->i_flags = le32_to_cpu(ri->i_flags);
+> > +	fi->flags = 0;
+> > +	fi->data_version = le64_to_cpu(F2FS_CKPT(sbi)->checkpoint_ver) - 1;
+> > +	get_extent_info(&fi->ext, ri->i_ext);
+> > +	f2fs_put_page(node_page, 1);
+> > +	return 0;
+> > +}
+> 
+> > +void update_inode(struct inode *inode, struct page *node_page)
+> > +{
+> > +	struct f2fs_node *rn;
+> > +	struct f2fs_inode *ri;
+> > +
+> > +	wait_on_page_writeback(node_page);
+> > +
+> > +	rn = page_address(node_page);
+> > +	ri = &(rn->i);
+> > +
+> > +	ri->i_mode = cpu_to_le16(inode->i_mode);
+> > +	ri->i_uid = cpu_to_le32(inode->i_uid);
+> > +	ri->i_gid = cpu_to_le32(inode->i_gid);
+> And make this:
+> 	i_uid_write(inode, le32_to_cpu(ri->i_uid));
+> 	i_gid_write(inode, le32_to_cpu(ri->i_gid));
+> 
+> > +	ri->i_links = cpu_to_le32(inode->i_nlink);
+> > +	ri->i_size = cpu_to_le64(i_size_read(inode));
+> > +	ri->i_blocks = cpu_to_le64(inode->i_blocks);
+> > +	set_raw_extent(&F2FS_I(inode)->ext, &ri->i_ext);
+> > +
+> > +	ri->i_ctime = cpu_to_le32(inode->i_ctime.tv_sec);
+> > +	ri->i_mtime = cpu_to_le32(inode->i_mtime.tv_sec);
+> > +	ri->i_atime = cpu_to_le32(inode->i_atime.tv_sec);
+> > +	ri->current_depth = cpu_to_le32(F2FS_I(inode)->current_depth);
+> > +	ri->i_xattr_nid = cpu_to_le32(F2FS_I(inode)->i_xattr_nid);
+> > +	ri->i_flags = cpu_to_le32(F2FS_I(inode)->i_flags);
+> > +	set_page_dirty(node_page);
+> > +}
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
-> in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Jaegeuk Kim
+Samsung
+
+
+
