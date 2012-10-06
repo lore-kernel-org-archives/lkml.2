@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab2JFR6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 13:58:24 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48369 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2JFR6W (ORCPT
+	id S1752524Ab2JFSAM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:00:12 -0400
+Received: from nm4-vm6.bullet.mail.gq1.yahoo.com ([98.136.218.165]:39929 "HELO
+	nm4-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750760Ab2JFSAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 13:58:22 -0400
-Message-ID: <1349546293.12699.31.camel@kjgkr>
-Subject: Re: [PATCH 16/16] f2fs: update Kconfig and Makefile
-From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: =?euc-kr?Q?=B1=E8=C0=E7=B1=D8?= <jaegeuk.kim@samsung.com>,
-        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-Date: Sun, 07 Oct 2012 02:58:13 +0900
-In-Reply-To: <20121005165341.GB18344@kroah.com>
-References: <001701cda2f1$ce1b3500$6a519f00$%kim@samsung.com>
-	 <20121005165341.GB18344@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sat, 6 Oct 2012 14:00:10 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Oct 2012 14:00:09 EDT
+X-Yahoo-Newman-Id: 176618.27796.bm@omp1017.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: jNrpjogVM1l3d17sW.1uJcp3uzh58L3Pk8NfO5NG9qf0oXw
+ W1DmDcgIIMGHuBKd3GsMKyJUMhh8HmBJ5hNorgcpFp2qedtmWPmruMo1Ms1e
+ aDyi1DTPCYaTomriBfPTitaUEDHSFlegwzgjFLFfxnicac2wmRc7BkGpnFd5
+ usc_4kRSppMD9d0gyHwBd3goOY0w0qhydLTIo1UG6Ln0wYZI7shd4F79b58Q
+ P1cbU8XDmJrgv08h2SOZDDRH7Imy.6aD2gcVCWZTSJxyup0gb54cpr4DQnR6
+ 4Zq2O.xrRVfVkYjhzMzgJUJND3tTjY3FoTFp6s9AsOrbiLvUEJZABMpthX3A
+ Za_UWd2sx84CIyiv3.GCMR9YH2GdjRSJwGzZEj_UGlhkL04Pl6uSjQLWoL0l
+ 5dZnM4hmJjh_9cjCvxbMR0MGB_jqHXp7qVkhlsfsn80o2_JH2NA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <5070703F.8050004@att.net>
+Date: Sat, 06 Oct 2012 12:54:07 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH v2 01/10] compiler-gcc4.h: Reorder macros based upon gcc
+ ver
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-1-git-send-email-daniel.santos@pobox.com> <20121006174220.GB6110@liondog.tnic>
+In-Reply-To: <20121006174220.GB6110@liondog.tnic>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-10-05 (금), 09:53 -0700, Greg KH:
-> On Fri, Oct 05, 2012 at 09:06:09PM +0900, 김재극 wrote:
-> > This adds Makefile and Kconfig for f2fs, and updates Makefile and Kconfig files
-> > in the fs directory.
-> 
-> I found it easier to comment about this here, instead of where the code
-> implemented this, as you describe it well here:
-> 
-> > +config F2FS_STAT_FS
-> > +	bool "F2FS Status Information"
-> > +	depends on F2FS_FS
-> > +	default y
-> > +	help
-> > +	  /proc/fs/f2fs/ contains information about partitions mounted as f2fs.
-> > +	  For each partition, a corresponding directory, named as its device
-> > +	  name, is provided with the following proc entries.
-> > +
-> > +	  f2fs_stat	major file system information managed by f2fs currently
-> > +	  f2fs_sit_stat	average SIT information about whole segments
-> > +	  f2fs_mem_stat	current memory footprint consumed by f2fs
-> > +
-> > +	  e.g., in /proc/fs/f2fs/sdb1/
-> 
-> As this is primarily debugging information, why not just always enable
-> it, and put in debugfs instead of in procfs?  That's where new debugging
-> information should be going.  Side benefit, your code should shrink a
-> bit if you use debugfs instead of procfs :)
-> 
-> Or, if this is really needed by all users, what is wrong with
-> /sys/fs/f2fs/ instead?
-> 
+On 10/06/2012 12:42 PM, Borislav Petkov wrote:
+>> @@ -56,10 +65,3 @@
+>>  #define __visible __attribute__((externally_visible))
+>>  #endif
+>>  
+>> -#if __GNUC_MINOR__ > 0
+>> -#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+>> -#endif
+>> -#if __GNUC_MINOR__ >= 3 && !defined(__CHECKER__)
+>
+> This last hunk doesn't apply since mainline has a "4" above instead of
+> "3". And it has had a "4" since it got added by 4a3127693001c so unless
+> I'm missing something, how did the 3 appear in your patches?
+These are based against -mm, where another commit is already in that
+changes it.  I was told that since that commit was already in -mm, to
+not include it in the patch set:
 
-Thank you for good recommendation. :)
-Since this status information is just for showing how fs is working in
-run-time, not configuring some kind of parameters in the fs, so I think
-proc or debugfs would be one of candidates.
+6c620cf1536a0ce6a83ecaaaf05298dcc0f7d440 (committed 2012-09-27)
 
-Between them, IMHO, this status information will not be used for
-debugging in practical.
-Instead, I think the debugging information would include something like
-ftrace, locking trace, IO trace, and so on.
-So, currently, I just want to show the current fs status by proc simply.
-And, of course, in the future, I have to reexamine and rewrite the proc
-entry finally.
-
-Thank you,
-
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Jaegeuk Kim
-Samsung
+This was probably (at least partially) the result of the fiasco I had
+with my email.
 
