@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab2JFUoH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 16:44:07 -0400
-Received: from 1wt.eu ([62.212.114.60]:35999 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab2JFUoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 16:44:05 -0400
-Date: Sat, 6 Oct 2012 22:43:51 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.5 regression on i915
-Message-ID: <20121006204351.GF22618@1wt.eu>
-References: <CAPM=9txTo4agvvFnY8KbF82WoCxh0Pmb1HcoEP4ZUbauL5Ws8Q@mail.gmail.com> <20121005235845.GE21163@1wt.eu> <20121006072704.GA22465@1wt.eu> <CAPM=9twQb7BUe6cAD-5THBBP-eYAU56__V5UXNn2qfqdFkVwmA@mail.gmail.com> <20121006075956.GF21163@1wt.eu> <051c15$4i14fm@AZSMGA002.ch.intel.com> <20121006084258.GB22618@1wt.eu> <275ffc$6skdfn@fmsmga002.fm.intel.com> <20121006091708.GC22618@1wt.eu> <84c8a8$61252n@orsmga001.jf.intel.com>
+	id S1752629Ab2JFVJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 17:09:28 -0400
+Received: from mail.southpole.se ([193.12.106.18]:60661 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab2JFVJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 17:09:27 -0400
+Message-ID: <1349557763.25406.7.camel@jerome.southpole.se>
+Subject: Re: [GIT PULL] Disintegrate UAPI for openrisc
+From: Jonas Bonn <jonas@southpole.se>
+To: David Howells <dhowells@redhat.com>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org
+Date: Sat, 06 Oct 2012 23:09:23 +0200
+In-Reply-To: <17392.1349380295@warthog.procyon.org.uk>
+References: <17392.1349380295@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <84c8a8$61252n@orsmga001.jf.intel.com>
-User-Agent: Mutt/1.4.2.3i
+X-Assp-Version: 2.2.1(12265) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 57764-07246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 05:10:57PM +0100, Chris Wilson wrote:
-> So far I have tested -intel-2.6.3 and -intel-2.7.1 with xorg-1.5.3 and
-> kernel-3.7 on a 965gm both using the EXA AccelMethod, and both are still
-> operational.
+Hi David,
+
+On Thu, 2012-10-04 at 20:51 +0100, David Howells wrote:
+> Can you merge the following branch into the openrisc tree please.
 > 
-> Can you send the complete Xorg.log for the current failure? Thanks,
+> This is to complete part of the UAPI disintegration for which the preparatory
+> patches were pulled recently.
+> 
+> Note that there are some fixup patches which are at the base of the branch
+> aimed at you, plus all arches get the asm-generic branch merged in too.
 
-Yes, I'm sending this to you as well as my dmesg and kernel config off-list
-to limit pollution. There's nothing private here so feel free to discuss it
-on-list.
+I gave this a try and it all looks good for OpenRISC.  I'll be happy, in
+principle, to push this for 3.7... but it's a bit disconcerting that
+there's a bunch of stuff here that shouldn't be going via the OpenRISC
+tree.  Any chance you could give a heads-up when everything up to the
+'disintegrate-openrisc' commit has been merged upstream so that I don't
+end up asking Linus to pull stuff outside of the arch/openrisc
+directory?
 
-Thanks!
-Willy
+Thanks,
+Jonas
+
 
