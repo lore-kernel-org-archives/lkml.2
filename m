@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab2JFPvZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:51:25 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3921 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755864Ab2JFPvQ (ORCPT
+	id S1756706Ab2JFPw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:52:26 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3268 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab2JFPvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:51:16 -0400
+	Sat, 6 Oct 2012 11:51:20 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sat, 06 Oct 2012 08:49:03 -0700
+	by hqnvupgp08.nvidia.com on Sat, 06 Oct 2012 08:51:15 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
         <sameo@linux.intel.com>
 CC: <vbyravarasu@nvidia.com>, <axel.lin@gmail.com>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] regulator: TPS51632: Add tps51632 regulator driver
-Date: Sat, 6 Oct 2012 20:47:46 +0530
-Message-ID: <1349536671-31714-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/5] regulator; tps65090: Register all regulators in single probe call
+Date: Sat, 6 Oct 2012 20:47:48 +0530
+Message-ID: <1349536671-31714-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com>
 References: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com>
@@ -26,451 +26,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS51632 is a driverless step down controller with
-serial control. Advanced features such as D-Cap+
-architecture with overlapping pulse support and OSR
-overshoot reduction provide fast transient response,
-lowest output capacitance and high efficiency.
-The TPS51632 supports both I2C and DVFS interfaces
-(through PWM) for dynamic control of the output voltage
-and current monitor telemetry.
-Add regulator driver for TPS51632.
+MFD drier registers the regulator driver once per device and
+hence it is require to register all regulators in single probe
+call.
+Following are details of changes done to achieve this:
+- Add max regulator and register all regulators even if there
+  is no regulator init data from platform.
+- Convert regulator init data to pointer type in platform data.
+- Add input supply name in regulator desc to provide input supply.
+- Separate desc information from driver information.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/regulator/Kconfig                    |   11 +
- drivers/regulator/Makefile                   |    1 +
- drivers/regulator/tps51632-regulator.c       |  332 ++++++++++++++++++++++++++
- include/linux/regulator/tps51632-regulator.h |   47 ++++
- 4 files changed, 391 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/tps51632-regulator.c
- create mode 100644 include/linux/regulator/tps51632-regulator.h
+ drivers/regulator/tps65090-regulator.c       |  137 ++++++++++++++------------
+ include/linux/mfd/tps65090.h                 |    1 +
+ include/linux/regulator/tps65090-regulator.h |    8 +-
+ 3 files changed, 82 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 67d47b5..aa9e8a1 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -335,6 +335,17 @@ config REGULATOR_PALMAS
- 	  on the muxing. This is handled automatically in the driver by
- 	  reading the mux info from OTP.
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index 96d59ad..f825fc9 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -27,12 +27,9 @@
+ #include <linux/regulator/tps65090-regulator.h>
  
-+config REGULATOR_TPS51632
-+	tristate "TI TPS51632 Power Regulator"
-+	depends on I2C
-+	select REGMAP_I2C
-+	help
-+	  This driver supports TPS51632 voltage regulator chip.
-+	  The TPS52632 is 3-2-1 Phase D-Cap+ Step Down Driverless Controller
-+	  with Serial VID control and DVFS.
-+	  The voltage output can be configure through I2C interface or PWM
-+	  interface.
-+
- config REGULATOR_TPS6105X
- 	tristate "TI TPS6105X Power regulators"
- 	depends on TPS6105X
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index e431eed..ec1aec4 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -41,6 +41,7 @@ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
- obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
- obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
- obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
-+obj-$(CONFIG_REGULATOR_TPS51632) += tps51632-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
-diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
-new file mode 100644
-index 0000000..3460364
---- /dev/null
-+++ b/drivers/regulator/tps51632-regulator.c
-@@ -0,0 +1,332 @@
-+/*
-+ * tps51632-regulator.c -- TI TPS51632
-+ *
-+ * Regulator driver for TPS51632 3-2-1 Phase D-Cap Step Down Driverless
-+ * Controller with serial VID control and DVFS.
-+ *
-+ * Copyright (c) 2012, NVIDIA Corporation.
-+ *
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-+ * whether express or implied; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+ * 02111-1307, USA
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/tps51632-regulator.h>
-+#include <linux/slab.h>
-+
-+/* Register definitions */
-+#define TPS51632_VOLTAGE_SELECT_REG		0x0
-+#define TPS51632_VOLTAGE_BASE_REG		0x1
-+#define TPS51632_OFFSET_REG			0x2
-+#define TPS51632_IMON_REG			0x3
-+#define TPS51632_VMAX_REG			0x4
-+#define TPS51632_DVFS_CONTROL_REG		0x5
-+#define TPS51632_POWER_STATE_REG		0x6
-+#define TPS51632_SLEW_REGS			0x7
-+#define TPS51632_FAULT_REG			0x14
-+
-+#define TPS51632_MAX_REG			0x15
-+
-+#define TPS51632_VOUT_MASK			0x7F
-+#define TPS51632_VOUT_OFFSET_MASK		0x1F
-+#define TPS51632_VMAX_MASK			0x7F
-+#define TPS51632_VMAX_LOCK			0x80
-+
-+/* TPS51632_DVFS_CONTROL_REG */
-+#define TPS51632_DVFS_PWMEN			0x1
-+#define TPS51632_DVFS_STEP_20			0x2
-+#define TPS51632_DVFS_VMAX_PG			0x4
-+#define TPS51632_DVFS_PWMRST			0x8
-+#define TPS51632_DVFS_OCA_EN			0x10
-+#define TPS51632_DVFS_FCCM			0x20
-+
-+/* TPS51632_POWER_STATE_REG */
-+#define TPS51632_POWER_STATE_MASK		0x03
-+#define TPS51632_POWER_STATE_MULTI_PHASE_CCM	0x0
-+#define TPS51632_POWER_STATE_SINGLE_PHASE_CCM	0x1
-+#define TPS51632_POWER_STATE_SINGLE_PHASE_DCM	0x2
-+
-+#define TPS51632_MIN_VOLATGE			500000
-+#define TPS51632_MAX_VOLATGE			1520000
-+#define TPS51632_VOLATGE_STEP_10mV		10000
-+#define TPS51632_VOLATGE_STEP_20mV		20000
-+#define TPS51632_MAX_VSEL			0x7F
-+#define TPS51632_MIN_VSEL			0x19
-+#define TPS51632_DEFAULT_RAMP_DELAY		6000
-+#define TPS51632_VOLT_VSEL(uV)					\
-+		(DIV_ROUND_UP(uV - TPS51632_MIN_VOLATGE,	\
-+			TPS51632_VOLATGE_STEP_10mV) +		\
-+			TPS51632_MIN_VSEL)
-+
-+/* TPS51632 chip information */
-+struct tps51632_chip {
-+	struct device *dev;
-+	struct regulator_desc desc;
-+	struct regulator_dev *rdev;
-+	struct regmap *regmap;
-+	bool enable_pwm_dvfs;
-+};
-+
-+static int tps51632_dcdc_get_voltage_sel(struct regulator_dev *rdev)
-+{
-+	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
-+	unsigned int data;
+ struct tps65090_regulator {
+-	int		id;
+-	/* used by regulator core */
+-	struct regulator_desc	desc;
+-
+-	/* Device */
+ 	struct device		*dev;
++	struct regulator_desc	*desc;
++	struct regulator_dev	*rdev;
+ };
+ 
+ static struct regulator_ops tps65090_ops = {
+@@ -41,46 +38,31 @@ static struct regulator_ops tps65090_ops = {
+ 	.is_enabled = regulator_is_enabled_regmap,
+ };
+ 
+-#define tps65090_REG(_id)				\
++#define tps65090_REG_DESC(_id, _sname, _en_reg, _ops)	\
+ {							\
+-	.id		= TPS65090_REGULATOR_##_id,		\
+-	.desc = {					\
+-		.name = tps65090_rails(_id),		\
+-		.id = TPS65090_REGULATOR_##_id,		\
+-		.ops = &tps65090_ops,			\
+-		.type = REGULATOR_VOLTAGE,		\
+-		.owner = THIS_MODULE,			\
+-		.enable_reg = (TPS65090_REGULATOR_##_id) + 12,	\
+-		.enable_mask = BIT(0),			\
+-	},						\
++	.name = tps65090_rails(_id),		\
++	.supply_name = _sname,			\
++	.id = TPS65090_REGULATOR_##_id,		\
++	.ops = &_ops,				\
++	.enable_reg = _en_reg,			\
++	.enable_mask = BIT(0),			\
++	.type = REGULATOR_VOLTAGE,		\
++	.owner = THIS_MODULE,			\
+ }
+ 
+-static struct tps65090_regulator TPS65090_regulator[] = {
+-	tps65090_REG(DCDC1),
+-	tps65090_REG(DCDC2),
+-	tps65090_REG(DCDC3),
+-	tps65090_REG(FET1),
+-	tps65090_REG(FET2),
+-	tps65090_REG(FET3),
+-	tps65090_REG(FET4),
+-	tps65090_REG(FET5),
+-	tps65090_REG(FET6),
+-	tps65090_REG(FET7),
++static struct regulator_desc tps65090_regulator_desc[] = {
++	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, tps65090_ops),
++	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, tps65090_ops),
++	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, tps65090_ops),
++	tps65090_REG_DESC(FET1,  "infet1",  0x0F, tps65090_ops),
++	tps65090_REG_DESC(FET2,  "infet2",  0x10, tps65090_ops),
++	tps65090_REG_DESC(FET3,  "infet3",  0x11, tps65090_ops),
++	tps65090_REG_DESC(FET4,  "infet4",  0x12, tps65090_ops),
++	tps65090_REG_DESC(FET5,  "infet5",  0x13, tps65090_ops),
++	tps65090_REG_DESC(FET6,  "infet6",  0x14, tps65090_ops),
++	tps65090_REG_DESC(FET7,  "infet7",  0x15, tps65090_ops),
+ };
+ 
+-static inline struct tps65090_regulator *find_regulator_info(int id)
+-{
+-	struct tps65090_regulator *ri;
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(TPS65090_regulator); i++) {
+-		ri = &TPS65090_regulator[i];
+-		if (ri->desc.id == id)
+-			return ri;
+-	}
+-	return NULL;
+-}
+-
+ static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct tps65090 *tps65090_mfd = dev_get_drvdata(pdev->dev.parent);
+@@ -88,39 +70,72 @@ static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
+ 	struct regulator_config config = { };
+ 	struct regulator_dev *rdev;
+ 	struct tps65090_regulator_platform_data *tps_pdata;
+-	int id = pdev->id;
++	struct tps65090_regulator *pmic;
++	struct tps65090_platform_data *tps65090_pdata;
++	int num;
 +	int ret;
-+	unsigned int reg = TPS51632_VOLTAGE_SELECT_REG;
-+	int vsel;
+ 
+-	dev_dbg(&pdev->dev, "Probing regulator %d\n", id);
++	dev_dbg(&pdev->dev, "Probing regulator\n");
+ 
+-	ri = find_regulator_info(id);
+-	if (ri == NULL) {
+-		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++	tps65090_pdata = dev_get_platdata(pdev->dev.parent);
++	if (!tps65090_pdata) {
++		dev_err(&pdev->dev, "Platform data missing\n");
+ 		return -EINVAL;
+ 	}
+-	tps_pdata = pdev->dev.platform_data;
+-	ri->dev = &pdev->dev;
+-
+-	config.dev = &pdev->dev;
+-	config.init_data = &tps_pdata->regulator;
+-	config.driver_data = ri;
+-	config.regmap = tps65090_mfd->rmap;
+-
+-	rdev = regulator_register(&ri->desc, &config);
+-	if (IS_ERR(rdev)) {
+-		dev_err(&pdev->dev, "failed to register regulator %s\n",
+-				ri->desc.name);
+-		return PTR_ERR(rdev);
 +
-+	if (tps->enable_pwm_dvfs)
-+		reg = TPS51632_VOLTAGE_BASE_REG;
-+
-+	ret = regmap_read(tps->regmap, reg, &data);
-+	if (ret < 0) {
-+		dev_err(tps->dev, "reg read failed, err %d\n", ret);
-+		return ret;
-+	}
-+
-+	vsel = data & TPS51632_VOUT_MASK;
-+
-+	if (vsel < TPS51632_MIN_VSEL)
-+		return 0;
-+	else
-+		return vsel - TPS51632_MIN_VSEL;
-+}
-+
-+static int tps51632_dcdc_set_voltage_sel(struct regulator_dev *rdev,
-+		unsigned selector)
-+{
-+	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
-+	int vsel;
-+	int ret;
-+	unsigned int reg = TPS51632_VOLTAGE_SELECT_REG;
-+
-+	if (tps->enable_pwm_dvfs)
-+		reg = TPS51632_VOLTAGE_BASE_REG;
-+
-+	vsel = selector + TPS51632_MIN_VSEL;
-+	if (vsel > TPS51632_MAX_VSEL)
-+		return -EINVAL;
-+
-+	ret = regmap_write(tps->regmap, TPS51632_VOLTAGE_SELECT_REG, vsel);
-+	if (ret < 0)
-+		dev_err(tps->dev, "reg write failed, err %d\n", ret);
-+	return ret;
-+}
-+
-+static int tps51632_dcdc_set_ramp_delay(struct regulator_dev *rdev,
-+		int ramp_delay)
-+{
-+	struct tps51632_chip *tps = rdev_get_drvdata(rdev);
-+	int bit = ramp_delay/6000;
-+	int ret;
-+
-+	if (bit)
-+		bit--;
-+	ret = regmap_write(tps->regmap, TPS51632_SLEW_REGS, BIT(bit));
-+	if (ret < 0)
-+		dev_err(tps->dev, "SLEW reg write failed, err %d\n", ret);
-+	return ret;
-+}
-+
-+static struct regulator_ops tps51632_dcdc_ops = {
-+	.get_voltage_sel	= tps51632_dcdc_get_voltage_sel,
-+	.set_voltage_sel	= tps51632_dcdc_set_voltage_sel,
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
-+	.set_ramp_delay		= tps51632_dcdc_set_ramp_delay,
-+};
-+
-+static int __devinit tps51632_init_dcdc(struct tps51632_chip *tps,
-+		struct tps51632_regulator_platform_data *pdata)
-+{
-+	int ret;
-+	uint8_t	control = 0;
-+	int vsel;
-+
-+	if (!pdata->enable_pwm_dvfs)
-+		goto skip_pwm_config;
-+
-+	control |= TPS51632_DVFS_PWMEN;
-+	tps->enable_pwm_dvfs = pdata->enable_pwm_dvfs;
-+	vsel = TPS51632_VOLT_VSEL(pdata->base_voltage_uV);
-+	ret = regmap_write(tps->regmap, TPS51632_VOLTAGE_BASE_REG, vsel);
-+	if (ret < 0) {
-+		dev_err(tps->dev, "BASE reg write failed, err %d\n", ret);
-+		return ret;
-+	}
-+
-+	if (pdata->dvfs_step_20mV)
-+		control |= TPS51632_DVFS_STEP_20;
-+
-+	if (pdata->max_voltage_uV) {
-+		unsigned int vmax;
-+		/**
-+		 * TPS51632 hw behavior: VMAX register can be write only
-+		 * once as it get locked after first write. The lock get
-+		 * reset only when device is power-reset.
-+		 * Write register only when lock bit is not enabled.
-+		 */
-+		ret = regmap_read(tps->regmap, TPS51632_VMAX_REG, &vmax);
-+		if (ret < 0) {
-+			dev_err(tps->dev, "VMAX read failed, err %d\n", ret);
-+			return ret;
-+		}
-+		if (!(vmax & TPS51632_VMAX_LOCK)) {
-+			vsel = TPS51632_VOLT_VSEL(pdata->max_voltage_uV);
-+			ret = regmap_write(tps->regmap, TPS51632_VMAX_REG,
-+					vsel);
-+			if (ret < 0) {
-+				dev_err(tps->dev,
-+					"VMAX write failed, err %d\n", ret);
-+				return ret;
-+			}
-+		}
-+	}
-+
-+skip_pwm_config:
-+	ret = regmap_write(tps->regmap, TPS51632_DVFS_CONTROL_REG, control);
-+	if (ret < 0)
-+		dev_err(tps->dev, "DVFS reg write failed, err %d\n", ret);
-+	return ret;
-+}
-+
-+static bool rd_wr_reg(struct device *dev, unsigned int reg)
-+{
-+	if ((reg >= 0x8) && (reg <= 0x10))
-+		return false;
-+	return true;
-+}
-+
-+static const struct regmap_config tps51632_regmap_config = {
-+	.reg_bits		= 8,
-+	.val_bits		= 8,
-+	.writeable_reg		= rd_wr_reg,
-+	.readable_reg		= rd_wr_reg,
-+	.max_register		= TPS51632_MAX_REG - 1,
-+	.cache_type		= REGCACHE_RBTREE,
-+};
-+
-+static int __devinit tps51632_probe(struct i2c_client *client,
-+				const struct i2c_device_id *id)
-+{
-+	struct tps51632_regulator_platform_data *pdata;
-+	struct regulator_dev *rdev;
-+	struct tps51632_chip *tps;
-+	int ret;
-+	struct regulator_config config = { };
-+
-+	pdata = client->dev.platform_data;
-+	if (!pdata) {
-+		dev_err(&client->dev, "No Platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
-+	if (!tps) {
-+		dev_err(&client->dev, "Memory allocation failed\n");
++	pmic = devm_kzalloc(&pdev->dev, TPS65090_REGULATOR_MAX * sizeof(*pmic),
++			GFP_KERNEL);
++	if (!pmic) {
++		dev_err(&pdev->dev, "mem alloc for pmic failed\n");
 +		return -ENOMEM;
 +	}
 +
-+	tps->dev = &client->dev;
-+	tps->desc.name = id->name;
-+	tps->desc.id = 0;
-+	tps->desc.ramp_delay = TPS51632_DEFAULT_RAMP_DELAY;
-+	tps->desc.min_uV = TPS51632_MIN_VOLATGE;
-+	tps->desc.uV_step = TPS51632_VOLATGE_STEP_10mV;
-+	tps->desc.n_voltages = (TPS51632_MAX_VSEL - TPS51632_MIN_VSEL) + 1;
-+	tps->desc.ops = &tps51632_dcdc_ops;
-+	tps->desc.type = REGULATOR_VOLTAGE;
-+	tps->desc.owner = THIS_MODULE;
++	for (num = 0; num < TPS65090_REGULATOR_MAX; num++) {
++		tps_pdata = tps65090_pdata->reg_pdata[num];
 +
-+	tps->regmap = devm_regmap_init_i2c(client, &tps51632_regmap_config);
-+	if (IS_ERR(tps->regmap)) {
-+		ret = PTR_ERR(tps->regmap);
-+		dev_err(&client->dev, "regmap init failed, err %d\n", ret);
-+		return ret;
++		ri = &pmic[num];
++		ri->dev = &pdev->dev;
++		ri->desc = &tps65090_regulator_desc[num];
++
++		config.dev = &pdev->dev;
++		config.driver_data = ri;
++		config.regmap = tps65090_mfd->rmap;
++		if (tps_pdata)
++			config.init_data = tps_pdata->reg_init_data;
++		else
++			config.init_data = NULL;
++
++		rdev = regulator_register(ri->desc, &config);
++		if (IS_ERR(rdev)) {
++			dev_err(&pdev->dev, "failed to register regulator %s\n",
++				ri->desc->name);
++			ret = PTR_ERR(rdev);
++			goto scrub;
++		}
++		ri->rdev = rdev;
+ 	}
+ 
+-	platform_set_drvdata(pdev, rdev);
++	platform_set_drvdata(pdev, pmic);
+ 	return 0;
++
++scrub:
++	while (--num >= 0) {
++		ri = &pmic[num];
++		regulator_unregister(ri->rdev);
 +	}
-+	i2c_set_clientdata(client, tps);
-+
-+	ret = tps51632_init_dcdc(tps, pdata);
-+	if (ret < 0) {
-+		dev_err(tps->dev, "Init failed, err = %d\n", ret);
-+		return ret;
++	return ret;
+ }
+ 
+ static int __devexit tps65090_regulator_remove(struct platform_device *pdev)
+ {
+-	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++	struct tps65090_regulator *pmic = platform_get_drvdata(pdev);
++	struct tps65090_regulator *ri;
++	int num;
+ 
+-	regulator_unregister(rdev);
++	for (num = 0; num < TPS65090_REGULATOR_MAX; ++num) {
++		ri = &pmic[num];
++		regulator_unregister(ri->rdev);
 +	}
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+index 6bc31d8..10f339f 100644
+--- a/include/linux/mfd/tps65090.h
++++ b/include/linux/mfd/tps65090.h
+@@ -45,6 +45,7 @@ struct tps65090_platform_data {
+ 	int irq_base;
+ 	int num_subdevs;
+ 	struct tps65090_subdev_info *subdevs;
++	struct tps65090_regulator_platform_data **reg_pdata;
+ };
+ 
+ /*
+diff --git a/include/linux/regulator/tps65090-regulator.h b/include/linux/regulator/tps65090-regulator.h
+index 5e27d4a..3572557 100644
+--- a/include/linux/regulator/tps65090-regulator.h
++++ b/include/linux/regulator/tps65090-regulator.h
+@@ -34,17 +34,19 @@ enum {
+ 	TPS65090_REGULATOR_FET5,
+ 	TPS65090_REGULATOR_FET6,
+ 	TPS65090_REGULATOR_FET7,
 +
-+	/* Register the regulators */
-+	config.dev = &client->dev;
-+	config.init_data = pdata->reg_init_data;
-+	config.driver_data = tps;
-+	config.regmap = tps->regmap;
-+	config.of_node = client->dev.of_node;
-+
-+	rdev = regulator_register(&tps->desc, &config);
-+	if (IS_ERR(rdev)) {
-+		dev_err(tps->dev, "regulator register failed\n");
-+		return PTR_ERR(rdev);
-+	}
-+
-+	tps->rdev = rdev;
-+	return 0;
-+}
-+
-+static int __devexit tps51632_remove(struct i2c_client *client)
-+{
-+	struct tps51632_chip *tps = i2c_get_clientdata(client);
-+
-+	regulator_unregister(tps->rdev);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id tps51632_id[] = {
-+	{.name = "tps51632",},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, tps51632_id);
-+
-+static struct i2c_driver tps51632_i2c_driver = {
-+	.driver = {
-+		.name = "tps51632",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps51632_probe,
-+	.remove = __devexit_p(tps51632_remove),
-+	.id_table = tps51632_id,
-+};
-+
-+static int __init tps51632_init(void)
-+{
-+	return i2c_add_driver(&tps51632_i2c_driver);
-+}
-+subsys_initcall(tps51632_init);
-+
-+static void __exit tps51632_cleanup(void)
-+{
-+	i2c_del_driver(&tps51632_i2c_driver);
-+}
-+module_exit(tps51632_cleanup);
-+
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_DESCRIPTION("TPS51632 voltage regulator driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/regulator/tps51632-regulator.h b/include/linux/regulator/tps51632-regulator.h
-new file mode 100644
-index 0000000..d00841e
---- /dev/null
-+++ b/include/linux/regulator/tps51632-regulator.h
-@@ -0,0 +1,47 @@
-+/*
-+ * tps51632-regulator.h -- TPS51632 regulator
-+ *
-+ * Interface for regulator driver for TPS51632 3-2-1 Phase D-Cap Step Down
-+ * Driverless Controller with serial VID control and DVFS.
-+ *
-+ * Copyright (C) 2012 NVIDIA Corporation
-+
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_REGULATOR_TPS51632_H
-+#define __LINUX_REGULATOR_TPS51632_H
-+
-+/*
-+ * struct tps51632_regulator_platform_data - tps51632 regulator platform data.
-+ *
++	/* Last entry */
++	TPS65090_REGULATOR_MAX,
+ };
+ 
+ /*
+  * struct tps65090_regulator_platform_data
+  *
+- * @regulator: The regulator init data.
+- * @slew_rate_uV_per_us: Slew rate microvolt per microsec.
 + * @reg_init_data: The regulator init data.
-+ * @enable_pwm_dvfs: Enable PWM DVFS or not.
-+ * @dvfs_step_20mV: Step for DVFS is 20mV or 10mV.
-+ * @max_voltage_uV: Maximum possible voltage in PWM-DVFS mode.
-+ * @base_voltage_uV: Base voltage when PWM-DVFS enabled.
-+ */
-+struct tps51632_regulator_platform_data {
+  */
+ 
+ struct tps65090_regulator_platform_data {
+-	struct regulator_init_data regulator;
 +	struct regulator_init_data *reg_init_data;
-+	bool enable_pwm_dvfs;
-+	bool dvfs_step_20mV;
-+	int max_voltage_uV;
-+	int base_voltage_uV;
-+};
-+
-+#endif /* __LINUX_REGULATOR_TPS51632_H */
+ };
+ 
+ #endif	/* __REGULATOR_TPS65090_H */
 -- 
 1.7.1.1
 
