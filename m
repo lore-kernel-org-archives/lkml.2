@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab2JFPhm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:37:42 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:38710 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199Ab2JFPdc (ORCPT
+	id S1756316Ab2JFPiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:38:12 -0400
+Received: from shrek-modem1.podlesie.net ([83.18.25.171]:39263 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab2JFPiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:33:32 -0400
-Date: Sat, 6 Oct 2012 12:33:26 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf tools: Fix ordering with unstable tsc
-Message-ID: <20121006153326.GH23354@infradead.org>
-References: <1349450579-18092-1-git-send-email-dsahern@gmail.com>
- <50704B74.5090703@gmail.com>
+	Sat, 6 Oct 2012 11:38:09 -0400
+Date: Sat, 6 Oct 2012 17:38:04 +0200
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: mitch@sfgoth.com, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pppoatm: don't send frames to destroyed vcc
+Message-ID: <20121006153804.GA13564@shrek.podlesie.net>
+References: <1349525991-21462-1-git-send-email-krzysiek@podlesie.net>
+ <1349530370.6524.2.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50704B74.5090703@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1349530370.6524.2.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Oct 06, 2012 at 09:17:08AM -0600, David Ahern escreveu:
-> Hi Arnaldo,
+On Sat, Oct 06, 2012 at 02:32:50PM +0100, David Woodhouse wrote:
+> On Sat, 2012-10-06 at 14:19 +0200, Krzysztof Mazur wrote:
+> > Now pppoatm_send(), like vcc_sendmsg(), checks for vcc flags that
+> > indicate that vcc is not ready.
 > 
-> Something with your recent changes (last month) is causing perf to
-> segfault with this patch. Ignore for now; I'll repost when I can
-> figure it out.
+> And what locking prevents the flag from being set immediately after we
+> check it?
+> 
 
-Ok, I was waiting anyway for Frédéric and others to do some review on
-it,
+nothing, this patch should fix this. 
 
-Thanks!
+The vcc_sendmsg() uses lock_sock(sk). This lock is used by
+vcc_release(), so vcc_destroy_socket() will not be called between
+check and during ->send(). The vcc_release_async() sets ATM_VF_CLOSE,
+but it should be safe to call ->send() after it, because
+vcc->dev->ops->close() is not called.
 
-- Arnaldo
+The pppoatm_send() is called with bottom halfs disabled, so
+bh_lock_sock() should be used instead of lock_sock().
+
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 0dcb5dc..29afc68 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -270,6 +270,7 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ {
+ 	struct pppoatm_vcc *pvcc = chan_to_pvcc(chan);
+ 	struct atm_vcc *vcc;
++	int ret;
+ 
+ 	ATM_SKB(skb)->vcc = pvcc->atmvcc;
+ 	pr_debug("(skb=0x%p, vcc=0x%p)\n", skb, pvcc->atmvcc);
+@@ -304,17 +305,22 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 	}
+ 
+ 	vcc = ATM_SKB(skb)->vcc;
++	bh_lock_sock(sk_atm(vcc));
+ 	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
+ 			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
+-			|| !test_bit(ATM_VF_READY, &vcc->flags))
++			|| !test_bit(ATM_VF_READY, &vcc->flags)) {
++		bh_unlock_sock(sk_atm(vcc));
+ 		goto nospace;
++	}
+ 
+ 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
+ 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
+ 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
+ 		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
+-	return ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
++	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
+ 	    ? DROP_PACKET : 1;
++	bh_unlock_sock(sk_atm(vcc));
++	return ret;
+ nospace:
+ 	/*
+ 	 * We don't have space to send this SKB now, but we might have
+
+-- 
+Krzysiek
