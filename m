@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab2JFUUo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 16:20:44 -0400
+	id S932260Ab2JFUVM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 16:21:12 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:59199 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab2JFUUi (ORCPT
+	with ESMTP id S932107Ab2JFUVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 16:20:38 -0400
+	Sat, 6 Oct 2012 16:21:07 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 36/49] tools/power/acpi/acpidump: create acpidump(8), local make install targets
-Date: Sat,  6 Oct 2012 16:09:57 -0400
-Message-Id: <0e7cc27935cda92c7a39a00791d0d4bbffeab117.1349554106.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
+        Len Brown <len.brown@intel.com>, stable@vger.kernel.org
+Subject: [PATCH 37/49] ACPI: run _OSC after ACPI_FULL_INITIALIZATION
+Date: Sat,  6 Oct 2012 16:09:58 -0400
+Message-Id: <fc54ab72959edbf229b65ac74b2f122d799ca002.1349554106.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <1349554210-29978-1-git-send-email-lenb@kernel.org>
 References: <1349554210-29978-1-git-send-email-lenb@kernel.org>
@@ -24,92 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
+The _OSC method may exist in module level code,
+so it must be called after ACPI_FULL_INITIALIZATION
+
+On some new platforms with Zero-Power-Optical-Disk-Drive (ZPODD)
+support, this fix is necessary to save power.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Tested-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: stable@vger.kernel.org
 ---
- tools/power/acpi/Makefile   |  4 +++
- tools/power/acpi/acpidump.8 | 59 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 63 insertions(+)
- create mode 100644 tools/power/acpi/acpidump.8
+ drivers/acpi/bus.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/power/acpi/Makefile b/tools/power/acpi/Makefile
-index dad79a6..6b9cf7a 100644
---- a/tools/power/acpi/Makefile
-+++ b/tools/power/acpi/Makefile
-@@ -12,3 +12,7 @@ CLEANFILES= $(PROG)
- clean : 
- 	rm -f $(CLEANFILES) $(patsubst %.c,%.o, $(SRCS)) *~
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index e059695..d59175e 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -994,8 +994,6 @@ static int __init acpi_bus_init(void)
+ 	status = acpi_ec_ecdt_probe();
+ 	/* Ignore result. Not having an ECDT is not fatal. */
  
-+install :
-+	install acpidump /usr/bin/acpidump
-+	install acpidump.8 /usr/share/man/man8
+-	acpi_bus_osc_support();
+-
+ 	status = acpi_initialize_objects(ACPI_FULL_INITIALIZATION);
+ 	if (ACPI_FAILURE(status)) {
+ 		printk(KERN_ERR PREFIX "Unable to initialize ACPI objects\n");
+@@ -1003,6 +1001,12 @@ static int __init acpi_bus_init(void)
+ 	}
+ 
+ 	/*
++	 * _OSC method may exist in module level code,
++	 * so it must be run after ACPI_FULL_INITIALIZATION
++	 */
++	acpi_bus_osc_support();
 +
-diff --git a/tools/power/acpi/acpidump.8 b/tools/power/acpi/acpidump.8
-new file mode 100644
-index 0000000..adfa991
---- /dev/null
-+++ b/tools/power/acpi/acpidump.8
-@@ -0,0 +1,59 @@
-+.TH ACPIDUMP 8
-+.SH NAME
-+acpidump \- Dump system's ACPI tables to an ASCII file.
-+.SH SYNOPSIS
-+.ft B
-+.B acpidump > acpidump.out
-+.SH DESCRIPTION
-+\fBacpidump \fP dumps the systems ACPI tables to an ASCII file
-+appropriate for attaching to a bug report.
-+
-+Subsequently, they can be processed by utilities in the ACPICA package.
-+.SS Options
-+no options worth worrying about.
-+.PP
-+.SH EXAMPLE
-+
-+.nf
-+# acpidump > acpidump.out
-+
-+$ acpixtract -a acpidump.out
-+        Acpi table [DSDT] -  15974 bytes written to DSDT.dat
-+        Acpi table [FACS] -     64 bytes written to FACS.dat
-+        Acpi table [FACP] -    116 bytes written to FACP.dat
-+        Acpi table [APIC] -    120 bytes written to APIC.dat
-+        Acpi table [MCFG] -     60 bytes written to MCFG.dat
-+        Acpi table [SSDT] -    444 bytes written to SSDT1.dat
-+        Acpi table [SSDT] -    439 bytes written to SSDT2.dat
-+        Acpi table [SSDT] -    439 bytes written to SSDT3.dat
-+        Acpi table [SSDT] -    439 bytes written to SSDT4.dat
-+        Acpi table [SSDT] -    439 bytes written to SSDT5.dat
-+        Acpi table [RSDT] -     76 bytes written to RSDT.dat
-+        Acpi table [RSDP] -     20 bytes written to RSDP.dat
-+
-+$ iasl -d *.dat
-+...
-+.fi
-+creates *.dsl, a human readable form which can be edited
-+and compiled using iasl.
-+
-+
-+.SH NOTES
-+
-+.B "acpidump "
-+must be run as root.
-+
-+.SH REFERENCES
-+ACPICA: https://acpica.org/
-+
-+.SH FILES
-+.ta
-+.nf
-+/dev/mem
-+/sys/firmware/acpi/tables/dynamic/*
-+.fi
-+
-+.PP
-+.SH AUTHOR
-+.nf
-+Written by Len Brown <len.brown@intel.com>
++	/*
+ 	 * _PDC control method may load dynamic SSDT tables,
+ 	 * and we need to install the table handler before that.
+ 	 */
 -- 
 1.8.0.rc0.18.gf84667d
 
