@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab2JFE25 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 00:28:57 -0400
-Received: from nm22.bullet.mail.bf1.yahoo.com ([98.139.212.181]:37930 "EHLO
-	nm22.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751101Ab2JFE2x (ORCPT
+	id S1751822Ab2JFElK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 00:41:10 -0400
+Received: from nm1-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.202]:45798 "HELO
+	nm1-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750846Ab2JFElG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 00:28:53 -0400
-X-Yahoo-Newman-Id: 7282.14020.bm@smtp104.sbc.mail.bf1.yahoo.com
+	Sat, 6 Oct 2012 00:41:06 -0400
+X-Yahoo-Newman-Id: 792531.38749.bm@omp1017.access.mail.sp2.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: RRiXqEkVM1krRGJEbguoyW6x1keV7C.MbPWVtedRUUCo1TX
- 0Q2faFgNPdtyde4OqykViXHBJV5ntW_Wyi.MFD0Zeku9cjYSIk4kCxfxYlv4
- NSNDNh4VYhpSkSu22F97_EQs7fXpBAFAm_AonUmU1tHWPgQ4fR7b9Ay7d8zU
- k6GXHhOPxzS8Tw.K5UnIcvFQYpwunVLqpP1f5yX5Uy4KVsqTIhc9LPthzU7B
- gJWjw4geg1ghVXYsSSv3bpzUPiVTuJKjsVW0Bw0kOtCZELdot5d16NnO65y5
- 6bjnAjl62qeWigsgw14WYOeuCVUMgvg4tu8LbN._9ThWbqlaK0V6hRDd3aYm
- GmMjcmlplxRw5b78tfLsrBTDJTn85qpGuvKBIvsAm9GXPe2R_eRz1I.moGLt
- HQme6BO7TVP84wJgpoQeS5IBUTQIrfLPrY5hkJYDjS9hmPWz48g--
+X-YMail-OSG: opxT9xgVM1mqIpGRBGIQeJRpteSxF1riym6JO8A5_poyJ7F
+ P7S0DqwgWXCp_CDGSpifc6w5WPmvBwVzJ718dfU.5_Xgj4cGD.UWrY57xzjk
+ xjcdcB4YDgc7AFknU9mEFeb8T_tzHB4HcMB25W8xPNB1ht4opO8HOV7ly.5M
+ ghvU0EDuJUDXfb4ReO4Imxg4BhgHwodTJiX_vX2DYOiRjSN.WiT0GMAwGH2v
+ Tzw.O.PCn.ea_DjzKH5qM0LMDi82_ecemU7etLKdbr2dbTRykq07xIEEDx_H
+ NQuyv6jVT__oqOFoVJv5sblabk6RNS7318GE7GkqbYd0CThcQdd3jJCoRyvG
+ wKvuOjW8iPYXwR.SBKfHnVMovepbM3TkpfzjE8pzozkzb78cgHlbPIdSCplG
+ Ow5ebgXc2jZpACXf7YWXLeGVlvwBVKKyP2aQbWS7tipH1BdhaRA--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <506FB381.4030605@att.net>
-Date: Fri, 05 Oct 2012 23:28:49 -0500
+Message-ID: <506FB65D.70109@att.net>
+Date: Fri, 05 Oct 2012 23:41:01 -0500
 From: Daniel Santos <danielfsantos@att.net>
 Reply-To: Daniel Santos <daniel.santos@pobox.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
 To: Josh Triplett <josh@joshtriplett.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+CC: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
+        Christopher Li <sparse@chrisli.org>,
         David Daney <david.daney@cavium.com>,
         David Howells <dhowells@redhat.com>,
         David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
@@ -39,73 +40,109 @@ CC: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>,
         Daniel Santos <daniel.santos@pobox.com>
-Subject: Re: [PATCH v2 07/10] compiler.h, bug.h: Prevent double error messages
- with BUILD_BUG{,_ON}
-References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-7-git-send-email-daniel.santos@pobox.com> <20121005205922.GA7362@jtriplet-mobl1>
-In-Reply-To: <20121005205922.GA7362@jtriplet-mobl1>
+Subject: Re: [PATCH v2 09/10] bug.h: Add BUILD_BUG_ON_MSG & BUILD_BUG_INTERNAL{,2}
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-9-git-send-email-daniel.santos@pobox.com> <20121005205858.GB28452@liondog.tnic> <20121005210258.GB7362@jtriplet-mobl1>
+In-Reply-To: <20121005210258.GB7362@jtriplet-mobl1>
 X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2012 03:59 PM, Josh Triplett wrote:
-> On Fri, Oct 05, 2012 at 02:42:46PM -0500, danielfsantos@att.net wrote:
->> --- a/include/linux/compiler.h
->> +++ b/include/linux/compiler.h
->> @@ -296,6 +296,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->>  #endif
->>  #ifndef __compiletime_error
->>  # define __compiletime_error(message)
->> +# define __compiletime_error_fallback(condition) \
->> +	 ((void)sizeof(char[1 - 2*!!(condition)]))
->> +#endif
->> +#ifndef __compiletime_error_fallback
->> +# define __compiletime_error_fallback(condition) (void)(0)
+On 10/05/2012 04:02 PM, Josh Triplett wrote:
+> On Fri, Oct 05, 2012 at 10:58:58PM +0200, Borislav Petkov wrote:
+>> On Fri, Oct 05, 2012 at 02:42:48PM -0500, danielfsantos@att.net wrote:
+>>> Add BUILD_BUG_ON_MSG which behaves like BUILD_BUG_ON (with optimizations
+>>> turned enabled), except that it allows you to specify the error message
+>>> you want emitted as the third parameter.  Under the hood, this relies on
+>>> BUILD_BUG_INTERNAL{,2}, which does the actual work and is pretty-much
+>>> identical to BUILD_BUG_ON.
+>>>
+>>> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+>>> ---
+>>>  include/linux/bug.h |   26 ++++++++++++++++++++++++++
+>>>  1 files changed, 26 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/bug.h b/include/linux/bug.h
+>>> index 1b43ea2..91bd9d5 100644
+>>> --- a/include/linux/bug.h
+>>> +++ b/include/linux/bug.h
+>>> @@ -16,6 +16,7 @@ struct pt_regs;
+>>>  #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+>>>  #define BUILD_BUG_ON_ZERO(e) (0)
+>>>  #define BUILD_BUG_ON_NULL(e) ((void*)0)
+>>> +#define BUILD_BUG_ON_MSG(cond, msg) (0)
+>>>  #define BUILD_BUG_ON(condition) (0)
+>>>  #define BUILD_BUG() (0)
+>>>  #else /* __CHECKER__ */
+>>> @@ -38,6 +39,31 @@ struct pt_regs;
+>>>   */
+>>>  #define BUILD_BUG_ON_INVALID(e) ((void)(sizeof((__force long)(e))))
+>>>  
+>>> +#define _CONCAT1(a, b) a##b
+>>> +#define CONCAT(a, b) _CONCAT1(a, b)
+>>
+>> Let's call the indirection _CONCAT without the "1".
+
+No problem, naming conventions are good! :)
+
+>>
+>>> +#define UNIQUIFY(prefix) CONCAT(prefix, __LINE__)
+>>> +
+>>> +#define BUILD_BUG_INTERNAL2(condition, msg, fn)			\
+>>> +	do {							\
+>>> +		extern void fn (void) __compiletime_error(msg);	\
+>>> +		__compiletime_error_fallback(condition);	\
+>>> +		if (condition)					\
+>>> +			fn();					\
+>>> +	} while (0)
+>>> +
+>>> +#define BUILD_BUG_INTERNAL(condition, msg, fn) \
+>>> +	BUILD_BUG_INTERNAL2(condition, msg, fn)
+>>
+>> Ditto. BUILD_BUG_INTERNAL2 should be __BUILD_BUG_INTERNAL and the one
+>> calling it _BUILD_BUG_INTERNAL (with one underscore).
 >
-> Might want to use do { } while (0) here, to force the use of a
-> semicolon and avoid the use of __compiletime_error_fallback in an
-> expression.
-Sure!  But while we're here, we may want to consider a few other macros
-in bug.h.  These two are intended to be used as an expression:
+> Also, you don't need both the BUILD_BUG_INTERNAL and CONCAT/UNIQUIFY
+> macros.  My original implementation just used the BUILD_BUG_INTERNAL
+> family of macros; if you'd rather rename them, by all means do so, but I
+> don't think you need two separate families of multiply-indirect macros.
 
-#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
-#define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
+Yeah, I was thinking in terms of reusable macros.  I'm kinda thinking the
+kernel needs a header just for handy little macros, like concat,
+uniquify, the
+IS_EMPTY and IF_EMPTY macros of mine in rbtree.h, etc.  There is a
+stringify.h
+that just contains a __stringify macro.  But here, it's just verbose, so
+I'll
+change it back to how you had it.
 
-They are using a different technique to generate the compile-time error,
-perhaps because the negative sized array wasn't always working past gcc
-4.4? Either way, perhaps these can become
+>>> +
+>>> +/**
+>>> + * BUILD_BUG_ON_MSG - break compile if a condition is true & emit supplied
+>>> + * 		      error message.
+>>> + * @condition: the condition which the compiler should know is false.
+>>> + *
+>>> + * See BUILD_BUG_ON for description.
+>>> + */
+>>> +#define BUILD_BUG_ON_MSG(cond, msg) \
+>>> +	BUILD_BUG_INTERNAL(cond, msg, UNIQUIFY(__build_bug_on_failed_))
+>>
+>> Btw, why are we adding the line at all? It is issued by gcc anyway:
+>>
+>> cc -Wall    macros.c   -o macros
+>> macros.c: In function ‘main’:
+>> macros.c:22:1: error: ‘__build_bug_on_failed_22’ undeclared (first use in this function)
+>
+> Because without that, you end up writing multiple prototypes for the
+> same function (__build_bug_on_failed) with different error attributes,
+> and GCC will ignore all but the last error attribute it sees, even with
+> a scoped prototype.
 
-#define BUILD_BUG_ON_ZERO(e) ({BUILD_BUG_ON(e); 0;})
-#define BUILD_BUG_ON_NULL(e) ({BUILD_BUG_ON(e); (void*)0;})
-
-This would again give us our cute error message.  However, I don't know
-when this style of expression began to be supported (I know it's a gcc
-extension), but I'm guessing it's pre gcc 3.2 because it's used in
-kernel.h.  Also:
-
-#define BUILD_BUG_ON_NOT_POWER_OF_2(n)            \
-        BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
-
-can become:
-
-#define BUILD_BUG_ON_NOT_POWER_OF_2(n)                         \
-        BUILD_BUG_ON_MSG((n) == 0 || (((n) & ((n) - 1)) != 0), \
-                         #n " not a power of two")
-
-I think the only thing that would leave unfinished is the __OPTIMIZE__ check
-in the BUILD_BUG_ON definition.  This is a throw-back to the days before
-BUILD_BUG_ON_NON_CONST (oops, that's still in another patch set).  Well, if
-you look at version 1 of this patch set, you'll see that it has that check,
-since __builtin_constant_p never returns one in an unoptimized build.
-However, that's a bit more work because we will need to examine every use of
-BUILD_BUG_ON and __builtin_constant_p.  I only found 2-3 last time I looked,
-one of which was commented outwith the remark that it "breaks in funny
-ways",
-which we certainly already know about __builtin_constant_p.  Another was a
-pretty complicated expression, but I'll have to look them up again.
-
-Please let me know what you think.
+Yeah, this is part of the trick to get non-existent functions with different
+messages on their error attributes, so that each BUILD_BUG_ON-type macro can
+have more helpful text in its error message.  I don't know what's in your
+macros.c, but it should have given you a much more shiny error message.
 
 Daniel
