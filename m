@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2JFIsf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 04:48:35 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53697 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754380Ab2JFIsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 04:48:30 -0400
-Date: Sat, 6 Oct 2012 14:18:58 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] uprobes: Do not delete uprobe if
- uprobe_unregister() fails
-Message-ID: <20121006084858.GA9145@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120930194119.GA11278@redhat.com>
- <20120930194204.GA11326@redhat.com>
+	id S1754887Ab2JFIvb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 04:51:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42925 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab2JFIvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 04:51:25 -0400
+Message-ID: <506FF10A.8030600@monstr.eu>
+Date: Sat, 06 Oct 2012 10:51:22 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120930194204.GA11326@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12100608-5806-0000-0000-00001A55AABE
+To: David Howells <dhowells@redhat.com>
+CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for microblaze
+References: <17386.1349380289@warthog.procyon.org.uk>
+In-Reply-To: <17386.1349380289@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-09-30 21:42:04]:
+Hi David,
 
-> delete_uprobe() must not be called if register_for_each_vma(false)
-> fails to remove all breakpoints, __uprobe_unregister() is correct.
-> The problem is that register_for_each_vma(false) always returns 0
-> and thus this logic does not work.
-> 
-> 1. Change verify_opcode() to return 0 rather than -EINVAL when
->    unregister detects the !is_swbp insn, we can treat this case
->    as success and currently unregister paths ignore the error
->    code anyway.
-> 
-> 2. Change remove_breakpoint() to propagate the error code from
->    write_opcode().
-> 
-> 3. Change register_for_each_vma(is_register => false) to remove
->    as much breakpoints as possible but return non-zero if
->    remove_breakpoint() fails at least once.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On 10/04/2012 09:51 PM, David Howells wrote:
+> Can you merge the following branch into the microblaze tree please.
+>
+> This is to complete part of the UAPI disintegration for which the preparatory
+> patches were pulled recently.
+>
+> Note that there are some fixup patches which are at the base of the branch
+> aimed at you, plus all arches get the asm-generic branch merged in too.
+>
+> The following changes since commit 612a9aab56a93533e76e3ad91642db7033e03b69:
+>
+>    Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2012-10-03 23:29:23 -0700)
+>
+> are available in the git repository at:
+>
+>
+>    git://git.infradead.org/users/dhowells/linux-headers.git disintegrate-microblaze
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
+I have added this to our internal testing repository and I will start to do some tests.
+
+I expect your intention is to merge this to mainline in current merge window, right?
+
+Thanks,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
