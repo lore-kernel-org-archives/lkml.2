@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab2JFASg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 20:18:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42973 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016Ab2JFASf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 20:18:35 -0400
-Message-ID: <506F78C9.1000803@zytor.com>
-Date: Fri, 05 Oct 2012 17:18:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753257Ab2JFAUW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 20:20:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43003 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198Ab2JFAUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 20:20:19 -0400
+Date: Fri, 5 Oct 2012 17:20:01 -0700
+From: "tip-bot for Luck, Tony" <tony.luck@intel.com>
+Message-ID: <tip-385ddeac7ed99cf7dc62d76274d55fbd7cae1b5a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        lenb@kernel.org, trenn@suse.de, tony.luck@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, tglx@linutronix.de, tony.luck@intel.com,
+        trenn@suse.de, hpa@linux.intel.com
+In-Reply-To: <506f59ae9600b36a4@agluck-desktop.sc.intel.com>
+References: <506f59ae9600b36a4@agluck-desktop.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/acpi] X86 ACPI: Use #ifdef not #if for CONFIG_X86 check
+Git-Commit-ID: 385ddeac7ed99cf7dc62d76274d55fbd7cae1b5a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
-References: <1348991844-12285-1-git-send-email-yinghai@kernel.org> <1348991844-12285-5-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com> <20121003165105.GA30214@jshin-Toonie> <CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com> <20121004164630.GB2244@phenom.dumpdata.com> <CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com> <871uhcsk93.fsf@xmission.com> <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com> <87ehlcr4et.fsf@xmission.com> <CAE9FiQU_PSv6afXLcQ8ohrn1wqoVttO+u5MA5xBEE4jJRVx9Mw@mail.gmail.com> <877gr4r40b.fsf@xmission.com>
-In-Reply-To: <877gr4r40b.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 05 Oct 2012 17:20:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2012 02:41 PM, Eric W. Biederman wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
->
->> with bzImage or vmlinux?
->
-> bzImage I presume.  Certainly the bzImage has lost it's 896M limit,
-> which is where ultimiately the 896M limite came from.
->
+Commit-ID:  385ddeac7ed99cf7dc62d76274d55fbd7cae1b5a
+Gitweb:     http://git.kernel.org/tip/385ddeac7ed99cf7dc62d76274d55fbd7cae1b5a
+Author:     Luck, Tony <tony.luck@intel.com>
+AuthorDate: Fri, 5 Oct 2012 15:05:34 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 5 Oct 2012 15:59:07 -0700
 
-~896M (actually comes from i386, not from bzImage...
+X86 ACPI: Use #ifdef not #if for CONFIG_X86 check
 
-	-hpa
+Fix a build warning on ia64:
 
+include/linux/acpi.h:437:5: warning: "CONFIG_X86" is not defined
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/506f59ae9600b36a4@agluck-desktop.sc.intel.com
+Cc: Len Brown <lenb@kernel.org>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ include/linux/acpi.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index d14081c..49fe586 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -434,7 +434,7 @@ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+ 
+ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+ 				  u32 pm1a_control, u32 pm1b_control);
+-#if CONFIG_X86
++#ifdef CONFIG_X86
+ void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
+ #else
+ static inline void arch_reserve_mem_area(acpi_physical_address addr,
