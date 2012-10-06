@@ -1,137 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2JFSsp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 14:48:45 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:33576 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2JFSsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 14:48:41 -0400
-Date: Sat, 6 Oct 2012 11:48:40 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for -rc1
-Message-ID: <alpine.DEB.2.00.1210061139230.18880@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755191Ab2JFSwl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 14:52:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751699Ab2JFSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 14:52:37 -0400
+Date: Sat, 6 Oct 2012 20:53:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() +
+	register() race
+Message-ID: <20121006185337.GA14697@redhat.com>
+References: <20120930194119.GA11278@redhat.com> <20120930194211.GA11333@redhat.com> <20121006093311.GB9145@linux.vnet.ibm.com> <20121006172531.GB9819@redhat.com> <20121006173719.GA9143@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121006173719.GA9143@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 10/06, Srikar Dronamraju wrote:
+>
+> >
+> > for the future changes... (say, we can remove bp if consumers do not
+> > want to trace this task). Not sure it makes sense to change it right
+> > now.
+> >
+> > So. Should I leave this patch as is? Or do you want me to move this
+> > check into handler_chain() and make it return "bool restart"?
+>
+> Lets keep it as is for now.
+>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Please pull the following Ceph changes from
+Thanks...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+But I am starting to think that I misunderstood your comment, you
+did not suggest to add this check into skip_sstep() as I wrongly
+thought.
 
-The bulk of this pull is a series from Alex that refactors and cleans up 
-the RBD code to lay the groundwork for supporting the new image format and 
-evolving feature set.  There are also some cleanups in libceph, and for 
-ceph there's fixed validation of file striping layouts and a bugfix in 
-the code handling a shrinking MDS cluster.
+And yes, I agree it would be more clean to move it out from
+find_active_uprobe() and avoid put_uprobe && clear_swbp....
 
-Thanks!
-sage
+So how about v2 below?
 
-----------------------------------------------------------------
-Alex Elder (62):
-      rbd: simplify __rbd_init_snaps_header()
-      rbd: make snap_names_len a u64
-      rbd: ensure invalid pointers are made null
-      rbd: use sizeof (object) instead of sizeof (type)
-      rbd: rearrange rbd_header_from_disk()
-      rbd: return earlier in rbd_header_from_disk()
-      rbd: expand rbd_dev_ondisk_valid() checks
-      rbd: separate reading header from decoding it
-      ceph: let path portion of mount "device" be optional
-      rbd: rename block_name -> object_prefix
-      rbd: add new snapshots at the tail
-      rbd: handle locking inside __rbd_client_find()
-      rbd: don't over-allocate space for object prefix
-      rbd: kill incore snap_names_len
-      rbd: more cleanup in rbd_header_from_disk()
-      rbd: move rbd_opts to struct rbd_device
-      rbd: add read_only rbd map option
-      rbd: kill notify_timeout option
-      rbd: bio_chain_clone() cleanups
-      rbd: drop needless test in rbd_rq_fn()
-      rbd: check for overflow in rbd_get_num_segments()
-      rbd: split up rbd_get_segment()
-      rbd: define rbd_assert()
-      rbd: rename rbd_id_get()
-      rbd: rename __rbd_init_snaps_header()
-      rbd: kill rbd_dev->q
-      rbd: kill rbd_image_header->total_snaps
-      rbd: separate mapping info in rbd_dev
-      rbd: record mapped size
-      rbd: return snap name from rbd_add_parse_args()
-      rbd: set mapping name with the rest
-      rbd: simplify snap_by_name() interface
-      rbd: do some header initialization earlier
-      rbd: simplify rbd_init_disk() a bit
-      rbd: move locking out of rbd_header_set_snap()
-      rbd: don't register snapshots in bus_add_dev()
-      rbd: use snaps list in rbd_snap_by_name()
-      rbd: assign header name later
-      rbd: defer registering snapshot devices
-      rbd: call set_snap() before snap_devs_update()
-      rbd: read the header before registering device
-      rbd: defer setting device id
-      rbd: call rbd_init_disk() sooner
-      rbd: drop dev registration check for new snap
-      rbd: set initial capacity in rbd_init_disk()
-      rbd: set up watch before announcing disk
-      rbd: pass flags to rbd_req_sync_exec()
-      rbd: support data returned from OSD methods
-      rbd: define some new format constants
-      rbd: define rbd_dev_image_id()
-      rbd: kill create_snap sysfs entry
-      rbd: don't use index in __rbd_add_snap_dev()
-      rbd: add an rbd features field
-      rbd: encapsulate code that gets snapshot info
-      rbd: lay out header probe infrastructure
-      rbd: add code to get the size of a v2 rbd image
-      rbd: get the object prefix for a v2 rbd image
-      rbd: get image features for a v2 image
-      rbd: get the snapshot context for a v2 image
-      rbd: get snapshot name for a v2 image
-      rbd: update remaining header fields for v2
-      ceph: avoid 32-bit page index overflow
+------------------------------------------------------------------------------
+[PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() + register() race
 
-Iulius Curt (1):
-      libceph: Fix sparse warning
+Strictly speaking this race was added by me in 56bb4cf6. However
+I think that this bug is just another indication that we should
+move copy_insn/uprobe_analyze_insn code from install_breakpoint()
+to uprobe_register(), there are a lot of other reasons for that.
+Until then, add a hack to close the race.
 
-Sage Weil (5):
-      libceph: remove unused monc->have_fsid
-      libceph: check for invalid mapping
-      ceph: propagate layout error on osd request creation
-      rbd: BUG on invalid layout
-      ceph: return EIO on invalid layout on GET_DATALOC ioctl
+A task can hit uprobe U1, but before it calls find_uprobe() this
+uprobe can be unregistered *AND* another uprobe U2 can be added to
+uprobes_tree at the same inode/offset. In this case handle_swbp()
+will use the not-fully-initialized U2, in particular its arch.insn
+for xol.
 
-Wei Yongjun (2):
-      ceph: use list_move_tail instead of list_del/list_add_tail
-      ceph: convert to use le32_add_cpu()
+Add the additional !UPROBE_COPY_INSN check into handle_swbp(),
+if this flag is not set we simply restart as if the new uprobe was
+not inserted yet. This is not very nice, we need barriers, but we
+will remove this hack when we change uprobe_register().
 
-Yan, Zheng (1):
-      ceph: Fix oops when handling mdsmap that decreases max_mds
+Note: with or without this patch install_breakpoint() can race with
+itself, yet another reson to kill UPROBE_COPY_INSN altogether. And
+even the usage of uprobe->flags is not safe. See the next patches.
 
- Documentation/ABI/testing/sysfs-bus-rbd |   18 +-
- drivers/block/rbd.c                     | 1790 ++++++++++++++++++++-----------
- drivers/block/rbd_types.h               |   27 +-
- fs/ceph/addr.c                          |   19 +-
- fs/ceph/caps.c                          |    2 +-
- fs/ceph/file.c                          |    4 +-
- fs/ceph/ioctl.c                         |    8 +-
- fs/ceph/mds_client.c                    |    3 +-
- fs/ceph/super.c                         |   37 +-
- include/linux/ceph/mon_client.h         |    1 -
- include/linux/ceph/osd_client.h         |    2 +-
- include/linux/ceph/osdmap.h             |    6 +-
- net/ceph/mon_client.c                   |    7 +-
- net/ceph/osd_client.c                   |   47 +-
- net/ceph/osdmap.c                       |   18 +-
- net/ceph/pagelist.c                     |    5 +-
- 16 files changed, 1302 insertions(+), 692 deletions(-)
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/events/uprobes.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index cfa22c4..dbbca3a 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -596,6 +596,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		BUG_ON((uprobe->offset & ~PAGE_MASK) +
+ 				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+ 
++		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+ 
+@@ -1436,6 +1437,14 @@ static void handle_swbp(struct pt_regs *regs)
+ 		}
+ 		return;
+ 	}
++	/*
++	 * TODO: move copy_insn/etc into _register and remove this hack.
++	 * After we hit the bp, _unregister + _register can install the
++	 * new and not-yet-analyzed uprobe at the same address, restart.
++	 */
++	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
++	if (unlikely(!(uprobe->flags & UPROBE_COPY_INSN)))
++		goto restart;
+ 
+ 	utask = current->utask;
+ 	if (!utask) {
+-- 
+1.5.5.1
+
+
