@@ -1,115 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab2JFFxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 01:53:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34629 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab2JFFxI (ORCPT
+	id S1751581Ab2JFGTu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 02:19:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63547 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab2JFGTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 01:53:08 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use dev_ printks in rtd520.c
-Date: Sat,  6 Oct 2012 14:53:02 +0900
-Message-Id: <1349502782-8809-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 6 Oct 2012 02:19:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 07/16] cgroup: fix warning when building without any subsys
+Date: Sat, 6 Oct 2012 06:19:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Li Zefan <lizefan@huawei.com>,
+        Ben Blum <bblum@andrew.cmu.edu>
+References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-8-git-send-email-arnd@arndb.de> <20121006021451.GA2601@localhost>
+In-Reply-To: <20121006021451.GA2601@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210060619.41645.arnd@arndb.de>
+X-Provags-ID: V02:K0:xs8KK3XFUyg92DH1XDOEATvN617AB38M2HtLZdvp29Z
+ +76TXdx0z8qUUB17ARkwJLcb0Y0dj6xI02+mvOkG3Kz1jKpwGb
+ 8+oh1L9wbHLA2Adard2ufE1M414ErPBl7Mmt+rJlX/KydFxK0A
+ CEUd3+pTzDFYxmza2eQHQMZPYWlCZcS2MVL7iA5DkaL53jMFos
+ mRsN0SyokGkc/DTo3yhXpI/xJqKKt/4qAdSs9jQKjyxDZSWQTK
+ GEwZ7i8wqiYVW+/cPtCgOEs5jnIrcLXhb65S9d9i7EZdtqS2OP
+ ytUPFO4QW5feKHd94Gq46BXKqyEjjxgQBodEcpTDmhGTooA4TU
+ RpFCBnr+B19FhMIoeuQU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
--Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+On Saturday 06 October 2012, Tejun Heo wrote:
+> On Fri, Oct 05, 2012 at 04:55:21PM +0200, Arnd Bergmann wrote:
+> > In a configuration where the base cgroup support is enabled but
+> > every single cgroup subsys is turned off, CGROUP_BUILTIN_SUBSYS_COUNT
+> > is zero, which causes the sanity check code in cgroup_load_subsys
+> > to trigger:
+> > 
+> >        BUG_ON(ss->subsys_id >= CGROUP_BUILTIN_SUBSYS_COUNT);
+> >        BUG_ON(subsys[ss->subsys_id] != ss);
+> 
+> CGROUP_BUILTIN_SUBSYS_COUNT is already gone in mainline.  I suppose
+> this is no longer necessary?
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/rtd520.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+Ah, you are right. I can confirm the problem is gone, and I'll drop
+the patch.
 
-diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 41d24b0..d7ed26a 100644
---- a/drivers/staging/comedi/drivers/rtd520.c
-+++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -507,15 +507,14 @@ static int rtd520_probe_fifo_depth(struct comedi_device *dev)
- 		}
- 	}
- 	if (i == limit) {
--		printk(KERN_INFO "\ncomedi: %s: failed to probe fifo size.\n",
--		       DRV_NAME);
-+		dev_info(dev->class_dev, "failed to probe fifo size.\n");
- 		return -EIO;
- 	}
- 	writel(0, devpriv->las0 + LAS0_ADC_FIFO_CLEAR);
- 	if (fifo_size != 0x400 && fifo_size != 0x2000) {
--		printk
--		    (KERN_INFO "\ncomedi: %s: unexpected fifo size of %i, expected 1024 or 8192.\n",
--		     DRV_NAME, fifo_size);
-+		dev_info(dev->class_dev,
-+			 "unexpected fifo size of %i, expected 1024 or 8192.\n",
-+			 fifo_size);
- 		return -EIO;
- 	}
- 	return fifo_size;
-@@ -1600,7 +1599,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int index;
- #endif
- 
--	printk(KERN_INFO "comedi%d: rtd520 attaching.\n", dev->minor);
-+	dev_info(dev->class_dev, "rtd520 attaching.\n");
- 
- #if defined(CONFIG_COMEDI_DEBUG) && defined(USE_DMA)
- 	/* You can set this a load time: modprobe comedi comedi_debug=1 */
-@@ -1626,7 +1625,8 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	ret = comedi_pci_enable(pcidev, DRV_NAME);
- 	if (ret < 0) {
--		printk(KERN_INFO "Failed to enable PCI device and request regions.\n");
-+		dev_info(dev->class_dev,
-+			 "Failed to enable PCI device and request regions.\n");
- 		return ret;
- 	}
- 	dev->iobase = 1;	/* the "detach" needs this */
-@@ -1653,8 +1653,9 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		pci_read_config_byte(pcidev,
- 				     PCI_LATENCY_TIMER, &pci_latency);
- 		if (pci_latency < 32) {
--			printk(KERN_INFO "%s: PCI latency changed from %d to %d\n",
--			       dev->board_name, pci_latency, 32);
-+			dev_info(dev->class_dev,
-+				 "PCI latency changed from %d to %d\n",
-+				 pci_latency, 32);
- 			pci_write_config_byte(pcidev,
- 					      PCI_LATENCY_TIMER, 32);
- 		} else {
-@@ -1675,7 +1676,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	}
- 
- 	/* Show board configuration */
--	printk(KERN_INFO "%s:", dev->board_name);
-+	dev_info(dev->class_dev, "%s:", dev->board_name);
- 
- 	ret = comedi_alloc_subdevices(dev, 4);
- 	if (ret)
-@@ -1767,7 +1768,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		return ret;
- 	}
- 	dev->irq = pcidev->irq;
--	printk(KERN_INFO "( irq=%u )", dev->irq);
-+	dev_info(dev->class_dev, "( irq=%u )", dev->irq);
- 
- 	ret = rtd520_probe_fifo_depth(dev);
- 	if (ret < 0)
-@@ -1844,7 +1845,7 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		/* set DMA trigger source */
- 		writel(DMAS_ADFIFO_HALF_FULL, devpriv->las0 + LAS0_DMA0_SRC);
- 	} else {
--		printk(KERN_INFO "( no IRQ->no DMA )");
-+		dev_info(dev->class_dev, "( no IRQ->no DMA )");
- 	}
- #endif /* USE_DMA */
- 
--- 
-1.7.9.5
-
+	Arnd
