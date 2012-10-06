@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab2JFPqK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 11:46:10 -0400
-Received: from shrek-modem1.podlesie.net ([83.18.25.171]:39551 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab2JFPqH (ORCPT
+	id S1755284Ab2JFPvP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 11:51:15 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3257 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab2JFPvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 11:46:07 -0400
-Date: Sat, 6 Oct 2012 17:46:06 +0200
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: mitch@sfgoth.com, netdev@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pppoatm: don't send frames to destroyed vcc
-Message-ID: <20121006154606.GA25588@shrek.podlesie.net>
-References: <1349525991-21462-1-git-send-email-krzysiek@podlesie.net>
- <1349530370.6524.2.camel@shinybook.infradead.org>
- <20121006153804.GA13564@shrek.podlesie.net>
+	Sat, 6 Oct 2012 11:51:13 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 06 Oct 2012 08:51:07 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
+        <sameo@linux.intel.com>
+CC: <vbyravarasu@nvidia.com>, <axel.lin@gmail.com>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 0/5] regulator: tps65090: fix regulator registration and add external control support
+Date: Sat, 6 Oct 2012 20:47:45 +0530
+Message-ID: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121006153804.GA13564@shrek.podlesie.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 05:38:04PM +0200, Krzysztof Mazur wrote:
-> On Sat, Oct 06, 2012 at 02:32:50PM +0100, David Woodhouse wrote:
-> > On Sat, 2012-10-06 at 14:19 +0200, Krzysztof Mazur wrote:
-> > > Now pppoatm_send(), like vcc_sendmsg(), checks for vcc flags that
-> > > indicate that vcc is not ready.
-> > 
-> > And what locking prevents the flag from being set immediately after we
-> > check it?
-> > 
-> 
-> nothing, this patch should fix this. 
-> 
 
-I think there is another problem here. The pppoatm gets a reference
-to atmvcc, but I don't see anything that protects against removal
-of that vcc.
+This patch series fixes the regulator registration issue and add support
+for external control.
+Patch 1: It renames the driver name and regulators to more appropriate.
+Patch 2: Fix the issue with regulator registration.
+Patch 3: Add LDO support.
+Patch 4: Add voltage output level information.
+Patch 5: Add support for extenal control for DCDC.
 
-The vcc uses vcc->sk socket for reference counting, so sock_hold()
-and sock_put() should be used by pppoatm.
+Laxman Dewangan (5):
+  regulator: tps65090: rename driver name and regulator name
+  regulator; tps65090: Register all regulators in single probe call
+  regulator: tps65090: Add support for LDO regulators
+  regulator: tps65090: Add voltage out level in platform data
+  regulator: tps65090: add external control support for DCDC
 
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index 29afc68..126f57f 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -154,6 +154,7 @@ static void pppoatm_unassign_vcc(struct atm_vcc *atmvcc)
- 	tasklet_kill(&pvcc->wakeup_tasklet);
- 	ppp_unregister_channel(&pvcc->chan);
- 	atmvcc->user_back = NULL;
-+	sock_put(sk_atm(pvcc->atmvcc));
- 	kfree(pvcc);
- 	/* Gee, I hope we have the big kernel lock here... */
- 	module_put(THIS_MODULE);
-@@ -371,6 +372,7 @@ static int pppoatm_assign_vcc(struct atm_vcc *atmvcc, void __user *arg)
- 	if (pvcc == NULL)
- 		return -ENOMEM;
- 	pvcc->atmvcc = atmvcc;
-+	sock_hold(sk_atm(atmvcc));
- 
- 	/* Maximum is zero, so that we can use atomic_inc_not_zero() */
- 	atomic_set(&pvcc->inflight, NONE_INFLIGHT);
-@@ -385,6 +387,7 @@ static int pppoatm_assign_vcc(struct atm_vcc *atmvcc, void __user *arg)
- 	pvcc->wakeup_tasklet.data = (unsigned long) &pvcc->chan;
- 	err = ppp_register_channel(&pvcc->chan);
- 	if (err != 0) {
-+		sock_put(sk_atm(atmvcc));
- 		kfree(pvcc);
- 		return err;
- 	}
+ drivers/regulator/tps65090-regulator.c       |  272 ++++++++++++++++++++------
+ include/linux/mfd/tps65090.h                 |    1 +
+ include/linux/regulator/tps65090-regulator.h |   38 +++--
+ 3 files changed, 237 insertions(+), 74 deletions(-)
 
--- 
-Krzysiek
