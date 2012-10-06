@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2JFAdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 20:33:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6241 "EHLO mga09.intel.com"
+	id S1754011Ab2JFAdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 20:33:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64179 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab2JFAdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 20:33:31 -0400
+	id S1753683Ab2JFAdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 20:33:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,541,1344236400"; 
-   d="scan'208";a="202284156"
+   d="scan'208";a="153038950"
 From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH 0/7] Improve swiotlb performance by using physical addresses
+Subject: [PATCH 1/7] swiotlb: Instead of tracking the end of the swiotlb
+	region just calculate it
 To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
         hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
         joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
         fujita.tomonori@lab.ntt.co.jp
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Fri, 05 Oct 2012 17:33:48 -0700
-Message-ID: <20121006000746.2561.67407.stgit@gitlad.jf.intel.com>
+Date: Fri, 05 Oct 2012 17:33:54 -0700
+Message-ID: <20121006003354.2561.11548.stgit@gitlad.jf.intel.com>
+In-Reply-To: <20121006000746.2561.67407.stgit@gitlad.jf.intel.com>
+References: <20121006000746.2561.67407.stgit@gitlad.jf.intel.com>
 User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,87 +29,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While working on 10Gb/s routing performance I found a significant amount of
-time was being spent in the swiotlb DMA handler.  Further digging found that a
-significant amount of this was due to virtual to physical address translation
-and calling the function that did it.  It accounted for nearly 60% of the
-total swiotlb overhead.
+In the case of swiotlb we already have the start of the region and the number
+of slabs that give us the region size.  Instead of having to call
+virt_to_phys on two pointers we can just take advantage of the fact that the
+region is linear and just compute the end based on the start plus the size.
 
-This patch set works to resolve that by replacing the io_tlb_start virtual
-address with io_tlb_addr which is a physical address.  In addition it changes
-the io_tlb_overflow_buffer from a virtual to a physical address.  I followed
-through with the cleanup to the point that the only functions that really
-require the virtual address for the DMA buffer are the init, free, and
-bounce functions.
-
-In the case of devices that are using the bounce buffers these patches should
-result in only a slight performance gain if any.  This is due to the locking
-overhead required to map and unmap the buffers.
-
-In the case of devices that are not making use of bounce buffers these patches
-can significantly reduce their overhead.  In the case of an ixgbe routing test
-for example, these changes result in 7 fewer calls to __phys_addr and
-allow is_swiotlb_buffer to become inlined due to a reduction in the number of
-instructions.  When running a routing throughput test using small packets I
-saw roughly a 5% increase in packets rates after applying these patches.  This
-appears to match up with the CPU overhead reduction I was tracking via perf.
-
-Before:
-Results 10.29Mps
-# Overhead Symbol
-# ........ ...........................................................................................................
-#
-     1.97%  [k] __phys_addr                                                                                   
-            |              
-            |--24.97%-- swiotlb_sync_single
-            |          
-            |--16.55%-- is_swiotlb_buffer
-            |          
-            |--11.25%-- unmap_single
-            |          
-             --2.71%-- swiotlb_dma_mapping_error
-     1.66%  [k] swiotlb_sync_single                                                                                 
-     1.45%  [k] is_swiotlb_buffer                                     
-     0.53%  [k] unmap_single                                                                                     
-     0.52%  [k] swiotlb_map_page                                      
-     0.47%  [k] swiotlb_sync_single_for_device                                                                 
-     0.43%  [k] swiotlb_sync_single_for_cpu                           
-     0.42%  [k] swiotlb_dma_mapping_error                                                               
-     0.34%  [k] swiotlb_unmap_page                
-
-After:
-Results 10.99Mps
-# Overhead Symbol
-# ........ ...........................................................................................................
-#
-     0.50%  [k] swiotlb_map_page                                                                                        
-     0.50%  [k] swiotlb_sync_single                                                                                     
-     0.36%  [k] swiotlb_sync_single_for_cpu                                                                             
-     0.35%  [k] swiotlb_sync_single_for_device                                                                          
-     0.25%  [k] swiotlb_unmap_page                                                                                      
-     0.17%  [k] swiotlb_dma_mapping_error  
-
-Finally, I updated the parameter names for several of the core function calls
-as there was some ambiguity in naming.  Specifically virtual address pointers
-were named dma_addr.  When I changed these pointers to physical I instead used
-the name tlb_addr as this value represented a physical address in the
-io_tlb_addr region and is less likely to be confused with a bus address.
-
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
 
-Alexander Duyck (7):
-      swiotlb:  Do not export swiotlb_bounce since there are no external consumers
-      swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
-      swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
-      swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
-      swiotlb: Make io_tlb_overflow_buffer a physical address
-      swiotlb: Replace virtual io_tlb_start with physical io_tlb_addr
-      swiotlb: Instead of tracking the end of the swiotlb region just calculate it
+ lib/swiotlb.c |   25 ++++++++++++-------------
+ 1 files changed, 12 insertions(+), 13 deletions(-)
 
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index f114bf6..5cc4d4e 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -57,11 +57,11 @@ int swiotlb_force;
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+  * API.
+  */
+-static char *io_tlb_start, *io_tlb_end;
++static char *io_tlb_start;
+ 
+ /*
+- * The number of IO TLB blocks (in groups of 64) between io_tlb_start and
+- * io_tlb_end.  This is command line adjustable via setup_io_tlb_npages.
++ * The number of IO TLB blocks (in groups of 64).
++ * This is command line adjustable via setup_io_tlb_npages.
+  */
+ static unsigned long io_tlb_nslabs;
+ 
+@@ -128,11 +128,11 @@ void swiotlb_print_info(void)
+ 	phys_addr_t pstart, pend;
+ 
+ 	pstart = virt_to_phys(io_tlb_start);
+-	pend = virt_to_phys(io_tlb_end);
++	pend = pstart + bytes;
+ 
+ 	printk(KERN_INFO "software IO TLB [mem %#010llx-%#010llx] (%luMB) mapped at [%p-%p]\n",
+ 	       (unsigned long long)pstart, (unsigned long long)pend - 1,
+-	       bytes >> 20, io_tlb_start, io_tlb_end - 1);
++	       bytes >> 20, io_tlb_start, io_tlb_start + bytes - 1);
+ }
+ 
+ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+@@ -143,12 +143,10 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+ 
+ 	io_tlb_nslabs = nslabs;
+ 	io_tlb_start = tlb;
+-	io_tlb_end = io_tlb_start + bytes;
+ 
+ 	/*
+ 	 * Allocate and initialize the free list array.  This array is used
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+-	 * between io_tlb_start and io_tlb_end.
+ 	 */
+ 	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+@@ -254,14 +252,12 @@ swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs)
+ 
+ 	io_tlb_nslabs = nslabs;
+ 	io_tlb_start = tlb;
+-	io_tlb_end = io_tlb_start + bytes;
+ 
+ 	memset(io_tlb_start, 0, bytes);
+ 
+ 	/*
+ 	 * Allocate and initialize the free list array.  This array is used
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+-	 * between io_tlb_start and io_tlb_end.
+ 	 */
+ 	io_tlb_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
+ 	                              get_order(io_tlb_nslabs * sizeof(int)));
+@@ -304,7 +300,6 @@ cleanup3:
+ 	                                                 sizeof(int)));
+ 	io_tlb_list = NULL;
+ cleanup2:
+-	io_tlb_end = NULL;
+ 	io_tlb_start = NULL;
+ 	io_tlb_nslabs = 0;
+ 	return -ENOMEM;
+@@ -339,8 +334,10 @@ void __init swiotlb_free(void)
+ 
+ static int is_swiotlb_buffer(phys_addr_t paddr)
+ {
+-	return paddr >= virt_to_phys(io_tlb_start) &&
+-		paddr < virt_to_phys(io_tlb_end);
++	phys_addr_t swiotlb_start = virt_to_phys(io_tlb_start);
++
++	return paddr >= swiotlb_start &&
++		paddr < (swiotlb_start + (io_tlb_nslabs << IO_TLB_SHIFT));
+ }
+ 
+ /*
+@@ -938,6 +935,8 @@ EXPORT_SYMBOL(swiotlb_dma_mapping_error);
+ int
+ swiotlb_dma_supported(struct device *hwdev, u64 mask)
+ {
+-	return swiotlb_virt_to_bus(hwdev, io_tlb_end - 1) <= mask;
++	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
++
++	return swiotlb_virt_to_bus(hwdev, io_tlb_start + bytes - 1) <= mask;
+ }
+ EXPORT_SYMBOL(swiotlb_dma_supported);
 
- drivers/xen/swiotlb-xen.c |   25 ++--
- include/linux/swiotlb.h   |   20 ++-
- lib/swiotlb.c             |  285 +++++++++++++++++++++++----------------------
- 3 files changed, 170 insertions(+), 160 deletions(-)
-
--- 
