@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab2JFVjN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 17:39:13 -0400
-Received: from smtp.intuilab.com ([93.93.42.171]:60048 "EHLO
-	zimbra.intuilab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab2JFVjL convert rfc822-to-8bit (ORCPT
+	id S1753505Ab2JFVsy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 17:48:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59685 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab2JFVsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 17:39:11 -0400
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification   implementation
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <alpine.LNX.2.00.1210062326150.27782@pobox.suse.cz>
-Date: Sat, 6 Oct 2012 23:39:08 +0200
-Cc: Jean Delvare <khali@linux-fr.org>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?iso-8859-1?Q?Fabien_Andr=E9?= <fabien.andre@gmail.com>,
-        =?utf-8?B?5YqJ5ZiJ6ae/?= <scott.liu@emc.com.tw>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, USB list <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <914C6C58-5A3B-4F7D-94BE-EF6868ED5D9D@enac.fr>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>  <20121006220421.47f5fd56@endymion.delvare>  <6F756B9E-DC87-4EF6-BB09-8A69A5F8C999@enac.fr>  <20121006231111.6350c014@endymion.delvare>  <alpine.LNX.2.00.1210062314110.27782@pobox.suse.cz> <alpine.LNX.2.00.1210062326150.27782@pobox.suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-X-Mailer: Apple Mail (2.1084)
+	Sat, 6 Oct 2012 17:48:53 -0400
+Date: Sat, 6 Oct 2012 14:48:39 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kamran Amini <kamran.amini.eng@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: PROBLEM: It seems that /usr/bin/time program reports a wrong
+ value for MaxRSS.
+In-Reply-To: <CAKMH-Yhdxfq50fKR3TF8gc6i7JeAowD+Oc+dqpXOYvqiNiw=Vw@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1210061344180.28972@eggly.anvils>
+References: <CAKMH-Yhdxfq50fKR3TF8gc6i7JeAowD+Oc+dqpXOYvqiNiw=Vw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Le 6 oct. 2012 à 23:28, Jiri Kosina a écrit :
-
-> On Sat, 6 Oct 2012, Jiri Kosina wrote:
+On Thu, 4 Oct 2012, Kamran Amini wrote:
 > 
->>> My vote is a clear 3. It took me a few years to kick all users (as
->>> opposed to implementers) of i2c from drivers/i2c and finding them a
->>> proper home, I'm not going to accept new intruders. Grouping drivers
->>> according to what they implement makes it a lot easier to share code
->>> and ideas between related drivers. If you want to convince yourself,
->>> just imagine the mess it would be if all drivers for PCI devices lived
->>> under drivers/pci.
->> 
->> This is more or less consistent with my original opinion when I was 
->> refactoring the HID layer out of the individual drivers a few years ago.
->> 
->> But Marcel objected that he wants to keep all the bluetooth-related 
->> drivers under net/bluetooth, and I didn't really want to push hard against 
->> this, because I don't have really super-strong personal preference either 
->> way.
->> 
->> But we definitely can use this oportunity to bring this up for discussion 
->> again.
-> 
-> Basically, to me this all boils down to the question -- what is more 
-> important: low-level transport being used, or the general function of the 
-> device?
-> 
-> To me, it's the latter, and as such, everything would belong under 
-> drivers/hid.
+> It seems that /usr/bin/time program reports a wrong value for MaxRSS.
+> The report shows MaxRSS, about 4 times the
+> actual allocated memory by a process and its children. MaxRSS (Maximum
+> Resident Set Size) is assumed to be maximum
+> allocated memory by a process and its children. This bug report talks
+> about this problem. More descriptions are provided in
+> time-problem.tar.gz file attached to this mail.
 
-Then shouldn't is be drivers/input, rather?
+You are right.
 
-St.
+Well, time-problem.tar.gz goes into more detail than I had time
+to read, so I cannot promise that everything you say is right.
 
+But you're right that /usr/bin/time is reporting MaxRSS 4 times too much
+on x86, and many other architectures.  It expects rusage.ru_maxrss to be
+a count of pages, so mistakenly uses to ptok() upon it; whereas the Linux
+kernel supplies that number already in kilobytes (as "man 2 getrusage"
+makes clear).
 
+I see this was mentioned when 2.6.32's commit 1f10206cf8e9 "getrusage:
+fill ru_maxrss value" started putting the number there instead of zero: 
+    
+    Make ->ru_maxrss value in struct rusage filled accordingly to rss hiwater
+    mark.  This struct is filled as a parameter to getrusage syscall.
+    ->ru_maxrss value is set to KBs which is the way it is done in BSD
+    systems.  /usr/bin/time (gnu time) application converts ->ru_maxrss to KBs
+    which seems to be incorrect behavior.  Maintainer of this util was
+    notified by me with the patch which corrects it and cc'ed.
+
+It looks as if we were naive to expect a change in /usr/bin/time then:
+so far as I can see, time has stood still at time-1.7 ever since 1996.
+Its README does say:
+
+    Mail suggestions and bug reports for GNU time to
+    bug-gnu-utils@prep.ai.mit.edu.  Please include the version of
+    `time', which you can get by running `time --version', and the
+    operating system and C compiler you used.
+
+Please do so, if you have a chance, or let me know if you cannot and
+I'll do so: though I suspect the mail address is out-of-date by now,
+and that it should say bug-gnu-utils@gnu.org.
+
+You might also like to raise a bug with the distros you care about:
+maybe some already apply their own fix, or will do before time-1.8.
+
+But it does look as if you're the first in three years to notice and
+care!  So don't be surprised if it's not a high priority for anyone.
+
+And I don't think you need attach a .tar.gz: just explain in a few
+lines that Linux 2.6.32 and later fill ru_maxrss, but in kilobytes
+not pages: so /usr/bin/time displays 4 times the right number when
+it multiplies that up with ptok().  (I don't have a BSD system to
+confirm whether it's indeed wrong for BSD too.)
+
+Thanks,
+Hugh
