@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2JFJ5m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 05:57:42 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53719 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab2JFJ5j (ORCPT
+	id S1756016Ab2JFJ5s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 05:57:48 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56412 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755839Ab2JFJ5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 05:57:39 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.255.235]
-In-Reply-To: <20121006080758.GB29618@localhost>
-References: <20121006080758.GB29618@localhost>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 6 Oct 2012 11:57:18 +0200
-Message-ID: <CAK=WgbaBxyxzqxb6S98BdPTovS-SKueJBY+7JRqkX+GoQj=w9g@mail.gmail.com>
-Subject: Re: [remoteproc:for-next 7/12] ERROR: "vring_del_virtqueue"
- [drivers/remoteproc/remoteproc.ko] undefined!
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 6 Oct 2012 05:57:42 -0400
+Message-ID: <1349517456.1491.33.camel@x61.thuisdomein>
+Subject: Re: [PATCH] regmap: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Valdis.Kletnieks@vt.edu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 06 Oct 2012 11:57:36 +0200
+In-Reply-To: <20121006085306.GB8590@opensource.wolfsonmicro.com>
+References: <1349000155.1553.27.camel@x61.thuisdomein>
+	 <20121001100321.GB4360@opensource.wolfsonmicro.com>
+	 <64681.1349223065@turing-police.cc.vt.edu>
+	 <1349249016.1414.55.camel@x61.thuisdomein>
+	 <59004.1349475644@turing-police.cc.vt.edu>
+	 <20121006085306.GB8590@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2012 09:57:36.0418 (UTC) FILETIME=[0352F020:01CDA3A9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 6, 2012 at 10:07 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Hi Sjur,
->
-> FYI, kernel build failed on
->
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
-> head:   d09f53a735bae43806a77754312a45d3f1198342
-> commit: ec4d02d9180f407c41f8310a13b34e473c671fbb [7/12] remoteproc: Add STE modem driver
-> config: x86_64-randconfig-s058 (attached as .config)
->
-> All error/warnings:
->
-> ERROR: "vring_del_virtqueue" [drivers/remoteproc/remoteproc.ko] undefined!
-> ERROR: "register_virtio_device" [drivers/remoteproc/remoteproc.ko] undefined!
-> ERROR: "unregister_virtio_device" [drivers/remoteproc/remoteproc.ko] undefined!
-> ERROR: "vring_new_virtqueue" [drivers/remoteproc/remoteproc.ko] undefined!
-> ERROR: "vring_interrupt" [drivers/remoteproc/remoteproc.ko] undefined!
-> ERROR: "vring_transport_features" [drivers/remoteproc/remoteproc.ko] undefined!
+On Sat, 2012-10-06 at 09:53 +0100, Mark Brown wrote:
+> On Fri, Oct 05, 2012 at 06:20:44PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> > On Wed, 03 Oct 2012 09:23:36 +0200, Paul Bolle said:
+> > > That is another way to silence GCC here.
+> 
+> > That's probably a preferable approach - that way, if a bogus val_count gets
+> > passed in, the caller will be informed of the fact.  Which is a lot better than
+> > just papering over the warning.
+> 
+> As I hinted earlier if someone were to send me a patch...
 
-Thanks, Fengguang, I've pushed this patch to fix this:
+0) I was hoping to do that. But in the mean time I also filed a bug
+report for GCC (at Fedora's bugzilla) [0].
 
-commit ed26d190a3e7718a6b8a4f844e963b408f54ce32
-Author: Ohad Ben-Cohen <ohad@wizery.com>
-Date:   Sat Oct 6 11:35:57 2012 +0200
+1) In that report (after actually closing it) Jakub Jelinek pointed at
+the type mismatch between regmap_volatile_range()'s 'num' (unsigned int)
+and its callers (both use size_t, both through 'val_count'). And,
+indeed, changing 'num' to size_t also makes this warning go away.
 
-    remoteproc: fix (again) the virtio-related build breakage
+This might explain why you didn't see a warning on 32 bit arm (if that
+is what you running while looking at my patch).
 
-    Another virtio dependency was overlooked, so add it to fix
-    the below build breakage. This time for real.
+2) I hope to send in a second path shortly, changing 'num' to size_t. My
+main doubt is whether its problematic that the loop index in
+regmap_volatile_range() uses unsigned int too. If 'num' would exceed
+UINT_MAX, that loop would never finish, wouldn't it? But is that
+actually possible? Are there machines with that many registers?
 
-    ERROR: "vring_del_virtqueue" [drivers/remoteproc/remoteproc.ko] undefined!
-    ERROR: "register_virtio_device" [drivers/remoteproc/remoteproc.ko] undefined
-    ERROR: "unregister_virtio_device" [drivers/remoteproc/remoteproc.ko] undefin
-    ERROR: "vring_new_virtqueue" [drivers/remoteproc/remoteproc.ko] undefined!
-    ERROR: "vring_interrupt" [drivers/remoteproc/remoteproc.ko] undefined!
-    ERROR: "vring_transport_features" [drivers/remoteproc/remoteproc.ko] undefin
 
-    Cc: stable@vger.kernel.org
-    Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-    Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Paul Bolle
 
-diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
-index 96ce101..209a4a2 100644
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -7,6 +7,7 @@ config REMOTEPROC
-        depends on HAS_DMA
-        select FW_CONFIG
-        select VIRTIO
-+       select VIRTIO_RING
+0) https://bugzilla.redhat.com/show_bug.cgi?id=862620
 
- config OMAP_REMOTEPROC
-        tristate "OMAP remoteproc support"
