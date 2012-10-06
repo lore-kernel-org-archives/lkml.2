@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2JFIxL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 04:53:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51954 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754287Ab2JFIxI (ORCPT
+	id S1755118Ab2JFJD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 05:03:59 -0400
+Received: from chandra.ncl.res.in ([59.163.216.11]:54936 "EHLO
+	chandra.ncl.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754385Ab2JFJD5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 04:53:08 -0400
-Date: Sat, 6 Oct 2012 09:53:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap: silence GCC warning
-Message-ID: <20121006085306.GB8590@opensource.wolfsonmicro.com>
-References: <1349000155.1553.27.camel@x61.thuisdomein>
- <20121001100321.GB4360@opensource.wolfsonmicro.com>
- <64681.1349223065@turing-police.cc.vt.edu>
- <1349249016.1414.55.camel@x61.thuisdomein>
- <59004.1349475644@turing-police.cc.vt.edu>
+	Sat, 6 Oct 2012 05:03:57 -0400
+X-Greylist: delayed 1649 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Oct 2012 05:03:56 EDT
+From: "Darbha  Srinivas" <d.srinivas@ncl.res.in>
+Subject: You have exceeded the limit of 23432 Email Account.
+Thread-Topic: You have exceeded the limit of 23432 Email Account.
+Thread-Index: Ac2jnOY4CCU+ORXeTTWYQFgp54Ndxw==
+Date: Sat, 6 Oct 2012 08:30:54 +0000
+Message-ID: <5981E97FAE827D48BDA7E173ECCD1BE37FB925@mailsrv01.ncl.res.in>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [115.184.43.213]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <59004.1349475644@turing-police.cc.vt.edu>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 06:20:44PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 03 Oct 2012 09:23:36 +0200, Paul Bolle said:
 
-> > That is another way to silence GCC here.
 
-> That's probably a preferable approach - that way, if a bogus val_count gets
-> passed in, the caller will be informed of the fact.  Which is a lot better than
-> just papering over the warning.
 
-As I hinted earlier if someone were to send me a patch...
+Dear Email User;
+
+You have exceeded the limit of 23432 storage on your mailbox set by your
+WEB SERVICE/Administrator, and you will be having problems in sending
+and receiving mails Until You Re-Validate. You have to update by clicking on
+the below link and fill out the information to validate your account.
+
+Please Click the link Below or copy paste to your browser To Validate Your
+Mailbox
+
+http://www.customclassicsoh.com/customform/use/filter/form1.html
+
+Warning!!!
+Failure to do this, will result in limited access to your mailbox.
+failure to update your account within Three days of this update
+notification, your account will be closed permanently.
+
+Sincerely,
+System Administrator®
+
+________________________________
+
+Disclaimer:
+
+This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
