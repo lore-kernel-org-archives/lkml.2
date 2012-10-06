@@ -1,105 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2JFJmr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 05:42:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:7050 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab2JFJmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 05:42:46 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH] pidns: remove recursion from free_pid_ns (v2)
-Date: Sat,  6 Oct 2012 13:41:37 +0400
-Message-Id: <1349516497-715551-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1755302Ab2JFJpb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 05:45:31 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47349 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2JFJp3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 05:45:29 -0400
+Date: Sat, 6 Oct 2012 15:15:28 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
+Message-ID: <20121006094528.GC9145@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120930194119.GA11278@redhat.com>
+ <20120930194217.GA11340@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120930194217.GA11340@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100609-2876-0000-0000-000000C6A81D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a stack trace of recursion:
-free_pid_ns(parent)
-  put_pid_ns(parent)
-    kref_put(&ns->kref, free_pid_ns);
-      free_pid_ns
+* Oleg Nesterov <oleg@redhat.com> [2012-09-30 21:42:17]:
 
-This patch turns recursion into loops.
+> Preparation. Extract the copy_insn/arch_uprobe_analyze_insn code
+> from install_breakpoint() into the new helper, uprobe_copy_insn().
+> 
+> And move uprobe->flags defines from uprobes.h to uprobes.c, nobody
+> else can use them anyway.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  include/linux/uprobes.h |   10 --------
+>  kernel/events/uprobes.c |   60 ++++++++++++++++++++++++++++++++---------------
+>  2 files changed, 41 insertions(+), 29 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 18d839d..2459457 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -35,16 +35,6 @@ struct inode;
+>  # include <asm/uprobes.h>
+>  #endif
+> 
+> -/* flags that denote/change uprobes behaviour */
+> -
+> -/* Have a copy of original instruction */
+> -#define UPROBE_COPY_INSN	0x1
+> -
+> -/* Dont run handlers when first register/ last unregister in progress*/
+> -#define UPROBE_RUN_HANDLER	0x2
+> -/* Can skip singlestep */
+> -#define UPROBE_SKIP_SSTEP	0x4
+> -
+>  struct uprobe_consumer {
+>  	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+>  	/*
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index a81080f..5c0c1b0 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -78,6 +78,13 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+>   */
+>  static atomic_t uprobe_events = ATOMIC_INIT(0);
+> 
+> +/* Have a copy of original instruction */
+> +#define UPROBE_COPY_INSN	0x1
+> +/* Dont run handlers when first register/ last unregister in progress*/
+> +#define UPROBE_RUN_HANDLER	0x2
+> +/* Can skip singlestep */
+> +#define UPROBE_SKIP_SSTEP	0x4
+> +
+>  struct uprobe {
+>  	struct rb_node		rb_node;	/* node in the rb tree */
+>  	atomic_t		ref;
+> @@ -563,6 +570,37 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
+>  	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
+>  }
+> 
+> +static int uprobe_copy_insn(struct uprobe *uprobe, struct file *file,
+> +				struct mm_struct *mm, unsigned long vaddr)
+> +{
+> +	int ret = 0;
+> +
+> +	if (uprobe->flags & UPROBE_COPY_INSN)
+> +		return ret;
+> +
+> +	ret = copy_insn(uprobe, file);
+> +	if (ret)
+> +		goto out;
+> +
+> +	ret = -ENOTSUPP;
+> +	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+> +		goto out;
+> +
+> +	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
+> +	if (ret)
+> +		goto out;
+> +
+> +	/* write_opcode() assumes we don't cross page boundary */
+> +	BUG_ON((uprobe->offset & ~PAGE_MASK) +
+> +			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+> +
+> +	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+> +	uprobe->flags |= UPROBE_COPY_INSN;
+> +	ret = 0;
+> + out:
+> +	return ret;
+> +}
+> +
 
-pidns can be nested many times, so in case of recursion
-a simple user space program can provoke a kernel panic
-due to exceed of a kernel stack.
+2 nits: 
+ why do we need to reset ret before out label? I think its redudant.
+ arch_uprobe_analyze_insn() should have set it to 0 already. No?
 
-v2: * don't check parent on NULL
-    * use atomic_dec_and_test(&kref->refcount)
+blank line above out:
 
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/linux/kref.h   |   12 ++++++++++++
- kernel/pid_namespace.c |   17 +++++++++++++----
- 2 files changed, 25 insertions(+), 4 deletions(-)
+Currently only extern functions start with uprobe_ but we already have
+copy_insn, and __copy_insn, So can think of any names for
+uprobe_copy_insn. Not sure test_and_copy_insn() is a good alternative.
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 65af688..2844262 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put - decrement refcount for object.
-+ * @kref: object.
-+ *
-+ * Decrement the refcount.
-+ * Return 1 if refcount is zero.
-+ */
-+static inline int __kref_put(struct kref *kref)
-+{
-+	return atomic_dec_and_test(&kref->refcount);
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 6144bab..2e22c32 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -138,11 +138,20 @@ void free_pid_ns(struct kref *kref)
- 
- 	ns = container_of(kref, struct pid_namespace, kref);
- 
--	parent = ns->parent;
--	destroy_pid_namespace(ns);
-+	while (1) {
- 
--	if (parent != NULL)
--		put_pid_ns(parent);
-+		parent = ns->parent;
-+		destroy_pid_namespace(ns);
-+
-+		if (parent == &init_pid_ns)
-+			break;
-+
-+		/* kref_put cannot be used for avoiding recursion */
-+		if (__kref_put(&parent->kref) == 0)
-+			break;
-+
-+		ns = parent;
-+	}
- }
- 
- void zap_pid_ns_processes(struct pid_namespace *pid_ns)
 -- 
-1.7.1
+thanks and regards
+Srikar
 
