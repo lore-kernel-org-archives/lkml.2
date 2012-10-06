@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab2JFAuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Oct 2012 20:50:04 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:39041 "EHLO smtp.getmail.no"
+	id S1753585Ab2JFBDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Oct 2012 21:03:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43275 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752827Ab2JFAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Oct 2012 20:50:00 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-Date: Sat, 06 Oct 2012 02:49:58 +0200
-To: linux-kernel@vger.kernel.org
-Subject: Minimal jitter = good desktop.
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wlqe9kw36426ze@localhost.localdomain>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1750825Ab2JFBDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Oct 2012 21:03:40 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <87d30wmnrc.fsf@xmission.com>
+References: <1348991844-12285-1-git-send-email-yinghai@kernel.org> <1348991844-12285-5-git-send-email-yinghai@kernel.org> <alpine.DEB.2.02.1210011139320.29232@kaball.uk.xensource.com> <20121003165105.GA30214@jshin-Toonie> <CAE9FiQW7vcwSUen_TD8tZQd6aDU2-on5_T4Bjr6aqN1bxM_5Cg@mail.gmail.com> <20121004164630.GB2244@phenom.dumpdata.com> <CAE9FiQUBohwjOzOm26yJME=JzZ7eH55hM+Q=Kc4Pz+ocaw90Jg@mail.gmail.com> <871uhcsk93.fsf@xmission.com> <CAE9FiQVx93B_imGbs1ms7gcu_-Z9HvkcGePQi9XpWQo0SKu-Kg@mail.gmail.com> <87ehlcr4et.fsf@xmission.com> <CAE9FiQU_PSv6afXLcQ8ohrn1wqoVttO+u5MA5xBEE4jJRVx9Mw@mail.gmail.com> <877gr4r40b.fsf@xmission.com> <506F78C9.1000803@zytor.com> <87d30wmnrc.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 04/13] x86, mm: Revert back good_end setting for 64bit
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 05 Oct 2012 18:02:19 -0700
+To: ebiederm@xmission.com
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <047b1c66-b3a0-4a25-b691-8ead19b7446e@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reducing jitter seems central for many things.
-First of all keypresses seem faster. (less jitter = less latency).
-Doom 3 and similar jittersensitive OpenGL applications run smoothly, and  
-better than windows. Doom 3 was also my main app to get running well, and  
-measuring jitter in the signalpath of OpenGL improved the overall  
-computing experience.
+That disappeared 10 years ago...
 
-Even youtube videos who are not synced to refresh, with a refresh of 60,  
-and a videofps of 30, runs quite well.  
-http://paradoxuncreated.com/Blog/wordpress/?p=3221
+ebiederm@xmission.com wrote:
 
-System is responsive, and I have only had one problem, and that is packing  
-seems not to work at the moment.
+>"H. Peter Anvin" <hpa@zytor.com> writes:
+>
+>> On 10/05/2012 02:41 PM, Eric W. Biederman wrote:
+>>> Yinghai Lu <yinghai@kernel.org> writes:
+>>>
+>>>> with bzImage or vmlinux?
+>>>
+>>> bzImage I presume.  Certainly the bzImage has lost it's 896M limit,
+>>> which is where ultimiately the 896M limite came from.
+>>>
+>>
+>> ~896M (actually comes from i386, not from bzImage...
+>
+>Right it was 1G - VMALLLOC_SIZE.
+>
+>At some point that affected the boot protocol as the maximum address we
+>could load ramdisks.
+>
+>Eric
 
-For a fast test in Ubuntu, try  
-http://paradoxuncreated.com/Blog/wordpress/?p=2268
-
-Definately a recommended config on the desktop.
-
-Peace Be With You.
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
