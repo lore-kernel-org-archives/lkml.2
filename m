@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab2JFULE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 16:11:04 -0400
+	id S1752643Ab2JFULZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 16:11:25 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:44043 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2JFULA (ORCPT
+	with ESMTP id S1750995Ab2JFULV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 16:11:00 -0400
+	Sat, 6 Oct 2012 16:11:21 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Bob Moore <robert.moore@intel.com>,
         Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 03/49] ACPICA: Split ACPICA initialization functions to new file, utxfinit.c
-Date: Sat,  6 Oct 2012 16:09:24 -0400
-Message-Id: <d978348b300595b067b80980f6a78db09fcd584c.1349554105.git.len.brown@intel.com>
+Subject: [PATCH 04/49] ACPICA: Comment update: Fix some typos in actble.h
+Date: Sat,  6 Oct 2012 16:09:25 -0400
+Message-Id: <80187431762989ebade986468d3c548287a12689.1349554105.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <1349554210-29978-1-git-send-email-lenb@kernel.org>
 References: <1349554210-29978-1-git-send-email-lenb@kernel.org>
@@ -27,636 +27,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bob Moore <robert.moore@intel.com>
 
-Split utxface.c to improve modularity and reduce file size.
+No functional change.
 
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/acpica/Makefile   |   1 +
- drivers/acpi/acpica/utxface.c  | 267 +---------------------------------
- drivers/acpi/acpica/utxfinit.c | 317 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 319 insertions(+), 266 deletions(-)
- create mode 100644 drivers/acpi/acpica/utxfinit.c
+ include/acpi/actbl.h | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/acpi/acpica/Makefile b/drivers/acpi/acpica/Makefile
-index 0a1b343..7f1d407 100644
---- a/drivers/acpi/acpica/Makefile
-+++ b/drivers/acpi/acpica/Makefile
-@@ -158,5 +158,6 @@ acpi-y +=		\
- 	utresrc.o	\
- 	utstate.o	\
- 	utxface.o	\
-+	utxfinit.o	\
- 	utxferror.o	\
- 	utxfmutex.o
-diff --git a/drivers/acpi/acpica/utxface.c b/drivers/acpi/acpica/utxface.c
-index 534179f..667229d 100644
---- a/drivers/acpi/acpica/utxface.c
-+++ b/drivers/acpi/acpica/utxface.c
-@@ -1,6 +1,6 @@
- /******************************************************************************
+diff --git a/include/acpi/actbl.h b/include/acpi/actbl.h
+index 59a73e1..d54e358 100644
+--- a/include/acpi/actbl.h
++++ b/include/acpi/actbl.h
+@@ -94,7 +94,7 @@
+ struct acpi_table_header {
+ 	char signature[ACPI_NAME_SIZE];	/* ASCII table signature */
+ 	u32 length;		/* Length of table in bytes, including this header */
+-	u8 revision;		/* ACPI Specification minor version # */
++	u8 revision;		/* ACPI Specification minor version number */
+ 	u8 checksum;		/* To make sum of entire table == 0 */
+ 	char oem_id[ACPI_OEM_ID_SIZE];	/* ASCII OEM identification */
+ 	char oem_table_id[ACPI_OEM_TABLE_ID_SIZE];	/* ASCII OEM table identification */
+@@ -108,7 +108,7 @@ struct acpi_table_header {
+  * GAS - Generic Address Structure (ACPI 2.0+)
   *
-- * Module Name: utxface - External interfaces for "global" ACPI functions
-+ * Module Name: utxface - External interfaces, miscellaneous utility functions
+  * Note: Since this structure is used in the ACPI tables, it is byte aligned.
+- * If misaliged access is not supported by the hardware, accesses to the
++ * If misaligned access is not supported by the hardware, accesses to the
+  * 64-bit Address field must be performed with care.
   *
-  *****************************************************************************/
+  ******************************************************************************/
+@@ -210,18 +210,18 @@ struct acpi_table_fadt {
+ 	u8 preferred_profile;	/* Conveys preferred power management profile to OSPM. */
+ 	u16 sci_interrupt;	/* System vector of SCI interrupt */
+ 	u32 smi_command;	/* 32-bit Port address of SMI command port */
+-	u8 acpi_enable;		/* Value to write to smi_cmd to enable ACPI */
+-	u8 acpi_disable;	/* Value to write to smi_cmd to disable ACPI */
+-	u8 s4_bios_request;	/* Value to write to SMI CMD to enter S4BIOS state */
++	u8 acpi_enable;		/* Value to write to SMI_CMD to enable ACPI */
++	u8 acpi_disable;	/* Value to write to SMI_CMD to disable ACPI */
++	u8 s4_bios_request;	/* Value to write to SMI_CMD to enter S4BIOS state */
+ 	u8 pstate_control;	/* Processor performance state control */
+-	u32 pm1a_event_block;	/* 32-bit Port address of Power Mgt 1a Event Reg Blk */
+-	u32 pm1b_event_block;	/* 32-bit Port address of Power Mgt 1b Event Reg Blk */
+-	u32 pm1a_control_block;	/* 32-bit Port address of Power Mgt 1a Control Reg Blk */
+-	u32 pm1b_control_block;	/* 32-bit Port address of Power Mgt 1b Control Reg Blk */
+-	u32 pm2_control_block;	/* 32-bit Port address of Power Mgt 2 Control Reg Blk */
+-	u32 pm_timer_block;	/* 32-bit Port address of Power Mgt Timer Ctrl Reg Blk */
+-	u32 gpe0_block;		/* 32-bit Port address of General Purpose Event 0 Reg Blk */
+-	u32 gpe1_block;		/* 32-bit Port address of General Purpose Event 1 Reg Blk */
++	u32 pm1a_event_block;	/* 32-bit port address of Power Mgt 1a Event Reg Blk */
++	u32 pm1b_event_block;	/* 32-bit port address of Power Mgt 1b Event Reg Blk */
++	u32 pm1a_control_block;	/* 32-bit port address of Power Mgt 1a Control Reg Blk */
++	u32 pm1b_control_block;	/* 32-bit port address of Power Mgt 1b Control Reg Blk */
++	u32 pm2_control_block;	/* 32-bit port address of Power Mgt 2 Control Reg Blk */
++	u32 pm_timer_block;	/* 32-bit port address of Power Mgt Timer Ctrl Reg Blk */
++	u32 gpe0_block;		/* 32-bit port address of General Purpose Event 0 Reg Blk */
++	u32 gpe1_block;		/* 32-bit port address of General Purpose Event 1 Reg Blk */
+ 	u8 pm1_event_length;	/* Byte Length of ports at pm1x_event_block */
+ 	u8 pm1_control_length;	/* Byte Length of ports at pm1x_control_block */
+ 	u8 pm2_control_length;	/* Byte Length of ports at pm2_control_block */
+@@ -229,12 +229,12 @@ struct acpi_table_fadt {
+ 	u8 gpe0_block_length;	/* Byte Length of ports at gpe0_block */
+ 	u8 gpe1_block_length;	/* Byte Length of ports at gpe1_block */
+ 	u8 gpe1_base;		/* Offset in GPE number space where GPE1 events start */
+-	u8 cst_control;		/* Support for the _CST object and C States change notification */
++	u8 cst_control;		/* Support for the _CST object and C-States change notification */
+ 	u16 c2_latency;		/* Worst case HW latency to enter/exit C2 state */
+ 	u16 c3_latency;		/* Worst case HW latency to enter/exit C3 state */
+-	u16 flush_size;		/* Processor's memory cache line width, in bytes */
++	u16 flush_size;		/* Processor memory cache line width, in bytes */
+ 	u16 flush_stride;	/* Number of flush strides that need to be read */
+-	u8 duty_offset;		/* Processor duty cycle index in processor's P_CNT reg */
++	u8 duty_offset;		/* Processor duty cycle index in processor P_CNT reg */
+ 	u8 duty_width;		/* Processor duty cycle value bit width in P_CNT register */
+ 	u8 day_alarm;		/* Index to day-of-month alarm in RTC CMOS RAM */
+ 	u8 month_alarm;		/* Index to month-of-year alarm in RTC CMOS RAM */
+@@ -255,11 +255,11 @@ struct acpi_table_fadt {
+ 	struct acpi_generic_address xpm_timer_block;	/* 64-bit Extended Power Mgt Timer Ctrl Reg Blk address */
+ 	struct acpi_generic_address xgpe0_block;	/* 64-bit Extended General Purpose Event 0 Reg Blk address */
+ 	struct acpi_generic_address xgpe1_block;	/* 64-bit Extended General Purpose Event 1 Reg Blk address */
+-	struct acpi_generic_address sleep_control;	/* 64-bit Sleep Control register */
+-	struct acpi_generic_address sleep_status;	/* 64-bit Sleep Status register */
++	struct acpi_generic_address sleep_control;	/* 64-bit Sleep Control register (ACPI 5.0) */
++	struct acpi_generic_address sleep_status;	/* 64-bit Sleep Status register (ACPI 5.0) */
+ };
  
-@@ -53,271 +53,6 @@
- #define _COMPONENT          ACPI_UTILITIES
- ACPI_MODULE_NAME("utxface")
+-/* Masks for FADT Boot Architecture Flags (boot_flags) */
++/* Masks for FADT Boot Architecture Flags (boot_flags) [Vx]=Introduced in this FADT revision */
  
--#ifndef ACPI_ASL_COMPILER
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_initialize_subsystem
-- *
-- * PARAMETERS:  None
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Initializes all global variables.  This is the first function
-- *              called, so any early initialization belongs here.
-- *
-- ******************************************************************************/
--acpi_status __init acpi_initialize_subsystem(void)
--{
--	acpi_status status;
--
--	ACPI_FUNCTION_TRACE(acpi_initialize_subsystem);
--
--	acpi_gbl_startup_flags = ACPI_SUBSYSTEM_INITIALIZE;
--	ACPI_DEBUG_EXEC(acpi_ut_init_stack_ptr_trace());
--
--	/* Initialize the OS-Dependent layer */
--
--	status = acpi_os_initialize();
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status, "During OSL initialization"));
--		return_ACPI_STATUS(status);
--	}
--
--	/* Initialize all globals used by the subsystem */
--
--	status = acpi_ut_init_globals();
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status,
--				"During initialization of globals"));
--		return_ACPI_STATUS(status);
--	}
--
--	/* Create the default mutex objects */
--
--	status = acpi_ut_mutex_initialize();
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status,
--				"During Global Mutex creation"));
--		return_ACPI_STATUS(status);
--	}
--
--	/*
--	 * Initialize the namespace manager and
--	 * the root of the namespace tree
--	 */
--	status = acpi_ns_root_initialize();
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status,
--				"During Namespace initialization"));
--		return_ACPI_STATUS(status);
--	}
--
--	/* Initialize the global OSI interfaces list with the static names */
--
--	status = acpi_ut_initialize_interfaces();
--	if (ACPI_FAILURE(status)) {
--		ACPI_EXCEPTION((AE_INFO, status,
--				"During OSI interfaces initialization"));
--		return_ACPI_STATUS(status);
--	}
--
--	/* If configured, initialize the AML debugger */
--
--	ACPI_DEBUGGER_EXEC(status = acpi_db_initialize());
--	return_ACPI_STATUS(status);
--}
--
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_enable_subsystem
-- *
-- * PARAMETERS:  flags           - Init/enable Options
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Completes the subsystem initialization including hardware.
-- *              Puts system into ACPI mode if it isn't already.
-- *
-- ******************************************************************************/
--acpi_status acpi_enable_subsystem(u32 flags)
--{
--	acpi_status status = AE_OK;
--
--	ACPI_FUNCTION_TRACE(acpi_enable_subsystem);
--
--#if (!ACPI_REDUCED_HARDWARE)
--
--	/* Enable ACPI mode */
--
--	if (!(flags & ACPI_NO_ACPI_ENABLE)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Going into ACPI mode\n"));
--
--		acpi_gbl_original_mode = acpi_hw_get_mode();
--
--		status = acpi_enable();
--		if (ACPI_FAILURE(status)) {
--			ACPI_WARNING((AE_INFO, "AcpiEnable failed"));
--			return_ACPI_STATUS(status);
--		}
--	}
--
--	/*
--	 * Obtain a permanent mapping for the FACS. This is required for the
--	 * Global Lock and the Firmware Waking Vector
--	 */
--	status = acpi_tb_initialize_facs();
--	if (ACPI_FAILURE(status)) {
--		ACPI_WARNING((AE_INFO, "Could not map the FACS table"));
--		return_ACPI_STATUS(status);
--	}
--#endif				/* !ACPI_REDUCED_HARDWARE */
--
--	/*
--	 * Install the default op_region handlers. These are installed unless
--	 * other handlers have already been installed via the
--	 * install_address_space_handler interface.
--	 */
--	if (!(flags & ACPI_NO_ADDRESS_SPACE_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Installing default address space handlers\n"));
--
--		status = acpi_ev_install_region_handlers();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--#if (!ACPI_REDUCED_HARDWARE)
--	/*
--	 * Initialize ACPI Event handling (Fixed and General Purpose)
--	 *
--	 * Note1: We must have the hardware and events initialized before we can
--	 * execute any control methods safely. Any control method can require
--	 * ACPI hardware support, so the hardware must be fully initialized before
--	 * any method execution!
--	 *
--	 * Note2: Fixed events are initialized and enabled here. GPEs are
--	 * initialized, but cannot be enabled until after the hardware is
--	 * completely initialized (SCI and global_lock activated)
--	 */
--	if (!(flags & ACPI_NO_EVENT_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Initializing ACPI events\n"));
--
--		status = acpi_ev_initialize_events();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--
--	/*
--	 * Install the SCI handler and Global Lock handler. This completes the
--	 * hardware initialization.
--	 */
--	if (!(flags & ACPI_NO_HANDLER_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Installing SCI/GL handlers\n"));
--
--		status = acpi_ev_install_xrupt_handlers();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--#endif				/* !ACPI_REDUCED_HARDWARE */
--
--	return_ACPI_STATUS(status);
--}
--
--ACPI_EXPORT_SYMBOL(acpi_enable_subsystem)
--
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_initialize_objects
-- *
-- * PARAMETERS:  flags           - Init/enable Options
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Completes namespace initialization by initializing device
-- *              objects and executing AML code for Regions, buffers, etc.
-- *
-- ******************************************************************************/
--acpi_status acpi_initialize_objects(u32 flags)
--{
--	acpi_status status = AE_OK;
--
--	ACPI_FUNCTION_TRACE(acpi_initialize_objects);
--
--	/*
--	 * Run all _REG methods
--	 *
--	 * Note: Any objects accessed by the _REG methods will be automatically
--	 * initialized, even if they contain executable AML (see the call to
--	 * acpi_ns_initialize_objects below).
--	 */
--	if (!(flags & ACPI_NO_ADDRESS_SPACE_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Executing _REG OpRegion methods\n"));
--
--		status = acpi_ev_initialize_op_regions();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--
--	/*
--	 * Execute any module-level code that was detected during the table load
--	 * phase. Although illegal since ACPI 2.0, there are many machines that
--	 * contain this type of code. Each block of detected executable AML code
--	 * outside of any control method is wrapped with a temporary control
--	 * method object and placed on a global list. The methods on this list
--	 * are executed below.
--	 */
--	acpi_ns_exec_module_code_list();
--
--	/*
--	 * Initialize the objects that remain uninitialized. This runs the
--	 * executable AML that may be part of the declaration of these objects:
--	 * operation_regions, buffer_fields, Buffers, and Packages.
--	 */
--	if (!(flags & ACPI_NO_OBJECT_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Completing Initialization of ACPI Objects\n"));
--
--		status = acpi_ns_initialize_objects();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--
--	/*
--	 * Initialize all device objects in the namespace. This runs the device
--	 * _STA and _INI methods.
--	 */
--	if (!(flags & ACPI_NO_DEVICE_INIT)) {
--		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
--				  "[Init] Initializing ACPI Devices\n"));
--
--		status = acpi_ns_initialize_devices();
--		if (ACPI_FAILURE(status)) {
--			return_ACPI_STATUS(status);
--		}
--	}
--
--	/*
--	 * Empty the caches (delete the cached objects) on the assumption that
--	 * the table load filled them up more than they will be at runtime --
--	 * thus wasting non-paged memory.
--	 */
--	status = acpi_purge_cached_objects();
--
--	acpi_gbl_startup_flags |= ACPI_INITIALIZED_OK;
--	return_ACPI_STATUS(status);
--}
--
--ACPI_EXPORT_SYMBOL(acpi_initialize_objects)
--
--#endif
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_terminate
-diff --git a/drivers/acpi/acpica/utxfinit.c b/drivers/acpi/acpica/utxfinit.c
-new file mode 100644
-index 0000000..14f5236
---- /dev/null
-+++ b/drivers/acpi/acpica/utxfinit.c
-@@ -0,0 +1,317 @@
-+/******************************************************************************
-+ *
-+ * Module Name: utxfinit - External interfaces for ACPICA initialization
-+ *
-+ *****************************************************************************/
-+
-+/*
-+ * Copyright (C) 2000 - 2012, Intel Corp.
-+ * All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ * 1. Redistributions of source code must retain the above copyright
-+ *    notice, this list of conditions, and the following disclaimer,
-+ *    without modification.
-+ * 2. Redistributions in binary form must reproduce at minimum a disclaimer
-+ *    substantially similar to the "NO WARRANTY" disclaimer below
-+ *    ("Disclaimer") and any redistribution must be conditioned upon
-+ *    including a substantially similar Disclaimer requirement for further
-+ *    binary redistribution.
-+ * 3. Neither the names of the above-listed copyright holders nor the names
-+ *    of any contributors may be used to endorse or promote products derived
-+ *    from this software without specific prior written permission.
-+ *
-+ * Alternatively, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") version 2 as published by the Free
-+ * Software Foundation.
-+ *
-+ * NO WARRANTY
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * HOLDERS OR CONTRIBUTORS BE LIABLE FOR SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-+ * POSSIBILITY OF SUCH DAMAGES.
-+ */
-+
-+#include <linux/export.h>
-+#include <acpi/acpi.h>
-+#include "accommon.h"
-+#include "acevents.h"
-+#include "acnamesp.h"
-+#include "acdebug.h"
-+#include "actables.h"
-+
-+#define _COMPONENT          ACPI_UTILITIES
-+ACPI_MODULE_NAME("utxfinit")
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_initialize_subsystem
-+ *
-+ * PARAMETERS:  None
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: Initializes all global variables. This is the first function
-+ *              called, so any early initialization belongs here.
-+ *
-+ ******************************************************************************/
-+acpi_status acpi_initialize_subsystem(void)
-+{
-+	acpi_status status;
-+
-+	ACPI_FUNCTION_TRACE(acpi_initialize_subsystem);
-+
-+	acpi_gbl_startup_flags = ACPI_SUBSYSTEM_INITIALIZE;
-+	ACPI_DEBUG_EXEC(acpi_ut_init_stack_ptr_trace());
-+
-+	/* Initialize the OS-Dependent layer */
-+
-+	status = acpi_os_initialize();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_EXCEPTION((AE_INFO, status, "During OSL initialization"));
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Initialize all globals used by the subsystem */
-+
-+	status = acpi_ut_init_globals();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_EXCEPTION((AE_INFO, status,
-+				"During initialization of globals"));
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Create the default mutex objects */
-+
-+	status = acpi_ut_mutex_initialize();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_EXCEPTION((AE_INFO, status,
-+				"During Global Mutex creation"));
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/*
-+	 * Initialize the namespace manager and
-+	 * the root of the namespace tree
-+	 */
-+	status = acpi_ns_root_initialize();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_EXCEPTION((AE_INFO, status,
-+				"During Namespace initialization"));
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Initialize the global OSI interfaces list with the static names */
-+
-+	status = acpi_ut_initialize_interfaces();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_EXCEPTION((AE_INFO, status,
-+				"During OSI interfaces initialization"));
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* If configured, initialize the AML debugger */
-+
-+	ACPI_DEBUGGER_EXEC(status = acpi_db_initialize());
-+	return_ACPI_STATUS(status);
-+}
-+ACPI_EXPORT_SYMBOL(acpi_initialize_subsystem)
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_enable_subsystem
-+ *
-+ * PARAMETERS:  flags               - Init/enable Options
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: Completes the subsystem initialization including hardware.
-+ *              Puts system into ACPI mode if it isn't already.
-+ *
-+ ******************************************************************************/
-+acpi_status acpi_enable_subsystem(u32 flags)
-+{
-+	acpi_status status = AE_OK;
-+
-+	ACPI_FUNCTION_TRACE(acpi_enable_subsystem);
-+
-+#if (!ACPI_REDUCED_HARDWARE)
-+
-+	/* Enable ACPI mode */
-+
-+	if (!(flags & ACPI_NO_ACPI_ENABLE)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Going into ACPI mode\n"));
-+
-+		acpi_gbl_original_mode = acpi_hw_get_mode();
-+
-+		status = acpi_enable();
-+		if (ACPI_FAILURE(status)) {
-+			ACPI_WARNING((AE_INFO, "AcpiEnable failed"));
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+
-+	/*
-+	 * Obtain a permanent mapping for the FACS. This is required for the
-+	 * Global Lock and the Firmware Waking Vector
-+	 */
-+	status = acpi_tb_initialize_facs();
-+	if (ACPI_FAILURE(status)) {
-+		ACPI_WARNING((AE_INFO, "Could not map the FACS table"));
-+		return_ACPI_STATUS(status);
-+	}
-+#endif				/* !ACPI_REDUCED_HARDWARE */
-+
-+	/*
-+	 * Install the default op_region handlers. These are installed unless
-+	 * other handlers have already been installed via the
-+	 * install_address_space_handler interface.
-+	 */
-+	if (!(flags & ACPI_NO_ADDRESS_SPACE_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Installing default address space handlers\n"));
-+
-+		status = acpi_ev_install_region_handlers();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+#if (!ACPI_REDUCED_HARDWARE)
-+	/*
-+	 * Initialize ACPI Event handling (Fixed and General Purpose)
-+	 *
-+	 * Note1: We must have the hardware and events initialized before we can
-+	 * execute any control methods safely. Any control method can require
-+	 * ACPI hardware support, so the hardware must be fully initialized before
-+	 * any method execution!
-+	 *
-+	 * Note2: Fixed events are initialized and enabled here. GPEs are
-+	 * initialized, but cannot be enabled until after the hardware is
-+	 * completely initialized (SCI and global_lock activated) and the various
-+	 * initialization control methods are run (_REG, _STA, _INI) on the
-+	 * entire namespace.
-+	 */
-+	if (!(flags & ACPI_NO_EVENT_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Initializing ACPI events\n"));
-+
-+		status = acpi_ev_initialize_events();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+
-+	/*
-+	 * Install the SCI handler and Global Lock handler. This completes the
-+	 * hardware initialization.
-+	 */
-+	if (!(flags & ACPI_NO_HANDLER_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Installing SCI/GL handlers\n"));
-+
-+		status = acpi_ev_install_xrupt_handlers();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+#endif				/* !ACPI_REDUCED_HARDWARE */
-+
-+	return_ACPI_STATUS(status);
-+}
-+ACPI_EXPORT_SYMBOL(acpi_enable_subsystem)
-+
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    acpi_initialize_objects
-+ *
-+ * PARAMETERS:  flags               - Init/enable Options
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: Completes namespace initialization by initializing device
-+ *              objects and executing AML code for Regions, buffers, etc.
-+ *
-+ ******************************************************************************/
-+acpi_status acpi_initialize_objects(u32 flags)
-+{
-+	acpi_status status = AE_OK;
-+
-+	ACPI_FUNCTION_TRACE(acpi_initialize_objects);
-+
-+	/*
-+	 * Run all _REG methods
-+	 *
-+	 * Note: Any objects accessed by the _REG methods will be automatically
-+	 * initialized, even if they contain executable AML (see the call to
-+	 * acpi_ns_initialize_objects below).
-+	 */
-+	if (!(flags & ACPI_NO_ADDRESS_SPACE_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Executing _REG OpRegion methods\n"));
-+
-+		status = acpi_ev_initialize_op_regions();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+
-+	/*
-+	 * Execute any module-level code that was detected during the table load
-+	 * phase. Although illegal since ACPI 2.0, there are many machines that
-+	 * contain this type of code. Each block of detected executable AML code
-+	 * outside of any control method is wrapped with a temporary control
-+	 * method object and placed on a global list. The methods on this list
-+	 * are executed below.
-+	 */
-+	acpi_ns_exec_module_code_list();
-+
-+	/*
-+	 * Initialize the objects that remain uninitialized. This runs the
-+	 * executable AML that may be part of the declaration of these objects:
-+	 * operation_regions, buffer_fields, Buffers, and Packages.
-+	 */
-+	if (!(flags & ACPI_NO_OBJECT_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Completing Initialization of ACPI Objects\n"));
-+
-+		status = acpi_ns_initialize_objects();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+
-+	/*
-+	 * Initialize all device objects in the namespace. This runs the device
-+	 * _STA and _INI methods.
-+	 */
-+	if (!(flags & ACPI_NO_DEVICE_INIT)) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_EXEC,
-+				  "[Init] Initializing ACPI Devices\n"));
-+
-+		status = acpi_ns_initialize_devices();
-+		if (ACPI_FAILURE(status)) {
-+			return_ACPI_STATUS(status);
-+		}
-+	}
-+
-+	/*
-+	 * Empty the caches (delete the cached objects) on the assumption that
-+	 * the table load filled them up more than they will be at runtime --
-+	 * thus wasting non-paged memory.
-+	 */
-+	status = acpi_purge_cached_objects();
-+
-+	acpi_gbl_startup_flags |= ACPI_INITIALIZED_OK;
-+	return_ACPI_STATUS(status);
-+}
-+ACPI_EXPORT_SYMBOL(acpi_initialize_objects)
+ #define ACPI_FADT_LEGACY_DEVICES    (1)  	/* 00: [V2] System has LPC or ISA bus devices */
+ #define ACPI_FADT_8042              (1<<1)	/* 01: [V3] System has an 8042 controller on port 60/64 */
+@@ -272,13 +272,13 @@ struct acpi_table_fadt {
+ 
+ /* Masks for FADT flags */
+ 
+-#define ACPI_FADT_WBINVD            (1)	/* 00: [V1] The wbinvd instruction works properly */
+-#define ACPI_FADT_WBINVD_FLUSH      (1<<1)	/* 01: [V1] wbinvd flushes but does not invalidate caches */
++#define ACPI_FADT_WBINVD            (1)	/* 00: [V1] The WBINVD instruction works properly */
++#define ACPI_FADT_WBINVD_FLUSH      (1<<1)	/* 01: [V1] WBINVD flushes but does not invalidate caches */
+ #define ACPI_FADT_C1_SUPPORTED      (1<<2)	/* 02: [V1] All processors support C1 state */
+ #define ACPI_FADT_C2_MP_SUPPORTED   (1<<3)	/* 03: [V1] C2 state works on MP system */
+ #define ACPI_FADT_POWER_BUTTON      (1<<4)	/* 04: [V1] Power button is handled as a control method device */
+ #define ACPI_FADT_SLEEP_BUTTON      (1<<5)	/* 05: [V1] Sleep button is handled as a control method device */
+-#define ACPI_FADT_FIXED_RTC         (1<<6)	/* 06: [V1] RTC wakeup status not in fixed register space */
++#define ACPI_FADT_FIXED_RTC         (1<<6)	/* 06: [V1] RTC wakeup status is not in fixed register space */
+ #define ACPI_FADT_S4_RTC_WAKE       (1<<7)	/* 07: [V1] RTC alarm can wake system from S4 */
+ #define ACPI_FADT_32BIT_TIMER       (1<<8)	/* 08: [V1] ACPI timer width is 32-bit (0=24-bit) */
+ #define ACPI_FADT_DOCKING_SUPPORTED (1<<9)	/* 09: [V1] Docking supported */
+@@ -297,7 +297,7 @@ struct acpi_table_fadt {
+ 
+ /* Values for preferred_profile (Preferred Power Management Profiles) */
+ 
+-enum acpi_prefered_pm_profiles {
++enum acpi_preferred_pm_profiles {
+ 	PM_UNSPECIFIED = 0,
+ 	PM_DESKTOP = 1,
+ 	PM_MOBILE = 2,
+@@ -335,7 +335,7 @@ union acpi_name_union {
+ struct acpi_table_desc {
+ 	acpi_physical_address address;
+ 	struct acpi_table_header *pointer;
+-	u32 length;		/* Length fixed at 32 bits */
++	u32 length;		/* Length fixed at 32 bits (fixed in table header) */
+ 	union acpi_name_union signature;
+ 	acpi_owner_id owner_id;
+ 	u8 flags;
 -- 
 1.8.0.rc0.18.gf84667d
 
