@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab2JGCoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 22:44:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47373 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab2JGCoC (ORCPT
+	id S1753201Ab2JGCod (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 22:44:33 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63438 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab2JGCo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 22:44:02 -0400
+	Sat, 6 Oct 2012 22:44:28 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 44/49] tools/power turbostat: add [-m MSR#] option
-Date: Sat,  6 Oct 2012 22:43:14 -0400
-Message-Id: <2f32edf12c1eafc8e5b1b0337360993fde1b3565.1349554106.git.len.brown@intel.com>
+Subject: [PATCH 47/49] tools/power/turbostat: add option to count SMIs, re-name some options
+Date: Sat,  6 Oct 2012 22:43:17 -0400
+Message-Id: <f9240813e61cb3e5838c9ab0237af831c61df7cf.1349554106.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <1349577799-566-1-git-send-email-lenb@kernel.org>
 References: <1349577799-566-1-git-send-email-lenb@kernel.org>
@@ -26,214 +26,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
--m MSR# prints the specified MSR in 32-bit format
--M MSR# prints the specified MSR in 64-bit format
+Counting SMIs is popular, so add a dedicated "-s" option to do it,
+and juggle some of the other option letters.
+
+-S is now system summary (was -s)
+-c is 32 bit counter (was -d)
+-C is 64-bit counter (was -D)
+-p is 1st thread in core (was -c)
+-P is 1st thread in package (was -p)
+
+bump the minor version number
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/x86/turbostat/turbostat.8 | 14 +++++++-
- tools/power/x86/turbostat/turbostat.c | 68 +++++++++++++++++++++++++++--------
- 2 files changed, 66 insertions(+), 16 deletions(-)
+ tools/power/x86/turbostat/turbostat.8 | 12 +++++++-----
+ tools/power/x86/turbostat/turbostat.c | 23 +++++++++++++----------
+ 2 files changed, 20 insertions(+), 15 deletions(-)
 
 diff --git a/tools/power/x86/turbostat/turbostat.8 b/tools/power/x86/turbostat/turbostat.8
-index 74e4450..8e7b29af 100644
+index 0fc7a11..e4d0690 100644
 --- a/tools/power/x86/turbostat/turbostat.8
 +++ b/tools/power/x86/turbostat/turbostat.8
-@@ -6,12 +6,14 @@ turbostat \- Report processor frequency and idle statistics
- .B turbostat
- .RB [ "\-s" ]
- .RB [ "\-v" ]
-+.RB [ "\-m MSR#" ]
- .RB [ "\-M MSR#" ]
- .RB command
- .br
- .B turbostat
- .RB [ "\-s" ]
- .RB [ "\-v" ]
-+.RB [ "\-m MSR#" ]
- .RB [ "\-M MSR#" ]
- .RB [ "\-i interval_sec" ]
- .SH DESCRIPTION
-@@ -35,7 +37,10 @@ The \fB-p\fP option limits output to the 1st thread in each package.
+@@ -23,17 +23,19 @@ supports an "invariant" TSC, plus the APERF and MPERF MSRs.
+ on processors that additionally support C-state residency counters.
+ 
+ .SS Options
+-The \fB-s\fP option limits output to a 1-line system summary for each interval.
++The \fB-p\fP option limits output to the 1st thread in 1st core of each package.
+ .PP
+-The \fB-c\fP option limits output to the 1st thread in each core.
++The \fB-P\fP option limits output to the 1st thread in each Package.
+ .PP
+-The \fB-p\fP option limits output to the 1st thread in each package.
++The \fB-S\fP option limits output to a 1-line System Summary for each interval.
  .PP
  The \fB-v\fP option increases verbosity.
  .PP
--The \fB-M MSR#\fP option dumps the specified MSR,
-+The \fB-m MSR#\fP option dumps the specified 32-bit MSR,
-+in addition to the usual frequency and idle statistics.
-+.PP
-+The \fB-M MSR#\fP option dumps the specified 64-bit MSR,
- in addition to the usual frequency and idle statistics.
+-The \fB-d MSR#\fP option includes the delta of the specified 32-bit MSR counter.
++The \fB-s\fP option prints the SMI counter, equivalent to "-c 0x34"
  .PP
- The \fB-i interval_sec\fP option prints statistics every \fiinterval_sec\fP seconds.
-@@ -165,6 +170,13 @@ may work poorly on Linux-2.6.20 through 2.6.29,
- as \fBacpi-cpufreq \fPperiodically cleared the APERF and MPERF
- in those kernels.
- 
-+If the TSC column does not make sense, then
-+the other numbers will also make no sense.
-+Turbostat is lightweight, and its data collection is not atomic.
-+These issues are usually caused by an extremely short measurement
-+interval (much less than 1 second), or system activity that prevents
-+turbostat from being able to run on all CPUS to quickly collect data.
-+
- The APERF, MPERF MSRs are defined to count non-halted cycles.
- Although it is not guaranteed by the architecture, turbostat assumes
- that they count at TSC rate, which is true on all processors tested to date.
+-The \fB-D MSR#\fP option includes the delta of the specified 64-bit MSR counter.
++The \fB-c MSR#\fP option includes the delta of the specified 32-bit MSR counter.
++.PP
++The \fB-C MSR#\fP option includes the delta of the specified 64-bit MSR counter.
+ .PP
+ The \fB-m MSR#\fP option includes the the specified 32-bit MSR value.
+ .PP
 diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index 5ce88dd..946e9ab 100644
+index e38976c..2655ae9 100644
 --- a/tools/power/x86/turbostat/turbostat.c
 +++ b/tools/power/x86/turbostat/turbostat.c
-@@ -63,7 +63,8 @@ unsigned int has_invariant_tsc;
- unsigned int do_nehalem_platform_info;
- unsigned int do_nehalem_turbo_ratio_limit;
- unsigned int do_ivt_turbo_ratio_limit;
--unsigned int extra_msr_offset;
-+unsigned int extra_msr_offset32;
-+unsigned int extra_msr_offset64;
- double bclk;
- unsigned int show_pkg;
- unsigned int show_core;
-@@ -84,7 +85,8 @@ struct thread_data {
- 	unsigned long long aperf;
- 	unsigned long long mperf;
- 	unsigned long long c1;	/* derived */
--	unsigned long long extra_msr;
-+	unsigned long long extra_msr64;
-+	unsigned int extra_msr32;
- 	unsigned int cpu_id;
- 	unsigned int flags;
- #define CPU_IS_FIRST_THREAD_IN_CORE	0x2
-@@ -206,6 +208,24 @@ int get_msr(int cpu, off_t offset, unsigned long long *msr)
- 	return 0;
- }
- 
-+/*
-+ * Truncate the 8 bytes we read from /dev/cpu/.../msr
-+ * to the 4 bytes requested
-+ */
-+
-+int get_msr32(int cpu, off_t offset, unsigned int *msr)
-+{
-+	int retval;
-+
-+	unsigned long long msr64;
-+
-+	retval = get_msr(cpu, offset, &msr64);
-+	*msr = (unsigned int) msr64;
-+
-+	return retval;
-+}
-+
-+
- void print_header(void)
- {
- 	if (show_pkg)
-@@ -223,8 +243,10 @@ void print_header(void)
- 	if (has_aperf)
+@@ -230,9 +230,9 @@ void print_header(void)
  		outp += sprintf(outp, "  GHz");
  	outp += sprintf(outp, "  TSC");
--	if (extra_msr_offset)
--		outp += sprintf(outp, "          MSR 0x%04X", extra_msr_offset);
-+	if (extra_msr_offset32)
-+		outp += sprintf(outp, "  MSR 0x%04X", extra_msr_offset32);
-+	if (extra_msr_offset64)
-+		outp += sprintf(outp, "          MSR 0x%04X", extra_msr_offset64);
- 	if (do_nhm_cstates)
- 		outp += sprintf(outp, "    %%c1");
- 	if (do_nhm_cstates)
-@@ -256,8 +278,10 @@ int dump_counters(struct thread_data *t, struct core_data *c,
- 		fprintf(stderr, "aperf: %016llX\n", t->aperf);
- 		fprintf(stderr, "mperf: %016llX\n", t->mperf);
- 		fprintf(stderr, "c1: %016llX\n", t->c1);
-+		fprintf(stderr, "msr0x%x: %08X\n",
-+			extra_msr_offset32, t->extra_msr32);
- 		fprintf(stderr, "msr0x%x: %016llX\n",
--			extra_msr_offset, t->extra_msr);
-+			extra_msr_offset64, t->extra_msr64);
- 	}
- 
- 	if (c) {
-@@ -361,9 +385,13 @@ int format_counters(struct thread_data *t, struct core_data *c,
- 	/* TSC */
- 	outp += sprintf(outp, "%5.2f", 1.0 * t->tsc/units/interval_float);
- 
-+	/* msr */
-+	if (extra_msr_offset32)
-+		outp += sprintf(outp, "  0x%08x", t->extra_msr32);
-+
- 	/* MSR */
--	if (extra_msr_offset)
--		outp += sprintf(outp, "  0x%016llx", t->extra_msr);
-+	if (extra_msr_offset64)
-+		outp += sprintf(outp, "  0x%016llx", t->extra_msr64);
- 
- 	if (do_nhm_cstates) {
- 		if (!skip_c1)
-@@ -506,9 +534,10 @@ delta_thread(struct thread_data *new, struct thread_data *old,
- 	}
- 
- 	/*
--	 * for "extra msr", just copy the latest w/o subtracting
-+	 * Extra MSR is a snapshot, simply copy latest w/o subtracting
- 	 */
--	old->extra_msr = new->extra_msr;
-+	old->extra_msr32 = new->extra_msr32;
-+	old->extra_msr64 = new->extra_msr64;
- }
- 
- int delta_cpu(struct thread_data *t, struct core_data *c,
-@@ -632,8 +661,12 @@ int get_counters(struct thread_data *t, struct core_data *c, struct pkg_data *p)
- 			return -4;
- 	}
- 
--	if (extra_msr_offset)
--		if (get_msr(cpu, extra_msr_offset, &t->extra_msr))
-+	if (extra_msr_offset32)
-+		if (get_msr32(cpu, extra_msr_offset32, &t->extra_msr32))
-+			return -5;
-+
-+	if (extra_msr_offset64)
-+		if (get_msr(cpu, extra_msr_offset64, &t->extra_msr64))
- 			return -5;
- 
- 	/* collect core counters only for 1st thread in core */
-@@ -1242,7 +1275,7 @@ void check_cpuid()
+ 	if (extra_delta_offset32)
+-		outp += sprintf(outp, "  delta 0x%03X", extra_delta_offset32);
++		outp += sprintf(outp, "  count 0x%03X", extra_delta_offset32);
+ 	if (extra_delta_offset64)
+-		outp += sprintf(outp, "  DELTA 0x%03X", extra_delta_offset64);
++		outp += sprintf(outp, "  COUNT 0x%03X", extra_delta_offset64);
+ 	if (extra_msr_offset32)
+ 		outp += sprintf(outp, "   MSR 0x%03X", extra_msr_offset32);
+ 	if (extra_msr_offset64)
+@@ -1304,7 +1304,7 @@ void check_cpuid()
  
  void usage()
  {
--	fprintf(stderr, "%s: [-v] [-M MSR#] [-i interval_sec | command ...]\n",
-+	fprintf(stderr, "%s: [-v] [-m msr#] [-M MSR#] [-i interval_sec | command ...]\n",
+-	fprintf(stderr, "%s: [-v][-d MSR#][-D MSR#][-m MSR#][-M MSR#][-i interval_sec | command ...]\n",
++	fprintf(stderr, "%s: [-v][-p|-P|-S][-c MSR# | -s]][-C MSR#][-m MSR#][-M MSR#][-i interval_sec | command ...]\n",
  		progname);
  	exit(1);
  }
-@@ -1532,7 +1565,7 @@ void cmdline(int argc, char **argv)
+@@ -1594,15 +1594,15 @@ void cmdline(int argc, char **argv)
  
  	progname = argv[0];
  
--	while ((opt = getopt(argc, argv, "+cpsvi:M:")) != -1) {
-+	while ((opt = getopt(argc, argv, "+cpsvi:m:M:")) != -1) {
+-	while ((opt = getopt(argc, argv, "+cpsvid:D:m:M:")) != -1) {
++	while ((opt = getopt(argc, argv, "+pPSvisc:sC:m:M:")) != -1) {
  		switch (opt) {
- 		case 'c':
+-		case 'c':
++		case 'p':
  			show_core_only++;
-@@ -1549,10 +1582,15 @@ void cmdline(int argc, char **argv)
+ 			break;
+-		case 'p':
++		case 'P':
+ 			show_pkg_only++;
+ 			break;
+-		case 's':
++		case 'S':
+ 			summary_only++;
+ 			break;
+ 		case 'v':
+@@ -1611,10 +1611,13 @@ void cmdline(int argc, char **argv)
  		case 'i':
  			interval_sec = atoi(optarg);
  			break;
-+		case 'm':
-+			sscanf(optarg, "%x", &extra_msr_offset32);
-+			if (verbose > 1)
-+				fprintf(stderr, "msr 0x%X\n", extra_msr_offset32);
-+			break;
- 		case 'M':
--			sscanf(optarg, "%x", &extra_msr_offset);
-+			sscanf(optarg, "%x", &extra_msr_offset64);
- 			if (verbose > 1)
--				fprintf(stderr, "MSR 0x%X\n", extra_msr_offset);
-+				fprintf(stderr, "MSR 0x%X\n", extra_msr_offset64);
+-		case 'd':
++		case 'c':
+ 			sscanf(optarg, "%x", &extra_delta_offset32);
  			break;
- 		default:
- 			usage();
+-		case 'D':
++		case 's':
++			extra_delta_offset32 = 0x34;	/* SMI counter */
++			break;
++		case 'C':
+ 			sscanf(optarg, "%x", &extra_delta_offset64);
+ 			break;
+ 		case 'm':
+@@ -1634,7 +1637,7 @@ int main(int argc, char **argv)
+ 	cmdline(argc, argv);
+ 
+ 	if (verbose > 1)
+-		fprintf(stderr, "turbostat v2.0 May 16, 2012"
++		fprintf(stderr, "turbostat v2.1 October 6, 2012"
+ 			" - Len Brown <lenb@kernel.org>\n");
+ 
+ 	turbostat_init();
 -- 
 1.8.0.rc0.18.gf84667d
 
