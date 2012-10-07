@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab2JGXi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:38:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38367 "EHLO
+	id S1755004Ab2JGXiY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:38:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38370 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753958Ab2JGXWe (ORCPT
+	by vger.kernel.org with ESMTP id S1752358Ab2JGXWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:22:34 -0400
-Message-Id: <20121007225845.360879773@decadent.org.uk>
+Message-Id: <20121007225845.772523671@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:51 +0100
+Date: Sun, 07 Oct 2012 23:59:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Li RongQing <roy.qing.li@gmail.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 077/108] xfrm: fix a read lock imbalance in make_blackhole
+Subject: [ 080/108] xfrm_user: fix info leak in copy_to_user_policy()
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 433a19548061bb5457b6ab77ed7ea58ca6e43ddb ]
+[ Upstream commit 7b789836f434c87168eab067cfbed1ec4783dffd ]
 
-if xfrm_policy_get_afinfo returns 0, it has already released the read
-lock, xfrm_policy_put_afinfo should not be called again.
+The memory reserved to dump the xfrm policy includes multiple padding
+bytes added by the compiler for alignment (padding bytes in struct
+xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
+memset(0) before filling the buffer to avoid the heap info leak.
 
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/xfrm/xfrm_policy.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_user.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 0174034..113d20e 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -1761,7 +1761,7 @@ static struct dst_entry *make_blackhole(struct net *net, u16 family,
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index f252cae..1d222e9 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1300,6 +1300,7 @@ static void copy_from_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy
  
- 	if (!afinfo) {
- 		dst_release(dst_orig);
--		ret = ERR_PTR(-EINVAL);
-+		return ERR_PTR(-EINVAL);
- 	} else {
- 		ret = afinfo->blackhole_route(net, dst_orig);
- 	}
+ static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
+ {
++	memset(p, 0, sizeof(*p));
+ 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
+ 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
+ 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
 
 
