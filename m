@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab2JGXks (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:40:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38335 "EHLO
+	id S932162Ab2JGXla (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:41:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38317 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753735Ab2JGXWZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753058Ab2JGXWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:25 -0400
-Message-Id: <20121007225846.316148456@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:23 -0400
+Message-Id: <20121007225849.236079825@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:58 +0100
+Date: Mon, 08 Oct 2012 00:00:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        htbegin <hotforest@gmail.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 084/108] net: ethernet: davinci_cpdma: decrease the desc count  when cleaning up the remaining packets
+        Marek Vasut <marex@denx.de>, Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 105/108] Bluetooth: Support AR3011 in Acer Iconia Tab W500
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: htbegin <hotforest@gmail.com>
+From: Marek Vasut <marex@denx.de>
 
-[ Upstream commit ffb5ba90017505a19e238e986e6d33f09e4df765 ]
+commit 6eda541d12116b4772baa09d3e8d7b0389df4289 upstream.
 
-chan->count is used by rx channel. If the desc count is not updated by
-the clean up loop in cpdma_chan_stop, the value written to the rxfree
-register in cpdma_chan_start will be incorrect.
+Acer used this chip connected via USB:
 
-Signed-off-by: Tao Hou <hotforest@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Bus 005 Device 005: ID 0cf3:3005 Atheros Communications, Inc. AR3011 Bluetooth
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.10
+  bDeviceClass          224 Wireless
+  bDeviceSubClass         1 Radio Frequency
+  bDeviceProtocol         1 Bluetooth
+  bMaxPacketSize0        64
+  idVendor           0x0cf3 Atheros Communications, Inc.
+  idProduct          0x3005 AR3011 Bluetooth
+  bcdDevice            0.01
+  iManufacturer           0
+  iProduct                0
+  iSerial                 0
+  bNumConfigurations      1
+
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/ti/davinci_cpdma.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/bluetooth/ath3k.c |    1 +
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
-index c97d2f5..bfc3b0d 100644
---- a/drivers/net/ethernet/ti/davinci_cpdma.c
-+++ b/drivers/net/ethernet/ti/davinci_cpdma.c
-@@ -851,6 +851,7 @@ int cpdma_chan_stop(struct cpdma_chan *chan)
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index ad591bd..f0f6202 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -63,6 +63,7 @@ static struct usb_device_id ath3k_table[] = {
  
- 		next_dma = desc_read(desc, hw_next);
- 		chan->head = desc_from_phys(pool, next_dma);
-+		chan->count--;
- 		chan->stats.teardown_dequeue++;
+ 	/* Atheros AR3011 with sflash firmware*/
+ 	{ USB_DEVICE(0x0CF3, 0x3002) },
++	{ USB_DEVICE(0x0CF3, 0xE019) },
+ 	{ USB_DEVICE(0x13d3, 0x3304) },
+ 	{ USB_DEVICE(0x0930, 0x0215) },
+ 	{ USB_DEVICE(0x0489, 0xE03D) },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index c9463af8..ff3eabc 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -125,6 +125,7 @@ static struct usb_device_id blacklist_table[] = {
  
- 		/* issue callback without locks held */
+ 	/* Atheros 3011 with sflash firmware */
+ 	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0cf3, 0xe019), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
 
 
