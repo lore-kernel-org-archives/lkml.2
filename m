@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab2JGER6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 00:17:58 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64974 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2JGER4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 00:17:56 -0400
-Date: Sun, 7 Oct 2012 12:17:50 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Andrew Jones <drjones@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-input@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [PATCH] pwm: Get rid of HAVE_PWM
-Message-ID: <20121007041748.GN20231@S2101-09.ap.freescale.net>
-References: <1349330819-11924-1-git-send-email-thierry.reding@avionic-design.de>
+	id S1751263Ab2JGFWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 01:22:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2JGFWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 01:22:14 -0400
+Date: Sun, 7 Oct 2012 07:24:58 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
+        Matthew Wilcox <willy@linux.intel.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [PATCH v4 -tip 0/3] x86, MSI, AHCI: Support multiple MSIs
+Message-ID: <cover.1349517905.git.agordeev@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349330819-11924-1-git-send-email-thierry.reding@avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 08:06:59AM +0200, Thierry Reding wrote:
-> Now that all drivers have been moved to the PWM subsystem, remove the
-> legacy HAVE_PWM symbol and replace it with the new PWM symbol. While at
-> it, select the PWM subsystem and corresponding PWM driver on boards that
-> require PWM functionality.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Bryan Wu <bryan.wu@canonical.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> Cc: Andrew Jones <drjones@redhat.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-mips@linux-mips.org
-> Cc: linux-input@vger.kernel.org
-> Cc: linux-leds@vger.kernel.org
-> ---
->  arch/arm/Kconfig           |  6 ++----
->  arch/arm/mach-mxs/Kconfig  |  6 ++++--
+Hello,
 
-Shawn Guo <shawn.guo@linaro.org>
+Compared to v3:
 
->  arch/arm/mach-pxa/Kconfig  | 42 ++++++++++++++++++++++++++++--------------
->  arch/mips/Kconfig          |  3 ++-
->  drivers/input/misc/Kconfig |  4 ++--
->  drivers/leds/Kconfig       |  2 +-
->  include/linux/pwm.h        |  2 +-
->  7 files changed, 40 insertions(+), 25 deletions(-)
+	Based on Ingo's review:
+
+	I have not noticed that v3 2/5 patch "x86, MSI: Allocate as many
+	multiple IRQs as requested" is redundant, since the AHCI code
+	tries to allocate maximum possible number of MSIs. As there are
+	no other users of this functionality, I removed the patch for now;
+
+	v3 patch 3/5 "x86, MSI: Minor readability fixes" merged into
+  	v4 patch 1/3 "x86, MSI: Support multiple MSIs in presense of IRQ
+	remapping";
+
+	1,3/3:	multi-line comments fixed;
+		loops 'for (; i; i--)' changed to 'for (i--; i >= 0; i--)';
+
+	3/3:	ahci_host_activate() failure path tested;
+		ahci_port_priv::lock field commented;
+
+
+Alexander Gordeev (3):
+  1/3 x86, MSI: Support multiple MSIs in presense of IRQ remapping
+  2/3 PCI, MSI: Enable multiple MSIs with pci_enable_msi_block_auto()
+  3/3 AHCI: Support multiple MSIs
+
+ Documentation/PCI/MSI-HOWTO.txt |   37 ++++++++-
+ arch/x86/kernel/apic/io_apic.c  |  165 +++++++++++++++++++++++++++++++--------
+ drivers/ata/ahci.c              |   93 +++++++++++++++++++++-
+ drivers/ata/ahci.h              |    6 ++
+ drivers/ata/libahci.c           |  118 ++++++++++++++++++++++++++--
+ drivers/pci/msi.c               |   26 ++++++
+ include/linux/irq.h             |    5 +
+ include/linux/pci.h             |    7 ++
+ kernel/irq/chip.c               |   30 +++++--
+ 9 files changed, 432 insertions(+), 55 deletions(-)
+
+-- 
+1.7.7.6
+
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
