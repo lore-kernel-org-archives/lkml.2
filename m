@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2JGXbu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:31:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38562 "EHLO
+	id S1754517Ab2JGXXB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38401 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754078Ab2JGXXD (ORCPT
+	by vger.kernel.org with ESMTP id S1754078Ab2JGXWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:03 -0400
-Message-Id: <20121007225842.313192634@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:37 -0400
+Message-Id: <20121007225844.810347963@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:29 +0100
+Date: Sun, 07 Oct 2012 23:59:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Dan Williams <dan.j.williams@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 055/108] Fix a dead loop in async_synchronize_full()
+        Michal Schmidt <mschmidt@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 073/108] bnx2x: fix rx checksum validation for IPv6
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,90 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[Fixed upstream by commits 2955b47d2c1983998a8c5915cb96884e67f7cb53 and
-a4683487f90bfe3049686fc5c566bdc1ad03ace6 from Dan Williams, but they are much
-more intrusive than this tiny fix, according to Andrew - gregkh]
+[ Upstream commit e488921f44765e8ab6c48ca35e3f6b78df9819df ]
 
-This patch tries to fix a dead loop in  async_synchronize_full(), which
-could be seen when preemption is disabled on a single cpu machine. 
+Commit d6cb3e41 "bnx2x: fix checksum validation" caused a performance
+regression for IPv6. Rx checksum offload does not work. IPv6 packets
+are passed to the stack with CHECKSUM_NONE.
 
-void async_synchronize_full(void)
-{
-        do {
-                async_synchronize_cookie(next_cookie);
-        } while (!list_empty(&async_running) || !
-list_empty(&async_pending));
-}
+The hardware obviously cannot perform IP checksum validation for IPv6,
+because there is no checksum in the IPv6 header. This should not prevent
+us from setting CHECKSUM_UNNECESSARY.
 
-async_synchronize_cookie() calls async_synchronize_cookie_domain() with
-&async_running as the default domain to synchronize. 
+Tested on BCM57711.
 
-However, there might be some works in the async_pending list from other
-domains. On a single cpu system, without preemption, there is no chance
-for the other works to finish, so async_synchronize_full() enters a dead
-loop. 
-
-It seems async_synchronize_full() wants to synchronize all entries in
-all running lists(domains), so maybe we could just check the entry_count
-to know whether all works are finished. 
-
-Currently, async_synchronize_cookie_domain() expects a non-NULL running
-list ( if NULL, there would be NULL pointer dereference ), so maybe a
-NULL pointer could be used as an indication for the functions to
-synchronize all works in all domains. 
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Williams <dan.j.williams@gmail.com>
-Cc: Christian Kujau <lists@nerdbynature.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/async.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -87,6 +87,13 @@ static async_cookie_t  __lowest_in_progr
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 2c1a5c0..4c50ac0 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -554,14 +554,16 @@ static inline void bnx2x_set_skb_rxhash(struct bnx2x *bp, union eth_rx_cqe *cqe,
+ static void bnx2x_csum_validate(struct sk_buff *skb, union eth_rx_cqe *cqe,
+ 				struct bnx2x_fastpath *fp)
  {
- 	struct async_entry *entry;
+-	/* Do nothing if no IP/L4 csum validation was done */
+-
++	/* Do nothing if no L4 csum validation was done.
++	 * We do not check whether IP csum was validated. For IPv4 we assume
++	 * that if the card got as far as validating the L4 csum, it also
++	 * validated the IP csum. IPv6 has no IP csum.
++	 */
+ 	if (cqe->fast_path_cqe.status_flags &
+-	    (ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG |
+-	     ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG))
++	    ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG)
+ 		return;
  
-+	if (!running) { /* just check the entry count */
-+		if (atomic_read(&entry_count))
-+			return 0; /* smaller than any cookie */
-+		else
-+			return next_cookie;
-+	}
-+
- 	if (!list_empty(running)) {
- 		entry = list_first_entry(running,
- 			struct async_entry, list);
-@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain)
-  */
- void async_synchronize_full(void)
- {
--	do {
--		async_synchronize_cookie(next_cookie);
--	} while (!list_empty(&async_running) || !list_empty(&async_pending));
-+	async_synchronize_cookie_domain(next_cookie, NULL);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_full);
+-	/* If both IP/L4 validation were done, check if an error was found. */
++	/* If L4 validation was done, check if an error was found. */
  
-@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full
- /**
-  * async_synchronize_cookie_domain - synchronize asynchronous function calls within a certain domain with cookie checkpointing
-  * @cookie: async_cookie_t to use as checkpoint
-- * @running: running list to synchronize on
-+ * @running: running list to synchronize on, NULL indicates all lists
-  *
-  * This function waits until all asynchronous function calls for the
-  * synchronization domain specified by the running list @list submitted
+ 	if (cqe->fast_path_cqe.type_error_flags &
+ 	    (ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG |
 
 
