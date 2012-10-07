@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab2JGXZJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:25:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38727 "EHLO
+	id S1754768Ab2JGXZD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:25:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38731 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754705Ab2JGXXb (ORCPT
+	by vger.kernel.org with ESMTP id S1754706Ab2JGXXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:23:31 -0400
-Message-Id: <20121007225837.766245498@decadent.org.uk>
+Message-Id: <20121007225837.626361996@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:56 +0100
+Date: Sun, 07 Oct 2012 23:58:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wang Xingchao <xingchao.wang@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 022/108] drm/i915: HDMI - Clear Audio Enable bit for Hot Plug
+Subject: [ 021/108] drm/i915: Reduce a pin-leak BUG into a WARN
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Xingchao <xingchao.wang@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit b98b60167279df3acac9422c3c9820d9ebbcf9fb upstream.
+commit 7e81a42e341a4f15d76624b7c02ffb21b085b56f upstream.
 
-Clear Audio Enable bit to trigger unsolicated event to notify Audio
-Driver part the HDMI hot plug change. The patch fixed the bug when
-remove HDMI cable the bit was not cleared correctly.
+Pin-leaks persist and we get the perennial bug reports of machine
+lockups to the BUG_ON(pin_count==MAX). If we instead loudly report that
+the object cannot be pinned at that time it should prevent the driver from
+locking up, and hopefully restore a semblance of working whilst still
+leaving us a OOPS to debug.
 
-In intel_hdmi_dpms(), if intel_hdmi->has_audio been true, the "Audio enable bit" will
-be set to trigger unsolicated event to notify Alsa driver the change.
-
-intel_hdmi->has_audio will be reset to false from intel_hdmi_detect() after
-remove the hdmi cable, here's debug log:
-
-[  187.494153] [drm:output_poll_execute], [CONNECTOR:17:HDMI-A-1] status updated from 1 to 2
-[  187.525349] [drm:intel_hdmi_detect], HDMI: has_audio = 0
-
-so when comes back to intel_hdmi_dpms(), the "Audio enable bit" will not be cleared. And this
-cause the eld infomation and pin presence doesnot update accordingly in alsa driver side.
-
-This patch will also trigger unsolicated event to alsa driver to notify the hot plug event:
-
-[  187.853159] ALSA sound/pci/hda/patch_hdmi.c:772 HDMI hot plug event: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=1
-[  187.853268] ALSA sound/pci/hda/patch_hdmi.c:990 HDMI status: Codec=3 Pin=5 Presence_Detect=0 ELD_Valid=0
-
-Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_hdmi.c b/drivers/gpu/drm/i915/intel_hdmi.c
-index 98f6024..12dc330 100644
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -609,7 +609,7 @@ static void intel_hdmi_dpms(struct drm_encoder *encoder, int mode)
- 	u32 temp;
- 	u32 enable_bits = SDVO_ENABLE;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3357,7 +3357,8 @@ i915_gem_object_pin(struct drm_i915_gem_
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int ret;
  
--	if (intel_hdmi->has_audio)
-+	if (intel_hdmi->has_audio || mode != DRM_MODE_DPMS_ON)
- 		enable_bits |= SDVO_AUDIO_ENABLE;
+-	BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
++	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
++		return -EBUSY;
+ 	WARN_ON(i915_verify_lists(dev));
  
- 	temp = I915_READ(intel_hdmi->sdvox_reg);
+ 	if (obj->gtt_space != NULL) {
 
 
