@@ -1,207 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab2JGMNz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 08:13:55 -0400
-Received: from mx3.wp.pl ([212.77.101.7]:23141 "EHLO mx3.wp.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab2JGMNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 08:13:49 -0400
-Date: Sun, 7 Oct 2012 14:13:44 +0200
-From: Jakub Kicinski <kubakici@wp.pl>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: Re: [1/2] PCI-Express Non-Transparent Bridge Support
-Message-ID: <20121007141344.6624e873@wp.pl>
-In-Reply-To: <1349213177-9985-2-git-send-email-jon.mason@intel.com>
-References: <1349213177-9985-2-git-send-email-jon.mason@intel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+	id S1753162Ab2JGMOH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 08:14:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48019 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab2JGMN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 08:13:56 -0400
+Date: Sun, 7 Oct 2012 09:13:28 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: trivial@vger.kernel.org, crope@iki.fi, gennarone@gmail.com,
+        dan.carpenter@oracle.com, hans.verkuil@cisco.com, thomas@m3y3r.de,
+        santoshprasadnayak@gmail.com, abraham.manu@gmail.com,
+        stoth@kernellabs.com, dheitmueller@kernellabs.com,
+        t.stanislaws@samsung.com, liplianin@netup.ru,
+        andriy.shevchenko@linux.intel.com, ptqa@netup.ru, David@Fries.net,
+        thunder.mmm@gmail.com, j@jannau.net, s.nawrocki@samsung.com,
+        sungchun.kang@samsung.com, khw0178.kim@samsung.com,
+        shaik.ameer@samsung.com, hdegoede@redhat.com, tobias.lorenz@gmx.net,
+        gregkh@suse.de, paul.gortmaker@windriver.com, m@bues.ch,
+        hfvogt@gmx.net, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] drivers/media: Remove unnecessary semicolon
+Message-ID: <20121007091328.21c59e5f@infradead.org>
+In-Reply-To: <1348746906-26863-1-git-send-email-peter.senna@gmail.com>
+References: <1348746906-26863-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
-X-WP-SPAM: NO 0000000 [4fP0]                               
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Peter,
 
-it's good to see some NTB code getting into mainline! I have a few comments
-though.
+Em Thu, 27 Sep 2012 13:55:06 +0200
+Peter Senna Tschudin <peter.senna@gmail.com> escreveu:
 
-On Tue, 02 Oct 2012 21:26:16 -0000, Jon Mason <jon.mason@intel.com>
-wrote:
+> Remove unnecessary semicolon
+> 
+> And:
+> drivers/media/dvb-frontends/stv0900_core.c: remove unnecessary whitespace before a
+> quoted newline
 
-[...]
->+/**
->+ * ntb_write_local_spad() - write to the secondary scratchpad register
->+ * @ndev: pointer to ntb_device instance
->+ * @idx: index to the scratchpad register, 0 based
->+ * @val: the data value to put into the register
->+ *
->+ * This function allows writing of a 32bit value to the indexed scratchpad
->+ * register. The register resides on the secondary (external) side.
->+ *
->+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
->+ */
-[...]
->+/**
->+ * ntb_write_remote_spad() - write to the secondary scratchpad register
->+ * @ndev: pointer to ntb_device instance
->+ * @idx: index to the scratchpad register, 0 based
->+ * @val: the data value to put into the register
->+ *
->+ * This function allows writing of a 32bit value to the indexed scratchpad
->+ * register. The register resides on the secondary (external) side.
->+ *
->+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
->+ */
+(answering about your v3 here, instead of at your v3 email as it got
+ lost - I had subscribed from vger - you likely sent the patch during
+ that period of time - fortunately, patchwork got it)
 
-Those comments look suspiciously similar. I think one of the functions
-does write to primary scratchpad?
+This patch doesn't apply as-is:
 
-[...]
->+/**
->+ * ntb_read_local_spad() - read from the primary scratchpad register
->+ * @ndev: pointer to ntb_device instance
->+ * @idx: index to scratchpad register, 0 based
->+ * @val: pointer to 32bit integer for storing the register value
->+ *
->+ * This function allows reading of the 32bit scratchpad register on
->+ * the primary (internal) side.
->+ *
->+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
->+ */
-[...]
->+/**
->+ * ntb_read_remote_spad() - read from the primary scratchpad register
->+ * @ndev: pointer to ntb_device instance
->+ * @idx: index to scratchpad register, 0 based
->+ * @val: pointer to 32bit integer for storing the register value
->+ *
->+ * This function allows reading of the 32bit scratchpad register on
->+ * the primary (internal) side.
->+ *
->+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
->+ */
+Applying patch patches/lmml_14721_v3_drivers_media_remove_unnecessary_semicolon.patch
+patching file drivers/media/dvb-core/dvb_frontend.c
+Hunk #1 succeeded at 2309 (offset 21 lines).
+patching file drivers/media/dvb-frontends/a8293.c
+patching file drivers/media/dvb-frontends/af9013.c
+patching file drivers/media/dvb-frontends/bcm3510.c
+patching file drivers/media/dvb-frontends/cx24110.c
+patching file drivers/media/dvb-frontends/drxd_hard.c
+patching file drivers/media/dvb-frontends/isl6405.c
+patching file drivers/media/dvb-frontends/isl6421.c
+patching file drivers/media/dvb-frontends/itd1000.c
+Hunk #1 FAILED at 231.
+1 out of 1 hunk FAILED -- rejects in file drivers/media/dvb-frontends/itd1000.c
+patching file drivers/media/dvb-frontends/lnbp21.c
+patching file drivers/media/dvb-frontends/lnbp22.c
+patching file drivers/media/dvb-frontends/si21xx.c
+patching file drivers/media/dvb-frontends/sp8870.c
+Hunk #1 FAILED at 188.
+Hunk #2 FAILED at 207.
+Hunk #3 FAILED at 229.
+3 out of 3 hunks FAILED -- rejects in file drivers/media/dvb-frontends/sp8870.c
+patching file drivers/media/dvb-frontends/sp887x.c
+patching file drivers/media/dvb-frontends/stv0299.c
+patching file drivers/media/dvb-frontends/stv0900_core.c
+patching file drivers/media/dvb-frontends/tda8083.c
+patching file drivers/media/i2c/cx25840/cx25840-core.c
+patching file drivers/media/pci/bt8xx/dst_ca.c
+patching file drivers/media/pci/cx23885/altera-ci.c
+patching file drivers/media/pci/cx23885/cimax2.c
+patching file drivers/media/pci/cx88/cx88-blackbird.c
+Hunk #1 FAILED at 721.
+Hunk #2 FAILED at 739.
+Hunk #3 FAILED at 755.
+3 out of 3 hunks FAILED -- rejects in file drivers/media/pci/cx88/cx88-blackbird.c
+patching file drivers/media/pci/cx88/cx88-dvb.c
+patching file drivers/media/pci/cx88/cx88-mpeg.c
+patching file drivers/media/pci/cx88/cx88-tvaudio.c
+patching file drivers/media/pci/cx88/cx88-video.c
+patching file drivers/media/pci/saa7134/saa7134-video.c
+patching file drivers/media/platform/exynos-gsc/gsc-regs.c
+patching file drivers/media/radio/si470x/radio-si470x-i2c.c
+Hunk #1 succeeded at 308 (offset 11 lines).
+patching file drivers/media/radio/si470x/radio-si470x-usb.c
+patching file drivers/media/radio/si4713-i2c.c
+Hunk #1 FAILED at 1009.
+Hunk #2 FAILED at 1081.
+Hunk #3 FAILED at 1130.
+Hunk #4 FAILED at 1420.
+Hunk #5 FAILED at 1473.
+Hunk #6 FAILED at 1698.
+6 out of 6 hunks FAILED -- rejects in file drivers/media/radio/si4713-i2c.c
+patching file drivers/media/usb/dvb-usb-v2/af9015.c
+patching file drivers/media/usb/dvb-usb-v2/af9035.c
+Hunk #1 succeeded at 520 (offset 1 line).
 
-Same here.
+As this patch is trivial enough, I'll just discard the affected hunks
+with "quilt push -f", applying it partially.
 
-[...]
->+static int ntb_setup_msix(struct ntb_device *ndev)
->+{
->+	struct pci_dev *pdev = ndev->pdev;
->+	struct msix_entry *msix;
->+	int msix_entries;
->+	int rc, i, pos;
->+	u16 val;
->+
->+	pos = pci_find_capability(pdev, PCI_CAP_ID_MSIX);
->+	if (!pos) {
->+		rc = -EIO;
->+		goto err;
->+	}
->+
->+	rc = pci_read_config_word(pdev, pos + PCI_MSIX_FLAGS, &val);
->+	if (rc)
->+		goto err;
->+
->+	msix_entries = msix_table_size(val);
->+	if (msix_entries > ndev->limits.msix_cnt) {
->+		rc = -EINVAL;
->+		goto err;
->+	}
->+
->+	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
->+				     GFP_KERNEL);
->+	if (!ndev->msix_entries) {
->+		rc = -ENOMEM;
->+		goto err;
->+	}
->+
->+	for (i = 0; i < msix_entries; i++)
->+		ndev->msix_entries[i].entry = i;
->+
->+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
->+	if (rc < 0)
->+		goto err1;
->+	if (rc > 0) {
-
-rc > 0 doesn't mean that vectors were allocated. Have a look at the
-example in Documentation/PCI/MSI-HOWTO.txt.
-
->+		/* On SNB, the link interrupt is always tied to 4th vector.  If
->+		 * we can't get all 4, then we can't use MSI-X.
->+		 */
->+		if (ndev->hw_type != BWD_HW) {
->+			rc = -EIO;
->+			goto err1;
->+		}
-
-This looks fragile, what if msix_table_size(val) was < 4? 
-
->+
->+		dev_warn(&pdev->dev,
->+			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
->+			 rc);
->+		msix_entries = rc;
->+	}
->+
->+	for (i = 0; i < msix_entries; i++) {
->+		msix = &ndev->msix_entries[i];
->+		WARN_ON(!msix->vector);
->+
->+		/* Use the last MSI-X vector for Link status */
->+		if (ndev->hw_type == BWD_HW) {
->+			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
->+					 "ntb-callback-msix", &ndev->db_cb[i]);
->+			if (rc)
->+				goto err2;
->+		} else {
->+			if (i == msix_entries - 1) {
->+				rc = request_irq(msix->vector,
->+						 xeon_event_msix_irq, 0,
->+						 "ntb-event-msix", ndev);
->+				if (rc)
->+					goto err2;
->+			} else {
->+				rc = request_irq(msix->vector,
->+						 xeon_callback_msix_irq, 0,
->+						 "ntb-callback-msix",
->+						 &ndev->db_cb[i]);
->+				if (rc)
->+					goto err2;
->+			}
->+		}
->+	}
->+
->+	ndev->num_msix = msix_entries;
->+	if (ndev->hw_type == BWD_HW)
->+		ndev->max_cbs = msix_entries;
->+	else
->+		ndev->max_cbs = msix_entries - 1;
->+
->+	return 0;
->+
->+err2:
->+	while (--i >= 0) {
->+		msix = &ndev->msix_entries[i];
->+		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
->+			free_irq(msix->vector, ndev);
->+		else
->+			free_irq(msix->vector, &ndev->db_cb[i]);
->+	}
->+	pci_disable_msix(pdev);
->+err1:
->+	kfree(ndev->msix_entries);
->+	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
->+err:
->+	ndev->num_msix = 0;
->+	return rc;
->+}
-
-Thanks for your work,
-
-  -- Kuba
+Cheers,
+Mauro
