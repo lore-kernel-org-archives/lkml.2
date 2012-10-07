@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab2JGXjS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:39:18 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:58627
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab2JGXjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:39:16 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        akpm@linux-foundation.org, andi@firstfloor.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 0/2] Drivers: hv 
-Date: Sun,  7 Oct 2012 16:59:07 -0700
-Message-Id: <1349654347-18337-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753810Ab2JGXW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:22:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38201 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752963Ab2JGXWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 19:22:05 -0400
+Message-Id: <20121007225848.966777214@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 08 Oct 2012 00:00:17 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ed Cashin <ecashin@coraid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 103/108] aoe: assert AoE packets marked as requiring no  checksum
+In-Reply-To: <20121007225834.673681075@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a basic balloon driver to take advantage of the dynamic memory
-management functionality supported on Windows hosts. Windows requires
-the guests to support both memory hot add as well as ballooning. In this patch
-we are adding the basic balloon driver. Memory hot add will be added in a
-subsequent patch and this requires some changes yet to be made on the host
-side.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-The policy engine on Windows hosts needs the guest to post memory status
-periodically and it looks like committed_as is what it is expecting.
-Since vm_committed_as is not currently an exported symbol, this patch set
-also exports this symbol.
+------------------
 
-K. Y. Srinivasan (2):
-  mm: Export vm_committed_as
-  Drivers: hv: Add Hyper-V balloon driver
+From: Ed Cashin <ecashin@coraid.com>
 
- drivers/hv/Kconfig      |    6 +
- drivers/hv/Makefile     |    1 +
- drivers/hv/hv_balloon.c | 1043 +++++++++++++++++++++++++++++++++++++++++++++++
- mm/mmap.c               |    1 +
- mm/nommu.c              |    1 +
- 5 files changed, 1052 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hv/hv_balloon.c
+[ Upstream commit 8babe8cc6570ed896b7b596337eb8fe730c3ff45 ]
 
--- 
-1.7.4.1
+In order for the network layer to see that AoE requires
+no checksumming in a generic way, the packets must be
+marked as requiring no checksum, so we make this requirement
+explicit with the assertion.
+
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/block/aoe/aoecmd.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index de0435e..887f68f 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -35,6 +35,7 @@ new_skb(ulong len)
+ 		skb_reset_mac_header(skb);
+ 		skb_reset_network_header(skb);
+ 		skb->protocol = __constant_htons(ETH_P_AOE);
++		skb_checksum_none_assert(skb);
+ 	}
+ 	return skb;
+ }
+
 
