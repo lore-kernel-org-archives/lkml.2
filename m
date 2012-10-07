@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab2JGPkE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 11:40:04 -0400
+	id S1753657Ab2JGPkN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:40:13 -0400
 Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:18945
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752715Ab2JGPjW (ORCPT
+	by vger.kernel.org with ESMTP id S1752944Ab2JGPjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 11:39:22 -0400
+	Sun, 7 Oct 2012 11:39:23 -0400
 X-IronPort-AV: E=Sophos;i="4.80,547,1344204000"; 
-   d="scan'208";a="158166840"
+   d="scan'208";a="158166844"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Antti Palosaari <crope@iki.fi>
+To: Michael Krufky <mkrufky@linuxtv.org>
 Cc: kernel-janitors@vger.kernel.org, rmallon@gmail.com, shubhrajyoti@ti.com,
         Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/13] drivers/media/tuners/qt1010.c: use macros for i2c_msg initialization
-Date: Sun,  7 Oct 2012 17:38:34 +0200
-Message-Id: <1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 6/13] drivers/media/tuners/tda18271-common.c: use macros for i2c_msg initialization
+Date: Sun,  7 Oct 2012 17:38:37 +0200
+Message-Id: <1349624323-15584-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,9 +27,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
-
-A length expressed as an explicit constant is also re-expressed as the size
-of the buffer, when this is possible.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -69,35 +66,47 @@ struct i2c_msg x =
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/tuners/qt1010.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/tuners/qt1010.c b/drivers/media/tuners/qt1010.c
-index bc419f8..37ff254 100644
---- a/drivers/media/tuners/qt1010.c
-+++ b/drivers/media/tuners/qt1010.c
-@@ -25,10 +25,8 @@
- static int qt1010_readreg(struct qt1010_priv *priv, u8 reg, u8 *val)
- {
- 	struct i2c_msg msg[2] = {
--		{ .addr = priv->cfg->i2c_address,
--		  .flags = 0, .buf = &reg, .len = 1 },
--		{ .addr = priv->cfg->i2c_address,
--		  .flags = I2C_M_RD, .buf = val, .len = 1 },
-+		I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
-+		I2C_MSG_READ(priv->cfg->i2c_address, val, 1),
+ drivers/media/tuners/tda18271-common.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/media/tuners/tda18271-common.c b/drivers/media/tuners/tda18271-common.c
+index 221171e..d05ed53 100644
+--- a/drivers/media/tuners/tda18271-common.c
++++ b/drivers/media/tuners/tda18271-common.c
+@@ -125,10 +125,8 @@ int tda18271_read_regs(struct dvb_frontend *fe)
+ 	unsigned char buf = 0x00;
+ 	int ret;
+ 	struct i2c_msg msg[] = {
+-		{ .addr = priv->i2c_props.addr, .flags = 0,
+-		  .buf = &buf, .len = 1 },
+-		{ .addr = priv->i2c_props.addr, .flags = I2C_M_RD,
+-		  .buf = regs, .len = 16 }
++		I2C_MSG_WRITE(priv->i2c_props.addr, &buf, sizeof(buf)),
++		I2C_MSG_READ(priv->i2c_props.addr, regs, 16)
  	};
  
- 	if (i2c_transfer(priv->i2c, msg, 2) != 2) {
-@@ -43,8 +41,8 @@ static int qt1010_readreg(struct qt1010_priv *priv, u8 reg, u8 *val)
- static int qt1010_writereg(struct qt1010_priv *priv, u8 reg, u8 val)
- {
- 	u8 buf[2] = { reg, val };
--	struct i2c_msg msg = { .addr = priv->cfg->i2c_address,
--			       .flags = 0, .buf = buf, .len = 2 };
-+	struct i2c_msg msg = I2C_MSG_WRITE(priv->cfg->i2c_address, buf,
-+					   sizeof(buf));
+ 	tda18271_i2c_gate_ctrl(fe, 1);
+@@ -155,10 +153,8 @@ int tda18271_read_extended(struct dvb_frontend *fe)
+ 	unsigned char buf = 0x00;
+ 	int ret, i;
+ 	struct i2c_msg msg[] = {
+-		{ .addr = priv->i2c_props.addr, .flags = 0,
+-		  .buf = &buf, .len = 1 },
+-		{ .addr = priv->i2c_props.addr, .flags = I2C_M_RD,
+-		  .buf = regdump, .len = TDA18271_NUM_REGS }
++		I2C_MSG_WRITE(priv->i2c_props.addr, &buf, sizeof(buf)),
++		I2C_MSG_READ(priv->i2c_props.addr, regdump, sizeof(regdump))
+ 	};
  
- 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
- 		dev_warn(&priv->i2c->dev, "%s: i2c wr failed reg=%02x\n",
-
+ 	tda18271_i2c_gate_ctrl(fe, 1);
+@@ -192,8 +188,7 @@ int tda18271_write_regs(struct dvb_frontend *fe, int idx, int len)
+ 	struct tda18271_priv *priv = fe->tuner_priv;
+ 	unsigned char *regs = priv->tda18271_regs;
+ 	unsigned char buf[TDA18271_NUM_REGS + 1];
+-	struct i2c_msg msg = { .addr = priv->i2c_props.addr, .flags = 0,
+-			       .buf = buf };
++	struct i2c_msg msg = I2C_MSG_WRITE(priv->i2c_props.addr, buf, 0);
+ 	int i, ret = 1, max;
+ 
+ 	BUG_ON((len == 0) || (idx + len > sizeof(buf)));
