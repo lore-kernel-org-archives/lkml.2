@@ -1,132 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab2JGBPf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 21:15:35 -0400
-Received: from plane.gmane.org ([80.91.229.3]:50315 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab2JGBPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 21:15:34 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: el_es <el.es.cr@gmail.com>
-Subject: Re: Minimal jitter = good desktop.
-Date: Sun, 7 Oct 2012 01:15:18 +0000 (UTC)
-Message-ID: <loom.20121007T022629-736@post.gmane.org>
-References: <op.wlqe9kw36426ze@localhost.localdomain> <alpine.DEB.2.02.1210051803180.13407@asgard.lang.hm> <op.wlrdzkqh6426ze@localhost.localdomain> <loom.20121006T164640-362@post.gmane.org> <op.wlrq12q96426ze@localhost.localdomain>
-Mime-Version: 1.0
+	id S1752121Ab2JGBqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 21:46:17 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43680 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab2JGBqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 21:46:16 -0400
+Date: Sat, 6 Oct 2012 18:44:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121007014447.GB2485@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121002195042.GA16087@www.outflux.net>
+ <20121003132538.GE13192@linux.vnet.ibm.com>
+ <20121003161702.GA22008@kroah.com>
+ <20121003164712.GF2527@linux.vnet.ibm.com>
+ <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
+ <20121003200314.GR2527@linux.vnet.ibm.com>
+ <20121004015539.GA19958@srcf.ucam.org>
+ <20121004143150.GA2464@linux.vnet.ibm.com>
+ <20121005164642.GA10711@linux.vnet.ibm.com>
+ <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.31.113.250 (Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20100101 Firefox/15.0.1)
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100701-2876-0000-0000-000000CB234A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uwaysi Bin Kareem <uwaysi.bin.kareem <at> paradoxuncreated.com> writes:
-
+On Sat, Oct 06, 2012 at 06:10:36PM +0200, Frederic Weisbecker wrote:
+> 2012/10/5 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > On Thu, Oct 04, 2012 at 07:31:50AM -0700, Paul E. McKenney wrote:
+> >> On Thu, Oct 04, 2012 at 02:55:39AM +0100, Matthew Garrett wrote:
+> >> > On Wed, Oct 03, 2012 at 01:03:14PM -0700, Paul E. McKenney wrote:
+> >> >
+> >> > > That has not proven sufficient for me in the past, RCU_FAST_NO_HZ
+> >> > > being a case in point.
+> >> >
+> >> > Taint the kernel at boot time? That'd be sufficient to force distros to
+> >> > disable it.
+> >>
+> >> Cool!  That does sound much more socially responsible than my thought
+> >> of forcing a splat (e.g., WARN_ON(1)) during boot.  ;-)
+> >
+> > So, from what I can see, here is the list of the ways of warning distros
+> > off of a given kernel config option, taken in terms of CONFIG_RCU_USER_QS:
+> >
+> > 1.      Make CONFIG_RCU_USER_QS depend on CONFIG_BROKEN.
+> >
+> >         It sounds to me like distros would avoid adding this (do they?),
+> >         but tester would probably avoid it as well.
+> >
+> > 2.      Make CONFIG_RCU_USER_QS depend on CONFIG_STAGING.
+> >
+> >         As Frederic noted, this is more of a driver thing than a
+> >         core-kernel thing, so probably not appropriate.
+> >
+> > 3.      Boot-time WARN_ON() if CONFIG_RCU_USER_QS=y.
+> >
+> >         This seems to me to be a tad excessive.  But the place to do it
+> >         might be rcu_bootup_announce_oddness() in kernel/rcutree_plugin.h.
+> >
+> > 4.      Remove CONFIG_RCU_USER_QS from Kconfig, so that users have to
+> >         patch their kernel to enable it.
+> >
+> >         This also seems a tad excessive.
+> >
+> > 5.      Maintain CONFIG_RCU_USER_QS out of tree, for example in the
+> >         -rt patchset.
+> >
+> >         This is a good place to start, but it has been where
+> >         CONFIG_RCU_USER_QS has been for some time, and although it
+> >         got some good testing, it clearly needs more.  In my view,
+> >         CONFIG_RCU_USER_QS has outgrown its out-of-tree roots.
+> >
+> > 6.      Boot-time add_taint() if CONFIG_RCU_USER_QS=y, as suggested
+> >         by Matthew Garrett.  The taint value might be TAINT_CRAP,
+> >         TAINT_OOT_MODULE, TAINT_WARN, or TAINT_FIRMWARE_WORKAROUND --
+> >         all the other taint values disable lockdep.  Of these four,
+> >         TAINT_OOT_MODULE and TAINT_FIRMWARE_WORKAROUND are clearly
+> >         off-topic, leaving TAINT_CRAP and TAINT_WARN.  Taking them one
+> >         at a time:
+> >
+> >         TAINT_CRAP: Used when loading modules from staging.
+> >
+> >         TAINT_WARN: Used when "scheduling while atomic" is encountered.
+> >
+> >         So I have my tongue only halfway in my cheek when I suggest
+> >         starting with TAINT_CRAP, then moving to TAINT_WARN, then
+> >         removing the tainting altogether.  The place to do this might
+> >         be rcu_bootup_announce_oddness() in kernel/rcutree_plugin.h.
+> >
+> > So how about the following progression?
+> >
+> > A.      Early days, only a few crazies should test.  In this case, the
+> >         code should be out of tree, perhaps in something like -rt,
+> >         perhaps as a set of patches.
+> >
+> > B.      Need more testers, but still not expected to work reasonably.
+> >         Mainline, but depending on CONFIG_BROKEN.  (I am not all that
+> >         enthusiastic about this option, but am including it for
+> >         completeness.)
 > 
-> This is really simple, and I don`t care about top posting, down posting,  
-> in the middle comments or whatever. Do whatehver you like, and have no  
-> other rule that what is in your soul. That is what drives ultimately  
-> society. Look up Aristotle natural-law. Which actually is based in divine  
-> nature.
+> Yeah neither am I. With a dependency on CONFIG_BROKEN, it considerably
+> reduce the testing coverage too.
 
-The natural law on most mailing lists is : avoid top-posting and actively
-discourage it. That includes LKML.
+;-)
 
+> > C.      Need wide testing, but don't want 100,000,000 unsuspecting
+> >         test subjects.  Taint the kernel with TAINT_CRAP.
+> >
+> > D.      OK for production in special situations, but definitely not
+> >         for typical users.  Taint the kernel with TAINT_WARN.
+> >
+> > E.      Ready for general production use.  Mainlined without restrictions.
+> >
+> > I would say that CONFIG_RCU_USER_QS is currently at point C above, it
+> > clearly now needs testing on a wide variety of hardware, but also is
+> > clearly not ready for 100,000,000 users.
+> >
+> > Thoughts?
 > 
-> Now jitter, is really easy. Jitter-sensitive OpenGL applications will show  
-> visible jitter.
-Question isn't of how you 'see' or 'feel' it, question is: how do you give
-representative hard numbers of it.
-
-> Doom 3 is extremely sensitive. I have tried to make it run  
-> well many times, but it wasn`t until I became aware of more unintuitive  
-> behaviour not according to theory with some settings, and I started trying  
-> reversing them. And then I found 90hz to be optimal, and giving a  
-> perfectly running doom 3. 
-
-> Someone actually suggested I try 10000hz BFS  
-> patch, because "it would reduce latency." Which I did. But then I also  
-> tried 20hz, and there was little difference on BFS. Ultimately I arrived  
-> at 90hz with CFS, and tweaking it`s granularity a bit, and it worked well.  
-> (Better than BFS). So in that case, JITTER is solved. Also a lot of  
-> low-jitter configs use low hz. So that seems to back it up. And everything  
-> on my computer seems to be running better. Smoother, more responsive. Even  
-> the ads in my browser ;(
-
-Can you guarantee the same will apply in all hardware combinations? 
-What if it doesn't work for e.g. someone with 4 core i5 and ATI gpu?
-
+> Really I would much prefer to add some "Don't enable it unless you're
+> doing kernel hacking.
+> If unsure say N" text in the Kconfig.
 > 
-> I also appreciate those who can measure small jitter in the uS range, and  
-> mitigate it. But I would also like for those, to check if a simple  
-> hold-logic would be better. For the 10ms filter I mentioned. Say hold for  
-> 1ms at 0, and then to regular peak values. It seems that would be a better  
-> filter. This just me being a perfectionist ofcourse.
+> I can understand that distros want to cover as much feature as they
+> can for their users. But
+> should it be an excuse for not reading outstanding warnings in Kconfig
+> help text?
 
-I know how filters work, thank you very much.
-But with same outcome one could argue, that someone could put a 
-regulator there instead, to auto-tune to a chosen benchmark;
-Maybe my personal favorite, GPC? 
-But since you cannot measure jitter, you can't minimize that automatically...
-or can you ?
-Since we're in Control Theory, what we have accessible as 'measurements' 
-is either a derivative of jitter or jitter derives from it, with bias unknown.
-IOW nice for looking at, but worthless.
-So the goal, according to what I derive from looking at LKML, is not
-to minimize the latency, but rather to make it as precise as possible, 
+In my experience, they do not read these warnings carefully.  :-(
+Or perhaps they do read them, but react to them by running the code
+through some test suite rather than by putting full faith in the
+warning.
 
-> So yes, according to the general definition of "os-jitter" it seems highly  
-> reduced.
-> 
-> I don`t know at all why you are mentioning opengl calls. Obviously games,  
-> do run quite well. Atleast now. It is also going to be great to test new  
-> games coming, and keep iterating knowledge and tuning. 
+> Or may be add some specific warning yeah. I wouldn't mind much.
 
+We have some weeks to think about it -- I cannot see pushing a
+warning in as a regression.  ;-)
 
-My thought experiment is as follows:
-Imagine all the layers of the opengl aware application.
-A thread or a few, to calculate the scene (spatial, physical, network
-threads). Also one to govern them all. This is scheduled in the 
-application itself, kernel only sees one process.
-The scene composition thread, produces new frames as fast as it 
-can run (or if synchronized to vsync, produces just one and then
-waits).
-An application competes for execution time with other applications.
-A thread (or a few) receiving data from app itself, recognizing what
-calls it should make, calling glibc/gl/kernel functions. This is still
-in userspace and competes with the application itself (say it's the X
-server)
-A thread or a few, in kernel space, receiving calls from userspace,
-translating into calls into hardware. (kernel driver)
-This competes for execution time with other kernel level threads,
-scheduler, other kernel services.
-Now the pipeline in the GPU receives the data and manipulates 
-GPU memory; Say, we can generate 2 to 4 frames in between gpu's internal
-vsync (exxageration here) so the data in gpu memory changes 2 to 4 
-times before the video buffer swap occurs and the output(s) start pushing
-the buffer content into the monitor bitstream. 
-Say we have comfortably enough time to push 2 scene updates, but 
-the third is dubious: not all calls to gpu arrive before vsync HAS TO 
-happen. The pipeline will not be reset; and if in the mean time, os scheduler
-decides something else should be ran instead of the application or
-xserver, it will be alerted of this fact only when its next slice comes.
-But then, it will try to finish the remaining calls, which will only add
-to injury. Because it will push the remaining calls for the scene
-which is delayed because of the caller was preempted during vsync,
-instead of recalculating the whole scene with most recent timing.
-
-If we could predict that all the required calls will NOT make it into
-GPU in time for 3rd frame update, we just wouldn't run it; but we can't
-predict that. This is what I would call 'graphic buffer underrun'.
-
-> 
-> Peace Be With You.
-
-Hope it's with you too.
-
-Lukasz
+							Thanx, Paul
 
