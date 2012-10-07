@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab2JGX2p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:28:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38646 "EHLO
+	id S1754866Ab2JGX3H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:29:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38635 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754634Ab2JGXXT (ORCPT
+	by vger.kernel.org with ESMTP id S1754618Ab2JGXXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:19 -0400
-Message-Id: <20121007225839.839115170@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:17 -0400
+Message-Id: <20121007225840.529035238@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:11 +0100
+Date: Sun, 07 Oct 2012 23:59:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marc Kleine-Budde <mkl@pengutronix.de>, Anant Gole <anantgole@ti.com>,
-        Jan Luebbe <jlu@pengutronix.de>
-Subject: [ 037/108] can: ti_hecc: fix oops during rmmod
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Andreas Hartmann <andihartmann@01019freenet.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 042/108] hwmon: (fam15h_power) Tweak runavg_range on resume
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,78 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit ab04c8bd423edb03e2148350a091836c196107fc upstream.
+commit 5f0ecb907deb1e6f28071ee3bd568903b9da1be4 upstream.
 
-This patch fixes an oops which occurs when unloading the driver, while the
-network interface is still up. The problem is that first the io mapping is
-teared own, then the CAN device is unregistered, resulting in accessing the
-hardware's iomem:
+The quirk introduced with commit
+00250ec90963b7ef6678438888f3244985ecde14 (hwmon: fam15h_power: fix
+bogus values with current BIOSes) is not only required during driver
+load but also when system resumes from suspend. The BIOS might set the
+previously recommended (but unsuitable) initilization value for the
+running average range register during resume.
 
-[  172.744232] Unable to handle kernel paging request at virtual address c88b0040
-[  172.752441] pgd = c7be4000
-[  172.755645] [c88b0040] *pgd=87821811, *pte=00000000, *ppte=00000000
-[  172.762207] Internal error: Oops: 807 [#1] PREEMPT ARM
-[  172.767517] Modules linked in: ti_hecc(-) can_dev
-[  172.772430] CPU: 0    Not tainted  (3.5.0alpha-00037-g3554cc0 #126)
-[  172.778961] PC is at ti_hecc_close+0xb0/0x100 [ti_hecc]
-[  172.784423] LR is at __dev_close_many+0x90/0xc0
-[  172.789123] pc : [<bf00c768>]    lr : [<c033be58>]    psr: 60000013
-[  172.789123] sp : c5c1de68  ip : 00040081  fp : 00000000
-[  172.801025] r10: 00000001  r9 : c5c1c000  r8 : 00100100
-[  172.806457] r7 : c5d0a48c  r6 : c5d0a400  r5 : 00000000  r4 : c5d0a000
-[  172.813232] r3 : c88b0000  r2 : 00000001  r1 : c5d0a000  r0 : c5d0a000
-[  172.820037] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  172.827423] Control: 10c5387d  Table: 87be4019  DAC: 00000015
-[  172.833404] Process rmmod (pid: 600, stack limit = 0xc5c1c2f0)
-[  172.839447] Stack: (0xc5c1de68 to 0xc5c1e000)
-[  172.843994] de60:                   bf00c6b8 c5c1dec8 c5d0a000 c5d0a000 00200200 c033be58
-[  172.852478] de80: c5c1de44 c5c1dec8 c5c1dec8 c033bf2c c5c1de90 c5c1de90 c5d0a084 c5c1de44
-[  172.860992] dea0: c5c1dec8 c033c098 c061d3dc c5d0a000 00000000 c05edf28 c05edb34 c000d724
-[  172.869476] dec0: 00000000 c033c2f8 c5d0a084 c5d0a084 00000000 c033c370 00000000 c5d0a000
-[  172.877990] dee0: c05edb00 c033c3b8 c5d0a000 bf00d3ac c05edb00 bf00d7c8 bf00d7c8 c02842dc
-[  172.886474] df00: c02842c8 c0282f90 c5c1c000 c05edb00 bf00d7c8 c0283668 bf00d7c8 00000000
-[  172.894989] df20: c0611f98 befe2f80 c000d724 c0282d10 bf00d804 00000000 00000013 c0068a8c
-[  172.903472] df40: c5c538e8 685f6974 00636365 c61571a8 c5cb9980 c61571a8 c6158a20 c00c9bc4
-[  172.911987] df60: 00000000 00000000 c5cb9980 00000000 c5cb9980 00000000 c7823680 00000006
-[  172.920471] df80: bf00d804 00000880 c5c1df8c 00000000 000d4267 befe2f80 00000001 b6d90068
-[  172.928985] dfa0: 00000081 c000d5a0 befe2f80 00000001 befe2f80 00000880 b6d90008 00000008
-[  172.937469] dfc0: befe2f80 00000001 b6d90068 00000081 00000001 00000000 befe2eac 00000000
-[  172.945983] dfe0: 00000000 befe2b18 00023ba4 b6e6addc 60000010 befe2f80 a8e00190 86d2d344
-[  172.954498] [<bf00c768>] (ti_hecc_close+0xb0/0x100 [ti_hecc]) from [<c033be58>] (__dev__registered_many+0xc0/0x2a0)
-[  172.984161] [<c033c098>] (rollback_registered_many+0xc0/0x2a0) from [<c033c2f8>] (rollback_registered+0x20/0x30)
-[  172.994750] [<c033c2f8>] (rollback_registered+0x20/0x30) from [<c033c370>] (unregister_netdevice_queue+0x68/0x98)
-[  173.005401] [<c033c370>] (unregister_netdevice_queue+0x68/0x98) from [<c033c3b8>] (unregister_netdev+0x18/0x20)
-[  173.015899] [<c033c3b8>] (unregister_netdev+0x18/0x20) from [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc])
-[  173.026245] [<bf00d3ac>] (ti_hecc_remove+0x60/0x80 [ti_hecc]) from [<c02842dc>] (platform_drv_remove+0x14/0x18)
-[  173.036712] [<c02842dc>] (platform_drv_remove+0x14/0x18) from [<c0282f90>] (__device_release_driver+0x7c/0xbc)
-
-Cc: Anant Gole <anantgole@ti.com>
-Tested-by: Jan Luebbe <jlu@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Tested-by: Andreas Hartmann <andihartmann@01019freenet.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/ti_hecc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/fam15h_power.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
-index 527dbcf..9ded21e 100644
---- a/drivers/net/can/ti_hecc.c
-+++ b/drivers/net/can/ti_hecc.c
-@@ -984,12 +984,12 @@ static int __devexit ti_hecc_remove(struct platform_device *pdev)
- 	struct net_device *ndev = platform_get_drvdata(pdev);
- 	struct ti_hecc_priv *priv = netdev_priv(ndev);
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -128,12 +128,12 @@ static bool __devinit fam15h_power_is_in
+  * counter saturations resulting in bogus power readings.
+  * We correct this value ourselves to cope with older BIOSes.
+  */
+-static DEFINE_PCI_DEVICE_TABLE(affected_device) = {
++static const struct pci_device_id affected_device[] = {
+ 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+ 	{ 0 }
+ };
  
-+	unregister_candev(ndev);
- 	clk_disable(priv->clk);
- 	clk_put(priv->clk);
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	iounmap(priv->base);
- 	release_mem_region(res->start, resource_size(res));
--	unregister_candev(ndev);
- 	free_candev(ndev);
- 	platform_set_drvdata(pdev, NULL);
+-static void __devinit tweak_runavg_range(struct pci_dev *pdev)
++static void tweak_runavg_range(struct pci_dev *pdev)
+ {
+ 	u32 val;
  
+@@ -157,6 +157,16 @@ static void __devinit tweak_runavg_range
+ 		REG_TDP_RUNNING_AVERAGE, val);
+ }
+ 
++#ifdef CONFIG_PM
++static int fam15h_power_resume(struct pci_dev *pdev)
++{
++	tweak_runavg_range(pdev);
++	return 0;
++}
++#else
++#define fam15h_power_resume NULL
++#endif
++
+ static void __devinit fam15h_power_init_data(struct pci_dev *f4,
+ 					     struct fam15h_power_data *data)
+ {
+@@ -255,6 +265,7 @@ static struct pci_driver fam15h_power_dr
+ 	.id_table = fam15h_power_id_table,
+ 	.probe = fam15h_power_probe,
+ 	.remove = __devexit_p(fam15h_power_remove),
++	.resume = fam15h_power_resume,
+ };
+ 
+ static int __init fam15h_power_init(void)
 
 
