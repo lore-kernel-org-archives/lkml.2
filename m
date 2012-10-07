@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab2JGXeJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:34:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38522 "EHLO
+	id S932148Ab2JGXeg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:34:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38498 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754393Ab2JGXWy (ORCPT
+	by vger.kernel.org with ESMTP id S1754322Ab2JGXWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:54 -0400
-Message-Id: <20121007225843.000001548@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:49 -0400
+Message-Id: <20121007225843.274569775@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:34 +0100
+Date: Sun, 07 Oct 2012 23:59:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        =?ISO-8859-15?q?Jo=C3=A3o=20Paulo=20Rechi=20Vita?= 
-	<jprvita@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 060/108] Bluetooth: Fix sending a HCI Authorization Request over LE links
+        Seth Forshee <seth.forshee@canonical.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 062/108] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,41 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit d8343f125710fb596f7a88cd756679f14f4e77b9 upstream.
+commit 32ab31e01e2def6f48294d872d9bb42573aae00f upstream.
 
-In the case that the link is already in the connected state and a
-Pairing request arrives from the mgmt interface, hci_conn_security()
-would be called but it was not considering LE links.
+The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
+but the only remapping unit described in the DMAR table matches id 0.
+Interrupt remapping fails as a result, and the kernel panics with the
+message "timer doesn't work through Interrupt-remapped IO-APIC."
 
-Reported-by: João Paulo Rechi Vita <jprvita@openbossa.org>
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
+not found, do not allow IRQ remapping to be enabled.
+
+v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
+    and add FW_BUG to the log message
+v3: Skip check if IOMMU doesn't support interrupt remapping and remove
+    existing check that the IOMMU count equals the IOAPIC count
+
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/hci_conn.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/iommu/intr_remapping.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -44,6 +44,7 @@
- 
- #include <net/bluetooth/bluetooth.h>
- #include <net/bluetooth/hci_core.h>
-+#include <net/bluetooth/smp.h>
- 
- static void hci_le_connect(struct hci_conn *conn)
+--- a/drivers/iommu/intr_remapping.c
++++ b/drivers/iommu/intr_remapping.c
+@@ -752,6 +752,7 @@ int __init parse_ioapics_under_ir(void)
  {
-@@ -641,6 +642,9 @@ int hci_conn_security(struct hci_conn *c
- {
- 	BT_DBG("conn %p", conn);
+ 	struct dmar_drhd_unit *drhd;
+ 	int ir_supported = 0;
++	int ioapic_idx;
  
-+	if (conn->type == LE_LINK)
-+		return smp_conn_security(conn, sec_level);
+ 	for_each_drhd_unit(drhd) {
+ 		struct intel_iommu *iommu = drhd->iommu;
+@@ -764,13 +765,20 @@ int __init parse_ioapics_under_ir(void)
+ 		}
+ 	}
+ 
+-	if (ir_supported && ir_ioapic_num != nr_ioapics) {
+-		printk(KERN_WARNING
+-		       "Not all IO-APIC's listed under remapping hardware\n");
+-		return -1;
++	if (!ir_supported)
++		return 0;
 +
- 	/* For sdp we don't need the link key. */
- 	if (sec_level == BT_SECURITY_SDP)
- 		return 1;
++	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
++		int ioapic_id = mpc_ioapic_id(ioapic_idx);
++		if (!map_ioapic_to_ir(ioapic_id)) {
++			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
++			       "interrupt remapping will be disabled\n",
++			       ioapic_id);
++			return -1;
++		}
+ 	}
+ 
+-	return ir_supported;
++	return 1;
+ }
+ 
+ int __init ir_dev_scope_init(void)
 
 
