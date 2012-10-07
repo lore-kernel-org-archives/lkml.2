@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2JGHQO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 03:16:14 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55432 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2JGHQM (ORCPT
+	id S1751964Ab2JGHRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 03:17:30 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:29017 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2JGHR2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 03:16:12 -0400
-Message-ID: <50712AAA.5030807@gmail.com>
-Date: Sun, 07 Oct 2012 09:09:30 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
-MIME-Version: 1.0
-To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-CC: Vyacheslav Dubeyko <slava@dubeyko.com>, jaegeuk.kim@samsung.com,
-        Al Viro <viro@zeniv.linux.org.uk>, tytso@mit.edu,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>  <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com> <1349553966.12699.132.camel@kjgkr>
-In-Reply-To: <1349553966.12699.132.camel@kjgkr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 7 Oct 2012 03:17:28 -0400
+Date: Sun, 7 Oct 2012 09:16:40 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: =?ISO-8859-1?B?U3TpcGhhbmU=?= Chatty <chatty@enac.fr>
+Cc: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Fabien =?UTF-8?B?QW5kcsOp?= <fabien.andre@gmail.com>,
+        =?UTF-8?B?5YqJ5ZiJ6ae/?= <scott.liu@emc.com.tw>,
+        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, USB list <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification  
+ implementation
+Message-ID: <20121007091640.0c21b3f3@endymion.delvare>
+In-Reply-To: <3289FFF0-9B90-4F2D-8ECA-EE344911FBC0@enac.fr>
+References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>
+	<20121006220421.47f5fd56@endymion.delvare>
+	<6F756B9E-DC87-4EF6-BB09-8A69A5F8C 999@enac.fr>
+	<20121006231111.6350c014@endymion.delvare>
+	<3289FFF0-9B90-4F2D-8ECA-EE344911FBC0@enac.fr>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 06/10/2012 22:06, Jaegeuk Kim ha scritto:
-> 2012-10-06 (í† ), 17:54 +0400, Vyacheslav Dubeyko:
->> Hi Jaegeuk,
->
-> Hi.
-> We know each other, right? :)
->
->>
->>> From:	 	ê¹€ìž¬ê·¹ <jaegeuk.kim@samsung.com>
->>> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
->>> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file system
->>> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
->>>
->>> This is a new patch set for the f2fs file system.
->>>
->>> What is F2FS?
->>> =============
->>>
->>> NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
->>> been widely being used for ranging from mobile to server systems. Since they are
->>> known to have different characteristics from the conventional rotational disks,
->>> a file system, an upper layer to the storage device, should adapt to the changes
->>> from the sketch.
->>>
->>> F2FS is a new file system carefully designed for the NAND flash memory-based storage
->>> devices. We chose a log structure file system approach, but we tried to adapt it
->>> to the new form of storage. Also we remedy some known issues of the very old log
->>> structured file system, such as snowball effect of wandering tree and high cleaning
->>> overhead.
->>>
->>> Because a NAND-based storage device shows different characteristics according to
->>> its internal geometry or flash memory management scheme aka FTL, we add various
->>> parameters not only for configuring on-disk layout, but also for selecting allocation
->>> and cleaning algorithms.
->>>
->>
->> What about F2FS performance? Could you share benchmarking results of the new file system?
->>
->> It is very interesting the case of aged file system. How is GC's implementation efficient? Could you share benchmarking results for the very aged file system state?
->>
->
-> Although I have benchmark results, currently I'd like to see the results
-> measured by community as a black-box. As you know, the results are very
-> dependent on the workloads and parameters, so I think it would be better
-> to see other results for a while.
-> Thanks,
->
+On Sat, 6 Oct 2012 23:27:47 +0200, Stéphane Chatty wrote:
+> Le 6 oct. 2012 à 23:11, Jean Delvare a écrit :
+> > On Sat, 6 Oct 2012 22:30:00 +0200, Stéphane Chatty wrote:
+> >> This is a question I asked a few months back, but apparently not all points of views had been expressed at the time. Currently, HID-over-USB lives in drivers/hid, but HID-over-BT lives in drivers/bluetooth. When I asked, Jiri explained that he maintained HID-over-USB and Marcel maintained HID-over-BT, which explained the choices made. Let's try to summarize what we know now:
+> >> 
+> >> The question is what drives the choice of where to put HID-over-XXX, among the following
+> >> 1- who the maintainer is. Here, Benjamin will probably maintain this so it does not help.
+> >> 2- dependencies. HID-over-XXX depends on HID as much as it depends on XXX, so it does not help.
+> >> 3- data flow. Indeed, HID is a client of HID-over-XXX which is a client of XXX. Are there other parts of the kernel where this drives the choice of where YYY-over-XXX lives?
+> >> 
+> >> Jiri, Marcel, Greg, others, any opinions?
+> > 
+> > My vote is a clear 3. It took me a few years to kick all users (as
+> > opposed to implementers) of i2c from drivers/i2c and finding them a
+> > proper home, I'm not going to accept new intruders. Grouping drivers
+> > according to what they implement makes it a lot easier to share code
+> > and ideas between related drivers. If you want to convince yourself,
+> > just imagine the mess it would be if all drivers for PCI devices lived
+> > under drivers/pci.
+> 
+> 
+> Having no strong opinion myself, I'm trying to get to the bottom of this :-) Here, I see two points that need clarification:
+> 
+> - I'm under the impression that the situation is exactly opposite between i2c and USB: drivers/usb contains lots of drivers for specific devices, but HID-over-USB is in drivers/hid. I actually found this disturbing when reading the HID code for the first time. Mmmm.
 
-1) Actually it's a strange approach. If you have got any results you 
-should share them with the community explaining how (the workload, hw 
-and so on) your benchmark works and the specific condition. I really 
-don't like the approach "I've got the results but I don't say anything, 
-if you want a number, do it yourself".
-2) For a new filesystem you should send the patches to linux-fsdevel.
-3) It's not clear the pros/cons of your filesystem, can you share with 
-us the main differences with the current fs already in mainline? Or is 
-it a company secret?
+Indeed I see a lot of drivers under drivers/usb. I'm glad I am not
+responsible for this subsystem ;) I think drivers/pci is a much cleaner
+example to follow. If nothing else, grouping drivers by functionality
+solves the problem of devices which can be accessed through multiple
+transport layers. For devices with multiple functions, we have
+drivers/mfd, specifically designed to make it possible to put support
+for each function into its dedicated location.
 
-Marco
+> - given your explanation, I'd say that you would agree to 2 as well, if it meant for instance that HID-over-I2C is neither in drivers/hid nor drivers/i2c. Actually, you don't care whether it is 1, 2, or 3 that drives the choice as long as HID-over-I2C is not in drivers/i2c, do you? :-)
+
+I do care that things are as consistent and logical as possible. I know
+sometimes there are borderline cases, or things done a certain way for
+historical reasons, but grouping by functionality seems the more
+logical and efficient as a rule of thumb.
+
+-- 
+Jean Delvare
