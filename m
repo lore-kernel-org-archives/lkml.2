@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab2JGXqv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:46:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38175 "EHLO
+	id S1752775Ab2JGXV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:21:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38126 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752803Ab2JGXWB (ORCPT
+	by vger.kernel.org with ESMTP id S1752686Ab2JGXVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:01 -0400
-Message-Id: <20121007225847.843328486@decadent.org.uk>
+	Sun, 7 Oct 2012 19:21:52 -0400
+Message-Id: <20121007225836.666663351@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 08 Oct 2012 00:00:09 +0100
+Date: Sun, 07 Oct 2012 23:58:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 095/108] net: small bug on rxhash calculation
+        Toshi Kani <toshi.kani@hp.com>, Lisa Mitchell <lisa.mitchell@hp.com>,
+        Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 014/108] hpwdt: Fix kdump issue in hpwdt
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,62 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chema Gonzalez <chema@google.com>
+From: Toshi Kani <toshi.kani@hp.com>
 
-[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
+commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c upstream.
 
-In the current rxhash calculation function, while the
-sorting of the ports/addrs is coherent (you get the
-same rxhash for packets sharing the same 4-tuple, in
-both directions), ports and addrs are sorted
-independently. This implies packets from a connection
-between the same addresses but crossed ports hash to
-the same rxhash.
+kdump can be interrupted by watchdog timer when the timer is left
+activated on the crash kernel. Changed the hpwdt driver to disable
+watchdog timer at boot-time. This assures that watchdog timer is
+disabled until /dev/watchdog is opened, and prevents watchdog timer
+to be left running on the crash kernel.
 
-For example, traffic between A=S:l and B=L:s is hashed
-(in both directions) from {L, S, {s, l}}. The same
-rxhash is obtained for packets between C=S:s and D=L:l.
-
-This patch ensures that you either swap both addrs and ports,
-or you swap none. Traffic between A and B, and traffic
-between C and D, get their rxhash from different sources
-({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
-
-The patch is co-written with Eric Dumazet <edumazet@google.com>
-
-Signed-off-by: Chema Gonzalez <chema@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
+Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/dev.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/watchdog/hpwdt.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 832ba6d..a4a0c5a 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2686,16 +2686,17 @@ ipv6:
- 		nhoff += poff;
- 		if (pskb_may_pull(skb, nhoff + 4)) {
- 			ports.v32 = * (__force u32 *) (skb->data + nhoff);
--			if (ports.v16[1] < ports.v16[0])
--				swap(ports.v16[0], ports.v16[1]);
- 			skb->l4_rxhash = 1;
- 		}
- 	}
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 1eff743..ae60406 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
+ 	hpwdt_timer_reg = pci_mem_addr + 0x70;
+ 	hpwdt_timer_con = pci_mem_addr + 0x72;
  
- 	/* get a consistent hash (same value on both flow directions) */
--	if (addr2 < addr1)
-+	if (addr2 < addr1 ||
-+	    (addr2 == addr1 &&
-+	     ports.v16[1] < ports.v16[0])) {
- 		swap(addr1, addr2);
--
-+		swap(ports.v16[0], ports.v16[1]);
-+	}
- 	hash = jhash_3words(addr1, addr2, ports.v32, hashrnd);
- 	if (!hash)
- 		hash = 1;
++	/* Make sure that timer is disabled until /dev/watchdog is opened */
++	hpwdt_stop();
++
+ 	/* Make sure that we have a valid soft_margin */
+ 	if (hpwdt_change_timer(soft_margin))
+ 		hpwdt_change_timer(DEFAULT_MARGIN);
 
 
