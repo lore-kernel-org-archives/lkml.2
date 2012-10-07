@@ -1,225 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2JGKPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 06:15:40 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:51283 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752412Ab2JGKPc convert rfc822-to-8bit (ORCPT
+	id S1752809Ab2JGKUq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 06:20:46 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52071 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2JGKUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 06:15:32 -0400
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=utf-8
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-In-Reply-To: <1349553966.12699.132.camel@kjgkr>
-Date: Sun, 7 Oct 2012 14:15:19 +0400
-Cc: jaegeuk.kim@samsung.com, Al Viro <viro@zeniv.linux.org.uk>, tytso@mit.edu,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6A0150A9-8C8C-4320-82B0-7ED8C7AEDAA9@dubeyko.com>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com> <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com> <1349553966.12699.132.camel@kjgkr>
-To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-X-Mailer: Apple Mail (2.1085)
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
+	Sun, 7 Oct 2012 06:20:39 -0400
+Date: Sun, 7 Oct 2012 14:20:34 +0400
+From: Andrew Vagin <avagin@gmail.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] [RFC] pidns: don't zap processes several times
+Message-ID: <20121007102034.GA1614@gmail.com>
+References: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
 
-On Oct 7, 2012, at 12:06 AM, Jaegeuk Kim wrote:
+The test program is attached.
 
-> 2012-10-06 (토), 17:54 +0400, Vyacheslav Dubeyko:
->> Hi Jaegeuk,
+On Sun, Oct 07, 2012 at 01:49:18PM +0400, Andrew Vagin wrote:
+> I wrote a test program. It does clone(CLONE_NEWPID | CLONE_VM) and
+> sleep(), a new task repeates the same actions. This program creates
+> 4000 tasks. When I tried to kill all this processes, a system was
+> inaccessible for some minutes.
 > 
-> Hi.
-> We know each other, right? :)
+> The system is inaccessible, because each process calls
+> zap_pid_ns_processes, which tries to kill subprocesses under
+> tasklist_lock. The most time are required for find_vpid().
 > 
-
-Yes, you are correct. :-)
-
->> 
->>> From:	 	김재극 <jaegeuk.kim@samsung.com>
->>> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
->>> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file system
->>> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
->>> 
->>> This is a new patch set for the f2fs file system.
->>> 
->>> What is F2FS?
->>> =============
->>> 
->>> NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
->>> been widely being used for ranging from mobile to server systems. Since they are
->>> known to have different characteristics from the conventional rotational disks,
->>> a file system, an upper layer to the storage device, should adapt to the changes
->>> from the sketch.
->>> 
->>> F2FS is a new file system carefully designed for the NAND flash memory-based storage
->>> devices. We chose a log structure file system approach, but we tried to adapt it
->>> to the new form of storage. Also we remedy some known issues of the very old log
->>> structured file system, such as snowball effect of wandering tree and high cleaning
->>> overhead.
->>> 
->>> Because a NAND-based storage device shows different characteristics according to
->>> its internal geometry or flash memory management scheme aka FTL, we add various
->>> parameters not only for configuring on-disk layout, but also for selecting allocation
->>> and cleaning algorithms.
->>> 
->> 
->> What about F2FS performance? Could you share benchmarking results of the new file system?
->> 
->> It is very interesting the case of aged file system. How is GC's implementation efficient? Could you share benchmarking results for the very aged file system state?
->> 
+> I suggest to mark sub-namespaces in zap_pid_ns_processes.
+> zap_pid_ns_processes for marked pidns doesn't kill tasks,
+> it only waits them.
 > 
-> Although I have benchmark results, currently I'd like to see the results
-> measured by community as a black-box. As you know, the results are very
-> dependent on the workloads and parameters, so I think it would be better
-> to see other results for a while.
-> Thanks,
-
-It is a good strategy. But it exists known bottlenecks and, maybe, it makes sense to begin discussion in the community.
-
-With the best regards,
-Vyacheslav Dubeyko.
-
+> I am not sure, that this idea is correct, but it helps.
 > 
->> With the best regards,
->> Vyacheslav Dubeyko.
->> 
->>> Patch set
->>> =========
->>> 
->>> The patch #1 adds a document to Documentation/filesystems/.
->>> The patch #2 adds a header file of on-disk layout to include/linux/.
->>> The patches #3-#15 adds f2fs source files to fs/f2fs/.
->>> The Last patch, patch #16, updates Makefile and Kconfig.
->>> 
->>> mkfs.f2fs
->>> =========
->>> 
->>> The file system formatting tool, "mkfs.f2fs", is available from the following
->>> download page:		
->>> http://sourceforge.net/projects/f2fs-tools/
->>> 
->>> 
->>> Usage
->>> =====
->>> 
->>> If you'd like to experience f2fs, simply:
->>> # mkfs.f2fs /dev/sdb1
->>> # mount -t f2fs /dev/sdb1 /mnt/f2fs
->>> 
->>> Short log
->>> =========
->>> 
->>> Jaegeuk Kim (16):
->>> f2fs: add document
->>> f2fs: add on-disk layout
->>> f2fs: add superblock and major in-memory structure
->>> f2fs: add super block operations
->>> f2fs: add checkpoint operations
->>> f2fs: add node operations
->>> f2fs: add segment operations
->>> f2fs: add file operations
->>> f2fs: add address space operations for data
->>> f2fs: add core inode operations
->>> f2fs: add inode operations for special inodes
->>> f2fs: add core directory operations
->>> f2fs: add xattr and acl functionalities
->>> f2fs: add garbage collection functions
->>> f2fs: add recovery routines for roll-forward
->>> f2fs: update Kconfig and Makefile
->>> 
->>> Documentation/filesystems/00-INDEX |    2 +
->>> Documentation/filesystems/f2fs.txt |  314 +++++++
->>> fs/Kconfig                         |    1 +
->>> fs/Makefile                        |    1 +
->>> fs/f2fs/Kconfig                    |   55 ++
->>> fs/f2fs/Makefile                   |    6 +
->>> fs/f2fs/acl.c                      |  402 ++++++++
->>> fs/f2fs/acl.h                      |   57 ++
->>> fs/f2fs/checkpoint.c               |  791 ++++++++++++++++
->>> fs/f2fs/data.c                     |  700 ++++++++++++++
->>> fs/f2fs/dir.c                      |  657 +++++++++++++
->>> fs/f2fs/f2fs.h                     |  981 ++++++++++++++++++++
->>> fs/f2fs/file.c                     |  643 +++++++++++++
->>> fs/f2fs/gc.c                       | 1140 +++++++++++++++++++++++
->>> fs/f2fs/gc.h                       |  203 +++++
->>> fs/f2fs/hash.c                     |   98 ++
->>> fs/f2fs/inode.c                    |  258 ++++++
->>> fs/f2fs/namei.c                    |  549 +++++++++++
->>> fs/f2fs/node.c                     | 1773 ++++++++++++++++++++++++++++++++++++
->>> fs/f2fs/node.h                     |  331 +++++++
->>> fs/f2fs/recovery.c                 |  372 ++++++++
->>> fs/f2fs/segment.c                  | 1755 +++++++++++++++++++++++++++++++++++
->>> fs/f2fs/segment.h                  |  627 +++++++++++++
->>> fs/f2fs/super.c                    |  550 +++++++++++
->>> fs/f2fs/xattr.c                    |  387 ++++++++
->>> fs/f2fs/xattr.h                    |  142 +++
->>> include/linux/f2fs_fs.h            |  359 ++++++++
->>> 27 files changed, 13154 insertions(+)
->>> create mode 100644 Documentation/filesystems/f2fs.txt
->>> create mode 100644 fs/f2fs/Kconfig
->>> create mode 100644 fs/f2fs/Makefile
->>> create mode 100644 fs/f2fs/acl.c
->>> create mode 100644 fs/f2fs/acl.h
->>> create mode 100644 fs/f2fs/checkpoint.c
->>> create mode 100644 fs/f2fs/data.c
->>> create mode 100644 fs/f2fs/dir.c
->>> create mode 100644 fs/f2fs/f2fs.h
->>> create mode 100644 fs/f2fs/file.c
->>> create mode 100644 fs/f2fs/gc.c
->>> create mode 100644 fs/f2fs/gc.h
->>> create mode 100644 fs/f2fs/hash.c
->>> create mode 100644 fs/f2fs/inode.c
->>> create mode 100644 fs/f2fs/namei.c
->>> create mode 100644 fs/f2fs/node.c
->>> create mode 100644 fs/f2fs/node.h
->>> create mode 100644 fs/f2fs/recovery.c
->>> create mode 100644 fs/f2fs/segment.c
->>> create mode 100644 fs/f2fs/segment.h
->>> create mode 100644 fs/f2fs/super.c
->>> create mode 100644 fs/f2fs/xattr.c
->>> create mode 100644 fs/f2fs/xattr.h
->>> create mode 100644 include/linux/f2fs_fs.h
->>> 
->>> -- 
->>> 1.7.9.5
->>> 
->>> 
->>> 
->>> 
->>> ---
->>> Jaegeuk Kim
->>> Samsung
->>> 
->>> 
->>> 
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  
->>> http://vger.kernel.org/majordomo-info.html
->>> 
->>> Please read the FAQ at http://www.tux.org/lkml/
->>> 
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Maybe we should restrict depth of pidns?
+> Why can't we enumerate task->children instead of using find_vpid()?
 > 
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  include/linux/pid_namespace.h |    1 +
+>  kernel/pid_namespace.c        |   14 ++++++++++++--
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index 00474b0..28073a0 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -34,6 +34,7 @@ struct pid_namespace {
+>  	kgid_t pid_gid;
+>  	int hide_pid;
+>  	int reboot;	/* group exit code if this pidns was rebooted */
+> +	atomic_t zapped; /* non zero if all process were killed */
+>  };
+>  
+>  extern struct pid_namespace init_pid_ns;
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index b051fa6..7db7dcd 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -177,21 +177,31 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>  	 * 	  maintain a tasklist for each pid namespace.
+>  	 *
+>  	 */
+> +
+> +	if (atomic_read(&pid_ns->zapped))
+> +		goto wait; /* All processes were already killed */
+> +
+>  	read_lock(&tasklist_lock);
+>  	nr = next_pidmap(pid_ns, 1);
+>  	while (nr > 0) {
+>  		rcu_read_lock();
+>  
+>  		task = pid_task(find_vpid(nr), PIDTYPE_PID);
+> -		if (task && !__fatal_signal_pending(task))
+> +		if (task && !__fatal_signal_pending(task)) {
+> +			struct pid_namespace *ns;
+> +
+>  			send_sig_info(SIGKILL, SEND_SIG_FORCED, task);
+> +			ns = task_active_pid_ns(task);
+> +			if (unlikely(ns->child_reaper == task))
+> +				atomic_set(&ns->zapped, 1);
+> +		}
+>  
+>  		rcu_read_unlock();
+>  
+>  		nr = next_pidmap(pid_ns, nr);
+>  	}
+>  	read_unlock(&tasklist_lock);
+> -
+> +wait:
+>  	/* Firstly reap the EXIT_ZOMBIE children we may have. */
+>  	do {
+>  		clear_thread_flag(TIF_SIGPENDING);
 > -- 
-> Jaegeuk Kim
-> Samsung
+> 1.7.1
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: attachment; filename="test.c"
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <sched.h>
+
+struct args {
+	char body[1024];
+	char ptr[0];
+};
+
+
+static i = 0;
+
+static int ns_exec(void *_arg)
+{
+	pid_t pid;
+	int status;
+	struct args *args = malloc(sizeof(struct args));
+
+	if (args == NULL) {
+		printf("Can't allocate memory\n");
+		return 1;
+	}
+
+	if (i++ > 4000)
+		return 0;
+
+	pid = clone(ns_exec, args->ptr,
+			CLONE_NEWPID | CLONE_VM | SIGCHLD, NULL);
+	if (pid == -1) {
+		printf("clone() failed: %m\n");
+		return 1;
+	}
+
+	while (1)
+		sleep(1000);
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	ns_exec(NULL);
+	return 0;
+}
+
+--J2SCkAp4GZ/dPZZf--
