@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab2JGXiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:38:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38370 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358Ab2JGXWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:34 -0400
-Message-Id: <20121007225845.772523671@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:54 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 080/108] xfrm_user: fix info leak in copy_to_user_policy()
-In-Reply-To: <20121007225834.673681075@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755034Ab2JGXiq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:38:46 -0400
+Received: from [216.32.181.184] ([216.32.181.184]:12026 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754144Ab2JGXik convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 19:38:40 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz9371Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441hbe9i1155h)
+From: Estevam Fabio-R49496 <r49496@freescale.com>
+To: Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: RE: [ 028/108] ARM: imx: armadillo5x0: Fix illegal register access
+Thread-Topic: [ 028/108] ARM: imx: armadillo5x0: Fix illegal register access
+Thread-Index: AQHNpOLGO9Gb2X/pR0akW5Py5SSnppeuf14m
+Date: Sun, 7 Oct 2012 23:37:30 +0000
+Message-ID: <86D15885F63D1143A519F161FB828EAF165AA3@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <20121007225834.673681075@decadent.org.uk>,<20121007225838.581640179@decadent.org.uk>
+In-Reply-To: <20121007225838.581640179@decadent.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [186.207.91.39]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+No, please drop it from 3.2-stable.
+
+This one should only go to 3.5/3.6 stable trees.
+
+Otherwise it will break 3.2-stable.
+
+Regards,
+
+Fabio Estevam
+________________________________________
+From: Ben Hutchings [ben@decadent.org.uk]
+Sent: Sunday, October 07, 2012 5:59 PM
+To: linux-kernel@vger.kernel.org; stable@vger.kernel.org
+Cc: akpm@linux-foundation.org; alan@lxorguk.ukuu.org.uk; Estevam Fabio-R49496; Arnd Bergmann; Sascha Hauer
+Subject: [ 028/108] ARM: imx: armadillo5x0: Fix illegal register access
 
 3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-[ Upstream commit 7b789836f434c87168eab067cfbed1ec4783dffd ]
+commit 35495173e1df621dff0e9a244accbe32cd28a98f upstream.
 
-The memory reserved to dump the xfrm policy includes multiple padding
-bytes added by the compiler for alignment (padding bytes in struct
-xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
-memset(0) before filling the buffer to avoid the heap info leak.
+Since commit eb92044eb (ARM i.MX3: Make ccm base address a variable )
+it is necessary to pass the CCM register base as a variable.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix the CCM register access in mach-armadillo5x0 by passing mx3_ccm_base and
+avoid illegal accesses.
+
+Also applies to v3.5
+
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/xfrm/xfrm_user.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-imx/mach-armadillo5x0.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index f252cae..1d222e9 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -1300,6 +1300,7 @@ static void copy_from_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy
- 
- static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
- 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
- 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
+diff --git a/arch/arm/mach-imx/mach-armadillo5x0.c b/arch/arm/mach-imx/mach-armadillo5x0.c
+index 2c6ab32..5985ed1 100644
+--- a/arch/arm/mach-imx/mach-armadillo5x0.c
++++ b/arch/arm/mach-imx/mach-armadillo5x0.c
+@@ -526,7 +526,8 @@ static void __init armadillo5x0_init(void)
+        imx31_add_mxc_nand(&armadillo5x0_nand_board_info);
+
+        /* set NAND page size to 2k if not configured via boot mode pins */
+-       __raw_writel(__raw_readl(MXC_CCM_RCSR) | (1 << 30), MXC_CCM_RCSR);
++       __raw_writel(__raw_readl(mx3_ccm_base + MXC_CCM_RCSR) |
++                                       (1 << 30), mx3_ccm_base + MXC_CCM_RCSR);
+
+        /* RTC */
+        /* Get RTC IRQ and register the chip */
+
+
 
 
