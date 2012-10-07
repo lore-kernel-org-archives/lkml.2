@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab2JGIAo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 04:00:44 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44131 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2JGIAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 04:00:42 -0400
-Message-ID: <1349596837.15349.2.camel@phoenix>
-Subject: [PATCH] ARM: OMAP: Fix dependency for OMAP_DEBUG_LEDS
-From: Axel Lin <axel.lin@ingics.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 07 Oct 2012 16:00:37 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1752470Ab2JGIQz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 04:16:55 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:54411 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2JGIQx convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:2>);
+	Sun, 7 Oct 2012 04:16:53 -0400
+Message-Id: <50714881020000780008D43E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Sun, 07 Oct 2012 09:16:49 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <hpa@zytor.com>
+Cc: <matt@console-pimps.org>, <matt.fleming@intel.com>, <mingo@kernel.org>,
+        <x86@kernel.org>, <mjg@redhat.com>, <linux-efi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] x86, mm: Include the entire kernel memory map
+ in trampoline_pgd
+References: <1349269157-25956-1-git-send-email-matt@console-pimps.org>
+ <1349269157-25956-2-git-send-email-matt@console-pimps.org>
+ <506C4C3A020000780008D041@nat28.tlf.novell.com>
+ <506DFAD8.5060701@zytor.com>
+ <506E9CDC020000780009FD13@nat28.tlf.novell.com>
+ <506F0A90.7020106@zytor.com>
+In-Reply-To: <506F0A90.7020106@zytor.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below build error:
-  LD      init/built-in.o
-arch/arm/plat-omap/built-in.o: In function `fpga_probe':
-arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-arch/arm/plat-omap/built-in.o:arch/arm/plat-omap/debug-leds.c:113: more undefined references to `led_classdev_register' follow
-make: *** [vmlinux] Error 1
+>>> "H. Peter Anvin" <hpa@zytor.com> 10/05/12 6:28 PM >>>
+>On 10/04/2012 11:39 PM, Jan Beulich wrote:
+>>>
+>>> We should have the check, but at least for Linux support we require
+>>> P <= V-2.
+>>
+>> Not really imo - P <= V - 1 should be sufficient here, as all that is
+>> necessary is that the result represents a 1:1 mapping. Specifically,
+>> there's no constraint to the virtual space limitation of the direct
+>> mapping of RAM.
+>>
+>
+>The P <= V-2 limitation doesn't come from this, it comes from the fact 
+>that we need to have the regular kernel 1:1 map and still have space for 
+>the kernel, vmalloc, ioremap and so on in the kernel part of the address 
+>space; in theory it *could* be some fraction between 1 and 2, but since 
+>hardware doesn't do fractional bits very well the above is what we have 
+>been telling the hardware folks. :)
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Bryan,
-I think this issue is introduced by commit dafbead
-"ARM: mach-omap1: retire custom LED code".
+I understand all that, but here we're talking about a true 1:1 mapping
+(i.e. in the lower half of the virtual address space), as opposed to the
+direct mapping (in the upper half). We can obviously use all of the lower
+half for this purpose.
 
-Regards,
-Axel
-
- arch/arm/plat-omap/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-index ca83a76..3281377 100644
---- a/arch/arm/plat-omap/Kconfig
-+++ b/arch/arm/plat-omap/Kconfig
-@@ -42,7 +42,7 @@ config OMAP_DEBUG_DEVICES
- 	  For debug cards on TI reference boards.
- 
- config OMAP_DEBUG_LEDS
--	def_bool y if NEW_LEDS
-+	default y if LEDS_CLASS
- 	depends on OMAP_DEBUG_DEVICES
- 
- config POWER_AVS_OMAP
--- 
-1.7.9.5
-
-
+Jan
 
