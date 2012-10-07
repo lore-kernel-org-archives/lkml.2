@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab2JGNXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 09:23:55 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:33657 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab2JGNXs (ORCPT
+	id S1752340Ab2JGNZm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 09:25:42 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:50956 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab2JGNZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 09:23:48 -0400
+	Sun, 7 Oct 2012 09:25:35 -0400
 MIME-Version: 1.0
-Date: Sun, 7 Oct 2012 21:23:47 +0800
-Message-ID: <CAPgLHd95Tv12n=yaSoM-nKtOd0NGiRq-LYe1H_NcFwQUS8U0YQ@mail.gmail.com>
-Subject: [PATCH] dgrp: remove unused including <linux/version.h>
+Date: Sun, 7 Oct 2012 21:25:34 +0800
+Message-ID: <CAPgLHd_a8ne_UXQfBr2cfkVffRUV5qcN_ndcPKJu1QAs1zd_Qw@mail.gmail.com>
+Subject: [PATCH] ARM: sa11x0: remove duplicated include from hackkit.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+To: linux@arm.linux.org.uk
+Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,26 +22,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Remove including <linux/version.h> that don't need it.
+Remove duplicated include.
 
 dpatch engine is used to auto generate this patch.
 (https://github.com/weiyj/dpatch)
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/staging/dgrp/dgrp_sysfs.c | 1 -
+ arch/arm/mach-sa1100/hackkit.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/dgrp/dgrp_sysfs.c b/drivers/staging/dgrp/dgrp_sysfs.c
-index e5a3c88..a13318c 100644
---- a/drivers/staging/dgrp/dgrp_sysfs.c
-+++ b/drivers/staging/dgrp/dgrp_sysfs.c
-@@ -17,7 +17,6 @@
- #include "dgrp_common.h"
- 
- #include <linux/kernel.h>
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/ctype.h>
- #include <linux/string.h>
+diff --git a/arch/arm/mach-sa1100/hackkit.c b/arch/arm/mach-sa1100/hackkit.c
+index fc106aa..d67a6d3 100644
+--- a/arch/arm/mach-sa1100/hackkit.c
++++ b/arch/arm/mach-sa1100/hackkit.c
+@@ -21,7 +21,6 @@
+ #include <linux/serial_core.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+-#include <linux/tty.h>
+ #include <linux/gpio.h>
+ #include <linux/leds.h>
+ #include <linux/platform_device.h>
 
