@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab2JGXpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:45:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38220 "EHLO
+	id S1755107Ab2JGXpn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:45:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38207 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752693Ab2JGXWI (ORCPT
+	by vger.kernel.org with ESMTP id S1753003Ab2JGXWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:08 -0400
-Message-Id: <20121007225835.838242153@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:07 -0400
+Message-Id: <20121007225836.802125341@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:42 +0100
+Date: Sun, 07 Oct 2012 23:58:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        qiuxishi <qiuxishi@gmail.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Mel Gorman <mgorman@suse.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 008/108] memory hotplug: fix section info double registration bug
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Anisse Astier <anisse@astier.eu>,
+        Li Chaoming <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 015/108] rtlwifi: rtl8192ce: Log message that B_CUT device may not work
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,78 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: qiuxishi <qiuxishi@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit f14851af0ebb32745c6c5a2e400aa0549f9d20df upstream.
+commit 022e1d0680c7b4366017393417b8758be5abcee8 upstream.
 
-There may be a bug when registering section info.  For example, on my
-Itanium platform, the pfn range of node0 includes the other nodes, so
-other nodes' section info will be double registered, and memmap's page
-count will equal to 3.
+There are a number of problems that occur for the latest version
+of the Realtek RTL8188CE device with the in-kernel driver. These
+include selection of the wrong firmware, and system lockup. A full
+fix is known, but is too invasive for inclusion in stable. This patch
+fixes the problem with loading the wrong firmware, and logs a message
+that the device may not work for kernels 3.6 and older.
 
-  node0: start_pfn=0x100,    spanned_pfn=0x20fb00, present_pfn=0x7f8a3, => 0x000100-0x20fc00
-  node1: start_pfn=0x80000,  spanned_pfn=0x80000,  present_pfn=0x80000, => 0x080000-0x100000
-  node2: start_pfn=0x100000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x100000-0x180000
-  node3: start_pfn=0x180000, spanned_pfn=0x80000,  present_pfn=0x80000, => 0x180000-0x200000
-
-  free_all_bootmem_node()
-	register_page_bootmem_info_node()
-		register_page_bootmem_info_section()
-
-When hot remove memory, we can't free the memmap's page because
-page_count() is 2 after put_page_bootmem().
-
-  sparse_remove_one_section()
-	free_section_usemap()
-		free_map_bootmem()
-			put_page_bootmem()
-
-[akpm@linux-foundation.org: add code comment]
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Anisse Astier <anisse@astier.eu>
+Cc: Li Chaoming <chaoming_li@realsil.com.cn>
+Tested-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/memory_hotplug.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 3ad25f9..6a5b90d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -126,9 +126,6 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 	struct mem_section *ms;
- 	struct page *page, *memmap;
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/def.h
+@@ -117,6 +117,7 @@
  
--	if (!pfn_valid(start_pfn))
--		return;
--
- 	section_nr = pfn_to_section_nr(start_pfn);
- 	ms = __nr_to_section(section_nr);
+ #define CHIP_VER_B			BIT(4)
+ #define CHIP_92C_BITMASK		BIT(0)
++#define CHIP_UNKNOWN			BIT(7)
+ #define CHIP_92C_1T2R			0x03
+ #define CHIP_92C			0x01
+ #define CHIP_88C			0x00
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
+@@ -1001,8 +1001,16 @@ static enum version_8192c _rtl92ce_read_
+ 		version = (value32 & TYPE_ID) ? VERSION_A_CHIP_92C :
+ 			   VERSION_A_CHIP_88C;
+ 	} else {
+-		version = (value32 & TYPE_ID) ? VERSION_B_CHIP_92C :
+-			   VERSION_B_CHIP_88C;
++		version = (enum version_8192c) (CHIP_VER_B |
++				((value32 & TYPE_ID) ? CHIP_92C_BITMASK : 0) |
++				((value32 & VENDOR_ID) ? CHIP_VENDOR_UMC : 0));
++		if ((!IS_CHIP_VENDOR_UMC(version)) && (value32 &
++		     CHIP_VER_RTL_MASK)) {
++			version = (enum version_8192c)(version |
++				   ((((value32 & CHIP_VER_RTL_MASK) == BIT(12))
++				   ? CHIP_VENDOR_UMC_B_CUT : CHIP_UNKNOWN) |
++				   CHIP_VENDOR_UMC));
++		}
+ 	}
  
-@@ -187,9 +184,16 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 	end_pfn = pfn + pgdat->node_spanned_pages;
+ 	switch (version) {
+--- a/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -165,12 +165,14 @@ int rtl92c_init_sw_vars(struct ieee80211
  
- 	/* register_section info */
--	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION)
--		register_page_bootmem_info_section(pfn);
--
-+	for (; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		/*
-+		 * Some platforms can assign the same pfn to multiple nodes - on
-+		 * node0 as well as nodeN.  To avoid registering a pfn against
-+		 * multiple nodes we check that this pfn does not already
-+		 * reside in some other node.
-+		 */
-+		if (pfn_valid(pfn) && (pfn_to_nid(pfn) == node))
-+			register_page_bootmem_info_section(pfn);
+ 	/* request fw */
+ 	if (IS_VENDOR_UMC_A_CUT(rtlhal->version) &&
+-	    !IS_92C_SERIAL(rtlhal->version))
++	    !IS_92C_SERIAL(rtlhal->version)) {
+ 		fw_name = "rtlwifi/rtl8192cfwU.bin";
+-	else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlhal->version))
++	} else if (IS_81xxC_VENDOR_UMC_B_CUT(rtlhal->version)) {
+ 		fw_name = "rtlwifi/rtl8192cfwU_B.bin";
+-	else
++		pr_info("****** This B_CUT device may not work with kernels 3.6 and earlier\n");
++	} else {
+ 		fw_name = rtlpriv->cfg->fw_name;
 +	}
- }
- #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
- 
+ 	err = request_firmware(&firmware, fw_name, rtlpriv->io.dev);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
 
 
