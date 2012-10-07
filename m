@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab2JGTPM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 15:15:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2JGTPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 15:15:05 -0400
-Date: Sun, 7 Oct 2012 21:16:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: dl8bcu@dl8bcu.de, peterz@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [regression] boot failure on alpha, bisected
-Message-ID: <20121007191627.GA19278@redhat.com>
-References: <20121006204736.GA1830@ds20.borg.net> <20121007165534.GA8024@redhat.com> <20121007171300.GA10942@redhat.com> <20121007180420.GA900@ds20.borg.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121007180420.GA900@ds20.borg.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752827Ab2JGTTP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 15:19:15 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:48525 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2JGTTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 15:19:04 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Tim Bird <tim.bird@am.sony.com>, mmarek@suse.cz, sam@ravnborg.org,
+        rientjes@google.com, Ezequiel Garcia <elezegarcia@gmail.com>
+Subject: [PATCH v2] Makefile: Add option to disable gcc automatic inlining
+Date: Sun,  7 Oct 2012 16:18:52 -0300
+Message-Id: <1349637532-27466-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07, Thorsten Kranzkowski wrote:
->
-> On Sun, Oct 07, 2012 at 07:13:00PM +0200, Oleg Nesterov wrote:
-> > On 10/07, Oleg Nesterov wrote:
-> > >
-> > > Hmm. I know nothing about arch/alpha and I can't understand its entry.S.
-> > > But _it seems_ to me that do_notify_resume() is called with irqs disabled.
-> > > If this is true, then imho arch/alpha should be fixed.
-> > >
-> > > Before this commit task_work_run() enabled irqs, but this was the "side
-> > > effect" of spin_lock_irq/spin_unlock_irq, we should not rely on this.
-> >
-> > Could you please test the debugging patch below?
->
-> Of course. With that patch applied the kernel (ac3d0da) boots again. The trace line
-> is printed about once a second, with values '2' and '4'.
+The new option is CONFIG_CC_DISABLE_AUTO_INLINE and it's
+located at:
+  * Kernel hacking
+    * Disable gcc automatic inlining
 
-Thanks a lot Thorsten!
+This option appends this options CFLAGS:
 
-So I'll probably send the patch which enables interrupts in
-task_work_run(). I guess this needs "if (irqs_disabled())"
-for lockdep.
+-fno-default-inline
+-fno-inline
+-fno-inline-small-functions
+-fno-indirect-inlining
+-fno-inline-functions-called-once
 
-The question is, should I add the warning to remind that this
-arch needs a fix?
+It's still not clear which of these really work and which doesn't.
+Just in case, just disable all of them.
 
-Oleg.
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+Changes from v1:
+ * Change define name to CONFIG_CC_XXX
+ * Disable all options that refer to inlining
+
+This work is part of CELF Workgroup Project:
+"Kernel_dynamic_memory_allocation_tracking_and_reduction":
+http://elinux.org/Kernel_dynamic_memory_allocation_tracking_and_reduction
+
+ Makefile             |    8 ++++++++
+ kernel/trace/Kconfig |    4 ++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index ddf5be9..3169603 100644
+--- a/Makefile
++++ b/Makefile
+@@ -561,6 +561,14 @@ else
+ KBUILD_CFLAGS	+= -O2
+ endif
+ 
++ifdef CONFIG_CC_DISABLE_AUTO_INLINE
++KBUILD_CFLAGS	+= -fno-default-inline \
++		   -fno-inline \
++		   -fno-inline-small-functions \
++		   -fno-indirect-inlining \
++		   -fno-inline-functions-called-once
++endif
++
+ include $(srctree)/arch/$(SRCARCH)/Makefile
+ 
+ ifdef CONFIG_READABLE_ASM
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 8c4c070..144da36 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -128,6 +128,10 @@ config TRACING_SUPPORT
+ 	depends on STACKTRACE_SUPPORT
+ 	default y
+ 
++config CC_DISABLE_AUTO_INLINE
++	bool "Disable gcc automatic inlining"
++	default n
++
+ if TRACING_SUPPORT
+ 
+ menuconfig FTRACE
+-- 
+1.7.8.6
 
