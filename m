@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab2JGJ5h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 05:57:37 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4487 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab2JGJ52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 05:57:28 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Vagin <avagin@openvz.org>, "Andrew G. Morgan" <morgan@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] proc: don't show nonexistent capabilities (v2)
-Date: Sun,  7 Oct 2012 13:56:54 +0400
-Message-Id: <1349603814-1085468-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1752737Ab2JGKNq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 06:13:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49030 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2JGKNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 06:13:37 -0400
+Message-ID: <1349604805.6017.1.camel@phoenix>
+Subject: [PATCH v2] ARM: OMAP: Fix dependency for OMAP_DEBUG_LEDS
+From: Axel Lin <axel.lin@ingics.com>
+To: Tony Lindgren <tony@atomide.com>, Bryan Wu <bryan.wu@canonical.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 07 Oct 2012 18:13:25 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch it is really hard to interpret a bounding set,
-if CAP_LAST_CAP is unknown for a current kernel.
+This fixes below build error when CONFIG_LEDS_CLASS is not set.
 
-Non-existant capabilities can not be deleted from a bounding set
-with help of prctl.
+  LD      init/built-in.o
+arch/arm/plat-omap/built-in.o: In function `fpga_probe':
+arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+arch/arm/plat-omap/built-in.o:arch/arm/plat-omap/debug-leds.c:113: more undefined references to `led_classdev_register' follow
+make: *** [vmlinux] Error 1
 
-E.g.: Here are two examples without/with this patch.
-CapBnd:	ffffffe0fdecffff
-CapBnd:	00000000fdecffff
-
-I suggest to hide non-existent capabilities. Here is two reasons.
-* It's logically and easier for using.
-* It helps to checkpoint-restore capabilities of tasks, because tasks
-can be restored on another kernel, where CAP_LAST_CAP is bigger.
-
-v2: Non-existent capabilities can not be removed from creds, because
-    in this case user cannot set all=eip. This patch cleans up non-existent
-    capabilities from content of /proc/pid/status
-
-Cc: Andrew G. Morgan <morgan@kernel.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- fs/proc/array.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ arch/arm/plat-omap/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index c5db89c..c814ba5 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -308,6 +308,10 @@ static void render_cap_t(struct seq_file *m, const char *header,
- 	seq_putc(m, '\n');
- }
+diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+index ca83a76..c262781 100644
+--- a/arch/arm/plat-omap/Kconfig
++++ b/arch/arm/plat-omap/Kconfig
+@@ -43,6 +43,7 @@ config OMAP_DEBUG_DEVICES
  
-+/* Remove non-existent capabilities */
-+#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
-+				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
-+
- static inline void task_cap(struct seq_file *m, struct task_struct *p)
- {
- 	const struct cred *cred;
-@@ -321,6 +325,11 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
- 	cap_bset	= cred->cap_bset;
- 	rcu_read_unlock();
+ config OMAP_DEBUG_LEDS
+ 	def_bool y if NEW_LEDS
++	select LEDS_CLASS
+ 	depends on OMAP_DEBUG_DEVICES
  
-+	NORM_CAPS(cap_inheritable);
-+	NORM_CAPS(cap_permitted);
-+	NORM_CAPS(cap_effective);
-+	NORM_CAPS(cap_bset);
-+
- 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
- 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
- 	render_cap_t(m, "CapEff:\t", &cap_effective);
+ config POWER_AVS_OMAP
 -- 
-1.7.1
+1.7.9.5
+
+
 
