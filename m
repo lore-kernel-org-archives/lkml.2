@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab2JGXX2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:23:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38555 "EHLO
+	id S1754815Ab2JGX00 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:26:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38702 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754515Ab2JGXXB (ORCPT
+	by vger.kernel.org with ESMTP id S1754690Ab2JGXX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:01 -0400
-Message-Id: <20121007225842.174746398@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:28 -0400
+Message-Id: <20121007225838.175286411@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:28 +0100
+Date: Sun, 07 Oct 2012 23:58:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rustad, Mark D" <mark.d.rustad@intel.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 054/108] net: Statically initialize init_net.dev_base_head
+        Guenter Roeck <linux@roeck-us.net>,
+        Paul Thomas <pthomas8589@gmail.com>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 025/108] hwmon: (ads7871) Add name sysfs attribute
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,52 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 734b65417b24d6eea3e3d7457e1f11493890ee1d upstream.
+commit 4e21f4eaa49f78d3e977e316514c941053871c76 upstream.
 
-This change eliminates an initialization-order hazard most
-recently seen when netprio_cgroup is built into the kernel.
+The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
+in this driver.
 
-With thanks to Eric Dumazet for catching a bug.
-
-Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Paul Thomas <pthomas8589@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Paul Thomas <pthomas8589@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/dev.c           |    3 ++-
- net/core/net_namespace.c |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/hwmon/ads7871.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 0f28a9e..1cb0d8a 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6283,7 +6283,8 @@ static struct hlist_head *netdev_create_hash(void)
- /* Initialize per network namespace state */
- static int __net_init netdev_init(struct net *net)
- {
--	INIT_LIST_HEAD(&net->dev_base_head);
-+	if (net != &init_net)
-+		INIT_LIST_HEAD(&net->dev_base_head);
+diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+index e65c6e4..7bf4ce3 100644
+--- a/drivers/hwmon/ads7871.c
++++ b/drivers/hwmon/ads7871.c
+@@ -139,6 +139,12 @@ static ssize_t show_voltage(struct device *dev,
+ 	}
+ }
  
- 	net->dev_name_head = netdev_create_hash();
- 	if (net->dev_name_head == NULL)
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index dddbacb..42f1e1c 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -27,7 +27,9 @@ static DEFINE_MUTEX(net_mutex);
- LIST_HEAD(net_namespace_list);
- EXPORT_SYMBOL_GPL(net_namespace_list);
++static ssize_t ads7871_show_name(struct device *dev,
++				 struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
++}
++
+ static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, show_voltage, NULL, 0);
+ static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, show_voltage, NULL, 1);
+ static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, show_voltage, NULL, 2);
+@@ -148,6 +154,8 @@ static SENSOR_DEVICE_ATTR(in5_input, S_IRUGO, show_voltage, NULL, 5);
+ static SENSOR_DEVICE_ATTR(in6_input, S_IRUGO, show_voltage, NULL, 6);
+ static SENSOR_DEVICE_ATTR(in7_input, S_IRUGO, show_voltage, NULL, 7);
  
--struct net init_net;
-+struct net init_net = {
-+	.dev_base_head = LIST_HEAD_INIT(init_net.dev_base_head),
-+};
- EXPORT_SYMBOL(init_net);
++static DEVICE_ATTR(name, S_IRUGO, ads7871_show_name, NULL);
++
+ static struct attribute *ads7871_attributes[] = {
+ 	&sensor_dev_attr_in0_input.dev_attr.attr,
+ 	&sensor_dev_attr_in1_input.dev_attr.attr,
+@@ -157,6 +165,7 @@ static struct attribute *ads7871_attributes[] = {
+ 	&sensor_dev_attr_in5_input.dev_attr.attr,
+ 	&sensor_dev_attr_in6_input.dev_attr.attr,
+ 	&sensor_dev_attr_in7_input.dev_attr.attr,
++	&dev_attr_name.attr,
+ 	NULL
+ };
  
- #define INITIAL_NET_GEN_PTRS	13 /* +1 for len +2 for rcu_head */
 
 
