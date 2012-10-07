@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab2JGCod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 22:44:33 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63438 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab2JGCo2 (ORCPT
+	id S1753261Ab2JGCor (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 22:44:47 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:35578 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab2JGCoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 22:44:28 -0400
+	Sat, 6 Oct 2012 22:44:44 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 47/49] tools/power/turbostat: add option to count SMIs, re-name some options
-Date: Sat,  6 Oct 2012 22:43:17 -0400
-Message-Id: <f9240813e61cb3e5838c9ab0237af831c61df7cf.1349554106.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 48/49] ACPI: Harden acpi_table_parse_entries() against BIOS bug
+Date: Sat,  6 Oct 2012 22:43:18 -0400
+Message-Id: <369d913b242cae2205471b11b6e33ac368ed33ec.1349554106.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <1349577799-566-1-git-send-email-lenb@kernel.org>
 References: <1349577799-566-1-git-send-email-lenb@kernel.org>
@@ -24,124 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Counting SMIs is popular, so add a dedicated "-s" option to do it,
-and juggle some of the other option letters.
+Parsing acpi table entries may fall into an infinite loop on a buggy BIOS
+which has entry length=0 in acpi table.
 
--S is now system summary (was -s)
--c is 32 bit counter (was -d)
--C is 64-bit counter (was -D)
--p is 1st thread in core (was -c)
--P is 1st thread in package (was -p)
+Instead of kernel hang with few failure clue which leads to heavy lifting debug
+effort, this patch hardens kernel boot by booting into non NUMA mode. The debug
+info left in log buffer helps people identify the issue.
 
-bump the minor version number
-
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/x86/turbostat/turbostat.8 | 12 +++++++-----
- tools/power/x86/turbostat/turbostat.c | 23 +++++++++++++----------
- 2 files changed, 20 insertions(+), 15 deletions(-)
+ drivers/acpi/tables.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.8 b/tools/power/x86/turbostat/turbostat.8
-index 0fc7a11..e4d0690 100644
---- a/tools/power/x86/turbostat/turbostat.8
-+++ b/tools/power/x86/turbostat/turbostat.8
-@@ -23,17 +23,19 @@ supports an "invariant" TSC, plus the APERF and MPERF MSRs.
- on processors that additionally support C-state residency counters.
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index f336bca7..2572d97 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -240,10 +240,17 @@ acpi_table_parse_entries(char *id,
+ 	       table_end) {
+ 		if (entry->type == entry_id
+ 		    && (!max_entries || count++ < max_entries))
+-			if (handler(entry, table_end)) {
+-				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
+-				return -EINVAL;
+-			}
++			if (handler(entry, table_end))
++				goto err;
++
++		/*
++		 * If entry->length is 0, break from this loop to avoid
++		 * infinite loop.
++		 */
++		if (entry->length == 0) {
++			pr_err(PREFIX "[%4.4s:0x%02x] Invalid zero length\n", id, entry_id);
++			goto err;
++		}
  
- .SS Options
--The \fB-s\fP option limits output to a 1-line system summary for each interval.
-+The \fB-p\fP option limits output to the 1st thread in 1st core of each package.
- .PP
--The \fB-c\fP option limits output to the 1st thread in each core.
-+The \fB-P\fP option limits output to the 1st thread in each Package.
- .PP
--The \fB-p\fP option limits output to the 1st thread in each package.
-+The \fB-S\fP option limits output to a 1-line System Summary for each interval.
- .PP
- The \fB-v\fP option increases verbosity.
- .PP
--The \fB-d MSR#\fP option includes the delta of the specified 32-bit MSR counter.
-+The \fB-s\fP option prints the SMI counter, equivalent to "-c 0x34"
- .PP
--The \fB-D MSR#\fP option includes the delta of the specified 64-bit MSR counter.
-+The \fB-c MSR#\fP option includes the delta of the specified 32-bit MSR counter.
-+.PP
-+The \fB-C MSR#\fP option includes the delta of the specified 64-bit MSR counter.
- .PP
- The \fB-m MSR#\fP option includes the the specified 32-bit MSR value.
- .PP
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index e38976c..2655ae9 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -230,9 +230,9 @@ void print_header(void)
- 		outp += sprintf(outp, "  GHz");
- 	outp += sprintf(outp, "  TSC");
- 	if (extra_delta_offset32)
--		outp += sprintf(outp, "  delta 0x%03X", extra_delta_offset32);
-+		outp += sprintf(outp, "  count 0x%03X", extra_delta_offset32);
- 	if (extra_delta_offset64)
--		outp += sprintf(outp, "  DELTA 0x%03X", extra_delta_offset64);
-+		outp += sprintf(outp, "  COUNT 0x%03X", extra_delta_offset64);
- 	if (extra_msr_offset32)
- 		outp += sprintf(outp, "   MSR 0x%03X", extra_msr_offset32);
- 	if (extra_msr_offset64)
-@@ -1304,7 +1304,7 @@ void check_cpuid()
+ 		entry = (struct acpi_subtable_header *)
+ 		    ((unsigned long)entry + entry->length);
+@@ -255,6 +262,9 @@ acpi_table_parse_entries(char *id,
  
- void usage()
- {
--	fprintf(stderr, "%s: [-v][-d MSR#][-D MSR#][-m MSR#][-M MSR#][-i interval_sec | command ...]\n",
-+	fprintf(stderr, "%s: [-v][-p|-P|-S][-c MSR# | -s]][-C MSR#][-m MSR#][-M MSR#][-i interval_sec | command ...]\n",
- 		progname);
- 	exit(1);
+ 	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
+ 	return count;
++err:
++	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
++	return -EINVAL;
  }
-@@ -1594,15 +1594,15 @@ void cmdline(int argc, char **argv)
  
- 	progname = argv[0];
- 
--	while ((opt = getopt(argc, argv, "+cpsvid:D:m:M:")) != -1) {
-+	while ((opt = getopt(argc, argv, "+pPSvisc:sC:m:M:")) != -1) {
- 		switch (opt) {
--		case 'c':
-+		case 'p':
- 			show_core_only++;
- 			break;
--		case 'p':
-+		case 'P':
- 			show_pkg_only++;
- 			break;
--		case 's':
-+		case 'S':
- 			summary_only++;
- 			break;
- 		case 'v':
-@@ -1611,10 +1611,13 @@ void cmdline(int argc, char **argv)
- 		case 'i':
- 			interval_sec = atoi(optarg);
- 			break;
--		case 'd':
-+		case 'c':
- 			sscanf(optarg, "%x", &extra_delta_offset32);
- 			break;
--		case 'D':
-+		case 's':
-+			extra_delta_offset32 = 0x34;	/* SMI counter */
-+			break;
-+		case 'C':
- 			sscanf(optarg, "%x", &extra_delta_offset64);
- 			break;
- 		case 'm':
-@@ -1634,7 +1637,7 @@ int main(int argc, char **argv)
- 	cmdline(argc, argv);
- 
- 	if (verbose > 1)
--		fprintf(stderr, "turbostat v2.0 May 16, 2012"
-+		fprintf(stderr, "turbostat v2.1 October 6, 2012"
- 			" - Len Brown <lenb@kernel.org>\n");
- 
- 	turbostat_init();
+ int __init
 -- 
 1.8.0.rc0.18.gf84667d
 
