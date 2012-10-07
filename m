@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab2JGXhT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:37:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38385 "EHLO
+	id S1754968Ab2JGXhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:37:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38399 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753996Ab2JGXWg (ORCPT
+	by vger.kernel.org with ESMTP id S1754071Ab2JGXWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:22:36 -0400
-Message-Id: <20121007225846.183335340@decadent.org.uk>
+Message-Id: <20121007225845.910413552@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:57 +0100
+Date: Sun, 07 Oct 2012 23:59:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Mathias Krause <minipli@googlemail.com>,
+        Brad Spengler <spender@grsecurity.net>,
         Steffen Klassert <steffen.klassert@secunet.com>,
-        Martin Willi <martin@revosec.ch>,
-        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 083/108] xfrm_user: ensure user supplied esn replay window is  valid
+Subject: [ 081/108] xfrm_user: fix info leak in copy_to_user_tmpl()
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,138 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit ecd7918745234e423dd87fcc0c077da557909720 ]
+[ Upstream commit 1f86840f897717f86d523a13e99a447e6a5d2fa5 ]
 
-The current code fails to ensure that the netlink message actually
-contains as many bytes as the header indicates. If a user creates a new
-state or updates an existing one but does not supply the bytes for the
-whole ESN replay window, the kernel copies random heap bytes into the
-replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
-netlink attribute. This leads to following issues:
+The memory used for the template copy is a local stack variable. As
+struct xfrm_user_tmpl contains multiple holes added by the compiler for
+alignment, not initializing the memory will lead to leaking stack bytes
+to userland. Add an explicit memset(0) to avoid the info leak.
 
-1. The replay window has random bits set confusing the replay handling
-   code later on.
+Initial version of the patch by Brad Spengler.
 
-2. A malicious user could use this flaw to leak up to ~3.5kB of heap
-   memory when she has access to the XFRM netlink interface (requires
-   CAP_NET_ADMIN).
-
-Known users of the ESN replay window are strongSwan and Steffen's
-iproute2 patch (<http://patchwork.ozlabs.org/patch/85962/>). The latter
-uses the interface with a bitmap supplied while the former does not.
-strongSwan is therefore prone to run into issue 1.
-
-To fix both issues without breaking existing userland allow using the
-XFRMA_REPLAY_ESN_VAL netlink attribute with either an empty bitmap or a
-fully specified one. For the former case we initialize the in-kernel
-bitmap with zero, for the latter we copy the user supplied bitmap. For
-state updates the full bitmap must be supplied.
-
-To prevent overflows in the bitmap length calculation the maximum size
-of bmp_len is limited to 128 by this patch -- resulting in a maximum
-replay window of 4096 packets. This should be sufficient for all real
-life scenarios (RFC 4303 recommends a default replay window size of 64).
-
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Martin Willi <martin@revosec.ch>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Brad Spengler <spender@grsecurity.net>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/xfrm.h |  2 ++
- net/xfrm/xfrm_user.c | 31 +++++++++++++++++++++++++------
- 2 files changed, 27 insertions(+), 6 deletions(-)
+ net/xfrm/xfrm_user.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/xfrm.h b/include/linux/xfrm.h
-index 22e61fd..28e493b 100644
---- a/include/linux/xfrm.h
-+++ b/include/linux/xfrm.h
-@@ -84,6 +84,8 @@ struct xfrm_replay_state {
- 	__u32	bitmap;
- };
- 
-+#define XFRMA_REPLAY_ESN_MAX	4096
-+
- struct xfrm_replay_state_esn {
- 	unsigned int	bmp_len;
- 	__u32		oseq;
 diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index 28e4f751..ede01a8 100644
+index 1d222e9..8f916a7 100644
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -123,9 +123,21 @@ static inline int verify_replay(struct xfrm_usersa_info *p,
- 				struct nlattr **attrs)
- {
- 	struct nlattr *rt = attrs[XFRMA_REPLAY_ESN_VAL];
-+	struct xfrm_replay_state_esn *rs;
+@@ -1405,6 +1405,7 @@ static int copy_to_user_tmpl(struct xfrm_policy *xp, struct sk_buff *skb)
+ 		struct xfrm_user_tmpl *up = &vec[i];
+ 		struct xfrm_tmpl *kp = &xp->xfrm_vec[i];
  
--	if ((p->flags & XFRM_STATE_ESN) && !rt)
--		return -EINVAL;
-+	if (p->flags & XFRM_STATE_ESN) {
-+		if (!rt)
-+			return -EINVAL;
-+
-+		rs = nla_data(rt);
-+
-+		if (rs->bmp_len > XFRMA_REPLAY_ESN_MAX / sizeof(rs->bmp[0]) / 8)
-+			return -EINVAL;
-+
-+		if (nla_len(rt) < xfrm_replay_state_esn_len(rs) &&
-+		    nla_len(rt) != sizeof(*rs))
-+			return -EINVAL;
-+	}
- 
- 	if (!rt)
- 		return 0;
-@@ -370,14 +382,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
- 					 struct nlattr *rp)
- {
- 	struct xfrm_replay_state_esn *up;
-+	int ulen;
- 
- 	if (!replay_esn || !rp)
- 		return 0;
- 
- 	up = nla_data(rp);
-+	ulen = xfrm_replay_state_esn_len(up);
- 
--	if (xfrm_replay_state_esn_len(replay_esn) !=
--			xfrm_replay_state_esn_len(up))
-+	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
- 		return -EINVAL;
- 
- 	return 0;
-@@ -388,22 +401,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
- 				       struct nlattr *rta)
- {
- 	struct xfrm_replay_state_esn *p, *pp, *up;
-+	int klen, ulen;
- 
- 	if (!rta)
- 		return 0;
- 
- 	up = nla_data(rta);
-+	klen = xfrm_replay_state_esn_len(up);
-+	ulen = nla_len(rta) >= klen ? klen : sizeof(*up);
- 
--	p = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
-+	p = kzalloc(klen, GFP_KERNEL);
- 	if (!p)
- 		return -ENOMEM;
- 
--	pp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
-+	pp = kzalloc(klen, GFP_KERNEL);
- 	if (!pp) {
- 		kfree(p);
- 		return -ENOMEM;
- 	}
- 
-+	memcpy(p, up, ulen);
-+	memcpy(pp, up, ulen);
-+
- 	*replay_esn = p;
- 	*preplay_esn = pp;
- 
++		memset(up, 0, sizeof(*up));
+ 		memcpy(&up->id, &kp->id, sizeof(up->id));
+ 		up->family = kp->encap_family;
+ 		memcpy(&up->saddr, &kp->saddr, sizeof(up->saddr));
 
 
