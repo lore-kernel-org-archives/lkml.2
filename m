@@ -1,103 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab2JGPZr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 11:25:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45942 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab2JGPZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 11:25:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,547,1344236400"; 
-   d="scan'208";a="201553875"
-Message-ID: <50719EEC.7090302@zytor.com>
-Date: Sun, 07 Oct 2012 23:25:32 +0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
+	id S1753439Ab2JGPdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:33:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35000 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753316Ab2JGPdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 11:33:47 -0400
+Message-ID: <1349624019.16173.113.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [STABLE][3.0][3.2][Add PATCH] phy/fixed: use an unique MDIO bus
+ name
+From: Ben Hutchings <ben@decadent.org.uk>
 To: Steven Rostedt <rostedt@goodmis.org>
-CC: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH v4] trace,x86: add x86 irq vector tracepoints
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com>   <50612729.2080307@zytor.com>   <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>   <50650A7E.90807@zytor.com>   <A5ED84D3BB3A384992CBB9C77DEDA4D413869FD7@USINDEM103.corp.hds.com>  <1349446428.6755.56.camel@gandalf.local.home> <506F7849.2080805@zytor.com> <1349492261.6755.87.camel@gandalf.local.home>
-In-Reply-To: <1349492261.6755.87.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>
+Date: Sun, 07 Oct 2012 16:33:39 +0100
+In-Reply-To: <1349441987.6755.45.camel@gandalf.local.home>
+References: <1349441987.6755.45.camel@gandalf.local.home>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-doV17NCNOcq6R/qjgEMb"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2012 10:57 AM, Steven Rostedt wrote:
-> 
-> I didn't say anything magic, but a table of pointers that are very
-> critical for the system running. Should we implement it with a single
-> switch, like we discussed in San Diego to do with the system call table?
-> 
-> That is, have a "normal" table, and a "trace" table. The trace table
-> points to functions that have tracepoints. The first enabler of tracing
-> switches the table to use the tracepoints, and the last disabler
-> switches it back?
-> 
 
-That is certainly a reasonable implementation option.  It is slightly
-less usable than it is for system calls, though, because the vectors in
-the IDTs are somewhat scrambled and so you can't just do an indirect
-jump to the original vector content.  This does get messy because you
-also want to preserve registers...
+--=-doV17NCNOcq6R/qjgEMb
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->>
->>> You are the maintainer and are responsible for the outcome of changes to
->>> the x86 arch, thus you do have final say. And if you think there's
->>> nothing to worry about with an IDT change then Seiji should implement
->>> it.
->>>
->>> I just want to point out some possible repercussions of doing it in a
->>> more complex way. As tracepoints use nops, and I may be pushing to even
->>> out-of-line the tracepoint unlikely part even more, I'm not sure the
->>> complexity is worth the amount of savings it would be against just
->>> adding the tracepoint in the code.
->>
->> The problem I'm seeing is the constant "oh, just a little bit more."  My
->> experience over the years is that there is always demand for "just one
->> more debug feature", each of which has negible cost, because they always
->> use the previous thing as a baseline... noone ever looks at the grand
->> total cost of the package (and by the time that happens, it is too late.)
-> 
-> Now I can turn this back at you ;-)  We can implement the simple "just
-> add the tracepoints in the code" first, and then later implement the
-> table swap version and we can say "hey! we just made the code faster!".
+On Fri, 2012-10-05 at 08:59 -0400, Steven Rostedt wrote:
+> I started testing my 3.2-rt branch on a powerpc box and it would
+> constantly spit out the following warning causing ktest to think the
+> boot failed:
+>=20
+> sysfs: cannot create duplicate filename '/class/mdio_bus/0
+[...]
+> Doing some investigations, I found it only triggered on some configs,
+> and it was fixed by 3.3. I ran a ktest.pl reverse bisect (bad is good
+> and good is bad) and it ended on this commit:
+>=20
+> commit 9e6c643bb4502c50b6511206601b7760c610dfcc
+> Author: Florian Fainelli <florian@openwrt.org>
+> Date:   Mon Jan 9 23:59:25 2012 +0000
+>=20
+>     phy/fixed: use an unique MDIO bus name.
+>    =20
+>     Signed-off-by: Florian Fainelli <florian@openwrt.org>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+> diff --git a/drivers/net/phy/fixed.c b/drivers/net/phy/fixed.c
+> index 1fa4d73..633680d 100644
+> --- a/drivers/net/phy/fixed.c
+> +++ b/drivers/net/phy/fixed.c
+> @@ -220,7 +220,7 @@ static int __init fixed_mdio_bus_init(void)
+>                 goto err_mdiobus_reg;
+>         }
+> =20
+> -       snprintf(fmb->mii_bus->id, MII_BUS_ID_SIZE, "0");
+> +       snprintf(fmb->mii_bus->id, MII_BUS_ID_SIZE, "fixed-0");
+>         fmb->mii_bus->name =3D "Fixed MDIO Bus";
+>         fmb->mii_bus->priv =3D fmb;
+>         fmb->mii_bus->parent =3D &pdev->dev;
+>=20
+> Sure enough, adding this patch to both 3.2 and 3.0 fixed the bug.
+>=20
+> Please pull this patch into the 3.2 and 3.0 stable trees.
 
-Can we?  My understanding how tracepoints are is that they export a
-bunch of data structures via debugfs (a.k.a. sploitfs -- any system with
-debugfs mounted really should be considered compromised from the start)
-and that they are intimately tied to how they are implemented.
+Networking stable fixes are normally vetted, backported and bundled up
+by David, so I'll let him decide on this.
 
->>
->> tracepoints in particular are something I'm getting concerned about,
->> because they are one of those things that turn kernel internals into an
->> ABI, which means misdesigned tracepoints can actually make kernel
->> internal changes very hard to do.  The cost of those kinds of issues go
->> up over time as the strain between where we'd like the code to be vs.
->> where the code is increases.
-> 
-> Honestly, I'm extremely concerned about this too. In fact, I've bitched
-> about this so many times in the past, but it just fell to deaf ears:
-> 
-> http://lwn.net/Articles/412685/
-> http://lwn.net/Articles/415591/
-> http://lwn.net/Articles/416665/
-> http://lwn.net/Articles/416684/
-> 
+There are a lot more MDIO bus drivers that don't play nicely with
+others, most of which seem to be fixed in mainline.  If David agrees
+that these are generally worthwhile then perhaps someone could try to
+gather those up?
 
-Slightly different complaint, but in the same general vein, yes.
+Ben.
 
-	-hpa
+--=20
+Ben Hutchings
+You can't have everything.  Where would you put it?
 
+--=-doV17NCNOcq6R/qjgEMb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIVAwUAUHGg0+e/yOyVhhEJAQrCsg//WyyzCYf7cBedhxDFTzulIJ1bnoP2kK6+
+VfmvVxlfrxec5f5nWfsWHlF+JYG8o/a44yWPIfMgvaUMfmGchHpvqC2a0Zih3W9z
+76kDH1wwBR9ui87IGwfFDgznaVfetONYy0U82pRldVzxHPjN4hFL+zKOoXdkMGxp
+fMqgxyEav+G1WxpNsOOwXkxPvP3IHeMafO7FxG4lxUcEtSrpJ45SFBJNbrT3vCb7
+NSgr64QLGAsCRSBlOQuh69iSa2CDiekKVqzGuW4uczhYviDgu/DtRhHLjZXFCXA6
+28JjtizuLig6ThWwteXaF/bxLFj8sZE0t0Yz3un8m1MHZK8/fyXDeQNAcaHh5fhK
+brxloxzfkZAZv8CkVwSjAoOYPTGiRD2SUNt9kDfXR3QE1gRp6hhCHvb5teZ131nH
+kV4g+FufOnciC47647687Qh5ZSurKISX5ynOyPSjrNrda8469TP67pjd05XJw7KT
+q6pkNuXogqkR5L2mvn4kJHoaa2fszY219wU3KUVxS9Z/OqwbG1cWWkFDPLKcoMea
+sDfyzon5JWC5bFdMwXOYqwD+MP6S5YEl8XLiFbIv/uaBeDKM+JjoSPksv9Lpr8wY
+bgkYpF4N7Dl7EiBFpdqSXMSbStaiSCjY4O5vJp/3dBbxMOH3+l2VKj6K5KHWZbLK
+0mW3luBYjhE=
+=0myO
+-----END PGP SIGNATURE-----
+
+--=-doV17NCNOcq6R/qjgEMb--
