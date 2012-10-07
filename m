@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2JGX23 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:28:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38654 "EHLO
+	id S1754645Ab2JGXXT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38524 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754648Ab2JGXXU (ORCPT
+	by vger.kernel.org with ESMTP id S1754395Ab2JGXWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:20 -0400
-Message-Id: <20121007225839.545899321@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:55 -0400
+Message-Id: <20121007225842.584009963@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:09 +0100
+Date: Sun, 07 Oct 2012 23:59:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 035/108] tracing: Dont call page_to_pfn() if page is NULL
+        Daniel J Blueman <daniel@quora.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 057/108] [libata] Prevent interface errors with Seagate FreeAgent GoFlex
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,48 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+From: Daniel J Blueman <daniel@quora.org>
 
-commit 85f2a2ef1d0ab99523e0b947a2b723f5650ed6aa upstream.
+commit c531077f40abc9f2129c4c83a30b3f8d6ce1c0e7 upstream.
 
-When allocating memory fails, page is NULL. page_to_pfn() will
-cause the kernel panicked if we don't use sparsemem vmemmap.
+When using my Seagate FreeAgent GoFlex eSATAp external disk enclosure,
+interface errors are always seen until 1.5Gbps is negotiated [1]. This
+occurs using any disk in the enclosure, and when the disk is connected
+directly with a generic passive eSATAp cable, we see stable 3Gbps
+operation as expected.
 
-Link: http://lkml.kernel.org/r/505AB1FF.8020104@cn.fujitsu.com
+Blacklist 3Gbps mode to avoid dataloss and the ~30s delay bus reset
+and renegotiation incurs.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/trace/events/kmem.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
-index 5f889f1..08fa272 100644
---- a/include/trace/events/kmem.h
-+++ b/include/trace/events/kmem.h
-@@ -214,7 +214,7 @@ TRACE_EVENT(mm_page_alloc,
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index c14f88c..95a656f 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4129,6 +4129,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
  
- 	TP_printk("page=%p pfn=%lu order=%d migratetype=%d gfp_flags=%s",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		show_gfp_flags(__entry->gfp_flags))
-@@ -240,7 +240,7 @@ DECLARE_EVENT_CLASS(mm_page,
+ 	/* Devices which aren't very happy with higher link speeds */
+ 	{ "WD My Book",			NULL,	ATA_HORKAGE_1_5_GBPS, },
++	{ "Seagate FreeAgent GoFlex",	NULL,	ATA_HORKAGE_1_5_GBPS, },
  
- 	TP_printk("page=%p pfn=%lu order=%u migratetype=%d percpu_refill=%d",
- 		__entry->page,
--		page_to_pfn(__entry->page),
-+		__entry->page ? page_to_pfn(__entry->page) : 0,
- 		__entry->order,
- 		__entry->migratetype,
- 		__entry->order == 0)
+ 	/*
+ 	 * Devices which choke on SETXFER.  Applies only if both the
 
 
