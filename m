@@ -1,64 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab2JGRLn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 13:11:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59092 "EHLO mx1.redhat.com"
+	id S1752543Ab2JGRNf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 13:13:35 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:44472 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037Ab2JGRLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 13:11:35 -0400
-Date: Sun, 7 Oct 2012 19:13:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: dl8bcu@dl8bcu.de, peterz@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
-Cc: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: Re: [regression] boot failure on alpha, bisected
-Message-ID: <20121007171300.GA10942@redhat.com>
-References: <20121006204736.GA1830@ds20.borg.net> <20121007165534.GA8024@redhat.com>
+	id S1751342Ab2JGRN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 13:13:27 -0400
+Message-ID: <5071B834.1010200@bfs.de>
+Date: Sun, 07 Oct 2012 19:13:24 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121007165534.GA8024@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
+        rmallon@gmail.com, shubhrajyoti@ti.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for i2c_msg
+ initialization
+References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr> <5071AEF3.6080108@bfs.de> <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07, Oleg Nesterov wrote:
->
-> Hmm. I know nothing about arch/alpha and I can't understand its entry.S.
-> But _it seems_ to me that do_notify_resume() is called with irqs disabled.
-> If this is true, then imho arch/alpha should be fixed.
->
-> Before this commit task_work_run() enabled irqs, but this was the "side
-> effect" of spin_lock_irq/spin_unlock_irq, we should not rely on this.
-
-Could you please test the debugging patch below?
-
-Oleg.
 
 
---- x/arch/alpha/kernel/signal.c
-+++ x/arch/alpha/kernel/signal.c
-@@ -567,11 +567,19 @@ do_signal(struct pt_regs * regs, struct 
- 		ptrace_set_bpt(current);	/* re-set breakpoint */
- }
- 
-+#include <linux/ratelimit.h>
-+
- void
- do_notify_resume(struct pt_regs *regs, struct switch_stack *sw,
- 		 unsigned long thread_info_flags,
- 		 unsigned long r0, unsigned long r19)
- {
-+	if (irqs_disabled()) {
-+		printk_ratelimited(KERN_WARNING
-+			"NOTIFY with irqs_disabled:%lx\n", thread_info_flags);
-+		local_irq_enable();
-+	}
-+
- 	if (thread_info_flags & _TIF_SIGPENDING)
- 		do_signal(regs, sw, r0, r19);
- 
+Am 07.10.2012 18:44, schrieb Julia Lawall:
+> On Sun, 7 Oct 2012, walter harms wrote:
+> 
+>>
+>>
+>> Am 07.10.2012 17:38, schrieb Julia Lawall:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
+>>>
+>>> In the second i2c_msg structure, a length expressed as an explicit
+>>> constant
+>>> is also re-expressed as the size of the buffer, reg.
+>>>
+>>> A simplified version of the semantic patch that makes this change is as
+>>> follows: (http://coccinelle.lip6.fr/)
+>>>
+>>> // <smpl>
+>>> @@
+>>> expression a,b,c;
+>>> identifier x;
+>>> @@
+>>>
+>>> struct i2c_msg x =
+>>> - {.addr = a, .buf = b, .len = c, .flags = I2C_M_RD}
+>>> + I2C_MSG_READ(a,b,c)
+>>>  ;
+>>>
+>>> @@
+>>> expression a,b,c;
+>>> identifier x;
+>>> @@
+>>>
+>>> struct i2c_msg x =
+>>> - {.addr = a, .buf = b, .len = c, .flags = 0}
+>>> + I2C_MSG_WRITE(a,b,c)
+>>>  ;
+>>>
+>>> @@
+>>> expression a,b,c,d;
+>>> identifier x;
+>>> @@
+>>>
+>>> struct i2c_msg x =
+>>> - {.addr = a, .buf = b, .len = c, .flags = d}
+>>> + I2C_MSG_OP(a,b,c,d)
+>>>  ;
+>>> // </smpl>
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> ---
+>>>  drivers/media/tuners/e4000.c |   20 +++-----------------
+>>>  1 file changed, 3 insertions(+), 17 deletions(-)
+>>>
+>>> diff --git a/drivers/media/tuners/e4000.c b/drivers/media/tuners/e4000.c
+>>> index 1b33ed3..8f182fc 100644
+>>> --- a/drivers/media/tuners/e4000.c
+>>> +++ b/drivers/media/tuners/e4000.c
+>>> @@ -26,12 +26,7 @@ static int e4000_wr_regs(struct e4000_priv *priv,
+>>> u8 reg, u8 *val, int len)
+>>>      int ret;
+>>>      u8 buf[1 + len];
+>>>      struct i2c_msg msg[1] = {
+>>> -        {
+>>> -            .addr = priv->cfg->i2c_addr,
+>>> -            .flags = 0,
+>>> -            .len = sizeof(buf),
+>>> -            .buf = buf,
+>>> -        }
+>>> +        I2C_MSG_WRITE(priv->cfg->i2c_addr, buf, sizeof(buf))
+>>>      };
+>>>
+>>
+>> Any reason why struct i2c_msg is an array ?
+> 
+> I assumed that it looked more harmonious with the other uses of
+> i2c_transfer, which takes as arguments an array and the number of elements.
+> 
+> But there are some files that instead use i2c_transfer(priv->i2c, &msg, 1).
+> I can change them all to do that if that is preferred.  But maybe I will
+> wait a little bit to see if there are other issues to address at the
+> same time.
+> 
+> thanks,
+> julia
+> 
 
+Hi Julia,
+please be aware i am not the maintainer only a distant watcher :)
+
+do you really thing that a macro is appropriate here ? I feel uneasy about it
+but i can not offer an other solution.
+
+nothing to worry about,
+just my 2 cents.
+
+re,
+ wh
+
+
+>>
+>> re,
+>> wh
+>>
+>>>      buf[0] = reg;
+>>> @@ -54,17 +49,8 @@ static int e4000_rd_regs(struct e4000_priv *priv,
+>>> u8 reg, u8 *val, int len)
+>>>      int ret;
+>>>      u8 buf[len];
+>>>      struct i2c_msg msg[2] = {
+>>> -        {
+>>> -            .addr = priv->cfg->i2c_addr,
+>>> -            .flags = 0,
+>>> -            .len = 1,
+>>> -            .buf = &reg,
+>>> -        }, {
+>>> -            .addr = priv->cfg->i2c_addr,
+>>> -            .flags = I2C_M_RD,
+>>> -            .len = sizeof(buf),
+>>> -            .buf = buf,
+>>> -        }
+>>> +        I2C_MSG_WRITE(priv->cfg->i2c_addr, &reg, sizeof(reg)),
+>>> +        I2C_MSG_READ(priv->cfg->i2c_addr, buf, sizeof(buf))
+>>>      };
+>>>
+>>>      ret = i2c_transfer(priv->i2c, msg, 2);
+>>>
+>>> -- 
+>>> To unsubscribe from this list: send the line "unsubscribe
+>>> kernel-janitors" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe
+>> kernel-janitors" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
