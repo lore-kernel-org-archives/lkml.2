@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2JGSlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:41:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44589 "EHLO
+	id S1754050Ab2JGSjG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 14:39:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44506 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab2JGSjK (ORCPT
+	with ESMTP id S1754064Ab2JGSib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:39:10 -0400
-Date: Sun, 07 Oct 2012 14:39:08 -0400 (EDT)
-Message-Id: <20121007.143908.1688001732224378028.davem@davemloft.net>
+	Sun, 7 Oct 2012 14:38:31 -0400
+Date: Sun, 07 Oct 2012 14:38:30 -0400 (EDT)
+Message-Id: <20121007.143830.766123411224453696.davem@davemloft.net>
 To: peter.senna@gmail.com
-Cc: mcuos.com@gmail.com, axel.lin@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 15/20 V2] drivers/net/ethernet/natsemi/xtsonic.c: fix
- error return code
+Cc: venza@brownhat.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 5/20 V2] drivers/net/ethernet/sis/sis900.c: fix error
+ return code
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1349475053-11464-5-git-send-email-peter.senna@gmail.com>
-References: <1349475053-11464-1-git-send-email-peter.senna@gmail.com>
-	<1349475053-11464-5-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1349469667-6137-5-git-send-email-peter.senna@gmail.com>
+References: <1349469667-6137-1-git-send-email-peter.senna@gmail.com>
+	<1349469667-6137-5-git-send-email-peter.senna@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
