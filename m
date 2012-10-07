@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2JGOjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 10:39:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33254 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab2JGOjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 10:39:14 -0400
-Date: Sun, 7 Oct 2012 07:39:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: Re: [ 28/52] xHCI: add cmd_ring_state
-Message-ID: <20121007143910.GA18016@kroah.com>
-References: <20121004210635.372689554@linuxfoundation.org>
- <20121004210638.880914187@linuxfoundation.org>
- <1349571292.16173.78.camel@deadeye.wl.decadent.org.uk>
+	id S1753331Ab2JGPIW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:08:22 -0400
+Received: from mail.servus.at ([193.170.194.20]:53298 "EHLO mail.servus.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab2JGPIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 11:08:15 -0400
+Date: Sun, 7 Oct 2012 17:07:55 +0200
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Stezenbach <js@sig21.net>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>
+Subject: [PATCH 0/3] Update LZO compression
+Message-ID: <cover.1349621096.git.markus@oberhumer.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349571292.16173.78.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 01:54:52AM +0100, Ben Hutchings wrote:
-> On Thu, 2012-10-04 at 14:21 -0700, Greg Kroah-Hartman wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Elric Fu <elricfu1@gmail.com>
-> > 
-> > commit c181bc5b5d5c79b71203cd10cef97f802fb6f9c1 upstream.
-> > 
-> > Adding cmd_ring_state for command ring. It helps to verify
-> > the current command ring state for controlling the command
-> > ring operations.
-> > 
-> > This patch should be backported to kernels as old as 3.0.  The commit
-> 
-> I assume this still needs backporting for 3.0, since it wasn't included
-> in 3.0.45-rc1.
+As requested by akpm I am sending my "lzo-update" branch at
 
-Yes, there were also other xhci patches that failed to either apply, or
-build, on 3.0 that were requested to be backported to there.
+  git://github.com/markus-oberhumer/linux.git lzo-update
 
-greg k-h
+to lkml as a patch series created by "git format-patch -M v3.5..lzo-update".
+
+You can also browse the branch at
+
+  https://github.com/markus-oberhumer/linux/compare/lzo-update
+
+and review the three patches at
+
+  https://github.com/markus-oberhumer/linux/commit/7c979cebc0f93dc692b734c12665a6824d219c20
+  https://github.com/markus-oberhumer/linux/commit/10f6781c8591fe5fe4c8c733131915e5ae057826
+  https://github.com/markus-oberhumer/linux/commit/5f702781f158cb59075cfa97e5c21f52275057f1
+
+Share and enjoy,
+Markus
+
+
+Markus F.X.J. Oberhumer (3):
+  lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c
+  lib/lzo: Update LZO compression to current upstream version
+  lib/lzo: Optimize code for CPUs with inefficient unaligned access
+
+ include/linux/lzo.h             |   15 +-
+ lib/lzo/Makefile                |    2 +-
+ lib/lzo/lzo1x_compress.c        |  309 +++++++++++++++++++++------------------
+ lib/lzo/lzo1x_decompress.c      |  255 --------------------------------
+ lib/lzo/lzo1x_decompress_safe.c |  237 ++++++++++++++++++++++++++++++
+ lib/lzo/lzodefs.h               |   34 ++++-
+ 6 files changed, 441 insertions(+), 411 deletions(-)
+ delete mode 100644 lib/lzo/lzo1x_decompress.c
+ create mode 100644 lib/lzo/lzo1x_decompress_safe.c
+
