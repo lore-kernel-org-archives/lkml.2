@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab2JGXju (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:39:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38337 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753769Ab2JGXW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:26 -0400
-Message-Id: <20121007225846.860685998@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 08 Oct 2012 00:00:02 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paolo Valente <paolo.valente@unimore.it>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 088/108] pkt_sched: fix virtual-start-time update in QFQ
-In-Reply-To: <20121007225834.673681075@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755030Ab2JGXkB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:40:01 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:58627
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755009Ab2JGXj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 19:39:56 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        akpm@linux-foundation.org, andi@firstfloor.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/2] mm: Export vm_committed_as
+Date: Sun,  7 Oct 2012 16:59:45 -0700
+Message-Id: <1349654386-18378-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+The policy engine on the host expects the guest to report the
+committed_as. Since this variable is not exported,
+export this symbol.
 
-------------------
-
-From: Paolo Valente <paolo.valente@unimore.it>
-
-[ Upstream commit 71261956973ba9e0637848a5adb4a5819b4bae83 ]
-
-If the old timestamps of a class, say cl, are stale when the class
-becomes active, then QFQ may assign to cl a much higher start time
-than the maximum value allowed. This may happen when QFQ assigns to
-the start time of cl the finish time of a group whose classes are
-characterized by a higher value of the ratio
-max_class_pkt/weight_of_the_class with respect to that of
-cl. Inserting a class with a too high start time into the bucket list
-corrupts the data structure and may eventually lead to crashes.
-This patch limits the maximum start time assigned to a class.
-
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- net/sched/sch_qfq.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/mmap.c  |    1 +
+ mm/nommu.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-index 7b03254..ca0fb48 100644
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -829,7 +829,10 @@ static void qfq_update_start(struct qfq_sched *q, struct qfq_class *cl)
- 		if (mask) {
- 			struct qfq_group *next = qfq_ffs(q, mask);
- 			if (qfq_gt(roundedF, next->F)) {
--				cl->S = next->F;
-+				if (qfq_gt(limit, next->F))
-+					cl->S = next->F;
-+				else /* preserve timestamp correctness */
-+					cl->S = limit;
- 				return;
- 			}
- 		}
-
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 2d94235..01439d4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -87,6 +87,7 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+  * other variables. It can be updated by several CPUs frequently.
+  */
+ struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
++EXPORT_SYMBOL(vm_committed_as);
+ 
+ /*
+  * Check that a process has enough memory to allocate a new virtual
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 45131b4..3914b7e 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -68,6 +68,7 @@ atomic_long_t mmap_pages_allocated;
+ 
+ EXPORT_SYMBOL(mem_map);
+ EXPORT_SYMBOL(num_physpages);
++EXPORT_SYMBOL(vm_committed_as);
+ 
+ /* list of mapped, potentially shareable regions */
+ static struct kmem_cache *vm_region_jar;
+-- 
+1.7.4.1
 
