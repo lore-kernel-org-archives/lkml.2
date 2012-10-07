@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab2JGXan (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:30:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38598 "EHLO
+	id S1754574Ab2JGXXH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38395 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754577Ab2JGXXI (ORCPT
+	by vger.kernel.org with ESMTP id S1754069Ab2JGXWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:08 -0400
-Message-Id: <20121007225841.217361103@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:38 -0400
+Message-Id: <20121007225845.086900587@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:21 +0100
+Date: Sun, 07 Oct 2012 23:59:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 047/108] dm table: clear add_random unless all devices have it set
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 075/108] xfrm_user: return error pointer instead of NULL
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,95 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milan Broz <mbroz@redhat.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit c3c4555edd10dbc0b388a0125b9c50de5e79af05 upstream.
+[ Upstream commit 864745d291b5ba80ea0bd0edcbe67273de368836 ]
 
-Always clear QUEUE_FLAG_ADD_RANDOM if any underlying device does not
-have it set. Otherwise devices with predictable characteristics may
-contribute entropy.
+When dump_one_state() returns an error, e.g. because of a too small
+buffer to dump the whole xfrm state, xfrm_state_netlink() returns NULL
+instead of an error pointer. But its callers expect an error pointer
+and therefore continue to operate on a NULL skbuff.
 
-QUEUE_FLAG_ADD_RANDOM specifies whether or not queue IO timings
-contribute to the random pool.
+This could lead to a privilege escalation (execution of user code in
+kernel context) if the attacker has CAP_NET_ADMIN and is able to map
+address 0.
 
-For bio-based targets this flag is always 0 because such devices have no
-real queue.
-
-For request-based devices this flag was always set to 1 by default.
-
-Now set it according to the flags on underlying devices. If there is at
-least one device which should not contribute, set the flag to zero: If a
-device, such as fast SSD storage, is not suitable for supplying entropy,
-a request-based queue stacked over it will not be either.
-
-Because the checking logic is exactly same as for the rotational flag,
-share the iteration function with device_is_nonrot().
-
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-table.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ net/xfrm/xfrm_user.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index f900690..77b90ae 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -1354,17 +1354,25 @@ static int device_is_nonrot(struct dm_target *ti, struct dm_dev *dev,
- 	return q && blk_queue_nonrot(q);
- }
- 
--static bool dm_table_is_nonrot(struct dm_table *t)
-+static int device_is_not_random(struct dm_target *ti, struct dm_dev *dev,
-+			     sector_t start, sector_t len, void *data)
-+{
-+	struct request_queue *q = bdev_get_queue(dev->bdev);
-+
-+	return q && !blk_queue_add_random(q);
-+}
-+
-+static bool dm_table_all_devices_attribute(struct dm_table *t,
-+					   iterate_devices_callout_fn func)
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 7cae73e..a092828 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -862,6 +862,7 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
  {
- 	struct dm_target *ti;
- 	unsigned i = 0;
+ 	struct xfrm_dump_info info;
+ 	struct sk_buff *skb;
++	int err;
  
--	/* Ensure that all underlying device are non-rotational. */
- 	while (i < dm_table_get_num_targets(t)) {
- 		ti = dm_table_get_target(t, i++);
+ 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC);
+ 	if (!skb)
+@@ -872,9 +873,10 @@ static struct sk_buff *xfrm_state_netlink(struct sk_buff *in_skb,
+ 	info.nlmsg_seq = seq;
+ 	info.nlmsg_flags = 0;
  
- 		if (!ti->type->iterate_devices ||
--		    !ti->type->iterate_devices(ti, device_is_nonrot, NULL))
-+		    !ti->type->iterate_devices(ti, func, NULL))
- 			return 0;
+-	if (dump_one_state(x, 0, &info)) {
++	err = dump_one_state(x, 0, &info);
++	if (err) {
+ 		kfree_skb(skb);
+-		return NULL;
++		return ERR_PTR(err);
  	}
  
-@@ -1396,7 +1404,8 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
- 	if (!dm_table_discard_zeroes_data(t))
- 		q->limits.discard_zeroes_data = 0;
- 
--	if (dm_table_is_nonrot(t))
-+	/* Ensure that all underlying devices are non-rotational. */
-+	if (dm_table_all_devices_attribute(t, device_is_nonrot))
- 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
- 	else
- 		queue_flag_clear_unlocked(QUEUE_FLAG_NONROT, q);
-@@ -1404,6 +1413,15 @@ void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
- 	dm_table_set_integrity(t);
- 
- 	/*
-+	 * Determine whether or not this queue's I/O timings contribute
-+	 * to the entropy pool, Only request-based targets use this.
-+	 * Clear QUEUE_FLAG_ADD_RANDOM if any underlying device does not
-+	 * have it set.
-+	 */
-+	if (blk_queue_add_random(q) && dm_table_all_devices_attribute(t, device_is_not_random))
-+		queue_flag_clear_unlocked(QUEUE_FLAG_ADD_RANDOM, q);
-+
-+	/*
- 	 * QUEUE_FLAG_STACKABLE must be set after all queue settings are
- 	 * visible to other CPUs because, once the flag is set, incoming bios
- 	 * are processed by request-based dm, which refers to the queue
+ 	return skb;
 
 
