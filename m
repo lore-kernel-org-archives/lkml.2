@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab2JGXWY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:22:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38193 "EHLO
+	id S1755082Ab2JGXkw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:40:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38327 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752937Ab2JGXWE (ORCPT
+	by vger.kernel.org with ESMTP id S1752937Ab2JGXWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:04 -0400
-Message-Id: <20121007225835.285328616@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:25 -0400
+Message-Id: <20121007225835.696555140@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:38 +0100
+Date: Sun, 07 Oct 2012 23:58:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Li Haifeng <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 004/108] mm/ia64: fix a memory block size bug
+Subject: [ 007/108] mm/page_alloc: fix the page address of higher pages buddy
+ calculation
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,64 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Li Haifeng <omycle@gmail.com>
 
-commit 05cf96398e1b6502f9e191291b715c7463c9d5dd upstream.
+commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
 
-I found following definition in include/linux/memory.h, in my IA64
-platform, SECTION_SIZE_BITS is equal to 32, and MIN_MEMORY_BLOCK_SIZE
-will be 0.
+The heuristic method for buddy has been introduced since commit
+43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
+of adjacent buddy lists").  But the page address of higher page's buddy
+was wrongly calculated, which will lead page_is_buddy to fail for ever.
+IOW, the heuristic method would be disabled with the wrong page address
+of higher page's buddy.
 
-  #define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+Calculating the page address of higher page's buddy should be based
+higher_page with the offset between index of higher page and index of
+higher page's buddy.
 
-Because MIN_MEMORY_BLOCK_SIZE is int type and length of 32bits,
-so MIN_MEMORY_BLOCK_SIZE(1 << 32) will will equal to 0.
-Actually when SECTION_SIZE_BITS >= 31, MIN_MEMORY_BLOCK_SIZE will be wrong.
-This will cause wrong system memory infomation in sysfs.
-I think it should be:
-
-  #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
-
-And "echo offline > memory0/state" will cause following call trace:
-
-  kernel BUG at mm/memory_hotplug.c:885!
-  sh[6455]: bugcheck! 0 [1]
-  Pid: 6455, CPU 0, comm:                   sh
-  psr : 0000101008526030 ifs : 8000000000000fa4 ip  : [<a0000001008c40f0>]    Not tainted (3.6.0-rc1)
-  ip is at offline_pages+0x210/0xee0
-  Call Trace:
-    show_stack+0x80/0xa0
-    show_regs+0x640/0x920
-    die+0x190/0x2c0
-    die_if_kernel+0x50/0x80
-    ia64_bad_break+0x3d0/0x6e0
-    ia64_native_leave_kernel+0x0/0x270
-    offline_pages+0x210/0xee0
-    alloc_pages_current+0x180/0x2a0
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>
+Signed-off-by: Haifeng Li <omycle@gmail.com>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
 Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/memory.h |    2 +-
+ mm/page_alloc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/memory.h b/include/linux/memory.h
-index 1ac7f6e..ff9a9f8 100644
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -19,7 +19,7 @@
- #include <linux/compiler.h>
- #include <linux/mutex.h>
- 
--#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
-+#define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
- 
- struct memory_block {
- 	unsigned long start_section_nr;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c66fb87..c13ea75 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -584,7 +584,7 @@ static inline void __free_one_page(struct page *page,
+ 		combined_idx = buddy_idx & page_idx;
+ 		higher_page = page + (combined_idx - page_idx);
+ 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
+-		higher_buddy = page + (buddy_idx - combined_idx);
++		higher_buddy = higher_page + (buddy_idx - combined_idx);
+ 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
+ 			list_add_tail(&page->lru,
+ 				&zone->free_area[order].free_list[migratetype]);
 
 
