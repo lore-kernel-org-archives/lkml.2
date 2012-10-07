@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2JGXWC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:22:02 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38129 "EHLO
+	id S1755162Ab2JGXqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:46:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38175 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752698Ab2JGXVx (ORCPT
+	by vger.kernel.org with ESMTP id S1752803Ab2JGXWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:21:53 -0400
-Message-Id: <20121007225836.939464940@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:01 -0400
+Message-Id: <20121007225847.843328486@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:50 +0100
+Date: Mon, 08 Oct 2012 00:00:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 016/108] brcmfmac: fix big endian bug in i-scan.
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 095/108] net: small bug on rxhash calculation
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,36 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hante Meuleman <meuleman@broadcom.com>
+From: Chema Gonzalez <chema@google.com>
 
-commit ed205b361956c96e0d8c09a8c9135a6a79cd9541 upstream.
+[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
 
-ssid len is 32 bit and needs endian conversion for big endian systems.
+In the current rxhash calculation function, while the
+sorting of the ports/addrs is coherent (you get the
+same rxhash for packets sharing the same 4-tuple, in
+both directions), ports and addrs are sorted
+independently. This implies packets from a connection
+between the same addresses but crossed ports hash to
+the same rxhash.
 
-Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+For example, traffic between A=S:l and B=L:s is hashed
+(in both directions) from {L, S, {s, l}}. The same
+rxhash is obtained for packets between C=S:s and D=L:l.
+
+This patch ensures that you either swap both addrs and ports,
+or you swap none. Traffic between A and B, and traffic
+between C and D, get their rxhash from different sources
+({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
+
+The patch is co-written with Eric Dumazet <edumazet@google.com>
+
+Signed-off-by: Chema Gonzalez <chema@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/core/dev.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-index c36e923..50b5553 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -500,8 +500,10 @@ static void wl_iscan_prep(struct brcmf_scan_params_le *params_le,
- 	params_le->active_time = cpu_to_le32(-1);
- 	params_le->passive_time = cpu_to_le32(-1);
- 	params_le->home_time = cpu_to_le32(-1);
--	if (ssid && ssid->SSID_len)
--		memcpy(&params_le->ssid_le, ssid, sizeof(struct brcmf_ssid));
-+	if (ssid && ssid->SSID_len) {
-+		params_le->ssid_le.SSID_len = cpu_to_le32(ssid->SSID_len);
-+		memcpy(&params_le->ssid_le.SSID, ssid->SSID, ssid->SSID_len);
-+	}
- }
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 832ba6d..a4a0c5a 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2686,16 +2686,17 @@ ipv6:
+ 		nhoff += poff;
+ 		if (pskb_may_pull(skb, nhoff + 4)) {
+ 			ports.v32 = * (__force u32 *) (skb->data + nhoff);
+-			if (ports.v16[1] < ports.v16[0])
+-				swap(ports.v16[0], ports.v16[1]);
+ 			skb->l4_rxhash = 1;
+ 		}
+ 	}
  
- static s32
+ 	/* get a consistent hash (same value on both flow directions) */
+-	if (addr2 < addr1)
++	if (addr2 < addr1 ||
++	    (addr2 == addr1 &&
++	     ports.v16[1] < ports.v16[0])) {
+ 		swap(addr1, addr2);
+-
++		swap(ports.v16[0], ports.v16[1]);
++	}
+ 	hash = jhash_3words(addr1, addr2, ports.v32, hashrnd);
+ 	if (!hash)
+ 		hash = 1;
 
 
