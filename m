@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750981Ab2JGEMi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 00:12:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58631 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2JGEMg (ORCPT
+	id S1751100Ab2JGEOO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 00:14:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39586 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab2JGEOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 00:12:36 -0400
-Date: Sun, 7 Oct 2012 12:12:35 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 09/17] ARM: imx: select ARM_CPU_SUSPEND if necessary
-Message-ID: <20121007041233.GM20231@S2101-09.ap.freescale.net>
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
- <1349195816-2225-10-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349195816-2225-10-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 7 Oct 2012 00:14:12 -0400
+Date: Sun, 07 Oct 2012 00:14:10 -0400 (EDT)
+Message-Id: <20121007.001410.1223449597402958747.davem@davemloft.net>
+To: florz@florz.de
+Cc: kaber@trash.net, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jpirko@redhat.com
+Subject: Re: [PATCH] vlan: don't deliver frames for unknown vlans to
+ protocols
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121004165020.GT1162@florz.florz.dyndns.org>
+References: <20121004165020.GT1162@florz.florz.dyndns.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isn't the following the approach we agreed on?
+From: Florian Zumbiehl <florz@florz.de>
+Date: Thu, 4 Oct 2012 18:50:20 +0200
 
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/183222/focus=1348538
+> 6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
+> vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
+> there was an rx_handler, as the rx_handler could cause the frame to be received
+> on a different (virtual) vlan-capable interface where that vlan might be
+> configured.
+> 
+> As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
+> frames for unknown vlans to be delivered to the protocol stack as if they had
+> been received untagged.
+> 
+> For example, if an ipv6 router advertisement that's tagged for a locally not
+> configured vlan is received on an interface with macvlan interfaces attached,
+> macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
+> macvlan interfaces, which caused it to be passed to the protocol stack, leading
+> to ipv6 addresses for the announced prefix being configured even though those
+> are completely unusable on the underlying interface.
+> 
+> The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
+> rx_handler, if there is one, sees the frame unchanged, but afterwards,
+> before the frame is delivered to the protocol stack, it gets marked whether
+> there is an rx_handler or not.
+> 
+> Signed-off-by: Florian Zumbiehl <florz@florz.de>
 
-Shawn
+I agree with your analysis but I do not like your fix.
 
-On Tue, Oct 02, 2012 at 06:36:48PM +0200, Arnd Bergmann wrote:
-> As tests using 'make randconfig' showed, imx5 requires the same logic
-> as imx6 to select ARM_CPU_SUSPEND when building with power management
-> enabled.
-> 
-> The defconfig does not have this problem because it enables imx6
-> as well, but disabling it leads to this warning:
-> 
-> arch/arm/mach-imx/built-in.o: In function `v7_cpu_resume':
-> arch/arm/mach-imx/head-v7.S:104: undefined reference to `cpu_resume'
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Sascha Hauer <kernel@pengutronix.de>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> ---
->  arch/arm/mach-imx/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index afd542a..8e96573 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -89,6 +89,7 @@ config SOC_IMX5
->  	select ARCH_MXC_IOMUX_V3
->  	select ARCH_HAS_CPUFREQ
->  	select ARCH_MX5
-> +	select ARM_CPU_SUSPEND if PM
->  	bool
->  
->  config SOC_IMX50
-> -- 
-> 1.7.10
-> 
+This is one of the hottest paths in the networking stack and I don't
+want to add more "pass pointer to local variable" type interfaces.
+
+Fix this in a cleaner way please, thanks
