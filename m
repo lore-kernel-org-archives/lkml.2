@@ -1,182 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab2JGHOB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 03:14:01 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55056 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab2JGHOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 03:14:00 -0400
-Date: Sun, 7 Oct 2012 12:44:36 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Introduce uprobe_copy_insn()
-Message-ID: <20121007071436.GE9143@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120930194119.GA11278@redhat.com>
- <20120930194217.GA11340@redhat.com>
- <20121006094528.GC9145@linux.vnet.ibm.com>
- <20121006171010.GA9819@redhat.com>
- <20121006173849.GB9143@linux.vnet.ibm.com>
- <20121006185949.GA15592@redhat.com>
+	id S1751911Ab2JGHQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 03:16:14 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55432 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2JGHQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 03:16:12 -0400
+Message-ID: <50712AAA.5030807@gmail.com>
+Date: Sun, 07 Oct 2012 09:09:30 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121006185949.GA15592@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12100707-1976-0000-0000-0000121A65CE
+To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+CC: Vyacheslav Dubeyko <slava@dubeyko.com>, jaegeuk.kim@samsung.com,
+        Al Viro <viro@zeniv.linux.org.uk>, tytso@mit.edu,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>  <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com> <1349553966.12699.132.camel@kjgkr>
+In-Reply-To: <1349553966.12699.132.camel@kjgkr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-10-06 20:59:49]:
+Il 06/10/2012 22:06, Jaegeuk Kim ha scritto:
+> 2012-10-06 (토), 17:54 +0400, Vyacheslav Dubeyko:
+>> Hi Jaegeuk,
+>
+> Hi.
+> We know each other, right? :)
+>
+>>
+>>> From:	 	김재극 <jaegeuk.kim@samsung.com>
+>>> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, chur.lee@samsung.com, cm224.lee@samsung.com, jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
+>>> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file system
+>>> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
+>>>
+>>> This is a new patch set for the f2fs file system.
+>>>
+>>> What is F2FS?
+>>> =============
+>>>
+>>> NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
+>>> been widely being used for ranging from mobile to server systems. Since they are
+>>> known to have different characteristics from the conventional rotational disks,
+>>> a file system, an upper layer to the storage device, should adapt to the changes
+>>> from the sketch.
+>>>
+>>> F2FS is a new file system carefully designed for the NAND flash memory-based storage
+>>> devices. We chose a log structure file system approach, but we tried to adapt it
+>>> to the new form of storage. Also we remedy some known issues of the very old log
+>>> structured file system, such as snowball effect of wandering tree and high cleaning
+>>> overhead.
+>>>
+>>> Because a NAND-based storage device shows different characteristics according to
+>>> its internal geometry or flash memory management scheme aka FTL, we add various
+>>> parameters not only for configuring on-disk layout, but also for selecting allocation
+>>> and cleaning algorithms.
+>>>
+>>
+>> What about F2FS performance? Could you share benchmarking results of the new file system?
+>>
+>> It is very interesting the case of aged file system. How is GC's implementation efficient? Could you share benchmarking results for the very aged file system state?
+>>
+>
+> Although I have benchmark results, currently I'd like to see the results
+> measured by community as a black-box. As you know, the results are very
+> dependent on the workloads and parameters, so I think it would be better
+> to see other results for a while.
+> Thanks,
+>
 
-> On 10/06, Srikar Dronamraju wrote:
-> >
-> > Yeah prepare_uprobe() looks good for me.
-> >
-> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> OK, renamed.
-> 
-> The next patches updated accordinly, I hope I can keep your acks.
+1) Actually it's a strange approach. If you have got any results you 
+should share them with the community explaining how (the workload, hw 
+and so on) your benchmark works and the specific condition. I really 
+don't like the approach "I've got the results but I don't say anything, 
+if you want a number, do it yourself".
+2) For a new filesystem you should send the patches to linux-fsdevel.
+3) It's not clear the pros/cons of your filesystem, can you share with 
+us the main differences with the current fs already in mainline? Or is 
+it a company secret?
 
-Yes, please keep my acks as I understand that the hunks in the rest of
-the patches will have trivial modifications.
-
--- 
-Thanks and Regards
-Srikar
-
-> 
-> ------------------------------------------------------------------------------
-> [PATCH] uprobes: Introduce prepare_uprobe()
-> 
-> Preparation. Extract the copy_insn/arch_uprobe_analyze_insn code
-> from install_breakpoint() into the new helper, prepare_uprobe().
-> 
-> And move uprobe->flags defines from uprobes.h to uprobes.c, nobody
-> else can use them anyway.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  include/linux/uprobes.h |   10 --------
->  kernel/events/uprobes.c |   60 ++++++++++++++++++++++++++++++++---------------
->  2 files changed, 41 insertions(+), 29 deletions(-)
-> 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 18d839d..2459457 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -35,16 +35,6 @@ struct inode;
->  # include <asm/uprobes.h>
->  #endif
-> 
-> -/* flags that denote/change uprobes behaviour */
-> -
-> -/* Have a copy of original instruction */
-> -#define UPROBE_COPY_INSN	0x1
-> -
-> -/* Dont run handlers when first register/ last unregister in progress*/
-> -#define UPROBE_RUN_HANDLER	0x2
-> -/* Can skip singlestep */
-> -#define UPROBE_SKIP_SSTEP	0x4
-> -
->  struct uprobe_consumer {
->  	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
->  	/*
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index dbbca3a..d6fa332 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -78,6 +78,13 @@ static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
->   */
->  static atomic_t uprobe_events = ATOMIC_INIT(0);
-> 
-> +/* Have a copy of original instruction */
-> +#define UPROBE_COPY_INSN	0x1
-> +/* Dont run handlers when first register/ last unregister in progress*/
-> +#define UPROBE_RUN_HANDLER	0x2
-> +/* Can skip singlestep */
-> +#define UPROBE_SKIP_SSTEP	0x4
-> +
->  struct uprobe {
->  	struct rb_node		rb_node;	/* node in the rb tree */
->  	atomic_t		ref;
-> @@ -563,6 +570,37 @@ static int copy_insn(struct uprobe *uprobe, struct file *filp)
->  	return __copy_insn(mapping, filp, uprobe->arch.insn, bytes, uprobe->offset);
->  }
-> 
-> +static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
-> +				struct mm_struct *mm, unsigned long vaddr)
-> +{
-> +	int ret = 0;
-> +
-> +	if (uprobe->flags & UPROBE_COPY_INSN)
-> +		return ret;
-> +
-> +	ret = copy_insn(uprobe, file);
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = -ENOTSUPP;
-> +	if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
-> +		goto out;
-> +
-> +	ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
-> +	if (ret)
-> +		goto out;
-> +
-> +	/* write_opcode() assumes we don't cross page boundary */
-> +	BUG_ON((uprobe->offset & ~PAGE_MASK) +
-> +			UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-> +
-> +	smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
-> +	uprobe->flags |= UPROBE_COPY_INSN;
-> +
-> + out:
-> +	return ret;
-> +}
-> +
->  static int
->  install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
->  			struct vm_area_struct *vma, unsigned long vaddr)
-> @@ -580,25 +618,9 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
->  	if (!uprobe->consumers)
->  		return 0;
-> 
-> -	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
-> -		ret = copy_insn(uprobe, vma->vm_file);
-> -		if (ret)
-> -			return ret;
-> -
-> -		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
-> -			return -ENOTSUPP;
-> -
-> -		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm, vaddr);
-> -		if (ret)
-> -			return ret;
-> -
-> -		/* write_opcode() assumes we don't cross page boundary */
-> -		BUG_ON((uprobe->offset & ~PAGE_MASK) +
-> -				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-> -
-> -		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
-> -		uprobe->flags |= UPROBE_COPY_INSN;
-> -	}
-> +	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
-> +	if (ret)
-> +		return ret;
-> 
->  	/*
->  	 * set MMF_HAS_UPROBES in advance for uprobe_pre_sstep_notifier(),
-> -- 
-> 1.5.5.1
-> 
-> 
-
+Marco
