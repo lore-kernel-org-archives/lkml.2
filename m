@@ -1,157 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab2JGBqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 21:46:17 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43680 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab2JGBqQ (ORCPT
+	id S1752271Ab2JGBrt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 21:47:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58009 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750860Ab2JGBrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 21:46:16 -0400
-Date: Sat, 6 Oct 2012 18:44:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121007014447.GB2485@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121002195042.GA16087@www.outflux.net>
- <20121003132538.GE13192@linux.vnet.ibm.com>
- <20121003161702.GA22008@kroah.com>
- <20121003164712.GF2527@linux.vnet.ibm.com>
- <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
- <20121003200314.GR2527@linux.vnet.ibm.com>
- <20121004015539.GA19958@srcf.ucam.org>
- <20121004143150.GA2464@linux.vnet.ibm.com>
- <20121005164642.GA10711@linux.vnet.ibm.com>
- <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100701-2876-0000-0000-000000CB234A
+	Sat, 6 Oct 2012 21:47:47 -0400
+Message-ID: <1349574442.16173.82.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 110/180] ext4: dont let i_reserved_meta_blocks go negative
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Brian Foster <bfoster@redhat.com>
+Cc: Theodore Tso <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sun, 07 Oct 2012 02:47:22 +0100
+In-Reply-To: <506ECB8F.80509@redhat.com>
+References: <6a854f579a99b4fe2efaca1057e8ae22@local>
+	 <20121001225202.266707400@1wt.eu> <20121004215528.GK13292@decadent.org.uk>
+	 <506ECB8F.80509@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-gNJd6pIzGjCKzKuiOXKR"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 06:10:36PM +0200, Frederic Weisbecker wrote:
-> 2012/10/5 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Thu, Oct 04, 2012 at 07:31:50AM -0700, Paul E. McKenney wrote:
-> >> On Thu, Oct 04, 2012 at 02:55:39AM +0100, Matthew Garrett wrote:
-> >> > On Wed, Oct 03, 2012 at 01:03:14PM -0700, Paul E. McKenney wrote:
-> >> >
-> >> > > That has not proven sufficient for me in the past, RCU_FAST_NO_HZ
-> >> > > being a case in point.
-> >> >
-> >> > Taint the kernel at boot time? That'd be sufficient to force distros to
-> >> > disable it.
+
+--=-gNJd6pIzGjCKzKuiOXKR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 2012-10-05 at 07:59 -0400, Brian Foster wrote:
+> On 10/04/2012 05:55 PM, Ben Hutchings wrote:
+> > On Tue, Oct 02, 2012 at 12:53:47AM +0200, Willy Tarreau wrote:
+> >> 2.6.32-longterm review patch.  If anyone has any objections, please le=
+t me know.
 > >>
-> >> Cool!  That does sound much more socially responsible than my thought
-> >> of forcing a splat (e.g., WARN_ON(1)) during boot.  ;-)
-> >
-> > So, from what I can see, here is the list of the ways of warning distros
-> > off of a given kernel config option, taken in terms of CONFIG_RCU_USER_QS:
-> >
-> > 1.      Make CONFIG_RCU_USER_QS depend on CONFIG_BROKEN.
-> >
-> >         It sounds to me like distros would avoid adding this (do they?),
-> >         but tester would probably avoid it as well.
-> >
-> > 2.      Make CONFIG_RCU_USER_QS depend on CONFIG_STAGING.
-> >
-> >         As Frederic noted, this is more of a driver thing than a
-> >         core-kernel thing, so probably not appropriate.
-> >
-> > 3.      Boot-time WARN_ON() if CONFIG_RCU_USER_QS=y.
-> >
-> >         This seems to me to be a tad excessive.  But the place to do it
-> >         might be rcu_bootup_announce_oddness() in kernel/rcutree_plugin.h.
-> >
-> > 4.      Remove CONFIG_RCU_USER_QS from Kconfig, so that users have to
-> >         patch their kernel to enable it.
-> >
-> >         This also seems a tad excessive.
-> >
-> > 5.      Maintain CONFIG_RCU_USER_QS out of tree, for example in the
-> >         -rt patchset.
-> >
-> >         This is a good place to start, but it has been where
-> >         CONFIG_RCU_USER_QS has been for some time, and although it
-> >         got some good testing, it clearly needs more.  In my view,
-> >         CONFIG_RCU_USER_QS has outgrown its out-of-tree roots.
-> >
-> > 6.      Boot-time add_taint() if CONFIG_RCU_USER_QS=y, as suggested
-> >         by Matthew Garrett.  The taint value might be TAINT_CRAP,
-> >         TAINT_OOT_MODULE, TAINT_WARN, or TAINT_FIRMWARE_WORKAROUND --
-> >         all the other taint values disable lockdep.  Of these four,
-> >         TAINT_OOT_MODULE and TAINT_FIRMWARE_WORKAROUND are clearly
-> >         off-topic, leaving TAINT_CRAP and TAINT_WARN.  Taking them one
-> >         at a time:
-> >
-> >         TAINT_CRAP: Used when loading modules from staging.
-> >
-> >         TAINT_WARN: Used when "scheduling while atomic" is encountered.
-> >
-> >         So I have my tongue only halfway in my cheek when I suggest
-> >         starting with TAINT_CRAP, then moving to TAINT_WARN, then
-> >         removing the tainting altogether.  The place to do this might
-> >         be rcu_bootup_announce_oddness() in kernel/rcutree_plugin.h.
-> >
-> > So how about the following progression?
-> >
-> > A.      Early days, only a few crazies should test.  In this case, the
-> >         code should be out of tree, perhaps in something like -rt,
-> >         perhaps as a set of patches.
-> >
-> > B.      Need more testers, but still not expected to work reasonably.
-> >         Mainline, but depending on CONFIG_BROKEN.  (I am not all that
-> >         enthusiastic about this option, but am including it for
-> >         completeness.)
-> 
-> Yeah neither am I. With a dependency on CONFIG_BROKEN, it considerably
-> reduce the testing coverage too.
+> >> ------------------
+> >>
+> >> From: Brian Foster <bfoster@redhat.com>
+> >>
+> >> commit 97795d2a5b8d3c8dc4365d4bd3404191840453ba upstream.
+> >>
+> >> If we hit a condition where we have allocated metadata blocks that
+> >> were not appropriately reserved, we risk underflow of
+> >> ei->i_reserved_meta_blocks.  In turn, this can throw
+> >> sbi->s_dirtyclusters_counter significantly out of whack and undermine
+> >> the nondelalloc fallback logic in ext4_nonda_switch().  Warn if this
+> >> occurs and set i_allocated_meta_blocks to avoid this problem.
+> >>
+> >> This condition is reproduced by xfstests 270 against ext2 with
+> >> delalloc enabled:
+> >>
+> >> Mar 28 08:58:02 localhost kernel: [  171.526344] EXT4-fs (loop1): dela=
+yed block allocation failed for inode 14 at logical offset 64486 with max b=
+locks 64 with error -28
+> >> Mar 28 08:58:02 localhost kernel: [  171.526346] EXT4-fs (loop1): This=
+ should not happen!! Data will be lost
+> >>
+> >> 270 ultimately fails with an inconsistent filesystem and requires an
+> >> fsck to repair.  The cause of the error is an underflow in
+> >> ext4_da_update_reserve_space() due to an unreserved meta block
+> >> allocation.
+> > [...]
+> >> +	if (unlikely(ei->i_allocated_meta_blocks > ei->i_reserved_meta_block=
+s)) {
+> >> +		ext4_msg(inode->i_sb, KERN_NOTICE, "%s: ino %lu, allocated %d "
+> >> +			 "with only %d reserved metadata blocks\n", __func__,
+> >> +			 inode->i_ino, ei->i_allocated_meta_blocks,
+> >> +			 ei->i_reserved_meta_blocks);
+> >> +		WARN_ON(1);
+> >> +		ei->i_allocated_meta_blocks =3D ei->i_reserved_meta_blocks;
+> >> +	}
+> > [...]
+> > =20
+> > This seems to be working around a bug elsewhere.  Has the underlying
+> > bug been fixed in mainline yet?
+> >=20
+>=20
+> Yes, the bug was fixed in:
+>=20
+> 03179fe92318e7934c180d96f12eff2cb36ef7b6
+> ext4: undo ext4_calc_metadata_amount if we fail to claim space
 
-;-)
+OK, and that's been applied to stable as:
 
-> > C.      Need wide testing, but don't want 100,000,000 unsuspecting
-> >         test subjects.  Taint the kernel with TAINT_CRAP.
-> >
-> > D.      OK for production in special situations, but definitely not
-> >         for typical users.  Taint the kernel with TAINT_WARN.
-> >
-> > E.      Ready for general production use.  Mainlined without restrictions.
-> >
-> > I would say that CONFIG_RCU_USER_QS is currently at point C above, it
-> > clearly now needs testing on a wide variety of hardware, but also is
-> > clearly not ready for 100,000,000 users.
-> >
-> > Thoughts?
-> 
-> Really I would much prefer to add some "Don't enable it unless you're
-> doing kernel hacking.
-> If unsure say N" text in the Kconfig.
-> 
-> I can understand that distros want to cover as much feature as they
-> can for their users. But
-> should it be an excuse for not reading outstanding warnings in Kconfig
-> help text?
+3.2: d9af293 ext4: undo ext4_calc_metadata_amount if we fail to claim space
+3.4: c0ce1fd ext4: undo ext4_calc_metadata_amount if we fail to claim space
+3.5: 564dfa3 ext4: undo ext4_calc_metadata_amount if we fail to claim space
 
-In my experience, they do not read these warnings carefully.  :-(
-Or perhaps they do read them, but react to them by running the code
-through some test suite rather than by putting full faith in the
-warning.
+Presumably it will need some backporting for older versions.
 
-> Or may be add some specific warning yeah. I wouldn't mind much.
+Ben.
 
-We have some weeks to think about it -- I cannot see pushing a
-warning in as a regression.  ;-)
+--=20
+Ben Hutchings
+You can't have everything.  Where would you put it?
 
-							Thanx, Paul
+--=-gNJd6pIzGjCKzKuiOXKR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUHDfKue/yOyVhhEJAQovgA/+J8NsrqN9Cax6yD2pAQ+5meY9k5TqkcOf
+UnTZB3ov7tcYtJ0Wl5yVT+Xlkrt4mAGLSXgEaK5hqCEwkjj3hOy5d2WHjnXwZnDi
+zpxQr59+n/EW0iWjN6seNHUphlfkKxefsL3pOrostMstcyV1ZHjvU9ZgtjvicItl
+2QV5sGhLnEfez/AXssvX1/m5nZrWO9x+Td3K29s9DN3czsBiptZlPKjkjs+wpS0j
+fygmQVyi0r0f9dLH2WQm8c+DsXsDorDZZktf67M8r17JFL+vAJ+ZAVVEHp/6wn8R
+cXC0bhm0jyNnuC0xSH3LDG+pOM5Ffpf7XWF30rP8lUpaV2FIfdeHoqtNvUdstB0V
+RPb2kr6Eu0Xucwve5KSsluO37N1Fwihu1q6eMwP4QKQgprMp0WZ//OHpf5sAApQs
+R9/rJGpwVvd1QgkiNZjvT300mpYUPnUsrm5u1Le9dwKHYGXR1KE0Ej71QeO66fOm
+SESEbpzs0ZgDbpFjyqYq07tBlioh6ZBFzVLt+bpMQdIVun5DYb4KLqXV4NL67gnQ
+wTJm5brLhzXilPtQnCrYbSG6SkH310bm9w5qqggUzY08iHVjcsiX6opX7utTmGZp
+I7/sPh4tU9F9/arxIAFTNU32oRhgy7d2/TwXHXExIlaOANklHu+D9KUxvcGOjRkw
+9MaCVryBNgc=
+=TvPH
+-----END PGP SIGNATURE-----
+
+--=-gNJd6pIzGjCKzKuiOXKR--
