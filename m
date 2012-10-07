@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2JGXfQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:35:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38475 "EHLO
+	id S1754602Ab2JGXfk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:35:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38460 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754239Ab2JGXWp (ORCPT
+	by vger.kernel.org with ESMTP id S1752643Ab2JGXWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:45 -0400
-Message-Id: <20121007225843.829604390@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:43 -0400
+Message-Id: <20121007225843.966679575@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:40 +0100
+Date: Sun, 07 Oct 2012 23:59:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Andres Freund <andres@anarazel.de>
-Subject: [ 066/108] Revert "drm/radeon: rework pll selection (v3)"
+        Avi Kivity <avi@redhat.com>, Tomas Racek <tracek@redhat.com>,
+        Michael Tokarev <mjt@tls.msk.ru>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 067/108] x86/alternatives: Fix p6 nops on non-modular kernels
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,199 +33,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Avi Kivity <avi@redhat.com>
 
-commit 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c upstream.
+commit cb09cad44f07044d9810f18f6f9a6a6f3771f979 upstream.
 
-This reverts commit 985f61f7ee647ad570c05eab0b74915da2ac8e19.
+Probably a leftover from the early days of self-patching, p6nops
+are marked __initconst_or_module, which causes them to be
+discarded in a non-modular kernel.  If something later triggers
+patching, it will overwrite kernel code with garbage.
 
-This commit fixed certain cases, but ended up regressing others
-due to limitations in the current KMS API.  A proper fix is too
-invasive for 3.6.  Push it back to 3.7.
-
-Reported-by: Andres Freund <andres@anarazel.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[bwh: Backported to 3.2: drop the DCE6 case]
+Reported-by: Tomas Racek <tracek@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Cc: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: qemu-devel@nongnu.org
+Cc: Anthony Liguori <anthony@codemonkey.ws>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |  163 +++++++-------------------------
- 1 file changed, 34 insertions(+), 129 deletions(-)
+ arch/x86/kernel/alternative.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1446,98 +1446,14 @@ static void radeon_legacy_atom_fixup(str
- 	}
- }
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index afb7ff7..ced4534 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -165,7 +165,7 @@ static const unsigned char * const k7_nops[ASM_NOP_MAX+2] =
+ #endif
  
--/**
-- * radeon_get_pll_use_mask - look up a mask of which pplls are in use
-- *
-- * @crtc: drm crtc
-- *
-- * Returns the mask of which PPLLs (Pixel PLLs) are in use.
-- */
--static u32 radeon_get_pll_use_mask(struct drm_crtc *crtc)
--{
--	struct drm_device *dev = crtc->dev;
--	struct drm_crtc *test_crtc;
--	struct radeon_crtc *radeon_test_crtc;
--	u32 pll_in_use = 0;
--
--	list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
--		if (crtc == test_crtc)
--			continue;
--
--		radeon_test_crtc = to_radeon_crtc(test_crtc);
--		if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
--			pll_in_use |= (1 << radeon_test_crtc->pll_id);
--	}
--	return pll_in_use;
--}
--
--/**
-- * radeon_get_shared_dp_ppll - return the PPLL used by another crtc for DP
-- *
-- * @crtc: drm crtc
-- *
-- * Returns the PPLL (Pixel PLL) used by another crtc/encoder which is
-- * also in DP mode.  For DP, a single PPLL can be used for all DP
-- * crtcs/encoders.
-- */
--static int radeon_get_shared_dp_ppll(struct drm_crtc *crtc)
--{
--	struct drm_device *dev = crtc->dev;
--	struct drm_encoder *test_encoder;
--	struct radeon_crtc *radeon_test_crtc;
--
--	list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
--		if (test_encoder->crtc && (test_encoder->crtc != crtc)) {
--			if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
--				/* for DP use the same PLL for all */
--				radeon_test_crtc = to_radeon_crtc(test_encoder->crtc);
--				if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
--					return radeon_test_crtc->pll_id;
--			}
--		}
--	}
--	return ATOM_PPLL_INVALID;
--}
--
--/**
-- * radeon_atom_pick_pll - Allocate a PPLL for use by the crtc.
-- *
-- * @crtc: drm crtc
-- *
-- * Returns the PPLL (Pixel PLL) to be used by the crtc.  For DP monitors
-- * a single PPLL can be used for all DP crtcs/encoders.  For non-DP
-- * monitors a dedicated PPLL must be used.  If a particular board has
-- * an external DP PLL, return ATOM_PPLL_INVALID to skip PLL programming
-- * as there is no need to program the PLL itself.  If we are not able to
-- * allocate a PLL, return ATOM_PPLL_INVALID to skip PLL programming to
-- * avoid messing up an existing monitor.
-- *
-- * Asic specific PLL information
-- *
-- * DCE 6.1
-- * - PPLL2 is only available to UNIPHYA (both DP and non-DP)
-- * - PPLL0, PPLL1 are available for UNIPHYB/C/D/E/F (both DP and non-DP)
-- *
-- * DCE 6.0
-- * - PPLL0 is available to all UNIPHY (DP only)
-- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
-- *
-- * DCE 5.0
-- * - DCPLL is available to all UNIPHY (DP only)
-- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
-- *
-- * DCE 3.0/4.0/4.1
-- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
-- *
-- */
- static int radeon_atom_pick_pll(struct drm_crtc *crtc)
+ #ifdef P6_NOP1
+-static const unsigned char  __initconst_or_module p6nops[] =
++static const unsigned char p6nops[] =
  {
- 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
- 	struct drm_device *dev = crtc->dev;
- 	struct radeon_device *rdev = dev->dev_private;
- 	struct drm_encoder *test_encoder;
--	u32 pll_in_use;
--	int pll;
-+	struct drm_crtc *test_crtc;
-+	uint32_t pll_in_use = 0;
- 
- 	if (ASIC_IS_DCE4(rdev)) {
- 		list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
-@@ -1545,7 +1461,7 @@ static int radeon_atom_pick_pll(struct d
- 				/* in DP mode, the DP ref clock can come from PPLL, DCPLL, or ext clock,
- 				 * depending on the asic:
- 				 * DCE4: PPLL or ext clock
--				 * DCE5: PPLL, DCPLL, or ext clock
-+				 * DCE5: DCPLL or ext clock
- 				 *
- 				 * Setting ATOM_PPLL_INVALID will cause SetPixelClock to skip
- 				 * PPLL/DCPLL programming and only program the DP DTO for the
-@@ -1553,31 +1469,29 @@ static int radeon_atom_pick_pll(struct d
- 				 */
- 				if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
- 					if (rdev->clock.dp_extclk)
--						/* skip PPLL programming if using ext clock */
- 						return ATOM_PPLL_INVALID;
- 					else if (ASIC_IS_DCE5(rdev))
--						/* use DCPLL for all DP */
- 						return ATOM_DCPLL;
--					else {
--						/* use the same PPLL for all DP monitors */
--						pll = radeon_get_shared_dp_ppll(crtc);
--						if (pll != ATOM_PPLL_INVALID)
--							return pll;
--					}
- 				}
--				break;
- 			}
- 		}
--		/* all other cases */
--		pll_in_use = radeon_get_pll_use_mask(crtc);
--		if (!(pll_in_use & (1 << ATOM_PPLL2)))
--			return ATOM_PPLL2;
--		if (!(pll_in_use & (1 << ATOM_PPLL1)))
-+
-+		/* otherwise, pick one of the plls */
-+		list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
-+			struct radeon_crtc *radeon_test_crtc;
-+
-+			if (crtc == test_crtc)
-+				continue;
-+
-+			radeon_test_crtc = to_radeon_crtc(test_crtc);
-+			if ((radeon_test_crtc->pll_id >= ATOM_PPLL1) &&
-+			    (radeon_test_crtc->pll_id <= ATOM_PPLL2))
-+				pll_in_use |= (1 << radeon_test_crtc->pll_id);
-+		}
-+		if (!(pll_in_use & 1))
- 			return ATOM_PPLL1;
--		DRM_ERROR("unable to allocate a PPLL\n");
--		return ATOM_PPLL_INVALID;
-+		return ATOM_PPLL2;
- 	} else
--		/* use PPLL1 or PPLL2 */
- 		return radeon_crtc->crtc_id;
- 
- }
-@@ -1696,7 +1610,7 @@ static void atombios_crtc_disable(struct
- 		break;
- 	}
- done:
--	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
-+	radeon_crtc->pll_id = -1;
- }
- 
- static const struct drm_crtc_helper_funcs atombios_helper_funcs = {
-@@ -1745,6 +1659,6 @@ void radeon_atombios_init_crtc(struct dr
- 		else
- 			radeon_crtc->crtc_offset = 0;
- 	}
--	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
-+	radeon_crtc->pll_id = -1;
- 	drm_crtc_helper_add(&radeon_crtc->base, &atombios_helper_funcs);
- }
+ 	P6_NOP1,
+ 	P6_NOP2,
 
 
