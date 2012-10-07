@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab2JGXiV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:38:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38375 "EHLO
+	id S1755018Ab2JGXi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:38:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38367 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753070Ab2JGXWf (ORCPT
+	by vger.kernel.org with ESMTP id S1753958Ab2JGXWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:35 -0400
-Message-Id: <20121007225844.663121700@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:34 -0400
+Message-Id: <20121007225845.360879773@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:46 +0100
+Date: Sun, 07 Oct 2012 23:59:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 072/108] PCI: acpiphp: check whether _ADR evaluation succeeded
+        Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 077/108] xfrm: fix a read lock imbalance in make_blackhole
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,55 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit dfb117b3e50c52c7b3416db4a4569224b8db80bb upstream.
+[ Upstream commit 433a19548061bb5457b6ab77ed7ea58ca6e43ddb ]
 
-Check whether we evaluated _ADR successfully.  Previously we ignored
-failure, so we would have used garbage data from the stack as the device
-and function number.
+if xfrm_policy_get_afinfo returns 0, it has already released the read
+lock, xfrm_policy_put_afinfo should not be called again.
 
-We return AE_OK so that we ignore only this slot and continue looking
-for other slots.
-
-Found by Coverity (CID 113981).
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ net/xfrm/xfrm_policy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 806c44f..09bf377 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -132,6 +132,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
- 		return AE_OK;
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 0174034..113d20e 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1761,7 +1761,7 @@ static struct dst_entry *make_blackhole(struct net *net, u16 family,
  
-+	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-+	if (ACPI_FAILURE(status)) {
-+		warn("can't evaluate _ADR (%#x)\n", status);
-+		return AE_OK;
-+	}
-+
-+	device = (adr >> 16) & 0xffff;
-+	function = adr & 0xffff;
-+
- 	pdev = pbus->self;
- 	if (pdev && pci_is_pcie(pdev)) {
- 		tmp = acpi_find_root_bridge_handle(pdev);
-@@ -144,10 +153,6 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 		}
+ 	if (!afinfo) {
+ 		dst_release(dst_orig);
+-		ret = ERR_PTR(-EINVAL);
++		return ERR_PTR(-EINVAL);
+ 	} else {
+ 		ret = afinfo->blackhole_route(net, dst_orig);
  	}
- 
--	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
--	device = (adr >> 16) & 0xffff;
--	function = adr & 0xffff;
--
- 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
- 	if (!newfunc)
- 		return AE_NO_MEMORY;
 
 
