@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab2JGXeg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:34:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38498 "EHLO
+	id S1754174Ab2JGXWr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:22:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38324 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754322Ab2JGXWt (ORCPT
+	by vger.kernel.org with ESMTP id S1753694Ab2JGXWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:49 -0400
-Message-Id: <20121007225843.274569775@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:24 -0400
+Message-Id: <20121007225847.550187436@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:36 +0100
+Date: Mon, 08 Oct 2012 00:00:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 062/108] irq_remap: disable IRQ remapping if any IOAPIC lacks an IOMMU
+        Thomas Graf <tgraf@suug.ch>, Vlad Yasevich <vyasevic@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        David Miller <davem@davemloft.net>,
+        Vlad Yasevich <vyasevich@gmail.com>
+Subject: [ 093/108] sctp: Dont charge for data in sndbuf again when  transmitting packet
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,68 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Thomas Graf <tgraf@suug.ch>
 
-commit 32ab31e01e2def6f48294d872d9bb42573aae00f upstream.
+[ Upstream commit 4c3a5bdae293f75cdf729c6c00124e8489af2276 ]
 
-The ACPI tables in the Macbook Air 5,1 define a single IOAPIC with id 2,
-but the only remapping unit described in the DMAR table matches id 0.
-Interrupt remapping fails as a result, and the kernel panics with the
-message "timer doesn't work through Interrupt-remapped IO-APIC."
+SCTP charges wmem_alloc via sctp_set_owner_w() in sctp_sendmsg() and via
+skb_set_owner_w() in sctp_packet_transmit(). If a sender runs out of
+sndbuf it will sleep in sctp_wait_for_sndbuf() and expects to be waken up
+by __sctp_write_space().
 
-To fix this, check each IOAPIC for a corresponding IOMMU. If an IOMMU is
-not found, do not allow IRQ remapping to be enabled.
+Buffer space charged via sctp_set_owner_w() is released in sctp_wfree()
+which calls __sctp_write_space() directly.
 
-v2: Move check to parse_ioapics_under_ir(), raise log level to KERN_ERR,
-    and add FW_BUG to the log message
-v3: Skip check if IOMMU doesn't support interrupt remapping and remove
-    existing check that the IOMMU count equals the IOAPIC count
+Buffer space charged via skb_set_owner_w() is released via sock_wfree()
+which calls sk->sk_write_space() _if_ SOCK_USE_WRITE_QUEUE is not set.
+sctp_endpoint_init() sets SOCK_USE_WRITE_QUEUE on all sockets.
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-[bwh: Backported to 3.2: adjust filename]
+Therefore if sctp_packet_transmit() manages to queue up more than sndbuf
+bytes, sctp_wait_for_sndbuf() will never be woken up again unless it is
+interrupted by a signal.
+
+This could be fixed by clearing the SOCK_USE_WRITE_QUEUE flag but ...
+
+Charging for the data twice does not make sense in the first place, it
+leads to overcharging sndbuf by a factor 2. Therefore this patch only
+charges a single byte in wmem_alloc when transmitting an SCTP packet to
+ensure that the socket stays alive until the packet has been released.
+
+This means that control chunks are no longer accounted for in wmem_alloc
+which I believe is not a problem as skb->truesize will typically lead
+to overcharging anyway and thus compensates for any control overhead.
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+CC: Vlad Yasevich <vyasevic@redhat.com>
+CC: Neil Horman <nhorman@tuxdriver.com>
+CC: David Miller <davem@davemloft.net>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/intr_remapping.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ net/sctp/output.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/iommu/intr_remapping.c
-+++ b/drivers/iommu/intr_remapping.c
-@@ -752,6 +752,7 @@ int __init parse_ioapics_under_ir(void)
- {
- 	struct dmar_drhd_unit *drhd;
- 	int ir_supported = 0;
-+	int ioapic_idx;
- 
- 	for_each_drhd_unit(drhd) {
- 		struct intel_iommu *iommu = drhd->iommu;
-@@ -764,13 +765,20 @@ int __init parse_ioapics_under_ir(void)
- 		}
- 	}
- 
--	if (ir_supported && ir_ioapic_num != nr_ioapics) {
--		printk(KERN_WARNING
--		       "Not all IO-APIC's listed under remapping hardware\n");
--		return -1;
-+	if (!ir_supported)
-+		return 0;
-+
-+	for (ioapic_idx = 0; ioapic_idx < nr_ioapics; ioapic_idx++) {
-+		int ioapic_id = mpc_ioapic_id(ioapic_idx);
-+		if (!map_ioapic_to_ir(ioapic_id)) {
-+			pr_err(FW_BUG "ioapic %d has no mapping iommu, "
-+			       "interrupt remapping will be disabled\n",
-+			       ioapic_id);
-+			return -1;
-+		}
- 	}
- 
--	return ir_supported;
-+	return 1;
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index 8fc4dcd..32ba8d0 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -334,6 +334,25 @@ finish:
+ 	return retval;
  }
  
- int __init ir_dev_scope_init(void)
++static void sctp_packet_release_owner(struct sk_buff *skb)
++{
++	sk_free(skb->sk);
++}
++
++static void sctp_packet_set_owner_w(struct sk_buff *skb, struct sock *sk)
++{
++	skb_orphan(skb);
++	skb->sk = sk;
++	skb->destructor = sctp_packet_release_owner;
++
++	/*
++	 * The data chunks have already been accounted for in sctp_sendmsg(),
++	 * therefore only reserve a single byte to keep socket around until
++	 * the packet has been transmitted.
++	 */
++	atomic_inc(&sk->sk_wmem_alloc);
++}
++
+ /* All packets are sent to the network through this function from
+  * sctp_outq_tail().
+  *
+@@ -375,7 +394,7 @@ int sctp_packet_transmit(struct sctp_packet *packet)
+ 	/* Set the owning socket so that we know where to get the
+ 	 * destination IP address.
+ 	 */
+-	skb_set_owner_w(nskb, sk);
++	sctp_packet_set_owner_w(nskb, sk);
+ 
+ 	if (!sctp_transport_dst_check(tp)) {
+ 		sctp_transport_route(tp, NULL, sctp_sk(sk));
 
 
