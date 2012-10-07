@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab2JGXnW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:43:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38253 "EHLO
+	id S1753226Ab2JGXWL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:22:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38123 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753239Ab2JGXWM (ORCPT
+	by vger.kernel.org with ESMTP id S1752643Ab2JGXVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:12 -0400
-Message-Id: <20121007225846.998654382@decadent.org.uk>
+	Sun, 7 Oct 2012 19:21:51 -0400
+Message-Id: <20121007225835.013960379@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 08 Oct 2012 00:00:03 +0100
+Date: Sun, 07 Oct 2012 23:58:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 089/108] sierra_net: Endianess bug fix.
+        Dylan Reid <dgreid@chromium.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 002/108] ASoC: samsung dma - Dont indicate support for pause/resume.
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,33 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Dylan Reid <dgreid@chromium.org>
 
-[ Upstream commit 2120c52da6fe741454a60644018ad2a6abd957ac ]
+commit 57b2d68863f281737d8596cb3d76d89d9cc54fd8 upstream.
 
-I discovered I couldn't get sierra_net to work on a powerpc.  Turns out
-the firmware attribute check assumes the system is little endian and
-hence fails because the attributes is a 16 bit value.
+The pause and resume operations indicate that the stream can be
+un-paused/resumed from the exact location they were paused/suspended.
+This is not true for this driver, the pause and suspend triggers share
+the same code path with stop, they flush all pending DMA transfers.
+This drops all pending samples.  The pause_release/resume triggers are
+the same as start, except that prepare won't be called beforehand,
+nothing will be enqueued to the DMA engine and nothing will happen (no
+audio).  Removing the pause flag will let apps know that it isn't
+supported.  Removing the resume flag will cause user space to call
+prepare and start instead of resume, so audio will continue playing when
+the system wakes up.
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Before removing the pause and resume flags, I tested this on an exynos
+5250, using 'aplay -i'. Pause/un-pause leads to silence followed by a
+write error.  Suspend/resume testing led to the same result.  Removing
+the two flags fixes suspend/resume (since snd_pcm_prepare is called
+again). And leads to a proper reporting of pause not supported.
+
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/sierra_net.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/samsung/dma.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/net/usb/sierra_net.c b/drivers/net/usb/sierra_net.c
-index 864448b..e773250 100644
---- a/drivers/net/usb/sierra_net.c
-+++ b/drivers/net/usb/sierra_net.c
-@@ -678,7 +678,7 @@ static int sierra_net_get_fw_attr(struct usbnet *dev, u16 *datap)
- 		return -EIO;
- 	}
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index f3ebc38..b70964e 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -34,9 +34,7 @@ static const struct snd_pcm_hardware dma_hardware = {
+ 	.info			= SNDRV_PCM_INFO_INTERLEAVED |
+ 				    SNDRV_PCM_INFO_BLOCK_TRANSFER |
+ 				    SNDRV_PCM_INFO_MMAP |
+-				    SNDRV_PCM_INFO_MMAP_VALID |
+-				    SNDRV_PCM_INFO_PAUSE |
+-				    SNDRV_PCM_INFO_RESUME,
++				    SNDRV_PCM_INFO_MMAP_VALID,
+ 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
+ 				    SNDRV_PCM_FMTBIT_U16_LE |
+ 				    SNDRV_PCM_FMTBIT_U8 |
+@@ -248,15 +246,11 @@ static int dma_trigger(struct snd_pcm_substream *substream, int cmd)
  
--	*datap = *attrdata;
-+	*datap = le16_to_cpu(*attrdata);
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+-	case SNDRV_PCM_TRIGGER_RESUME:
+-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		prtd->state |= ST_RUNNING;
+ 		prtd->params->ops->trigger(prtd->params->ch);
+ 		break;
  
- 	kfree(attrdata);
- 	return result;
+ 	case SNDRV_PCM_TRIGGER_STOP:
+-	case SNDRV_PCM_TRIGGER_SUSPEND:
+-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		prtd->state &= ~ST_RUNNING;
+ 		prtd->params->ops->stop(prtd->params->ch);
+ 		break;
 
 
