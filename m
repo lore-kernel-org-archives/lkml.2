@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab2JGXV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:21:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38126 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752686Ab2JGXVw (ORCPT
+	id S1755184Ab2JGXrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:47:10 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:38624 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab2JGXrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:21:52 -0400
-Message-Id: <20121007225836.666663351@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:48 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Toshi Kani <toshi.kani@hp.com>, Lisa Mitchell <lisa.mitchell@hp.com>,
-        Thomas Mingarelli <Thomas.Mingarelli@hp.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [ 014/108] hpwdt: Fix kdump issue in hpwdt
-In-Reply-To: <20121007225834.673681075@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 7 Oct 2012 19:47:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
+References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com>
+	<CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
+	<CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
+Date: Mon, 8 Oct 2012 01:47:05 +0200
+Message-ID: <CAEk6gTAB7dG+4R2r3NTg6yWhRCKWA8aV4vNpvp5gR55gDSS1=g@mail.gmail.com>
+Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
+From: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Hi Grant, Thomas,
+do you see any potential problems with this patch?
 
-------------------
+It adds sysfs interface to change / set-up trigger edge from the
+kernel (currently not possible).
 
-From: Toshi Kani <toshi.kani@hp.com>
-
-commit 308b135e4fcc00c80c07e0e04e7afa8edf78583c upstream.
-
-kdump can be interrupted by watchdog timer when the timer is left
-activated on the crash kernel. Changed the hpwdt driver to disable
-watchdog timer at boot-time. This assures that watchdog timer is
-disabled until /dev/watchdog is opened, and prevents watchdog timer
-to be left running on the crash kernel.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Lisa Mitchell <lisa.mitchell@hp.com>
-Signed-off-by: Thomas Mingarelli <Thomas.Mingarelli@hp.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/watchdog/hpwdt.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 1eff743..ae60406 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -814,6 +814,9 @@ static int __devinit hpwdt_init_one(struct pci_dev *dev,
- 	hpwdt_timer_reg = pci_mem_addr + 0x70;
- 	hpwdt_timer_con = pci_mem_addr + 0x72;
- 
-+	/* Make sure that timer is disabled until /dev/watchdog is opened */
-+	hpwdt_stop();
-+
- 	/* Make sure that we have a valid soft_margin */
- 	if (hpwdt_change_timer(soft_margin))
- 		hpwdt_change_timer(DEFAULT_MARGIN);
+BR,
+Drasko
 
 
+On Fri, Oct 5, 2012 at 3:16 PM, Drasko DRASKOVIC
+<drasko.draskovic@gmail.com> wrote:
+> On Fri, Oct 5, 2012 at 2:40 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Fri, Oct 5, 2012 at 2:20 PM, Drasko DRASKOVIC
+>> Why not put the above text into the patch commit blurb?
+>
+> OK, I can add this easily. Makes sense.
+>
+>
+>> If I understand correctly the below more or less exports
+>> struct irq_chip to userspace,
+>> trying to hide it by instead exposing a property of the
+>> containing struct gpio_chip and it worries me.
+>
+> No, it should not. It operates only on already exported gpiochip
+> (similar to gpio_export_link()).
+> It just helps exported GPIO be configured in "interrupt" and not in
+> "normal" mode.
+>
+>>
+>> One possible comment is that you shouldn't
+>> add this to gpiolib, if you want to mess around with the
+>> irq_chip you should create sysfs entries for the irq_chip
+>> per se, then we can have a symbolic link from the
+>> gpio_chip to its irq_chip in sysfs, and you can follow that
+>> to change trigger flanks, right?
+>
+> I did not found any correlation between kernel space irq_chip and
+> gpiolib's internal stuctures describing interrupt.
+>
+> This patch implementation seems like reasonable solution to me, but
+> still leaves possibility for someone to configure GPIO interrupt mode
+> internally (within driver) different than it is declared lately to
+> sysfs by calling my function...
+>
+> Otherwise, a pointer to an edge set-up kernel function can be added to
+> the gpio_chip structure, but I think it will be slightly more
+> complicated, and will fall back to the same thing.
+>
+>>
+>> Part of me doesn't like it when userspace is messing
+>> around with this kind of thing. Why can't this be set
+>> up from the kernel itself by some jam table?
+>>
+>> I can understand it if this is some lab board with GPIO
+>> or so, if it's some embedded GPIO controller within
+>> a laptop or something it surely should be in kernelspace.
+>
+> Yes, it is intended for embedded devices, where most (if not all) of
+> GPIO configuration should be done by the kernel, but also this
+> configuration should be appropriately exported to sysfs, so that
+> user-space applications could start using it right after the boot.
+>
+>
+>> So please detail your usecase a bit... what is the code
+>> daemon etc in userspace poking around at these pins?
+>> What is is doing and why?
+>
+> Right now, sysfs exposes interface like this for GPIO IRQ type configuration :
+>
+> # cat /sys/class/gpio/gpioX/edge
+> none
+> # echo rising > /sys/class/gpio/gpioX/edge
+>
+> This example puts GPIO pin X into "interrupt" mode, and declares it's
+> "type" i.e. that it triggers on rising edge.
+>
+> In the world of embedded, system configuratio which tells which GPIO
+> pins should be configured in "interrupt" mode (and what is their
+> trigger type) is kept in some format usually known only to the kernel
+> driver. We have no need to export this format to the user space, so
+> that rc scripts for example would know to parse GPIO configuration and
+> execute operations I mentioned above.
+>
+> To avoid that this is done from the user space, a function accesible
+> to kernel is needed.
+>
+> BR,
+> Drasko
