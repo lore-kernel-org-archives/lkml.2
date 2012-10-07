@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab2JGJu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 05:50:27 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:1381 "EHLO relay.sw.ru"
+	id S1752568Ab2JGJwH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 05:52:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab2JGJuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 05:50:18 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] [RFC] pidns: don't zap processes several times
-Date: Sun,  7 Oct 2012 13:49:18 +0400
-Message-Id: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1750743Ab2JGJv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 05:51:58 -0400
+Message-ID: <507150A7.9010001@redhat.com>
+Date: Sun, 07 Oct 2012 11:51:35 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Gleb Natapov <gleb@redhat.com>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <5061713D.5060406@redhat.com> <CAJocwcf+8u84_yDC-PK0Yni93YSTWzYvr69nq6b3pNv1MwVJzQ@mail.gmail.com> <50641356.5070008@redhat.com> <CAJocwcc19F+PtsQ5okGMvYeVnkEigpZRpwWY9JgeRPFqfcVoXA@mail.gmail.com> <506540C7.9070105@linux.vnet.ibm.com> <50680049.5020206@redhat.com> <20120930110755.GB1009@redhat.com> <50682945.3060309@redhat.com> <20121003141739.GA15253@linux.vnet.ibm.com> <506C5239.4080209@redhat.com> <20121004072900.GU23096@redhat.com> <506E9C01.5040300@linux.vnet.ibm.com>
+In-Reply-To: <506E9C01.5040300@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wrote a test program. It does clone(CLONE_NEWPID | CLONE_VM) and
-sleep(), a new task repeates the same actions. This program creates
-4000 tasks. When I tried to kill all this processes, a system was
-inaccessible for some minutes.
+On 10/05/2012 10:36 AM, Raghavendra K T wrote:
+>>>
+>>> You can store i in the vcpu itself:
+>>>
+>>>    set_bit(vcpu->index, &kvm->preempted);
+>>>
+>> This will make the fact that vcpus are stored in an array into API
+>> instead of implementation detail :( There were patches for vcpu
+>> destruction that changed the array to rculist. Well, it will be still
+>> possible to make the array rcu protected and copy it every time vcpu is
+>> deleted/added I guess.
+>>
+> 
+> If IUC, summary is, we are going with
+> - Let vcpu array be rcu protected.
 
-The system is inaccessible, because each process calls
-zap_pid_ns_processes, which tries to kill subprocesses under
-tasklist_lock. The most time are required for find_vpid().
+That's for the future.  For now ->vcpus[] is statically allocated.
 
-I suggest to mark sub-namespaces in zap_pid_ns_processes.
-zap_pid_ns_processes for marked pidns doesn't kill tasks,
-it only waits them.
+> - we use index inside vcpu and should be updated when a vcpu is
+> added/deleted.
 
-I am not sure, that this idea is correct, but it helps.
+Yes.
 
-Maybe we should restrict depth of pidns?
-Why can't we enumerate task->children instead of using find_vpid()?
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- include/linux/pid_namespace.h |    1 +
- kernel/pid_namespace.c        |   14 ++++++++++++--
- 2 files changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index 00474b0..28073a0 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -34,6 +34,7 @@ struct pid_namespace {
- 	kgid_t pid_gid;
- 	int hide_pid;
- 	int reboot;	/* group exit code if this pidns was rebooted */
-+	atomic_t zapped; /* non zero if all process were killed */
- };
- 
- extern struct pid_namespace init_pid_ns;
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index b051fa6..7db7dcd 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -177,21 +177,31 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
- 	 * 	  maintain a tasklist for each pid namespace.
- 	 *
- 	 */
-+
-+	if (atomic_read(&pid_ns->zapped))
-+		goto wait; /* All processes were already killed */
-+
- 	read_lock(&tasklist_lock);
- 	nr = next_pidmap(pid_ns, 1);
- 	while (nr > 0) {
- 		rcu_read_lock();
- 
- 		task = pid_task(find_vpid(nr), PIDTYPE_PID);
--		if (task && !__fatal_signal_pending(task))
-+		if (task && !__fatal_signal_pending(task)) {
-+			struct pid_namespace *ns;
-+
- 			send_sig_info(SIGKILL, SEND_SIG_FORCED, task);
-+			ns = task_active_pid_ns(task);
-+			if (unlikely(ns->child_reaper == task))
-+				atomic_set(&ns->zapped, 1);
-+		}
- 
- 		rcu_read_unlock();
- 
- 		nr = next_pidmap(pid_ns, nr);
- 	}
- 	read_unlock(&tasklist_lock);
--
-+wait:
- 	/* Firstly reap the EXIT_ZOMBIE children we may have. */
- 	do {
- 		clear_thread_flag(TIF_SIGPENDING);
 -- 
-1.7.1
-
+error compiling committee.c: too many arguments to function
