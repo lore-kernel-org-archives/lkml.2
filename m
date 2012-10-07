@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab2JGXkw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:40:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38327 "EHLO
+	id S1755059Ab2JGXks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:40:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38335 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752937Ab2JGXWZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753735Ab2JGXWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:22:25 -0400
-Message-Id: <20121007225835.696555140@decadent.org.uk>
+Message-Id: <20121007225846.316148456@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:41 +0100
+Date: Sun, 07 Oct 2012 23:59:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Li Haifeng <omycle@gmail.com>, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, KyongHo Cho <pullip.cho@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 007/108] mm/page_alloc: fix the page address of higher pages buddy
- calculation
+        htbegin <hotforest@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 084/108] net: ethernet: davinci_cpdma: decrease the desc count  when cleaning up the remaining packets
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,47 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Haifeng <omycle@gmail.com>
+From: htbegin <hotforest@gmail.com>
 
-commit 0ba8f2d59304dfe69b59c034de723ad80f7ab9ac upstream.
+[ Upstream commit ffb5ba90017505a19e238e986e6d33f09e4df765 ]
 
-The heuristic method for buddy has been introduced since commit
-43506fad21ca ("mm/page_alloc.c: simplify calculation of combined index
-of adjacent buddy lists").  But the page address of higher page's buddy
-was wrongly calculated, which will lead page_is_buddy to fail for ever.
-IOW, the heuristic method would be disabled with the wrong page address
-of higher page's buddy.
+chan->count is used by rx channel. If the desc count is not updated by
+the clean up loop in cpdma_chan_stop, the value written to the rxfree
+register in cpdma_chan_start will be incorrect.
 
-Calculating the page address of higher page's buddy should be based
-higher_page with the offset between index of higher page and index of
-higher page's buddy.
-
-Signed-off-by: Haifeng Li <omycle@gmail.com>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KyongHo Cho <pullip.cho@samsung.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tao Hou <hotforest@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/ti/davinci_cpdma.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c66fb87..c13ea75 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -584,7 +584,7 @@ static inline void __free_one_page(struct page *page,
- 		combined_idx = buddy_idx & page_idx;
- 		higher_page = page + (combined_idx - page_idx);
- 		buddy_idx = __find_buddy_index(combined_idx, order + 1);
--		higher_buddy = page + (buddy_idx - combined_idx);
-+		higher_buddy = higher_page + (buddy_idx - combined_idx);
- 		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
- 			list_add_tail(&page->lru,
- 				&zone->free_area[order].free_list[migratetype]);
+diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
+index c97d2f5..bfc3b0d 100644
+--- a/drivers/net/ethernet/ti/davinci_cpdma.c
++++ b/drivers/net/ethernet/ti/davinci_cpdma.c
+@@ -851,6 +851,7 @@ int cpdma_chan_stop(struct cpdma_chan *chan)
+ 
+ 		next_dma = desc_read(desc, hw_next);
+ 		chan->head = desc_from_phys(pool, next_dma);
++		chan->count--;
+ 		chan->stats.teardown_dequeue++;
+ 
+ 		/* issue callback without locks held */
 
 
