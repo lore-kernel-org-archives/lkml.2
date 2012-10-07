@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2JGIc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 04:32:28 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48564 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2JGIcX (ORCPT
+	id S1752586Ab2JGIcm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 04:32:42 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64373 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab2JGIci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 04:32:23 -0400
+	Sun, 7 Oct 2012 04:32:38 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: bfields@fieldses.org, viro@zeniv.linux.org.uk,
@@ -14,9 +14,9 @@ Cc: bfields@fieldses.org, viro@zeniv.linux.org.uk,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ravishankar N <ravi.n1@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 1/4] fat: modify nfs mount option
-Date: Sun,  7 Oct 2012 04:32:11 -0400
-Message-Id: <1349598731-3184-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v4 2/4] fat (exportfs): rebuild inode if ilookup() fails
+Date: Sun,  7 Oct 2012 04:32:27 -0400
+Message-Id: <1349598747-3218-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,129 +24,271 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Provide two possible values 'stale_rw' and 'nostale_ro' for
-the -o nfs mount option.The first one allows all file operations but
-does not reduce ESTALE errors on memory constrained systems. The second
-one eliminates ESTALE errors but mounts the filesystem as
-read-only. Not specifying a value defaults to 'stale_rw'.
+Assign i_pos to kstat->ino and re-introduce fat_encode_fh() and include
+i_pos value in the file handle.Use the i_pos value to find the directory
+entry of the inode and subsequently rebuild the inode if the cache
+lookups fail.
+Since this involves  accessing the FAT media,it is better to do this
+only if the 'nfs' mount option is enabled with nostale_ro.
+Also introduce a helper fat_get_blknr_offset() for use in
+__fat_write_inode() and fat_nfs_get_inode()
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/fat.h   |    7 +++++--
- fs/fat/inode.c |   24 +++++++++++++++++-------
- 2 files changed, 22 insertions(+), 9 deletions(-)
+ fs/fat/fat.h   |   10 ++++++
+ fs/fat/file.c  |    4 +++
+ fs/fat/inode.c |   13 ++++----
+ fs/fat/nfs.c   |  101 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 115 insertions(+), 13 deletions(-)
 
 diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index ca7e8f8..38324e8 100644
+index 38324e8..9f3d21a 100644
 --- a/fs/fat/fat.h
 +++ b/fs/fat/fat.h
-@@ -23,6 +23,9 @@
- #define FAT_ERRORS_PANIC	2      /* panic on error */
- #define FAT_ERRORS_RO		3      /* remount r/o on error */
+@@ -214,6 +214,13 @@ static inline sector_t fat_clus_to_blknr(struct msdos_sb_info *sbi, int clus)
+ 		+ sbi->data_start;
+ }
  
-+#define FAT_NFS_STALE_RW	1      /* NFS RW support, can cause ESTALE */
-+#define FAT_NFS_NOSTALE_RO	2      /* NFS RO support, no ESTALE issue */
++static inline void fat_get_blknr_offset(struct msdos_sb_info *sbi,
++				loff_t i_pos, sector_t *blknr, int *offset)
++{
++	*blknr = i_pos >> sbi->dir_per_block_bits;
++	*offset = i_pos & (sbi->dir_per_block - 1);
++}
 +
- struct fat_mount_options {
- 	kuid_t fs_uid;
- 	kgid_t fs_gid;
-@@ -33,6 +36,7 @@ struct fat_mount_options {
- 	unsigned short shortname;  /* flags for shortname display/create rule */
- 	unsigned char name_check;  /* r = relaxed, n = normal, s = strict */
- 	unsigned char errors;	   /* On error: continue, panic, remount-ro */
-+	unsigned char nfs;	   /* NFS support: nostale_ro, stale_rw */
- 	unsigned short allow_utime;/* permission for setting the [am]time */
- 	unsigned quiet:1,          /* set = fake successful chmods and chowns */
- 		 showexec:1,       /* set = only set x bit for com/exe/bat */
-@@ -47,8 +51,7 @@ struct fat_mount_options {
- 		 usefree:1,	   /* Use free_clusters for FAT32 */
- 		 tz_utc:1,	   /* Filesystem timestamps are in UTC */
- 		 rodir:1,	   /* allow ATTR_RO for directory */
--		 discard:1,	   /* Issue discard requests on deletions */
--		 nfs:1;		   /* Do extra work needed for NFS export */
-+		 discard:1;	   /* Issue discard requests on deletions */
- };
+ static inline void fat16_towchar(wchar_t *dst, const __u8 *src, size_t len)
+ {
+ #ifdef __BIG_ENDIAN
+@@ -339,6 +346,7 @@ extern int fat_file_fsync(struct file *file, loff_t start, loff_t end,
+ 			  int datasync);
  
- #define FAT_HASH_BITS	8
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 76f60c6..48f794a 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -754,8 +754,6 @@ static int fat_show_options(struct seq_file *m, struct dentry *root)
- 		seq_puts(m, ",usefree");
- 	if (opts->quiet)
- 		seq_puts(m, ",quiet");
--	if (opts->nfs)
--		seq_puts(m, ",nfs");
- 	if (opts->showexec)
- 		seq_puts(m, ",showexec");
- 	if (opts->sys_immutable)
-@@ -785,6 +783,10 @@ static int fat_show_options(struct seq_file *m, struct dentry *root)
- 		seq_puts(m, ",errors=panic");
- 	else
- 		seq_puts(m, ",errors=remount-ro");
-+	if (opts->nfs == FAT_NFS_NOSTALE_RO)
-+		seq_puts(m, ",nfs=nostale_ro");
-+	else if (opts->nfs)
-+		seq_puts(m, ",nfs=stale_rw");
- 	if (opts->discard)
- 		seq_puts(m, ",discard");
+ /* fat/inode.c */
++extern loff_t fat_i_pos_read(struct msdos_sb_info *sbi, struct inode *inode);
+ extern void fat_attach(struct inode *inode, loff_t i_pos);
+ extern void fat_detach(struct inode *inode);
+ extern struct inode *fat_iget(struct super_block *sb, loff_t i_pos);
+@@ -382,6 +390,8 @@ void fat_cache_destroy(void);
  
-@@ -800,7 +802,8 @@ enum {
- 	Opt_shortname_winnt, Opt_shortname_mixed, Opt_utf8_no, Opt_utf8_yes,
- 	Opt_uni_xl_no, Opt_uni_xl_yes, Opt_nonumtail_no, Opt_nonumtail_yes,
- 	Opt_obsolete, Opt_flush, Opt_tz_utc, Opt_rodir, Opt_err_cont,
--	Opt_err_panic, Opt_err_ro, Opt_discard, Opt_nfs, Opt_err,
-+	Opt_err_panic, Opt_err_ro, Opt_discard, Opt_nfs_stale_rw,
-+	Opt_nfs_nostale_ro, Opt_err,
- };
- 
- static const match_table_t fat_tokens = {
-@@ -829,7 +832,9 @@ static const match_table_t fat_tokens = {
- 	{Opt_err_panic, "errors=panic"},
- 	{Opt_err_ro, "errors=remount-ro"},
- 	{Opt_discard, "discard"},
--	{Opt_nfs, "nfs"},
-+	{Opt_nfs_stale_rw, "nfs"},
-+	{Opt_nfs_stale_rw, "nfs=stale_rw"},
-+	{Opt_nfs_nostale_ro, "nfs=nostale_ro"},
- 	{Opt_obsolete, "conv=binary"},
- 	{Opt_obsolete, "conv=text"},
- 	{Opt_obsolete, "conv=auto"},
-@@ -1017,6 +1022,12 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
- 		case Opt_err_ro:
- 			opts->errors = FAT_ERRORS_RO;
- 			break;
-+		case Opt_nfs_stale_rw:
-+			opts->nfs = FAT_NFS_STALE_RW;
-+			break;
-+		case Opt_nfs_nostale_ro:
-+			opts->nfs = FAT_NFS_NOSTALE_RO;
-+			break;
- 
- 		/* msdos specific */
- 		case Opt_dots:
-@@ -1075,9 +1086,6 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
- 		case Opt_discard:
- 			opts->discard = 1;
- 			break;
--		case Opt_nfs:
--			opts->nfs = 1;
--			break;
- 
- 		/* obsolete mount options */
- 		case Opt_obsolete:
-@@ -1108,6 +1116,8 @@ out:
- 		opts->allow_utime = ~opts->fs_dmask & (S_IWGRP | S_IWOTH);
- 	if (opts->unicode_xlate)
- 		opts->utf8 = 0;
-+	if (opts->nfs == FAT_NFS_NOSTALE_RO)
-+		sb->s_flags |= MS_RDONLY;
- 
+ /* fat/nfs.c */
+ struct fid;
++extern int fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp,
++			 struct inode *parent);
+ extern struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
+ 				       int fh_len, int fh_type);
+ extern struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index a62e0ec..1f81cb4 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -306,6 +306,10 @@ int fat_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 	struct inode *inode = dentry->d_inode;
+ 	generic_fillattr(inode, stat);
+ 	stat->blksize = MSDOS_SB(inode->i_sb)->cluster_size;
++	if (MSDOS_SB(inode->i_sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
++		/* Use i_pos for ino. This is used as fileid of nfs. */
++		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
++	}
  	return 0;
  }
+ EXPORT_SYMBOL_GPL(fat_getattr);
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 48f794a..db4119e 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -596,7 +596,7 @@ static int fat_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	return 0;
+ }
+ 
+-static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
++loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
+ 				    struct inode *inode)
+ {
+ 	loff_t i_pos;
+@@ -616,8 +616,8 @@ static int __fat_write_inode(struct inode *inode, int wait)
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	struct buffer_head *bh;
+ 	struct msdos_dir_entry *raw_entry;
+-	loff_t i_pos;
+-	int err;
++	loff_t i_pos, blocknr;
++	int offset, err;
+ 
+ 	if (inode->i_ino == MSDOS_ROOT_INO)
+ 		return 0;
+@@ -627,7 +627,8 @@ retry:
+ 	if (!i_pos)
+ 		return 0;
+ 
+-	bh = sb_bread(sb, i_pos >> sbi->dir_per_block_bits);
++	fat_get_blknr_offset(sbi, i_pos, &blocknr, &offset);
++	bh = sb_bread(sb, blocknr);
+ 	if (!bh) {
+ 		fat_msg(sb, KERN_ERR, "unable to read inode block "
+ 		       "for updating (i_pos %lld)", i_pos);
+@@ -640,8 +641,7 @@ retry:
+ 		goto retry;
+ 	}
+ 
+-	raw_entry = &((struct msdos_dir_entry *) (bh->b_data))
+-	    [i_pos & (sbi->dir_per_block - 1)];
++	raw_entry = &((struct msdos_dir_entry *) (bh->b_data))[offset];
+ 	if (S_ISDIR(inode->i_mode))
+ 		raw_entry->size = 0;
+ 	else
+@@ -703,6 +703,7 @@ static const struct super_operations fat_sops = {
+ };
+ 
+ static const struct export_operations fat_export_ops = {
++	.encode_fh      = fat_encode_fh,
+ 	.fh_to_dentry	= fat_fh_to_dentry,
+ 	.fh_to_parent	= fat_fh_to_parent,
+ 	.get_parent	= fat_get_parent,
+diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+index ef4b5fa..156903b 100644
+--- a/fs/fat/nfs.c
++++ b/fs/fat/nfs.c
+@@ -14,6 +14,14 @@
+ #include <linux/exportfs.h>
+ #include "fat.h"
+ 
++struct fat_fid {
++	u32 ino;
++	u32 gen;
++	u64 i_pos;
++	u32 parent_ino;
++	u32 parent_gen;
++} __packed;
++
+ /**
+  * Look up a directory inode given its starting cluster.
+  */
+@@ -40,7 +48,7 @@ static struct inode *fat_dget(struct super_block *sb, int i_logstart)
+ }
+ 
+ static struct inode *fat_nfs_get_inode(struct super_block *sb,
+-				       u64 ino, u32 generation)
++				       u64 ino, u32 generation, loff_t i_pos)
+ {
+ 	struct inode *inode;
+ 
+@@ -52,30 +60,109 @@ static struct inode *fat_nfs_get_inode(struct super_block *sb,
+ 		iput(inode);
+ 		inode = NULL;
+ 	}
++	if (inode == NULL && MSDOS_SB(sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
++		struct buffer_head *bh = NULL;
++		struct msdos_dir_entry *de ;
++		loff_t blocknr;
++		int offset;
++		fat_get_blknr_offset(MSDOS_SB(sb), i_pos, &blocknr, &offset);
++		bh = sb_bread(sb, blocknr);
++		if (!bh) {
++			fat_msg(sb, KERN_ERR,
++				"unable to read block(%llu) for building NFS inode",
++				(llu)blocknr);
++			return inode;
++		}
++		de = (struct msdos_dir_entry *)bh->b_data;
++		/* If a file is deleted on server and client is not updated
++		 * yet, we must not build the inode upon a lookup call.
++		 */
++		if (IS_FREE(de[offset].name))
++			inode = NULL;
++		else
++			inode = fat_build_inode(sb, &de[offset], i_pos);
++		brelse(bh);
++	}
+ 
+ 	return inode;
+ }
+ 
++
++int
++fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
++{
++	int len = *lenp;
++	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
++	struct fat_fid *fid = (struct fat_fid *) fh;
++	loff_t i_pos;
++	int type = FILEID_INO32_GEN;
++
++	if (parent && (len < 5)) {
++		*lenp = 5;
++		return 255;
++	} else if (len < 3) {
++		*lenp = 3;
++		return 255;
++	}
++
++	i_pos = fat_i_pos_read(sbi, inode);
++	*lenp = 3;
++	fid->ino = inode->i_ino;
++	fid->gen = inode->i_generation;
++	fid->i_pos = i_pos;
++	if (parent) {
++		fid->parent_ino = parent->i_ino;
++		fid->parent_gen = parent->i_generation;
++		type = FILEID_INO32_GEN_PARENT;
++		*lenp = 5;
++	}
++
++	return type;
++}
++
+ /**
+  * Map a NFS file handle to a corresponding dentry.
+  * The dentry may or may not be connected to the filesystem root.
+  */
+-struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
++struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fh,
+ 				int fh_len, int fh_type)
+ {
+-	return generic_fh_to_dentry(sb, fid, fh_len, fh_type,
+-				    fat_nfs_get_inode);
++	struct inode *inode = NULL;
++	struct fat_fid *fid = (struct fat_fid *)fh;
++	if (fh_len < 3)
++		return NULL;
++
++	switch (fh_type) {
++	case FILEID_INO32_GEN:
++	case FILEID_INO32_GEN_PARENT:
++		inode = fat_nfs_get_inode(sb, fid->ino, fid->gen, fid->i_pos);
++
++		break;
++	}
++
++	return d_obtain_alias(inode);
+ }
+ 
+ /*
+  * Find the parent for a file specified by NFS handle.
+  * This requires that the handle contain the i_ino of the parent.
+  */
+-struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
++struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fh,
+ 				int fh_len, int fh_type)
+ {
+-	return generic_fh_to_parent(sb, fid, fh_len, fh_type,
+-				    fat_nfs_get_inode);
++	struct inode *inode = NULL;
++	struct fat_fid *fid = (struct fat_fid *)fh;
++	if (fh_len < 5)
++		return NULL;
++
++	switch (fh_type) {
++	case FILEID_INO32_GEN_PARENT:
++		inode = fat_nfs_get_inode(sb, fid->parent_ino, fid->parent_gen,
++						fid->i_pos);
++		break;
++	}
++
++	return d_obtain_alias(inode);
+ }
+ 
+ /*
 -- 
 1.7.9.5
 
