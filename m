@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2JGXeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:34:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38483 "EHLO
+	id S1754485Ab2JGXfQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:35:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38475 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753579Ab2JGXWr (ORCPT
+	by vger.kernel.org with ESMTP id S1754239Ab2JGXWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:47 -0400
-Message-Id: <20121007225843.687733838@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:45 -0400
+Message-Id: <20121007225843.829604390@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:39 +0100
+Date: Sun, 07 Oct 2012 23:59:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [ 065/108] CPU hotplug, cpusets, suspend: Dont modify cpusets during
- suspend/resume
+        Alex Deucher <alexander.deucher@amd.com>,
+        Andres Freund <andres@anarazel.de>
+Subject: [ 066/108] Revert "drm/radeon: rework pll selection (v3)"
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,144 +28,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit d35be8bab9b0ce44bed4b9453f86ebf64062721e upstream.
+commit 2f1f4d9b60396d2df4cff829bd5376ffc8ed9a2c upstream.
 
-In the event of CPU hotplug, the kernel modifies the cpusets' cpus_allowed
-masks as and when necessary to ensure that the tasks belonging to the cpusets
-have some place (online CPUs) to run on. And regular CPU hotplug is
-destructive in the sense that the kernel doesn't remember the original cpuset
-configurations set by the user, across hotplug operations.
+This reverts commit 985f61f7ee647ad570c05eab0b74915da2ac8e19.
 
-However, suspend/resume (which uses CPU hotplug) is a special case in which
-the kernel has the responsibility to restore the system (during resume), to
-exactly the same state it was in before suspend.
+This commit fixed certain cases, but ended up regressing others
+due to limitations in the current KMS API.  A proper fix is too
+invasive for 3.6.  Push it back to 3.7.
 
-In order to achieve that, do the following:
-
-1. Don't modify cpusets during suspend/resume. At all.
-   In particular, don't move the tasks from one cpuset to another, and
-   don't modify any cpuset's cpus_allowed mask. So, simply ignore cpusets
-   during the CPU hotplug operations that are carried out in the
-   suspend/resume path.
-
-2. However, cpusets and sched domains are related. We just want to avoid
-   altering cpusets alone. So, to keep the sched domains updated, build
-   a single sched domain (containing all active cpus) during each of the
-   CPU hotplug operations carried out in s/r path, effectively ignoring
-   the cpusets' cpus_allowed masks.
-
-   (Since userspace is frozen while doing all this, it will go unnoticed.)
-
-3. During the last CPU online operation during resume, build the sched
-   domains by looking up the (unaltered) cpusets' cpus_allowed masks.
-   That will bring back the system to the same original state as it was in
-   before suspend.
-
-Ultimately, this will not only solve the cpuset problem related to suspend
-resume (ie., restores the cpusets to exactly what it was before suspend, by
-not touching it at all) but also speeds up suspend/resume because we avoid
-running cpuset update code for every CPU being offlined/onlined.
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com
-[Preeti U Murthy: Please apply this patch to the stable tree 3.0.y]
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Reported-by: Andres Freund <andres@anarazel.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[bwh: Backported to 3.2: drop the DCE6 case]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/cpuset.c |    3 +++
- kernel/sched.c  |   40 ++++++++++++++++++++++++++++++++++++----
- 2 files changed, 39 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |  163 +++++++-------------------------
+ 1 file changed, 34 insertions(+), 129 deletions(-)
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2080,6 +2080,9 @@ static void scan_for_empty_cpusets(struc
-  * (of no affect) on systems that are actively using CPU hotplug
-  * but making no active use of cpusets.
-  *
-+ * The only exception to this is suspend/resume, where we don't
-+ * modify cpusets at all.
-+ *
-  * This routine ensures that top_cpuset.cpus_allowed tracks
-  * cpu_active_mask on each CPU hotplug (cpuhp) event.
-  *
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8192,34 +8192,66 @@ int __init sched_create_sysfs_power_savi
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -1446,98 +1446,14 @@ static void radeon_legacy_atom_fixup(str
+ 	}
  }
- #endif /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
  
-+static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
-+
- /*
-  * Update cpusets according to cpu_active mask.  If cpusets are
-  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
-  * around partition_sched_domains().
-+ *
-+ * If we come here as part of a suspend/resume, don't touch cpusets because we
-+ * want to restore it back to its original state upon resume anyway.
-  */
- static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
- 			     void *hcpu)
+-/**
+- * radeon_get_pll_use_mask - look up a mask of which pplls are in use
+- *
+- * @crtc: drm crtc
+- *
+- * Returns the mask of which PPLLs (Pixel PLLs) are in use.
+- */
+-static u32 radeon_get_pll_use_mask(struct drm_crtc *crtc)
+-{
+-	struct drm_device *dev = crtc->dev;
+-	struct drm_crtc *test_crtc;
+-	struct radeon_crtc *radeon_test_crtc;
+-	u32 pll_in_use = 0;
+-
+-	list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
+-		if (crtc == test_crtc)
+-			continue;
+-
+-		radeon_test_crtc = to_radeon_crtc(test_crtc);
+-		if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
+-			pll_in_use |= (1 << radeon_test_crtc->pll_id);
+-	}
+-	return pll_in_use;
+-}
+-
+-/**
+- * radeon_get_shared_dp_ppll - return the PPLL used by another crtc for DP
+- *
+- * @crtc: drm crtc
+- *
+- * Returns the PPLL (Pixel PLL) used by another crtc/encoder which is
+- * also in DP mode.  For DP, a single PPLL can be used for all DP
+- * crtcs/encoders.
+- */
+-static int radeon_get_shared_dp_ppll(struct drm_crtc *crtc)
+-{
+-	struct drm_device *dev = crtc->dev;
+-	struct drm_encoder *test_encoder;
+-	struct radeon_crtc *radeon_test_crtc;
+-
+-	list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
+-		if (test_encoder->crtc && (test_encoder->crtc != crtc)) {
+-			if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
+-				/* for DP use the same PLL for all */
+-				radeon_test_crtc = to_radeon_crtc(test_encoder->crtc);
+-				if (radeon_test_crtc->pll_id != ATOM_PPLL_INVALID)
+-					return radeon_test_crtc->pll_id;
+-			}
+-		}
+-	}
+-	return ATOM_PPLL_INVALID;
+-}
+-
+-/**
+- * radeon_atom_pick_pll - Allocate a PPLL for use by the crtc.
+- *
+- * @crtc: drm crtc
+- *
+- * Returns the PPLL (Pixel PLL) to be used by the crtc.  For DP monitors
+- * a single PPLL can be used for all DP crtcs/encoders.  For non-DP
+- * monitors a dedicated PPLL must be used.  If a particular board has
+- * an external DP PLL, return ATOM_PPLL_INVALID to skip PLL programming
+- * as there is no need to program the PLL itself.  If we are not able to
+- * allocate a PLL, return ATOM_PPLL_INVALID to skip PLL programming to
+- * avoid messing up an existing monitor.
+- *
+- * Asic specific PLL information
+- *
+- * DCE 6.1
+- * - PPLL2 is only available to UNIPHYA (both DP and non-DP)
+- * - PPLL0, PPLL1 are available for UNIPHYB/C/D/E/F (both DP and non-DP)
+- *
+- * DCE 6.0
+- * - PPLL0 is available to all UNIPHY (DP only)
+- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
+- *
+- * DCE 5.0
+- * - DCPLL is available to all UNIPHY (DP only)
+- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
+- *
+- * DCE 3.0/4.0/4.1
+- * - PPLL1, PPLL2 are available for all UNIPHY (both DP and non-DP) and DAC
+- *
+- */
+ static int radeon_atom_pick_pll(struct drm_crtc *crtc)
  {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DOWN_FAILED_FROZEN:
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	struct drm_encoder *test_encoder;
+-	u32 pll_in_use;
+-	int pll;
++	struct drm_crtc *test_crtc;
++	uint32_t pll_in_use = 0;
+ 
+ 	if (ASIC_IS_DCE4(rdev)) {
+ 		list_for_each_entry(test_encoder, &dev->mode_config.encoder_list, head) {
+@@ -1545,7 +1461,7 @@ static int radeon_atom_pick_pll(struct d
+ 				/* in DP mode, the DP ref clock can come from PPLL, DCPLL, or ext clock,
+ 				 * depending on the asic:
+ 				 * DCE4: PPLL or ext clock
+-				 * DCE5: PPLL, DCPLL, or ext clock
++				 * DCE5: DCPLL or ext clock
+ 				 *
+ 				 * Setting ATOM_PPLL_INVALID will cause SetPixelClock to skip
+ 				 * PPLL/DCPLL programming and only program the DP DTO for the
+@@ -1553,31 +1469,29 @@ static int radeon_atom_pick_pll(struct d
+ 				 */
+ 				if (ENCODER_MODE_IS_DP(atombios_get_encoder_mode(test_encoder))) {
+ 					if (rdev->clock.dp_extclk)
+-						/* skip PPLL programming if using ext clock */
+ 						return ATOM_PPLL_INVALID;
+ 					else if (ASIC_IS_DCE5(rdev))
+-						/* use DCPLL for all DP */
+ 						return ATOM_DCPLL;
+-					else {
+-						/* use the same PPLL for all DP monitors */
+-						pll = radeon_get_shared_dp_ppll(crtc);
+-						if (pll != ATOM_PPLL_INVALID)
+-							return pll;
+-					}
+ 				}
+-				break;
+ 			}
+ 		}
+-		/* all other cases */
+-		pll_in_use = radeon_get_pll_use_mask(crtc);
+-		if (!(pll_in_use & (1 << ATOM_PPLL2)))
+-			return ATOM_PPLL2;
+-		if (!(pll_in_use & (1 << ATOM_PPLL1)))
 +
-+		/*
-+		 * num_cpus_frozen tracks how many CPUs are involved in suspend
-+		 * resume sequence. As long as this is not the last online
-+		 * operation in the resume sequence, just build a single sched
-+		 * domain, ignoring cpusets.
-+		 */
-+		num_cpus_frozen--;
-+		if (likely(num_cpus_frozen)) {
-+			partition_sched_domains(1, NULL, NULL);
-+			break;
++		/* otherwise, pick one of the plls */
++		list_for_each_entry(test_crtc, &dev->mode_config.crtc_list, head) {
++			struct radeon_crtc *radeon_test_crtc;
++
++			if (crtc == test_crtc)
++				continue;
++
++			radeon_test_crtc = to_radeon_crtc(test_crtc);
++			if ((radeon_test_crtc->pll_id >= ATOM_PPLL1) &&
++			    (radeon_test_crtc->pll_id <= ATOM_PPLL2))
++				pll_in_use |= (1 << radeon_test_crtc->pll_id);
 +		}
-+
-+		/*
-+		 * This is the last CPU online operation. So fall through and
-+		 * restore the original sched domains by considering the
-+		 * cpuset configurations.
-+		 */
-+
- 	case CPU_ONLINE:
- 	case CPU_DOWN_FAILED:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
- 	default:
- 		return NOTIFY_DONE;
++		if (!(pll_in_use & 1))
+ 			return ATOM_PPLL1;
+-		DRM_ERROR("unable to allocate a PPLL\n");
+-		return ATOM_PPLL_INVALID;
++		return ATOM_PPLL2;
+ 	} else
+-		/* use PPLL1 or PPLL2 */
+ 		return radeon_crtc->crtc_id;
+ 
+ }
+@@ -1696,7 +1610,7 @@ static void atombios_crtc_disable(struct
+ 		break;
  	}
-+	return NOTIFY_OK;
+ done:
+-	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
++	radeon_crtc->pll_id = -1;
  }
  
- static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
- 			       void *hcpu)
- {
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	switch (action) {
- 	case CPU_DOWN_PREPARE:
- 		cpuset_update_active_cpus();
--		return NOTIFY_OK;
-+		break;
-+	case CPU_DOWN_PREPARE_FROZEN:
-+		num_cpus_frozen++;
-+		partition_sched_domains(1, NULL, NULL);
-+		break;
- 	default:
- 		return NOTIFY_DONE;
+ static const struct drm_crtc_helper_funcs atombios_helper_funcs = {
+@@ -1745,6 +1659,6 @@ void radeon_atombios_init_crtc(struct dr
+ 		else
+ 			radeon_crtc->crtc_offset = 0;
  	}
-+	return NOTIFY_OK;
+-	radeon_crtc->pll_id = ATOM_PPLL_INVALID;
++	radeon_crtc->pll_id = -1;
+ 	drm_crtc_helper_add(&radeon_crtc->base, &atombios_helper_funcs);
  }
- 
- static int update_runtime(struct notifier_block *nfb,
 
 
