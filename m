@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab2JGSnd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:43:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44733 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab2JGSnX (ORCPT
+	id S1754519Ab2JGSn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 14:43:58 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56675 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473Ab2JGSnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:43:23 -0400
-Date: Sun, 07 Oct 2012 14:43:19 -0400 (EDT)
-Message-Id: <20121007.144319.1790853256019640271.davem@davemloft.net>
-To: ramesh.nagappa@gmail.com
-Cc: netdev@vger.kernel.org, edumazet@google.com, ebiederm@xmission.com,
-        xemul@parallels.com, linux-kernel@vger.kernel.org,
-        ramesh.nagappa@ericsson.com
-Subject: Re: [PATCH V2] net: Fix skb_under_panic oops in
- neigh_resolve_output
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1349500215-22765-1-git-send-email-ramesh.nagappa@gmail.com>
-References: <1349500215-22765-1-git-send-email-ramesh.nagappa@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Oct 2012 14:43:17 -0400
+MIME-Version: 1.0
+Date: Mon, 8 Oct 2012 00:43:16 +0600
+Message-ID: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
+Subject: boot failure on i7-3317u in Samsung 900x3c
+From: Mike Bakhterev <mike.bakhterev@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ramesh.nagappa@gmail.com
-Date: Fri,  5 Oct 2012 22:10:15 -0700
+Greetings.
 
-> The retry loop in neigh_resolve_output() and neigh_connected_output()
-> call dev_hard_header() with out reseting the skb to network_header.
-> This causes the retry to fail with skb_under_panic. The fix is to
-> reset the network_header within the retry loop.
-> 
-> Signed-off-by: Ramesh Nagappa <ramesh.nagappa@ericsson.com>
-> Reviewed-by: Shawn Lu <shawn.lu@ericsson.com>
-> Reviewed-by: Robert Coulson <robert.coulson@ericsson.com>
-> Reviewed-by: Billie Alsup <billie.alsup@ericsson.com>
+When i'm trying to boot the subject maching in UEFI mode i get
+sometimes machine check exception 0xbe2000000003110a (i was not able
+to decode this, as some bits are not covered in Intel's Manuals). It
+emerges when i am booting 3.4.x, 3.5.4 and 3.5.5 kernels from
+ArchLinux. When i am booting from SSD i get this error all the time,
+when i'm booting from USB stick i get this sometimes (quite frequently
+and the probability to boot succesfully is increased when i specify
+"verbose" kernel option). I'm booting with systemd. The sytems boots
+always successfully, when i use the installation ArchLinux image,
+which is shipped with 3.5 kernel and boots in BIOS mode with
+traditional initscripts.
 
-Applied and queued up for -stable, thanks.
+It looks like race condition when configuring memory or something like this.
+
+It is not hardware error, because Windows 7 and 8 boot and run fine.
+And this is my second unit, because the first one was broken
+(something with motherboard) when running Windows 8, and Linux on that
+broken machine reported the same MCE. Now Windows works OK (if you
+could say, it works), and Linux reports the same MCEs.
+
+Here is some guy playing with caching of PCI memory region and getting
+the same MCE on the Sandy Bridge:
+http://stackoverflow.com/questions/11254023/how-to-do-mmap-for-cacheable-pcie-bar
+
+Sorry, but i have no time to bisect this :(
+
+P.S. Excuse me my English.
+
+P.P.S. Can this be fixed with kernel command line options?
