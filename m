@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab2JGXZz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:25:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38714 "EHLO
+	id S1754802Ab2JGXZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:25:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38686 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754696Ab2JGXXa (ORCPT
+	by vger.kernel.org with ESMTP id S1754698Ab2JGXXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:23:30 -0400
-Message-Id: <20121007225837.899837416@decadent.org.uk>
+Message-Id: <20121007225838.996445652@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:57 +0100
+Date: Sun, 07 Oct 2012 23:59:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eddie Wai <eddie.wai@broadcom.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 023/108] [SCSI] bnx2i: Fixed NULL ptr deference for 1G bnx2 Linux iSCSI
- offload
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 031/108] cfg80211: fix possible circular lock on reg_regdb_search()
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,76 +30,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eddie Wai <eddie.wai@broadcom.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-commit d6532207116307eb7ecbfa7b9e02c53230096a50 upstream.
+commit a85d0d7f3460b1a123b78e7f7e39bf72c37dfb78 upstream.
 
-This patch fixes the following kernel panic invoked by uninitialized fields
-in the chip initialization for the 1G bnx2 iSCSI offload.
+When call_crda() is called we kick off a witch hunt search
+for the same regulatory domain on our internal regulatory
+database and that work gets kicked off on a workqueue, this
+is done while the cfg80211_mutex is held. If that workqueue
+kicks off it will first lock reg_regdb_search_mutex and
+later cfg80211_mutex but to ensure two CPUs will not contend
+against cfg80211_mutex the right thing to do is to have the
+reg_regdb_search() wait until the cfg80211_mutex is let go.
 
-One of the bits in the chip initialization is being used by the latest
-firmware to control overflow packets.  When this control bit gets enabled
-erroneously, it would ultimately result in a bad packet placement which would
-cause the bnx2 driver to dereference a NULL ptr in the placement handler.
+The lockdep report is pasted below.
 
-This can happen under certain stress I/O environment under the Linux
-iSCSI offload operation.
+cfg80211: Calling CRDA to update world regulatory domain
 
-This change only affects Broadcom's 5709 chipset.
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.3.8 #3 Tainted: G           O
+-------------------------------------------------------
+kworker/0:1/235 is trying to acquire lock:
+ (cfg80211_mutex){+.+...}, at: [<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
 
-Unable to handle kernel NULL pointer dereference at 0000000000000008 RIP:
- [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-Pid: 0, comm: swapper Tainted: G     ---- 2.6.18-333.el5debug #2
-RIP: 0010:[<ffffffff881f0e7d>]  [<ffffffff881f0e7d>] :bnx2:bnx2_poll_work+0xd0d/0x13c5
-RSP: 0018:ffff8101b575bd50  EFLAGS: 00010216
-RAX: 0000000000000005 RBX: ffff81007c5fb180 RCX: 0000000000000000
-RDX: 0000000000000ffc RSI: 00000000817e8000 RDI: 0000000000000220
-RBP: ffff81015bbd7ec0 R08: ffff8100817e9000 R09: 0000000000000000
-R10: ffff81007c5fb180 R11: 00000000000000c8 R12: 000000007a25a010
-R13: 0000000000000000 R14: 0000000000000005 R15: ffff810159f80558
-FS:  0000000000000000(0000) GS:ffff8101afebc240(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 0000000000000008 CR3: 0000000000201000 CR4: 00000000000006a0
-Process swapper (pid: 0, threadinfo ffff8101b5754000, task ffff8101afebd820)
-Stack:  000000000000000b ffff810159f80000 0000000000000040 ffff810159f80520
- ffff810159f80500 00cf00cf8008e84b ffffc200100939e0 ffff810009035b20
- 0000502900000000 000000be00000001 ffff8100817e7810 00d08101b575bea8
+but task is already holding lock:
+ (reg_regdb_search_mutex){+.+...}, at: [<81646828>] set_regdom+0x710/0x808 [cfg80211]
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #2 (reg_regdb_search_mutex){+.+...}:
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<81645778>] is_world_regdom+0x9f8/0xc74 [cfg80211]
+
+-> #1 (reg_mutex#2){+.+...}:
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<8164539c>] is_world_regdom+0x61c/0xc74 [cfg80211]
+
+-> #0 (cfg80211_mutex){+.+...}:
+       [<800a77b8>] __lock_acquire+0x10d4/0x17bc
+       [<800a8384>] lock_acquire+0x60/0x88
+       [<802950a8>] mutex_lock_nested+0x54/0x31c
+       [<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
+
+other info that might help us debug this:
+
+Chain exists of:
+  cfg80211_mutex --> reg_mutex#2 --> reg_regdb_search_mutex
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(reg_regdb_search_mutex);
+                               lock(reg_mutex#2);
+                               lock(reg_regdb_search_mutex);
+  lock(cfg80211_mutex);
+
+ *** DEADLOCK ***
+
+3 locks held by kworker/0:1/235:
+ #0:  (events){.+.+..}, at: [<80089a00>] process_one_work+0x230/0x460
+ #1:  (reg_regdb_work){+.+...}, at: [<80089a00>] process_one_work+0x230/0x460
+ #2:  (reg_regdb_search_mutex){+.+...}, at: [<81646828>] set_regdom+0x710/0x808 [cfg80211]
+
+stack backtrace:
 Call Trace:
- <IRQ>  [<ffffffff8008e0d0>] show_schedstat+0x1c2/0x25b
- [<ffffffff881f1886>] :bnx2:bnx2_poll+0xf6/0x231
- [<ffffffff8000c9b9>] net_rx_action+0xac/0x1b1
- [<ffffffff800125a0>] __do_softirq+0x89/0x133
- [<ffffffff8005e30c>] call_softirq+0x1c/0x28
- [<ffffffff8006d5de>] do_softirq+0x2c/0x7d
- [<ffffffff8006d46e>] do_IRQ+0xee/0xf7
- [<ffffffff8005d625>] ret_from_intr+0x0/0xa
- <EOI>  [<ffffffff801a5780>] acpi_processor_idle_simple+0x1c5/0x341
- [<ffffffff801a573d>] acpi_processor_idle_simple+0x182/0x341
- [<ffffffff801a55bb>] acpi_processor_idle_simple+0x0/0x341
- [<ffffffff80049560>] cpu_idle+0x95/0xb8
- [<ffffffff80078b1c>] start_secondary+0x479/0x488
+[<80290fd4>] dump_stack+0x8/0x34
+[<80291bc4>] print_circular_bug+0x2ac/0x2d8
+[<800a77b8>] __lock_acquire+0x10d4/0x17bc
+[<800a8384>] lock_acquire+0x60/0x88
+[<802950a8>] mutex_lock_nested+0x54/0x31c
+[<816468a4>] set_regdom+0x78c/0x808 [cfg80211]
 
-Signed-off-by: Eddie Wai <eddie.wai@broadcom.com>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Felix Fietkau <nbd@openwrt.org>
+Tested-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/bnx2i/bnx2i_hwi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/wireless/reg.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
-index 33d6630..91eec60 100644
---- a/drivers/scsi/bnx2i/bnx2i_hwi.c
-+++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
-@@ -1264,6 +1264,9 @@ int bnx2i_send_fw_iscsi_init_msg(struct bnx2i_hba *hba)
- 	int rc = 0;
- 	u64 mask64;
- 
-+	memset(&iscsi_init, 0x00, sizeof(struct iscsi_kwqe_init1));
-+	memset(&iscsi_init2, 0x00, sizeof(struct iscsi_kwqe_init2));
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 2ded3c7..72d170c 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -350,6 +350,9 @@ static void reg_regdb_search(struct work_struct *work)
+ 	struct reg_regdb_search_request *request;
+ 	const struct ieee80211_regdomain *curdom, *regdom;
+ 	int i, r;
++	bool set_reg = false;
 +
- 	bnx2i_adjust_qp_size(hba);
++	mutex_lock(&cfg80211_mutex);
  
- 	iscsi_init.flags =
+ 	mutex_lock(&reg_regdb_search_mutex);
+ 	while (!list_empty(&reg_regdb_search_list)) {
+@@ -365,9 +368,7 @@ static void reg_regdb_search(struct work_struct *work)
+ 				r = reg_copy_regd(&regdom, curdom);
+ 				if (r)
+ 					break;
+-				mutex_lock(&cfg80211_mutex);
+-				set_regdom(regdom);
+-				mutex_unlock(&cfg80211_mutex);
++				set_reg = true;
+ 				break;
+ 			}
+ 		}
+@@ -375,6 +376,11 @@ static void reg_regdb_search(struct work_struct *work)
+ 		kfree(request);
+ 	}
+ 	mutex_unlock(&reg_regdb_search_mutex);
++
++	if (set_reg)
++		set_regdom(regdom);
++
++	mutex_unlock(&cfg80211_mutex);
+ }
+ 
+ static DECLARE_WORK(reg_regdb_work, reg_regdb_search);
 
 
