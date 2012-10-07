@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2JHCOM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 22:14:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11515 "EHLO mga11.intel.com"
+	id S1752173Ab2JHCY5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 22:24:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:47913 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab2JHCOJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 22:14:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,549,1344236400"; 
-   d="scan'208";a="231800709"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: linux-next: build failure after merge of the thermal tree
-Thread-Topic: linux-next: build failure after merge of the thermal tree
-Thread-Index: AQHNpOhMvYTADJzIDkWI68ejLuTtcZeuqCug
-Date: Mon, 8 Oct 2012 02:14:05 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B90926322F516@SHSMSX101.ccr.corp.intel.com>
-References: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
-In-Reply-To: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751092Ab2JHCYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 22:24:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Kasatkin@ozlabs.org, Kees Cook <keescook@chromium.org>,
+        David Howells <dhowells@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Module xattr signatures
+In-Reply-To: <1349457006.20387.41.camel@falcor>
+References: <87a9w11yhs.fsf@rustcorp.com.au> <CALLzPKYTaOX0SNkT_z9snyEMSQ4paKLf3H-C=O0vM-Gc8O99UA@mail.gmail.com> <1349457006.20387.41.camel@falcor>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 08 Oct 2012 10:03:58 +1030
+Message-ID: <874nm5rh5l.fsf@rustcorp.com.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+> On Fri, 2012-10-05 at 17:42 +0300, Kasatkin, Dmitry wrote:
+>> Hello,
+>> 
+>> On Fri, Oct 5, 2012 at 4:47 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> >
+>> > Hi all,
+>> >
+>> >         Had a talk with Mimi, and IMA still wants xattr signatures on
+>> > modules like they have for other files with EVM.  With Kees' patches now
+>> > merged into my modules-wip branch (warning, rebases frequently), this
+>> > should be pretty simple.  Dmitry?
+>> >
+>> 
+>> Yes, there is no difference for IMA/EVM what type of file has a
+>> signature to verify.
+>> It just reads the signature from the xattr. With the module hook it
+>> will just do the same
+>> for modules as well. It is independent of appended signature verification.
+>> The format of signatures is different at the moment.
+>
+>> >         The question of whether this falls back to appended signatures
+>> > if there's no xattr support, or whether we fix cpio depends on whether
+>> > someone is prepared to do the latter.  As Mimi points out, AIX, bsd,
+>> > solaris all have versions of cpio that support extended attributes, as
+>> > does the bsdcpio Debian package, for example.
+>> >
+>> 
+>> As I already said in one of my early mails, I am not sure at all if
+>> IMA really needs to verify a signature,
+>> if primary mechanism is to use appended signature.
+>
+> Which is the preferred method is exactly the point. That depends on your
+> use case.  For systems with IMA-appraisal already enabled, there would
+> not be any reason for the appended signature verification.
+>
+> Now, with the MODULE_CHECK hook, systems could define an IMA-appraisal
+> policy to appraise just kernel modules.
+>
+> The remaining issue is how to deal with filesystems that don't have
+> extended attribute support.  As we've already had this discussion, lets
+> summarize the different options:
+>
+> - don't support them
+>
+> Not very friendly.
+>
+> - modify the new syscall to pass the signature and signature length
+>
+> Kees nixed this idea.
+>
+> - fall back to appended signature verification
+>
+> In addition to David Howell's version of the appended signature
+> verification, I would like having the existing EVM/IMA-appraisal
+> signature format, based on Dmitry's proposed kernel module patches, as
+> another option.
 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: Monday, October 08, 2012 8:02 AM
-> To: Zhang, Rui
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Amit
-> Daniel Kachhap; Wu, Fengguang; Andrew Morton
-> Subject: linux-next: build failure after merge of the thermal tree
-> Importance: High
-> 
-> Hi Zhang,
-> 
-> After merging the thermal tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/thermal/cpu_cooling.c: In function 'get_idr':
-> drivers/thermal/cpu_cooling.c:89:14: error: 'MAX_ID_MASK' undeclared
-> (first use in this function)
-> 
-> Caused by commit 023614183768 ("thermal: add generic cpufreq cooling
-> implementation") interacting with commit 125c4c706b68 ("idr: rename
-> MAX_LEVEL to MAX_IDR_LEVEL") which very recently entered Linus' tree.
-> 
-> I have applied the following fix patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 8 Oct 2012 10:56:56 +1100
-> Subject: [PATCH] thermal: fix for for MAX_ID_MASK to MAX_IDR_MASK
-> rename
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Or:
 
-The patch looks good to me, thanks for the fix.
+ - Reduce the set of filesystems which don't support xattrs to the empty
+   set ;)
 
--rui
-> ---
->  drivers/thermal/cpu_cooling.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/cpu_cooling.c
-> b/drivers/thermal/cpu_cooling.c index 9050c1b..cc1c930 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -86,7 +86,7 @@ again:
->  	else if (unlikely(err))
->  		return err;
-> 
-> -	*id = *id & MAX_ID_MASK;
-> +	*id = *id & MAX_IDR_MASK;
->  	return 0;
->  }
-> 
-> --
-> 1.7.10.280.gaa39
-> 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Which I prefer...
+Cheers,
+Rusty.
