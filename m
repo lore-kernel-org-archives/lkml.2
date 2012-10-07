@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab2JGXdX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:33:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38526 "EHLO
+	id S1754904Ab2JGXdn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:33:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38519 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754404Ab2JGXWz (ORCPT
+	by vger.kernel.org with ESMTP id S1753122Ab2JGXWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:22:55 -0400
-Message-Id: <20121007225843.138318091@decadent.org.uk>
+Message-Id: <20121007225842.863675485@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:35 +0100
+Date: Sun, 07 Oct 2012 23:59:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>,
-        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 061/108] pch_uart: Add eg20t_port lock field, avoid recursive spinlocks
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 059/108] Bluetooth: Change signature of smp_conn_security()
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,132 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
 
-commit 2588aba002d14e938c2f56d299ecf3e7ce1302a5 upstream.
+commit cc110922da7e902b62d18641a370fec01a9fa794 upstream.
 
-pch_uart_interrupt() takes priv->port.lock which leads to two recursive
-spinlock calls if low_latency==1 or CONFIG_PREEMPT_RT_FULL=y (one
-otherwise):
+To make it clear that it may be called from contexts that may not have
+any knowledge of L2CAP, we change the connection parameter, to receive
+a hci_conn.
 
-pch_uart_interrupt
-  spin_lock_irqsave(priv->port.lock, flags)
-  case PCH_UART_IID_RDR_TO (data ready)
-  handle_rx_to
-    push_rx
-      tty_port_tty_get
-        spin_lock_irqsave(&port->lock, flags) <--- already hold this lock
-        ...
-      tty_flip_buffer_push
-        ...
-        flush_to_ldisc
-          spin_lock_irqsave(&tty->buf.lock)
-            spin_lock_irqsave(&tty->buf.lock)
-            disc->ops->receive_buf(tty, char_buf)
-              n_tty_receive_buf
-                tty->ops->flush_chars()
-                uart_flush_chars
-                  uart_start
-                    spin_lock_irqsave(&port->lock) <--- already hold this lock
+This also makes it clear that it is checking the security of the link.
 
-Avoid this by using a dedicated lock to protect the eg20t_port structure
-and IO access to its membase. This is more consistent with the 8250
-driver.  Ensure priv->lock is always take prior to priv->port.lock when
-taken at the same time.
-
-V2: Remove inadvertent whitespace change.
-V3: Account for oops_in_progress for the private lock in
-    pch_console_write().
-
-Note: Like the 8250 driver, if a printk is introduced anywhere inside
-      the pch_console_write() critical section, the kernel will hang
-      on a recursive spinlock on the private lock. The oops case is
-      handled by using a trylock in the oops_in_progress case.
-
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Feng Tang <feng.tang@intel.com>
-CC: Alexander Stein <alexander.stein@systec-electronic.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop changes to pch_console_write()]
+Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/pch_uart.c |   38 ++++++++++++++++++++++++++------------
- 1 file changed, 26 insertions(+), 12 deletions(-)
+ include/net/bluetooth/smp.h |    2 +-
+ net/bluetooth/l2cap_core.c  |   11 ++++++-----
+ net/bluetooth/l2cap_sock.c  |    2 +-
+ net/bluetooth/smp.c         |    4 ++--
+ 4 files changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -236,6 +236,9 @@ struct eg20t_port {
- 	int				tx_dma_use;
- 	void				*rx_buf_virt;
- 	dma_addr_t			rx_buf_dma;
-+
-+	/* protect the eg20t_port private structure and io access to membase */
-+	spinlock_t lock;
+--- a/include/net/bluetooth/smp.h
++++ b/include/net/bluetooth/smp.h
+@@ -131,7 +131,7 @@ struct smp_chan {
  };
  
- /**
-@@ -964,7 +967,7 @@ static irqreturn_t pch_uart_interrupt(in
- 	unsigned int iid;
- 	unsigned long flags;
+ /* SMP Commands */
+-int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level);
++int smp_conn_security(struct hci_conn *hcon, __u8 sec_level);
+ int smp_sig_channel(struct l2cap_conn *conn, struct sk_buff *skb);
+ int smp_distribute_keys(struct l2cap_conn *conn, __u8 force);
  
--	spin_lock_irqsave(&priv->port.lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
- 	handled = 0;
- 	while ((iid = pch_uart_hal_get_iid(priv)) > 1) {
- 		switch (iid) {
-@@ -1017,7 +1020,7 @@ static irqreturn_t pch_uart_interrupt(in
- 			priv->int_dis_flag = 0;
- 	}
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -902,14 +902,15 @@ static void l2cap_chan_ready(struct sock
+ static void l2cap_conn_ready(struct l2cap_conn *conn)
+ {
+ 	struct l2cap_chan *chan;
++	struct hci_conn *hcon = conn->hcon;
  
--	spin_unlock_irqrestore(&priv->port.lock, flags);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- 	return IRQ_RETVAL(handled);
+ 	BT_DBG("conn %p", conn);
+ 
+-	if (!conn->hcon->out && conn->hcon->type == LE_LINK)
++	if (!hcon->out && hcon->type == LE_LINK)
+ 		l2cap_le_conn_ready(conn);
+ 
+-	if (conn->hcon->out && conn->hcon->type == LE_LINK)
+-		smp_conn_security(conn, conn->hcon->pending_sec_level);
++	if (hcon->out && hcon->type == LE_LINK)
++		smp_conn_security(hcon, hcon->pending_sec_level);
+ 
+ 	read_lock(&conn->chan_lock);
+ 
+@@ -918,8 +919,8 @@ static void l2cap_conn_ready(struct l2ca
+ 
+ 		bh_lock_sock(sk);
+ 
+-		if (conn->hcon->type == LE_LINK) {
+-			if (smp_conn_security(conn, chan->sec_level))
++		if (hcon->type == LE_LINK) {
++			if (smp_conn_security(hcon, chan->sec_level))
+ 				l2cap_chan_ready(sk);
+ 
+ 		} else if (chan->chan_type != L2CAP_CHAN_CONN_ORIENTED) {
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -616,7 +616,7 @@ static int l2cap_sock_setsockopt(struct
+ 				break;
+ 			}
+ 
+-			if (smp_conn_security(conn, sec.level))
++			if (smp_conn_security(conn->hcon, sec.level))
+ 				break;
+ 
+ 			err = 0;
+--- a/net/bluetooth/smp.c
++++ b/net/bluetooth/smp.c
+@@ -554,9 +554,9 @@ static u8 smp_cmd_security_req(struct l2
+ 	return 0;
  }
  
-@@ -1131,9 +1134,9 @@ static void pch_uart_break_ctl(struct ua
- 	unsigned long flags;
+-int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level)
++int smp_conn_security(struct hci_conn *hcon, __u8 sec_level)
+ {
+-	struct hci_conn *hcon = conn->hcon;
++	struct l2cap_conn *conn = hcon->l2cap_data;
+ 	struct smp_chan *smp = conn->smp_chan;
  
- 	priv = container_of(port, struct eg20t_port, port);
--	spin_lock_irqsave(&port->lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
- 	pch_uart_hal_set_break(priv, ctl);
--	spin_unlock_irqrestore(&port->lock, flags);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- }
- 
- /* Grab any interrupt resources and initialise any low level driver state. */
-@@ -1284,7 +1287,8 @@ static void pch_uart_set_termios(struct
- 
- 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
- 
--	spin_lock_irqsave(&port->lock, flags);
-+	spin_lock_irqsave(&priv->lock, flags);
-+	spin_lock(&port->lock);
- 
- 	uart_update_timeout(port, termios->c_cflag, baud);
- 	rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
-@@ -1297,7 +1301,8 @@ static void pch_uart_set_termios(struct
- 		tty_termios_encode_baud_rate(termios, baud, baud);
- 
- out:
--	spin_unlock_irqrestore(&port->lock, flags);
-+	spin_unlock(&port->lock);
-+	spin_unlock_irqrestore(&priv->lock, flags);
- }
- 
- static const char *pch_uart_type(struct uart_port *port)
-@@ -1449,6 +1454,8 @@ static struct eg20t_port *pch_uart_init_
- 	pci_enable_msi(pdev);
- 	pci_set_master(pdev);
- 
-+	spin_lock_init(&priv->lock);
-+
- 	iobase = pci_resource_start(pdev, 0);
- 	mapbase = pci_resource_start(pdev, 1);
- 	priv->mapbase = mapbase;
+ 	BT_DBG("conn %p hcon %p level 0x%2.2x", conn, hcon, sec_level);
 
 
