@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab2JGX1E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:27:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38677 "EHLO
+	id S1754860Ab2JGX07 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:26:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38685 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754676Ab2JGXX0 (ORCPT
+	by vger.kernel.org with ESMTP id S1754678Ab2JGXX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:26 -0400
-Message-Id: <20121007225839.272131544@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:27 -0400
+Message-Id: <20121007225838.719240918@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:07 +0100
+Date: Sun, 07 Oct 2012 23:59:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?S=C3=B8ren=20holm?= <sgh@sgh.dk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/108] asix: Support DLink DUB-E100 H/W Ver C1
+        Guenter Roeck <linux@roeck-us.net>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 029/108] hwmon: (ad7314) Add name sysfs attribute
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,30 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Søren Holm <sgh@sgh.dk>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit ed3770a9cd5764a575b83810ea679bbff2b03082 upstream.
+commit 3ceefe4319636d89d4bdf40dca9471970f942e4f upstream.
 
-Signed-off-by: Søren Holm <sgh@sgh.dk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust filename]
+The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
+in this driver.
+
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/asix.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hwmon/ad7314.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -1648,6 +1648,10 @@ static const struct usb_device_id	produc
- 	USB_DEVICE (0x2001, 0x3c05),
- 	.driver_info = (unsigned long) &ax88772_info,
- }, {
-+       // DLink DUB-E100 H/W Ver C1
-+       USB_DEVICE (0x2001, 0x1a02),
-+       .driver_info = (unsigned long) &ax88772_info,
-+}, {
- 	// Linksys USB1000
- 	USB_DEVICE (0x1737, 0x0039),
- 	.driver_info = (unsigned long) &ax88178_info,
+diff --git a/drivers/hwmon/ad7314.c b/drivers/hwmon/ad7314.c
+index cfec802..f915eb1 100644
+--- a/drivers/hwmon/ad7314.c
++++ b/drivers/hwmon/ad7314.c
+@@ -87,10 +87,18 @@ static ssize_t ad7314_show_temperature(struct device *dev,
+ 	}
+ }
+ 
++static ssize_t ad7314_show_name(struct device *dev,
++				struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
++}
++
++static DEVICE_ATTR(name, S_IRUGO, ad7314_show_name, NULL);
+ static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
+ 			  ad7314_show_temperature, NULL, 0);
+ 
+ static struct attribute *ad7314_attributes[] = {
++	&dev_attr_name.attr,
+ 	&sensor_dev_attr_temp1_input.dev_attr.attr,
+ 	NULL,
+ };
 
 
