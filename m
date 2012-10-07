@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab2JGSn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:43:58 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56675 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab2JGSnR (ORCPT
+	id S1754217Ab2JGSyl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 14:54:41 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44934 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab2JGSyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:43:17 -0400
-MIME-Version: 1.0
-Date: Mon, 8 Oct 2012 00:43:16 +0600
-Message-ID: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
-Subject: boot failure on i7-3317u in Samsung 900x3c
-From: Mike Bakhterev <mike.bakhterev@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 7 Oct 2012 14:54:33 -0400
+Date: Sun, 07 Oct 2012 14:54:32 -0400 (EDT)
+Message-Id: <20121007.145432.1141528829169465290.davem@davemloft.net>
+To: haicheng.li@linux.intel.com
+Cc: fengguang.wu@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix PTP dependencies: explicitly select all the
+ possible dependencies.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <50718E45.1070706@linux.intel.com>
+References: <50706885.1030908@linux.intel.com>
+	<20121006.171748.734171045678392820.davem@davemloft.net>
+	<50718E45.1070706@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings.
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Sun, 07 Oct 2012 22:14:29 +0800
 
-When i'm trying to boot the subject maching in UEFI mode i get
-sometimes machine check exception 0xbe2000000003110a (i was not able
-to decode this, as some bits are not covered in Intel's Manuals). It
-emerges when i am booting 3.4.x, 3.5.4 and 3.5.5 kernels from
-ArchLinux. When i am booting from SSD i get this error all the time,
-when i'm booting from USB stick i get this sometimes (quite frequently
-and the probability to boot succesfully is increased when i specify
-"verbose" kernel option). I'm booting with systemd. The sytems boots
-always successfully, when i use the installation ArchLinux image,
-which is shipped with 3.5 kernel and boots in BIOS mode with
-traditional initscripts.
 
-It looks like race condition when configuring memory or something like this.
+Use "pch_gbe: " as the prefix in your patch Subject line,
+also:
 
-It is not hardware error, because Windows 7 and 8 boot and run fine.
-And this is my second unit, because the first one was broken
-(something with motherboard) when running Windows 8, and Linux on that
-broken machine reported the same MCE. Now Windows works OK (if you
-could say, it works), and Linux reports the same MCEs.
+> @@ -26,6 +26,9 @@ if PCH_GBE
+>  config PCH_PTP
+>  	bool "PCH PTP clock support"
+>  	default n
+> +	depends on EXPERIMENTAL
+> +	select PPS
+> +	select PTP_1588_CLOCK
 
-Here is some guy playing with caching of PCI memory region and getting
-the same MCE on the Sandy Bridge:
-http://stackoverflow.com/questions/11254023/how-to-do-mmap-for-cacheable-pcie-bar
+This patch is corrupted by your email client.
 
-Sorry, but i have no time to bisect this :(
-
-P.S. Excuse me my English.
-
-P.P.S. Can this be fixed with kernel command line options?
+DO NOT resend this patch without first emailing it to yourself
+and verifying that you can in fact apply what you receive in
+the email cleanly.
