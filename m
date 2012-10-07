@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab2JGJ5W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 05:57:22 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:50721 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750743Ab2JGJ5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 05:57:17 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Constantine Shulyupin <const@MakeLinux.com>
-Subject: [PATCH] USB: usb-skeleton.c: fix compilation error and restore kref_put on fail in skel_open
-Date: Sun,  7 Oct 2012 11:57:12 +0200
-Message-Id: <1349603832-26424-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.204.199 authed with poster@makelinux.net}
+	id S1752741Ab2JGJ5h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 05:57:37 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4487 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743Ab2JGJ52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 05:57:28 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Vagin <avagin@openvz.org>, "Andrew G. Morgan" <morgan@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH] proc: don't show nonexistent capabilities (v2)
+Date: Sun,  7 Oct 2012 13:56:54 +0400
+Message-Id: <1349603814-1085468-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+Without this patch it is really hard to interpret a bounding set,
+if CAP_LAST_CAP is unknown for a current kernel.
 
-Function skel_open increments usage count for the device with kref_get and the usage count should be decremented on the function failure.
+Non-existant capabilities can not be deleted from a bounding set
+with help of prctl.
 
-Some last changes in function skel_open and finally commit
-52a7499 Revert "USB: usb-skeleton.c: fix open/disconnect race"
-introduced a bug in function skel_open, which this patch fixes.
+E.g.: Here are two examples without/with this patch.
+CapBnd:	ffffffe0fdecffff
+CapBnd:	00000000fdecffff
 
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+I suggest to hide non-existent capabilities. Here is two reasons.
+* It's logically and easier for using.
+* It helps to checkpoint-restore capabilities of tasks, because tasks
+can be restored on another kernel, where CAP_LAST_CAP is bigger.
+
+v2: Non-existent capabilities can not be removed from creds, because
+    in this case user cannot set all=eip. This patch cleans up non-existent
+    capabilities from content of /proc/pid/status
+
+Cc: Andrew G. Morgan <morgan@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- drivers/usb/usb-skeleton.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/proc/array.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 0616f23..027005b 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -113,8 +113,10 @@ static int skel_open(struct inode *inode, struct file *file)
- 	mutex_lock(&dev->io_mutex);
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index c5db89c..c814ba5 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -308,6 +308,10 @@ static void render_cap_t(struct seq_file *m, const char *header,
+ 	seq_putc(m, '\n');
+ }
  
- 	retval = usb_autopm_get_interface(interface);
--	if (retval)
--		goto out_err;
-+	if (retval) {
-+		kref_put(&dev->kref, skel_delete);
-+		goto exit;
-+	}
++/* Remove non-existent capabilities */
++#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
++				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
++
+ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ {
+ 	const struct cred *cred;
+@@ -321,6 +325,11 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ 	cap_bset	= cred->cap_bset;
+ 	rcu_read_unlock();
  
- 	/* save our object in the file's private structure */
- 	file->private_data = dev;
++	NORM_CAPS(cap_inheritable);
++	NORM_CAPS(cap_permitted);
++	NORM_CAPS(cap_effective);
++	NORM_CAPS(cap_bset);
++
+ 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+ 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+ 	render_cap_t(m, "CapEff:\t", &cap_effective);
 -- 
-1.7.9.5
+1.7.1
 
