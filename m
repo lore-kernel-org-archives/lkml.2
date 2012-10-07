@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab2JGX0k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:26:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38698 "EHLO
+	id S1754878Ab2JGX1B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:27:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38682 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754686Ab2JGXX2 (ORCPT
+	by vger.kernel.org with ESMTP id S1754677Ab2JGXX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:28 -0400
-Message-Id: <20121007225838.314150856@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:26 -0400
+Message-Id: <20121007225839.130546643@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:00 +0100
+Date: Sun, 07 Oct 2012 23:59:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 026/108] DMA: PL330: Check the pointer returned by kzalloc
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: [ 032/108] xen/boot: Disable BIOS SMP MP table search.
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,35 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 61c6e7531d3b66b33187b8cdd700fd8ab93ffd62 upstream.
+commit bd49940a35ec7d488ae63bd625639893b3385b97 upstream.
 
-kzalloc could return NULL. Hence add a check to avoid
-NULL pointer dereference.
+As the initial domain we are able to search/map certain regions
+of memory to harvest configuration data. For all low-level we
+use ACPI tables - for interrupts we use exclusively ACPI _PRT
+(so DSDT) and MADT for INT_SRC_OVR.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-[bwh: Backported to 3.2: adjust context and error label]
+The SMP MP table is not used at all. As a matter of fact we do
+not even support machines that only have SMP MP but no ACPI tables.
+
+Lets follow how Moorestown does it and just disable searching
+for BIOS SMP tables.
+
+This also fixes an issue on HP Proliant BL680c G5 and DL380 G6:
+
+9f->100 for 1:1 PTE
+Freeing 9f-100 pfn range: 97 pages freed
+1-1 mapping on 9f->100
+.. snip..
+e820: BIOS-provided physical RAM map:
+Xen: [mem 0x0000000000000000-0x000000000009efff] usable
+Xen: [mem 0x000000000009f400-0x00000000000fffff] reserved
+Xen: [mem 0x0000000000100000-0x00000000cfd1dfff] usable
+.. snip..
+Scan for SMP in [mem 0x00000000-0x000003ff]
+Scan for SMP in [mem 0x0009fc00-0x0009ffff]
+Scan for SMP in [mem 0x000f0000-0x000fffff]
+found SMP MP-table at [mem 0x000f4fa0-0x000f4faf] mapped at [ffff8800000f4fa0]
+(XEN) mm.c:908:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 entry 0000000000100461 for l1e_owner=0, pg_owner=0
+(XEN) mm.c:4995:d0 ptwr_emulate: could not get_page_from_l1e()
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff81ac07e2>] xen_set_pte_init+0x66/0x71
+. snip..
+Pid: 0, comm: swapper Not tainted 3.6.0-rc6upstream-00188-gb6fb969-dirty #2 HP ProLiant BL680c G5
+.. snip..
+Call Trace:
+ [<ffffffff81ad31c6>] __early_ioremap+0x18a/0x248
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81ad32ac>] early_ioremap+0x13/0x15
+ [<ffffffff81acc140>] get_mpc_size+0x2f/0x67
+ [<ffffffff81acc284>] smp_scan_config+0x10c/0x136
+ [<ffffffff81acc2e4>] default_find_smp_config+0x36/0x5a
+ [<ffffffff81ac3085>] setup_arch+0x5b3/0xb5b
+ [<ffffffff81624731>] ? printk+0x48/0x4a
+ [<ffffffff81abca7f>] start_kernel+0x90/0x390
+ [<ffffffff81abc356>] x86_64_start_reservations+0x131/0x136
+ [<ffffffff81abfa83>] xen_start_kernel+0x65f/0x661
+(XEN) Domain 0 crashed: 'noreboot' set - not rebooting.
+
+which is that ioremap would end up mapping 0xff using _PAGE_IOMAP
+(which is what early_ioremap sticks as a flag) - which meant
+we would get MFN 0xFF (pte ff461, which is OK), and then it would
+also map 0x100 (b/c ioremap tries to get page aligned request, and
+it was trying to map 0xf4fa0 + PAGE_SIZE - so it mapped the next page)
+as _PAGE_IOMAP. Since 0x100 is actually a RAM page, and the _PAGE_IOMAP
+bypasses the P2M lookup we would happily set the PTE to 1000461.
+Xen would deny the request since we do not have access to the
+Machine Frame Number (MFN) of 0x100. The P2M[0x100] is for example
+0x80140.
+
+Fixes-Oracle-Bugzilla: https://bugzilla.oracle.com/bugzilla/show_bug.cgi?id=13665
+Acked-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/dma/pl330.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/xen/enlighten.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -858,6 +858,11 @@ pl330_probe(struct amba_device *adev, co
- 	/* Initialize channel parameters */
- 	num_chan = max(pdat ? pdat->nr_valid_peri : 0, (u8)pi->pcfg.num_chan);
- 	pdmac->peripherals = kzalloc(num_chan * sizeof(*pch), GFP_KERNEL);
-+	if (!pdmac->peripherals) {
-+		ret = -ENOMEM;
-+		dev_err(&adev->dev, "unable to allocate pdmac->peripherals\n");
-+		goto probe_err4;
-+	}
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1289,6 +1289,10 @@ asmlinkage void __init xen_start_kernel(
  
- 	for (i = 0; i < num_chan; i++) {
- 		pch = &pdmac->peripherals[i];
+ 		/* Make sure ACS will be enabled */
+ 		pci_request_acs();
++
++		/* Avoid searching for BIOS MP tables */
++		x86_init.mpparse.find_smp_config = x86_init_noop;
++		x86_init.mpparse.get_smp_config = x86_init_uint_noop;
+ 	}
+ #ifdef CONFIG_PCI
+ 	/* PCI BIOS service won't work from a PV guest. */
 
 
