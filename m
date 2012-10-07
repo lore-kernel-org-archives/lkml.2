@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2JGUDK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 16:03:10 -0400
-Received: from asav3.lyse.net ([81.167.37.131]:45915 "EHLO asav3.lyse.net"
+	id S1754106Ab2JGUTT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 16:19:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab2JGUDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 16:03:07 -0400
-X-Greylist: delayed 1846 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Oct 2012 16:03:07 EDT
-Date: Sun, 7 Oct 2012 21:34:52 +0200
-From: Helge Hafting <helge.hafting@ntebb.no>
-To: linux-kernel@vger.kernel.org
-Subject: 3.6.0 regression, distorted sound failure while using jack and
- hd-audio
-Message-ID: <20121007213452.08e29880@tenkende-august.homelinux.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753364Ab2JGUTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 16:19:12 -0400
+Date: Sun, 7 Oct 2012 16:18:54 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Airlie <airlied@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121007201854.GA6628@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Dave Airlie <airlied@gmail.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Kees Cook <keescook@chromium.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Serge Hallyn <serge.hallyn@canonical.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20121003164712.GF2527@linux.vnet.ibm.com>
+ <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
+ <20121003200314.GR2527@linux.vnet.ibm.com>
+ <20121004015539.GA19958@srcf.ucam.org>
+ <20121004143150.GA2464@linux.vnet.ibm.com>
+ <20121005164642.GA10711@linux.vnet.ibm.com>
+ <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
+ <20121007014447.GB2485@linux.vnet.ibm.com>
+ <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
+ <20121007163029.GG2485@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121007163029.GG2485@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My sound setup works fine with 3.5.4, but have serious problems with 3.6.0
+On Sun, Oct 07, 2012 at 09:30:29AM -0700, Paul E. McKenney wrote:
+ 
+ > > I think Kconfig is mostly what distro would like to use the thing is
+ > > the Kconfig text needs to be there upfront when its merged, not two
+ > > months later, since then it too late for a distro to notice.
+ > > 
+ > > I'd bet most distros would read the warnings, but in a lot of cases
+ > > the warning don't exist until its too late.
+ > 
+ > In the case of CONFIG_RCU_USER_QS you are quite right, the warning
+ > should have been there from the beginning and was not.  I suppose you
+ > could argue that the warning was not sufficiently harsh in the case of
+ > CONFIG_RCU_FAST_NO_HZ, but either way it did get ignored:
 
-It is sound through jack that breaks, simply using "aplay" directly with the
-alsa device works.
+Maybe if we had a universally agreed upon tag for kconfig, like
+"distro recommendation: N" that would make things obvious, and also allow
+those of us unfortunate enough to maintain distro kernels to have something
+to easily grep for.  This would also catch the case when you eventually (hopefully)
+flip from an N to a Y.
 
-When I use jack, my setup works fine with 3.5.4. But boot into 3.6.0,
-and I get badly distorted sound as if using an extremely overdone reverb effect. 
-And jack reports tons of xruns, several per second.
+There will likely still be some distros that will decide they know better
+(and I'm pretty sure eventually I'll find reason to do so myself), but it at least
+gives the feature maintainer the "I told you so" clause.
 
-This can be worked around by going from 256 to 512 frames/period in the jack
-settings. But that also double the latency, which makes keyboard playing less
-pleasant.
+Something we do quite often for our in-development kernels is enable something
+that's shiny, new and unproven, and then when we branch for a release, we turn
+it back off.  It would be great if a lot of this kind of thing could be more automated.
 
-It is not a case of 256 frames/period being (almost) too extreme for the machine. With kernel 3.5.4,
-I can use 128 frames/period and get mostly ok sound, with only an occational 
-xrun (and a correseponding pop in the sound). So I use 256 because that's solid.
-But with 3.6.0, not even 256 is enough. And it is not an occational pop, but
-awful distortion all the time.
+	Dave
 
-I don't really know what has changed from 3.5.4 to 3.6.0. The hd-audio driver?
-Something in alsa? Or the scheduling?
-
-Machine: Dell precision M6600 laptop, 8GB, 2.2GHz quad-core i7.
-         Usually at 800MHz to save power, this is enough for making sound.
-Kernels: 64-bit 3.5.4 or 3.6.0
-Distro: funtoo
-
-Audio according to lspci:
-00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset Family High Definition Audio Controller (rev 04)
-
-Please tell if there is anything I should try. I can test other kernel versions
-or try patches.
-
-Helge Hafting
