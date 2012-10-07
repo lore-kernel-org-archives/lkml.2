@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab2JGGgX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 02:36:23 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35014 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab2JGGgV (ORCPT
+	id S1751787Ab2JGGhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 02:37:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55408 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab2JGGhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 02:36:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <22758.1349565339@warthog.procyon.org.uk>
-References: <22758.1349565339@warthog.procyon.org.uk>
-Date: Sun, 7 Oct 2012 08:36:20 +0200
-X-Google-Sender-Auth: wcTzIy_rNefFnfiwewL8omqSJkQ
-Message-ID: <CAMuHMdX2TgSbTj8yjyRKXT=RJ0E+efR7FH-vzoWL8+-SCUN29w@mail.gmail.com>
-Subject: Re:
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@osdl.org, arnd@arndb.de, hpa@zytor.com, catalin.marinas@arm.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, ddaney.cavm@gmail.com,
-        Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 7 Oct 2012 02:37:14 -0400
+Subject: Re: AW: [REGRESSION] Kernel 3.6 drops network packets instead of
+ forwarding
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Chini, Georg (HP App Services)" <georg.chini@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <B3A09DD14C7DC341B8B4D309FE5DD1BE1513FAA4@G2W2525.americas.hpqcorp.net>
+References: <B3A09DD14C7DC341B8B4D309FE5DD1BE1513FAA4@G2W2525.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 07 Oct 2012 08:37:09 +0200
+Message-ID: <1349591829.21172.2042.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 7, 2012 at 1:15 AM, David Howells <dhowells@redhat.com> wrote:
->  (3) m68k turned out to have a header installation problem due to it lacking a
->      kvm_para.h file.
+On Sat, 2012-10-06 at 17:52 +0000, Chini, Georg (HP App Services) wrote:
+> Hello,
+> 
+> > Looks like the bug fixed by : 
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f4ef85bbda96324785097356336bc79cdd37db0a
+> >
+> > (David Miller will send it to stable team shortly)
+> 
+> Yes, you are right. Applied the patch and it fixes the problem.
+> Thanks a lot for your help.
 
-Sh also.
+Thanks for testing !
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
