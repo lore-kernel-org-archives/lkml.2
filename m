@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab2JGN11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 09:27:27 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:57522 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab2JGN1T (ORCPT
+	id S1752825Ab2JGN23 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 09:28:29 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:57797 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2JGN2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 09:27:19 -0400
+	Sun, 7 Oct 2012 09:28:21 -0400
 MIME-Version: 1.0
-Date: Sun, 7 Oct 2012 21:27:18 +0800
-Message-ID: <CAPgLHd8itpLei2m-T-W1U5L_Q83oejtUhSZuDfDvXQrPPNhRTQ@mail.gmail.com>
-Subject: [PATCH] drm/nouveau: remove duplicated include from nouveau_drm.c
+Date: Sun, 7 Oct 2012 21:28:20 +0800
+Message-ID: <CAPgLHd-C5NvpG7vo68kAjY4+CxDXenYU-Po-K4Z+uuvz_vZpxg@mail.gmail.com>
+Subject: [PATCH] pinctrl: remove duplicated include from pinctrl-bcm2835.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+To: swarren@wwwdotorg.org, linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-rpi-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,19 +30,19 @@ dpatch engine is used to auto generate this patch.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/gpu/drm/nouveau/nouveau_drm.c | 1 -
+ drivers/pinctrl/pinctrl-bcm2835.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index ccae8c2..f5c8ccf 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -49,7 +49,6 @@
- #include "nouveau_fbcon.h"
- #include "nouveau_fence.h"
- 
--#include "nouveau_ttm.h"
- 
- MODULE_PARM_DESC(config, "option string to pass to driver core");
- static char *nouveau_config;
+diff --git a/drivers/pinctrl/pinctrl-bcm2835.c b/drivers/pinctrl/pinctrl-bcm2835.c
+index a4adee6..f2534ed 100644
+--- a/drivers/pinctrl/pinctrl-bcm2835.c
++++ b/drivers/pinctrl/pinctrl-bcm2835.c
+@@ -29,7 +29,6 @@
+ #include <linux/irq.h>
+ #include <linux/irqdesc.h>
+ #include <linux/irqdomain.h>
+-#include <linux/irq.h>
+ #include <linux/module.h>
+ #include <linux/of_address.h>
+ #include <linux/of.h>
 
