@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab2JGIdP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 04:33:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48938 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab2JGIdM (ORCPT
+	id S1752611Ab2JGIdz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 04:33:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49521 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab2JGIdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 04:33:12 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH v4 4/4] Documentation: update nfs option in filesystem/vfat.txt
-Date: Sun,  7 Oct 2012 04:33:02 -0400
-Message-Id: <1349598782-3286-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 7 Oct 2012 04:33:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 09/17] ARM: imx: select ARM_CPU_SUSPEND if necessary
+Date: Sun, 7 Oct 2012 08:33:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-10-git-send-email-arnd@arndb.de> <20121007041233.GM20231@S2101-09.ap.freescale.net>
+In-Reply-To: <20121007041233.GM20231@S2101-09.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210070833.31597.arnd@arndb.de>
+X-Provags-ID: V02:K0:VL3aHY4aNqj38ggaj8Wa6zQW9wr8c6f6ouwjv8E0+Ym
+ NoP0/IOFi3lvQGior4DOLF1cUdB3GyV/VF3KlQtecyhVAYzQ1g
+ Fr7bk8JLZMAg50HdN2tvnuml7nWBSCE3gMmbJG64iDoPFKywUg
+ syAsXfyDzBZ6c4vnKkXvobvTGZgyWijxZb+xTQv4nNFHfnXVHW
+ HPJakomcwe2JiR/6Mplcj9efhF3Uu7RK2RVjtrTyKpc8GHWFHT
+ hMEMrkphaIyEWjsxVL1l4sc6zk6HYfWrr4eyUUr3X5g/puax6o
+ r8FL3/yWe6Wk0DIZ6z630GOkJGOj/wxLO+cZwy8Z6bJnrlhusJ
+ mD+hXlAiNypnEhoDZXgs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Sunday 07 October 2012, Shawn Guo wrote:
+> Isn't the following the approach we agreed on?
+> 
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/183222/focus=1348538
+> 
 
-update nfs option in filesystem/vfat.txt
+Yes, you are right, my mistake. That patch was already merged, I just
+accidentally picked up the older one again when going through my backlog
+and forgot to check that it still applies.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- Documentation/filesystems/vfat.txt |   23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+Dropping it from late/fixes now.
 
-diff --git a/Documentation/filesystems/vfat.txt b/Documentation/filesystems/vfat.txt
-index de1e6c4..d62f8e6 100644
---- a/Documentation/filesystems/vfat.txt
-+++ b/Documentation/filesystems/vfat.txt
-@@ -141,13 +141,26 @@ discard       -- If set, issues discard/TRIM commands to the block
- 		 device when blocks are freed. This is useful for SSD devices
- 		 and sparse/thinly-provisoned LUNs.
- 
--nfs           -- This option maintains an index (cache) of directory
--		 inodes by i_logstart which is used by the nfs-related code to
--		 improve look-ups.
--
--		 Enable this only if you want to export the FAT filesystem
-+nfs= stale_rw|nostale_ro
-+	      -- Enable this only if you want to export the FAT filesystem
- 		 over NFS
- 
-+		 stale_rw:This option maintains an index (cache) of directory
-+		 inodes by i_logstart which is used by the nfs-related code to
-+		 improve look-ups.Full file operations (read/write) over NFS is supported
-+		 but with cache eviction at NFS server, this could result in ESTALE issues.
-+
-+		 nostale_ro:This option bases the inode number and filehandle on the on-disk
-+		 location of a file in the MS-DOS directory entry.This ensures that ESTALE
-+		 will not be returned after a file is evicted from the inode cache. However,
-+		 it means that operations such as rename, create and unlink could cause
-+		 filehandles that previously pointed at one file to point at a different file,
-+		 potentially causing data corruption. For this reason, this option also mounts
-+		 the filesystem readonly.
-+
-+		 To maintain backward compatibility, '-o nfs' is also accepted, defaulting to
-+		 stale_rw
-+
- <bool>: 0,1,yes,no,true,false
- 
- TODO
--- 
-1.7.9.5
-
+	Arnd
