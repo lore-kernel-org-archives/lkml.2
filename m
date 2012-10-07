@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab2JGCoI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Oct 2012 22:44:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33543 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab2JGCoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Oct 2012 22:44:04 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 45/49] intel_idle: enable IVB Xeon support
-Date: Sat,  6 Oct 2012 22:43:15 -0400
-Message-Id: <23795e580cad5d6b73d47d51b9074ce3e58bf334.1349554106.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <1349577799-566-1-git-send-email-lenb@kernel.org>
-References: <1349577799-566-1-git-send-email-lenb@kernel.org>
-In-Reply-To: <a950c135e5b2be6ef7518d54d98a7901db1b377a.1349554105.git.len.brown@intel.com>
-References: <a950c135e5b2be6ef7518d54d98a7901db1b377a.1349554105.git.len.brown@intel.com>
-Reply-To: Len Brown <lenb@kernel.org>
-Organization: Intel Open Source Technology Center
+	id S1752383Ab2JGCqc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Oct 2012 22:46:32 -0400
+Received: from shutemov.name ([176.9.204.213]:59799 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751763Ab2JGCqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Oct 2012 22:46:31 -0400
+Date: Sun, 7 Oct 2012 05:47:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        ".linux-crypto"@vger.kernel.org
+Subject: Deadlock on poweroff
+Message-ID: <20121007024711.GA21403@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+Hi Paul and all,
 
-IVB Xeon currently shares the same parameters IVB client.
+With commit 755609a9087fa983f567dc5452b2fa7b089b591f I've got deadlock on
+poweroff.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/idle/intel_idle.c | 1 +
- 1 file changed, 1 insertion(+)
+It guess it happens because of race for cpu_hotplug.lock:
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index e872617..b0f6b4c 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -413,6 +413,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
- 	ICPU(0x2a, idle_cpu_snb),
- 	ICPU(0x2d, idle_cpu_snb),
- 	ICPU(0x3a, idle_cpu_ivb),
-+	ICPU(0x3e, idle_cpu_ivb),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
+	CPU A					CPU B
+disable_nonboot_cpus()
+_cpu_down()
+cpu_hotplug_begin()
+ mutex_lock(&cpu_hotplug.lock);
+__cpu_notify()
+padata_cpu_callback()
+__padata_remove_cpu()
+padata_replace()
+synchronize_rcu()
+					rcu_gp_kthread()
+					get_online_cpus();
+					mutex_lock(&cpu_hotplug.lock);
+
+Have you seen the issue before?
+
 -- 
-1.8.0.rc0.18.gf84667d
-
+ Kirill A. Shutemov
