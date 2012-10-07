@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab2JGXWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:22:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38161 "EHLO
+	id S1753417Ab2JGXWO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:22:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38119 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752432Ab2JGXV6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752550Ab2JGXVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:21:58 -0400
-Message-Id: <20121007225836.111413761@decadent.org.uk>
+	Sun, 7 Oct 2012 19:21:48 -0400
+Message-Id: <20121007225835.427609279@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:44 +0100
+Date: Sun, 07 Oct 2012 23:58:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Paul Clements <paul.clements@steeleye.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 010/108] vfs: dcache: use DCACHE_DENTRY_KILLED instead of DCACHE_DISCONNECTED
- in d_kill()
+Subject: [ 005/108] nbd: clear waiting_queue on shutdown
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,67 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit b161dfa6937ae46d50adce8a7c6b12233e96e7bd upstream.
+commit fded4e090c60100d709318896c79816d68d5b47d upstream.
 
-IBM reported a soft lockup after applying the fix for the rename_lock
-deadlock.  Commit c83ce989cb5f ("VFS: Fix the nfs sillyrename regression
-in kernel 2.6.38") was found to be the culprit.
+Fix a serious but uncommon bug in nbd which occurs when there is heavy
+I/O going to the nbd device while, at the same time, a failure (server,
+network) or manual disconnect of the nbd connection occurs.
 
-The nfs sillyrename fix used DCACHE_DISCONNECTED to indicate that the
-dentry was killed.  This flag can be set on non-killed dentries too,
-which results in infinite retries when trying to traverse the dentry
-tree.
+There is a small window between the time that the nbd_thread is stopped
+and the socket is shutdown where requests can continue to be queued to
+nbd's internal waiting_queue.  When this happens, those requests are
+never completed or freed.
 
-This patch introduces a separate flag: DCACHE_DENTRY_KILLED, which is
-only set in d_kill() and makes try_to_ascend() test only this flag.
+The fix is to clear the waiting_queue on shutdown of the nbd device, in
+the same way that the nbd request queue (queue_head) is already being
+cleared.
 
-IBM reported successful test results with this patch.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: local nbd_device pointers are called 'lo' not 'nbd']
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/dcache.c            |    4 ++--
- include/linux/dcache.h |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/block/nbd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 8086636..16521a9 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -389,7 +389,7 @@ static struct dentry *d_kill(struct dentry *dentry, struct dentry *parent)
- 	 * Inform try_to_ascend() that we are no longer attached to the
- 	 * dentry tree
- 	 */
--	dentry->d_flags |= DCACHE_DISCONNECTED;
-+	dentry->d_flags |= DCACHE_DENTRY_KILLED;
- 	if (parent)
- 		spin_unlock(&parent->d_lock);
- 	dentry_iput(dentry);
-@@ -1048,7 +1048,7 @@ static struct dentry *try_to_ascend(struct dentry *old, int locked, unsigned seq
- 	 * or deletion
- 	 */
- 	if (new != old->d_parent ||
--		 (old->d_flags & DCACHE_DISCONNECTED) ||
-+		 (old->d_flags & DCACHE_DENTRY_KILLED) ||
- 		 (!locked && read_seqretry(&rename_lock, seq))) {
- 		spin_unlock(&new->d_lock);
- 		new = NULL;
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index caa34e5..5920079 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -206,6 +206,8 @@ struct dentry_operations {
- #define DCACHE_MANAGED_DENTRY \
- 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
- 
-+#define DCACHE_DENTRY_KILLED	0x100000
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -445,6 +445,14 @@ static void nbd_clear_que(struct nbd_dev
+ 		req->errors++;
+ 		nbd_end_request(req);
+ 	}
 +
- extern seqlock_t rename_lock;
++	while (!list_empty(&lo->waiting_queue)) {
++		req = list_entry(lo->waiting_queue.next, struct request,
++				 queuelist);
++		list_del_init(&req->queuelist);
++		req->errors++;
++		nbd_end_request(req);
++	}
+ }
  
- static inline int dname_external(struct dentry *dentry)
+ 
+@@ -594,6 +602,7 @@ static int __nbd_ioctl(struct block_devi
+ 		lo->file = NULL;
+ 		nbd_clear_que(lo);
+ 		BUG_ON(!list_empty(&lo->queue_head));
++		BUG_ON(!list_empty(&lo->waiting_queue));
+ 		if (file)
+ 			fput(file);
+ 		return 0;
 
 
