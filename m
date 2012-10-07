@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2JGS2J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:28:09 -0400
-Received: from nm6.bullet.mail.ne1.yahoo.com ([98.138.90.69]:45216 "HELO
-	nm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753545Ab2JGS16 (ORCPT
+	id S1753936Ab2JGSgP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 14:36:15 -0400
+Received: from nm15-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.208]:24479 "HELO
+	nm15-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751649Ab2JGSgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:27:58 -0400
-X-Yahoo-Newman-Id: 618179.30800.bm@omp1007.access.mail.mud.yahoo.com
+	Sun, 7 Oct 2012 14:36:05 -0400
+X-Yahoo-Newman-Id: 857192.95483.bm@omp1015.access.mail.sp2.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: tTEgd38VM1mvF81jP4IHbep7THcKkfqcui3238eEX1jj5wq
- oOiykpKEYvAOVMLUH1hvTPy6u.rT1u022YkXMzlgzxOBU0f0qCHFYtU4q6XE
- TPOsDQw5JqYQcNEpMBNfDq17UeXhfAUY4VafGN.6tjy63SUsQKxvLQX3gfdD
- qrbR1cfzSDeyHaZFfVtYGr9NRU_IIzA9_Dz2gTjvgHr7Ud0ec9UjgcGqcrma
- Xb1jViAwi43z_SIshwqZQQdAxzYeSKHPPTIqnJWE0q4aL.HDby7QQxKCkuBm
- aJuKDdkPZM82q2lGQu60o2EqT6aZuySkqOVuuQaTdLsIjDp6zMtWRiuLc4co
- kOHEJlbG3onkT2aCsEAjXglBsRSjSibCkjQ8JyKXMSrF4dIURRg0MTiiG77v
- x4O65F5S52_Fklj_mu6uQoAl7wcPzUG6f1Heh0p5Bbgfcr0MrGlE-
+X-YMail-OSG: ljofvr8VM1l5cXYb3WSvbnU.z0ZMTtPDSpvF2nKMSanb5tm
+ U.kIHjvdArT7d6BlEmlM_wnVSVcM2irjFYz8MLjWCN3iAX.EN31soy0ldL.f
+ Dp3TFpb3N1WjLu1e91l6VeIfDlx5uWCwnROU.QdgFYAfifGvc2oFT3wYZhPA
+ K1zalcODM4nVVPrcjUM5VuNrk07ktclot1YK2N_rS5d7cxUwBLi_G77ceauc
+ AGiDS4x7zZX7jPzfDsKFzzxKgfUxIV.aOfRjQkqxnsZVnXHXR0M4SAaaA..K
+ x870uyfMXlkgD4PtIrgGjObhH_hq49R23AeV4Fjy5CPEwOZhLx80cKDmP.ID
+ yfUkqzlX5yy6JR9V4wpgzztxORNeTtdkNOuYAYMxj9avqB3ZIucYT_xihriY
+ AC.nkFa_6rvShOwNY59uTw7pg0QvdV_fqTJu4yKmuDyaI7KJBBg--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <5071C9AE.2010106@att.net>
-Date: Sun, 07 Oct 2012 13:27:58 -0500
+Message-ID: <5071CB92.2040703@att.net>
+Date: Sun, 07 Oct 2012 13:36:02 -0500
 From: Daniel Santos <danielfsantos@att.net>
 Reply-To: Daniel Santos <daniel.santos@pobox.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Andi Kleen <ak@linux.intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
+        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
         David Daney <david.daney@cavium.com>,
         David Howells <dhowells@redhat.com>,
         David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
@@ -37,72 +36,49 @@ To: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Pavel Pisa <pisa@cmp.felk.cvut.cz>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Santos <daniel.santos@pobox.com>
-Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-3-git-send-email-daniel.santos@pobox.com> <20121006231041.GB3278@liondog.tnic>
-In-Reply-To: <20121006231041.GB3278@liondog.tnic>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 0/10] Cleanup & new features for compiler*.h and bug.h
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com> <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
 X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2012 06:10 PM, Borislav Petkov wrote:
-> On Fri, Oct 05, 2012 at 02:42:42PM -0500, danielfsantos@att.net wrote:
->> Using GCC_VERSION reduces complexity, is easier to read and is GCC's
->> recommended mechanism for doing version checks. (Just don't ask me why
->> they didn't define it in the first place.)  This also makes it easy to
->> merge compiler-gcc{,3,4}.h should somebody want to.
->>
->> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
->> Acked-by: David Rientjes <rientjes@google.com>
->> ---
+I just realized that in my patch set header I didn't specify that this
+version of the patches is based against -mm.  However, I did not test
+against -mm, I rebased them to mainline, merged some conflicts and made
+some changes and tested there and I'm running that kernel now (that is,
+with all of my patches, including fair scheduler using the generic
+red-black tree).
+
+This patch set builds fine against -mm & -next, but I just can't get
+either of those to run correctly on my machine, even without my
+patches.  (Sorry, that I don't have an actual test machine at the moment.)
+
+On 10/05/2012 02:35 PM, danielfsantos@att.net wrote:
+> This patch set is a dependency of the generic red-black tree patch set, which
+> I have now split up into three smaller sets.
 >
-> [ … ]
+> The major aim of this patch set is to cleanup compiler-gcc*.h and improve the
+> manageability of of compiler features at various versions (when they are
+> broken, etc.), and to cleanup & add some needed features to bug.h.
 >
->> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
->> index 4506d65..bbfeb13 100644
->> --- a/include/linux/compiler-gcc4.h
->> +++ b/include/linux/compiler-gcc4.h
->> @@ -4,7 +4,7 @@
->>  
->>  /* GCC 4.1.[01] miscompiles __weak */
->>  #ifdef __KERNEL__
->> -# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
->> +# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
->>  //#  error Your version of gcc miscompiles the __weak directive
+> compiler-gcc*.h
+> o Introduce GCC_VERSION - (e.g., gcc 4.7.1 becomes 40701)
+> o Reorder all features based upon the version introduced (readability)
+> o Change all version checks to use GCC_VERSION
+> o Remove redundant __linktime_error
 >
-> Did I miss something again? This "error" preprocessor function is
-> commented out here? Why?
-We'll have to ask Andrew.  Maybe so he can test on those versions of gcc?
-
-commit d3ffe64a1dbcfe18b57f90f7c01c40c93d0a8b92
-Author: Andrew Morton <akpm@linux-foundation.org>
-Date:   Fri Sep 28 00:02:42 2012 +0000
-
-    a
-   
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 934bc34..997fd8a 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -5,7 +5,7 @@
- /* GCC 4.1.[01] miscompiles __weak */
- #ifdef __KERNEL__
- # if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
--#  error Your version of gcc miscompiles the __weak directive
-+//#  error Your version of gcc miscompiles the __weak directive
- # endif
- #endif
-
-
-I can provide you a version of these patches rebased against Linus if
-you like, which I am using to test since the -mm & -next trees aren't
-working on my machine (hardware, .config and/or LVM/RAID setup). I
-haven't put Walken's patches underneath them however.
-
+> bug.h
+> o Improve BUILD_BUG_ON(expr) - Will now generate a compile-time error and in
+>   gcc-4.4+, also emits an error message containing the expression that failed.
+> o Add BUILD_BUG_ON_MSG(expr, msg) - Like BUILD_BUG_ON, except that you can
+>   specify the error message that is emitted (again, gcc-4.4+).
+> o Add BUILD_BUG_ON_INTERNAL(expr, fn, msg) - contains a generic implementation
+>   of BUILG_BUG_ON{_MSG}.
+> o Finally, the implementations of BUILD_BUG{,_ON,_ON_MSG} is consolidated,
+>   eliminating duplicate code.
 
