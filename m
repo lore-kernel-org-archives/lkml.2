@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab2JGXW6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:22:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38377 "EHLO
+	id S1754617Ab2JGXXP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38490 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753986Ab2JGXWf (ORCPT
+	by vger.kernel.org with ESMTP id S1754290Ab2JGXWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:35 -0400
-Message-Id: <20121007225845.631405306@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:48 -0400
+Message-Id: <20121007225843.414964653@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:53 +0100
+Date: Sun, 07 Oct 2012 23:59:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 079/108] xfrm_user: fix info leak in copy_to_user_state()
+        Miklos Szeredi <miklos@szeredi.hu>, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 063/108] vfs: dcache: fix deadlock in tree traversal
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Miklos Szeredi <miklos@szeredi.hu>
 
-[ Upstream commit f778a636713a435d3a922c60b1622a91136560c1 ]
+commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
 
-The memory reserved to dump the xfrm state includes the padding bytes of
-struct xfrm_usersa_info added by the compiler for alignment (7 for
-amd64, 3 for i386). Add an explicit memset(0) before filling the buffer
-to avoid the info leak.
+IBM reported a deadlock in select_parent().  This was found to be caused
+by taking rename_lock when already locked when restarting the tree
+traversal.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+There are two cases when the traversal needs to be restarted:
+
+ 1) concurrent d_move(); this can only happen when not already locked,
+    since taking rename_lock protects against concurrent d_move().
+
+ 2) racing with final d_put() on child just at the moment of ascending
+    to parent; rename_lock doesn't protect against this rare race, so it
+    can happen when already locked.
+
+Because of case 2, we need to be able to handle restarting the traversal
+when rename_lock is already held.  This patch fixes all three callers of
+try_to_ascend().
+
+IBM reported that the deadlock is gone with this patch.
+
+[ I rewrote the patch to be smaller and just do the "goto again" if the
+  lock was already held, but credit goes to Miklos for the real work.
+   - Linus ]
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/xfrm/xfrm_user.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/dcache.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index 7f53c82..f252cae 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -689,6 +689,7 @@ out:
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 0364af2..693f95b 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1134,6 +1134,8 @@ positive:
+ 	return 1;
  
- static void copy_to_user_state(struct xfrm_state *x, struct xfrm_usersa_info *p)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->id, &x->id, sizeof(p->id));
- 	memcpy(&p->sel, &x->sel, sizeof(p->sel));
- 	memcpy(&p->lft, &x->lft, sizeof(p->lft));
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -1236,6 +1238,8 @@ out:
+ rename_retry:
+ 	if (found)
+ 		return found;
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
+@@ -3035,6 +3039,8 @@ resume:
+ 	return;
+ 
+ rename_retry:
++	if (locked)
++		goto again;
+ 	locked = 1;
+ 	write_seqlock(&rename_lock);
+ 	goto again;
 
 
