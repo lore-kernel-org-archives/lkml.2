@@ -1,136 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2JGPJK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 11:09:10 -0400
-Received: from mail.servus.at ([193.170.194.20]:53326 "EHLO mail.servus.at"
+	id S1753397Ab2JGPZr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:25:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45942 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab2JGPJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 11:09:06 -0400
-Date: Sun, 7 Oct 2012 17:09:02 +0200
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Stezenbach <js@sig21.net>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-Subject: [PATCH 3/3] lib/lzo: Optimize code for CPUs with inefficient
- unaligned access
-Message-ID: <5f702781f158cb59075cfa97e5c21f52275057f1.1349621096.git.markus@oberhumer.com>
-References: <cover.1349621096.git.markus@oberhumer.com>
+	id S1753300Ab2JGPZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 11:25:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,547,1344236400"; 
+   d="scan'208";a="201553875"
+Message-ID: <50719EEC.7090302@zytor.com>
+Date: Sun, 07 Oct 2012 23:25:32 +0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1349621096.git.markus@oberhumer.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Seiji Aguchi <seiji.aguchi@hds.com>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [PATCH v4] trace,x86: add x86 irq vector tracepoints
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com>   <50612729.2080307@zytor.com>   <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>   <50650A7E.90807@zytor.com>   <A5ED84D3BB3A384992CBB9C77DEDA4D413869FD7@USINDEM103.corp.hds.com>  <1349446428.6755.56.camel@gandalf.local.home> <506F7849.2080805@zytor.com> <1349492261.6755.87.camel@gandalf.local.home>
+In-Reply-To: <1349492261.6755.87.camel@gandalf.local.home>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some code paths are only benefical on machines with fast unaligned
-loads, so only use these if CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-defined.
+On 10/06/2012 10:57 AM, Steven Rostedt wrote:
+> 
+> I didn't say anything magic, but a table of pointers that are very
+> critical for the system running. Should we implement it with a single
+> switch, like we discussed in San Diego to do with the system call table?
+> 
+> That is, have a "normal" table, and a "trace" table. The trace table
+> points to functions that have tracepoints. The first enabler of tracing
+> switches the table to use the tracepoints, and the last disabler
+> switches it back?
+> 
 
-Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
----
- lib/lzo/lzo1x_compress.c        |    4 ++--
- lib/lzo/lzo1x_decompress_safe.c |   15 ++++++++++++---
- lib/lzo/lzodefs.h               |    2 +-
- 3 files changed, 15 insertions(+), 6 deletions(-)
+That is certainly a reasonable implementation option.  It is slightly
+less usable than it is for system calls, though, because the vectors in
+the IDTs are somewhat scrambled and so you can't just do an indirect
+jump to the original vector content.  This does get messy because you
+also want to preserve registers...
 
-diff --git a/lib/lzo/lzo1x_compress.c b/lib/lzo/lzo1x_compress.c
-index d42efe5..1593dba 100644
---- a/lib/lzo/lzo1x_compress.c
-+++ b/lib/lzo/lzo1x_compress.c
-@@ -90,7 +90,7 @@ next:
- 
- 		m_len = 4;
- 		{
--#if defined(LZO_USE_CTZ64)
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && defined(LZO_USE_CTZ64)
- 		u64 v;
- 		v = get_unaligned((const u64 *) (ip + m_len)) ^
- 		    get_unaligned((const u64 *) (m_pos + m_len));
-@@ -110,7 +110,7 @@ next:
- #  else
- #    error "missing endian definition"
- #  endif
--#elif defined(LZO_USE_CTZ32)
-+#elif defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && defined(LZO_USE_CTZ32)
- 		u32 v;
- 		v = get_unaligned((const u32 *) (ip + m_len)) ^
- 		    get_unaligned((const u32 *) (m_pos + m_len));
-diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
-index 0dba30c..569985d 100644
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -64,6 +64,7 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 				}
- 				t += 3;
- copy_literal_run:
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
-@@ -77,7 +78,9 @@ copy_literal_run:
- 					} while (ip < ie);
- 					ip = ie;
- 					op = oe;
--				} else {
-+				} else
-+#endif
-+				{
- 					NEED_OP(t);
- 					NEED_IP(t + 3);
- 					do {
-@@ -148,6 +151,7 @@ copy_literal_run:
- 			m_pos -= 0x4000;
- 		}
- 		TEST_LB(m_pos);
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
- 			if (likely(HAVE_OP(t + 15))) {
-@@ -173,7 +177,9 @@ copy_literal_run:
- 					*op++ = *m_pos++;
- 				} while (op < oe);
- 			}
--		} else {
-+		} else
-+#endif
-+		{
- 			unsigned char *oe = op + t;
- 			NEED_OP(t);
- 			op[0] = m_pos[0];
-@@ -187,11 +193,14 @@ copy_literal_run:
- match_next:
- 		state = next;
- 		t = next;
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
--		} else {
-+		} else
-+#endif
-+		{
- 			NEED_IP(t + 3);
- 			NEED_OP(t);
- 			while (t > 0) {
-diff --git a/lib/lzo/lzodefs.h b/lib/lzo/lzodefs.h
-index ddc8db5..5a4beb2 100644
---- a/lib/lzo/lzodefs.h
-+++ b/lib/lzo/lzodefs.h
-@@ -29,7 +29,7 @@
- #define LZO_USE_CTZ32	1
- #elif defined(__i386__) || defined(__powerpc__)
- #define LZO_USE_CTZ32	1
--#else
-+#elif defined(__arm__) && (__LINUX_ARM_ARCH__ >= 5)
- #define LZO_USE_CTZ32	1
- #endif
- 
--- 
-1.7.1
+>>
+>>> You are the maintainer and are responsible for the outcome of changes to
+>>> the x86 arch, thus you do have final say. And if you think there's
+>>> nothing to worry about with an IDT change then Seiji should implement
+>>> it.
+>>>
+>>> I just want to point out some possible repercussions of doing it in a
+>>> more complex way. As tracepoints use nops, and I may be pushing to even
+>>> out-of-line the tracepoint unlikely part even more, I'm not sure the
+>>> complexity is worth the amount of savings it would be against just
+>>> adding the tracepoint in the code.
+>>
+>> The problem I'm seeing is the constant "oh, just a little bit more."  My
+>> experience over the years is that there is always demand for "just one
+>> more debug feature", each of which has negible cost, because they always
+>> use the previous thing as a baseline... noone ever looks at the grand
+>> total cost of the package (and by the time that happens, it is too late.)
+> 
+> Now I can turn this back at you ;-)  We can implement the simple "just
+> add the tracepoints in the code" first, and then later implement the
+> table swap version and we can say "hey! we just made the code faster!".
+
+Can we?  My understanding how tracepoints are is that they export a
+bunch of data structures via debugfs (a.k.a. sploitfs -- any system with
+debugfs mounted really should be considered compromised from the start)
+and that they are intimately tied to how they are implemented.
+
+>>
+>> tracepoints in particular are something I'm getting concerned about,
+>> because they are one of those things that turn kernel internals into an
+>> ABI, which means misdesigned tracepoints can actually make kernel
+>> internal changes very hard to do.  The cost of those kinds of issues go
+>> up over time as the strain between where we'd like the code to be vs.
+>> where the code is increases.
+> 
+> Honestly, I'm extremely concerned about this too. In fact, I've bitched
+> about this so many times in the past, but it just fell to deaf ears:
+> 
+> http://lwn.net/Articles/412685/
+> http://lwn.net/Articles/415591/
+> http://lwn.net/Articles/416665/
+> http://lwn.net/Articles/416684/
+> 
+
+Slightly different complaint, but in the same general vein, yes.
+
+	-hpa
+
+
 
