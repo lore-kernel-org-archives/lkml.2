@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab2JGPxW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 11:53:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46536 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2JGPxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 11:53:17 -0400
-Date: Sun, 7 Oct 2012 17:53:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: jdelvare@suse.de, mmarek@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild fixes
-Message-ID: <20121007155310.GA25356@pobox.suse.cz>
+	id S1753529Ab2JGPzz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:55:55 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8870 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2JGPzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 11:55:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 07 Oct 2012 08:53:41 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <linux-kernel@vger.kernel.org>, <vbyravarasu@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 1/5] mfd: add battery charger in tps65090 sub devs
+Date: Sun, 7 Oct 2012 20:52:16 +0530
+Message-ID: <1349623340-21807-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1349623340-21807-1-git-send-email-ldewangan@nvidia.com>
+References: <1349623340-21807-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+TPS65090 supports the battery charging and hence adding
+the device name in the list of TPS65090 children. Also
+remove the tps65090-regulator as it duplicates with
+tps65090-pmic for regulator driver.
 
-there are two fixes I intended to send after v3.6-rc7, but failed to do
-so. So please pull them for v3.7-rc1 and they will be picked up by
-stable. The first one fixes gcc -x <language> syntax in various
-build-time tests, which icecream and possible other gcc wrappers did not
-understand (and yes, icecream is going to be fixed as well). The second
-one fixes make tar-pkg so that unpacking the tarball does not replace
-the /lib -> /usr/lib symlink on recent Fedora releases.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/mfd/tps65090.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
-Michal
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index 074ae32..9b79d68 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -74,7 +74,7 @@ static struct mfd_cell tps65090s[] = {
+ 		.name = "tps65090-pmic",
+ 	},
+ 	{
+-		.name = "tps65090-regulator",
++		.name = "tps65090-charger",
+ 	},
+ };
+ 
+-- 
+1.7.1.1
 
-The following changes since commit 979570e02981d4a8fc20b3cc8fd651856c98ee9d:
-
-  Linux 3.6-rc7 (2012-09-23 18:10:57 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
-
-Jean Delvare (1):
-      kbuild: Fix gcc -x syntax
-
-Michal Marek (1):
-      kbuild: Do not package /boot and /lib in make tar-pkg
-
- arch/mips/Makefile                         |    2 +-
- arch/mips/kernel/Makefile                  |    2 +-
- arch/x86/Makefile                          |    4 ++--
- scripts/Kbuild.include                     |   12 ++++++------
- scripts/Makefile.fwinst                    |    4 ++--
- scripts/gcc-version.sh                     |    6 +++---
- scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
- scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
- scripts/kconfig/check.sh                   |    2 +-
- scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
- scripts/package/buildtar                   |    2 +-
- tools/perf/Makefile                        |    2 +-
- tools/power/cpupower/Makefile              |    2 +-
- 13 files changed, 22 insertions(+), 22 deletions(-)
