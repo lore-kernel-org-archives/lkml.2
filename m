@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab2JGXfk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:35:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38460 "EHLO
+	id S1754170Ab2JGXWl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:22:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38267 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643Ab2JGXWn (ORCPT
+	by vger.kernel.org with ESMTP id S1752643Ab2JGXWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:43 -0400
-Message-Id: <20121007225843.966679575@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:12 -0400
+Message-Id: <20121007225847.286070400@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:41 +0100
+Date: Mon, 08 Oct 2012 00:00:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Avi Kivity <avi@redhat.com>, Tomas Racek <tracek@redhat.com>,
-        Michael Tokarev <mjt@tls.msk.ru>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 067/108] x86/alternatives: Fix p6 nops on non-modular kernels
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 091/108] ipv6: release reference of ip6_null_entrys dst entry  in __ip6_del_rt
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,44 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avi Kivity <avi@redhat.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit cb09cad44f07044d9810f18f6f9a6a6f3771f979 upstream.
+[ Upstream commit 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b ]
 
-Probably a leftover from the early days of self-patching, p6nops
-are marked __initconst_or_module, which causes them to be
-discarded in a non-modular kernel.  If something later triggers
-patching, it will overwrite kernel code with garbage.
+as we hold dst_entry before we call __ip6_del_rt,
+so we should alse call dst_release not only return
+-ENOENT when the rt6_info is ip6_null_entry.
 
-Reported-by: Tomas Racek <tracek@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: qemu-devel@nongnu.org
-Cc: Anthony Liguori <anthony@codemonkey.ws>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>
-Link: http://lkml.kernel.org/r/5034AE84.90708@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+and we already hold the dst entry, so I think it's
+safe to call dst_release out of the write-read lock.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/alternative.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/route.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index afb7ff7..ced4534 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -165,7 +165,7 @@ static const unsigned char * const k7_nops[ASM_NOP_MAX+2] =
- #endif
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 2e21751..488a1b7 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1435,17 +1435,18 @@ static int __ip6_del_rt(struct rt6_info *rt, struct nl_info *info)
+ 	struct fib6_table *table;
+ 	struct net *net = dev_net(rt->rt6i_dev);
  
- #ifdef P6_NOP1
--static const unsigned char  __initconst_or_module p6nops[] =
-+static const unsigned char p6nops[] =
- {
- 	P6_NOP1,
- 	P6_NOP2,
+-	if (rt == net->ipv6.ip6_null_entry)
+-		return -ENOENT;
++	if (rt == net->ipv6.ip6_null_entry) {
++		err = -ENOENT;
++		goto out;
++	}
+ 
+ 	table = rt->rt6i_table;
+ 	write_lock_bh(&table->tb6_lock);
+-
+ 	err = fib6_del(rt, info);
+-	dst_release(&rt->dst);
+-
+ 	write_unlock_bh(&table->tb6_lock);
+ 
++out:
++	dst_release(&rt->dst);
+ 	return err;
+ }
+ 
 
 
