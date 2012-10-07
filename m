@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab2JGQVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 12:21:12 -0400
-Received: from smtp.intuilab.com ([93.93.42.171]:38046 "EHLO
-	zimbra.intuilab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2JGQVD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 12:21:03 -0400
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification  implementation
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <CAN+gG=FOnFDn4BdEQUt0dbQRj-6PrhRzSOqM620xSM3DeTXt_Q@mail.gmail.com>
-Date: Sun, 7 Oct 2012 18:20:54 +0200
-Cc: Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        =?iso-8859-1?Q?Fabien_Andr=E9?= <fabien.andre@gmail.com>,
-        =?utf-8?B?5YqJ5ZiJ6ae/?= <scott.liu@emc.com.tw>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, USB list <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <91E2364F-9A56-4222-A876-BEC6D474EC75@enac.fr>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>< 20121006220421.47f5fd56@endymion.delvare><6F756B9E-DC87-4EF6-BB09-8A69A5F8C 999@enac.fr><20121006231111.6350c014@endymion.delvare><alpine.LNX.2.00.1210 062314110.27782@pobox.suse.cz><alpine.LNX.2.00.1210062326150.27782@pobox.su se.cz><914C6C58-5A3B-4F7D-94BE-EF6868ED5D9D@enac.fr> <CAN+gG=FOnFDn4BdEQUt0dbQRj-6PrhRzSOqM620xSM3DeTXt_Q@mail.gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1753405Ab2JGQaq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 12:30:46 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:48792 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593Ab2JGQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 12:30:39 -0400
+Date: Sun, 7 Oct 2012 09:30:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121007163029.GG2485@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121003161702.GA22008@kroah.com>
+ <20121003164712.GF2527@linux.vnet.ibm.com>
+ <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
+ <20121003200314.GR2527@linux.vnet.ibm.com>
+ <20121004015539.GA19958@srcf.ucam.org>
+ <20121004143150.GA2464@linux.vnet.ibm.com>
+ <20121005164642.GA10711@linux.vnet.ibm.com>
+ <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
+ <20121007014447.GB2485@linux.vnet.ibm.com>
+ <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12100716-6078-0000-0000-00001068A113
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Le 7 oct. 2012 à 18:07, Benjamin Tissoires a écrit :
->>> 
->>> Basically, to me this all boils down to the question -- what is more
->>> important: low-level transport being used, or the general function of the
->>> device?
->>> 
->>> To me, it's the latter, and as such, everything would belong under
->>> drivers/hid.
->> 
->> Then shouldn't is be drivers/input, rather?
+On Sun, Oct 07, 2012 at 12:33:48PM +1000, Dave Airlie wrote:
+> >>
+> >> Really I would much prefer to add some "Don't enable it unless you're
+> >> doing kernel hacking.
+> >> If unsure say N" text in the Kconfig.
+> >>
+> >> I can understand that distros want to cover as much feature as they
+> >> can for their users. But
+> >> should it be an excuse for not reading outstanding warnings in Kconfig
+> >> help text?
+> >
+> > In my experience, they do not read these warnings carefully.  :-(
+> > Or perhaps they do read them, but react to them by running the code
+> > through some test suite rather than by putting full faith in the
+> > warning.
 > 
-> Ouch, it will introduce more and more complexity.
-
-Purely rhetorical question, I agree. But still.
-
+> I think Kconfig is mostly what distro would like to use the thing is
+> the Kconfig text needs to be there upfront when its merged, not two
+> months later, since then it too late for a distro to notice.
 > 
-> It seems that hid transport layers should go in drivers/hid.
-> However, I don't like mixing the transport layer and the final
-> drivers. Maybe this is the time to rework a little bit the tree.
-> To minimize the moves, we could introduce:
-> drivers/hid/busses/usb
-> drivers/hid/busses/i2c
-> drivers/hid/busses/bluetooth
+> I'd bet most distros would read the warnings, but in a lot of cases
+> the warning don't exist until its too late.
 
-What about creating drivers/hid/core and move all generic stuff there? That is:
-drivers/hid/core
-drivers/hid/usb
-drivers/hid/i2c
-drivers/hid/bluetooth
+In the case of CONFIG_RCU_USER_QS you are quite right, the warning
+should have been there from the beginning and was not.  I suppose you
+could argue that the warning was not sufficiently harsh in the case of
+CONFIG_RCU_FAST_NO_HZ, but either way it did get ignored:
 
-Cheers,
+config RCU_FAST_NO_HZ
+	bool "Accelerate last non-dyntick-idle CPU's grace periods"
+	depends on TREE_RCU && NO_HZ && SMP
+	default n
+	help
+	  This option causes RCU to attempt to accelerate grace periods
+	  in order to allow the final CPU to enter dynticks-idle state
+	  more quickly.  On the other hand, this option increases the
+	  overhead of the dynticks-idle checking, particularly on systems
+	  with large numbers of CPUs.
 
-St.
+	  Say Y if energy efficiency is critically important, particularly
+	  	if you have relatively few CPUs.
 
+	  Say N if you are unsure.
+
+I have since made RCU_FAST_NO_HZ more generally applicable, so it is
+OK to enable now.  I suppose I need to update the help text...
+
+Either way, however, it would be good to tag an experimental config
+option at boot time.  Even if the help text gives very clear warnings,
+it would be good to have the option defend itself against the occasional
+inevitable typo.
+
+							Thanx, Paul
+
+> Dave.
+> 
+> 
+> >> Or may be add some specific warning yeah. I wouldn't mind much.
+> >
+> > We have some weeks to think about it -- I cannot see pushing a
+> > warning in as a regression.  ;-)
+> >
+> >                                                         Thanx, Paul
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
