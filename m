@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2JGXbO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:31:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38585 "EHLO
+	id S1754324Ab2JGXXE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38406 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754063Ab2JGXXF (ORCPT
+	by vger.kernel.org with ESMTP id S1754082Ab2JGXWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:05 -0400
-Message-Id: <20121007225841.350586705@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:37 -0400
+Message-Id: <20121007225844.240289438@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:22 +0100
+Date: Sun, 07 Oct 2012 23:59:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>,
-        =?ISO-8859-15?q?Jakub=20Hus=C3=A1k?= <jakub@gooseman.cz>
-Subject: [ 048/108] md/raid10: fix "enough" function for detecting if array is failed.
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 069/108] HID: hidraw: fix list->buffer memleak
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Matthieu CASTET <matthieu.castet@parrot.com>
 
-commit 80b4812407c6b1f66a4f2430e69747a13f010839 upstream.
+commit 4c7b417ecb756e85dfc955b0e7a04fd45585533e upstream.
 
-The 'enough' function is written to work with 'near' arrays only
-in that is implicitly assumes that the offset from one 'group' of
-devices to the next is the same as the number of copies.
-In reality it is the number of 'near' copies.
+If we don't read fast enough hidraw device, hidraw_report_event
+will cycle and we will leak list->buffer.
+Also list->buffer are not free on release.
+After this patch, kmemleak report nothing.
 
-So change it to make this number explicit.
-
-This bug makes it possible to run arrays without enough drives
-present, which is dangerous.
-It is appropriate for an -stable kernel, but will almost certainly
-need to be modified for some of them.
-
-Reported-by: Jakub Husák <jakub@gooseman.cz>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bwh: Backported to 3.2: s/geo->/conf->/]
+Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid10.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/hid/hidraw.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1226,14 +1226,16 @@ static int enough(struct r10conf *conf,
- 	do {
- 		int n = conf->copies;
- 		int cnt = 0;
-+		int this = first;
- 		while (n--) {
--			if (conf->mirrors[first].rdev &&
--			    first != ignore)
-+			if (conf->mirrors[this].rdev &&
-+			    this != ignore)
- 				cnt++;
--			first = (first+1) % conf->raid_disks;
-+			this = (this+1) % conf->raid_disks;
+diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+index 36fa77b..3b6f7bf 100644
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -96,6 +96,7 @@ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count,
  		}
- 		if (cnt == 0)
- 			return 0;
-+		first = (first + conf->near_copies) % conf->raid_disks;
- 	} while (first != 0);
- 	return 1;
- }
+ 
+ 		kfree(list->buffer[list->tail].value);
++		list->buffer[list->tail].value = NULL;
+ 		list->tail = (list->tail + 1) & (HIDRAW_BUFFER_SIZE - 1);
+ 	}
+ out:
+@@ -300,6 +301,7 @@ static int hidraw_release(struct inode * inode, struct file * file)
+ 	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
+ 	int ret;
++	int i;
+ 
+ 	mutex_lock(&minors_lock);
+ 	if (!hidraw_table[minor]) {
+@@ -317,6 +319,9 @@ static int hidraw_release(struct inode * inode, struct file * file)
+ 			kfree(list->hidraw);
+ 		}
+ 	}
++
++	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
++		kfree(list->buffer[i].value);
+ 	kfree(list);
+ 	ret = 0;
+ unlock:
+@@ -446,12 +451,17 @@ int hidraw_report_event(struct hid_device *hid, u8 *data, int len)
+ 	int ret = 0;
+ 
+ 	list_for_each_entry(list, &dev->list, node) {
++		int new_head = (list->head + 1) & (HIDRAW_BUFFER_SIZE - 1);
++
++		if (new_head == list->tail)
++			continue;
++
+ 		if (!(list->buffer[list->head].value = kmemdup(data, len, GFP_ATOMIC))) {
+ 			ret = -ENOMEM;
+ 			break;
+ 		}
+ 		list->buffer[list->head].len = len;
+-		list->head = (list->head + 1) & (HIDRAW_BUFFER_SIZE - 1);
++		list->head = new_head;
+ 		kill_fasync(&list->fasync, SIGIO, POLL_IN);
+ 	}
+ 
 
 
