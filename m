@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab2JGXcj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:32:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38547 "EHLO
+	id S1754662Ab2JGXch (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:32:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38550 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754483Ab2JGXXA (ORCPT
+	by vger.kernel.org with ESMTP id S1754494Ab2JGXXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:23:00 -0400
-Message-Id: <20121007225841.764902449@decadent.org.uk>
+Message-Id: <20121007225841.901967507@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:25 +0100
+Date: Sun, 07 Oct 2012 23:59:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Manoj Iyer <manoj.iyer@canonical.com>,
-        Chris Gagnon <chris.gagnon@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 051/108] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4) BCM20702A0
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        John Hommel <john.hommel@hp.com>
+Subject: [ 052/108] Bluetooth: Use USB_VENDOR_AND_INTERFACE() for Broadcom devices
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-commit 61c964ba1748e984cb232b431582815899bf10fe upstream.
+commit 92c385f46b30f4954e9dd2d2005c12d233b479ea upstream.
 
-Patch adds support for BCM20702A0 device id (0a5c:21f4).
+Many Broadcom devices has a vendor specific devices class, with this rule
+we match all existent and future controllers with this behavior.
 
-usb-devices after patch was applied:
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+We also remove old rules to that matches product id for Broadcom devices.
 
-usb-devices before patch was applied:
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Tested-by: Chris Gagnon <chris.gagnon@canonical.com>
+Tested-by: John Hommel <john.hommel@hp.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/btusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/bluetooth/btusb.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index e272214..da6aa39 100644
+index 2fe7776..e791b20 100644
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -98,6 +98,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0a5c, 0x21e6) },
- 	{ USB_DEVICE(0x0a5c, 0x21e8) },
- 	{ USB_DEVICE(0x0a5c, 0x21f3) },
-+	{ USB_DEVICE(0x0a5c, 0x21f4) },
+@@ -94,16 +94,14 @@ static struct usb_device_id btusb_table[] = {
+ 
+ 	/* Broadcom BCM20702A0 */
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+-	{ USB_DEVICE(0x0a5c, 0x21e3) },
+-	{ USB_DEVICE(0x0a5c, 0x21e6) },
+-	{ USB_DEVICE(0x0a5c, 0x21e8) },
+-	{ USB_DEVICE(0x0a5c, 0x21f3) },
+-	{ USB_DEVICE(0x0a5c, 0x21f4) },
  	{ USB_DEVICE(0x413c, 0x8197) },
  
  	/* Foxconn - Hon Hai */
+ 	{ USB_DEVICE(0x0489, 0xe033) },
+ 
++	/*Broadcom devices with vendor specific id */
++	{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) },
++
+ 	{ }	/* Terminating entry */
+ };
+ 
 
 
