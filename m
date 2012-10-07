@@ -1,214 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2JGIgy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 04:36:54 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55782 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab2JGIgu (ORCPT
+	id S1752692Ab2JGIs2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 04:48:28 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55396 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2JGIsZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 04:36:50 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: akpm@linux-foundation.org, viro@zeniv.linux.org.uk, mfasheh@suse.com,
-        jlbec@evilplan.org, ocfs2-devel@oss.oracle.com,
-        chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        fengguang.wu@intel.com
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Vivek Trivedi <vtrivedi018@gmail.com>
-Subject: [PATCH RESEND] writeback: change nr_pages_dirtied argument into local variable
-Date: Sun,  7 Oct 2012 04:36:34 -0400
-Message-Id: <1349598994-3386-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 7 Oct 2012 04:48:25 -0400
+MIME-Version: 1.0
+From: =?UTF-8?B?546L5oCd5rqQ?= <wangsiyuanbuaa@gmail.com>
+Date: Sun, 7 Oct 2012 16:48:04 +0800
+Message-ID: <CAKhuMP=DB2WGzNN2dXoFuJtSRCneBrToUb43KjU_OsQCrJP_UA@mail.gmail.com>
+Subject: usb 3.0 hard drive doesn't work
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason nr_pages_dirtied is argument anymore.
-because nr_pages_dirtied value from caller is not used in
-balance_dirty_pages_ratelimited_nr function.
+hi,
+i have a usb 3.0 hard drive and a laptop with usb 3.0 port.
+when the hard drive is connected to the usb 3.0 port, the drive could
+not be found.
+the dmesg output is listed below.
+additinal info:
+1) the usb 3.0 hard drive can be found when connected to usb 2.0 port.
+2) the usb 2.0 hard drive can be found when connected to usb 3.0 port.
+3) mouse works when connected to the usb 3.0 port.
+4) it is archlinux and kernel version is 3.5.5-1-ARCH
+it seems that it is not the linux driver's problem, because the mouse
+could work and the hard drive is found due to the dmesg.
+is this a bug?
+would someone help me?
+thank you!
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Vivek Trivedi <vtrivedi018@gmail.com>
----
- fs/btrfs/disk-io.c        |    8 ++++----
- fs/btrfs/file.c           |    3 +--
- fs/btrfs/ioctl.c          |    2 +-
- fs/ocfs2/file.c           |    5 +----
- fs/splice.c               |    5 +----
- include/linux/writeback.h |    9 +--------
- mm/page-writeback.c       |   11 +++++------
- 7 files changed, 14 insertions(+), 29 deletions(-)
+dmesg out put when usb 3.0 hard drive is conneted to usb 3.0 port:
+[  646.077385] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+[  646.171319] usbcore: registered new interface driver uas
+[  646.175313] Initializing USB Mass Storage driver...
+[  646.175501] scsi4 : usb-storage 2-2:1.0
+[  646.175665] usbcore: registered new interface driver usb-storage
+[  646.175667] USB Mass Storage support registered.
+[  657.149403] scsi 4:0:0:0: Direct-Access     WD       My Passport
+0730 1016 PQ: 0 ANSI: 6
+[  657.149974] sd 4:0:0:0: [sdb] 976707584 512-byte logical blocks:
+(500 GB/465 GiB)
+[  657.150223] sd 4:0:0:0: [sdb] Write Protect is off
+[  657.150232] sd 4:0:0:0: [sdb] Mode Sense: 47 00 10 08
+[  657.150456] sd 4:0:0:0: [sdb] No Caching mode page present
+[  657.150462] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+[  657.151436] sd 4:0:0:0: [sdb] No Caching mode page present
+[  657.151440] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+[  657.159907]  sdb: sdb1
+[  657.160852] sd 4:0:0:0: [sdb] No Caching mode page present
+[  657.160858] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+[  657.160861] sd 4:0:0:0: [sdb] Attached SCSI disk
+[  657.268875] usb 2-2: Device not responding to set address.
+[  657.471456] usb 2-2: Device not responding to set address.
+[  657.674211] usb 2-2: device not accepting address 2, error -71
+[  657.780745] usb 2-2: Device not responding to set address.
+[  657.983519] usb 2-2: Device not responding to set address.
+[  658.186214] usb 2-2: device not accepting address 2, error -71
+[  658.292717] usb 2-2: Device not responding to set address.
+[  658.495537] usb 2-2: Device not responding to set address.
+[  658.698277] usb 2-2: device not accepting address 2, error -71
+[  658.804774] usb 2-2: Device not responding to set address.
+[  659.007557] usb 2-2: Device not responding to set address.
+[  659.210298] usb 2-2: device not accepting address 2, error -71
+[  659.210366] usb 2-2: USB disconnect, device number 2
+[  659.213797] sd 4:0:0:0: [sdb] Unhandled error code
+[  659.213804] sd 4:0:0:0: [sdb]
+[  659.213808] Result: hostbyte=0x01 driverbyte=0x00
+[  659.213812] sd 4:0:0:0: [sdb] CDB:
+[  659.213814] cdb[0]=0x28: 28 00 00 00 00 00 00 00 08 00
+[  659.213826] end_request: I/O error, dev sdb, sector 0
+[  659.213830] Buffer I/O error on device sdb, logical block 0
+[  659.214647] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called
+with disabled ep ffff8800b375fe40
+[  659.214656] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called
+with disabled ep ffff8800b375fe00
+[  659.320085] usb 2-2: Device not responding to set address.
+[  659.522884] usb 2-2: Device not responding to set address.
+[  659.725646] usb 2-2: device not accepting address 3, error -71
+[  659.832077] usb 2-2: Device not responding to set address.
+[  660.034905] usb 2-2: Device not responding to set address.
+[  660.237663] usb 2-2: device not accepting address 4, error -71
+[  660.344135] usb 2-2: Device not responding to set address.
+[  660.546938] usb 2-2: Device not responding to set address.
+[  660.749642] usb 2-2: device not accepting address 5, error -71
+[  660.856129] usb 2-2: Device not responding to set address.
+[  661.058946] usb 2-2: Device not responding to set address.
+[  661.261701] usb 2-2: device not accepting address 6, error -71
+[  661.261722] hub 2-0:1.0: unable to enumerate USB device on port 2
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index c699955..9dae7f3 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3337,8 +3337,8 @@ void btrfs_btree_balance_dirty(struct btrfs_root *root, unsigned long nr)
- 	num_dirty = root->fs_info->dirty_metadata_bytes;
- 
- 	if (num_dirty > thresh) {
--		balance_dirty_pages_ratelimited_nr(
--				   root->fs_info->btree_inode->i_mapping, 1);
-+		balance_dirty_pages_ratelimited(
-+				   root->fs_info->btree_inode->i_mapping);
- 	}
- 	return;
- }
-@@ -3358,8 +3358,8 @@ void __btrfs_btree_balance_dirty(struct btrfs_root *root, unsigned long nr)
- 	num_dirty = root->fs_info->dirty_metadata_bytes;
- 
- 	if (num_dirty > thresh) {
--		balance_dirty_pages_ratelimited_nr(
--				   root->fs_info->btree_inode->i_mapping, 1);
-+		balance_dirty_pages_ratelimited(
-+				   root->fs_info->btree_inode->i_mapping);
- 	}
- 	return;
- }
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index 9ab1bed..a8ee75c 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1346,8 +1346,7 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
- 
- 		cond_resched();
- 
--		balance_dirty_pages_ratelimited_nr(inode->i_mapping,
--						   dirty_pages);
-+		balance_dirty_pages_ratelimited(inode->i_mapping);
- 		if (dirty_pages < (root->leafsize >> PAGE_CACHE_SHIFT) + 1)
- 			btrfs_btree_balance_dirty(root, 1);
- 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 19d51a2..a2a4b44 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1223,7 +1223,7 @@ int btrfs_defrag_file(struct inode *inode, struct file *file,
- 		}
- 
- 		defrag_count += ret;
--		balance_dirty_pages_ratelimited_nr(inode->i_mapping, ret);
-+		balance_dirty_pages_ratelimited(inode->i_mapping);
- 		mutex_unlock(&inode->i_mutex);
- 
- 		if (newer_than) {
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 5a4ee77..dda0898 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -2513,18 +2513,15 @@ static ssize_t ocfs2_file_splice_write(struct pipe_inode_info *pipe,
- 		ret = sd.num_spliced;
- 
- 	if (ret > 0) {
--		unsigned long nr_pages;
- 		int err;
- 
--		nr_pages = (ret + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
--
- 		err = generic_write_sync(out, *ppos, ret);
- 		if (err)
- 			ret = err;
- 		else
- 			*ppos += ret;
- 
--		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
-+		balance_dirty_pages_ratelimited(mapping);
- 	}
- 
- 	return ret;
-diff --git a/fs/splice.c b/fs/splice.c
-index 13e5b47..8890604 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -1024,17 +1024,14 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
- 		ret = sd.num_spliced;
- 
- 	if (ret > 0) {
--		unsigned long nr_pages;
- 		int err;
- 
--		nr_pages = (ret + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
--
- 		err = generic_write_sync(out, *ppos, ret);
- 		if (err)
- 			ret = err;
- 		else
- 			*ppos += ret;
--		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
-+		balance_dirty_pages_ratelimited(mapping);
- 	}
- 	sb_end_write(inode->i_sb);
- 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 50c3e8f..b82a83a 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -161,14 +161,7 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
- 			    unsigned long start_time);
- 
- void page_writeback_init(void);
--void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
--					unsigned long nr_pages_dirtied);
--
--static inline void
--balance_dirty_pages_ratelimited(struct address_space *mapping)
--{
--	balance_dirty_pages_ratelimited_nr(mapping, 1);
--}
-+void balance_dirty_pages_ratelimited(struct address_space *mapping);
- 
- typedef int (*writepage_t)(struct page *page, struct writeback_control *wbc,
- 				void *data);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..6f42712 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1069,7 +1069,7 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
- }
- 
- /*
-- * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
-+ * After a task dirtied this many pages, balance_dirty_pages_ratelimited()
-  * will look to see if it needs to start dirty throttling.
-  *
-  * If dirty_poll_interval is too low, big NUMA machines will call the expensive
-@@ -1436,9 +1436,8 @@ static DEFINE_PER_CPU(int, bdp_ratelimits);
- DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
- 
- /**
-- * balance_dirty_pages_ratelimited_nr - balance dirty memory state
-+ * balance_dirty_pages_ratelimited - balance dirty memory state
-  * @mapping: address_space which was dirtied
-- * @nr_pages_dirtied: number of pages which the caller has just dirtied
-  *
-  * Processes which are dirtying memory should call in here once for each page
-  * which was newly dirtied.  The function will periodically check the system's
-@@ -1449,8 +1448,7 @@ DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
-  * limit we decrease the ratelimiting by a lot, to prevent individual processes
-  * from overshooting the limit by (ratelimit_pages) each.
-  */
--void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
--					unsigned long nr_pages_dirtied)
-+void balance_dirty_pages_ratelimited(struct address_space *mapping)
- {
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 	int ratelimit;
-@@ -1484,6 +1482,7 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
- 	 */
- 	p = &__get_cpu_var(dirty_throttle_leaks);
- 	if (*p > 0 && current->nr_dirtied < ratelimit) {
-+		unsigned long nr_pages_dirtied;
- 		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
- 		*p -= nr_pages_dirtied;
- 		current->nr_dirtied += nr_pages_dirtied;
-@@ -1493,7 +1492,7 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
- 	if (unlikely(current->nr_dirtied >= ratelimit))
- 		balance_dirty_pages(mapping, current->nr_dirtied);
- }
--EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
-+EXPORT_SYMBOL(balance_dirty_pages_ratelimited);
- 
- void throttle_vm_writeout(gfp_t gfp_mask)
- {
 -- 
-1.7.9.5
-
+王思源
