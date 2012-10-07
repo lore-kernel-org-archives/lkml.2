@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2JGXXL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:23:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38494 "EHLO
+	id S1754771Ab2JGXaV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:30:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38605 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754296Ab2JGXWs (ORCPT
+	by vger.kernel.org with ESMTP id S1754586Ab2JGXXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:48 -0400
-Message-Id: <20121007225843.550386485@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:09 -0400
+Message-Id: <20121007225840.940894385@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:38 +0100
+Date: Sun, 07 Oct 2012 23:59:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 064/108] usb: gadget: dummy_hcd: fixup error probe path
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 045/108] sb_edac: Avoid overflow errors at memory size calculation
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 1b68a4ca2d038addb7314211d122fb6d7002b38b upstream.
+commit deb09ddaff1435f72dd598d38f9b58354c68a5ec upstream.
 
-If USB2 host controller probes fine but USB3 does not then we don't
-remove the USB controller properly and lock up the system while the HUB
-code will try to enumerate the USB2 controller and access memory which
-is no longer available in case the dummy_hcd was compiled as a module.
+Sandy bridge EDAC is calculating the memory size with overflow.
+Basically, the size field and the integer calculation is using 32 bits.
+More bits are needed, when the DIMM memories have high density.
 
-This is a problem since 448b6eb1 ("USB: Make sure to fetch the BOS desc
-for roothubs.) if used in USB3 mode because dummy does not provide this
-descriptor and explodes later.
+The net result is that memories are improperly reported there, when
+high-density DIMMs are used:
 
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 591: mc#0: channel 0, dimm 0, -16384 Mb (-4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 591: mc#0: channel 1, dimm 0, -16384 Mb (-4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+
+As the number of pages value is handled at the EDAC core as unsigned
+ints, the driver shows the 16 GB memories at sysfs interface as 16760832
+MB! The fix is simple: calculate the number of pages as unsigned 64-bits
+integer.
+
+After the patch, the memory size (16 GB) is properly detected:
+
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 592: mc#0: channel 0, dimm 0, 16384 Mb (4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 592: mc#0: channel 1, dimm 0, 16384 Mb (4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Debug log function is debugf0(), not edac_dbg()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/gadget/dummy_hcd.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/edac/sb_edac.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index b799106..0e58a46 100644
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -2503,10 +2503,8 @@ static int dummy_hcd_probe(struct platform_device *pdev)
- 	hs_hcd->has_tt = 1;
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -554,7 +554,8 @@ static int get_dimm_config(const struct
+ {
+ 	struct sbridge_pvt *pvt = mci->pvt_info;
+ 	struct csrow_info *csr;
+-	int i, j, banks, ranks, rows, cols, size, npages;
++	unsigned i, j, banks, ranks, rows, cols, npages;
++	u64 size;
+ 	int csrow = 0;
+ 	unsigned long last_page = 0;
+ 	u32 reg;
+@@ -626,10 +627,10 @@ static int get_dimm_config(const struct
+ 				cols = numcol(mtr);
  
- 	retval = usb_add_hcd(hs_hcd, 0, 0);
--	if (retval != 0) {
--		usb_put_hcd(hs_hcd);
--		return retval;
--	}
-+	if (retval)
-+		goto put_usb2_hcd;
+ 				/* DDR3 has 8 I/O banks */
+-				size = (rows * cols * banks * ranks) >> (20 - 3);
++				size = ((u64)rows * cols * banks * ranks) >> (20 - 3);
+ 				npages = MiB_TO_PAGES(size);
  
- 	if (mod_data.is_super_speed) {
- 		ss_hcd = usb_create_shared_hcd(&dummy_hcd, &pdev->dev,
-@@ -2525,6 +2523,8 @@ static int dummy_hcd_probe(struct platform_device *pdev)
- put_usb3_hcd:
- 	usb_put_hcd(ss_hcd);
- dealloc_usb2_hcd:
-+	usb_remove_hcd(hs_hcd);
-+put_usb2_hcd:
- 	usb_put_hcd(hs_hcd);
- 	the_controller.hs_hcd = the_controller.ss_hcd = NULL;
- 	return retval;
+-				debugf0("mc#%d: channel %d, dimm %d, %d Mb (%d pages) bank: %d, rank: %d, row: %#x, col: %#x\n",
++				debugf0("mc#%d: channel %d, dimm %d, %Ld Mb (%d pages) bank: %d, rank: %d, row: %#x, col: %#x\n",
+ 					pvt->sbridge_dev->mc, i, j,
+ 					size, npages,
+ 					banks, ranks, rows, cols);
 
 
