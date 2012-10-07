@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab2JGX33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:29:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38623 "EHLO
+	id S932093Ab2JGX3Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:29:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38629 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754615Ab2JGXXO (ORCPT
+	by vger.kernel.org with ESMTP id S1754307Ab2JGXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:14 -0400
-Message-Id: <20121007225840.665902152@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:16 -0400
+Message-Id: <20121007225840.112005040@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:17 +0100
+Date: Sun, 07 Oct 2012 23:59:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andre Przywara <andre.przywara@amd.com>
-Subject: [ 043/108] xen/boot: Disable NUMA for PV guests.
+        Marc Dionne <marc.c.dionne@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 039/108] HID: logitech: dont use stack based dj_report structures
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,90 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Marc Dionne <marc.c.dionne@gmail.com>
 
-commit 8d54db795dfb1049d45dc34f0dddbc5347ec5642 upstream.
+commit d8dc3494f77a5cc3b274bae36f7e74e85cf8a407 upstream.
 
-The hypervisor is in charge of allocating the proper "NUMA" memory
-and dealing with the CPU scheduler to keep them bound to the proper
-NUMA node. The PV guests (and PVHVM) have no inkling of where they
-run and do not need to know that right now. In the future we will
-need to inject NUMA configuration data (if a guest spans two or more
-NUMA nodes) so that the kernel can make the right choices. But those
-patches are not yet present.
+On a system with a logitech wireless keyboard/mouse and DMA-API debugging
+enabled, this warning appears at boot:
 
-In the meantime, disable the NUMA capability in the PV guest, which
-also fixes a bootup issue. Andre says:
+kernel: WARNING: at lib/dma-debug.c:929 check_for_stack.part.12+0x70/0xa7()
+kernel: Hardware name: MS-7593
+kernel: uhci_hcd 0000:00:1d.1: DMA-API: device driver maps memory fromstack [addr=ffff8801b0079c29]
 
-"we see Dom0 crashes due to the kernel detecting the NUMA topology not
-by ACPI, but directly from the northbridge (CONFIG_AMD_NUMA).
+Make logi_dj_recv_query_paired_devices and logi_dj_recv_switch_to_dj_mode
+use a structure allocated with kzalloc rather than a stack based one.
 
-This will detect the actual NUMA config of the physical machine, but
-will crash about the mismatch with Dom0's virtual memory. Variation of
-the theme: Dom0 sees what it's not supposed to see.
-
-This happens with the said config option enabled and on a machine where
-this scanning is still enabled (K8 and Fam10h, not Bulldozer class)
-
-We have this dump then:
-NUMA: Warning: node ids are out of bound, from=-1 to=-1 distance=10
-Scanning NUMA topology in Northbridge 24
-Number of physical nodes 4
-Node 0 MemBase 0000000000000000 Limit 0000000040000000
-Node 1 MemBase 0000000040000000 Limit 0000000138000000
-Node 2 MemBase 0000000138000000 Limit 00000001f8000000
-Node 3 MemBase 00000001f8000000 Limit 0000000238000000
-Initmem setup node 0 0000000000000000-0000000040000000
-  NODE_DATA [000000003ffd9000 - 000000003fffffff]
-Initmem setup node 1 0000000040000000-0000000138000000
-  NODE_DATA [0000000137fd9000 - 0000000137ffffff]
-Initmem setup node 2 0000000138000000-00000001f8000000
-  NODE_DATA [00000001f095e000 - 00000001f0984fff]
-Initmem setup node 3 00000001f8000000-0000000238000000
-Cannot find 159744 bytes in node 3
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-Pid: 0, comm: swapper Not tainted 3.3.6 #1 AMD Dinar/Dinar
-RIP: e030:[<ffffffff81d220e6>]  [<ffffffff81d220e6>] __alloc_bootmem_node+0x43/0x96
-.. snip..
-  [<ffffffff81d23024>] sparse_early_usemaps_alloc_node+0x64/0x178
-  [<ffffffff81d23348>] sparse_init+0xe4/0x25a
-  [<ffffffff81d16840>] paging_init+0x13/0x22
-  [<ffffffff81d07fbb>] setup_arch+0x9c6/0xa9b
-  [<ffffffff81683954>] ? printk+0x3c/0x3e
-  [<ffffffff81d01a38>] start_kernel+0xe5/0x468
-  [<ffffffff81d012cf>] x86_64_start_reservations+0xba/0xc1
-  [<ffffffff81007153>] ? xen_setup_runstate_info+0x2c/0x36
-  [<ffffffff81d050ee>] xen_start_kernel+0x565/0x56c
-"
-
-so we just disable NUMA scanning by setting numa_off=1.
-
-Reported-and-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Acked-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Marc Dionne <marc.c.dionne@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/setup.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hid/hid-logitech-dj.c |   38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -16,6 +16,7 @@
- #include <asm/e820.h>
- #include <asm/setup.h>
- #include <asm/acpi.h>
-+#include <asm/numa.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index 5e8a7ed..0f9c146 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -436,27 +436,37 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
  
-@@ -431,4 +432,7 @@ void __init xen_arch_setup(void)
- 	boot_option_idle_override = IDLE_HALT;
- 	WARN_ON(set_pm_idle_to_default());
- 	fiddle_vdso();
-+#ifdef CONFIG_NUMA
-+	numa_off = 1;
-+#endif
+ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ {
+-	struct dj_report dj_report;
++	struct dj_report *dj_report;
++	int retval;
+ 
+-	memset(&dj_report, 0, sizeof(dj_report));
+-	dj_report.report_id = REPORT_ID_DJ_SHORT;
+-	dj_report.device_index = 0xFF;
+-	dj_report.report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
+-	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
++	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	if (!dj_report)
++		return -ENOMEM;
++	dj_report->report_id = REPORT_ID_DJ_SHORT;
++	dj_report->device_index = 0xFF;
++	dj_report->report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
++	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
++	kfree(dj_report);
++	return retval;
  }
+ 
+ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 					  unsigned timeout)
+ {
+-	struct dj_report dj_report;
++	struct dj_report *dj_report;
++	int retval;
+ 
+-	memset(&dj_report, 0, sizeof(dj_report));
+-	dj_report.report_id = REPORT_ID_DJ_SHORT;
+-	dj_report.device_index = 0xFF;
+-	dj_report.report_type = REPORT_TYPE_CMD_SWITCH;
+-	dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
+-	dj_report.report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
+-	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
++	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	if (!dj_report)
++		return -ENOMEM;
++	dj_report->report_id = REPORT_ID_DJ_SHORT;
++	dj_report->device_index = 0xFF;
++	dj_report->report_type = REPORT_TYPE_CMD_SWITCH;
++	dj_report->report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
++	dj_report->report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
++	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
++	kfree(dj_report);
++	return retval;
+ }
+ 
+ 
 
 
