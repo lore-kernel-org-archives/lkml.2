@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab2JGPmu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 11:42:50 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:42652
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751571Ab2JGPjV (ORCPT
+	id S1753734Ab2JGPnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 11:43:00 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:3043 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990Ab2JGPjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 11:39:21 -0400
+	Sun, 7 Oct 2012 11:39:20 -0400
 X-IronPort-AV: E=Sophos;i="4.80,547,1344204000"; 
-   d="scan'208";a="158166839"
+   d="scan'208";a="158166838"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Michael Krufky <mkrufky@linuxtv.org>
+To: Antti Palosaari <crope@iki.fi>
 Cc: kernel-janitors@vger.kernel.org, rmallon@gmail.com, shubhrajyoti@ti.com,
         Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/13] drivers/media/tuners/mxl5007t.c: use macros for i2c_msg initialization
-Date: Sun,  7 Oct 2012 17:38:33 +0200
-Message-Id: <1349624323-15584-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for i2c_msg initialization
+Date: Sun,  7 Oct 2012 17:38:32 +0200
+Message-Id: <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -28,8 +28,8 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
 
-In each case, a length expressed as an explicit constant is also
-re-expressed as the size of the buffer, when this is possible.
+In the second i2c_msg structure, a length expressed as an explicit constant
+is also re-expressed as the size of the buffer, reg.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -69,48 +69,45 @@ struct i2c_msg x =
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/tuners/mxl5007t.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/media/tuners/e4000.c |   20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/media/tuners/mxl5007t.c b/drivers/media/tuners/mxl5007t.c
-index 69e453e..c0c28be 100644
---- a/drivers/media/tuners/mxl5007t.c
-+++ b/drivers/media/tuners/mxl5007t.c
-@@ -464,8 +464,8 @@ reg_pair_t *mxl5007t_calc_rf_tune_regs(struct mxl5007t_state *state,
- static int mxl5007t_write_reg(struct mxl5007t_state *state, u8 reg, u8 val)
- {
- 	u8 buf[] = { reg, val };
--	struct i2c_msg msg = { .addr = state->i2c_props.addr, .flags = 0,
--			       .buf = buf, .len = 2 };
-+	struct i2c_msg msg = I2C_MSG_WRITE(state->i2c_props.addr, buf,
-+					   sizeof(buf));
+diff --git a/drivers/media/tuners/e4000.c b/drivers/media/tuners/e4000.c
+index 1b33ed3..8f182fc 100644
+--- a/drivers/media/tuners/e4000.c
++++ b/drivers/media/tuners/e4000.c
+@@ -26,12 +26,7 @@ static int e4000_wr_regs(struct e4000_priv *priv, u8 reg, u8 *val, int len)
  	int ret;
- 
- 	ret = i2c_transfer(state->i2c_props.adap, &msg, 1);
-@@ -494,10 +494,8 @@ static int mxl5007t_read_reg(struct mxl5007t_state *state, u8 reg, u8 *val)
- {
- 	u8 buf[2] = { 0xfb, reg };
- 	struct i2c_msg msg[] = {
--		{ .addr = state->i2c_props.addr, .flags = 0,
--		  .buf = buf, .len = 2 },
--		{ .addr = state->i2c_props.addr, .flags = I2C_M_RD,
--		  .buf = val, .len = 1 },
-+		I2C_MSG_WRITE(state->i2c_props.addr, buf, sizeof(buf)),
-+		I2C_MSG_READ(state->i2c_props.addr, val, 1),
+ 	u8 buf[1 + len];
+ 	struct i2c_msg msg[1] = {
+-		{
+-			.addr = priv->cfg->i2c_addr,
+-			.flags = 0,
+-			.len = sizeof(buf),
+-			.buf = buf,
+-		}
++		I2C_MSG_WRITE(priv->cfg->i2c_addr, buf, sizeof(buf))
  	};
+ 
+ 	buf[0] = reg;
+@@ -54,17 +49,8 @@ static int e4000_rd_regs(struct e4000_priv *priv, u8 reg, u8 *val, int len)
  	int ret;
+ 	u8 buf[len];
+ 	struct i2c_msg msg[2] = {
+-		{
+-			.addr = priv->cfg->i2c_addr,
+-			.flags = 0,
+-			.len = 1,
+-			.buf = &reg,
+-		}, {
+-			.addr = priv->cfg->i2c_addr,
+-			.flags = I2C_M_RD,
+-			.len = sizeof(buf),
+-			.buf = buf,
+-		}
++		I2C_MSG_WRITE(priv->cfg->i2c_addr, &reg, sizeof(reg)),
++		I2C_MSG_READ(priv->cfg->i2c_addr, buf, sizeof(buf))
+ 	};
  
-@@ -512,10 +510,8 @@ static int mxl5007t_read_reg(struct mxl5007t_state *state, u8 reg, u8 *val)
- static int mxl5007t_soft_reset(struct mxl5007t_state *state)
- {
- 	u8 d = 0xff;
--	struct i2c_msg msg = {
--		.addr = state->i2c_props.addr, .flags = 0,
--		.buf = &d, .len = 1
--	};
-+	struct i2c_msg msg = I2C_MSG_WRITE(state->i2c_props.addr, &d,
-+					   sizeof(d));
- 	int ret = i2c_transfer(state->i2c_props.adap, &msg, 1);
- 
- 	if (ret != 1) {
+ 	ret = i2c_transfer(priv->i2c, msg, 2);
 
