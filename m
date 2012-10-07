@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2JGS4b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:56:31 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:14145 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab2JGS4W (ORCPT
+	id S1754379Ab2JGS4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 14:56:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44983 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab2JGS4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:56:22 -0400
-X-IronPort-AV: E=Sophos;i="4.80,547,1344204000"; 
-   d="scan'208";a="176162715"
-Date: Sun, 7 Oct 2012 20:56:19 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, walter harms <wharms@bfs.de>,
-        Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
-        rmallon@gmail.com, shubhrajyoti@ti.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for
- i2c_msg initialization
-In-Reply-To: <1349633780.15802.8.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>  <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr>  <5071AEF3.6080108@bfs.de>  <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>  <5071B834.1010200@bfs.de> 
- <alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6> <1349633780.15802.8.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Sun, 7 Oct 2012 14:56:24 -0400
+Date: Sun, 07 Oct 2012 14:56:22 -0400 (EDT)
+Message-Id: <20121007.145622.83624305358947187.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org, florian@openwrt.org,
+        netdev@vger.kernel.org
+Subject: Re: [STABLE][3.0][3.2][Add PATCH] phy/fixed: use an unique MDIO
+ bus name
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1349624019.16173.113.camel@deadeye.wl.decadent.org.uk>
+References: <1349441987.6755.45.camel@gandalf.local.home>
+	<1349624019.16173.113.camel@deadeye.wl.decadent.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Some people thought that it would be nice to have the macros rather than
->> the inlined field initializations, especially since there is no flag for
->> write.  A separate question is whether an array of one element is useful,
->> or whether one should systematically use & on a simple variable of the
->> structure type.  I'm open to suggestions about either point.
->
-> I think the macro naming is not great.
->
-> Maybe add DEFINE_/DECLARE_/_INIT or something other than an action
-> name type to the macro names.
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sun, 07 Oct 2012 16:33:39 +0100
 
-DEFINE and DECLARE usually have a declared variable as an argument, which 
-is not the case here.
+> Networking stable fixes are normally vetted, backported and bundled up
+> by David, so I'll let him decide on this.
+> 
+> There are a lot more MDIO bus drivers that don't play nicely with
+> others, most of which seem to be fixed in mainline.  If David agrees
+> that these are generally worthwhile then perhaps someone could try to
+> gather those up?
 
-These macros are like the macros PCI_DEVICE and PCI_DEVICE_CLASS.
+I very much am not inclined to backport this stuff, it impacts
+an extremely small group of people so the risk/benefit ratio is
+simply not worth it for me to do the work.
 
-Are READ and WRITE the action names?  They are really the important 
-information in this case.
+If someone else does the work and tests it, I'm willing to ACK
+it going into -stable.
 
-> I think the consistency is better if all the references are done
-> as arrays, even for single entry arrays.
-
-Is it worth creating arrays where &msg is used?  Or would it be better to 
-leave that aspect as it is?
-
-julia
+But this change impacted a lot of MDIO drivers and there were
+regressions that needed to be fixed up the first time this stuff
+went in.
