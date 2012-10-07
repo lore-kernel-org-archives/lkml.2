@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2JGXba (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:31:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38572 "EHLO
+	id S1754873Ab2JGXbr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:31:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38569 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529Ab2JGXXE (ORCPT
+	by vger.kernel.org with ESMTP id S1754526Ab2JGXXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:04 -0400
-Message-Id: <20121007225841.487720345@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:03 -0400
+Message-Id: <20121007225842.036845619@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:23 +0100
+Date: Sun, 07 Oct 2012 23:59:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Don Zickus <dzickus@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 049/108] USB: Fix race condition when removing host controllers
+        Henrik Rydberg <rydberg@euromail.se>, Shea Levy <shea@shealevy.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 053/108] Bluetooth: Add support for Apple vendor-specific devices
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,72 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit 0d00dc2611abbe6ad244d50569c2ee82ce42846c upstream.
+commit 1fa6535faf055cd71311ab887e94fc234f04ee18 upstream.
 
-This patch (as1607) fixes a race that can occur if a USB host
-controller is removed while a process is reading the
-/sys/kernel/debug/usb/devices file.
+As pointed out by Gustavo and Marcel, all Apple-specific Broadcom
+devices seen so far have the same interface class, subclass and
+protocol numbers. This patch adds an entry which matches all of them,
+using the new USB_VENDOR_AND_INTERFACE_INFO() macro.
 
-The usb_device_read() routine uses the bus->root_hub pointer to
-determine whether or not the root hub is registered.  The is not a
-valid test, because the pointer is set before the root hub gets
-registered and remains set even after the root hub is unregistered and
-deallocated.  As a result, usb_device_read() or usb_device_dump() can
-access freed memory, causing an oops.
+In particular, this patch adds support for the MacBook Pro Retina
+(05ac:8286), which is not in the present list.
 
-The patch changes the test to use the hcd->rh_registered flag, which
-does get set and cleared at the appropriate times.  It also makes sure
-to hold the usb_bus_list_lock mutex while setting the flag, so that
-usb_device_read() will become aware of new root hubs as soon as they
-are registered.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Tested-by: Shea Levy <shea@shealevy.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/devices.c |    2 +-
- drivers/usb/core/hcd.c     |    6 ++----
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/core/devices.c b/drivers/usb/core/devices.c
-index d956965..3440812 100644
---- a/drivers/usb/core/devices.c
-+++ b/drivers/usb/core/devices.c
-@@ -624,7 +624,7 @@ static ssize_t usb_device_read(struct file *file, char __user *buf,
- 	/* print devices for all busses */
- 	list_for_each_entry(bus, &usb_bus_list, bus_list) {
- 		/* recurse through all children of the root hub */
--		if (!bus->root_hub)
-+		if (!bus_to_hcd(bus)->rh_registered)
- 			continue;
- 		usb_lock_device(bus->root_hub);
- 		ret = usb_device_dump(&buf, &nbytes, &skip_bytes, ppos,
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index bc84106..75ba209 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1011,10 +1011,7 @@ static int register_root_hub(struct usb_hcd *hcd)
- 	if (retval) {
- 		dev_err (parent_dev, "can't register root hub for %s, %d\n",
- 				dev_name(&usb_dev->dev), retval);
--	}
--	mutex_unlock(&usb_bus_list_lock);
--
--	if (retval == 0) {
-+	} else {
- 		spin_lock_irq (&hcd_root_hub_lock);
- 		hcd->rh_registered = 1;
- 		spin_unlock_irq (&hcd_root_hub_lock);
-@@ -1023,6 +1020,7 @@ static int register_root_hub(struct usb_hcd *hcd)
- 		if (HCD_DEAD(hcd))
- 			usb_hc_died (hcd);	/* This time clean up */
- 	}
-+	mutex_unlock(&usb_bus_list_lock);
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index e791b20..654e248 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -52,6 +52,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Generic Bluetooth USB device */
+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
  
- 	return retval;
- }
++	/* Apple-specific (Broadcom) devices */
++	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
++
+ 	/* Broadcom SoftSailing reporting vendor specific */
+ 	{ USB_DEVICE(0x0a5c, 0x21e1) },
+ 
 
 
