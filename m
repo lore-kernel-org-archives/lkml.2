@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab2JGQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 12:58:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44278 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2JGQ61 (ORCPT
+	id S1751767Ab2JGRGA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 13:06:00 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:60690 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab2JGRFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 12:58:27 -0400
+	Sun, 7 Oct 2012 13:05:52 -0400
+Message-ID: <5071B63D.4020300@linux.vnet.ibm.com>
+Date: Sun, 07 Oct 2012 22:35:01 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <1349603814-1085468-1-git-send-email-avagin@openvz.org>
-References: <1349603814-1085468-1-git-send-email-avagin@openvz.org>
-Date: Sun, 7 Oct 2012 09:58:26 -0700
-X-Google-Sender-Auth: LLnTTL6JiEM_eByTHU4O4sSnSPY
-Message-ID: <CAGXu5jL8VvfVu0XN7-HDwGt232ovvUBvjP5CJQt+6A3Jnv_OfQ@mail.gmail.com>
-Subject: Re: [PATCH] proc: don't show nonexistent capabilities (v2)
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, "Andrew G. Morgan" <morgan@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        linux-crypto@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: Deadlock on poweroff
+References: <20121007024711.GA21403@shutemov.name> <20121007160311.GE2485@linux.vnet.ibm.com> <20121007165012.GA23535@shutemov.name>
+In-Reply-To: <20121007165012.GA23535@shutemov.name>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100717-8878-0000-0000-000004482314
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 7, 2012 at 2:56 AM, Andrew Vagin <avagin@openvz.org> wrote:
-> Without this patch it is really hard to interpret a bounding set,
-> if CAP_LAST_CAP is unknown for a current kernel.
->
-> Non-existant capabilities can not be deleted from a bounding set
-> with help of prctl.
->
-> E.g.: Here are two examples without/with this patch.
-> CapBnd: ffffffe0fdecffff
-> CapBnd: 00000000fdecffff
->
-> I suggest to hide non-existent capabilities. Here is two reasons.
-> * It's logically and easier for using.
-> * It helps to checkpoint-restore capabilities of tasks, because tasks
-> can be restored on another kernel, where CAP_LAST_CAP is bigger.
->
-> v2: Non-existent capabilities can not be removed from creds, because
->     in this case user cannot set all=eip. This patch cleans up non-existent
->     capabilities from content of /proc/pid/status
->
-> Cc: Andrew G. Morgan <morgan@kernel.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+On 10/07/2012 10:20 PM, Kirill A. Shutemov wrote:
+> On Sun, Oct 07, 2012 at 09:03:11AM -0700, Paul E. McKenney wrote:
+>> On Sun, Oct 07, 2012 at 05:47:11AM +0300, Kirill A. Shutemov wrote:
+>>> Hi Paul and all,
+>>>
+>>> With commit 755609a9087fa983f567dc5452b2fa7b089b591f I've got deadlock on
+>>> poweroff.
+>>>
+>>> It guess it happens because of race for cpu_hotplug.lock:
+>>>
+>>> 	CPU A					CPU B
+>>> disable_nonboot_cpus()
+>>> _cpu_down()
+>>> cpu_hotplug_begin()
+>>>  mutex_lock(&cpu_hotplug.lock);
+>>> __cpu_notify()
+>>> padata_cpu_callback()
+>>> __padata_remove_cpu()
+>>> padata_replace()
+>>> synchronize_rcu()
+>>> 					rcu_gp_kthread()
+>>> 					get_online_cpus();
+>>> 					mutex_lock(&cpu_hotplug.lock);
+>>>
+>>> Have you seen the issue before?
+>>
+>> This is a new one for me.  Does the following (very lightly tested)
+>> patch help?
+> 
+> Works for me. Thanks.
+> 
 
-Seems sensible to me.
+Could you share the patch please? Looks like it didn't hit the mailing
+lists.. 
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+Regards,
+Srivatsa S. Bhat
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
