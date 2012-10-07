@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2JGIs2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 04:48:28 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55396 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2JGIsZ convert rfc822-to-8bit (ORCPT
+	id S1751411Ab2JGJWv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 05:22:51 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:33376 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2JGJWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 04:48:25 -0400
+	Sun, 7 Oct 2012 05:22:43 -0400
+Message-ID: <507149DB.1030008@linux.vnet.ibm.com>
+Date: Sun, 07 Oct 2012 17:22:35 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-From: =?UTF-8?B?546L5oCd5rqQ?= <wangsiyuanbuaa@gmail.com>
-Date: Sun, 7 Oct 2012 16:48:04 +0800
-Message-ID: <CAKhuMP=DB2WGzNN2dXoFuJtSRCneBrToUb43KjU_OsQCrJP_UA@mail.gmail.com>
-Subject: usb 3.0 hard drive doesn't work
-To: linux-kernel@vger.kernel.org
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: KVM: WARNING: at .. kvm_release_pfn_clean
+References: <506E9B77.60505@suse.cz>
+In-Reply-To: <506E9B77.60505@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100709-1396-0000-0000-000001F705EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-i have a usb 3.0 hard drive and a laptop with usb 3.0 port.
-when the hard drive is connected to the usb 3.0 port, the drive could
-not be found.
-the dmesg output is listed below.
-additinal info:
-1) the usb 3.0 hard drive can be found when connected to usb 2.0 port.
-2) the usb 2.0 hard drive can be found when connected to usb 3.0 port.
-3) mouse works when connected to the usb 3.0 port.
-4) it is archlinux and kernel version is 3.5.5-1-ARCH
-it seems that it is not the linux driver's problem, because the mouse
-could work and the hard drive is found due to the dmesg.
-is this a bug?
-would someone help me?
-thank you!
+On 10/05/2012 04:33 PM, Jiri Slaby wrote:
+> Hi,
+> 
+> I'm getting this warning while running qemu-kvm 1.2.rc1 on the top of
+> 3.6.0-next-20121001:
+> WARNING: at virt/kvm/kvm_main.c:1325 kvm_release_pfn_clean+0x70/0x80()
+> Hardware name: To Be Filled By O.E.M.
+> Modules linked in: nls_cp437 vfat fat dvb_usb_dib0700 dib0090 dib7000p
+> dib7000m dib0070 dib8000 dib3000mc dibx000_common microcode
+> Pid: 11848, comm: qemu-kvm Tainted: G        W
+> 3.6.0-next-20121001_64+ #70
+> Call Trace:
+>  [<ffffffff8107f19f>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff8107f1fa>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff81004cd0>] kvm_release_pfn_clean+0x70/0x80
+>  [<ffffffff81027ac6>] paging64_page_fault+0x686/0x830
+>  [<ffffffff81024745>] ? paging64_gva_to_gpa+0x35/0x80
+>  [<ffffffff81021121>] kvm_mmu_page_fault+0x31/0x100
+>  [<ffffffff81040e81>] handle_exception+0x231/0x3d0
+>  [<ffffffff81041fbc>] vmx_handle_exit+0xcc/0x780
+>  [<ffffffff8101be44>] kvm_arch_vcpu_ioctl_run+0x444/0xf60
+>  [<ffffffff81017117>] ? kvm_arch_vcpu_load+0x57/0x1b0
+>  [<ffffffff81005302>] kvm_vcpu_ioctl+0x472/0x610
+>  [<ffffffff811aa36b>] ? fsnotify+0x24b/0x340
+>  [<ffffffff8117d609>] do_vfs_ioctl+0x99/0x580
+>  [<ffffffff810b620b>] ? pick_next_task_fair+0x13b/0x1a0
+>  [<ffffffff810b4f68>] ? __enqueue_entity+0x78/0x80
+>  [<ffffffff81010114>] ? kvm_on_user_return+0x64/0x70
+>  [<ffffffff8117db40>] sys_ioctl+0x50/0x90
+>  [<ffffffff816a46e2>] system_call_fastpath+0x16/0x1b
+> 
+> I.e. is_error_pfn(pfn) is true.
 
-dmesg out put when usb 3.0 hard drive is conneted to usb 3.0 port:
-[  646.077385] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
-[  646.171319] usbcore: registered new interface driver uas
-[  646.175313] Initializing USB Mass Storage driver...
-[  646.175501] scsi4 : usb-storage 2-2:1.0
-[  646.175665] usbcore: registered new interface driver usb-storage
-[  646.175667] USB Mass Storage support registered.
-[  657.149403] scsi 4:0:0:0: Direct-Access     WD       My Passport
-0730 1016 PQ: 0 ANSI: 6
-[  657.149974] sd 4:0:0:0: [sdb] 976707584 512-byte logical blocks:
-(500 GB/465 GiB)
-[  657.150223] sd 4:0:0:0: [sdb] Write Protect is off
-[  657.150232] sd 4:0:0:0: [sdb] Mode Sense: 47 00 10 08
-[  657.150456] sd 4:0:0:0: [sdb] No Caching mode page present
-[  657.150462] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[  657.151436] sd 4:0:0:0: [sdb] No Caching mode page present
-[  657.151440] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[  657.159907]  sdb: sdb1
-[  657.160852] sd 4:0:0:0: [sdb] No Caching mode page present
-[  657.160858] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-[  657.160861] sd 4:0:0:0: [sdb] Attached SCSI disk
-[  657.268875] usb 2-2: Device not responding to set address.
-[  657.471456] usb 2-2: Device not responding to set address.
-[  657.674211] usb 2-2: device not accepting address 2, error -71
-[  657.780745] usb 2-2: Device not responding to set address.
-[  657.983519] usb 2-2: Device not responding to set address.
-[  658.186214] usb 2-2: device not accepting address 2, error -71
-[  658.292717] usb 2-2: Device not responding to set address.
-[  658.495537] usb 2-2: Device not responding to set address.
-[  658.698277] usb 2-2: device not accepting address 2, error -71
-[  658.804774] usb 2-2: Device not responding to set address.
-[  659.007557] usb 2-2: Device not responding to set address.
-[  659.210298] usb 2-2: device not accepting address 2, error -71
-[  659.210366] usb 2-2: USB disconnect, device number 2
-[  659.213797] sd 4:0:0:0: [sdb] Unhandled error code
-[  659.213804] sd 4:0:0:0: [sdb]
-[  659.213808] Result: hostbyte=0x01 driverbyte=0x00
-[  659.213812] sd 4:0:0:0: [sdb] CDB:
-[  659.213814] cdb[0]=0x28: 28 00 00 00 00 00 00 00 08 00
-[  659.213826] end_request: I/O error, dev sdb, sector 0
-[  659.213830] Buffer I/O error on device sdb, logical block 0
-[  659.214647] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff8800b375fe40
-[  659.214656] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called
-with disabled ep ffff8800b375fe00
-[  659.320085] usb 2-2: Device not responding to set address.
-[  659.522884] usb 2-2: Device not responding to set address.
-[  659.725646] usb 2-2: device not accepting address 3, error -71
-[  659.832077] usb 2-2: Device not responding to set address.
-[  660.034905] usb 2-2: Device not responding to set address.
-[  660.237663] usb 2-2: device not accepting address 4, error -71
-[  660.344135] usb 2-2: Device not responding to set address.
-[  660.546938] usb 2-2: Device not responding to set address.
-[  660.749642] usb 2-2: device not accepting address 5, error -71
-[  660.856129] usb 2-2: Device not responding to set address.
-[  661.058946] usb 2-2: Device not responding to set address.
-[  661.261701] usb 2-2: device not accepting address 6, error -71
-[  661.261722] hub 2-0:1.0: unable to enumerate USB device on port 2
+Jiri, thanks for your report!
 
--- 
-王思源
+This is a known bug which can be fixed by this patch:
+	https://lkml.org/lkml/2012/9/21/46
+
+But this patch need be improved, i will post the new version after
+full test.
+
