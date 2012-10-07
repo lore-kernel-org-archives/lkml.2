@@ -1,97 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab2JGVzv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 17:55:51 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:52385 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab2JGVzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 17:55:46 -0400
-Message-ID: <5071FA5D.30003@gmail.com>
-Date: Mon, 08 Oct 2012 08:55:41 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1752412Ab2JGV6L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 17:58:11 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35375 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab2JGV6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 17:58:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: myungjoo.ham@samsung.com, mturquette@linaro.org, kyungmin.park@samsung.com,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] devfreq: Add suspend and resume apis
+Date: Mon, 08 Oct 2012 00:01:40 +0200
+Message-ID: <3818614.VWiQmGi8Bj@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1349342914-7095-3-git-send-email-rajagopal.venkat@linaro.org>
+References: <1349342914-7095-1-git-send-email-rajagopal.venkat@linaro.org> <1349342914-7095-3-git-send-email-rajagopal.venkat@linaro.org>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
-        shubhrajyoti@ti.com, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/13] drivers/media/tuners/qt1010.c: use macros for i2c_msg
- initialization
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/12 02:38, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thursday 04 of October 2012 14:58:33 Rajagopal Venkat wrote:
+> Add devfreq suspend/resume apis for devfreq users. This patch
+> supports suspend and resume of devfreq load monitoring, required
+> for devices which can idle.
 > 
-> Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
-> 
-> A length expressed as an explicit constant is also re-expressed as the size
-> of the buffer, when this is possible.
-> 
-> A simplified version of the semantic patch that makes this change is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression a,b,c;
-> identifier x;
-> @@
-> 
-> struct i2c_msg x =
-> - {.addr = a, .buf = b, .len = c, .flags = I2C_M_RD}
-> + I2C_MSG_READ(a,b,c)
->  ;
-> 
-> @@
-> expression a,b,c;
-> identifier x;
-> @@
-> 
-> struct i2c_msg x =
-> - {.addr = a, .buf = b, .len = c, .flags = 0}
-> + I2C_MSG_WRITE(a,b,c)
->  ;
-> 
-> @@
-> expression a,b,c,d;
-> identifier x;
-> @@
-> 
-> struct i2c_msg x = 
-> - {.addr = a, .buf = b, .len = c, .flags = d}
-> + I2C_MSG_OP(a,b,c,d)
->  ;
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+
+Well, I wonder if this may be tied in to the runtime PM framework, so that,
+for example, pm_runtime_suspend() will automatically suspend devfreq on
+success (and the runtime resume of the device will resume devfreq)?
+
+Rafael
+
+
 > ---
->  drivers/media/tuners/qt1010.c |   10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
+>  drivers/devfreq/devfreq.c                 | 28 ++++++++++++++++++++++++++++
+>  drivers/devfreq/governor.h                |  2 ++
+>  drivers/devfreq/governor_simpleondemand.c |  9 +++++++++
+>  include/linux/devfreq.h                   | 12 ++++++++++++
+>  4 files changed, 51 insertions(+)
 > 
-> diff --git a/drivers/media/tuners/qt1010.c b/drivers/media/tuners/qt1010.c
-> index bc419f8..37ff254 100644
-> --- a/drivers/media/tuners/qt1010.c
-> +++ b/drivers/media/tuners/qt1010.c
-> @@ -25,10 +25,8 @@
->  static int qt1010_readreg(struct qt1010_priv *priv, u8 reg, u8 *val)
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 41a4099..63e075e 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -428,6 +428,34 @@ int devfreq_remove_device(struct devfreq *devfreq)
+>  }
+>  EXPORT_SYMBOL(devfreq_remove_device);
+>  
+> +/**
+> + * devfreq_suspend_device() - Suspend devfreq of a device.
+> + * @devfreq	the devfreq instance to be suspended
+> + */
+> +int devfreq_suspend_device(struct devfreq *devfreq)
+> +{
+> +	if (!devfreq)
+> +		return -EINVAL;
+> +
+> +	return devfreq->governor->event_handler(devfreq,
+> +				DEVFREQ_GOV_SUSPEND, NULL);
+> +}
+> +EXPORT_SYMBOL(devfreq_suspend_device);
+> +
+> +/**
+> + * devfreq_resume_device() - Resume devfreq of a device.
+> + * @devfreq	the devfreq instance to be resumed
+> + */
+> +int devfreq_resume_device(struct devfreq *devfreq)
+> +{
+> +	if (!devfreq)
+> +		return -EINVAL;
+> +
+> +	return devfreq->governor->event_handler(devfreq,
+> +				DEVFREQ_GOV_RESUME, NULL);
+> +}
+> +EXPORT_SYMBOL(devfreq_resume_device);
+> +
+>  static ssize_t show_governor(struct device *dev,
+>  			     struct device_attribute *attr, char *buf)
 >  {
->  	struct i2c_msg msg[2] = {
-> -		{ .addr = priv->cfg->i2c_address,
-> -		  .flags = 0, .buf = &reg, .len = 1 },
-> -		{ .addr = priv->cfg->i2c_address,
-> -		  .flags = I2C_M_RD, .buf = val, .len = 1 },
-> +		I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
-> +		I2C_MSG_READ(priv->cfg->i2c_address, val, 1),
-
-This is a bit inconsistent. For single length values we should either
-consistently use sizeof(val) or 1. This has both.
-
-~Ryan
-
+> diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
+> index bb3aff3..26432ac 100644
+> --- a/drivers/devfreq/governor.h
+> +++ b/drivers/devfreq/governor.h
+> @@ -22,6 +22,8 @@
+>  #define DEVFREQ_GOV_START			0x1
+>  #define DEVFREQ_GOV_STOP			0x2
+>  #define DEVFREQ_GOV_INTERVAL			0x3
+> +#define DEVFREQ_GOV_SUSPEND			0x4
+> +#define DEVFREQ_GOV_RESUME			0x5
+>  
+>  /* Caution: devfreq->lock must be locked before calling update_devfreq */
+>  extern int update_devfreq(struct devfreq *devfreq);
+> diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
+> index cf94218..a8ba78c 100644
+> --- a/drivers/devfreq/governor_simpleondemand.c
+> +++ b/drivers/devfreq/governor_simpleondemand.c
+> @@ -104,6 +104,15 @@ int devfreq_simple_ondemand_handler(struct devfreq *devfreq,
+>  	case DEVFREQ_GOV_INTERVAL:
+>  		devfreq_interval_update(devfreq, (unsigned int *)data);
+>  		break;
+> +
+> +	case DEVFREQ_GOV_SUSPEND:
+> +		devfreq_monitor_suspend(devfreq);
+> +		break;
+> +
+> +	case DEVFREQ_GOV_RESUME:
+> +		devfreq_monitor_resume(devfreq);
+> +		break;
+> +
+>  	default:
+>  		break;
+>  	}
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> index 9cdffde..ee243a3 100644
+> --- a/include/linux/devfreq.h
+> +++ b/include/linux/devfreq.h
+> @@ -158,6 +158,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
+>  				  const struct devfreq_governor *governor,
+>  				  void *data);
+>  extern int devfreq_remove_device(struct devfreq *devfreq);
+> +extern int devfreq_suspend_device(struct devfreq *devfreq);
+> +extern int devfreq_resume_device(struct devfreq *devfreq);
+>  
+>  /* Helper functions for devfreq user device driver with OPP. */
+>  extern struct opp *devfreq_recommended_opp(struct device *dev,
+> @@ -211,6 +213,16 @@ static int devfreq_remove_device(struct devfreq *devfreq)
+>  	return 0;
+>  }
+>  
+> +static int devfreq_suspend_device(struct devfreq *devfreq)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int devfreq_resume_device(struct devfreq *devfreq)
+> +{
+> +	return 0;
+> +}
+> +
+>  static struct opp *devfreq_recommended_opp(struct device *dev,
+>  					   unsigned long *freq, u32 flags)
+>  {
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
