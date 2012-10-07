@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958Ab2JGXg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:36:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38396 "EHLO
+	id S932150Ab2JGXhT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:37:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38385 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754065Ab2JGXWh (ORCPT
+	by vger.kernel.org with ESMTP id S1753996Ab2JGXWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:37 -0400
-Message-Id: <20121007225844.389031750@decadent.org.uk>
+	Sun, 7 Oct 2012 19:22:36 -0400
+Message-Id: <20121007225846.183335340@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:44 +0100
+Date: Sun, 07 Oct 2012 23:59:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 070/108] HID: hidraw: improve error handling in hidraw_init()
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Martin Willi <martin@revosec.ch>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 083/108] xfrm_user: ensure user supplied esn replay window is  valid
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,61 +31,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit bcb4a75bde3821cecb17a71d287abfd6ef9bd68d upstream.
+[ Upstream commit ecd7918745234e423dd87fcc0c077da557909720 ]
 
-Several improvements in error handling:
-- do not report success if alloc_chrdev_region() failed
-- check for error code of cdev_add()
-- use unregister_chrdev_region() instead of unregister_chrdev()
-  if class_create() failed
+The current code fails to ensure that the netlink message actually
+contains as many bytes as the header indicates. If a user creates a new
+state or updates an existing one but does not supply the bytes for the
+whole ESN replay window, the kernel copies random heap bytes into the
+replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
+netlink attribute. This leads to following issues:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+1. The replay window has random bits set confusing the replay handling
+   code later on.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+2. A malicious user could use this flaw to leak up to ~3.5kB of heap
+   memory when she has access to the XFRM netlink interface (requires
+   CAP_NET_ADMIN).
+
+Known users of the ESN replay window are strongSwan and Steffen's
+iproute2 patch (<http://patchwork.ozlabs.org/patch/85962/>). The latter
+uses the interface with a bitmap supplied while the former does not.
+strongSwan is therefore prone to run into issue 1.
+
+To fix both issues without breaking existing userland allow using the
+XFRMA_REPLAY_ESN_VAL netlink attribute with either an empty bitmap or a
+fully specified one. For the former case we initialize the in-kernel
+bitmap with zero, for the latter we copy the user supplied bitmap. For
+state updates the full bitmap must be supplied.
+
+To prevent overflows in the bitmap length calculation the maximum size
+of bmp_len is limited to 128 by this patch -- resulting in a maximum
+replay window of 4096 packets. This should be sufficient for all real
+life scenarios (RFC 4303 recommends a default replay window size of 64).
+
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Martin Willi <martin@revosec.ch>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hidraw.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ include/linux/xfrm.h |  2 ++
+ net/xfrm/xfrm_user.c | 31 +++++++++++++++++++++++++------
+ 2 files changed, 27 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 3b6f7bf..7c47fc3 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -559,21 +559,28 @@ int __init hidraw_init(void)
+diff --git a/include/linux/xfrm.h b/include/linux/xfrm.h
+index 22e61fd..28e493b 100644
+--- a/include/linux/xfrm.h
++++ b/include/linux/xfrm.h
+@@ -84,6 +84,8 @@ struct xfrm_replay_state {
+ 	__u32	bitmap;
+ };
  
- 	if (result < 0) {
- 		pr_warn("can't get major number\n");
--		result = 0;
- 		goto out;
++#define XFRMA_REPLAY_ESN_MAX	4096
++
+ struct xfrm_replay_state_esn {
+ 	unsigned int	bmp_len;
+ 	__u32		oseq;
+diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
+index 28e4f751..ede01a8 100644
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -123,9 +123,21 @@ static inline int verify_replay(struct xfrm_usersa_info *p,
+ 				struct nlattr **attrs)
+ {
+ 	struct nlattr *rt = attrs[XFRMA_REPLAY_ESN_VAL];
++	struct xfrm_replay_state_esn *rs;
+ 
+-	if ((p->flags & XFRM_STATE_ESN) && !rt)
+-		return -EINVAL;
++	if (p->flags & XFRM_STATE_ESN) {
++		if (!rt)
++			return -EINVAL;
++
++		rs = nla_data(rt);
++
++		if (rs->bmp_len > XFRMA_REPLAY_ESN_MAX / sizeof(rs->bmp[0]) / 8)
++			return -EINVAL;
++
++		if (nla_len(rt) < xfrm_replay_state_esn_len(rs) &&
++		    nla_len(rt) != sizeof(*rs))
++			return -EINVAL;
++	}
+ 
+ 	if (!rt)
+ 		return 0;
+@@ -370,14 +382,15 @@ static inline int xfrm_replay_verify_len(struct xfrm_replay_state_esn *replay_es
+ 					 struct nlattr *rp)
+ {
+ 	struct xfrm_replay_state_esn *up;
++	int ulen;
+ 
+ 	if (!replay_esn || !rp)
+ 		return 0;
+ 
+ 	up = nla_data(rp);
++	ulen = xfrm_replay_state_esn_len(up);
+ 
+-	if (xfrm_replay_state_esn_len(replay_esn) !=
+-			xfrm_replay_state_esn_len(up))
++	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
+ 		return -EINVAL;
+ 
+ 	return 0;
+@@ -388,22 +401,28 @@ static int xfrm_alloc_replay_state_esn(struct xfrm_replay_state_esn **replay_esn
+ 				       struct nlattr *rta)
+ {
+ 	struct xfrm_replay_state_esn *p, *pp, *up;
++	int klen, ulen;
+ 
+ 	if (!rta)
+ 		return 0;
+ 
+ 	up = nla_data(rta);
++	klen = xfrm_replay_state_esn_len(up);
++	ulen = nla_len(rta) >= klen ? klen : sizeof(*up);
+ 
+-	p = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
++	p = kzalloc(klen, GFP_KERNEL);
+ 	if (!p)
+ 		return -ENOMEM;
+ 
+-	pp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
++	pp = kzalloc(klen, GFP_KERNEL);
+ 	if (!pp) {
+ 		kfree(p);
+ 		return -ENOMEM;
  	}
  
- 	hidraw_class = class_create(THIS_MODULE, "hidraw");
- 	if (IS_ERR(hidraw_class)) {
- 		result = PTR_ERR(hidraw_class);
--		unregister_chrdev(hidraw_major, "hidraw");
--		goto out;
-+		goto error_cdev;
- 	}
- 
-         cdev_init(&hidraw_cdev, &hidraw_ops);
--        cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
-+	result = cdev_add(&hidraw_cdev, dev_id, HIDRAW_MAX_DEVICES);
-+	if (result < 0)
-+		goto error_class;
++	memcpy(p, up, ulen);
++	memcpy(pp, up, ulen);
 +
- out:
- 	return result;
-+
-+error_class:
-+	class_destroy(hidraw_class);
-+error_cdev:
-+	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
-+	goto out;
- }
+ 	*replay_esn = p;
+ 	*preplay_esn = pp;
  
- void hidraw_exit(void)
 
 
