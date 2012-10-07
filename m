@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2JGXXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:23:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38490 "EHLO
+	id S1754667Ab2JGXXW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:23:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38552 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754290Ab2JGXWs (ORCPT
+	by vger.kernel.org with ESMTP id S1754501Ab2JGXXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:22:48 -0400
-Message-Id: <20121007225843.414964653@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:01 -0400
+Message-Id: <20121007225841.624292671@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:37 +0100
+Date: Sun, 07 Oct 2012 23:59:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Miklos Szeredi <miklos@szeredi.hu>, Miklos Szeredi <mszeredi@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 063/108] vfs: dcache: fix deadlock in tree traversal
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [ 050/108] asus-laptop: HRWS/HWRS typo
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,71 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <miklos@szeredi.hu>
+From: Corentin Chary <corentin.chary@gmail.com>
 
-commit 8110e16d42d587997bcaee0c864179e6d93603fe upstream.
+commit 8871e99f89b7d7b1ea99de550eea2a56273f42ab upstream.
 
-IBM reported a deadlock in select_parent().  This was found to be caused
-by taking rename_lock when already locked when restarting the tree
-traversal.
-
-There are two cases when the traversal needs to be restarted:
-
- 1) concurrent d_move(); this can only happen when not already locked,
-    since taking rename_lock protects against concurrent d_move().
-
- 2) racing with final d_put() on child just at the moment of ascending
-    to parent; rename_lock doesn't protect against this rare race, so it
-    can happen when already locked.
-
-Because of case 2, we need to be able to handle restarting the traversal
-when rename_lock is already held.  This patch fixes all three callers of
-try_to_ascend().
-
-IBM reported that the deadlock is gone with this patch.
-
-[ I rewrote the patch to be smaller and just do the "goto again" if the
-  lock was already held, but credit goes to Miklos for the real work.
-   - Linus ]
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=24222
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/dcache.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/platform/x86/asus-laptop.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 0364af2..693f95b 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1134,6 +1134,8 @@ positive:
- 	return 1;
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index e38f91b..110c777 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -863,9 +863,9 @@ static ssize_t show_infos(struct device *dev,
+ 	 * The significance of others is yet to be found.
+ 	 * If we don't find the method, we assume the device are present.
+ 	 */
+-	rv = acpi_evaluate_integer(asus->handle, "HRWS", NULL, &temp);
++	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
+ 	if (!ACPI_FAILURE(rv))
+-		len += sprintf(page + len, "HRWS value         : %#x\n",
++		len += sprintf(page + len, "HWRS value         : %#x\n",
+ 			       (uint) temp);
+ 	/*
+ 	 * Another value for userspace: the ASYM method returns 0x02 for
+@@ -1751,9 +1751,9 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
+ 	 * The significance of others is yet to be found.
+ 	 */
+ 	status =
+-	    acpi_evaluate_integer(asus->handle, "HRWS", NULL, &hwrs_result);
++	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
+ 	if (!ACPI_FAILURE(status))
+-		pr_notice("  HRWS returned %x", (int)hwrs_result);
++		pr_notice("  HWRS returned %x", (int)hwrs_result);
  
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -1236,6 +1238,8 @@ out:
- rename_retry:
- 	if (found)
- 		return found;
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
-@@ -3035,6 +3039,8 @@ resume:
- 	return;
- 
- rename_retry:
-+	if (locked)
-+		goto again;
- 	locked = 1;
- 	write_seqlock(&rename_lock);
- 	goto again;
+ 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
+ 		asus->have_rsts = true;
 
 
