@@ -1,64 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab2JGGmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 02:42:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42374 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2JGGma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 02:42:30 -0400
-Date: Sun, 7 Oct 2012 08:42:22 +0200
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/16] f2fs: add on-disk layout
-Message-ID: <20121007064222.GA436@stefanha-thinkpad>
+	id S1751823Ab2JGHL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 03:11:59 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:54843 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2JGHL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 03:11:58 -0400
+Date: Sun, 7 Oct 2012 12:42:31 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() +
+ register() race
+Message-ID: <20121007071231.GD9143@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120930194119.GA11278@redhat.com>
+ <20120930194211.GA11333@redhat.com>
+ <20121006093311.GB9145@linux.vnet.ibm.com>
+ <20121006172531.GB9819@redhat.com>
+ <20121006173719.GA9143@linux.vnet.ibm.com>
+ <20121006185337.GA14697@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121006185337.GA14697@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 12100707-1976-0000-0000-0000121A6357
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/*
-> + * For superblock
-> + */
-> +struct f2fs_super_block {
-> +	__le32 magic;		/* Magic Number */
-> +	__le16 major_ver;	/* Major Version */
-> +	__le16 minor_ver;	/* Minor Version */
-> +	__le32 log_sectorsize;	/* log2 (Sector size in bytes) */
-> +	__le32 log_sectors_per_block;	/* log2 (Number of sectors per block */
-> +	__le32 log_blocksize;	/* log2 (Block size in bytes) */
+* Oleg Nesterov <oleg@redhat.com> [2012-10-06 20:53:37]:
 
-Why store log_blocksize on disk when it can be calculated from
-log_sectorsize and log_sectors_per_block?  It may be handy to keep this
-in the in-memory superblock but keeping it on-disk means you need a
-consistency check and error code path when loading the superblock.
+> On 10/06, Srikar Dronamraju wrote:
+> >
+> > >
+> > > for the future changes... (say, we can remove bp if consumers do not
+> > > want to trace this task). Not sure it makes sense to change it right
+> > > now.
+> > >
+> > > So. Should I leave this patch as is? Or do you want me to move this
+> > > check into handler_chain() and make it return "bool restart"?
+> >
+> > Lets keep it as is for now.
+> >
+> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Thanks...
+> 
+> But I am starting to think that I misunderstood your comment, you
+> did not suggest to add this check into skip_sstep() as I wrongly
+> thought.
+> 
+> And yes, I agree it would be more clean to move it out from
+> find_active_uprobe() and avoid put_uprobe && clear_swbp....
+> 
+> So how about v2 below?
 
-> +struct f2fs_inode {
-> +	__le16 i_mode;			/* File mode */
-> +	__le16 i_reserved;		/* Reserved */
-> +	__le32 i_uid;			/* User ID */
-> +	__le32 i_gid;			/* Group ID */
-> +	__le32 i_links;			/* Links count */
-> +	__le64 i_size;			/* File size in bytes */
-> +	__le64 i_blocks;		/* File size in bytes */
+Yes, this is what I meant. Thanks for the relooking into it.
+This will mean, change in one hunk in patch 7/7.
 
-File size in blocks 
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-> +struct direct_node {
-> +	__le32 addr[ADDRS_PER_BLOCK];	/* aray of data block address */
+> 
+> ------------------------------------------------------------------------------
+> [PATCH 4/7] uprobes: Fix handle_swbp() vs unregister() + register() race
+> 
+> Strictly speaking this race was added by me in 56bb4cf6. However
+> I think that this bug is just another indication that we should
+> move copy_insn/uprobe_analyze_insn code from install_breakpoint()
+> to uprobe_register(), there are a lot of other reasons for that.
+> Until then, add a hack to close the race.
+> 
+> A task can hit uprobe U1, but before it calls find_uprobe() this
+> uprobe can be unregistered *AND* another uprobe U2 can be added to
+> uprobes_tree at the same inode/offset. In this case handle_swbp()
+> will use the not-fully-initialized U2, in particular its arch.insn
+> for xol.
+> 
+> Add the additional !UPROBE_COPY_INSN check into handle_swbp(),
+> if this flag is not set we simply restart as if the new uprobe was
+> not inserted yet. This is not very nice, we need barriers, but we
+> will remove this hack when we change uprobe_register().
+> 
+> Note: with or without this patch install_breakpoint() can race with
+> itself, yet another reson to kill UPROBE_COPY_INSN altogether. And
+> even the usage of uprobe->flags is not safe. See the next patches.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  kernel/events/uprobes.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index cfa22c4..dbbca3a 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -596,6 +596,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+>  		BUG_ON((uprobe->offset & ~PAGE_MASK) +
+>  				UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
+> 
+> +		smp_wmb(); /* pairs with rmb() in find_active_uprobe() */
+>  		uprobe->flags |= UPROBE_COPY_INSN;
+>  	}
+> 
+> @@ -1436,6 +1437,14 @@ static void handle_swbp(struct pt_regs *regs)
+>  		}
+>  		return;
+>  	}
+> +	/*
+> +	 * TODO: move copy_insn/etc into _register and remove this hack.
+> +	 * After we hit the bp, _unregister + _register can install the
+> +	 * new and not-yet-analyzed uprobe at the same address, restart.
+> +	 */
+> +	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+> +	if (unlikely(!(uprobe->flags & UPROBE_COPY_INSN)))
+> +		goto restart;
+> 
+>  	utask = current->utask;
+>  	if (!utask) {
+> -- 
+> 1.5.5.1
+> 
+> 
 
-s/aray/array/
-
-> +} __packed;
-> +
-> +struct indirect_node {
-> +	__le32 nid[NIDS_PER_BLOCK];	/* aray of data block address */
-
-s/aray/array/
-
-Stefan
