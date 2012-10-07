@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab2JGV6L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 17:58:11 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35375 "EHLO ogre.sisk.pl"
+	id S1752496Ab2JGWEE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 18:04:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35392 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab2JGV6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 17:58:08 -0400
+	id S1751008Ab2JGWEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 18:04:01 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Cc: myungjoo.ham@samsung.com, mturquette@linaro.org, kyungmin.park@samsung.com,
-        patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/3] devfreq: Add suspend and resume apis
-Date: Mon, 08 Oct 2012 00:01:40 +0200
-Message-ID: <3818614.VWiQmGi8Bj@vostro.rjw.lan>
+To: Miles Lane <miles.lane@gmail.com>, Bryan Wu <bryan.wu@canonical.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Jamie Iles <jamie@jamieiles.com>, Jochen Friedrich <jochen@scram.de>
+Subject: Re: 3.6.0+ (GIT) -- BUG: sleeping function called from invalid context at kernel/mutex.c:269 in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
+Date: Mon, 08 Oct 2012 00:07:32 +0200
+Message-ID: <8827278.7YnWKaee5F@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1349342914-7095-3-git-send-email-rajagopal.venkat@linaro.org>
-References: <1349342914-7095-1-git-send-email-rajagopal.venkat@linaro.org> <1349342914-7095-3-git-send-email-rajagopal.venkat@linaro.org>
+In-Reply-To: <CAHFgRy_ju3ybBGyApRXhke6=DW9B=LOZUVrjV0KfZbFFcG4PZA@mail.gmail.com>
+References: <CAHFgRy_ju3ybBGyApRXhke6=DW9B=LOZUVrjV0KfZbFFcG4PZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,131 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 of October 2012 14:58:33 Rajagopal Venkat wrote:
-> Add devfreq suspend/resume apis for devfreq users. This patch
-> supports suspend and resume of devfreq load monitoring, required
-> for devices which can idle.
-> 
-> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+On Wednesday 03 of October 2012 21:26:17 Miles Lane wrote:
+> ACPI: Preparing to enter system sleep state S3
+> PM: Saving platform NVS memory
+> Disabling non-boot CPUs ...
+> numa_remove_cpu cpu 1 node 0: mask now 0
+> Broke affinity for irq 46
+> smpboot: CPU 1 is now offline
+> BUG: sleeping function called from invalid context at kernel/mutex.c:269
+> in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
+> 4 locks held by pm-suspend/3561:
+>  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8113cab6>]
+> sysfs_write_file+0x37/0x121
+>  #1:  (s_active#98){.+.+.+}, at: [<ffffffff8113cb50>]
+> sysfs_write_file+0xd1/0x121
+>  #2:  (autosleep_lock){+.+.+.}, at: [<ffffffff810616c2>]
+> pm_autosleep_lock+0x12/0x14
+>  #3:  (pm_mutex){+.+.+.}, at: [<ffffffff8105c06c>] pm_suspend+0x38/0x1b8
+> irq event stamp: 103458
+> hardirqs last  enabled at (103457): [<ffffffff81460461>]
+> __mutex_unlock_slowpath+0x101/0x125
+> hardirqs last disabled at (103458): [<ffffffff8105be25>]
+> arch_suspend_disable_irqs+0xa/0xc
+> softirqs last  enabled at (103196): [<ffffffff8103445d>]
+> __do_softirq+0x12a/0x155
+> softirqs last disabled at (103171): [<ffffffff8146836c>] call_softirq+0x1c/0x30
+> Pid: 3561, comm: pm-suspend Not tainted 3.6.0+ #26
+> Call Trace:
+>  [<ffffffff8106b64e>] ? print_irqtrace_events+0x9d/0xa1
+>  [<ffffffff8104efcd>] __might_sleep+0x19f/0x1a8
+>  [<ffffffff81460345>] mutex_lock_nested+0x20/0x3b
+>  [<ffffffff81391cbb>] ledtrig_cpu+0x3b/0x7b
+>  [<ffffffff81391d29>] ledtrig_cpu_syscore_suspend+0xe/0x15
+>  [<ffffffff813329e9>] syscore_suspend+0x78/0xfd
+>  [<ffffffff8105bf42>] suspend_devices_and_enter+0x10f/0x201
+>  [<ffffffff8105c133>] pm_suspend+0xff/0x1b8
+>  [<ffffffff8105b4fa>] state_store+0x43/0x6c
+>  [<ffffffff811c5ba6>] kobj_attr_store+0xf/0x1b
+>  [<ffffffff8113cb68>] sysfs_write_file+0xe9/0x121
+>  [<ffffffff810e48a3>] vfs_write+0x9b/0xfd
+>  [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
+>  [<ffffffff810e4ac6>] sys_write+0x4d/0x7a
+>  [<ffffffff814672f4>] tracesys+0xdd/0xe2
 
-Well, I wonder if this may be tied in to the runtime PM framework, so that,
-for example, pm_runtime_suspend() will automatically suspend devfreq on
-success (and the runtime resume of the device will resume devfreq)?
+Well, this most likely has been introduced by commit:
+
+commit 8f88731d052d2b14f332249a9332690ac1b365ac
+Author: Bryan Wu <bryan.wu@canonical.com>
+Date:   Sat Jun 25 18:33:50 2011 +0800
+
+    led-triggers: create a trigger for CPU activity
+
+because ledtrig_cpu_syscore_suspend() is run in atomic context, which kind of
+doesn't play well with mutexes.
+
+Linus, Bryan, care to fix this?
 
 Rafael
 
 
-> ---
->  drivers/devfreq/devfreq.c                 | 28 ++++++++++++++++++++++++++++
->  drivers/devfreq/governor.h                |  2 ++
->  drivers/devfreq/governor_simpleondemand.c |  9 +++++++++
->  include/linux/devfreq.h                   | 12 ++++++++++++
->  4 files changed, 51 insertions(+)
-> 
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index 41a4099..63e075e 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -428,6 +428,34 @@ int devfreq_remove_device(struct devfreq *devfreq)
->  }
->  EXPORT_SYMBOL(devfreq_remove_device);
->  
-> +/**
-> + * devfreq_suspend_device() - Suspend devfreq of a device.
-> + * @devfreq	the devfreq instance to be suspended
-> + */
-> +int devfreq_suspend_device(struct devfreq *devfreq)
-> +{
-> +	if (!devfreq)
-> +		return -EINVAL;
-> +
-> +	return devfreq->governor->event_handler(devfreq,
-> +				DEVFREQ_GOV_SUSPEND, NULL);
-> +}
-> +EXPORT_SYMBOL(devfreq_suspend_device);
-> +
-> +/**
-> + * devfreq_resume_device() - Resume devfreq of a device.
-> + * @devfreq	the devfreq instance to be resumed
-> + */
-> +int devfreq_resume_device(struct devfreq *devfreq)
-> +{
-> +	if (!devfreq)
-> +		return -EINVAL;
-> +
-> +	return devfreq->governor->event_handler(devfreq,
-> +				DEVFREQ_GOV_RESUME, NULL);
-> +}
-> +EXPORT_SYMBOL(devfreq_resume_device);
-> +
->  static ssize_t show_governor(struct device *dev,
->  			     struct device_attribute *attr, char *buf)
->  {
-> diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
-> index bb3aff3..26432ac 100644
-> --- a/drivers/devfreq/governor.h
-> +++ b/drivers/devfreq/governor.h
-> @@ -22,6 +22,8 @@
->  #define DEVFREQ_GOV_START			0x1
->  #define DEVFREQ_GOV_STOP			0x2
->  #define DEVFREQ_GOV_INTERVAL			0x3
-> +#define DEVFREQ_GOV_SUSPEND			0x4
-> +#define DEVFREQ_GOV_RESUME			0x5
->  
->  /* Caution: devfreq->lock must be locked before calling update_devfreq */
->  extern int update_devfreq(struct devfreq *devfreq);
-> diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
-> index cf94218..a8ba78c 100644
-> --- a/drivers/devfreq/governor_simpleondemand.c
-> +++ b/drivers/devfreq/governor_simpleondemand.c
-> @@ -104,6 +104,15 @@ int devfreq_simple_ondemand_handler(struct devfreq *devfreq,
->  	case DEVFREQ_GOV_INTERVAL:
->  		devfreq_interval_update(devfreq, (unsigned int *)data);
->  		break;
-> +
-> +	case DEVFREQ_GOV_SUSPEND:
-> +		devfreq_monitor_suspend(devfreq);
-> +		break;
-> +
-> +	case DEVFREQ_GOV_RESUME:
-> +		devfreq_monitor_resume(devfreq);
-> +		break;
-> +
->  	default:
->  		break;
->  	}
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index 9cdffde..ee243a3 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -158,6 +158,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
->  				  const struct devfreq_governor *governor,
->  				  void *data);
->  extern int devfreq_remove_device(struct devfreq *devfreq);
-> +extern int devfreq_suspend_device(struct devfreq *devfreq);
-> +extern int devfreq_resume_device(struct devfreq *devfreq);
->  
->  /* Helper functions for devfreq user device driver with OPP. */
->  extern struct opp *devfreq_recommended_opp(struct device *dev,
-> @@ -211,6 +213,16 @@ static int devfreq_remove_device(struct devfreq *devfreq)
->  	return 0;
->  }
->  
-> +static int devfreq_suspend_device(struct devfreq *devfreq)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int devfreq_resume_device(struct devfreq *devfreq)
-> +{
-> +	return 0;
-> +}
-> +
->  static struct opp *devfreq_recommended_opp(struct device *dev,
->  					   unsigned long *freq, u32 flags)
->  {
-> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
