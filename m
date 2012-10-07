@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2JGTBG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 15:01:06 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:38445 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752898Ab2JGTBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 15:01:00 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [bisected] PS/2 keyboard and mouse dead on resume on Intel D845BG
-Date: Sun, 7 Oct 2012 21:00:09 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-References: <201210071513.27959.linux@rainbow-software.org>
-In-Reply-To: <201210071513.27959.linux@rainbow-software.org>
-X-KMail-QuotePrefix: > 
+	id S1753081Ab2JGTDl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 15:03:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25424 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814Ab2JGTDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 15:03:35 -0400
+Date: Sun, 7 Oct 2012 21:01:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] [RFC] pidns: don't zap processes several times
+Message-ID: <20121007190118.GA16068@redhat.com>
+References: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201210072100.09813.linux@rainbow-software.org>
+In-Reply-To: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 07 October 2012 15:13:27 Ondrej Zary wrote:
-> Hello,
-> Intel D845BG board comes out of S3 with PS/2 keyboard and mouse completely
-> dead. The machine works otherwise (with USB keyboard or over network). When
-> rebooted in this state, the BIOS hangs with blank screen. I have the latest
-> BIOS installed (P08).
+On 10/07, Andrew Vagin wrote:
 >
-> Old kernels worked. Bisection pointed to commit:
-> b6dacf63e9fb2e7a1369843d6cef332f76fca6a3
-> (ACPI: Unconditionally set SCI_EN on resume)
+> I wrote a test program. It does clone(CLONE_NEWPID | CLONE_VM) and
+> sleep(), a new task repeates the same actions. This program creates
+> 4000 tasks. When I tried to kill all this processes, a system was
+> inaccessible for some minutes.
+
+So this creates 4000 nested namespaces? Not sure this really needs the
+fix... The size of pid would be more than 4000 * sizeof(struct upid).
+
+Perhaps we should MAX_PID_NS_LEVEL instead?
+
+As for the patch, it looks correct at first glance. But,
+
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -34,6 +34,7 @@ struct pid_namespace {
+>  	kgid_t pid_gid;
+>  	int hide_pid;
+>  	int reboot;	/* group exit code if this pidns was rebooted */
+> +	atomic_t zapped; /* non zero if all process were killed */
+>  };
+
+atomic_t buys nothing. In this case atomic_set/read doesn't differ
+from plain STORE/LOAD.
+
+> @@ -177,21 +177,31 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>  	 * 	  maintain a tasklist for each pid namespace.
+>  	 *
+>  	 */
+> +
+> +	if (atomic_read(&pid_ns->zapped))
+> +		goto wait; /* All processes were already killed */
+> +
+
+OK, but if we try to speedup, then probably the main loop should
+check ->zapped too and stop. Multiple reapers can start
+zap_pid_ns_processes() at the same time.
+
+So, probably,
+
+>  	read_lock(&tasklist_lock);
+>  	nr = next_pidmap(pid_ns, 1);
+>  	while (nr > 0) {
+
+should be "while (nr > 0 && !zapped)", and
+
+>  		rcu_read_lock();
 >
-> Commenting out this line in drivers/acpi/sleep.c:
-> 	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
-> fixes the problem.
->
-> Any ideas why this breaks on this system?
+>  		task = pid_task(find_vpid(nr), PIDTYPE_PID);
+> -		if (task && !__fatal_signal_pending(task))
+> +		if (task && !__fatal_signal_pending(task)) {
+> +			struct pid_namespace *ns;
+> +
+>  			send_sig_info(SIGKILL, SEND_SIG_FORCED, task);
+> +			ns = task_active_pid_ns(task);
+> +			if (unlikely(ns->child_reaper == task))
+> +				atomic_set(&ns->zapped, 1);
 
-Added acpi_read_bit_register there and it seems that SCI_EN is already set!
+This should be unconditional. Even if the task is not child_reaper,
+we are going to kill the whole namespace. So I think
 
-This patch fixes the problem here. I wonder how this affects systems that
-require SCI_EN to be set.
+	if (task_active_pid_ns(task) != task_active_pid_ns(current))
+		ns->zapped = 1;
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -271,6 +271,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	acpi_status status = AE_OK;
- 	u32 acpi_state = acpi_target_sleep_state;
- 	int error;
-+	u32 sci_enabled;
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
-@@ -289,7 +290,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
- 	}
- 
- 	/* This violates the spec but is required for bug compatibility. */
--	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
-+	acpi_read_bit_register(ACPI_BITREG_SCI_ENABLE, &sci_enabled);
-+	if (!sci_enabled)
-+		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers */
- 	acpi_leave_sleep_state_prep(acpi_state);
+except it should be optimized.
 
--- 
-Ondrej Zary
+
+
+I am wondering if we can do for_each_pid_in_this_ns(pid) which skips
+the pids from the sub-namespaces. Note that zap_pid_ns_processes()
+doesn't really need to kill the tasks from sub-namespace, its init
+will take care anyway. In this case we do not nee ns->zapped.
+Probably not...
+
+Oleg.
+
