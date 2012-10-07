@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab2JGX07 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:26:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38685 "EHLO
+	id S1754837Ab2JGX05 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:26:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38691 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754678Ab2JGXX1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754683Ab2JGXX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Oct 2012 19:23:27 -0400
-Message-Id: <20121007225838.719240918@decadent.org.uk>
+Message-Id: <20121007225838.447588565@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:59:03 +0100
+Date: Sun, 07 Oct 2012 23:59:01 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guenter Roeck <linux@roeck-us.net>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 029/108] hwmon: (ad7314) Add name sysfs attribute
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 027/108] [SCSI] hpsa: fix handling of protocol error
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,44 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 3ceefe4319636d89d4bdf40dca9471970f942e4f upstream.
+commit 256d0eaac87da1e993190846064f339f4c7a63f5 upstream.
 
-The 'name' sysfs attribute is mandatory for hwmon devices, but was missing
-in this driver.
+If a command status of CMD_PROTOCOL_ERR is received, this
+information should be conveyed to the SCSI mid layer, not
+dropped on the floor.  CMD_PROTOCOL_ERR may be received
+from the Smart Array for any commands destined for an external
+RAID controller such as a P2000, or commands destined for tape
+drives or CD/DVD-ROM drives, if for instance a cable is
+disconnected.  This mostly affects multipath configurations, as
+disconnecting a cable on a non-multipath configuration is not
+going to do anything good regardless of whether CMD_PROTOCOL_ERR
+is handled correctly or not.  Not handling CMD_PROTOCOL_ERR
+correctly in a multipath configaration involving external RAID
+controllers may cause data corruption, so this is quite a serious
+bug.  This bug should not normally cause a problem for direct
+attached disk storage.
 
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/ad7314.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/scsi/hpsa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/ad7314.c b/drivers/hwmon/ad7314.c
-index cfec802..f915eb1 100644
---- a/drivers/hwmon/ad7314.c
-+++ b/drivers/hwmon/ad7314.c
-@@ -87,10 +87,18 @@ static ssize_t ad7314_show_temperature(struct device *dev,
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 796482b..2b4261c 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1315,8 +1315,9 @@ static void complete_scsi_command(struct CommandList *cp)
  	}
- }
- 
-+static ssize_t ad7314_show_name(struct device *dev,
-+				struct device_attribute *devattr, char *buf)
-+{
-+	return sprintf(buf, "%s\n", to_spi_device(dev)->modalias);
-+}
-+
-+static DEVICE_ATTR(name, S_IRUGO, ad7314_show_name, NULL);
- static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
- 			  ad7314_show_temperature, NULL, 0);
- 
- static struct attribute *ad7314_attributes[] = {
-+	&dev_attr_name.attr,
- 	&sensor_dev_attr_temp1_input.dev_attr.attr,
- 	NULL,
- };
+ 		break;
+ 	case CMD_PROTOCOL_ERR:
++		cmd->result = DID_ERROR << 16;
+ 		dev_warn(&h->pdev->dev, "cp %p has "
+-			"protocol error \n", cp);
++			"protocol error\n", cp);
+ 		break;
+ 	case CMD_HARDWARE_ERR:
+ 		cmd->result = DID_ERROR << 16;
 
 
