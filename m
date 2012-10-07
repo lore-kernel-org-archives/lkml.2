@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2JGTnO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 15:43:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45345 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab2JGTnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 15:43:05 -0400
-Date: Sun, 7 Oct 2012 21:42:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>,
-        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Message-ID: <20121007194259.GA25313@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>,
-	David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Steven Rostedt <rostedt@goodmis.org>
-References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
- <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
- <20121006231041.GB3278@liondog.tnic>
- <5071C9AE.2010106@att.net>
+	id S1753534Ab2JGTrg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 15:47:36 -0400
+Received: from relay2.mail.vrmd.de ([81.28.224.28]:42260 "EHLO
+	relay2.mail.vrmd.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2JGTr1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 15:47:27 -0400
+Date: Sun, 7 Oct 2012 19:41:47 +0000
+From: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linux-alpha@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [regression] boot failure on alpha, bisected
+Message-ID: <20121007194147.GA931@ds20.borg.net>
+Reply-To: dl8bcu@dl8bcu.de
+Mail-Followup-To: dl8bcu@dl8bcu.de, Oleg Nesterov <oleg@redhat.com>,
+	peterz@infradead.org, mingo@kernel.org,
+	linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+	Richard Henderson <rth@twiddle.net>,
+	Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+	Matt Turner <mattst88@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>
+References: <20121006204736.GA1830@ds20.borg.net>
+ <20121007165534.GA8024@redhat.com>
+ <20121007171300.GA10942@redhat.com>
+ <20121007180420.GA900@ds20.borg.net>
+ <20121007191627.GA19278@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5071C9AE.2010106@att.net>
+In-Reply-To: <20121007191627.GA19278@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Relay-User: dl8bcu@dl8bcu.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 01:27:58PM -0500, Daniel Santos wrote:
-> > Did I miss something again? This "error" preprocessor function is
-> > commented out here? Why?
-> We'll have to ask Andrew.  Maybe so he can test on those versions of gcc?
+On Sun, Oct 07, 2012 at 09:16:27PM +0200, Oleg Nesterov wrote:
+> On 10/07, Thorsten Kranzkowski wrote:
+> > On Sun, Oct 07, 2012 at 07:13:00PM +0200, Oleg Nesterov wrote:
+> > > On 10/07, Oleg Nesterov wrote:
+> > > >
+> > > > Hmm. I know nothing about arch/alpha and I can't understand its entry.S.
+> > > > But _it seems_ to me that do_notify_resume() is called with irqs disabled.
+> > > > If this is true, then imho arch/alpha should be fixed.
+> > > >
+> > > > Before this commit task_work_run() enabled irqs, but this was the "side
+> > > > effect" of spin_lock_irq/spin_unlock_irq, we should not rely on this.
+> > >
+> > > Could you please test the debugging patch below?
+> >
+> > Of course. With that patch applied the kernel (ac3d0da) boots again. The trace line
+> > is printed about once a second, with values '2' and '4'.
 > 
-> commit d3ffe64a1dbcfe18b57f90f7c01c40c93d0a8b92
-> Author: Andrew Morton <akpm@linux-foundation.org>
-> Date:   Fri Sep 28 00:02:42 2012 +0000
+> Thanks a lot Thorsten!
 > 
->     a
->    
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> So I'll probably send the patch which enables interrupts in
+> task_work_run(). I guess this needs "if (irqs_disabled())"
+> for lockdep.
 > 
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 934bc34..997fd8a 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -5,7 +5,7 @@
->  /* GCC 4.1.[01] miscompiles __weak */
->  #ifdef __KERNEL__
->  # if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
-> -#  error Your version of gcc miscompiles the __weak directive
-> +//#  error Your version of gcc miscompiles the __weak directive
->  # endif
->  #endif
+> The question is, should I add the warning to remind that this
+> arch needs a fix?
 
-Ah, interesting. I think akpm has been redoing -mm couple times recently
-so you probably caught a temporary thing.
-
-> I can provide you a version of these patches rebased against Linus if
-> you like, which I am using to test since the -mm & -next trees aren't
-> working on my machine (hardware, .config and/or LVM/RAID setup). I
-> haven't put Walken's patches underneath them however.
-
-Nah, not necessary. I'd simply wait after the merge window closes and
-everything settles down and then crank out a patchset against one of
-the major trees (say -mm, linus or -next) so we can agree on the final
-versions. AFAICT, the general design is fine - it's just the details
-that need to be hammered out with precision.
-
-Thanks.
+If you do, then please warn only once, otherwise there will be a lot of
+warnings :-)
+ 
+Thorsten
+ 
 
 -- 
-Regards/Gruss,
-    Boris.
+| Thorsten Kranzkowski        Internet: dl8bcu@dl8bcu.de                      |
+| Mobile: ++49 170 1876134       Snail: Kiebitzstr. 14, 49324 Melle, Germany  |
+| Ampr: dl8bcu@db0lj.#rpl.deu.eu, dl8bcu@marvin.dl8bcu.ampr.org [44.130.8.19] |
