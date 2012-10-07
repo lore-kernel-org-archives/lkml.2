@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2JGXYq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:24:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38739 "EHLO
+	id S1754800Ab2JGXZF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 19:25:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38722 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754716Ab2JGXXc (ORCPT
+	by vger.kernel.org with ESMTP id S1754582Ab2JGXXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:23:32 -0400
-Message-Id: <20121007225837.493815951@decadent.org.uk>
+	Sun, 7 Oct 2012 19:23:31 -0400
+Message-Id: <20121007225838.038472923@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 07 Oct 2012 23:58:54 +0100
+Date: Sun, 07 Oct 2012 23:58:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Leach <matthew.leach@arm.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 020/108] ARM: 7532/1: decompressor: reset SCTLR.TRE for VMSA ARMv7 cores
+        "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 024/108] [SCSI] mpt2sas: Fix for issue - Unable to boot from the drive
+ connected to HBA
 In-Reply-To: <20121007225834.673681075@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,36 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: "sreekanth.reddy@lsi.com" <sreekanth.reddy@lsi.com>
 
-commit e1e5b7e4251c7538ca08c2c5545b0c2fbd8a6635 upstream.
+commit 10cce6d8b5af0b32bc4254ae4a28423a74c0921c upstream.
 
-This patch zeroes the SCTLR.TRE bit prior to setting the mapping as
-cacheable for ARMv7 cores in the decompressor, ensuring that the
-memory region attributes are obtained from the C and B bits, not from
-the page tables.
+This patch checks whether HBA is SAS2008 B0 controller.
+if it is a SAS2008 B0 controller then it use IO-APIC interrupt instead of MSIX,
+as SAS2008 B0 controller doesn't support MSIX interrupts.
 
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[jejb: fix whitespace problems]
+Signed-off-by: Sreekanth Reddy <sreekanth.reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/boot/compressed/head.S |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 81769c1..bc67cbf 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -653,6 +653,7 @@ __armv7_mmu_cache_on:
- 		mcrne	p15, 0, r0, c8, c7, 0	@ flush I,D TLBs
- #endif
- 		mrc	p15, 0, r0, c1, c0, 0	@ read control reg
-+		bic	r0, r0, #1 << 28	@ clear SCTLR.TRE
- 		orr	r0, r0, #0x5000		@ I-cache enable, RR cache replacement
- 		orr	r0, r0, #0x003c		@ write buffer
- #ifdef CONFIG_MMU
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index b25757d..9d5a56c 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -1209,6 +1209,13 @@ _base_check_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+ 	u16 message_control;
+ 
+ 
++	/* Check whether controller SAS2008 B0 controller,
++	   if it is SAS2008 B0 controller use IO-APIC instead of MSIX */
++	if (ioc->pdev->device == MPI2_MFGPAGE_DEVID_SAS2008 &&
++	    ioc->pdev->revision == 0x01) {
++		return -EINVAL;
++	}
++
+ 	base = pci_find_capability(ioc->pdev, PCI_CAP_ID_MSIX);
+ 	if (!base) {
+ 		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "msix not "
 
 
