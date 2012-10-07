@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2JGS4n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 14:56:43 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44983 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab2JGS4Y (ORCPT
+	id S1754274Ab2JGTBG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 15:01:06 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:38445 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752898Ab2JGTBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 14:56:24 -0400
-Date: Sun, 07 Oct 2012 14:56:22 -0400 (EDT)
-Message-Id: <20121007.145622.83624305358947187.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        gregkh@linuxfoundation.org, florian@openwrt.org,
-        netdev@vger.kernel.org
-Subject: Re: [STABLE][3.0][3.2][Add PATCH] phy/fixed: use an unique MDIO
- bus name
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1349624019.16173.113.camel@deadeye.wl.decadent.org.uk>
-References: <1349441987.6755.45.camel@gandalf.local.home>
-	<1349624019.16173.113.camel@deadeye.wl.decadent.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 7 Oct 2012 15:01:00 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [bisected] PS/2 keyboard and mouse dead on resume on Intel D845BG
+Date: Sun, 7 Oct 2012 21:00:09 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+References: <201210071513.27959.linux@rainbow-software.org>
+In-Reply-To: <201210071513.27959.linux@rainbow-software.org>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201210072100.09813.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Sun, 07 Oct 2012 16:33:39 +0100
+On Sunday 07 October 2012 15:13:27 Ondrej Zary wrote:
+> Hello,
+> Intel D845BG board comes out of S3 with PS/2 keyboard and mouse completely
+> dead. The machine works otherwise (with USB keyboard or over network). When
+> rebooted in this state, the BIOS hangs with blank screen. I have the latest
+> BIOS installed (P08).
+>
+> Old kernels worked. Bisection pointed to commit:
+> b6dacf63e9fb2e7a1369843d6cef332f76fca6a3
+> (ACPI: Unconditionally set SCI_EN on resume)
+>
+> Commenting out this line in drivers/acpi/sleep.c:
+> 	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+> fixes the problem.
+>
+> Any ideas why this breaks on this system?
 
-> Networking stable fixes are normally vetted, backported and bundled up
-> by David, so I'll let him decide on this.
-> 
-> There are a lot more MDIO bus drivers that don't play nicely with
-> others, most of which seem to be fixed in mainline.  If David agrees
-> that these are generally worthwhile then perhaps someone could try to
-> gather those up?
+Added acpi_read_bit_register there and it seems that SCI_EN is already set!
 
-I very much am not inclined to backport this stuff, it impacts
-an extremely small group of people so the risk/benefit ratio is
-simply not worth it for me to do the work.
+This patch fixes the problem here. I wonder how this affects systems that
+require SCI_EN to be set.
 
-If someone else does the work and tests it, I'm willing to ACK
-it going into -stable.
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -271,6 +271,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+ 	acpi_status status = AE_OK;
+ 	u32 acpi_state = acpi_target_sleep_state;
+ 	int error;
++	u32 sci_enabled;
+ 
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+@@ -289,7 +290,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+ 	}
+ 
+ 	/* This violates the spec but is required for bug compatibility. */
+-	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
++	acpi_read_bit_register(ACPI_BITREG_SCI_ENABLE, &sci_enabled);
++	if (!sci_enabled)
++		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+ 
+ 	/* Reprogram control registers */
+ 	acpi_leave_sleep_state_prep(acpi_state);
 
-But this change impacted a lot of MDIO drivers and there were
-regressions that needed to be fixed up the first time this stuff
-went in.
+-- 
+Ondrej Zary
