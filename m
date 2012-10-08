@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab2JHGo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:44:56 -0400
+	id S1753502Ab2JHGpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:45:08 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:40084 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab2JHGoy (ORCPT
+	with ESMTP id S1753326Ab2JHGpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:44:54 -0400
+	Mon, 8 Oct 2012 02:45:04 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -14,11 +14,11 @@ To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
 Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 1/8] perf tools: add on_exit implementation
-Date: Mon,  8 Oct 2012 09:43:26 +0300
-Message-Id: <1349678613-7045-2-git-send-email-irina.tirdea@gmail.com>
+        Irina Tirdea <irina.tirdea@intel.com>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+Subject: [PATCH 2/8] perf tools: update Makefile for Android
+Date: Mon,  8 Oct 2012 09:43:27 +0300
+Message-Id: <1349678613-7045-3-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
 References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
@@ -26,106 +26,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-on_exit() is only available in new versions of glibc.
-It is not implemented in Bionic and will lead to linking errors when
-compiling for Android.
+For cross-compiling on Android, some specific changes are needed in
+the Makefile.
 
-Implement a wrapper for on_exit using atexit.
+Update the Makefile to support cross-compiling for Android.
+The original ideea for this was send by Bernhard Rosenkraenzer in
+https://lkml.org/lkml/2012/8/23/316, but this is a rewrite.
 
-The implementation for on_exit is the one sent by Bernhard Rosenkraenzer in
-https://lkml.org/lkml/2012/8/23/316. The configuration part from the Makefile
-is different than the one from the original patch.
+Changes:
+() support bionic in addition to glibc
+() remove rt and pthread libraries that do not exist in Android
+() use $(CFLAGS) when detecting initial compiler flags. This is needed
+when setting CFLAGS as an argument of make (e.g. for setting --sysroot).
+() include perf's local directory when building for Android to be able to find
+relative paths if using --sysroot (e.g.: ../../include/linux/perf_event.h)
 
 Signed-off-by: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Makefile                 |    6 ++++++
- tools/perf/builtin-record.c         |   32 ++++++++++++++++++++++++++++++++
- tools/perf/config/feature-tests.mak |   11 ++++++++++-
- 3 files changed, 48 insertions(+), 1 deletion(-)
+ tools/perf/Makefile                 |   25 +++++++++++++++++++------
+ tools/perf/config/feature-tests.mak |    9 +++++++++
+ 2 files changed, 28 insertions(+), 6 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f9126f8..0e468b5 100644
+index 0e468b5..1a23118 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -751,6 +751,12 @@ ifndef NO_STRLCPY
- 	endif
+@@ -155,15 +155,15 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
+ -include config/feature-tests.mak
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all),y)
+ 	CFLAGS := $(CFLAGS) -fstack-protector-all
  endif
  
-+ifndef NO_ON_EXIT
-+	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),),y)
-+		BASIC_CFLAGS += -DHAVE_ON_EXIT
-+	endif
+-ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -Wstack-protector),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector),y)
+        CFLAGS := $(CFLAGS) -Wstack-protector
+ endif
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -Wvolatile-register-var),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var),y)
+        CFLAGS := $(CFLAGS) -Wvolatile-register-var
+ endif
+ 
+@@ -172,6 +172,13 @@ endif
+ BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
+ 
++ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS)),y)
++	BIONIC := 1
++	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
++	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
++	BASIC_CFLAGS += -I.
 +endif
 +
- ifndef NO_BACKTRACE
-        ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
-                BASIC_CFLAGS += -DBACKTRACE_SUPPORT
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e9231659..73b5d7f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,38 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
-+#ifndef HAVE_ON_EXIT
-+#ifndef ATEXIT_MAX
-+#define ATEXIT_MAX 32
-+#endif
-+static int __on_exit_count = 0;
-+typedef void (*on_exit_func_t) (int, void *);
-+static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
-+static void *__on_exit_args[ATEXIT_MAX];
-+static int __exitcode = 0;
-+static void __handle_on_exit_funcs(void);
-+static int on_exit(on_exit_func_t function, void *arg);
-+#define exit(x) (exit)(__exitcode = (x))
-+
-+static int on_exit(on_exit_func_t function, void *arg)
-+{
-+	if (__on_exit_count == ATEXIT_MAX)
-+		return -ENOMEM;
-+	else if (__on_exit_count == 0)
-+		atexit(__handle_on_exit_funcs);
-+	__on_exit_funcs[__on_exit_count] = function;
-+	__on_exit_args[__on_exit_count++] = arg;
-+	return 0;
-+}
-+
-+static void __handle_on_exit_funcs(void)
-+{
-+	int i;
-+	for (i = 0; i < __on_exit_count; i++)
-+		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
-+}
-+#endif
-+
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
+ # Guard against environment variables
+ BUILTIN_OBJS =
+ LIB_H =
+@@ -467,12 +474,18 @@ else
+ FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+ 	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
+-	ifneq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
+-		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+-	else
++	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
++		LIBC_SUPPORT := 1
++	endif
++	ifeq ($(BIONIC),1)
++		LIBC_SUPPORT := 1
++	endif
++	ifeq ($(LIBC_SUPPORT),1)
+ 		NO_LIBELF := 1
+ 		NO_DWARF := 1
+ 		NO_DEMANGLE := 1
++	else
++		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+ 	endif
+ else
+ 	FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
 diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 4add41b..eaeb0fd 100644
+index eaeb0fd..3ef5ec9 100644
 --- a/tools/perf/config/feature-tests.mak
 +++ b/tools/perf/config/feature-tests.mak
-@@ -203,4 +203,13 @@ int main(void)
- 	return audit_open();
+@@ -43,6 +43,15 @@ int main(void)
  }
  endef
--endif
-\ No newline at end of file
-+endif
-+
-+define SOURCE_ON_EXIT
-+#include <stdio.h>
+ 
++define SOURCE_BIONIC
++#include <android/api-level.h>
 +
 +int main(void)
 +{
-+	return on_exit(NULL, NULL);
++	return __ANDROID_API__;
 +}
 +endef
++
+ define SOURCE_ELF_MMAP
+ #include <libelf.h>
+ int main(void)
 -- 
 1.7.9.5
 
