@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab2JHRO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:14:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36830 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab2JHRO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:14:27 -0400
-Date: Mon, 8 Oct 2012 19:14:24 +0200
-From: Jan Kara <jack@suse.cz>
-To: Neil Salstrom <salstrom@paintedocean.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: 3.6.0 kernel BUG at fs/dcache.c:967 during shutdown /
- restart
-Message-ID: <20121008171424.GA14767@quack.suse.cz>
-References: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
- <5070685A.1060605@paintedocean.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5070685A.1060605@paintedocean.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754354Ab2JHRRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:17:55 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39227 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab2JHRRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 13:17:52 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 00/12] perf kvm: Add live mode for analyzing events
+Date: Mon,  8 Oct 2012 11:17:24 -0600
+Message-Id: <1349716656-48165-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 06-10-12 10:20:26, Neil Salstrom wrote:
-> 
-> I've not submitted a kernel bug before but I've read the bug
-> reporting pages.  I'll try to do my best and if you need more
-> information please let me know.  Please feel free to cc me on the
-> answer or if you have questions.
-> 
-> I'm using Linux Mint 13 (64 bit) on AMD hardware with a self
-> compiled 3.6.0 kernel for my MythTV HTPC.
-> 
-> Kernel version: Linux version 3.6.0 (gcc version 4.6.3
-> (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #1 SMP Tue Oct 2 15:34:46 PDT 2012
-> 
-> CPU: model name      : AMD A6-3500 APU with Radeon(tm) HD Graphics
-> 
-> If you need any other system variables please let me know and I can
-> get those as well.
-> 
-> Upon shutdown or restart (from either the hard button on the case or
-> a "sudo shutdown -r now" the system crashes and does not actually
-> shut down.  I can ssh in to the system and a dmesg shows the
-> following:
-  There should be a line like:
-BUG: Dentry ... still in use (%d) [unmount of %s %s]
+perf kvm stat currently requires back to back record and report
+commands to see stats. e.g.,
 
-just before the oops. Can you please post that one as well? Also I see that
-you are using nvidia module which taints the kernel. Can you try
-reproducing the issue without the module loaded?
+  perf kvm stat record -p $pid -- sleep 1
+  perf kvm stat report
 
-								Honza
-> 
-> [102792.710563] ------------[ cut here ]------------
-> [102792.710564] kernel BUG at fs/dcache.c:967!
-> [102792.710566] invalid opcode: 0000 [#1] SMP
-> [102792.710568] Modules linked in: nls_utf8 udf crc_itu_t nfsv4
-> binfmt_misc nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc
-> snd_hda_codec_hdmi xfs nvidia(PO) rc_imon_mce imon rc_core
-> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq_midi
-> snd_hwdep snd_rawmidi snd_pcm psmouse snd_seq_midi_event snd_seq
-> serio_raw snd_seq_device snd_timer snd soundcore snd_page_alloc
-> f71882fg r8169 ahci libahci
-> [102792.710587] CPU 0
-> [102792.710590] Pid: 29771, comm: umount Tainted: P           O
-> 3.6.0 #1 System manufacturer System Product Name/F1A55-M LX PLUS
-> [102792.710592] RIP: 0010:[<ffffffff8116c606>] [<ffffffff8116c606>]
-> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
-> [102792.710598] RSP: 0018:ffff880118f6dd98  EFLAGS: 00010296
-> [102792.710600] RAX: 000000000000005d RBX: ffff88011092acc0 RCX:
-> 00000000000013ae
-> [102792.710601] RDX: 0000000000004663 RSI: 0000000000000046 RDI:
-> ffffffff81bbf9bc
-> [102792.710602] RBP: ffff880118f6ddb8 R08: 000000000000000a R09:
-> 0000000000000000
-> [102792.710604] R10: 000000000000039a R11: 0000000000000399 R12:
-> ffff880110a5c900
-> [102792.710605] R13: ffff880118fa9d00 R14: ffff880118fa9d30 R15:
-> ffff8801180c9000
-> [102792.710607] FS:  00007f9cc4c16800(0000)
-> GS:ffff88011ec00000(0000) knlGS:0000000000000000
-> [102792.710608] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [102792.710609] CR2: 00007f9cc4241120 CR3: 0000000117993000 CR4:
-> 00000000000007f0
-> [102792.710611] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [102792.710612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [102792.710614] Process umount (pid: 29771, threadinfo
-> ffff880118f6c000, task ffff88007b8edb00)
-> [102792.710614] Stack:
-> [102792.710616]  ffff8801180c9350 ffff880110a5c6c0 ffff8801180c9000
-> ffffffffa0d0f3c0
-> [102792.710618]  ffff880118f6ddd8 ffffffff8116de93 0000000000000001
-> ffff8801180c9000
-> [102792.710620]  ffff880118f6de08 ffffffff811583bc ffff880110a5c760
-> 0000000000000014
-> [102792.710622] Call Trace:
-> [102792.710626]  [<ffffffff8116de93>] shrink_dcache_for_umount+0x33/0x60
-> [102792.710629]  [<ffffffff811583bc>] generic_shutdown_super+0x2c/0xf0
-> [102792.710632]  [<ffffffff81158516>] kill_anon_super+0x16/0x30
-> [102792.710634]  [<ffffffff81158557>] kill_litter_super+0x27/0x30
-> [102792.710650]  [<ffffffffa0d094a9>] rpc_kill_sb+0x99/0xc0 [sunrpc]
-> [102792.710653]  [<ffffffff8115877c>] deactivate_locked_super+0x3c/0xa0
-> [102792.710655]  [<ffffffff8115938e>] deactivate_super+0x4e/0x70
-> [102792.710658]  [<ffffffff81174416>] mntput_no_expire+0x106/0x160
-> [102792.710661]  [<ffffffff8117543e>] sys_umount+0x6e/0x3b0
-> [102792.710664]  [<ffffffff81583d96>] system_call_fastpath+0x1a/0x1f
-> [102792.710665] Code: 00 00 48 8b 40 28 4c 8b 08 48 8b 43 30 48 85
-> c0 74 04 48 8b 50 40 48 89 34 24 48 c7 c7 48 69 7c 81 48 89 de 31 c0
-> e8 09 62 40 00 <0f> 0b 0f 0b 66 0f 1f 44 00 00 55 48 89 e5 41 54 53
-> 66 66 66 66
-> [102792.710686] RIP  [<ffffffff8116c606>]
-> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
-> [102792.710689]  RSP <ffff880118f6dd98>
-> [102792.710705] ---[ end trace 6cebf99f8c65907b ]---
-> 
-> Thank you,
-> 
-> Neil
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This is rather inconvenvient for on box monitoring of a VM. This
+patch introduces a 'live' mode that in effect combines the record
+plus report into one command. e.g., to monitor a single VM:
+ 
+  perf kvm stat live -p $pid
+
+Same stats options for the record+report path work with the live mode.
+Display rate defaults to 1 and can be changed using the -d option.
+
+The command works fine for low event rates, but as the number of events
+increases (e.g., building a kernel in a 4-vcpu VM or nested virtualization)
+the ordered samples code is failing. e.g,
+
+  ...
+  Total Samples:76309, Total events handled time:1121314.04us.
+
+  Warning: Timestamp below last timeslice flush
+  Failed to process event
+
+This is on a 16-cpu server. For the kernel build in a 4 vcpu VM I am seeing on
+the order of 50,000+ events per second and in the case of nested virtualization
+(at least this one use case) I am seeing on the order of 100,000+ events per
+second. Not surprising it's having problems keeping up.
+
+I'll continue poking around the ordered samples code, but wanted to kick
+this out in case someone has ideas or objections to the approach.
+
+David Ahern (12):
+  perf evlist: restore some methods removed in an earlier cleanup
+  perf evlist: move tracepoint processing code to evlist.c
+  perf evlist: add initialzation function for tracepoints
+  perf session: export a few functions for event processing
+  perf top: move CONSOLE_CLEAR to header file
+  perf kvm: remove typecast in init_kvm_event_record
+  perf kvm: handle realloc failures
+  perf kvm: add braces around multi-line statements
+  perf kvm: split out tracepoints from record args
+  perf kvm: total count is a u64, print as so
+  perf kvm: only process events for vcpus of interest
+  perf kvm: add live mode
+
+ tools/perf/builtin-kvm.c  |  717 ++++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/builtin-top.c  |    2 -
+ tools/perf/util/evlist.c  |  120 ++++++++
+ tools/perf/util/evlist.h  |   10 +
+ tools/perf/util/header.c  |   39 ---
+ tools/perf/util/session.c |   15 +-
+ tools/perf/util/session.h |    9 +
+ tools/perf/util/top.h     |    2 +
+ 8 files changed, 819 insertions(+), 95 deletions(-)
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.1
+
