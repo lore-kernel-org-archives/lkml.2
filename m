@@ -1,159 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2JHVLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:11:10 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:37912 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab2JHVLI (ORCPT
+	id S1754950Ab2JHVOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:14:32 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:23688 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754380Ab2JHVOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:11:08 -0400
-Date: Mon, 8 Oct 2012 14:11:03 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v3 8/8] perf stat: implement --big-num grouping
-Message-ID: <20121008211103.GK2631@ghostprotocols.net>
-References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
- <1349678613-7045-9-git-send-email-irina.tirdea@gmail.com>
+	Mon, 8 Oct 2012 17:14:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18WhKIYNo8BfOksmbcsRd71
+Date: Mon, 8 Oct 2012 14:14:26 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: axel.lin@gmail.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: OMAP_DEBUG_LEDS needs to select LEDS_CLASS
+Message-ID: <20121008211426.GJ13011@atomide.com>
+References: <1347939042.15578.1.camel@phoenix>
+ <CAK5ve-LXv76vuBLHQQtREHn_ZogUsbyqzz2-uTHT_Ps-9vS3Pw@mail.gmail.com>
+ <CAF+7xWnJj4XovwT5K_BDN8Q4GBLogsCb29Ro9t0Taek95HaPDg@mail.gmail.com>
+ <CAK5ve-L92DqDv7ZApaaN5BOby+oPf2Ate-3jvgkadm7gfXZLcg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349678613-7045-9-git-send-email-irina.tirdea@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK5ve-L92DqDv7ZApaaN5BOby+oPf2Ate-3jvgkadm7gfXZLcg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 08, 2012 at 09:43:33AM +0300, Irina Tirdea escreveu:
->  
-> +/* Group the digits according to the grouping rules of the current locale.
-> +   The interpretation of GROUPING is as in `struct lconv' from <locale.h>.  */
-> +static int group_number_locale(char *number, char **gnumber)
-> +{
-> +	const char *thousands_sep = NULL, *grouping = NULL;
-> +	int glen, tlen, dest_alloc_size, src_size, ret = 0, cnt;
+* Bryan Wu <bryan.wu@canonical.com> [120918 01:03]:
+> On Tue, Sep 18, 2012 at 2:49 PM, Axel Lin <axel.lin@gmail.com> wrote:
+> > 2012/9/18 Bryan Wu <bryan.wu@canonical.com>:
+> >> On Tue, Sep 18, 2012 at 11:30 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> >>> This fixes below build error when CONFIG_LEDS_CLASS is not set.
+> >>>
+> >>>   LD      init/built-in.o
+> >>> arch/arm/plat-omap/built-in.o: In function `fpga_probe':
+> >>> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> >>> make: *** [vmlinux] Error 1
+> >>>
+> >>
+> >> Thanks for posting this. But I think Tony has already fixed it in mainline:
+> >> --
+> >> commit 359f64f7b3997e94ee71039b5fcdc1278b9b77c4
+> >> Author: Tony Lindgren <tony@atomide.com>
+> >> Date:   Wed Sep 15 10:18:51 2010 -0700
+> >>
+> >>     omap: Fix compile dependency to LEDS_CLASS
+> >>
+> >>     If we LEDS_CLASS is not selected, we will get undefined reference
+> >>     to `led_classdev_register'.
+> >>
+> >>     Signed-off-by: Tony Lindgren <tony@atomide.com>
+> >
+> > Commit 359f64f7b was commited on Sep 15 2010.
+> > This patch is against current linux-next tree.
+> > I got the build error on linux-next tree (next-20120917).
+> >
+> 
+> Obviously, linux-next is not updated to latest mainline, -:D
 
-Please set ret to -ENOMEM; and...
+Thanks I'll apply this to fixes.
 
-> +	char *dest_alloc_ptr, *dest_end, *src_start, *src_end;
-> +
+Regards,
 
-When we have else clauses, I think its better to use
-
-#ifdef LOCALE_SUPPORT
-	struct lconv *lc = localeconv();
-	if (lc != NULL) {
-		thousands_sep = lc->thousands_sep;
-		grouping = lc->grouping;
-	}
-#else
-	thousands_sep = ",";
-	grouping = "\x3";
-#endif
-
-
-> +#ifndef LOCALE_SUPPORT
-> +	thousands_sep = ",";
-> +	grouping = "\x3";
-> +#else
-> +	struct lconv *lc = localeconv();
-> +	if (lc != NULL) {
-> +		thousands_sep = lc->thousands_sep;
-> +		grouping = lc->grouping;
-> +	}
-> +#endif
-> +
-> +	*gnumber = NULL;
-> +	/* No grouping */
-> +	if (thousands_sep == NULL || grouping == NULL ||
-> +	    *thousands_sep == '\0' || *grouping == CHAR_MAX || *grouping <= 0) {
-> +		*gnumber = strdup(number);
-> +		if (*gnumber == NULL)
-> +			ret = -ENOMEM;
-> +		goto out;
-
-Humm, so we bail out unconditionally? :-)
-
-	this should be:
-
-		if (*gnumber == NULL)
-			goto out;
-> +	}
-> +
-> +	glen = *grouping++;
-> +	tlen = strlen(thousands_sep);
-> +
-> +	src_size = strlen(number);
-> +	/* Worst case scenario we have 1-character grouping */
-> +	dest_alloc_size = (src_size + src_size * tlen) * sizeof(char);
-> +	dest_alloc_ptr = zalloc(dest_alloc_size);
-> +	if (dest_alloc_ptr == NULL) {
-> +		ret = -ENOMEM;
-
-remove the above
-
-> +		goto out;
-> +	}
-> +	/* -1 for '\0' */
-> +	dest_end = dest_alloc_ptr + dest_alloc_size - 1;
-> +
-> +	src_start = number;
-> +	src_end = number + src_size;
-> +
-> +	while (src_end > src_start) {
-> +		*--dest_end = *--src_end;
-> +		if (--glen == 0 && src_end > src_start) {
-> +			/* A new group */
-> +			cnt = tlen;
-> +			do
-> +				*--dest_end = thousands_sep[--cnt];
-> +			while (cnt > 0);
-> +
-> +			if (*grouping == CHAR_MAX || *grouping < 0) {
-> +				/* No further grouping to be done.
-> +				   Copy the rest of the number. */
-> +				do
-> +					*--dest_end = *--src_end;
-> +				while (src_end > src_start);
-> +				break;
-> +			} else if (*grouping != '\0') {
-> +				glen = *grouping++;
-> +			} else {
-> +				/* The previous grouping repeats ad infinitum */
-> +				glen = grouping[-1];
-> +			}
-> +		}
-> +	}
-> +
-> +	/* Make a copy with the exact needed size of the grouped number */
-> +	*gnumber = strdup(dest_end);
-> +	if (*gnumber == NULL) {
-> +		ret = -ENOMEM;
-
-	ditto
-> +		goto out_free_dest;
-> +	}
-> +
-> +	/* fall through */
-
-Why the "fall through" comment? This is a common construct and this
-comment mostly applies where one would expect a break in a switch
-statement :-)
-
-Ah, here you do:
-
-	ret = 0;
-
-Since all went well.
-
-> +out_free_dest:
-> +	free(dest_alloc_ptr);
-> +out:
-> +	return ret;
-> +}
+Tony
