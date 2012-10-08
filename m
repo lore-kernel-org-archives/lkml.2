@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab2JHV75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:59:57 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55169 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751705Ab2JHV7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:59:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/KsXj07B63ydZb0FsmRPEn
-Date: Mon, 8 Oct 2012 14:59:51 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: OMAP: Fix dependency for OMAP_DEBUG_LEDS
-Message-ID: <20121008215950.GV13011@atomide.com>
-References: <1349604805.6017.1.camel@phoenix>
+	id S1754870Ab2JHWFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:05:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751977Ab2JHWFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 18:05:38 -0400
+Date: Mon, 8 Oct 2012 23:05:32 +0100
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: Jim Meyering <jim@meyering.net>, eblake@redhat.com
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
+Subject: F_DUPFD_CLOEXEC broken in 3.7.0
+Message-ID: <20121008220532.GD15039@rhmail.home.annexia.org>
+References: <20121008171517.GA15039@rhmail.home.annexia.org>
+ <20121008172103.GB15039@rhmail.home.annexia.org>
+ <87a9vwrgtl.fsf@rho.meyering.net>
+ <20121008215030.GI24071@rhmail.home.annexia.org>
+ <20121008215325.GC15039@rhmail.home.annexia.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="d6Gm4EdcadzBjdND"
 Content-Disposition: inline
-In-Reply-To: <1349604805.6017.1.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121008215325.GC15039@rhmail.home.annexia.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Axel Lin <axel.lin@ingics.com> [121007 03:14]:
-> This fixes below build error when CONFIG_LEDS_CLASS is not set.
-> 
->   LD      init/built-in.o
-> arch/arm/plat-omap/built-in.o: In function `fpga_probe':
-> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> arch/arm/plat-omap/built-in.o:arch/arm/plat-omap/debug-leds.c:113: more undefined references to `led_classdev_register' follow
-> make: *** [vmlinux] Error 1
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Thanks looks like I have already an earlier version of the same
-patch from you already queued.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
+Let's move this to LKML ...
 
-Tony
+On Mon, Oct 08, 2012 at 10:53:25PM +0100, Richard W.M. Jones wrote:
+> On Mon, Oct 08, 2012 at 10:50:30PM +0100, Richard W.M. Jones wrote:
+> [.. discussion on gnulib test-cloexec test snipped ..]
+> > I'm suspicious this is a kernel bug:
+> > 
+> > creat("test-cloexec.tmp", 0600)         = 3
+> > fcntl(3, F_GETFD)                       = 0
+> > fcntl(3, F_GETFD)                       = 0
+> > fcntl(3, F_SETFD, FD_CLOEXEC)           = 0
+> > fcntl(3, F_GETFD)                       = 0x1 (flags FD_CLOEXEC)
+> > fcntl(3, F_GETFD)                       = 0x1 (flags FD_CLOEXEC)
+> > fcntl(3, F_SETFD, 0)                    = 0
+> > fcntl(3, F_GETFD)                       = 0
+> > fcntl(3, F_DUPFD_CLOEXEC, 0)            = 4
+> > fcntl(4, F_GETFD)                       = 0
+> > write(2, "test-cloexec.c:97: assertion failed\n", 36) = 36
+> > 
+> > It seems to me from the description in the man page that
+> > F_DUPFD_CLOEXEC ought to be setting the FD_CLOEXEC flag on file
+> > descriptor 4, so either it's not or else F_GETFD isn't reading the
+> > flag for some reason.
+> 
+> Al Viro (CC'd) made some changes in this area recently ..
 
-> ---
->  arch/arm/plat-omap/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-> index ca83a76..c262781 100644
-> --- a/arch/arm/plat-omap/Kconfig
-> +++ b/arch/arm/plat-omap/Kconfig
-> @@ -43,6 +43,7 @@ config OMAP_DEBUG_DEVICES
->  
->  config OMAP_DEBUG_LEDS
->  	def_bool y if NEW_LEDS
-> +	select LEDS_CLASS
->  	depends on OMAP_DEBUG_DEVICES
->  
->  config POWER_AVS_OMAP
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
+Attached is a self-contained test program that demonstrates the bug.
+
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+libguestfs lets you edit virtual machines.  Supports shell scripting,
+bindings from many languages.  http://libguestfs.org
+
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="cloexec.c"
+
+/* Test if F_DUPFD_CLOEXEC works right.
+ * by Richard W.M. Jones.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <assert.h>
+
+int
+main ()
+{
+  char *file = "/tmp/cloexec.tmp";
+  int fd = creat (file, 0600);
+  int fd2;
+  int flags;
+
+  assert (fd >= 0);
+
+  fd2 = fcntl (fd, F_DUPFD_CLOEXEC, 0);
+  assert (fd2 >= 0);
+
+  flags = fcntl (fd2, F_GETFD);
+  assert (flags >= 0);
+
+  if ((flags & FD_CLOEXEC) == 0) {
+    fprintf (stderr, "F_DUPFD_CLOEXEC failed to set FD_CLOEXEC flag!\n");
+    exit (EXIT_FAILURE);
+  }
+
+  exit (EXIT_SUCCESS);
+}
+
+--d6Gm4EdcadzBjdND--
