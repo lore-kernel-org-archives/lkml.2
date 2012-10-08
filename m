@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2JHG6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:58:45 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:57556 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753467Ab2JHG6o (ORCPT
+	id S1753613Ab2JHHCC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 03:02:02 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35386 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472Ab2JHHB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:58:44 -0400
-Date: Mon, 8 Oct 2012 09:53:26 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
-Message-ID: <20121008065325.GB23811@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1349391501-15799-1-git-send-email-milinevskyy@gmail.com>
+	Mon, 8 Oct 2012 03:01:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="St7VIuEGZ6dlpu13"
-Content-Disposition: inline
-In-Reply-To: <1349391501-15799-1-git-send-email-milinevskyy@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 8 Oct 2012 15:01:57 +0800
+Message-ID: <CA+U0gVjD9mBxR5=r1qv69MHN9b7Dd1PPRnEzchZpYuOU_W1eNw@mail.gmail.com>
+Subject: CPU utilization between physical CPU and virtual CPU in KVM
+From: Dennis Chen <kernel.org.gnu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: qemu-devel@nongnu.org, libvir-list@redhat.com, dennis.chen@tnsoft.com.cn
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
---St7VIuEGZ6dlpu13
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am confused by the following observed scenario:
 
-On Fri, Oct 05, 2012 at 01:58:21AM +0300, Dmytro Milinevskyy wrote:
->=20
-> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
+In my 4-CPU (KVM supported, 2 core with 2 thread for each) host
+machine box, I create only one VM with 3-vCPU through virsh/libvirt
+tools and also I pin this VM process to the physical processor 3. I
+guess the CPU utilization for the processor 3 will not exceed 100%,
+then I create 3 process (dead loop-- while(1);) and bind each of them
+to vCPU[0-2] respectively, through the "top -c" command in VM
+environment, I can see the CPU utilization for each of the vCPU is
+about 100%, but interesting, I found that the CPU utilization of
+processor 3 in the host machine is about 300% with "toc -c" command.
+why does a single process bound to a CPU can get ~300% cpu bandwidth
+in this case, does the kernel scheduler dispatch the idle cycle
+capacity of the CPUs to the virtual CPU of the VM, other word, the
+scheduler knows the vCPU info in the VM process?
 
-missing commit log. NAK. Just resend with a proper commit log and I can
-apply.
+For the same case, if I create another 4 new dead-loop processes and
+bind them to the physical CPU[0-3] equally, then I find the vCPU0/1 in
+VM will not be 100%, eg. 32%,  (I think the scheduler in the guest OS
+doesn't know it's running in a virtual environment, so the utilization
+of the vCPU will not change to adapt to the physical processor
+utilization, but it did, why?
 
---=20
-balbi
-
---St7VIuEGZ6dlpu13
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQcnhlAAoJEIaOsuA1yqREoXMP/1kvbZi+QeqbkqM3TdA7tfFH
-Sehw2NauXN6HbUfUoLFV0Dz05Udr/ceksDaBqUS9FABOPsOTwnduPcfDxS3zBi4f
-hgP/u5KPGAw/ymkHMbngK9maTPBW1JBCzxahwKJZNNVJQb+AfTkmnndRuZk1BR+x
-qJS70RaNk/E4wCaNMlhEx05Hz5H401DZ77tAjFRfqQaWKW7X7uCjkNB1Y2YlAoDW
-0GM92C73kGzH1dpNV1iPgB6+7z1uAjF51wh/I0M1YuPoooM1FRgnyFft8Bf1FyNc
-0eozUygjEOHIIdsuHe5M/sywM5N8ofPOJTG9b+bLp15M3hp+4aIXTr9ROmQIR3iJ
-Kiv08D+QN9W9BLIeyRQGtYYKJaYH1uuwUETXrfK4s//uVPQZH/tv3JFggbQsQs3i
-NvlAEXggIVo0hKMwNVV2ntOf8Mtd+ThpzSjb7WMCdShAMstupHIfcBXT8VJpAgJs
-Ypyib3ndkrWzSWLLI6acghqK66XLUuz5GjlNkylccDkeqqLgvTrUg+OaS3kCrToz
-eo6DXMHfkRNHeoXaz0j9dMcAsEDRE7GUakmTOQfneLzvQM5kYMvjL7Y71MVhMpXh
-EQ5lHcAVuq7wQZVytiluqU4zOwxXWccUB3SUkowhvepaEFllLeNsyPcklj/eAhfI
-aqGYO2XDIRhJAZXWv+Pj
-=g3Q0
------END PGP SIGNATURE-----
-
---St7VIuEGZ6dlpu13--
+-org-gnu
