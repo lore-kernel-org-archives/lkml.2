@@ -1,90 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab2JHBE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 21:04:56 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48799 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2JHBEy (ORCPT
+	id S1752994Ab2JHBOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 21:14:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38952 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752006Ab2JHBOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 21:04:54 -0400
-Date: Sun, 7 Oct 2012 18:04:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Dave Airlie <airlied@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121008010410.GL2485@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAGXu5jJhEpdwCqYc0hWs504snMZg9FMygUjLwRUSyaKGAfXb5Q@mail.gmail.com>
- <20121003200314.GR2527@linux.vnet.ibm.com>
- <20121004015539.GA19958@srcf.ucam.org>
- <20121004143150.GA2464@linux.vnet.ibm.com>
- <20121005164642.GA10711@linux.vnet.ibm.com>
- <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
- <20121007014447.GB2485@linux.vnet.ibm.com>
- <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
- <20121007163029.GG2485@linux.vnet.ibm.com>
- <20121007201854.GA6628@redhat.com>
+	Sun, 7 Oct 2012 21:14:31 -0400
+Date: Mon, 8 Oct 2012 02:14:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valdis.Kletnieks@vt.edu, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: silence GCC warning
+Message-ID: <20121008011429.GA19748@opensource.wolfsonmicro.com>
+References: <1349000155.1553.27.camel@x61.thuisdomein> <20121001100321.GB4360@opensource.wolfsonmicro.com> <64681.1349223065@turing-police.cc.vt.edu> <1349249016.1414.55.camel@x61.thuisdomein> <59004.1349475644@turing-police.cc.vt.edu> <20121006085306.GB8590@opensource.wolfsonmicro.com> <1349517456.1491.33.camel@x61.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121007201854.GA6628@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100801-7408-0000-0000-0000091AE80D
+In-Reply-To: <1349517456.1491.33.camel@x61.thuisdomein>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 04:18:54PM -0400, Dave Jones wrote:
-> On Sun, Oct 07, 2012 at 09:30:29AM -0700, Paul E. McKenney wrote:
-> 
->  > > I think Kconfig is mostly what distro would like to use the thing is
->  > > the Kconfig text needs to be there upfront when its merged, not two
->  > > months later, since then it too late for a distro to notice.
->  > > 
->  > > I'd bet most distros would read the warnings, but in a lot of cases
->  > > the warning don't exist until its too late.
->  > 
->  > In the case of CONFIG_RCU_USER_QS you are quite right, the warning
->  > should have been there from the beginning and was not.  I suppose you
->  > could argue that the warning was not sufficiently harsh in the case of
->  > CONFIG_RCU_FAST_NO_HZ, but either way it did get ignored:
-> 
-> Maybe if we had a universally agreed upon tag for kconfig, like
-> "distro recommendation: N" that would make things obvious, and also allow
-> those of us unfortunate enough to maintain distro kernels to have something
-> to easily grep for.  This would also catch the case when you eventually (hopefully)
-> flip from an N to a Y.
-> 
-> There will likely still be some distros that will decide they know better
-> (and I'm pretty sure eventually I'll find reason to do so myself), but it at least
-> gives the feature maintainer the "I told you so" clause.
-> 
-> Something we do quite often for our in-development kernels is enable something
-> that's shiny, new and unproven, and then when we branch for a release, we turn
-> it back off.  It would be great if a lot of this kind of thing could be more automated.
+On Sat, Oct 06, 2012 at 11:57:36AM +0200, Paul Bolle wrote:
 
-One approach would be to have CONFIG_DISTRO, so that experimental
-features could use "depends on !DISTRO", but also to have multiple
-"BLEEDING" symbols.  For example, given a CONFIG_DISTRO_BLEEDING_HPC
-and CONFIG_DISTRO_BLEEDING_RT, CONFIG_RCU_USER_QS might eventually
-use the following clause:
+> 2) I hope to send in a second path shortly, changing 'num' to size_t. My
+> main doubt is whether its problematic that the loop index in
+> regmap_volatile_range() uses unsigned int too. If 'num' would exceed
+> UINT_MAX, that loop would never finish, wouldn't it? But is that
+> actually possible? Are there machines with that many registers?
 
-	depends on !DISTRO || DISTRO_BLEEDING_HPC || DISTRO_BLEEDING_RT
-
-A normal distro would define DISTRO, a distro looking to provide bleeding-edge
-HPC or real-time features would also define DISTRO_BLEEDING_HPC or
-DISTRO_BLEEDING_RT, respectively.
-
-Does that make sense, or am I being overly naive?
-
-							Thanx, Paul
-
+It's possible, of course - people can give whatever random numbers they
+like to registers.  It's not particularly likely, though, so probably as
+well not to worry about it until it's actually a problem.
