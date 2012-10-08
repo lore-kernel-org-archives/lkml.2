@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab2JHXGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 19:06:32 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35784 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab2JHXGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 19:06:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349720414.6755.111.camel@gandalf.local.home>
-References: <1349720414.6755.111.camel@gandalf.local.home>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 8 Oct 2012 19:05:59 -0400
-X-Google-Sender-Auth: 3TwbTkvZGJorDa-bN4PACX9kaxg
-Message-ID: <CAP=VYLrg2ouS+fODQMtxAguZ84h-v5T66aX48vTOCdsMhbBckg@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.4.12-rt20
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751373Ab2JHXKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 19:10:40 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37645 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751035Ab2JHXKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 19:10:38 -0400
+Message-ID: <1349737836.15802.24.camel@joe-AO722>
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+From: Joe Perches <joe@perches.com>
+To: "\"Jan H." =?ISO-8859-1?Q?Sch=F6nherr=22?= 
+	<schnhrr@cs.tu-berlin.de>
+Cc: Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 08 Oct 2012 16:10:36 -0700
+In-Reply-To: <50732F8A.9090109@cs.tu-berlin.de>
+References: <5064790E.4000207@cs.tu-berlin.de>
+	 <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com>
+	 <5065B909.1060907@cs.tu-berlin.de>
+	 <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com>
+	 <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com>
+	 <50732F8A.9090109@cs.tu-berlin.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 8, 2012 at 2:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> Dear RT Folks,
->
-> I'm pleased to announce the 3.4.12-rt20 stable release.
->
->
-> This release is just an update to the new stable 3.4.12 version
-> and no RT specific changes have been made.
+On Mon, 2012-10-08 at 21:54 +0200, "Jan H. Schönherr" wrote:
+> Am 08.10.2012 21:24, schrieb Kay Sievers:
+> > On Fri, Sep 28, 2012 at 4:56 PM, Kay Sievers <kay@vrfy.org> wrote:
+> >> On Fri, Sep 28, 2012 at 4:49 PM, "Jan H. Schönherr"
+> >>> Given that I'm able to fix the racing case, would you be in favor of
+> >>> this approach, or should we stick to the earlier version?
+> >>
+> >> I'm open to everything that makes sense. Let's see how it looks and we
+> >> can decide when we have something that passes the tests.
+[]
+> > any updates, did you try something else?
+> > Or should we merge the first version for now?
+[]
+> My current version does mostly well for race-printk()s, now. But
+> there's still one issue to resolve and some polishing to do.
+> 
+> If we can afford to wait a little longer, we might get a nicer
+> solution (and avoid a possible mostly-revert later).
 
-Did I miss something that ruled out the inclusion of your fix for
-moving the per-cpu softirq lock init after setup_per_cpu_areas?
+I've also got a large refactoring patch series to printk.c
+(move and declutter) I was going to submit post rc-1.
 
-Thanks,
-Paul.
---
+No doubt there'll be several conflicts there too.
 
->
->
-> You can get this release via the git tree at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
->
->   Head SHA1: 16f7c2da31596d7b61e29ee6df2f89ed69a7ecf7
->
->
-> Or to build 3.4.12-rt20 directly, the following patches should be applied:
->
->   http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
->
->   http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.12.xz
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.12-rt20.patch.xz
->
->
->
-> Enjoy,
->
-> -- Steve
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
