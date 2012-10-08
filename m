@@ -1,143 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab2JHXBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 19:01:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754989Ab2JHXA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 19:00:56 -0400
-Date: Tue, 9 Oct 2012 01:00:29 +0200
-From: Petr Holasek <pholasek@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v4] KSM: numa awareness sysfs knob
-Message-ID: <20121008230028.GA9607@thinkpad-work.redhat.com>
-References: <1348448166-1995-1-git-send-email-pholasek@redhat.com>
- <alpine.LSU.2.00.1209301736560.6304@eggly.anvils>
+	id S1755242Ab2JHXGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 19:06:32 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35784 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab2JHXGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 19:06:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1209301736560.6304@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349720414.6755.111.camel@gandalf.local.home>
+References: <1349720414.6755.111.camel@gandalf.local.home>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 8 Oct 2012 19:05:59 -0400
+X-Google-Sender-Auth: 3TwbTkvZGJorDa-bN4PACX9kaxg
+Message-ID: <CAP=VYLrg2ouS+fODQMtxAguZ84h-v5T66aX48vTOCdsMhbBckg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.4.12-rt20
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+On Mon, Oct 8, 2012 at 2:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.4.12-rt20 stable release.
+>
+>
+> This release is just an update to the new stable 3.4.12 version
+> and no RT specific changes have been made.
 
-first of all, please let me apologize for the delay in my response and thank
-you for your extensive review!
+Did I miss something that ruled out the inclusion of your fix for
+moving the per-cpu softirq lock init after setup_per_cpu_areas?
 
-On Sun, 30 Sep 2012, Hugh Dickins wrote:
-> Andrea's point about ksm_migrate_page() is an important one, and I've
-> answered that against his mail, but here's some other easier points.
-> 
-> On Mon, 24 Sep 2012, Petr Holasek wrote:
-> 
-> > Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_across_nodes
-> > which control merging pages across different numa nodes.
-> > When it is set to zero only pages from the same node are merged,
-> > otherwise pages from all nodes can be merged together (default behavior).
-> > 
+Thanks,
+Paul.
+--
 
-...
-
-> > 
-> > v4:	- merge_nodes was renamed to merge_across_nodes
-> > 	- share_all debug knob was dropped
-> 
-> Yes, you were right to drop the share_all knob for now.  I do like the
-> idea, but it was quite inappropriate to mix it in with this NUMAnode
-> patch.  And although I like the idea, I think it wants a bit more: I
-> already have a hacky "allksm" boot option patch to mm/mmap.c for my
-> own testing, which adds VM_MERGEABLE everywhere.  If I gave that up
-> (I'd like to!) in favour of yours, I think I would still be missing
-> all the mms that are created before there's a chance to switch the
-> share_all mode on.  Or maybe I misread your v3.  Anyway, that's a
-> different topic, happily taken off today's agenda.
-> 
-
-Agreed, it hid original purpose of this patch and made it more difficult for
-eventual merging. So let's move it lower on the ksm todo list for this time :)
-
-> > diff --git a/mm/ksm.c b/mm/ksm.c
-> > index 47c8853..7c82032 100644
-> > --- a/mm/ksm.c
-> > +++ b/mm/ksm.c
-> > @@ -36,6 +36,7 @@
-> >  #include <linux/hash.h>
-> >  #include <linux/freezer.h>
-> >  #include <linux/oom.h>
-> > +#include <linux/numa.h>
-> >  
-> >  #include <asm/tlbflush.h>
-> >  #include "internal.h"
-> > @@ -140,7 +141,10 @@ struct rmap_item {
-> >  	unsigned long address;		/* + low bits used for flags below */
-> >  	unsigned int oldchecksum;	/* when unstable */
-> >  	union {
-> > -		struct rb_node node;	/* when node of unstable tree */
-> > +		struct {
-> > +			struct rb_node node;	/* when node of unstable tree */
-> > +			struct rb_root *root;
-> > +		};
-> 
-> This worries me a little, enlarging struct rmap_item: there may
-> be very many of them in the system, best to minimize their size.
-> 
-> (This struct rb_root *root is used for one thing only, isn't it?  For the
-> unstable rb_erase() in remove_rmap_item_from_tree().  It annoys me that
-> we need to record root just for that, but I don't see an alternative.)
-
-Yes, I've played a quite lot with this issue, but wasn't able to find an
-alternative solution, too.
-
-> 
-> The 64-bit case can be easily improved by locating unsigned int nid
-> after oldchecksum instead.  The 32-bit case (which supports smaller
-> NODES_SHIFT: 6 was the largest I found) could be "improved" by keeping
-> nid in the lower bits of address along with (moved) UNSTABLE_FLAG and
-> STABLE_FLAG and reduced SEQNR_MASK - we really need only 1 bit for that,
-> but 2 bits would be nice for keeping the BUG_ON(age > 1).
-> 
-> But you may think I'm going too far there, and prefer just to put
-> #ifdef CONFIG_NUMA around the unsigned int nid, so at least it does
-> not enlarge the more basic 32-bit configuration.
-> 
-
-I like your idea of unsigned int nid, will implement it in next version.
-
-...
-
-> >  
-> > -	for (node = rb_first(&root_stable_tree); node; node = rb_next(node)) {
-> > -		struct stable_node *stable_node;
-> > +	for (i = 0; i < MAX_NUMNODES; i++)
-> 
-> It's irritating to have to do this outer nid loop, but I think you're
-> right, that the memory hotremove notification does not quite tell us
-> which node to look at.  Or can we derive that from start_pfn?  Would
-> it be safe to assume that end_pfn-1 must be in the same node?
-> 
-
-I had assumed that we can't rely on end_pfn-1 in the same node, but now
-mm/memory_hotremove.c looks to me that we can rely on it because memory hotremove
-callback is triggered for each zone where we are removing memory.
-So I think yes, we can optimize it in the way you mentioned above. If I am wrong
-correct me, please :)
-
-...
-
-> 
-> Looks nice - thank you.
-> 
-
-Thanks for your help!
-
-Petr
+>
+>
+> You can get this release via the git tree at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+>
+>   Head SHA1: 16f7c2da31596d7b61e29ee6df2f89ed69a7ecf7
+>
+>
+> Or to build 3.4.12-rt20 directly, the following patches should be applied:
+>
+>   http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+>
+>   http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.12.xz
+>
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.12-rt20.patch.xz
+>
+>
+>
+> Enjoy,
+>
+> -- Steve
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
