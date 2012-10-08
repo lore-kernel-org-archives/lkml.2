@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2JHUuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 16:50:18 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:43058 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab2JHUuM (ORCPT
+	id S1754849Ab2JHUu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 16:50:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51714 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab2JHUu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 16:50:12 -0400
-Date: Mon, 8 Oct 2012 13:50:06 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v3 4/8] perf tools: configure tmp path at build time
-Message-ID: <20121008205006.GH2631@ghostprotocols.net>
-References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
- <1349678613-7045-5-git-send-email-irina.tirdea@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349678613-7045-5-git-send-email-irina.tirdea@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Oct 2012 16:50:56 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        davem@davemloft.net
+Cc: linux-bluetooth@vger.kernel.org, davej@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, levinsasha928@gmail.com,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH resend] net, bluetooth: don't attempt to free a channel that wasn't created
+Date: Mon,  8 Oct 2012 16:48:32 -0400
+Message-Id: <1349729312-14259-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.7.12
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 08, 2012 at 09:43:29AM +0300, Irina Tirdea escreveu:
-> From: Irina Tirdea <irina.tirdea@intel.com>
-> 
-> Temporary perf files are hardcoded to point to /tmp. Android does not have
-> a /tmp directory so it needs to set this path at compile time.
-> 
-> Add a compile-time definition (PERF_TMP_DIR) in the Makefile that sets the path
-> to temp directory. By default it points to /tmp.
+We may currently attempt to free a channel which wasn't created due to
+an error in the initialization path, this would cause a NULL ptr deref.
 
+This would cause the following oops:
 
-[acme@sandy linux]$ am /wb/1.patch 
-Applying: perf tools: configure tmp path at build time
-[perf/core eafbb72] perf tools: configure tmp path at build time
- Author: Irina Tirdea <irina.tirdea@intel.com>
- 9 files changed, 39 insertions(+), 9 deletions(-)
-[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
-make: Entering directory `/home/git/linux/tools/perf'
-PERF_VERSION = 3.6.rc5.371.geafbb7
-make: Leaving directory `/home/git/linux/tools/perf'
-make: Entering directory `/home/git/linux/tools/perf'
-make: *** No rule to make target `/home/acme/git/build/perf/util/pmu.c', needed by `/home/acme/git/build/perf/util/pmu.o'.  Stop.
-make: *** Waiting for unfinished jobs....
-make: Leaving directory `/home/git/linux/tools/perf'
+[   12.919073] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+[   12.919131] IP: [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
+[   12.919135] PGD 0
+[   12.919138] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   12.919193] Dumping ftrace buffer:
+[   12.919242]    (ftrace buffer empty)
+[   12.919314] Modules linked in:
+[   12.919318] CPU 1
+[   12.919319] Pid: 6210, comm: krfcommd Tainted: G        W    3.6.0-next-20121004-sasha-00005-gb010653-dirty #30
+[   12.919374] RIP: 0010:[<ffffffff836645c4>]  [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
+[   12.919377] RSP: 0000:ffff880066933c38  EFLAGS: 00010246
+[   12.919378] RAX: ffffffff8366c780 RBX: 0000000000000000 RCX: 6666666666666667
+[   12.919379] RDX: 0000000000000fa0 RSI: ffffffff84d3f79e RDI: 0000000000000010
+[   12.919381] RBP: ffff880066933c48 R08: ffffffff859989f8 R09: 0000000000000001
+[   12.919382] R10: 0000000000000000 R11: 7fffffffffffffff R12: 0000000000000000
+[   12.919383] R13: ffff88009b00a200 R14: ffff88009b00a200 R15: 0000000000000001
+[   12.919385] FS:  0000000000000000(0000) GS:ffff880033600000(0000) knlGS:0000000000000000
+[   12.919437] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   12.919440] CR2: 0000000000000010 CR3: 0000000005026000 CR4: 00000000000406e0
+[   12.919446] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   12.919451] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   12.919504] Process krfcommd (pid: 6210, threadinfo ffff880066932000, task ffff880065c4b000)
+[   12.919506] Stack:
+[   12.919510]  ffff88009b00a200 ffff880032084000 ffff880066933c68 ffffffff8366c7bc
+[   12.919513]  7fffffffffffffff ffff880032084000 ffff880066933c98 ffffffff833ae0ae
+[   12.919516]  ffff880066933ca8 0000000000000000 0000000000000000 ffff88009b00a200
+[   12.919517] Call Trace:
+[   12.919522]  [<ffffffff8366c7bc>] l2cap_sock_destruct+0x3c/0x80
+[   12.919527]  [<ffffffff833ae0ae>] __sk_free+0x1e/0x1f0
+[   12.919530]  [<ffffffff833ae2f7>] sk_free+0x17/0x20
+[   12.919585]  [<ffffffff8366ca4e>] l2cap_sock_alloc.constprop.5+0x9e/0xd0
+[   12.919591]  [<ffffffff8366cb9e>] l2cap_sock_create+0x7e/0x100
+[   12.919652]  [<ffffffff83a4f32a>] ? _raw_read_lock+0x6a/0x80
+[   12.919658]  [<ffffffff836402c4>] ? bt_sock_create+0x74/0x110
+[   12.919660]  [<ffffffff83640308>] bt_sock_create+0xb8/0x110
+[   12.919664]  [<ffffffff833aa232>] __sock_create+0x282/0x3b0
+[   12.919720]  [<ffffffff833aa0b0>] ? __sock_create+0x100/0x3b0
+[   12.919725]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
+[   12.919779]  [<ffffffff833aa37f>] sock_create_kern+0x1f/0x30
+[   12.919784]  [<ffffffff83675714>] rfcomm_l2sock_create+0x44/0x70
+[   12.919787]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
+[   12.919790]  [<ffffffff836785fe>] rfcomm_run+0x4e/0x1f0
+[   12.919846]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
+[   12.919852]  [<ffffffff81138ee3>] kthread+0xe3/0xf0
+[   12.919908]  [<ffffffff8117b12e>] ? put_lock_stats.isra.14+0xe/0x40
+[   12.919914]  [<ffffffff81138e00>] ? flush_kthread_work+0x1f0/0x1f0
+[   12.919968]  [<ffffffff83a5077c>] ret_from_fork+0x7c/0x90
+[   12.919973]  [<ffffffff81138e00>] ? flush_kthread_work+0x1f0/0x1f0
+[   12.920161] Code: 83 ec 08 f6 05 ff 58 44 02 04 74 1b 8b 4f 10 48 89 fa 48 c7 c6 d9 d7 d4 84 48 c7 c7 80 9e aa 85 31 c0 e8 80
+ac 3a fe 48 8d 7b 10 <f0> 83 6b 10 01 0f 94 c0 84 c0 74 05 e8 8b e0 ff ff 48 83 c4 08
+[   12.920165] RIP  [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
+[   12.920166]  RSP <ffff880066933c38>
+[   12.920167] CR2: 0000000000000010
+[   12.920417] ---[ end trace 5a9114e8a158ab84 ]---
 
+Introduced in commit 61d6ef3e ("Bluetooth: Make better use of l2cap_chan
+reference counting").
 
-Remove this patch:
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/bluetooth/l2cap_sock.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-[acme@sandy linux]$ git reset --hard HEAD^
-HEAD is now at 7747e2f Documentation: add documentation on compiling for Android
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 083f2bf..66c295a 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -1083,7 +1083,8 @@ static void l2cap_sock_destruct(struct sock *sk)
+ {
+ 	BT_DBG("sk %p", sk);
+ 
+-	l2cap_chan_put(l2cap_pi(sk)->chan);
++	if (l2cap_pi(sk)->chan)
++		l2cap_chan_put(l2cap_pi(sk)->chan);
+ 	if (l2cap_pi(sk)->rx_busy_skb) {
+ 		kfree_skb(l2cap_pi(sk)->rx_busy_skb);
+ 		l2cap_pi(sk)->rx_busy_skb = NULL;
+-- 
+1.7.12
 
-And it works again, dropping,
-
-- Arnaldo
-
-[acme@sandy linux]$ make -j8 -C tools/perf/ LIBUNWIND_DIR=/opt/libunwind O=/home/acme/git/build/perf install
-make: Entering directory `/home/git/linux/tools/perf'
-PERF_VERSION = 3.6.rc5.370.g7747e2
-make: Leaving directory `/home/git/linux/tools/perf'
-make: Entering directory `/home/git/linux/tools/perf'
-    GEN perf-archive
-make[1]: Entering directory `/home/git/linux/tools/lib/traceevent'
-make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
-make[1]: Leaving directory `/home/git/linux/tools/lib/traceevent'
-    CC /home/acme/git/build/perf/perf.o
-    CC /home/acme/git/build/perf/util/pmu.o
-    CC /home/acme/git/build/perf/util/symbol.o
-    CC /home/acme/git/build/perf/util/dso-test-data.o
-    CC /home/acme/git/build/perf/util/trace-event-info.o
-    CC /home/acme/git/build/perf/util/map.o
-    AR /home/acme/git/build/perf/libperf.a
-    LINK /home/acme/git/build/perf/perf
-install -d -m 755 '/home/acme/bin'
-install /home/acme/git/build/perf/perf '/home/acme/bin'
-install -d -m 755 '/home/acme/libexec/perf-core/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-install -d -m 755 '/home/acme/libexec/perf-core/scripts/perl/bin'
-install /home/acme/git/build/perf/perf-archive -t '/home/acme/libexec/perf-core'
-install scripts/perl/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-install scripts/perl/*.pl -t '/home/acme/libexec/perf-core/scripts/perl'
-install scripts/perl/bin/* -t '/home/acme/libexec/perf-core/scripts/perl/bin'
-install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-install -d -m 755 '/home/acme/libexec/perf-core/scripts/python/bin'
-install scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '/home/acme/libexec/perf-core/scripts/python/Perf-Trace-Util/lib/Perf/Trace'
-install scripts/python/*.py -t '/home/acme/libexec/perf-core/scripts/python'
-install scripts/python/bin/* -t '/home/acme/libexec/perf-core/scripts/python/bin'
-install -d -m 755 '/home/acme/etc/bash_completion.d'
-install bash_completion '/home/acme/etc/bash_completion.d/perf'
-make: Leaving directory `/home/git/linux/tools/perf'
-[acme@sandy linux]$
