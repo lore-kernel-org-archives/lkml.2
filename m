@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2JHRLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:11:53 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:60582 "EHLO mail.x86-64.org"
+	id S1754394Ab2JHRMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:12:00 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:60590 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754275Ab2JHRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754286Ab2JHRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Oct 2012 13:11:48 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Tony Luck <tony.luck@intel.com>
 Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 1/6] x86, RAS: Add a barebones RAS subtree
-Date: Mon,  8 Oct 2012 19:11:28 +0200
-Message-Id: <1349716293-16723-2-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/6] x86, RAS: Add function enabling direct writes to MCE MSRs
+Date: Mon,  8 Oct 2012 19:11:31 +0200
+Message-Id: <1349716293-16723-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <1349716293-16723-1-git-send-email-bp@amd64.org>
 References: <1349716293-16723-1-git-send-email-bp@amd64.org>
@@ -23,60 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-This should collect all x86 RAS-related stuff.
+Normally, writing to MCE MSRs causes a #GP. Add a function to enable
+direct accesses to those MSRs.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/Kconfig      | 8 ++++++++
- arch/x86/Makefile     | 3 +++
- arch/x86/ras/Makefile | 1 +
- 3 files changed, 12 insertions(+)
- create mode 100644 arch/x86/ras/Makefile
- create mode 100644 arch/x86/ras/ras.c
+ arch/x86/ras/amd/mce-inject.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index e0323d67ee42..e5cae3de52ff 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -687,6 +687,14 @@ config X86_CYCLONE_TIMER
- 	def_bool y
- 	depends on X86_SUMMIT
+diff --git a/arch/x86/ras/amd/mce-inject.c b/arch/x86/ras/amd/mce-inject.c
+index 66969eab5591..c0c811579ce9 100644
+--- a/arch/x86/ras/amd/mce-inject.c
++++ b/arch/x86/ras/amd/mce-inject.c
+@@ -55,6 +55,30 @@ DEFINE_SIMPLE_ATTRIBUTE(misc_fops, inj_misc_get, inj_misc_set, "%llx\n");
+ DEFINE_SIMPLE_ATTRIBUTE(addr_fops, inj_addr_get, inj_addr_set, "%llx\n");
  
-+config X86_RAS
-+	def_bool y
-+	prompt "X86 RAS features"
-+	---help---
-+	A collection of Reliability, Availability and Serviceability software
-+	features which enable hardware error logging and reporting. Leave it
-+	at 'y' unless you really know what you're doing.
+ /*
++ * Caller needs to be make sure this cpu doesn't disappear
++ * from under us, i.e.: get_cpu/put_cpu.
++ */
++static int toggle_hw_mce_inject(unsigned int cpu, bool enable)
++{
++	u32 l, h;
++	int err;
 +
- source "arch/x86/Kconfig.cpu"
- 
- config HPET_TIMER
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 58790bd85c1d..2810e50b670d 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -163,6 +163,9 @@ libs-y  += arch/x86/lib/
- # See arch/x86/Kbuild for content of core part of the kernel
- core-y += arch/x86/
- 
-+# RAS support
-+core-$(CONFIG_X86_RAS)		+= arch/x86/ras/
++	err = rdmsr_on_cpu(cpu, MSR_K7_HWCR, &l, &h);
++	if (err) {
++		pr_err("%s: error reading HWCR\n", __func__);
++		return err;
++	}
 +
- # drivers-y are linked after core-y
- drivers-$(CONFIG_MATH_EMULATION) += arch/x86/math-emu/
- drivers-$(CONFIG_PCI)            += arch/x86/pci/
-diff --git a/arch/x86/ras/Makefile b/arch/x86/ras/Makefile
-new file mode 100644
-index 000000000000..7a70bb5cd057
---- /dev/null
-+++ b/arch/x86/ras/Makefile
-@@ -0,0 +1 @@
-+obj-y		:= ras.o
-diff --git a/arch/x86/ras/ras.c b/arch/x86/ras/ras.c
-new file mode 100644
-index 000000000000..e69de29bb2d1
++	enable ? (l |= BIT(18)) : (l &= ~BIT(18));
++
++	err = wrmsr_on_cpu(cpu, MSR_K7_HWCR, l, h);
++	if (err)
++		pr_err("%s: error writing HWCR\n", __func__);
++
++	return err;
++}
++
++/*
+  * This denotes into which bank we're injecting and triggers
+  * the injection, at the same time.
+  */
 -- 
 1.8.0.rc0.18.gf84667d
 
