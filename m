@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab2JHIKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:10:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36180 "EHLO ogre.sisk.pl"
+	id S1754000Ab2JHIKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:10:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36187 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753899Ab2JHIKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753897Ab2JHIKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Oct 2012 04:10:14 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
@@ -17,9 +17,9 @@ Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         mark gross <markgross@thegnar.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/7] PM / QoS: Introduce request and constraint data types for PM QoS flags
-Date: Mon, 08 Oct 2012 10:05:07 +0200
-Message-ID: <5257738.DZvocH2moA@vostro.rjw.lan>
+Subject: [PATCH 1/7] PM / QoS: Prepare device structure for adding more constraint types
+Date: Mon, 08 Oct 2012 10:04:03 +0200
+Message-ID: <5823653.QdHL6Lda2x@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
 In-Reply-To: <1413438.1MkXj8vjQK@vostro.rjw.lan>
 References: <201209282351.10663.rjw@sisk.pl> <1413438.1MkXj8vjQK@vostro.rjw.lan>
@@ -32,152 +32,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Introduce struct pm_qos_flags_request and struct pm_qos_flags
-representing PM QoS flags request type and PM QoS flags constraint
-type, respectively.  With these definitions the data structures
-will be arranged so that the list member of a struct pm_qos_flags
-object will contain the head of a list of struct pm_qos_flags_request
-objects representing all of the "flags" requests present for the
-given device.  Then, the effective_flags member of a struct
-pm_qos_flags object will contain the bitwise OR of the flags members
-of all the struct pm_qos_flags_request objects in the list.
-
-Additionally, introduce helper function pm_qos_update_flags()
-allowing the caller to manage the list of struct pm_qos_flags_request
-pointed to by the list member of struct pm_qos_flags.
-
-The flags are of type s32 so that the request's "value" field
-is always of the same type regardless of what kind of request it
-is (latency requests already have value fields of type s32).
+Currently struct dev_pm_info contains only one PM QoS constraints
+pointer reserved for latency requirements.  Since one more device
+constraints type (i.e. flags) will be necessary, introduce a new
+structure, struct dev_pm_qos, that eventually will contain all of
+the available device PM QoS constraints and replace the "constraints"
+pointer in struct dev_pm_info with a pointer to the new structure
+called "qos".
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Reviewed-by: Jean Pihet <j-pihet@ti.com>
 ---
- include/linux/pm_qos.h |   17 +++++++++++--
- kernel/power/qos.c     |   63 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 78 insertions(+), 2 deletions(-)
+ drivers/base/power/qos.c |   42 ++++++++++++++++++++++--------------------
+ include/linux/pm.h       |    2 +-
+ include/linux/pm_qos.h   |    4 ++++
+ 3 files changed, 27 insertions(+), 21 deletions(-)
 
+Index: linux/include/linux/pm.h
+===================================================================
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -551,7 +551,7 @@ struct dev_pm_info {
+ 	struct dev_pm_qos_request *pq_req;
+ #endif
+ 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
+-	struct pm_qos_constraints *constraints;
++	struct dev_pm_qos	*qos;
+ };
+ 
+ extern void update_pm_runtime_accounting(struct device *dev);
 Index: linux/include/linux/pm_qos.h
 ===================================================================
 --- linux.orig/include/linux/pm_qos.h
 +++ linux/include/linux/pm_qos.h
-@@ -33,6 +33,11 @@ struct pm_qos_request {
- 	struct delayed_work work; /* for pm_qos_update_request_timeout */
- };
- 
-+struct pm_qos_flags_request {
-+	struct list_head node;
-+	s32 flags;	/* Do not change to 64 bit */
-+};
-+
- struct dev_pm_qos_request {
- 	struct plist_node node;
- 	struct device *dev;
-@@ -45,8 +50,8 @@ enum pm_qos_type {
- };
- 
- /*
-- * Note: The lockless read path depends on the CPU accessing
-- * target_value atomically.  Atomic access is only guaranteed on all CPU
-+ * Note: The lockless read path depends on the CPU accessing target_value
-+ * or effective_flags atomically.  Atomic access is only guaranteed on all CPU
-  * types linux supports for 32 bit quantites
-  */
- struct pm_qos_constraints {
-@@ -57,6 +62,11 @@ struct pm_qos_constraints {
+@@ -57,6 +57,10 @@ struct pm_qos_constraints {
  	struct blocking_notifier_head *notifiers;
  };
  
-+struct pm_qos_flags {
-+	struct list_head list;
-+	s32 effective_flags;	/* Do not change to 64 bit */
++struct dev_pm_qos {
++	struct pm_qos_constraints latency;
 +};
 +
- struct dev_pm_qos {
- 	struct pm_qos_constraints latency;
- };
-@@ -75,6 +85,9 @@ static inline int dev_pm_qos_request_act
- 
- int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
- 			 enum pm_qos_req_action action, int value);
-+bool pm_qos_update_flags(struct pm_qos_flags *pqf,
-+			 struct pm_qos_flags_request *req,
-+			 enum pm_qos_req_action action, s32 val);
- void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
- 			s32 value);
- void pm_qos_update_request(struct pm_qos_request *req,
-Index: linux/kernel/power/qos.c
+ /* Action requested to pm_qos_update_target */
+ enum pm_qos_req_action {
+ 	PM_QOS_ADD_REQ,		/* Add a new request */
+Index: linux/drivers/base/power/qos.c
 ===================================================================
---- linux.orig/kernel/power/qos.c
-+++ linux/kernel/power/qos.c
-@@ -213,6 +213,69 @@ int pm_qos_update_target(struct pm_qos_c
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -55,9 +55,7 @@ static BLOCKING_NOTIFIER_HEAD(dev_pm_not
+  */
+ s32 __dev_pm_qos_read_value(struct device *dev)
+ {
+-	struct pm_qos_constraints *c = dev->power.constraints;
+-
+-	return c ? pm_qos_read_value(c) : 0;
++	return dev->power.qos ? pm_qos_read_value(&dev->power.qos->latency) : 0;
  }
  
  /**
-+ * pm_qos_flags_remove_req - Remove device PM QoS flags request.
-+ * @pqf: Device PM QoS flags set to remove the request from.
-+ * @req: Request to remove from the set.
-+ */
-+static void pm_qos_flags_remove_req(struct pm_qos_flags *pqf,
-+				    struct pm_qos_flags_request *req)
-+{
-+	s32 val = 0;
-+
-+	list_del(&req->node);
-+	list_for_each_entry(req, &pqf->list, node)
-+		val |= req->flags;
-+
-+	pqf->effective_flags = val;
-+}
-+
-+/**
-+ * pm_qos_update_flags - Update a set of PM QoS flags.
-+ * @pqf: Set of flags to update.
-+ * @req: Request to add to the set, to modify, or to remove from the set.
-+ * @action: Action to take on the set.
-+ * @val: Value of the request to add or modify.
-+ *
-+ * Update the given set of PM QoS flags and call notifiers if the aggregate
-+ * value has changed.  Returns 1 if the aggregate constraint value has changed,
-+ * 0 otherwise.
-+ */
-+bool pm_qos_update_flags(struct pm_qos_flags *pqf,
-+			 struct pm_qos_flags_request *req,
-+			 enum pm_qos_req_action action, s32 val)
-+{
-+	unsigned long irqflags;
-+	s32 prev_value, curr_value;
-+
-+	spin_lock_irqsave(&pm_qos_lock, irqflags);
-+
-+	prev_value = list_empty(&pqf->list) ? 0 : pqf->effective_flags;
-+
-+	switch (action) {
-+	case PM_QOS_REMOVE_REQ:
-+		pm_qos_flags_remove_req(pqf, req);
-+		break;
-+	case PM_QOS_UPDATE_REQ:
-+		pm_qos_flags_remove_req(pqf, req);
-+	case PM_QOS_ADD_REQ:
-+		req->flags = val;
-+		INIT_LIST_HEAD(&req->node);
-+		list_add_tail(&req->node, &pqf->list);
-+		pqf->effective_flags |= val;
-+		break;
-+	default:
-+		/* no action */
-+		;
-+	}
-+
-+	curr_value = list_empty(&pqf->list) ? 0 : pqf->effective_flags;
-+
-+	spin_unlock_irqrestore(&pm_qos_lock, irqflags);
-+
-+	return prev_value != curr_value;
-+}
-+
-+/**
-  * pm_qos_request - returns current system wide qos expectation
-  * @pm_qos_class: identification of which qos value is requested
-  *
+@@ -91,12 +89,12 @@ static int apply_constraint(struct dev_p
+ {
+ 	int ret, curr_value;
+ 
+-	ret = pm_qos_update_target(req->dev->power.constraints,
++	ret = pm_qos_update_target(&req->dev->power.qos->latency,
+ 				   &req->node, action, value);
+ 
+ 	if (ret) {
+ 		/* Call the global callbacks if needed */
+-		curr_value = pm_qos_read_value(req->dev->power.constraints);
++		curr_value = pm_qos_read_value(&req->dev->power.qos->latency);
+ 		blocking_notifier_call_chain(&dev_pm_notifiers,
+ 					     (unsigned long)curr_value,
+ 					     req);
+@@ -114,20 +112,22 @@ static int apply_constraint(struct dev_p
+  */
+ static int dev_pm_qos_constraints_allocate(struct device *dev)
+ {
++	struct dev_pm_qos *qos;
+ 	struct pm_qos_constraints *c;
+ 	struct blocking_notifier_head *n;
+ 
+-	c = kzalloc(sizeof(*c), GFP_KERNEL);
+-	if (!c)
++	qos = kzalloc(sizeof(*qos), GFP_KERNEL);
++	if (!qos)
+ 		return -ENOMEM;
+ 
+ 	n = kzalloc(sizeof(*n), GFP_KERNEL);
+ 	if (!n) {
+-		kfree(c);
++		kfree(qos);
+ 		return -ENOMEM;
+ 	}
+ 	BLOCKING_INIT_NOTIFIER_HEAD(n);
+ 
++	c = &qos->latency;
+ 	plist_head_init(&c->list);
+ 	c->target_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
+ 	c->default_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
+@@ -135,7 +135,7 @@ static int dev_pm_qos_constraints_alloca
+ 	c->notifiers = n;
+ 
+ 	spin_lock_irq(&dev->power.lock);
+-	dev->power.constraints = c;
++	dev->power.qos = qos;
+ 	spin_unlock_irq(&dev->power.lock);
+ 
+ 	return 0;
+@@ -151,7 +151,7 @@ static int dev_pm_qos_constraints_alloca
+ void dev_pm_qos_constraints_init(struct device *dev)
+ {
+ 	mutex_lock(&dev_pm_qos_mtx);
+-	dev->power.constraints = NULL;
++	dev->power.qos = NULL;
+ 	dev->power.power_state = PMSG_ON;
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ }
+@@ -164,6 +164,7 @@ void dev_pm_qos_constraints_init(struct
+  */
+ void dev_pm_qos_constraints_destroy(struct device *dev)
+ {
++	struct dev_pm_qos *qos;
+ 	struct dev_pm_qos_request *req, *tmp;
+ 	struct pm_qos_constraints *c;
+ 
+@@ -176,10 +177,11 @@ void dev_pm_qos_constraints_destroy(stru
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+ 	dev->power.power_state = PMSG_INVALID;
+-	c = dev->power.constraints;
+-	if (!c)
++	qos = dev->power.qos;
++	if (!qos)
+ 		goto out;
+ 
++	c = &qos->latency;
+ 	/* Flush the constraints list for the device */
+ 	plist_for_each_entry_safe(req, tmp, &c->list, node) {
+ 		/*
+@@ -191,7 +193,7 @@ void dev_pm_qos_constraints_destroy(stru
+ 	}
+ 
+ 	spin_lock_irq(&dev->power.lock);
+-	dev->power.constraints = NULL;
++	dev->power.qos = NULL;
+ 	spin_unlock_irq(&dev->power.lock);
+ 
+ 	kfree(c->notifiers);
+@@ -235,7 +237,7 @@ int dev_pm_qos_add_request(struct device
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (!dev->power.constraints) {
++	if (!dev->power.qos) {
+ 		if (dev->power.power_state.event == PM_EVENT_INVALID) {
+ 			/* The device has been removed from the system. */
+ 			req->dev = NULL;
+@@ -290,7 +292,7 @@ int dev_pm_qos_update_request(struct dev
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (req->dev->power.constraints) {
++	if (req->dev->power.qos) {
+ 		if (new_value != req->node.prio)
+ 			ret = apply_constraint(req, PM_QOS_UPDATE_REQ,
+ 					       new_value);
+@@ -329,7 +331,7 @@ int dev_pm_qos_remove_request(struct dev
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (req->dev->power.constraints) {
++	if (req->dev->power.qos) {
+ 		ret = apply_constraint(req, PM_QOS_REMOVE_REQ,
+ 				       PM_QOS_DEFAULT_VALUE);
+ 		memset(req, 0, sizeof(*req));
+@@ -362,13 +364,13 @@ int dev_pm_qos_add_notifier(struct devic
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (!dev->power.constraints)
++	if (!dev->power.qos)
+ 		ret = dev->power.power_state.event != PM_EVENT_INVALID ?
+ 			dev_pm_qos_constraints_allocate(dev) : -ENODEV;
+ 
+ 	if (!ret)
+ 		ret = blocking_notifier_chain_register(
+-				dev->power.constraints->notifiers, notifier);
++				dev->power.qos->latency.notifiers, notifier);
+ 
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ 	return ret;
+@@ -393,9 +395,9 @@ int dev_pm_qos_remove_notifier(struct de
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+ 	/* Silently return if the constraints object is not present. */
+-	if (dev->power.constraints)
++	if (dev->power.qos)
+ 		retval = blocking_notifier_chain_unregister(
+-				dev->power.constraints->notifiers,
++				dev->power.qos->latency.notifiers,
+ 				notifier);
+ 
+ 	mutex_unlock(&dev_pm_qos_mtx);
 
