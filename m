@@ -1,128 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab2JHIif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:38:35 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44155 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab2JHIic convert rfc822-to-8bit (ORCPT
+	id S1754091Ab2JHImm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:42:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54219 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab2JHImj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:38:32 -0400
-Message-ID: <507290DF.30307@parallels.com>
-Date: Mon, 8 Oct 2012 12:37:51 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Mon, 8 Oct 2012 04:42:39 -0400
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "bfields@redhat.com" <bfields@redhat.com>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tim.c.chen@linux.intel.com" <tim.c.chen@linux.intel.com>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH 0/5] net: socket bind to file descriptor introduced
-References: <20120815161141.7598.16682.stgit@localhost.localdomain> <87y5lf7d37.fsf@xmission.com> <50320EE5.10307@parallels.com> <20120904190007.GB29369@fieldses.org> <20121005200009.GA30139@fieldses.org>
-In-Reply-To: <20121005200009.GA30139@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <3818614.VWiQmGi8Bj@vostro.rjw.lan>
+References: <1349342914-7095-1-git-send-email-rajagopal.venkat@linaro.org>
+	<1349342914-7095-3-git-send-email-rajagopal.venkat@linaro.org>
+	<3818614.VWiQmGi8Bj@vostro.rjw.lan>
+Date: Mon, 8 Oct 2012 14:12:39 +0530
+Message-ID: <CA+Z25wXinqreVQcJVsF+bXiwNKPii=onMkTB0Scrk6TU6EajNg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] devfreq: Add suspend and resume apis
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: myungjoo.ham@samsung.com, mturquette@linaro.org, kyungmin.park@samsung.com,
+        patches@linaro.org, linaro-dev@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-06.10.2012 00:00, J. Bruce Fields пишет:
-> On Tue, Sep 04, 2012 at 03:00:07PM -0400, bfields wrote:
->> On Mon, Aug 20, 2012 at 02:18:13PM +0400, Stanislav Kinsbursky wrote:
->>> 16.08.2012 07:03, Eric W. Biederman пишет:
->>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
->>>>
->>>>> This patch set introduces new socket operation and new system call:
->>>>> sys_fbind(), which allows to bind socket to opened file.
->>>>> File to bind to can be created by sys_mknod(S_IFSOCK) and opened by
->>>>> open(O_PATH).
->>>>>
->>>>> This system call is especially required for UNIX sockets, which has name
->>>>> lenght limitation.
->>>>>
->>>>> The following series implements...
->>>>
->>>> Hmm.  I just realized this patchset is even sillier than I thought.
->>>>
->>>> Stanislav is the problem you are ultimately trying to solve nfs clients
->>>> in a container connecting to the wrong user space rpciod?
->>>>
->>>
->>> Hi, Eric.
->>> The problem you mentioned was the reason why I started to think about this.
->>> But currently I believe, that limitations in unix sockets connect or
->>> bind should be removed, because it will be useful it least for CRIU
->>> project.
->>>
->>>> Aka net/sunrpc/xprtsock.c:xs_setup_local only taking an absolute path
->>>> and then creating a delayed work item to actually open the unix domain
->>>> socket?
->>>>
->>>> The straight correct and straight forward thing to do appears to be:
->>>> - Capture the root from current->fs in xs_setup_local.
->>>> - In xs_local_finish_connect change current->fs.root to the captured
->>>>    version of root before kernel_connect, and restore current->fs.root
->>>>    after kernel_connect.
->>>>
->>>> It might not be a bad idea to implement open on unix domain sockets in
->>>> a filesystem as create(AF_LOCAL)+connect() which would allow you to
->>>> replace __sock_create + kernel_connect with a simple file_open_root.
->>>>
->>>
->>> I like the idea of introducing new family (AF_LOCAL_AT for example)
->>> and new sockaddr for connecting or binding from specified root. The
->>> only thing I'm worrying is passing file descriptor to unix bind or
->>> connect routine. Because this approach doesn't provide easy way to
->>> use such family and sockaddr in kernel (like in NFS example).
->>>
->>>> But I think the simple scheme of:
->>>> struct path old_root;
->>>> old_root = current->fs.root;
->>>> kernel_connect(...);
->>>> current->fs.root = old_root;
->>>>
->>>> Is more than sufficient and will remove the need for anything
->>>> except a purely local change to get nfs clients to connect from
->>>> containers.
->>>>
->>>
->>> That was my first idea.
+On 8 October 2012 03:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday 04 of October 2012 14:58:33 Rajagopal Venkat wrote:
+>> Add devfreq suspend/resume apis for devfreq users. This patch
+>> supports suspend and resume of devfreq load monitoring, required
+>> for devices which can idle.
 >>
->> So is this what you're planning on doing now?
+>> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+>> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 >
-> What ever happened to this?
->
+> Well, I wonder if this may be tied in to the runtime PM framework, so that,
+> for example, pm_runtime_suspend() will automatically suspend devfreq on
+> success (and the runtime resume of the device will resume devfreq)?
 
-Sorry, was busy.
-I'll prepare patch today, I hope.
+That's a good idea. If you agree, we can handle this as separate patch on
+top this patchset.
 
-> --b.
 >
+> Rafael
+>
+>
+>> ---
+>>  drivers/devfreq/devfreq.c                 | 28 ++++++++++++++++++++++++++++
+>>  drivers/devfreq/governor.h                |  2 ++
+>>  drivers/devfreq/governor_simpleondemand.c |  9 +++++++++
+>>  include/linux/devfreq.h                   | 12 ++++++++++++
+>>  4 files changed, 51 insertions(+)
 >>
->>> And probably it would be worth to change all
->>> fs_struct to support sockets with relative path.
->>> What do you think about it?
+>> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+>> index 41a4099..63e075e 100644
+>> --- a/drivers/devfreq/devfreq.c
+>> +++ b/drivers/devfreq/devfreq.c
+>> @@ -428,6 +428,34 @@ int devfreq_remove_device(struct devfreq *devfreq)
+>>  }
+>>  EXPORT_SYMBOL(devfreq_remove_device);
 >>
->> I didn't understand the question.  Are you suggesting that changes to
->> fs_struct would be required to make this work?  I don't see why.
+>> +/**
+>> + * devfreq_suspend_device() - Suspend devfreq of a device.
+>> + * @devfreq  the devfreq instance to be suspended
+>> + */
+>> +int devfreq_suspend_device(struct devfreq *devfreq)
+>> +{
+>> +     if (!devfreq)
+>> +             return -EINVAL;
+>> +
+>> +     return devfreq->governor->event_handler(devfreq,
+>> +                             DEVFREQ_GOV_SUSPEND, NULL);
+>> +}
+>> +EXPORT_SYMBOL(devfreq_suspend_device);
+>> +
+>> +/**
+>> + * devfreq_resume_device() - Resume devfreq of a device.
+>> + * @devfreq  the devfreq instance to be resumed
+>> + */
+>> +int devfreq_resume_device(struct devfreq *devfreq)
+>> +{
+>> +     if (!devfreq)
+>> +             return -EINVAL;
+>> +
+>> +     return devfreq->governor->event_handler(devfreq,
+>> +                             DEVFREQ_GOV_RESUME, NULL);
+>> +}
+>> +EXPORT_SYMBOL(devfreq_resume_device);
+>> +
+>>  static ssize_t show_governor(struct device *dev,
+>>                            struct device_attribute *attr, char *buf)
+>>  {
+>> diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
+>> index bb3aff3..26432ac 100644
+>> --- a/drivers/devfreq/governor.h
+>> +++ b/drivers/devfreq/governor.h
+>> @@ -22,6 +22,8 @@
+>>  #define DEVFREQ_GOV_START                    0x1
+>>  #define DEVFREQ_GOV_STOP                     0x2
+>>  #define DEVFREQ_GOV_INTERVAL                 0x3
+>> +#define DEVFREQ_GOV_SUSPEND                  0x4
+>> +#define DEVFREQ_GOV_RESUME                   0x5
 >>
->> --b.
+>>  /* Caution: devfreq->lock must be locked before calling update_devfreq */
+>>  extern int update_devfreq(struct devfreq *devfreq);
+>> diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
+>> index cf94218..a8ba78c 100644
+>> --- a/drivers/devfreq/governor_simpleondemand.c
+>> +++ b/drivers/devfreq/governor_simpleondemand.c
+>> @@ -104,6 +104,15 @@ int devfreq_simple_ondemand_handler(struct devfreq *devfreq,
+>>       case DEVFREQ_GOV_INTERVAL:
+>>               devfreq_interval_update(devfreq, (unsigned int *)data);
+>>               break;
+>> +
+>> +     case DEVFREQ_GOV_SUSPEND:
+>> +             devfreq_monitor_suspend(devfreq);
+>> +             break;
+>> +
+>> +     case DEVFREQ_GOV_RESUME:
+>> +             devfreq_monitor_resume(devfreq);
+>> +             break;
+>> +
+>>       default:
+>>               break;
+>>       }
+>> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+>> index 9cdffde..ee243a3 100644
+>> --- a/include/linux/devfreq.h
+>> +++ b/include/linux/devfreq.h
+>> @@ -158,6 +158,8 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
+>>                                 const struct devfreq_governor *governor,
+>>                                 void *data);
+>>  extern int devfreq_remove_device(struct devfreq *devfreq);
+>> +extern int devfreq_suspend_device(struct devfreq *devfreq);
+>> +extern int devfreq_resume_device(struct devfreq *devfreq);
+>>
+>>  /* Helper functions for devfreq user device driver with OPP. */
+>>  extern struct opp *devfreq_recommended_opp(struct device *dev,
+>> @@ -211,6 +213,16 @@ static int devfreq_remove_device(struct devfreq *devfreq)
+>>       return 0;
+>>  }
+>>
+>> +static int devfreq_suspend_device(struct devfreq *devfreq)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static int devfreq_resume_device(struct devfreq *devfreq)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>>  static struct opp *devfreq_recommended_opp(struct device *dev,
+>>                                          unsigned long *freq, u32 flags)
+>>  {
+>>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+
 
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Regards,
+Rajagopal
