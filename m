@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2JHUSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 16:18:16 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57711 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab2JHUSL (ORCPT
+	id S1754725Ab2JHUUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 16:20:08 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:58294 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab2JHUUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 16:18:11 -0400
-Date: Mon, 08 Oct 2012 16:18:06 -0400 (EDT)
-Message-Id: <20121008.161806.2146082252793236167.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Oct 2012 16:20:04 -0400
+Date: Mon, 8 Oct 2012 13:19:56 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Dong Hao <haodong@linux.vnet.ibm.com>
+Subject: Re: [PATCH 07/12] perf kvm: handle realloc failures
+Message-ID: <20121008201956.GE2631@ghostprotocols.net>
+References: <1349716656-48165-1-git-send-email-dsahern@gmail.com>
+ <1349716656-48165-8-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349716656-48165-8-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Mon, Oct 08, 2012 at 11:17:31AM -0600, David Ahern escreveu:
+> Save previous pointer and free on failure.
 
-There is an attempt to fix a bad interaction between syscall tracing
-and force_successful_syscall() from Al Viro, but it needs to be redone
-as it introduced regressions and thus had to be reverted for now.
+<SNIP>
+ 
+> +	prev = event->vcpu;
+>  	event->vcpu = realloc(event->vcpu,
+>  			      event->max_vcpu * sizeof(*event->vcpu));
+>  	if (!event->vcpu) {
+> +		free(prev);
+>  		pr_err("Not enough memory\n");
 
-Al is working on an updated version.
+Unfamiliar way of doing it, usually we do it like:
 
-But what we do have here are some significant bzero/memset
-improvements for Niagara-4.  An 8K page can be cleared in around 600
-cycles, because we essentially have a store that behaves like
-powerpc's dcbz that we can actually make real use of.
+  	vcpu = realloc(event->vcpu, event->max_vcpu * sizeof(*event->vcpu));
 
-Please pull, thanks a lot.
+	if (!vcpu) {
+  		pr_err("Not enough memory\n");
+		return -1;
+	}
 
-The following changes since commit ecefbd94b834fa32559d854646d777c56749ef1c:
+	event->vcpu = vcpu;
 
-  Merge tag 'kvm-3.7-1' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-10-04 09:30:33 -0700)
+I.e. we don't trow away the old value of event->vcpu.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-for you to fetch changes up to 2863bc54ec03df7a6e2c48cff0477d7e2384efc9:
-
-  Revert strace hiccups fix. (2012-10-05 20:39:04 -0700)
-
-----------------------------------------------------------------
-Al Viro (2):
-      sparc64: Rearrange thread info to cheaply clear syscall noerror state.
-      sparc64: Fix strace hiccups when force_successful_syscall() triggers.
-
-David S. Miller (2):
-      sparc64: Niagara-4 bzero/memset, plus use MRU stores in page copy.
-      Revert strace hiccups fix.
-
- arch/sparc/include/asm/asi.h   |  19 +++++++++++++++++
- arch/sparc/kernel/head_64.S    |   2 +-
- arch/sparc/lib/Makefile        |   2 +-
- arch/sparc/lib/NG4clear_page.S |  29 ++++++++++++++++++++++++++
- arch/sparc/lib/NG4copy_page.S  |  16 +++++++--------
- arch/sparc/lib/NG4memset.S     | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- arch/sparc/lib/NG4patch.S      |  15 ++++++++++++--
- 7 files changed, 176 insertions(+), 12 deletions(-)
- create mode 100644 arch/sparc/lib/NG4clear_page.S
- create mode 100644 arch/sparc/lib/NG4memset.S
+- Arnaldo
