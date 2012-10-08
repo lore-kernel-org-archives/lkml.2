@@ -1,24 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2JHWdf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:33:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41390 "EHLO
+	id S932156Ab2JHWdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:33:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41417 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336Ab2JHWdb (ORCPT
+	with ESMTP id S932079Ab2JHWdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:33:31 -0400
+	Mon, 8 Oct 2012 18:33:36 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Dong Hao <haodong@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/25] perf trace: Add support for tracing workload given by command line
-Date: Mon,  8 Oct 2012 19:32:28 -0300
-Message-Id: <1349735570-19339-4-git-send-email-acme@infradead.org>
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        arnaldo.melo@gmail.com
+Subject: [GIT PULL 00/25] perf/core improvements and fixes
+Date: Mon,  8 Oct 2012 19:32:25 -0300
+Message-Id: <1349735570-19339-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
-References: <1349735570-19339-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -26,130 +38,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Ingo,
 
-Now perf trace is able to trace specified workload by forking it like
-perf record does.  And also finish the tracing if the workload quits or
-gets SIGINT.
+	Please consider pulling,
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1349413336-26936-5-git-send-email-namhyung@kernel.org
+- Arnaldo
+
+The following changes since commit 139c0815903de1a7865fe1d6beac5e995fefdf46:
+
+  perf hists: Add more helpers for hist entry stat (2012-10-04 13:36:18 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 7747e2f4fb5fb840994613dd1474c17cddb7836b:
+
+  Documentation: add documentation on compiling for Android (2012-10-08 17:44:39 -0300)
+
+----------------------------------------------------------------
+
+perf/core improvements and fixes
+
+. Handle PERF_RECORD_EXIT events in sched and annotate.
+
+. struct machine refactorings to help in top and trace.
+
+. Add on_exit implementation for systems without one, e.g. Android, from
+  Bernhard Rosenkraenzer.
+
+. Only process events for vcpus of interest, helps handling large number
+  of events, from David Ahern.
+
+. Cross compiling fixes for Android, from Irina Tirdea.
+
+. Add documentation on compiling for Android, from Irina Tirdea.
+
+. perf diff improvements from Jiri Olsa.
+
+. Target (task/user/cpu/syswide) handling improvements, from Namhyung Kim.
+
+. Add support in 'trace' for tracing workload given by command line, from
+  Namhyung Kim.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c |   43 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index da1183f..4e9320b 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -52,6 +52,13 @@ struct trace {
- 	struct perf_record_opts opts;
- };
- 
-+static bool done = false;
-+
-+static void sig_handler(int sig __maybe_unused)
-+{
-+	done = true;
-+}
-+
- static int trace__read_syscall_info(struct trace *trace, int id)
- {
- 	char tp_name[128];
-@@ -189,11 +196,12 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 	return 0;
- }
- 
--static int trace__run(struct trace *trace)
-+static int trace__run(struct trace *trace, int argc, const char **argv)
- {
- 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
- 	struct perf_evsel *evsel;
- 	int err = -1, i, nr_events = 0, before;
-+	const bool forks = argc > 0;
- 
- 	if (evlist == NULL) {
- 		printf("Not enough memory to run!\n");
-@@ -214,6 +222,17 @@ static int trace__run(struct trace *trace)
- 
- 	perf_evlist__config_attrs(evlist, &trace->opts);
- 
-+	signal(SIGCHLD, sig_handler);
-+	signal(SIGINT, sig_handler);
-+
-+	if (forks) {
-+		err = perf_evlist__prepare_workload(evlist, &trace->opts, argv);
-+		if (err < 0) {
-+			printf("Couldn't run the workload!\n");
-+			goto out_delete_evlist;
-+		}
-+	}
-+
- 	err = perf_evlist__open(evlist);
- 	if (err < 0) {
- 		printf("Couldn't create the events: %s\n", strerror(errno));
-@@ -227,6 +246,10 @@ static int trace__run(struct trace *trace)
- 	}
- 
- 	perf_evlist__enable(evlist);
-+
-+	if (forks)
-+		perf_evlist__start_workload(evlist);
-+
- again:
- 	before = nr_events;
- 
-@@ -272,8 +295,15 @@ again:
- 		}
- 	}
- 
--	if (nr_events == before)
-+	if (nr_events == before) {
-+		if (done)
-+			goto out_delete_evlist;
-+
- 		poll(evlist->pollfd, evlist->nr_fds, -1);
-+	}
-+
-+	if (done)
-+		perf_evlist__disable(evlist);
- 
- 	goto again;
- 
-@@ -286,7 +316,8 @@ out:
- int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	const char * const trace_usage[] = {
--		"perf trace [<options>]",
-+		"perf trace [<options>] [<command>]",
-+		"perf trace [<options>] -- <command> [<options>]",
- 		NULL
- 	};
- 	struct trace trace = {
-@@ -326,8 +357,6 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	char bf[BUFSIZ];
- 
- 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
--	if (argc)
--		usage_with_options(trace_usage, trace_options);
- 
- 	err = perf_target__validate(&trace.opts.target);
- 	if (err) {
-@@ -343,8 +372,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		return err;
- 	}
- 
--	if (perf_target__none(&trace.opts.target))
-+	if (!argc && perf_target__none(&trace.opts.target))
- 		trace.opts.target.system_wide = true;
- 
--	return trace__run(&trace);
-+	return trace__run(&trace, argc, argv);
- }
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
 
+Arnaldo Carvalho de Melo (6):
+      perf tools: Have the page size value available for all tools
+      perf machine: Introduce find_thread method
+      perf event: No need to create a thread when handling PERF_RECORD_EXIT
+      perf annotate: Handle PERF_RECORD_EXIT events
+      perf sched: Handle PERF_RECORD_EXIT events
+      perf machine: Carve up event processing specific from perf_tool
+
+Bernhard Rosenkraenzer (1):
+      perf tools: Add on_exit implementation
+
+David Ahern (4):
+      perf kvm: Only process events for vcpus of interest
+      perf kvm: Remove typecast in init_kvm_event_record
+      perf kvm: Total count is a u64, print as so
+      perf kvm: Add braces around multi-line statements
+
+Irina Tirdea (2):
+      perf tools: Update Makefile for Android
+      Documentation: add documentation on compiling for Android
+
+Jiri Olsa (8):
+      perf diff: Add -b option for perf diff to display paired entries only
+      perf diff: Add ratio computation way to compare hist entries
+      perf diff: Add option to sort entries based on diff computation
+      perf diff: Add weighted diff computation way to compare hist entries
+      perf diff: Add -p option to display period values for hist entries
+      perf diff: Add -F option to display formula for computation
+      perf diff: Include samples without symbol in overall stats
+      perf diff: Display empty space for non paired samples
+
+Namhyung Kim (3):
+      perf trace: Validate target task/user/cpu argument
+      perf trace: Explicitly enable system-wide mode if no option is given
+      perf trace: Add support for tracing workload given by command line
+
+Wei Yongjun (1):
+      perf tools: Remove duplicated include from trace-event-python.c
+
+ tools/perf/Documentation/android.txt               |   75 ++++
+ tools/perf/Documentation/perf-diff.txt             |   60 +++
+ tools/perf/Makefile                                |   33 +-
+ tools/perf/builtin-annotate.c                      |    3 +-
+ tools/perf/builtin-diff.c                          |  405 +++++++++++++++++++-
+ tools/perf/builtin-inject.c                        |    6 +-
+ tools/perf/builtin-kvm.c                           |   35 +-
+ tools/perf/builtin-record.c                        |   32 ++
+ tools/perf/builtin-report.c                        |    4 +-
+ tools/perf/builtin-sched.c                         |    3 +-
+ tools/perf/builtin-script.c                        |    4 +-
+ tools/perf/builtin-test.c                          |    2 -
+ tools/perf/builtin-top.c                           |    3 +-
+ tools/perf/builtin-trace.c                         |   53 ++-
+ tools/perf/config/feature-tests.mak                |   20 +-
+ tools/perf/perf.c                                  |    2 +
+ tools/perf/ui/hist.c                               |  134 ++++++-
+ tools/perf/ui/stdio/hist.c                         |    2 +-
+ tools/perf/util/build-id.c                         |    2 +-
+ tools/perf/util/event.c                            |  215 +----------
+ tools/perf/util/event.h                            |    6 +-
+ tools/perf/util/evlist.c                           |    3 -
+ tools/perf/util/hist.h                             |    8 +
+ tools/perf/util/machine.c                          |  277 +++++++++++++
+ tools/perf/util/machine.h                          |   19 +
+ .../util/scripting-engines/trace-event-python.c    |    1 -
+ tools/perf/util/session.c                          |    4 +-
+ tools/perf/util/sort.h                             |   18 +
+ tools/perf/util/thread.c                           |   41 +-
+ tools/perf/util/thread.h                           |    2 +
+ tools/perf/util/trace-event-read.c                 |    2 -
+ tools/perf/util/util.c                             |    2 +
+ tools/perf/util/util.h                             |    2 +
+ 33 files changed, 1173 insertions(+), 305 deletions(-)
+ create mode 100644 tools/perf/Documentation/android.txt
+ create mode 100644 tools/perf/util/machine.c
+ create mode 100644 tools/perf/util/machine.h
