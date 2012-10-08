@@ -1,114 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab2JHFOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 01:14:00 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58709 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab2JHFN6 (ORCPT
+	id S1752234Ab2JHFOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 01:14:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48258 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab2JHFOG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 01:13:58 -0400
-Message-ID: <50726110.5020901@gmail.com>
-Date: Mon, 08 Oct 2012 16:13:52 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Mon, 8 Oct 2012 01:14:06 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2 0/7] uio_pruss cleanup and platform support
+Thread-Topic: [PATCH v2 0/7] uio_pruss cleanup and platform support
+Thread-Index: AQHNnbDBq0mAo1oeIk+/mQ19uCF7cpenWDUAgALNG/CAAMPQAIAEAgHA
+Date: Mon, 8 Oct 2012 05:13:32 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EA9DDE7@DBDE01.ent.ti.com>
+References: <1348861072-14507-1-git-send-email-mporter@ti.com>
+ <20121003150058.GB11180@beef>
+ <1BAFE6F6C881BF42822005164F1491C33EA9C6B7@DBDE01.ent.ti.com>
+ <20121005212826.GN11149@beef>
+In-Reply-To: <20121005212826.GN11149@beef>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-puzzleid: {1B06E746-8DB0-45C5-99A5-634D77F9FDC6}
+x-cr-hashedpuzzle: F+Om NQO/ RjsX Z1wW jRhZ p8zP 2BfX 6eoB AARjFg== ABXVqA==
+ AFIsFw== AFgprQ== AGXJJQ== AGd55A== AHjKsw==
+ AIdsyw==;9;ZABhAHYAaQBuAGMAaQAtAGwAaQBuAHUAeAAtAG8AcABlAG4ALQBzAG8AdQByAGMAZQBAAGwAaQBuAHUAeAAuAGQAYQB2AGkAbgBjAGkAZABzAHAALgBjAG8AbQA7AGcAcgBlAGcAawBoAEAAbABpAG4AdQB4AGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGgAagBrAEAAaABhAG4AcwBqAGsAbwBjAGgALgBkAGUAOwBsAGkAbgB1AHgALQBhAHIAbQAtAGsAZQByAG4AZQBsAEAAbABpAHMAdABzAC4AaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBvAG0AYQBwAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgAQABhAHIAbQAuAGwAaQBuAHUAeAAuAG8AcgBnAC4AdQBrADsAcABhAHUAbABAAHAAdwBzAGEAbgAuAGMAbwBtADsAdABvAG4AeQBAAGEAdABvAG0AaQBkAGUALgBjAG8AbQA=;Sosha1_v1;7;{1B06E746-8DB0-45C5-99A5-634D77F9FDC6};ZwB1AHIAdQByAGEAagBhAC4AaABlAGIAYgBhAHIAQAB0AGkALgBjAG8AbQA=;Mon,
+ 08 Oct 2012 05:12:20
+ GMT;UgBFADoAIABbAFAAQQBUAEMASAAgAHYAMgAgADAALwA3AF0AIAB1AGkAbwBfAHAAcgB1AHMAcwAgAGMAbABlAGEAbgB1AHAAIABhAG4AZAAgAHAAbABhAHQAZgBvAHIAbQAgAHMAdQBwAHAAbwByAHQA
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
-        shubhrajyoti@ti.com, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/13] drivers/media/tuners/qt1010.c: use macros for i2c_msg
- initialization
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr> <5071FA5D.30003@gmail.com> <alpine.DEB.2.02.1210080704440.1972@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1210080704440.1972@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/12 16:05, Julia Lawall wrote:
-> On Mon, 8 Oct 2012, Ryan Mallon wrote:
+On Sat, Oct 06, 2012 at 02:58:26, Porter, Matt wrote:
+> On Fri, Oct 05, 2012 at 04:43:56AM +0000, Hebbar, Gururaja wrote:
+> > Matt,
+> > 
+> > On Wed, Oct 03, 2012 at 20:30:58, Porter, Matt wrote:
+> > > On Fri, Sep 28, 2012 at 03:37:45PM -0400, Matt Porter wrote:
+> > > > Changes since v1:
+> > > > 	- Replaced uio_pruss private SRAM API use with genalloc
+> > > > 	- Added DA850 platform device and clock support
+> > > > 	- Added DA850 L3 RAM gen_pool support
+> > > > 	- Split out DT binding
+> > > > 
+> > > > This series enables uio_pruss on both DA850 and AM33xx. The driver
+> > > > previously was not enabled by any platform and the private SRAM API
+> > > > was accessing an invalid SRAM bank for use on DA850. For AM33xx,
+> > > > DT, pinctrl, and runtime PM support are added since AM33xx only
+> > > > boots via DT.
+> > > 
+> > > I'm dropping AM33xx/OMAP support from v3 for this series 
+> > 
+> > Just for my clarification, I believe you will be taking up AM33xx/OMAP 
+> > SRAM support later once you have completed supporting DaVinci. Right?
 > 
->> On 08/10/12 02:38, Julia Lawall wrote:
->>> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
->>>
->>> A length expressed as an explicit constant is also re-expressed as
->>> the size
->>> of the buffer, when this is possible.
->>>
->>> A simplified version of the semantic patch that makes this change is as
->>> follows: (http://coccinelle.lip6.fr/)
->>>
->>> // <smpl>
->>> @@
->>> expression a,b,c;
->>> identifier x;
->>> @@
->>>
->>> struct i2c_msg x =
->>> - {.addr = a, .buf = b, .len = c, .flags = I2C_M_RD}
->>> + I2C_MSG_READ(a,b,c)
->>>  ;
->>>
->>> @@
->>> expression a,b,c;
->>> identifier x;
->>> @@
->>>
->>> struct i2c_msg x =
->>> - {.addr = a, .buf = b, .len = c, .flags = 0}
->>> + I2C_MSG_WRITE(a,b,c)
->>>  ;
->>>
->>> @@
->>> expression a,b,c,d;
->>> identifier x;
->>> @@
->>>
->>> struct i2c_msg x =
->>> - {.addr = a, .buf = b, .len = c, .flags = d}
->>> + I2C_MSG_OP(a,b,c,d)
->>>  ;
->>> // </smpl>
->>>
->>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> ---
->>>  drivers/media/tuners/qt1010.c |   10 ++++------
->>>  1 file changed, 4 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/media/tuners/qt1010.c
->>> b/drivers/media/tuners/qt1010.c
->>> index bc419f8..37ff254 100644
->>> --- a/drivers/media/tuners/qt1010.c
->>> +++ b/drivers/media/tuners/qt1010.c
->>> @@ -25,10 +25,8 @@
->>>  static int qt1010_readreg(struct qt1010_priv *priv, u8 reg, u8 *val)
->>>  {
->>>      struct i2c_msg msg[2] = {
->>> -        { .addr = priv->cfg->i2c_address,
->>> -          .flags = 0, .buf = &reg, .len = 1 },
->>> -        { .addr = priv->cfg->i2c_address,
->>> -          .flags = I2C_M_RD, .buf = val, .len = 1 },
->>> +        I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
->>> +        I2C_MSG_READ(priv->cfg->i2c_address, val, 1),
->>
->> This is a bit inconsistent. For single length values we should either
->> consistently use sizeof(val) or 1. This has both.
+> There's no SRAM support for uio_pruss to be handled for AM33xx, 
+
+Sorry for not being clearer.
+
+I was referring to adding SRAM support for McASP module on AM335x platform.
+
+
+> but I
+> will be posting a separate series with the DT portion and some alternate
+> hard reset handling implementation. I find the private OMAP reset api to
+> be very ugly but we might have to go with that for now. I didn't want
+> the OMAP hard reset portion to hold up the more important part of this
+> cleanup.
 > 
-> val is a pointer.  It does not have size 1.
+> -Matt
+> 
+> > > since the
+> > > focus has turned to fixing Davinci SRAM to provide genalloc support
+> > > and the associated use of that in the driver.
+> > > 
+> > > I'll have a separate series with AM33xx support since dealing cleanly
+> > > with external resets on OMAP is a bigger issue.
+> > > 
+> > > -Matt
+> > > _______________________________________________
+> > > Davinci-linux-open-source mailing list
+> > > Davinci-linux-open-source@linux.davincidsp.com
+> > > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> > > 
+> > 
+> > 
+> > Regards, 
+> > Gururaja
+> > _______________________________________________
+> > Davinci-linux-open-source mailing list
+> > Davinci-linux-open-source@linux.davincidsp.com
+> > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> 
 
-Sorry, I mean either:
 
-	I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
-	I2C_MSG_READ(priv->cfg->i2c_address, val, sizeof(*val)),
-
-or:
-
-	I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, 1),
-	I2C_MSG_READ(priv->cfg->i2c_address, val, 1),
-
-~Ryan
-
+Regards, 
+Gururaja
