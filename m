@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2JHKHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 06:07:01 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48164 "EHLO relay.sw.ru"
+	id S1752272Ab2JHKHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 06:07:55 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:21583 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751970Ab2JHKGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 06:06:51 -0400
+	id S1751245Ab2JHKHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 06:07:52 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -14,10 +14,12 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
         <devel@openvz.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v4 03/14] memcg: change defines to an enum
-Date: Mon,  8 Oct 2012 14:06:09 +0400
-Message-Id: <1349690780-15988-4-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH v4 05/14] Add a __GFP_KMEMCG flag
+Date: Mon,  8 Oct 2012 14:06:11 +0400
+Message-Id: <1349690780-15988-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349690780-15988-1-git-send-email-glommer@parallels.com>
 References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
@@ -25,104 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a cleanup patch for clarity of expression.  In earlier
-submissions, people asked it to be in a separate patch, so here it is.
+This flag is used to indicate to the callees that this allocation is a
+kernel allocation in process context, and should be accounted to
+current's memcg. It takes numerical place of the of the recently removed
+__GFP_NO_KSWAPD.
 
-[ v2: use named enum as type throughout the file as well ]
+[ v4: make flag unconditional, also declare it in trace code ]
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Suleiman Souhlal <suleiman@google.com>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ include/linux/gfp.h             | 3 ++-
+ include/trace/events/gfpflags.h | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7a9652a..71d259e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -386,9 +386,12 @@ enum charge_type {
- };
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 02c1c97..9289d46 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -31,6 +31,7 @@ struct vm_area_struct;
+ #define ___GFP_THISNODE		0x40000u
+ #define ___GFP_RECLAIMABLE	0x80000u
+ #define ___GFP_NOTRACK		0x200000u
++#define ___GFP_KMEMCG		0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
  
- /* for encoding cft->private value on file */
--#define _MEM			(0)
--#define _MEMSWAP		(1)
--#define _OOM_TYPE		(2)
-+enum res_type {
-+	_MEM,
-+	_MEMSWAP,
-+	_OOM_TYPE,
-+};
-+
- #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
- #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
- #define MEMFILE_ATTR(val)	((val) & 0xffff)
-@@ -3915,7 +3918,8 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	char str[64];
- 	u64 val;
--	int type, name, len;
-+	int name, len;
-+	enum res_type type;
+@@ -87,7 +88,7 @@ struct vm_area_struct;
  
- 	type = MEMFILE_TYPE(cft->private);
- 	name = MEMFILE_ATTR(cft->private);
-@@ -3951,7 +3955,8 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
- 			    const char *buffer)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
--	int type, name;
-+	enum res_type type;
-+	int name;
- 	unsigned long long val;
- 	int ret;
- 
-@@ -4027,7 +4032,8 @@ out:
- static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
--	int type, name;
-+	int name;
-+	enum res_type type;
- 
- 	type = MEMFILE_TYPE(event);
- 	name = MEMFILE_ATTR(event);
-@@ -4363,7 +4369,7 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_thresholds *thresholds;
- 	struct mem_cgroup_threshold_ary *new;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 	u64 threshold, usage;
- 	int i, size, ret;
- 
-@@ -4446,7 +4452,7 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_thresholds *thresholds;
- 	struct mem_cgroup_threshold_ary *new;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 	u64 usage;
- 	int i, j, size;
- 
-@@ -4524,7 +4530,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *event;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 
- 	BUG_ON(type != _OOM_TYPE);
- 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
-@@ -4549,7 +4555,7 @@ static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *ev, *tmp;
--	int type = MEMFILE_TYPE(cft->private);
-+	enum res_type type = MEMFILE_TYPE(cft->private);
- 
- 	BUG_ON(type != _OOM_TYPE);
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+-
++#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+  * allocations that simply cannot be supported (e.g. page tables).
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+index 9391706..730df12 100644
+--- a/include/trace/events/gfpflags.h
++++ b/include/trace/events/gfpflags.h
+@@ -36,6 +36,7 @@
+ 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+ 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
+ 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
++	{(unsigned long)__GFP_KMEMCG,		"GFP_KMEMCG"},		\
+ 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
+ 	) : "GFP_NOWAIT"
  
 -- 
 1.7.11.4
