@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab2JHMjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 08:39:55 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:39615 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab2JHMjx (ORCPT
+	id S1752612Ab2JHMki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 08:40:38 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38511 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2JHMkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 08:39:53 -0400
+	Mon, 8 Oct 2012 08:40:36 -0400
 MIME-Version: 1.0
-Date: Mon, 8 Oct 2012 20:39:52 +0800
-Message-ID: <CAPgLHd-=SuxABDRiUp3V-HzOnaJVhzOJd4XxPax+NjUJ9xjwVg@mail.gmail.com>
-Subject: [PATCH] powerpc/83xx: use module_i2c_driver to simplify the code
+Date: Mon, 8 Oct 2012 20:40:35 +0800
+Message-ID: <CAPgLHd99+yWL1br_FgWbj=5vnjRWoAAqe9ME6LS45aCj=Ga-Wg@mail.gmail.com>
+Subject: [PATCH] hwmon: ina2xx: use module_i2c_driver to simplify the code
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: galak@kernel.crashing.org, benh@kernel.crashing.org, paulus@samba.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+To: khali@linux-fr.org, linux@roeck-us.net
+Cc: yongjun_wei@trendmicro.com.cn, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,31 +30,33 @@ dpatch engine is used to auto generate this patch.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ drivers/hwmon/ina2xx.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-index ef6537b..d91799e 100644
---- a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-+++ b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-@@ -232,17 +232,7 @@ static struct i2c_driver mcu_driver = {
- 	.id_table = mcu_ids,
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 70717d4..3e7a869 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -301,19 +301,8 @@ static struct i2c_driver ina2xx_driver = {
+ 	.id_table	= ina2xx_id,
  };
  
--static int __init mcu_init(void)
+-static int __init ina2xx_init(void)
 -{
--	return i2c_add_driver(&mcu_driver);
+-	return i2c_add_driver(&ina2xx_driver);
 -}
--module_init(mcu_init);
 -
--static void __exit mcu_exit(void)
+-static void __exit ina2xx_exit(void)
 -{
--	i2c_del_driver(&mcu_driver);
+-	i2c_del_driver(&ina2xx_driver);
 -}
--module_exit(mcu_exit);
-+module_i2c_driver(mcu_driver);
++module_i2c_driver(ina2xx_driver);
  
- MODULE_DESCRIPTION("Power Management and GPIO expander driver for "
- 		   "MPC8349E-mITX-compatible MCU");
+ MODULE_AUTHOR("Lothar Felten <l-felten@ti.com>");
+ MODULE_DESCRIPTION("ina2xx driver");
+ MODULE_LICENSE("GPL");
+-
+-module_init(ina2xx_init);
+-module_exit(ina2xx_exit);
 
 
