@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab2JHWk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:40:29 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62991 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab2JHWkX (ORCPT
+	id S1755343Ab2JHWky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:40:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41346 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab2JHWdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:40:23 -0400
-From: Stan Hu <stanhu@gmail.com>
-To: spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Stan Hu <stanhu@gmail.com>
-Subject: [PATCH 1/1] spi: omap2-mcspi: add option to configure output line for McSPI driver
-Date: Mon,  8 Oct 2012 16:39:40 -0600
-Message-Id: <1349735980-17015-1-git-send-email-stanhu@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <y>
-References: <y>
+	Mon, 8 Oct 2012 18:33:09 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Dong Hao <haodong@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 21/25] perf kvm: Total count is a u64, print as so
+Date: Mon,  8 Oct 2012 19:32:46 -0300
+Message-Id: <1349735570-19339-22-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
+References: <1349735570-19339-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-McSPI driver previously assumed that D0 was input (MISO) and D1 was output (MOSI).
-This forces the hardware designer to wire all SPI peripherals in this way when
-it should be a software configuration option.
+From: David Ahern <dsahern@gmail.com>
 
-Signed-off-by: Stan Hu <stanhu@gmail.com>
+remove cast and use proper type in format.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Dong Hao <haodong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1349716656-48165-11-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/spi/spi-omap2-mcspi.c                 |   11 +++++++++--
- include/linux/platform_data/spi-omap2-mcspi.h |    2 ++
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ tools/perf/builtin-kvm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 3542fdc..d7c7e13 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -740,6 +740,7 @@ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
- 		struct spi_transfer *t)
- {
- 	struct omap2_mcspi_cs *cs = spi->controller_state;
-+	struct omap2_mcspi_device_config *cd = spi->controller_data;
- 	struct omap2_mcspi *mcspi;
- 	struct spi_master *spi_cntrl;
- 	u32 l = 0, div = 0;
-@@ -765,8 +766,14 @@ static int omap2_mcspi_setup_transfer(struct spi_device *spi,
- 	/* standard 4-wire master mode:  SCK, MOSI/out, MISO/in, nCS
- 	 * REVISIT: this controller could support SPI_3WIRE mode.
- 	 */
--	l &= ~(OMAP2_MCSPI_CHCONF_IS|OMAP2_MCSPI_CHCONF_DPE1);
--	l |= OMAP2_MCSPI_CHCONF_DPE0;
-+	l &= ~(OMAP2_MCSPI_CHCONF_IS|
-+		OMAP2_MCSPI_CHCONF_DPE0|OMAP2_MCSPI_CHCONF_DPE1);
-+
-+	/* set input selection for D0 and D1 */
-+	if (cd->d0_is_output)
-+		l |= OMAP2_MCSPI_CHCONF_IS|OMAP2_MCSPI_CHCONF_DPE1;
-+	else
-+		l |= OMAP2_MCSPI_CHCONF_DPE0;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 8416754..72a302e 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -673,8 +673,8 @@ static void print_result(struct perf_kvm *kvm)
+ 		pr_info("\n");
+ 	}
  
- 	/* wordlength */
- 	l &= ~OMAP2_MCSPI_CHCONF_WL_MASK;
-diff --git a/include/linux/platform_data/spi-omap2-mcspi.h b/include/linux/platform_data/spi-omap2-mcspi.h
-index a357eb2..419d08a 100644
---- a/include/linux/platform_data/spi-omap2-mcspi.h
-+++ b/include/linux/platform_data/spi-omap2-mcspi.h
-@@ -18,6 +18,8 @@ struct omap2_mcspi_dev_attr {
+-	pr_info("\nTotal Samples:%lld, Total events handled time:%.2fus.\n\n",
+-		(unsigned long long)kvm->total_count, kvm->total_time / 1e3);
++	pr_info("\nTotal Samples:%" PRIu64 ", Total events handled time:%.2fus.\n\n",
++		kvm->total_count, kvm->total_time / 1e3);
+ }
  
- struct omap2_mcspi_device_config {
- 	unsigned turbo_mode:1;
-+	/* 0 -> [D0 = MISO, D1 = MOSI], 1 -> [D0 = MOSI, D1 = MISO] */
-+	unsigned d0_is_output:1;
- };
- 
- #endif
+ static int process_sample_event(struct perf_tool *tool,
 -- 
-1.7.9.5
+1.7.9.2.358.g22243
 
