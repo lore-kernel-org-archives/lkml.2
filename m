@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2JHNOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:14:10 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:32959 "EHLO zmc.proxad.net"
+	id S1752983Ab2JHNOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:14:19 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:33114 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753081Ab2JHNNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:13:45 -0400
+	id S1753081Ab2JHNOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:14:12 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 13/32 v3] USB: ohci: move ohci_pci_{suspend,resume} to ohci-hcd.c
-Date: Mon,  8 Oct 2012 15:11:27 +0200
-Message-Id: <1349701906-16481-14-git-send-email-florian@openwrt.org>
+        Paul Mundt <lethal@linux-sh.org>,
+        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 22/32 v4] sh: convert boards to use the OHCI platform driver
+Date: Mon,  8 Oct 2012 15:11:36 +0200
+Message-Id: <1349701906-16481-23-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
@@ -21,145 +23,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Alan Stern, move the ohci-pci.c ohci_pci_{suspend,resume}
-routines to ohci-hcd.c. Due to their move, also rename them to
-ohci_{suspend,resume} to make it clear they operate on ohci_hcd. Since they
-are not necessarily called, annotate them with __maybe_unused, and make them
-enclosed within an #ifdef CONFIG_PM / #endif section.
+This patch makes all SuperH boards using the ohci-sh platform driver to use
+the ohci-platform driver instead, which is suitable for use by these boards.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes in v3:
-- moved ohci_{suspend,resume} within a #ifdef CONFIG_PM block as needed
+Changes in v4:
 - rebased against greg's latest usb-next
 
-Changes in v2:
-- moved ohci_{suspend,resume} out of the #ifdef CONFIG_PM block
-- removed the empty CONFIG_PM #ifdef/endif block in ohci-pci.c
+Changes in v3:
+- improved commit message
 
- drivers/usb/host/ohci-hcd.c |   43 +++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/ohci-pci.c |   47 ++-----------------------------------------
- 2 files changed, 45 insertions(+), 45 deletions(-)
+No changes between v1 and v2
 
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index fd97801..9171599 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -983,6 +983,49 @@ static int ohci_restart (struct ohci_hcd *ohci)
+ arch/sh/kernel/cpu/sh3/setup-sh7720.c  |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7757.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7763.c |    6 +++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7786.c |    6 +++++-
+ 4 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/arch/sh/kernel/cpu/sh3/setup-sh7720.c b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+index 0c2f1b2..42d991f 100644
+--- a/arch/sh/kernel/cpu/sh3/setup-sh7720.c
++++ b/arch/sh/kernel/cpu/sh3/setup-sh7720.c
+@@ -20,6 +20,7 @@
+ #include <linux/serial_sci.h>
+ #include <linux/sh_timer.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <asm/rtc.h>
+ #include <cpu/serial.h>
  
- #endif
+@@ -103,12 +104,15 @@ static struct resource usb_ohci_resources[] = {
  
-+#ifdef CONFIG_PM
-+
-+static int __maybe_unused ohci_suspend(struct usb_hcd *hcd, bool do_wakeup)
-+{
-+	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
-+	unsigned long	flags;
-+	int		rc = 0;
-+
-+	/* Root hub was already suspended. Disable irq emission and
-+	 * mark HW unaccessible, bail out if RH has been resumed. Use
-+	 * the spinlock to properly synchronize with possible pending
-+	 * RH suspend or resume activity.
-+	 */
-+	spin_lock_irqsave (&ohci->lock, flags);
-+	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
-+		rc = -EINVAL;
-+		goto bail;
-+	}
-+	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
-+	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
-+
-+	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+ bail:
-+	spin_unlock_irqrestore (&ohci->lock, flags);
-+
-+	return rc;
-+}
-+
-+
-+static int __maybe_unused ohci_resume(struct usb_hcd *hcd, bool hibernated)
-+{
-+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-+
-+	/* Make sure resume from hibernation re-enumerates everything */
-+	if (hibernated)
-+		ohci_usb_reset(hcd_to_ohci(hcd));
-+
-+	ohci_finish_controller_resume(hcd);
-+	return 0;
-+}
-+
-+#endif
-+
- /*-------------------------------------------------------------------------*/
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
  
- MODULE_AUTHOR (DRIVER_AUTHOR);
-diff --git a/drivers/usb/host/ohci-pci.c b/drivers/usb/host/ohci-pci.c
-index 1843bb6..6afa7dc 100644
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -296,49 +296,6 @@ static int __devinit ohci_pci_start (struct usb_hcd *hcd)
- 	return ret;
- }
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+index 4a2f357..9079a0f 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7757.c
+@@ -19,6 +19,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <cpu/sh7757.h>
  
--#ifdef	CONFIG_PM
--
--static int ohci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
--{
--	struct ohci_hcd	*ohci = hcd_to_ohci (hcd);
--	unsigned long	flags;
--	int		rc = 0;
--
--	/* Root hub was already suspended. Disable irq emission and
--	 * mark HW unaccessible, bail out if RH has been resumed. Use
--	 * the spinlock to properly synchronize with possible pending
--	 * RH suspend or resume activity.
--	 */
--	spin_lock_irqsave (&ohci->lock, flags);
--	if (ohci->rh_state != OHCI_RH_SUSPENDED) {
--		rc = -EINVAL;
--		goto bail;
--	}
--	ohci_writel(ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
--	(void)ohci_readl(ohci, &ohci->regs->intrdisable);
--
--	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-- bail:
--	spin_unlock_irqrestore (&ohci->lock, flags);
--
--	return rc;
--}
--
--
--static int ohci_pci_resume(struct usb_hcd *hcd, bool hibernated)
--{
--	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
--
--	/* Make sure resume from hibernation re-enumerates everything */
--	if (hibernated)
--		ohci_usb_reset(hcd_to_ohci(hcd));
--
--	ohci_finish_controller_resume(hcd);
--	return 0;
--}
--
--#endif	/* CONFIG_PM */
--
+@@ -750,12 +751,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
  
- /*-------------------------------------------------------------------------*/
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask = &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask = DMA_BIT_MASK(32),
++		.platform_data	= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+index bd0a8fb..1686aca 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7763.c
+@@ -16,6 +16,7 @@
+ #include <linux/sh_intc.h>
+ #include <linux/io.h>
+ #include <linux/serial_sci.h>
++#include <linux/usb/ohci_pdriver.h>
  
-@@ -362,8 +319,8 @@ static const struct hc_driver ohci_pci_hc_driver = {
- 	.shutdown =		ohci_shutdown,
+ static struct plat_sci_port scif0_platform_data = {
+ 	.mapbase	= 0xffe00000,
+@@ -106,12 +107,15 @@ static struct resource usb_ohci_resources[] = {
  
- #ifdef	CONFIG_PM
--	.pci_suspend =		ohci_pci_suspend,
--	.pci_resume =		ohci_pci_resume,
-+	.pci_suspend =		ohci_suspend,
-+	.pci_resume =		ohci_resume,
- #endif
+ static u64 usb_ohci_dma_mask = 0xffffffffUL;
  
- 	/*
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_dma_mask,
+ 		.coherent_dma_mask	= 0xffffffff,
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+index 2e6952f..ab52d4d 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7786.c
+@@ -23,6 +23,7 @@
+ #include <linux/sh_timer.h>
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
++#include <linux/usb/ohci_pdriver.h>
+ #include <cpu/dma-register.h>
+ #include <asm/mmzone.h>
+ 
+@@ -583,12 +584,15 @@ static struct resource usb_ohci_resources[] = {
+ 	},
+ };
+ 
++static struct usb_ohci_pdata usb_ohci_pdata;
++
+ static struct platform_device usb_ohci_device = {
+-	.name		= "sh_ohci",
++	.name		= "ohci-platform",
+ 	.id		= -1,
+ 	.dev = {
+ 		.dma_mask		= &usb_ohci_device.dev.coherent_dma_mask,
+ 		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= &usb_ohci_pdata,
+ 	},
+ 	.num_resources	= ARRAY_SIZE(usb_ohci_resources),
+ 	.resource	= usb_ohci_resources,
 -- 
 1.7.9.5
 
