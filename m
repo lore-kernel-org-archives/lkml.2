@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab2JHAvn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:51:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19912 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab2JHAvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:51:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,549,1344236400"; 
-   d="scan'208";a="153494404"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Len Brown <lenb@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "Tang, Feng" <feng.tang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: RE: [RESEND PATCH v4 0/2] ACPI: DBGP/DBG2 early console support for
- LPIA.
-Thread-Topic: [RESEND PATCH v4 0/2] ACPI: DBGP/DBG2 early console support
- for LPIA.
-Thread-Index: AQHNnUOrBkDYuFk+Zkq7bu7tl07myJesJCkAgAJ+ZUA=
-Date: Mon, 8 Oct 2012 00:51:35 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88B9C2E4@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1347453194.git.zetalog@gmail.com>
- <cover.1348652044.git.lv.zheng@intel.com> <5065457E.4040500@zytor.com>
- <50707BB0.8050301@kernel.org>
-In-Reply-To: <50707BB0.8050301@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752786Ab2JHBE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 21:04:28 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58861 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab2JHBE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 21:04:26 -0400
+Message-ID: <50722696.4090100@lwfinger.net>
+Date: Sun, 07 Oct 2012 20:04:22 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
+        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: r8712u: fix potential NULL pointer dereference
+ in r871x_wps_start()
+References: <CAPgLHd8d0v6fjMGJnK2LbRWTyhRh4DQXXNyxWo10=0Y+GVk7FA@mail.gmail.com>
+In-Reply-To: <CAPgLHd8d0v6fjMGJnK2LbRWTyhRh4DQXXNyxWo10=0Y+GVk7FA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q980plYY029047
 
-> go ahead and take the series in tip 3.8, Peter, thanks.
-> 
-> I looked over this series a while back and my feedback was that it should be
-> disabled by default and enabled by bootparam -- like other earlyprink -- else an
-> issue here would render a system un-bootable.  I see that LV has addressed
-> that in the latest version.
-> LV,
-> have you addressed the feedback from Konrad?
+On 10/07/2012 07:43 PM, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> The dereference should be moved below the NULL test.
+>
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>   drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
 
-I missed the mail from Konrad. Thanks for your reminder.
-I'll find it and update my patches according to his suggestion.
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
-Best regards/Lv Zheng
+Thanks,
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Larry
+
+>
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index c9a6a7f..3a64790 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -2110,10 +2110,10 @@ static int r871x_wps_start(struct net_device *dev,
+>   	struct iw_point *pdata = &wrqu->data;
+>   	u32   u32wps_start = 0;
+>
+> -	if (copy_from_user((void *)&u32wps_start, pdata->pointer, 4))
+> -		return -EFAULT;
+>   	if ((padapter->bDriverStopped) || (pdata == NULL))
+>   		return -EINVAL;
+> +	if (copy_from_user((void *)&u32wps_start, pdata->pointer, 4))
+> +		return -EFAULT;
+>   	if (u32wps_start == 0)
+>   		u32wps_start = *extra;
+>   	if (u32wps_start == 1) /* WPS Start */
+>
+>
+
