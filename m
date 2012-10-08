@@ -1,109 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab2JHPuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:50:01 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61192 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab2JHPt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:49:59 -0400
-Date: Mon, 8 Oct 2012 08:49:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Peter Zijlstra <peterz@infradead.org>, Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Patch Upstream: slab: fix the DEADLOCK issue on l3 alien lock
-Message-ID: <20121008154952.GA27015@kroah.com>
-References: <20121007143944.B00BA2759@git.kroah.org>
+	id S1753901Ab2JHPwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:52:05 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:4251
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751702Ab2JHPwA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 11:52:00 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz9371I542M1432Izz1202h1d1ah1d2ahzz8275bh8275dhz2fh2a8h683h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+CC: "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit
+ packets in the RESET path
+Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit
+ packets in the RESET path
+Thread-Index: AQHNoMWcxusn4sLRaUqO/CrO1v0WZJevlA5A
+Date: Mon, 8 Oct 2012 15:51:09 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930A1FCB6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1349201011-14572-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1349201011-14572-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121007143944.B00BA2759@git.kroah.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 10:39:44AM -0400, Gregs git-bot wrote:
-> commit: 947ca1856a7e60aa6d20536785e6a42dff25aa6e
-> From: Michael Wang <wangyun@linux.vnet.ibm.com>
-> Date: Wed, 5 Sep 2012 10:33:18 +0800
-> Subject: slab: fix the DEADLOCK issue on l3 alien lock
-> 
-> DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
-> the process of this fake report is:
-> 
-> 	   kmem_cache_free()	//free obj in cachep
-> 	-> cache_free_alien()	//acquire cachep's l3 alien lock
-> 	-> __drain_alien_cache()
-> 	-> free_block()
-> 	-> slab_destroy()
-> 	-> kmem_cache_free()	//free slab in cachep->slabp_cache
-> 	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
-> 
-> Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
-> fake report generated.
-> 
-> This should not happen since we already have init_lock_keys() which will
-> reassign the lock class for both l3 list and l3 alien.
-> 
-> However, init_lock_keys() was invoked at a wrong position which is before we
-> invoke enable_cpucache() on each cache.
-> 
-> Since until set slab_state to be FULL, we won't invoke enable_cpucache()
-> on caches to build their l3 alien while creating them, so although we invoked
-> init_lock_keys(), the l3 alien lock class won't change since we don't have
-> them until invoked enable_cpucache() later.
-> 
-> This patch will invoke init_lock_keys() after we done enable_cpucache()
-> instead of before to avoid the fake DEADLOCK report.
-> 
-> Michael traced the problem back to a commit in release 3.0.0:
-> 
-> commit 30765b92ada267c5395fc788623cb15233276f5c
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Thu Jul 28 23:22:56 2011 +0200
-> 
->     slab, lockdep: Annotate the locks before using them
-> 
->     Fernando found we hit the regular OFF_SLAB 'recursion' before we
->     annotate the locks, cure this.
-> 
->     The relevant portion of the stack-trace:
-> 
->     > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
->     > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
->     > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
->     > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
->     > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
->     > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
->     > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
->     > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
->     > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
->     > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
-> 
->     Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
->     Acked-by: Pekka Enberg <penberg@kernel.org>
->     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> The commit moved init_lock_keys() before we build up the alien, so we
-> failed to reclass it.
-> 
-> Cc: <stable@vger.kernel.org> # 3.0+
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
 
-The commit above shows up in 3.1, not 3.0, so this patch does not apply
-to the 3.0.y kernel from what I can tell.  If this is incorrect, please
-let me know.
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Tuesday, October 02, 2012 2:04 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
+> hch@infradead.org; linux-scsi@vger.kernel.org
+> Cc: KY Srinivasan; stable@vger.kernel.org
+> Subject: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit packets in the
+> RESET path
+> 
+> Properly account for I/O in transit before returning from the RESET call.
+> In the absense of this patch, we could have a situation where the host may
+> respond to a command that was issued prior to the issuance of the RESET
+> command at some arbitrary time after responding to the RESET command.
+> Currently, the host does not do anything with the RESET command.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/scsi/storvsc_drv.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 528d52b..0144078 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -1221,7 +1221,12 @@ static int storvsc_host_reset_handler(struct scsi_cmnd
+> *scmnd)
+>  	/*
+>  	 * At this point, all outstanding requests in the adapter
+>  	 * should have been flushed out and return to us
+> +	 * There is a potential race here where the host may be in
+> +	 * the process of responding when we return from here.
+> +	 * Just wait for all in-transit packets to be accounted for
+> +	 * before we return from here.
+>  	 */
+> +	storvsc_wait_to_drain(stor_device);
+> 
+>  	return SUCCESS;
+>  }
+> --
+> 1.7.4.1
 
-thanks,
+James,
 
-greg k-h
+This patch is critical for running Linux based workloads on our Cloud infrastructure - Azure.
+Please let me know if there are any issues.
+
+Regards,
+
+K. Y
+
+
+
