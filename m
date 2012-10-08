@@ -1,560 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2JHIMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:12:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36146 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700Ab2JHIJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:09:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Huang Ying <ying.huang@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jean Pihet <j-pihet@ti.com>, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/7] PM / QoS: Make it possible to expose PM QoS device flags to user space
-Date: Mon, 08 Oct 2012 10:07:58 +0200
-Message-ID: <5925717.MuPWJfgSgk@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1413438.1MkXj8vjQK@vostro.rjw.lan>
-References: <201209282351.10663.rjw@sisk.pl> <1413438.1MkXj8vjQK@vostro.rjw.lan>
+	id S1753897Ab2JHIOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:14:01 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49298 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2JHIN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 04:13:58 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [REGRESSION][PATCH] ACPI idle,
+ CPU hotplug: Fix NULL pointer dereference during hotplug
+To: rjw@sisk.pl, daniel.lezcano@linaro.org
+Cc: len.brown@intel.com, khilman@ti.com, deepthi@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 08 Oct 2012 13:43:08 +0530
+Message-ID: <20121008081239.20227.91630.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100808-1396-0000-0000-000001F7F374
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On a KVM guest, when a CPU is taken offline and brought back online, we hit
+the following NULL pointer dereference:
 
-Define two device PM QoS flags, PM_QOS_FLAG_NO_POWER_OFF
-and PM_QOS_FLAG_REMOTE_WAKEUP, and introduce routines
-dev_pm_qos_expose_flags() and dev_pm_qos_hide_flags() allowing the
-caller to expose those two flags to user space or to hide them
-from it, respectively.
+[   45.400843] Unregister pv shared memory for cpu 1
+[   45.412331] smpboot: CPU 1 is now offline
+[   45.529894] SMP alternatives: lockdep: fixing up alternatives
+[   45.533472] smpboot: Booting Node 0 Processor 1 APIC 0x1
+[   45.411526] kvm-clock: cpu 1, msr 0:7d14601, secondary cpu clock
+[   45.571370] KVM setup async PF for cpu 1
+[   45.572331] kvm-stealtime: cpu 1, msr 7d0e040
+[   45.575031] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[   45.576017] IP: [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017] PGD 5dfb067 PUD 5da8067 PMD 0
+[   45.576017] Oops: 0000 [#1] SMP
+[   45.576017] Modules linked in:
+[   45.576017] CPU 0
+[   45.576017] Pid: 607, comm: stress_cpu_hotp Not tainted 3.6.0-padata-tp-debug #3 Bochs Bochs
+[   45.576017] RIP: 0010:[<ffffffff81519f98>]  [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017] RSP: 0018:ffff880005d93ce8  EFLAGS: 00010286
+[   45.576017] RAX: ffff880005d93fd8 RBX: 0000000000000000 RCX: 0000000000000006
+[   45.576017] RDX: 0000000000000006 RSI: 2222222222222222 RDI: 0000000000000000
+[   45.576017] RBP: ffff880005d93cf8 R08: 2222222222222222 R09: 2222222222222222
+[   45.576017] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[   45.576017] R13: 0000000000000000 R14: ffffffff81c8cca0 R15: 0000000000000001
+[   45.576017] FS:  00007f91936ae700(0000) GS:ffff880007c00000(0000) knlGS:0000000000000000
+[   45.576017] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   45.576017] CR2: 0000000000000000 CR3: 0000000005db3000 CR4: 00000000000006f0
+[   45.576017] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   45.576017] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   45.576017] Process stress_cpu_hotp (pid: 607, threadinfo ffff880005d92000, task ffff8800066bbf40)
+[   45.576017] Stack:
+[   45.576017]  ffff880007a96400 0000000000000000 ffff880005d93d28 ffffffff813ac689
+[   45.576017]  ffff880007a96400 ffff880007a96400 0000000000000002 ffffffff81cd8d01
+[   45.576017]  ffff880005d93d58 ffffffff813aa498 0000000000000001 00000000ffffffdd
+[   45.576017] Call Trace:
+[   45.576017]  [<ffffffff813ac689>] acpi_processor_hotplug+0x55/0x97
+[   45.576017]  [<ffffffff813aa498>] acpi_cpu_soft_notify+0x93/0xce
+[   45.576017]  [<ffffffff816ae47d>] notifier_call_chain+0x5d/0x110
+[   45.576017]  [<ffffffff8109730e>] __raw_notifier_call_chain+0xe/0x10
+[   45.576017]  [<ffffffff81069050>] __cpu_notify+0x20/0x40
+[   45.576017]  [<ffffffff81069085>] cpu_notify+0x15/0x20
+[   45.576017]  [<ffffffff816978f1>] _cpu_up+0xee/0x137
+[   45.576017]  [<ffffffff81697983>] cpu_up+0x49/0x59
+[   45.576017]  [<ffffffff8168758d>] store_online+0x9d/0xe0
+[   45.576017]  [<ffffffff8140a9f8>] dev_attr_store+0x18/0x30
+[   45.576017]  [<ffffffff812322c0>] sysfs_write_file+0xe0/0x150
+[   45.576017]  [<ffffffff811b389c>] vfs_write+0xac/0x180
+[   45.576017]  [<ffffffff811b3be2>] sys_write+0x52/0xa0
+[   45.576017]  [<ffffffff816b31e9>] system_call_fastpath+0x16/0x1b
+[   45.576017] Code: 48 c7 c7 40 e5 ca 81 e8 07 d0 18 00 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 10 48 89 5d f0 4c 89 65 f8 48 89 fb <f6> 07 02 75 13 48 8b 5d f0 4c 8b 65 f8 c9 c3 66 0f 1f 84 00 00
+[   45.576017] RIP  [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017]  RSP <ffff880005d93ce8>
+[   45.576017] CR2: 0000000000000000
+[   45.656079] ---[ end trace 433d6c9ac0b02cef ]---
 
-After the flags have been exposed, user space will see two
-additional sysfs attributes, pm_qos_no_power_off and
-pm_qos_remote_wakeup, under the device's /sys/devices/.../power/
-directory.  Then, writing 1 to one of them will update the
-PM QoS flags request owned by user space so that the corresponding
-flag is requested to be set.  In turn, writing 0 to one of them
-will cause the corresponding flag in the user space's request to
-be cleared (however, the owners of the other PM QoS flags requests
-for the same device may still request the flag to be set and it
-may be effectively set even if user space doesn't request that).
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Jean Pihet <j-pihet@ti.com>
+Analysis:
+Commit 3d339dc (cpuidle / ACPI : move cpuidle_device field out of the
+acpi_processor_power structure()) made the allocation of the dev structure
+(struct cpuidle) of a CPU dynamic, whereas previously it was statically
+allocated. And this dynamic allocation occurs in acpi_processor_power_init()
+if pr->flags.power evaluates to non-zero.
+
+On KVM guests, pr->flags.power evaluates to zero, hence dev is never
+allocated. This causes the NULL pointer (dev) dereference in
+cpuidle_disable_device() during a subsequent CPU online operation. Fix this
+by ensuring that dev is non-NULL before dereferencing.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- Documentation/ABI/testing/sysfs-devices-power |   31 ++++
- drivers/base/power/power.h                    |    6 
- drivers/base/power/qos.c                      |  167 ++++++++++++++++++++------
- drivers/base/power/sysfs.c                    |   95 +++++++++++++-
- include/linux/pm.h                            |    1 
- include/linux/pm_qos.h                        |   26 ++++
- 6 files changed, 278 insertions(+), 48 deletions(-)
 
-Index: linux/include/linux/pm_qos.h
-===================================================================
---- linux.orig/include/linux/pm_qos.h
-+++ linux/include/linux/pm_qos.h
-@@ -34,6 +34,9 @@ enum pm_qos_flags_status {
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
- #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
- 
-+#define PM_QOS_FLAG_NO_POWER_OFF	(1 << 0)
-+#define PM_QOS_FLAG_REMOTE_WAKEUP	(1 << 1)
-+
- struct pm_qos_request {
- 	struct plist_node node;
- 	int pm_qos_class;
-@@ -86,6 +89,8 @@ struct pm_qos_flags {
- struct dev_pm_qos {
- 	struct pm_qos_constraints latency;
- 	struct pm_qos_flags flags;
-+	struct dev_pm_qos_request *latency_req;
-+	struct dev_pm_qos_request *flags_req;
- };
- 
- /* Action requested to pm_qos_update_target */
-@@ -187,10 +192,31 @@ static inline int dev_pm_qos_add_ancesto
- #ifdef CONFIG_PM_RUNTIME
- int dev_pm_qos_expose_latency_limit(struct device *dev, s32 value);
- void dev_pm_qos_hide_latency_limit(struct device *dev);
-+int dev_pm_qos_expose_flags(struct device *dev, s32 value);
-+void dev_pm_qos_hide_flags(struct device *dev);
-+int dev_pm_qos_update_flags(struct device *dev, s32 mask, bool set);
-+
-+static inline s32 dev_pm_qos_requested_latency(struct device *dev)
-+{
-+	return dev->power.qos->latency_req->data.pnode.prio;
-+}
-+
-+static inline s32 dev_pm_qos_requested_flags(struct device *dev)
-+{
-+	return dev->power.qos->flags_req->data.flr.flags;
-+}
- #else
- static inline int dev_pm_qos_expose_latency_limit(struct device *dev, s32 value)
- 			{ return 0; }
- static inline void dev_pm_qos_hide_latency_limit(struct device *dev) {}
-+static inline int dev_pm_qos_expose_flags(struct device *dev, s32 value)
-+			{ return 0; }
-+static inline void dev_pm_qos_hide_flags(struct device *dev) {}
-+static inline int dev_pm_qos_update_flags(struct device *dev, s32 m, bool set)
-+			{ return 0; }
-+
-+static inline s32 dev_pm_qos_requested_latency(struct device *dev) { return 0; }
-+static inline s32 dev_pm_qos_requested_flags(struct device *dev) { return 0; }
- #endif
- 
- #endif
-Index: linux/include/linux/pm.h
-===================================================================
---- linux.orig/include/linux/pm.h
-+++ linux/include/linux/pm.h
-@@ -548,7 +548,6 @@ struct dev_pm_info {
- 	unsigned long		active_jiffies;
- 	unsigned long		suspended_jiffies;
- 	unsigned long		accounting_timestamp;
--	struct dev_pm_qos_request *pq_req;
- #endif
- 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
- 	struct dev_pm_qos	*qos;
-Index: linux/drivers/base/power/qos.c
-===================================================================
---- linux.orig/drivers/base/power/qos.c
-+++ linux/drivers/base/power/qos.c
-@@ -40,6 +40,7 @@
- #include <linux/device.h>
- #include <linux/mutex.h>
- #include <linux/export.h>
-+#include <linux/pm_runtime.h>
- 
- #include "power.h"
- 
-@@ -322,6 +323,36 @@ int dev_pm_qos_add_request(struct device
- EXPORT_SYMBOL_GPL(dev_pm_qos_add_request);
- 
- /**
-+ * __dev_pm_qos_update_request - Modify an existing device PM QoS request.
-+ * @req : PM QoS request to modify.
-+ * @new_value: New value to request.
-+ */
-+int __dev_pm_qos_update_request(struct dev_pm_qos_request *req, s32 new_value)
-+{
-+	s32 curr_value;
-+	int ret = 0;
-+
-+	if (!req->dev->power.qos)
-+		return -ENODEV;
-+
-+	switch(req->type) {
-+	case DEV_PM_QOS_LATENCY:
-+		curr_value = req->data.pnode.prio;
-+		break;
-+	case DEV_PM_QOS_FLAGS:
-+		curr_value = req->data.flr.flags;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	if (curr_value != new_value)
-+		ret = apply_constraint(req, PM_QOS_UPDATE_REQ, new_value);
-+
-+	return ret;
-+}
-+
-+/**
-  * dev_pm_qos_update_request - modifies an existing qos request
-  * @req : handle to list element holding a dev_pm_qos request to use
-  * @new_value: defines the qos request
-@@ -336,11 +367,9 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_add_request
-  * -EINVAL in case of wrong parameters, -ENODEV if the device has been
-  * removed from the system
+ drivers/cpuidle/cpuidle.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index e28f6ea..7f15b85 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -368,7 +368,7 @@ EXPORT_SYMBOL_GPL(cpuidle_enable_device);
   */
--int dev_pm_qos_update_request(struct dev_pm_qos_request *req,
--			      s32 new_value)
-+int dev_pm_qos_update_request(struct dev_pm_qos_request *req, s32 new_value)
+ void cpuidle_disable_device(struct cpuidle_device *dev)
  {
--	s32 curr_value;
--	int ret = 0;
-+	int ret;
- 
- 	if (!req) /*guard against callers passing in null */
- 		return -EINVAL;
-@@ -350,29 +379,9 @@ int dev_pm_qos_update_request(struct dev
- 		return -EINVAL;
- 
- 	mutex_lock(&dev_pm_qos_mtx);
--
--	if (!req->dev->power.qos) {
--		ret = -ENODEV;
--		goto out;
--	}
--
--	switch(req->type) {
--	case DEV_PM_QOS_LATENCY:
--		curr_value = req->data.pnode.prio;
--		break;
--	case DEV_PM_QOS_FLAGS:
--		curr_value = req->data.flr.flags;
--		break;
--	default:
--		ret = -EINVAL;
--		goto out;
--	}
--
--	if (curr_value != new_value)
--		ret = apply_constraint(req, PM_QOS_UPDATE_REQ, new_value);
--
-- out:
-+	__dev_pm_qos_update_request(req, new_value);
- 	mutex_unlock(&dev_pm_qos_mtx);
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(dev_pm_qos_update_request);
-@@ -533,10 +542,19 @@ int dev_pm_qos_add_ancestor_request(stru
- EXPORT_SYMBOL_GPL(dev_pm_qos_add_ancestor_request);
- 
- #ifdef CONFIG_PM_RUNTIME
--static void __dev_pm_qos_drop_user_request(struct device *dev)
-+static void __dev_pm_qos_drop_user_request(struct device *dev,
-+					   enum dev_pm_qos_req_type type)
- {
--	dev_pm_qos_remove_request(dev->power.pq_req);
--	dev->power.pq_req = NULL;
-+	switch(type) {
-+	case DEV_PM_QOS_LATENCY:
-+		dev_pm_qos_remove_request(dev->power.qos->latency_req);
-+		dev->power.qos->latency_req = NULL;
-+		break;
-+	case DEV_PM_QOS_FLAGS:
-+		dev_pm_qos_remove_request(dev->power.qos->flags_req);
-+		dev->power.qos->flags_req = NULL;
-+		break;
-+	}
- }
- 
- /**
-@@ -552,7 +570,7 @@ int dev_pm_qos_expose_latency_limit(stru
- 	if (!device_is_registered(dev) || value < 0)
- 		return -EINVAL;
- 
--	if (dev->power.pq_req)
-+	if (dev->power.qos && dev->power.qos->latency_req)
- 		return -EEXIST;
- 
- 	req = kzalloc(sizeof(*req), GFP_KERNEL);
-@@ -563,10 +581,10 @@ int dev_pm_qos_expose_latency_limit(stru
- 	if (ret < 0)
- 		return ret;
- 
--	dev->power.pq_req = req;
--	ret = pm_qos_sysfs_add(dev);
-+	dev->power.qos->latency_req = req;
-+	ret = pm_qos_sysfs_add_latency(dev);
- 	if (ret)
--		__dev_pm_qos_drop_user_request(dev);
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_LATENCY);
- 
- 	return ret;
- }
-@@ -578,10 +596,87 @@ EXPORT_SYMBOL_GPL(dev_pm_qos_expose_late
-  */
- void dev_pm_qos_hide_latency_limit(struct device *dev)
- {
--	if (dev->power.pq_req) {
--		pm_qos_sysfs_remove(dev);
--		__dev_pm_qos_drop_user_request(dev);
-+	if (dev->power.qos && dev->power.qos->latency_req) {
-+		pm_qos_sysfs_remove_latency(dev);
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_LATENCY);
- 	}
- }
- EXPORT_SYMBOL_GPL(dev_pm_qos_hide_latency_limit);
-+
-+/**
-+ * dev_pm_qos_expose_flags - Expose PM QoS flags of a device to user space.
-+ * @dev: Device whose PM QoS flags are to be exposed to user space.
-+ * @val: Initial values of the flags.
-+ */
-+int dev_pm_qos_expose_flags(struct device *dev, s32 val)
-+{
-+	struct dev_pm_qos_request *req;
-+	int ret;
-+
-+	if (!device_is_registered(dev))
-+		return -EINVAL;
-+
-+	if (dev->power.qos && dev->power.qos->flags_req)
-+		return -EEXIST;
-+
-+	req = kzalloc(sizeof(*req), GFP_KERNEL);
-+	if (!req)
-+		return -ENOMEM;
-+
-+	ret = dev_pm_qos_add_request(dev, req, DEV_PM_QOS_FLAGS, val);
-+	if (ret < 0)
-+		return ret;
-+
-+	dev->power.qos->flags_req = req;
-+	ret = pm_qos_sysfs_add_flags(dev);
-+	if (ret)
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_FLAGS);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(dev_pm_qos_expose_flags);
-+
-+/**
-+ * dev_pm_qos_hide_flags - Hide PM QoS flags of a device from user space.
-+ * @dev: Device whose PM QoS flags are to be hidden from user space.
-+ */
-+void dev_pm_qos_hide_flags(struct device *dev)
-+{
-+	if (dev->power.qos && dev->power.qos->flags_req) {
-+		pm_qos_sysfs_remove_flags(dev);
-+		__dev_pm_qos_drop_user_request(dev, DEV_PM_QOS_FLAGS);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(dev_pm_qos_hide_flags);
-+
-+/**
-+ * dev_pm_qos_update_flags - Update PM QoS flags request owned by user space.
-+ * @dev: Device to update the PM QoS flags request for.
-+ * @mask: Flags to set/clear.
-+ * @set: Whether to set or clear the flags (true means set).
-+ */
-+int dev_pm_qos_update_flags(struct device *dev, s32 mask, bool set)
-+{
-+	s32 value;
-+	int ret;
-+
-+	if (!dev->power.qos || !dev->power.qos->flags_req)
-+		return -EINVAL;
-+
-+	pm_runtime_get_sync(dev);
-+	mutex_lock(&dev_pm_qos_mtx);
-+
-+	value = dev_pm_qos_requested_flags(dev);
-+	if (set)
-+		value |= mask;
-+	else
-+		value &= ~mask;
-+
-+	ret = __dev_pm_qos_update_request(dev->power.qos->flags_req, value);
-+
-+	mutex_unlock(&dev_pm_qos_mtx);
-+	pm_runtime_put(dev);
-+
-+	return ret;
-+}
- #endif /* CONFIG_PM_RUNTIME */
-Index: linux/drivers/base/power/power.h
-===================================================================
---- linux.orig/drivers/base/power/power.h
-+++ linux/drivers/base/power/power.h
-@@ -93,8 +93,10 @@ extern void dpm_sysfs_remove(struct devi
- extern void rpm_sysfs_remove(struct device *dev);
- extern int wakeup_sysfs_add(struct device *dev);
- extern void wakeup_sysfs_remove(struct device *dev);
--extern int pm_qos_sysfs_add(struct device *dev);
--extern void pm_qos_sysfs_remove(struct device *dev);
-+extern int pm_qos_sysfs_add_latency(struct device *dev);
-+extern void pm_qos_sysfs_remove_latency(struct device *dev);
-+extern int pm_qos_sysfs_add_flags(struct device *dev);
-+extern void pm_qos_sysfs_remove_flags(struct device *dev);
- 
- #else /* CONFIG_PM */
- 
-Index: linux/drivers/base/power/sysfs.c
-===================================================================
---- linux.orig/drivers/base/power/sysfs.c
-+++ linux/drivers/base/power/sysfs.c
-@@ -221,7 +221,7 @@ static DEVICE_ATTR(autosuspend_delay_ms,
- static ssize_t pm_qos_latency_show(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
--	return sprintf(buf, "%d\n", dev->power.pq_req->data.pnode.prio);
-+	return sprintf(buf, "%d\n", dev_pm_qos_requested_latency(dev));
- }
- 
- static ssize_t pm_qos_latency_store(struct device *dev,
-@@ -237,12 +237,67 @@ static ssize_t pm_qos_latency_store(stru
- 	if (value < 0)
- 		return -EINVAL;
- 
--	ret = dev_pm_qos_update_request(dev->power.pq_req, value);
-+	ret = dev_pm_qos_update_request(dev->power.qos->latency_req, value);
- 	return ret < 0 ? ret : n;
- }
- 
- static DEVICE_ATTR(pm_qos_resume_latency_us, 0644,
- 		   pm_qos_latency_show, pm_qos_latency_store);
-+
-+static ssize_t pm_qos_no_power_off_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!(dev_pm_qos_requested_flags(dev)
-+					& PM_QOS_FLAG_NO_POWER_OFF));
-+}
-+
-+static ssize_t pm_qos_no_power_off_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t n)
-+{
-+	int ret;
-+
-+	if (kstrtoint(buf, 0, &ret))
-+		return -EINVAL;
-+
-+	if (ret != 0 && ret != 1)
-+		return -EINVAL;
-+
-+	ret = dev_pm_qos_update_flags(dev, PM_QOS_FLAG_NO_POWER_OFF, ret);
-+	return ret < 0 ? ret : n;
-+}
-+
-+static DEVICE_ATTR(pm_qos_no_power_off, 0644,
-+		   pm_qos_no_power_off_show, pm_qos_no_power_off_store);
-+
-+static ssize_t pm_qos_remote_wakeup_show(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!(dev_pm_qos_requested_flags(dev)
-+					& PM_QOS_FLAG_REMOTE_WAKEUP));
-+}
-+
-+static ssize_t pm_qos_remote_wakeup_store(struct device *dev,
-+					  struct device_attribute *attr,
-+					  const char *buf, size_t n)
-+{
-+	s32 value;
-+	int ret;
-+
-+	if (kstrtoint(buf, 0, &ret))
-+		return -EINVAL;
-+
-+	if (ret != 0 && ret != 1)
-+		return -EINVAL;
-+
-+	ret = dev_pm_qos_update_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP, ret);
-+	return ret < 0 ? ret : n;
-+}
-+
-+static DEVICE_ATTR(pm_qos_remote_wakeup, 0644,
-+		   pm_qos_remote_wakeup_show, pm_qos_remote_wakeup_store);
- #endif /* CONFIG_PM_RUNTIME */
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -564,15 +619,27 @@ static struct attribute_group pm_runtime
- 	.attrs	= runtime_attrs,
- };
- 
--static struct attribute *pm_qos_attrs[] = {
-+static struct attribute *pm_qos_latency_attrs[] = {
- #ifdef CONFIG_PM_RUNTIME
- 	&dev_attr_pm_qos_resume_latency_us.attr,
- #endif /* CONFIG_PM_RUNTIME */
- 	NULL,
- };
--static struct attribute_group pm_qos_attr_group = {
-+static struct attribute_group pm_qos_latency_attr_group = {
-+	.name	= power_group_name,
-+	.attrs	= pm_qos_latency_attrs,
-+};
-+
-+static struct attribute *pm_qos_flags_attrs[] = {
-+#ifdef CONFIG_PM_RUNTIME
-+	&dev_attr_pm_qos_no_power_off.attr,
-+	&dev_attr_pm_qos_remote_wakeup.attr,
-+#endif /* CONFIG_PM_RUNTIME */
-+	NULL,
-+};
-+static struct attribute_group pm_qos_flags_attr_group = {
- 	.name	= power_group_name,
--	.attrs	= pm_qos_attrs,
-+	.attrs	= pm_qos_flags_attrs,
- };
- 
- int dpm_sysfs_add(struct device *dev)
-@@ -615,14 +682,24 @@ void wakeup_sysfs_remove(struct device *
- 	sysfs_unmerge_group(&dev->kobj, &pm_wakeup_attr_group);
- }
- 
--int pm_qos_sysfs_add(struct device *dev)
-+int pm_qos_sysfs_add_latency(struct device *dev)
-+{
-+	return sysfs_merge_group(&dev->kobj, &pm_qos_latency_attr_group);
-+}
-+
-+void pm_qos_sysfs_remove_latency(struct device *dev)
-+{
-+	sysfs_unmerge_group(&dev->kobj, &pm_qos_latency_attr_group);
-+}
-+
-+int pm_qos_sysfs_add_flags(struct device *dev)
- {
--	return sysfs_merge_group(&dev->kobj, &pm_qos_attr_group);
-+	return sysfs_merge_group(&dev->kobj, &pm_qos_flags_attr_group);
- }
- 
--void pm_qos_sysfs_remove(struct device *dev)
-+void pm_qos_sysfs_remove_flags(struct device *dev)
- {
--	sysfs_unmerge_group(&dev->kobj, &pm_qos_attr_group);
-+	sysfs_unmerge_group(&dev->kobj, &pm_qos_flags_attr_group);
- }
- 
- void rpm_sysfs_remove(struct device *dev)
-Index: linux/Documentation/ABI/testing/sysfs-devices-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-devices-power
-+++ linux/Documentation/ABI/testing/sysfs-devices-power
-@@ -204,3 +204,34 @@ Description:
- 
- 		This attribute has no effect on system-wide suspend/resume and
- 		hibernation.
-+
-+What:		/sys/devices/.../power/pm_qos_no_power_off
-+Date:		September 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/devices/.../power/pm_qos_no_power_off attribute
-+		is used for manipulating the PM QoS "no power off" flag.  If
-+		set, this flag indicates to the kernel that power should not
-+		be removed entirely from the device.
-+
-+		Not all drivers support this attribute.  If it isn't supported,
-+		it is not present.
-+
-+		This attribute has no effect on system-wide suspend/resume and
-+		hibernation.
-+
-+What:		/sys/devices/.../power/pm_qos_remote_wakeup
-+Date:		September 2012
-+Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-+Description:
-+		The /sys/devices/.../power/pm_qos_remote_wakeup attribute
-+		is used for manipulating the PM QoS "remote wakeup required"
-+		flag.  If set, this flag indicates to the kernel that the
-+		device is a source of user events that have to be signaled from
-+		its low-power states.
-+
-+		Not all drivers support this attribute.  If it isn't supported,
-+		it is not present.
-+
-+		This attribute has no effect on system-wide suspend/resume and
-+		hibernation.
+-	if (!dev->enabled)
++	if (!dev || !dev->enabled)
+ 		return;
+ 	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return;
 
