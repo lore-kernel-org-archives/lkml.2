@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab2JHTkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 15:40:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31319 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab2JHTkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 15:40:01 -0400
-Date: Mon, 8 Oct 2012 22:41:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Thomas Lendacky <tahm@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-Message-ID: <20121008204145.GA17820@redhat.com>
-References: <cover.1348824232.git.mst@redhat.com>
- <87vces2gxq.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vces2gxq.fsf@rustcorp.com.au>
+	id S1753305Ab2JHTml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 15:42:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42894 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab2JHTmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 15:42:36 -0400
+Date: Mon, 8 Oct 2012 12:42:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, kamezawa.hiroyu@jp.fujitsu.com,
+        minchan@kernel.org, shangw@linux.vnet.ibm.com, yinghai@kernel.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + mm-memblock-reduce-overhead-in-binary-search.patch added to
+ -mm tree
+Message-Id: <20121008124234.3e8c511b.akpm@linux-foundation.org>
+In-Reply-To: <20120910115514.GC17437@dhcp22.suse.cz>
+References: <20120907235058.A33F75C0219@hpza9.eem.corp.google.com>
+	<20120910082035.GA13035@dhcp22.suse.cz>
+	<20120910094604.GA7365@hacker.(null)>
+	<20120910110550.GA17437@dhcp22.suse.cz>
+	<20120910113051.GA15193@hacker.(null)>
+	<20120910115514.GC17437@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:14:17PM +0930, Rusty Russell wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> 
-> > Thinking about Sasha's patches, we can reduce ring usage
-> > for virtio net small packets dramatically if we put
-> > virtio net header inline with the data.
-> > This can be done for free in case guest net stack allocated
-> > extra head room for the packet, and I don't see
-> > why would this have any downsides.
-> 
-> I've been wanting to do this for the longest time... but...
-> 
-> > Even though with my recent patches qemu
-> > no longer requires header to be the first s/g element,
-> > we need a new feature bit to detect this.
-> > A trivial qemu patch will be sent separately.
-> 
-> There's a reason I haven't done this.  I really, really dislike "my
-> implemention isn't broken" feature bits.  We could have an infinite
-> number of them, for each bug in each device.
-> 
-> So my plan was to tie this assumption to the new PCI layout.
+On Mon, 10 Sep 2012 13:55:15 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-I don't object but old qemu has this limitation for s390 as well,
-and that's not using PCI, right? So how do we detect
-new hypervisor there?
+> > >OK. Thanks for the clarification. The main question remains, though. Is
+> > >this worth for memblock_is_memory?
+> > 
+> > There are many call sites need to call pfn_valid, how can you guarantee all
+> > the addrs are between memblock_start_of_DRAM() and memblock_end_of_DRAM(), 
+> > if not can this reduce possible overhead ? 
+> 
+> That was my question. I hoped for an answer in the patch description. I
+> am really not familiar with unicore32 which is the only user now.
+> 
+> > I add unlikely which means that this will not happen frequently. :-)
+> 
+> unlikely doesn't help much in this case. You would be doing the test for
+> every pfn_valid invocation anyway. So the main question is. Do you want
+> to optimize for something that doesn't happen often when it adds a cost
+> (not a big one but still) for the more probable cases?
+> I would say yes if we clearly see that the exceptional case really pays
+> off. Nothing in the changelog convinces me about that.
 
--- 
-MST
+I don't believe Michal's questions have been resolved yet, so I'll keep
+this patch on hold for now.
+
