@@ -1,80 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2JHNjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:39:17 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63539 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab2JHNjP convert rfc822-to-8bit (ORCPT
+	id S1752757Ab2JHNkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:40:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56239 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab2JHNkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:39:15 -0400
+	Mon, 8 Oct 2012 09:40:08 -0400
+Date: Mon, 8 Oct 2012 15:39:51 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Subject: Re: [PATCH 1/2] pwm: pwm-tiecap: Add device-tree binding support for
+ APWM driver
+Message-ID: <20121008133951.GA26525@avionic-0098.mockup.avionic-design.de>
+References: <1348658863-29428-1-git-send-email-avinashphilip@ti.com>
+ <1348658863-29428-2-git-send-email-avinashphilip@ti.com>
+ <20121002060014.GA4298@avionic-0098.mockup.avionic-design.de>
+ <518397C60809E147AF5323E0420B992E3E9CA1E8@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
-References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
- <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Mon, 8 Oct 2012 10:38:53 -0300
-Message-ID: <CAKi4VAKj0C7-Ug4M=s7wSFGZeP5Tr0Tt1vyg41tKhf01mA+vcQ@mail.gmail.com>
-Subject: Re: [ANNOUNCE] kmod 10
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <518397C60809E147AF5323E0420B992E3E9CA1E8@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:POzTXT8UWjukApgTJd86JDFeiD5bMlAcOE6pOKc6PSl
+ AjqIwjjqFtjcnHVPQzUfab5FsLVMRNG3bNG/lofh3xQGsy95p3
+ 8ePKxDyGUBcieceHmSKJhUhgVeW/uajDbB+s8AjnBafoH1qTuh
+ /Y6aSJvRWc4d4epwFN37sAGquURn3f3YJcHGgBXqwllhasfX8F
+ YiUisJlZFGk7xwcx/Kw8NA5RQMoTFzZbJOkKZO+DXjZNhmVxL5
+ GzUNdLP5PmQS4teZK9vp8buMIl7qAdBBzS/t1dlcDqdBmLxNlm
+ ZovDVCcz+/mNC2ZJMLCXDMoPRo8GVCK0f5bhvv02VVzXBSlGvq
+ hhn+IaOguDHU7GyWl0gm52cA3UkWJ7ja2J1AauPKUA1Y6iUTZa
+ GdedgC7nkQb+oEni9vi//7f96hES2b4trIKj3nnIg7CNP/Xtkf
+ 99C+L
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 16, 2012 at 11:34 PM, Jan Engelhardt <jengelh@inai.de> wrote:
->
-> On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
->>
->>kmod 10 is out:
->>
->>ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
->>ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
->
-> make check fails here with glibc-2.15, gcc-4.7, x86_64,
-> due to what seems to be duplicated symbols(?):
->
->
-> + make check V=1
-> Making check in .
-> make --no-print-directory testsuite/uname.la testsuite/path.la testsuite/init_module.la testsuite/delete_module.la testsuite/libtestsuite.la testsuite/test-init testsuite/test-testsuite testsuite/test-loaded testsuite/test-modinfo testsuite/test-alias testsuite/test-new-module testsuite/test-modprobe testsuite/test-blacklist testsuite/test-dependencies
-> depbase=`echo testsuite/uname.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
-> /bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
->  fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/uname.lo testsuite/uname.c &&\
-> mv -f $depbase.Tpo $depbase.Plo
-> libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
->  synchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF testsuite/.deps/uname.Tpo -c testsuite/uname.c  -fPIC -DPIC -o testsuite/.libs/uname.o
-> cc1: warning: /usr/local/include: No such file or directory [enabled by default]
-> /bin/sh ./libtool  --tag=CC   --mode=link gcc -std=gnu99 -std=gnu99 -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables -g avoid-version -module -shared -export-dynamic -rpath /nowhere -ldl  -o testsuite/uname.
->  la  testsuite/uname.lo
-> libtool: link: gcc -std=gnu99 -shared  -fPIC -DPIC  testsuite/.libs/uname.o   -ldl  -O2   -Wl,-soname -Wl,uname.so.0 -o testsuite/.libs/uname.so.0.0.0
-> libtool: link: (cd "testsuite/.libs" && rm -f "uname.so.0" && ln -s "uname.so.0.0.0" "uname.so.0")
-> libtool: link: (cd "testsuite/.libs" && rm -f "uname.so" && ln -s "uname.so.0.0.0" "uname.so")
-> libtool: link: ( cd "testsuite/.libs" && rm -f "uname.la" && ln -s "../uname.la" "uname.la" )
-> depbase=`echo testsuite/path.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
-> /bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
->  fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/path.lo testsuite/path.c &&\
-> mv -f $depbase.Tpo $depbase.Plo
-> libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
->  synchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF testsuite/.deps/path.Tpo -c testsuite/path.c  -fPIC -DPIC -o testsuite/.libs/path.o
-> cc1: warning: /usr/local/include: No such file or directory [enabled by default]
-> {standard input}: Assembler messages:
-> {standard input}:418: Error: symbol `open64' is already defined
-> {standard input}:678: Error: symbol `stat64' is already defined
-> {standard input}:758: Error: symbol `lstat64' is already defined
-> {standard input}:1234: Error: symbol `__xstat64' is already defined
-> {standard input}:1396: Error: symbol `__lxstat64' is already defined
-> make[2]: *** [testsuite/path.lo] Error 1
-> make[1]: *** [check-am] Error 2
-> make: *** [check-recursive] Error 1
-> error: Bad exit status from /var/tmp/rpm-tmp.Eq2Axz (%check)
 
-For completeness of ML archives: it's fixed on git:
-http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=commit;h=d6423417778d049b07a3091c3972160be99c9173
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Oct 08, 2012 at 01:31:19PM +0000, Philip, Avinash wrote:
+> On Tue, Oct 02, 2012 at 11:30:14, Thierry Reding wrote:
+> > On Wed, Sep 26, 2012 at 04:57:42PM +0530, Philip, Avinash wrote:
+[...]
+> > > @@ -231,13 +290,56 @@ static int __devinit ecap_pwm_probe(struct plat=
+form_device *pdev)
+> > >  	}
+> > > =20
+> > >  	pm_runtime_enable(&pdev->dev);
+> > > +
+> > > +	/*
+> > > +	 * Some platform has extra PWM-subsystem common config space
+> > > +	 * and requires special handling of clock gating.
+> > > +	 */
+> > > +	if (pdata && pdata->has_configspace) {
+> > > +		r =3D platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> > > +		if (!r) {
+> > > +			dev_err(&pdev->dev, "no memory resource defined\n");
+> > > +			ret =3D -ENODEV;
+> > > +			goto err_disable_clock;
+> > > +		}
+> > > +
+> > > +		pc->config_base =3D devm_ioremap(&pdev->dev, r->start,
+> > > +				resource_size(r));
+> > > +		if (!pc->config_base) {
+> > > +			dev_err(&pdev->dev, "failed to ioremap() registers\n");
+> > > +			ret =3D -EADDRNOTAVAIL;
+> > > +			goto err_disable_clock;
+> > > +		}
+> >=20
+> > Isn't this missing a request_mem_region()? I assume you don't do that
+> > here because you need the same region in the EHRPWM driver, right?
+>=20
+> request_mem_region() is avoided as this region is shared across PWM
+> sub modules ECAP & EHRPWM.=20
+>=20
+> > This should be indication enough that the design is not right here.
+> > I think we need a proper abstraction here. Can this not be done via
+> > PM runtime support? If not, maybe this should be represented by
+> > clock objects since the bit obviously enables a clock.
+>=20
+> It is not done as part of PM runtime as this is has nothing to
+> do with clock tree of the SOC. The bits we were enabling here
+> should consider as an enable of the individual sub module as
+> part of IP integration. Hence we were handling these subsystem
+> module enable in the driver itself.
 
-Lucas De Marchi
+My point remains valid: you shouldn't be able to access the same
+register through two different drivers. That's one of the reasons, if
+not the only reasen, why the request_mem_region() function exists. I
+think you should add some abstraction to provide this functionality to
+the drivers. I assume that eventually there will be more than just the
+PWM cores that require access to this register.
+
+Thierry
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQctenAAoJEN0jrNd/PrOhKY8P/3BV7jiQkYygJF7zxvcLJxBw
+Jjn7isR3gLr3nN/6qN1Lw4cllDuN6TzzVFEzan3yJ6ZApIL7vPDKyP7o2xZHl7Br
+zJ9y6KOcnE8gStHRjb/G7yYMH+bdMZW0qfAfAnY/CZvR3uiJBtXfu0lxpgvfYrq7
+8wh9bK93MCXYs+uoZQnMWc8iT8QeVWNbv9UuVbPPZkTV7VrLy71s5JmF3Qkr2hJe
+FIlph2P319lRv2Ql7pmGOi2Vg/bzjxUuT+5ZcAP+thGmh3hwM4aeM3dlwPChBuJR
+OblsDXSS3pzGrDZghDPpe3Q4YMiCgC6YPYwqoqLXWTg2mvfpq9aUVX5rlQGU1u/+
+3doC2gaP90CORQHT5oTJQVrMfjzNNmkHFC/tTi8tbpGeXkMVSDYE9ZquJslOaKpV
+L5LW4M2ZuGg7UgIcDW/thCvvW8F0zHz6oJ8E8xINWioZHCHMEyzwU1f+K99N3vnW
+ais/G534U9bXbantgSDQbJPByBWIixGjenJxPAl5AAFoo0i3IqrCmPO2drVBAPPW
+xoPh4/oYsAcaIwrJqhPRLq4jUAkG7OCY4KcCeGTcDtY6wNkhPqCDcT4jFPT7jnC3
+9t+yn3sgzVHo/HBrETPkL1jAjWIn0YDNuqPld4ADOsSkf+kHF/W62lMUcXSA0WO3
+NfobIyCwnrAtG53bewB/
+=gaFy
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
