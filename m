@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2JHPdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:33:38 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:35976 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752893Ab2JHPde (ORCPT
+	id S1751063Ab2JHPfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:35:43 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61110 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab2JHPfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:33:34 -0400
-From: Rabin Vincent <rabin.vincent@stericsson.com>
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <rabin@rab.in>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: [PATCH] mm: show migration types in show_mem
-Date: Mon, 8 Oct 2012 17:32:18 +0200
-Message-ID: <1349710338-13955-1-git-send-email-rabin.vincent@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Mon, 8 Oct 2012 11:35:41 -0400
+Date: Mon, 8 Oct 2012 08:35:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>,
+        lkml <linux-kernel@vger.kernel.org>, jim.cromie@gmail.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        jbaron@redhat.com
+Subject: Re: [bisected] stray angle bracket in dmesg
+Message-ID: <20121008153536.GB17568@kroah.com>
+References: <5072DD92.2000305@cwi.nl>
+ <20121008141829.GA244@x4>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121008141829.GA244@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful to diagnose the reason for page allocation failure for
-cases where there appear to be several free pages.
+On Mon, Oct 08, 2012 at 04:18:29PM +0200, Markus Trippelsdorf wrote:
+> On 2012.10.08 at 15:05 +0100, Wouter M. Koolen wrote:
+> > Hi guys,
+> > 
+> > After upgrading from 3.5.4 to 3.5.5 I started noticing log lines of the 
+> > form (just a random sample)
+> > 
+> > pci_bus 0000:00: >resource 4 [io  0x0000-0x0cf7]
+> > pnp 00:07: >Plug and Play ACPI device, IDs PNP0303 (active)
+> > system 00:04: >[io  0x0680-0x069f] has been reserved
+> > pci_root PNP0A08:00: >host bridge window [io  0x0000-0x0cf7]
+> > 
+> > Note the right angle bracket between the device name and the message 
+> > string. These angle brackets were not there up till 3.5.4.
+> > 
+> > This does not happen in all dmesg lines. Only the ones that start with a 
+> > device identifier.
+> > 
+> > I assume this angle bracket was not intentional. Otherwise please excuse 
+> > the noise.
+> > 
+> > I noticed this because all of these lines now suddenly slip through my 
+> > logcheck ignore rules.
+> > 
+> > Bisection points to this commit:
+> > 
+> > commit 3d822616ca81881d8c19d0b473e79ba241c700de
+> > Author: Markus Trippelsdorf <markus@trippelsdorf.de>
+> > Date:   Sat Aug 18 18:35:51 2012 -0600
+> 
+> This patch should be reverted for stable, since the move to ASCII SOH (
+> commit 04d2c8c83d0) wasn't backported. So the fix just isn't necessary.
 
-Example, with this alloc_pages(GFP_ATOMIC) failure:
+Ick, sorry about that, I'll go revert it for the next 3.5.y release,
+thanks for letting me know.
 
- swapper/0: page allocation failure: order:0, mode:0x0
- ...
- Mem-info:
- Normal per-cpu:
- CPU    0: hi:   90, btch:  15 usd:  48
- CPU    1: hi:   90, btch:  15 usd:  21
- active_anon:0 inactive_anon:0 isolated_anon:0
-  active_file:0 inactive_file:84 isolated_file:0
-  unevictable:0 dirty:0 writeback:0 unstable:0
-  free:4026 slab_reclaimable:75 slab_unreclaimable:484
-  mapped:0 shmem:0 pagetables:0 bounce:0
- Normal free:16104kB min:2296kB low:2868kB high:3444kB active_anon:0kB
- inactive_anon:0kB active_file:0kB inactive_file:336kB unevictable:0kB
- isolated(anon):0kB isolated(file):0kB present:331776kB mlocked:0kB
- dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:300kB
- slab_unreclaimable:1936kB kernel_stack:328kB pagetables:0kB unstable:0kB
- bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
- lowmem_reserve[]: 0 0
-
-Before the patch, it's hard (for me, at least) to say why all these free
-chunks weren't considered for allocation:
-
- Normal: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 1*256kB 1*512kB
- 1*1024kB 1*2048kB 3*4096kB = 16128kB
-
-After the patch, it's obvious that the reason is that all of these are
-in the MIGRATE_CMA (C) freelist:
-
- Normal: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 1*256kB (C) 1*512kB
- (C) 1*1024kB (C) 1*2048kB (C) 3*4096kB (C) = 16128kB
-
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
----
- mm/page_alloc.c | 42 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 40 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c13ea75..cbe5373 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2818,6 +2818,31 @@ out:
- 
- #define K(x) ((x) << (PAGE_SHIFT-10))
- 
-+static void show_migration_types(unsigned char type)
-+{
-+	static const char types[MIGRATE_TYPES] = {
-+		[MIGRATE_UNMOVABLE]	= 'U',
-+		[MIGRATE_RECLAIMABLE]	= 'E',
-+		[MIGRATE_MOVABLE]	= 'M',
-+		[MIGRATE_RESERVE]	= 'R',
-+#ifdef CONFIG_CMA
-+		[MIGRATE_CMA]		= 'C',
-+#endif
-+		[MIGRATE_ISOLATE]	= 'I',
-+	};
-+	char tmp[MIGRATE_TYPES + 1];
-+	char *p = tmp;
-+	int i;
-+
-+	for (i = 0; i < MIGRATE_TYPES; i++) {
-+		if (type & (1 << i))
-+			*p++ = types[i];
-+	}
-+
-+	*p = '\0';
-+	printk("(%s) ", tmp);
-+}
-+
- /*
-  * Show free area list (used inside shift_scroll-lock stuff)
-  * We also calculate the percentage fragmentation. We do this by counting the
-@@ -2942,6 +2967,7 @@ void show_free_areas(unsigned int filter)
- 
- 	for_each_populated_zone(zone) {
-  		unsigned long nr[MAX_ORDER], flags, order, total = 0;
-+		unsigned char types[MAX_ORDER];
- 
- 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
- 			continue;
-@@ -2950,12 +2976,24 @@ void show_free_areas(unsigned int filter)
- 
- 		spin_lock_irqsave(&zone->lock, flags);
- 		for (order = 0; order < MAX_ORDER; order++) {
--			nr[order] = zone->free_area[order].nr_free;
-+			struct free_area *area = &zone->free_area[order];
-+			int type;
-+
-+			nr[order] = area->nr_free;
- 			total += nr[order] << order;
-+
-+			types[order] = 0;
-+			for (type = 0; type < MIGRATE_TYPES; type++) {
-+				if (!list_empty(&area->free_list[type]))
-+					types[order] |= 1 << type;
-+			}
- 		}
- 		spin_unlock_irqrestore(&zone->lock, flags);
--		for (order = 0; order < MAX_ORDER; order++)
-+		for (order = 0; order < MAX_ORDER; order++) {
- 			printk("%lu*%lukB ", nr[order], K(1UL) << order);
-+			if (nr[order])
-+				show_migration_types(types[order]);
-+		}
- 		printk("= %lukB\n", K(total));
- 	}
- 
--- 
-1.7.11.3
-
+greg k-h
