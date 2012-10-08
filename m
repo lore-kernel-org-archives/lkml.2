@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab2JHSFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 14:05:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46246 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab2JHSFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 14:05:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,555,1344236400"; 
-   d="scan'208";a="232107463"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mike Bakhterev <mike.bakhterev@gmail.com>,
-        Matt Fleming <matt@console-pimps.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-efi <linux-efi@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: RE: boot failure on i7-3317u in Samsung 900x3c
-Thread-Topic: boot failure on i7-3317u in Samsung 900x3c
-Thread-Index: AQHNpT0OFhN6Zra9x0WndAgs3yXilpev+uuAgAAYmYCAABIaAP//jbIg
-Date: Mon, 8 Oct 2012 18:05:13 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D49494@ORSMSX108.amr.corp.intel.com>
-References: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
-	<1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CACx33ghsnYz0VNwEbhuyn7ZgrtamHfrTKHR4E0b9Q+LpahcDXw@mail.gmail.com>
-	<1349714729.15966.167.camel@mfleming-mobl1.ger.corp.intel.com>
- <CACx33gg7M7WNFrFg47WX17HZvD-H6mW8_w5y8d16K-uMfUa_kQ@mail.gmail.com>
-In-Reply-To: <CACx33gg7M7WNFrFg47WX17HZvD-H6mW8_w5y8d16K-uMfUa_kQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1754554Ab2JHSGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 14:06:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36303 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab2JHSGd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 14:06:33 -0400
+Date: Mon, 8 Oct 2012 19:06:28 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 fixes
+Message-ID: <20121008180628.GC3204@arm.com>
 MIME-Version: 1.0
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 08 Oct 2012 18:06:29.0024 (UTC) FILETIME=[A3BEEA00:01CDA57F]
+X-MC-Unique: 112100819063105801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q98I5enF032744
 
-> STATUS be2000000003110a MCGSTATUS 5
+Hi Linus,
 
-The SDM can help here. See volume 3A, section 15.9.2 "Compound Error Codes".
+Please pull the tag below. There are two fixes and removal of the
+arm64-specific compat_sys_sendfile (I pushed the generic implementation
+separately and it now got into mainline). Thanks.
 
-The low 16 bits of the status in this case are 0001 0001 0000 1010
+The following changes since commit e9eca4de957ac33744fb994ccacd4a5102e445a8:
 
-This tells us that you have a cache error in L2 cache severe enough that the
-processor has begun filtering further error reports.
+  Merge tag 'upstream-3.7-rc1-fastmap' of git://git.infradead.org/linux-ubi (2012-10-08 20:40:45 +0900)
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git arm64-fixes
+
+for you to fetch changes up to 6916fd086f0c5d7871ad3986300ba30d63616925:
+
+  arm64: Enable interrupts before calling do_notify_resume() (2012-10-08 18:04:21 +0100)
+
+----------------------------------------------------------------
+AArch64 fixes:
+- Use swiotlb_init() instead of swiotlb_init_with_default_size(). The
+  latter is now a static function (commit 74838b7 "swiotlb: add the late
+  swiotlb initialization function with iotlb memory").
+- Enable interrupts before calling do_notify_resume().
+
+AArch64 clean-up:
+- Use the generic implementation of compat_sys_sendfile() on arm64 as
+  commit 8f9c0119 (introducing the function) has been merged.
+
+----------------------------------------------------------------
+Catalin Marinas (3):
+      arm64: Call swiotlb_init() instead of swiotlb_init_with_default_size()
+      arm64: Use the generic compat_sys_sendfile() implementation
+      arm64: Enable interrupts before calling do_notify_resume()
+
+ arch/arm64/include/asm/unistd32.h |    1 +
+ arch/arm64/kernel/entry.S         |    1 +
+ arch/arm64/kernel/sys_compat.c    |   20 --------------------
+ arch/arm64/mm/dma-mapping.c       |    6 ++----
+ arch/arm64/mm/init.c              |    5 +----
+ arch/arm64/mm/mm.h                |    1 +
+ 6 files changed, 6 insertions(+), 28 deletions(-)
+
