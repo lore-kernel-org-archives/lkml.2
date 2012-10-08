@@ -1,94 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab2JHKxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 06:53:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44034 "EHLO comal.ext.ti.com"
+	id S1752324Ab2JHKyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 06:54:32 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29524 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833Ab2JHKxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 06:53:38 -0400
-Message-ID: <5072B091.1040007@ti.com>
-Date: Mon, 8 Oct 2012 16:23:05 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1750833Ab2JHKy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 06:54:28 -0400
+Subject: [PATCH v3] SUNRPC: set desired file system root before connecting
+	local transports
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Mon, 08 Oct 2012 14:56:32 +0400
+Message-ID: <20121008105437.18668.99905.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>
-Subject: Re: [PATCH v4 7/7] ARM: davinci: register pruss_uio device on DA850
- EVM
-References: <1349456686-22736-1-git-send-email-mporter@ti.com> <1349456686-22736-8-git-send-email-mporter@ti.com>
-In-Reply-To: <1349456686-22736-8-git-send-email-mporter@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/5/2012 10:34 PM, Matt Porter wrote:
-> Configures the required pdata and registers the pruss_uio
-> platform device on the DA850 EVM.
-> 
-> Tested on AM180x-EVM using the PRU_memAccessPRUDataRam and
-> PRU_memAccessL3andDDR examples from the PRU userspace tools
-> available from http://www.ti.com/tool/sprc940
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  arch/arm/mach-davinci/board-da850-evm.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index 7359375..6f9478b 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -31,6 +31,7 @@
->  #include <linux/platform_data/mtd-davinci.h>
->  #include <linux/platform_data/mtd-davinci-aemif.h>
->  #include <linux/platform_data/spi-davinci.h>
-> +#include <linux/platform_data/uio_pruss.h>
->  #include <linux/regulator/machine.h>
->  #include <linux/regulator/tps6507x.h>
->  #include <linux/spi/spi.h>
-> @@ -40,6 +41,7 @@
->  #include <mach/cp_intc.h>
->  #include <mach/da8xx.h>
->  #include <mach/mux.h>
-> +#include <mach/sram.h>
->  
->  #include <asm/mach-types.h>
->  #include <asm/mach/arch.h>
-> @@ -1253,6 +1255,10 @@ static __init int da850_wl12xx_init(void)
->  
->  #endif /* CONFIG_DA850_WL12XX */
->  
-> +struct uio_pruss_pdata da8xx_pruss_uio_pdata = {
-> +	.pintc_base	= 0x4000,
-> +};
-> +
->  #define DA850EVM_SATA_REFCLKPN_RATE	(100 * 1000 * 1000)
->  
->  static __init void da850_evm_init(void)
-> @@ -1339,6 +1345,12 @@ static __init void da850_evm_init(void)
->  		pr_warning("da850_evm_init: lcdcntl mux setup failed: %d\n",
->  				ret);
->  
-> +	da8xx_pruss_uio_pdata.sram_pool = sram_get_gen_pool();
-> +	ret = da8xx_register_pruss_uio(&da8xx_pruss_uio_pdata);
-> +	if (ret)
-> +		pr_warning("pruss_uio initialization failed: %d\n",
-> +				ret);
+Today, there is a problem in connecting of local SUNRPC thansports. These
+transports uses UNIX sockets and connection itself is done by rpciod
+workqueue.
+But all local transports are connecting in rpciod context. I.e. UNIX sockets
+lookup is done in context of process file system root.
+This works nice until we will try to mount NFS from process with other root -
+for example in container. This container can have it's own (nested) root and
+rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
+this container will register new service (Lockd for example) in global rpcbind
+- not containers's one.
+This patch solves the problem by switching rpciod kernel thread's file system
+root to the right one (stored on transport) while connecting of local
+transports.
 
-I failed to mention this last time around, but is there any reason
-platform data will change from board to board? Looks like the pintc_base
-is SoC specific and that all platforms would use SRAM when using the
-pruss driver. Looks like you can make da8xx_register_pruss_uio() take no
-parameters at all.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ net/sunrpc/xprtsock.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 50 insertions(+), 2 deletions(-)
 
-Thanks,
-Sekhar
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index aaaadfb..ecbced1 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -37,6 +37,7 @@
+ #include <linux/sunrpc/svcsock.h>
+ #include <linux/sunrpc/xprtsock.h>
+ #include <linux/file.h>
++#include <linux/fs_struct.h>
+ #ifdef CONFIG_SUNRPC_BACKCHANNEL
+ #include <linux/sunrpc/bc_xprt.h>
+ #endif
+@@ -255,6 +256,11 @@ struct sock_xprt {
+ 	void			(*old_state_change)(struct sock *);
+ 	void			(*old_write_space)(struct sock *);
+ 	void			(*old_error_report)(struct sock *);
++
++	/*
++	 * Saved transport creator root. Required for local transports only.
++	 */
++	struct path		root;
+ };
+ 
+ /*
+@@ -1876,6 +1882,30 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
+ 	return kernel_connect(sock, xs_addr(xprt), xprt->addrlen, 0);
+ }
+ 
++/*
++ * __xs_local_swap_root - swap current root to tranport's root helper.
++ * @new_root - path to set to current fs->root.
++ * @old_root - optinal paoinet to save current root to
++ *
++ * This routine is requieed to connecting unix sockets to absolute path in
++ * proper root environment.
++ * Note: no path_get() will be called. I.e. caller have to hold reference to
++ * new_root.
++ */
++static void __xs_local_swap_root(struct path *new_root, struct path *old_root)
++{
++	struct fs_struct *fs = current->fs;
++
++	spin_lock(&fs->lock);
++	write_seqcount_begin(&fs->seq);
++	if (old_root)
++		*old_root = fs->root;
++	fs->root = *new_root;
++	write_seqcount_end(&fs->seq);
++	spin_unlock(&fs->lock);
++}
++
++
+ /**
+  * xs_local_setup_socket - create AF_LOCAL socket, connect to a local endpoint
+  * @xprt: RPC transport to connect
+@@ -1891,6 +1921,7 @@ static void xs_local_setup_socket(struct work_struct *work)
+ 	struct rpc_xprt *xprt = &transport->xprt;
+ 	struct socket *sock;
+ 	int status = -EIO;
++	struct path root;
+ 
+ 	current->flags |= PF_FSTRANS;
+ 
+@@ -1907,7 +1938,10 @@ static void xs_local_setup_socket(struct work_struct *work)
+ 	dprintk("RPC:       worker connecting xprt %p via AF_LOCAL to %s\n",
+ 			xprt, xprt->address_strings[RPC_DISPLAY_ADDR]);
+ 
++	__xs_local_swap_root(&transport->root, &root);
+ 	status = xs_local_finish_connecting(xprt, sock);
++	__xs_local_swap_root(&root, NULL);
++
+ 	switch (status) {
+ 	case 0:
+ 		dprintk("RPC:       xprt %p connected to %s\n",
+@@ -2256,6 +2290,18 @@ static void xs_connect(struct rpc_task *task)
+ 	}
+ }
+ 
++static void xs_local_destroy(struct rpc_xprt *xprt)
++{
++	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct path root = transport->root;
++
++	dprintk("RPC:       xs_local_destroy xprt %p\n", xprt);
++
++	xs_destroy(xprt);
++
++	path_put(&root);
++}
++
+ /**
+  * xs_local_print_stats - display AF_LOCAL socket-specifc stats
+  * @xprt: rpc_xprt struct containing statistics
+@@ -2475,7 +2521,7 @@ static struct rpc_xprt_ops xs_local_ops = {
+ 	.send_request		= xs_local_send_request,
+ 	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
+ 	.close			= xs_close,
+-	.destroy		= xs_destroy,
++	.destroy		= xs_local_destroy,
+ 	.print_stats		= xs_local_print_stats,
+ };
+ 
+@@ -2654,8 +2700,10 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
+ 	dprintk("RPC:       set up xprt to %s via AF_LOCAL\n",
+ 			xprt->address_strings[RPC_DISPLAY_ADDR]);
+ 
+-	if (try_module_get(THIS_MODULE))
++	if (try_module_get(THIS_MODULE)) {
++		get_fs_root(current->fs, &transport->root);
+ 		return xprt;
++	}
+ 	ret = ERR_PTR(-EINVAL);
+ out_err:
+ 	xprt_free(xprt);
+
