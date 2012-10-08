@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2JHGZQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:25:16 -0400
-Received: from chandra.ncl.res.in ([59.163.216.11]:41630 "EHLO
-	chandra.ncl.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2JHGZM convert rfc822-to-8bit (ORCPT
+	id S1753340Ab2JHG2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:28:43 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15924 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab2JHG2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:25:12 -0400
-X-Greylist: delayed 3422 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Oct 2012 02:25:12 EDT
-From: "Kedar B. Batkulwar" <kb.batkulwar@ncl.res.in>
-Subject: RE-ACTIVATE YOUR EMAIL ACCOUNT.
-Thread-Topic: RE-ACTIVATE YOUR EMAIL ACCOUNT.
-Thread-Index: Ac2lFKoVbPfZvL0tSWmSkQIDaVxwsQ==
-Date: Mon, 8 Oct 2012 05:20:43 +0000
-Message-ID: <EEF64ABF5899414F9B79C1B7A07E63F50CB029A7@mailsrv01.ncl.res.in>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [101.62.117.164]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Oct 2012 02:28:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 07 Oct 2012 23:26:28 -0700
+Message-ID: <50726ABC.4030502@nvidia.com>
+Date: Mon, 8 Oct 2012 11:25:08 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+References: <1349623340-21807-1-git-send-email-ldewangan@nvidia.com> <1349623340-21807-5-git-send-email-ldewangan@nvidia.com> <D958900912E20642BCBC71664EFECE3E6DDF8AF387@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDF8AF387@BGMAIL02.nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 08 October 2012 11:07 AM, Venu Byravarasu wrote:
+>> -----Original Message-----
+>> From: Laxman Dewangan
+>> Sent: Sunday, October 07, 2012 8:52 PM
+>> To: sameo@linux.intel.com
+>> Cc: linux-kernel@vger.kernel.org; Venu Byravarasu; Laxman Dewangan
+>> Subject: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+>>
+>> Since tps65090 register is accessed via regmap, moving
+>> the register access APIs to header and making it as inline.
+> Why should we move function implementation to header file?
+> Also by making inline, doesn't the output binary size increase?
+
+These function does not do much but just indirect the regmap calls so 
+not seeing much size increase but better execution.
+Also it will remove the complexity and code sizes from mfd drivers. The 
+sub driver can use direct regmap calls if they want.
 
 
-
-Dear Email User;
-
-You have exceeded the limit of 23432 storage on your mailbox set by your
-WEB SERVICE/Administrator, and you will be having problems in sending
-and receiving mails Until You Re-Validate. You have to update by clicking on
-the below link and fill out the information to validate your account.
-
-Please Click the link Below or copy paste to your browser To Validate Your
-Mailbox
-
-http://www.stevedgood.com/ornament/use/filter/form1.html
-
-Warning!!!
-Failure to do this, will result in limited access to your mailbox.
-failure to update your account within Three days of this update
-notification, your account will be closed permanently.
-
-Sincerely,
-System Administrator®
-
-________________________________
-
-Disclaimer:
-
-This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
