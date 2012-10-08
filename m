@@ -1,455 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab2JHV0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:26:53 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48519 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2JHV0t (ORCPT
+	id S1753626Ab2JHV2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:28:42 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40851 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab2JHV2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:26:49 -0400
-Date: Mon, 8 Oct 2012 17:29:43 -0400
-From: "Maxin B. John" <maxin.john@gmail.com>
-To: gregkh@linuxfoundation.org, devel@linuxdriverproject.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Support for OWI/Maplin USB Robotic Arm
-Message-ID: <20121008212943.GA3986@linux-3ix0.site>
+	Mon, 8 Oct 2012 17:28:39 -0400
+Date: Mon, 8 Oct 2012 14:28:37 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v4] slab: Ignore internal flags in cache creation
+In-Reply-To: <1349434154-8000-1-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1210081424340.22552@chino.kir.corp.google.com>
+References: <1349434154-8000-1-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, 5 Oct 2012, Glauber Costa wrote:
 
-This driver helps us to control the OWI/Maplin USB Robotic Arm device.
+> diff --git a/mm/slab.h b/mm/slab.h
+> index 7deeb44..4c35c17 100644
+> --- a/mm/slab.h
+> +++ b/mm/slab.h
+> @@ -45,6 +45,31 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
+>  #endif
+>  
+>  
+> +/* Legal flag mask for kmem_cache_create(), for various configurations */
+> +#define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | SLAB_PANIC | \
+> +			 SLAB_DESTROY_BY_RCU | SLAB_DEBUG_OBJECTS )
+> +
+> +#if defined(CONFIG_DEBUG_SLAB)
+> +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
+> +#elif defined(CONFIG_SLUB_DEBUG)
+> +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
+> +			  SLAB_TRACE | SLAB_DEBUG_FREE)
+> +#else
+> +#define SLAB_DEBUG_FLAGS (0)
+> +#endif
+> +
+> +#if defined(CONFIG_SLAB)
+> +#define SLAB_CACHE_FLAGS (SLAB_MEMSPREAD | SLAB_NOLEAKTRACE | \
 
-I have tested this driver in my x86 Laptop and it works as expected
-(Some clean-ups and modifications are in the pipeline, though).
+s/SLAB_MEMSPREAD/SLAB_MEM_SPREAD/
 
-After review process and the life in staging,I hope this driver will
-find it's place in "drivers/usb/misc/" :)
-
-The userspace utility program is available from the below URL:
-https://github.com/maxinbjohn/robotic_arm_driver
-
-OWI/Maplin USB Robotic arm is available from:
-http://www.maplin.co.uk/robotic-arm-kit-with-usb-pc-interface-266257
-http://www.owirobots.com/cart/html/owi-535pc-robotic-arm-kit-with-usb-pc-interface-assembled.html
-
-Please let me know your comments.
-
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index d805eef..a1eefa9 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -144,4 +144,6 @@ source "drivers/staging/imx-drm/Kconfig"
- 
- source "drivers/staging/dgrp/Kconfig"
- 
-+source "drivers/staging/usb_robotic_arm/Kconfig"
-+
- endif # STAGING
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index 76e2ebd..fd9b5f3 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -64,3 +64,4 @@ obj-$(CONFIG_NET_VENDOR_SILICOM)	+= silicom/
- obj-$(CONFIG_CED1401)		+= ced1401/
- obj-$(CONFIG_DRM_IMX)		+= imx-drm/
- obj-$(CONFIG_DGRP)		+= dgrp/
-+obj-$(CONFIG_USB_ROBOTIC_ARM)	+= usb_robotic_arm/
-diff --git a/drivers/staging/usb_robotic_arm/Kconfig b/drivers/staging/usb_robotic_arm/Kconfig
-new file mode 100644
-index 0000000..7ac4547
---- /dev/null
-+++ b/drivers/staging/usb_robotic_arm/Kconfig
-@@ -0,0 +1,15 @@
-+config USB_ROBOTIC_ARM
-+	tristate "OWI/MAPLIN USB Robotic Arm support"
-+	depends on USB
-+	default N
-+	---help---
-+	  This enables us to control the OWI/Maplin Robotic Arm
-+	  device attached to the USB port.
-+
-+	  For more details, and to get the userspace utility
-+	  programs, please see https://github.com/maxinbjohn/robotic_arm_driver
-+
-+	  To compile this as a module, choose M here: the module will
-+	  be called robotic_arm.
-+
-+	  If unsure, say N.
-diff --git a/drivers/staging/usb_robotic_arm/Makefile b/drivers/staging/usb_robotic_arm/Makefile
-new file mode 100644
-index 0000000..9509413
---- /dev/null
-+++ b/drivers/staging/usb_robotic_arm/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_USB_ROBOTIC_ARM)             += robotic_arm.o
-diff --git a/drivers/staging/usb_robotic_arm/README b/drivers/staging/usb_robotic_arm/README
-new file mode 100644
-index 0000000..f7998ef
---- /dev/null
-+++ b/drivers/staging/usb_robotic_arm/README
-@@ -0,0 +1,59 @@
-+
-+The USB_ROBOTIC_ARM is a proof-of-concept driver for the OWI/Maplin USB
-+Robotic Arm. I created it for fun. So, don't expect much from it.
-+
-+INSTALLATION:
-+
-+Select the 'USB ROBOTIC ARM' and build the kernel.
-+
-+If we build it as module, locate the robotic_arm.ko
-+
-+As 'root', insert the module:
-+# insmod robotic_arm.ko
-+# dmesg
-+[ 8808.461441] usbcore: registered new interface driver robotic_arm
-+
-+Connect the Robotic Arm to the PC.
-+
-+# dmesg
-+...
-+[ 8718.729311] robotic_arm 5-1:1.0: USB ROBOTIC ARM now attached
-+
-+# cd /sys/bus/usb/drivers/robotic_arm/
-+In my case,
-+# ls
-+5-1:1.0  bind  module  new_id  remove_id  uevent  unbind
-+
-+# cd 5-1:1.0
-+# ls
-+bAlternateSetting  bInterfaceNumber    bNumEndpoints  gripmotor  motor2  power                 uevent
-+basemotor          bInterfaceProtocol  driver         led        motor3  subsystem
-+bInterfaceClass    bInterfaceSubClass  ep_81          modalias   motor4  supports_autosuspend
-+
-+TESTING:
-+
-+# echo 1 > basemotor
-+(This will rotate the base clockwise)
-+
-+# echo 2 > basemotor
-+(This will rotate the base anti-clockwise)
-+
-+# echo 0 > basemotor
-+(This will stop the base motor if it is on)
-+
-+# echo 1 > led
-+(This will switch on the front side LED)
-+
-+# echo 1 > motor3
-+(This will switch on motor3)
-+
-+HARDWARE AVAILABILITY:
-+
-+OWI/Maplin USB Robotic arm is available from:
-+http://www.maplin.co.uk/robotic-arm-kit-with-usb-pc-interface-266257
-+http://www.owirobots.com/cart/html/owi-535pc-robotic-arm-kit-with-usb-pc-interface-assembled.html
-+
-+REFERENCES:
-+
-+Reverse Engineering details of Robotic Arm's Protocol is available here:
-+http://notbrainsurgery.livejournal.com/38622.html
-diff --git a/drivers/staging/usb_robotic_arm/TODO b/drivers/staging/usb_robotic_arm/TODO
-new file mode 100644
-index 0000000..6c0fd7e
---- /dev/null
-+++ b/drivers/staging/usb_robotic_arm/TODO
-@@ -0,0 +1,8 @@
-+TODO:
-+	- provide independent control for motors in the hand
-+	- various code clean-ups
-+	- test on various platforms
-+	- send to lkml for review
-+
-+Please send patches to Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+and Cc: Maxin B. John <maxin.john@gmail.com>
-diff --git a/drivers/staging/usb_robotic_arm/robotic_arm.c b/drivers/staging/usb_robotic_arm/robotic_arm.c
-new file mode 100644
-index 0000000..dbde911
---- /dev/null
-+++ b/drivers/staging/usb_robotic_arm/robotic_arm.c
-@@ -0,0 +1,278 @@
-+/*
-+ * USB ROBOTIC ARM driver
-+ * robotic_arm - driver for Robotic ARM with USB interface
-+ * from Maplin Electronics.This is an experimental driver.
-+ * Use at your own risk.
-+ *
-+ * Copyright (C) 2012 Maxin B. John (maxin.john@gmail.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
-+ *
-+ * Derived from USB LED driver
-+ * Copyright (c) 2001 Greg Kroah-Hartman (greg@kroah.com)
-+ */
-+
-+#define DEBUG 1
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/usb.h>
-+
-+/* Version Information */
-+#define DRIVER_VERSION "v0.1"
-+#define DRIVER_AUTHOR "Maxin B. John, maxin.john@gmail.com"
-+#define DRIVER_DESC "USB ROBOTIC ARM Driver"
-+
-+#define VENDOR_ID       0x1267
-+#define PRODUCT_ID      0x0000
-+
-+/* table of devices that work with this driver */
-+static struct usb_device_id id_table[] = {
-+	{.idVendor = 0x1267, .match_flags = USB_DEVICE_ID_MATCH_VENDOR,},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(usb, id_table);
-+
-+struct usb_robotic_arm {
-+	struct usb_device *udev;
-+	unsigned char led;
-+	unsigned char gripmotor;
-+	unsigned char motor2;
-+	unsigned char motor3;
-+	unsigned char motor4;
-+	unsigned char basemotor;
-+};
-+
-+static void update_robotic_arm(struct usb_robotic_arm *robotic_arm)
-+{
-+	int retval = 0;
-+	u8 cmd[3];
-+
-+	cmd[0] = 0;
-+	cmd[1] = 0;
-+	cmd[2] = 0;
-+
-+	/*
-+	 * Byte 2 controls LED light inside the grip.
-+	 * If Bit 0 is 1, LED on, otherwise LED off
-+	 *
-+	 */
-+
-+	if (robotic_arm->led)
-+		cmd[2] = 1;
-+
-+	/*
-+	 * Byte 1 controls the Base Motor
-+	 * If value is 1, Base Motor rotates clockwise
-+	 * If value is 2, Base Motor rotates anti-clockwise
-+	 * Otherwise, Base Motor is off
-+	 *
-+	 */
-+
-+	if (robotic_arm->basemotor == 1)
-+		cmd[1] = 1;
-+
-+	else if (robotic_arm->basemotor == 2)
-+		cmd[1] = 2;
-+	else
-+		cmd[1] = 0;
-+
-+	/*
-+	 * Byte 0 controls the Grip
-+	 * If value is 1, Grip tightens
-+	 * If values is 2, Grip Looses
-+	 *
-+	 */
-+
-+	if (robotic_arm->gripmotor == 1)
-+		cmd[0] = 1;
-+	else if (robotic_arm->gripmotor == 2)
-+		cmd[0] = 2;
-+	/*
-+	 * Byte 0 controls the Motor 2
-+	 * If value is 1, Motor 2 (wrist) moves up
-+	 * If value is 2, Motor 2 (wrist) moves down
-+	 *
-+	 */
-+
-+	else if (robotic_arm->motor2 == 1)
-+		cmd[0] = 4;
-+	else if (robotic_arm->motor2 == 2)
-+		cmd[0] = 8;
-+
-+	/*
-+	 * Byte 0 controls the Motor 3
-+	 * If value is 1, Motor 3 (elbow) moves up
-+	 * If value is 2, Motor 3 (elbow) moves down
-+	 *
-+	 */
-+
-+	else if (robotic_arm->motor3 == 1)
-+		cmd[0] = 16;
-+	else if (robotic_arm->motor3 == 2)
-+		cmd[0] = 32;
-+
-+	/*
-+	 * Byte 0 controls the Motor 4
-+	 * If value is 1, Motor 4 (shoulder) moves up
-+	 * If value is 2, Motor 4 (shoulder) moves down
-+	 *
-+	 */
-+
-+	else if (robotic_arm->motor4 == 1)
-+		cmd[0] = 64;
-+	else if (robotic_arm->motor4 == 2)
-+		cmd[0] = 128;
-+	else
-+		cmd[0] = 0;
-+
-+	retval = usb_control_msg(robotic_arm->udev,
-+				 usb_sndctrlpipe(robotic_arm->udev, 0),
-+				 6, 0x40, 0x100, 0, cmd, 3, 0);
-+
-+
-+	if (retval)
-+		dev_dbg(&robotic_arm->udev->dev, "retval = %d\n", retval);
-+
-+}
-+
-+#define show_set(value) \
-+static ssize_t show_##value(struct device *dev, struct device_attribute *attr,\
-+			char *buf)					\
-+{									\
-+	struct usb_interface *intf = to_usb_interface(dev);		\
-+	struct usb_robotic_arm *robotic_arm = usb_get_intfdata(intf);	\
-+									\
-+	return sprintf(buf, "%d\n", robotic_arm->value);		\
-+}                                                                       \
-+static ssize_t set_##value(struct device *dev, struct device_attribute *attr,\
-+				const char *buf, size_t count)		\
-+{                                                                       \
-+	struct usb_interface *intf = to_usb_interface(dev);             \
-+	struct usb_robotic_arm *robotic_arm = usb_get_intfdata(intf);   \
-+	int ret = -ENXIO;						\
-+	unsigned long val;						\
-+									\
-+	ret = kstrtoul(buf, 0, &val);					\
-+	if (ret)							\
-+		return ret;						\
-+	robotic_arm->value = val;					\
-+	update_robotic_arm(robotic_arm);                                \
-+	return count;                                                   \
-+}                                                                       \
-+static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, show_##value, set_##value);
-+show_set(led);
-+show_set(gripmotor);
-+show_set(motor2);
-+show_set(motor3);
-+show_set(motor4);
-+show_set(basemotor);
-+
-+static int robotic_arm_probe(struct usb_interface *interface,
-+			     const struct usb_device_id *id)
-+{
-+	struct usb_device *udev;
-+	struct usb_robotic_arm *dev;
-+	int retval = -ENOMEM;
-+
-+	udev = interface_to_usbdev(interface);
-+	dev = kzalloc(sizeof(struct usb_robotic_arm), GFP_KERNEL);
-+	if (dev == NULL) {
-+		dev_err(&interface->dev, "out of memory\n");
-+		goto error_mem;
-+	}
-+
-+	dev->udev = usb_get_dev(udev);
-+
-+	usb_set_intfdata(interface, dev);
-+
-+	retval = device_create_file(&interface->dev, &dev_attr_led);
-+	if (retval)
-+		goto error;
-+	retval = device_create_file(&interface->dev, &dev_attr_gripmotor);
-+	if (retval)
-+		goto error;
-+	retval = device_create_file(&interface->dev, &dev_attr_motor2);
-+	if (retval)
-+		goto error;
-+	retval = device_create_file(&interface->dev, &dev_attr_motor3);
-+	if (retval)
-+		goto error;
-+	retval = device_create_file(&interface->dev, &dev_attr_motor4);
-+	if (retval)
-+		goto error;
-+	retval = device_create_file(&interface->dev, &dev_attr_basemotor);
-+	if (retval)
-+		goto error;
-+
-+	dev_info(&interface->dev, "USB ROBOTIC ARM now attached\n");
-+	return 0;
-+
-+error:
-+	device_remove_file(&interface->dev, &dev_attr_led);
-+	device_remove_file(&interface->dev, &dev_attr_gripmotor);
-+	device_remove_file(&interface->dev, &dev_attr_motor2);
-+	device_remove_file(&interface->dev, &dev_attr_motor3);
-+	device_remove_file(&interface->dev, &dev_attr_motor4);
-+	device_remove_file(&interface->dev, &dev_attr_basemotor);
-+
-+	usb_set_intfdata(interface, NULL);
-+	usb_put_dev(dev->udev);
-+	kfree(dev);
-+
-+error_mem:
-+	return retval;
-+}
-+
-+static void robotic_arm_disconnect(struct usb_interface *interface)
-+{
-+	struct usb_robotic_arm *dev = NULL;
-+
-+	dev = usb_get_intfdata(interface);
-+
-+	device_remove_file(&interface->dev, &dev_attr_led);
-+	device_remove_file(&interface->dev, &dev_attr_gripmotor);
-+	device_remove_file(&interface->dev, &dev_attr_motor2);
-+	device_remove_file(&interface->dev, &dev_attr_motor3);
-+	device_remove_file(&interface->dev, &dev_attr_motor4);
-+	device_remove_file(&interface->dev, &dev_attr_basemotor);
-+
-+	/* first remove the files, then set the pointer to NULL */
-+	usb_set_intfdata(interface, NULL);
-+
-+	usb_put_dev(dev->udev);
-+
-+	kfree(dev);
-+
-+	dev_info(&interface->dev, "USB ROBOTIC ARM now disconnected\n");
-+}
-+
-+static struct usb_driver robotic_arm_driver = {
-+	.name = "robotic_arm",
-+	.probe = robotic_arm_probe,
-+	.disconnect = robotic_arm_disconnect,
-+	.id_table = id_table,
-+};
-+
-+static int __init usb_robotic_arm_init(void)
-+{
-+	return usb_register(&robotic_arm_driver);
-+}
-+
-+static void __exit usb_robotic_arm_exit(void)
-+{
-+	usb_deregister(&robotic_arm_driver);
-+}
-+
-+module_init(usb_robotic_arm_init);
-+module_exit(usb_robotic_arm_exit);
-+
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE("GPL");
+> +			  SLAB_RECLAIM_ACCOUNT | SLAB_TEMPORARY | SLAB_NOTRACK)
+> +#elif defined(CONFIG_SLUB)
+> +#define SLAB_CACHE_FLAGS (SLAB_NOLEAKTRACE | SLAB_RECLAIM_ACCOUNT | \
+> +			  SLAB_TEMPORARY | SLAB_NOTRACK)
+> +#else
+> +#define SLAB_CACHE_FLAGS (0)
+> +#endif
+> +
+> +#define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
+> +
+>  int __kmem_cache_shutdown(struct kmem_cache *);
+>  
+>  #endif
