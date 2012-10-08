@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab2JHFhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 01:37:19 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13066 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab2JHFhP convert rfc822-to-8bit (ORCPT
+	id S1753261Ab2JHFkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 01:40:49 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9867 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab2JHFkq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 01:37:15 -0400
+	Mon, 8 Oct 2012 01:40:46 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 07 Oct 2012 22:37:15 -0700
+	by hqnvupgp08.nvidia.com on Sun, 07 Oct 2012 22:40:45 -0700
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: Laxman Dewangan <ldewangan@nvidia.com>,
         "sameo@linux.intel.com" <sameo@linux.intel.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 8 Oct 2012 11:07:10 +0530
-Subject: RE: [PATCH 4/5] mfd: tps65090: move register access APIs to header
-Thread-Topic: [PATCH 4/5] mfd: tps65090: move register access APIs to header
-Thread-Index: Ac2kpD48w52NXWEsTGasZkandVTErAAcjZQQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF8AF387@BGMAIL02.nvidia.com>
+Date: Mon, 8 Oct 2012 11:10:40 +0530
+Subject: RE: [PATCH 3/5] mfd: tps65090: remove unused member of struct
+ tps65090
+Thread-Topic: [PATCH 3/5] mfd: tps65090: remove unused member of struct
+ tps65090
+Thread-Index: Ac2kpD0s0jECywPVRs+77YM0eKrXcAAcso8w
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF8AF38A@BGMAIL02.nvidia.com>
 References: <1349623340-21807-1-git-send-email-ldewangan@nvidia.com>
- <1349623340-21807-5-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1349623340-21807-5-git-send-email-ldewangan@nvidia.com>
+ <1349623340-21807-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1349623340-21807-4-git-send-email-ldewangan@nvidia.com>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -38,130 +40,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Sent: Sunday, October 07, 2012 8:52 PM
 > To: sameo@linux.intel.com
 > Cc: linux-kernel@vger.kernel.org; Venu Byravarasu; Laxman Dewangan
-> Subject: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+> Subject: [PATCH 3/5] mfd: tps65090: remove unused member of struct
+> tps65090
 > 
-> Since tps65090 register is accessed via regmap, moving
-> the register access APIs to header and making it as inline.
+> Remove unused member from tps65090 data structure as
 
-Why should we move function implementation to header file? 
-Also by making inline, doesn't the output binary size increase?
+Remove unused members 
 
+> these are not used.
 > 
 > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > ---
->  drivers/mfd/tps65090.c       |   34 ----------------------------------
->  include/linux/mfd/tps65090.h |   39
-> +++++++++++++++++++++++++++++++++++----
->  2 files changed, 35 insertions(+), 38 deletions(-)
+>  drivers/mfd/tps65090.c       |    6 +-----
+>  include/linux/mfd/tps65090.h |   11 -----------
+>  2 files changed, 1 insertions(+), 16 deletions(-)
 > 
 > diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-> index 3cfc9dc..355a077 100644
+> index f95f7f6..3cfc9dc 100644
 > --- a/drivers/mfd/tps65090.c
 > +++ b/drivers/mfd/tps65090.c
-> @@ -25,7 +25,6 @@
->  #include <linux/i2c.h>
->  #include <linux/mfd/core.h>
->  #include <linux/mfd/tps65090.h>
-> -#include <linux/regmap.h>
->  #include <linux/err.h>
+> @@ -269,12 +269,9 @@ static int __devinit tps65090_i2c_probe(struct
+> i2c_client *client,
+>  		return -ENOMEM;
+>  	}
 > 
->  #define NUM_INT_REG 2
-> @@ -78,39 +77,6 @@ static struct mfd_cell tps65090s[] = {
->  	},
->  };
+> -	tps65090->client = client;
+>  	tps65090->dev = &client->dev;
+>  	i2c_set_clientdata(client, tps65090);
 > 
-> -int tps65090_write(struct device *dev, int reg, uint8_t val)
-> -{
-> -	struct tps65090 *tps = dev_get_drvdata(dev);
-> -	return regmap_write(tps->rmap, reg, val);
-> -}
-> -EXPORT_SYMBOL_GPL(tps65090_write);
+> -	mutex_init(&tps65090->lock);
 > -
-> -int tps65090_read(struct device *dev, int reg, uint8_t *val)
-> -{
-> -	struct tps65090 *tps = dev_get_drvdata(dev);
-> -	unsigned int temp_val;
-> -	int ret;
-> -	ret = regmap_read(tps->rmap, reg, &temp_val);
-> -	if (!ret)
-> -		*val = temp_val;
-> -	return ret;
-> -}
-> -EXPORT_SYMBOL_GPL(tps65090_read);
-> -
-> -int tps65090_set_bits(struct device *dev, int reg, uint8_t bit_num)
-> -{
-> -	struct tps65090 *tps = dev_get_drvdata(dev);
-> -	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), ~0u);
-> -}
-> -EXPORT_SYMBOL_GPL(tps65090_set_bits);
-> -
-> -int tps65090_clr_bits(struct device *dev, int reg, uint8_t bit_num)
-> -{
-> -	struct tps65090 *tps = dev_get_drvdata(dev);
-> -	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), 0u);
-> -}
-> -EXPORT_SYMBOL_GPL(tps65090_clr_bits);
-> -
->  static void tps65090_irq_lock(struct irq_data *data)
->  {
->  	struct tps65090 *tps65090 = irq_data_get_irq_chip_data(data);
+>  	if (client->irq) {
+>  		ret = tps65090_irq_init(tps65090, client->irq, pdata-
+> >irq_base);
+>  		if (ret) {
+> @@ -284,8 +281,7 @@ static int __devinit tps65090_i2c_probe(struct
+> i2c_client *client,
+>  		}
+>  	}
+> 
+> -	tps65090->rmap = devm_regmap_init_i2c(tps65090->client,
+> -					      &tps65090_regmap_config);
+> +	tps65090->rmap = devm_regmap_init_i2c(client,
+> &tps65090_regmap_config);
+
+Indentation missing.
+ 
+
+>  	if (IS_ERR(tps65090->rmap)) {
+>  		ret = PTR_ERR(tps65090->rmap);
+>  		dev_err(&client->dev, "regmap_init failed with err: %d\n",
+> ret);
 > diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-> index 6c57622..1a5f916 100644
+> index 6bc31d8..6c57622 100644
 > --- a/include/linux/mfd/tps65090.h
 > +++ b/include/linux/mfd/tps65090.h
-> @@ -23,6 +23,7 @@
->  #define __LINUX_MFD_TPS65090_H
-> 
+> @@ -25,26 +25,15 @@
 >  #include <linux/irq.h>
-> +#include <linux/regmap.h>
 > 
 >  struct tps65090 {
+> -	struct mutex		lock;
 >  	struct device		*dev;
-> @@ -40,9 +41,39 @@ struct tps65090_platform_data {
->   * NOTE: the functions below are not intended for use outside
->   * of the TPS65090 sub-device drivers
->   */
-> -extern int tps65090_write(struct device *dev, int reg, uint8_t val);
-> -extern int tps65090_read(struct device *dev, int reg, uint8_t *val);
-> -extern int tps65090_set_bits(struct device *dev, int reg, uint8_t bit_num);
-> -extern int tps65090_clr_bits(struct device *dev, int reg, uint8_t bit_num);
-> +static inline int tps65090_write(struct device *dev, int reg, uint8_t val)
-> +{
-> +	struct tps65090 *tps = dev_get_drvdata(dev);
-> +
-> +	return regmap_write(tps->rmap, reg, val);
-> +}
-> +
-> +static inline int tps65090_read(struct device *dev, int reg, uint8_t *val)
-> +{
-> +	struct tps65090 *tps = dev_get_drvdata(dev);
-> +	unsigned int temp_val;
-> +	int ret;
-> +
-> +	ret = regmap_read(tps->rmap, reg, &temp_val);
-> +	if (!ret)
-> +		*val = temp_val;
-> +	return ret;
-> +}
-> +
-> +static inline int tps65090_set_bits(struct device *dev, int reg,
-> +		uint8_t bit_num)
-> +{
-> +	struct tps65090 *tps = dev_get_drvdata(dev);
-> +
-> +	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), ~0u);
-> +}
-> +
-> +static inline int tps65090_clr_bits(struct device *dev, int reg,
-> +		uint8_t bit_num)
-> +{
-> +	struct tps65090 *tps = dev_get_drvdata(dev);
-> +
-> +	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), 0u);
-> +}
+> -	struct i2c_client	*client;
+>  	struct regmap		*rmap;
+>  	struct irq_chip		irq_chip;
+>  	struct mutex		irq_lock;
+>  	int			irq_base;
+> -	unsigned int		id;
+> -};
+> -
+> -struct tps65090_subdev_info {
+> -	int		id;
+> -	const char	*name;
+> -	void		*platform_data;
+>  };
 > 
->  #endif /*__LINUX_MFD_TPS65090_H */
+>  struct tps65090_platform_data {
+>  	int irq_base;
+> -	int num_subdevs;
+> -	struct tps65090_subdev_info *subdevs;
+>  };
+> 
+>  /*
 > --
 > 1.7.1.1
 
