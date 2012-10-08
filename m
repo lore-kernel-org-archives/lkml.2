@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2JHQOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 12:14:49 -0400
+	id S1753975Ab2JHQPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 12:15:00 -0400
 Received: from ns2.allidaho.com ([66.232.90.194]:43661 "EHLO mail.allidaho.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab2JHQOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 12:14:45 -0400
+	id S1752720Ab2JHQOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 12:14:48 -0400
 X-Greylist: delayed 1364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Oct 2012 12:14:45 EDT
 From: "Dialup Jon Norstog" <thursday@allidaho.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
@@ -15,8 +15,8 @@ Cc: dl8bcu@dl8bcu.de, peterz@infradead.org, mingo@kernel.org,
         Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
         Matt Turner <mattst88@gmail.com>
 Subject: Re: [regression] boot failure on alpha, bisected
-Date: Mon, 8 Oct 2012 08:14:17 -0600
-Message-Id: <20121008140948.M96290@allidaho.com>
+Date: Mon, 8 Oct 2012 08:14:30 -0600
+Message-Id: <20121008141440.M72159@allidaho.com>
 In-Reply-To: <20121007193909.GK2616@ZenIV.linux.org.uk>
 References: <20121006204736.GA1830@ds20.borg.net> <20121007165534.GA8024@redhat.com> <20121007170850.GJ2616@ZenIV.linux.org.uk> <20121007173336.GA14804@redhat.com> <20121007193909.GK2616@ZenIV.linux.org.uk>
 X-Mailer: OpenWebMail 2.52 20061019
@@ -28,7 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!  I'm an Alpha user - I just want to thank you ll for working to keep
+Hello!  I'm an Alpha user - I just want to thank you all for working to keep
 Linux current on this architecture.  I am still using the last working Alpha
 Core release ... I hope to keep the old beast running for many more years!
 
