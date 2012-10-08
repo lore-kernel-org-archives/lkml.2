@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2JHAoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:44:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52118 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab2JHAoC (ORCPT
+	id S1752565Ab2JHApM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:45:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38137 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab2JHApI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:44:02 -0400
-Date: Sun, 7 Oct 2012 17:43:58 -0700
+	Sun, 7 Oct 2012 20:45:08 -0400
+Date: Sun, 7 Oct 2012 17:45:04 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
         apw@canonical.com, akpm@linux-foundation.org, andi@firstfloor.org
-Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
-Message-ID: <20121008004358.GA12342@kroah.com>
+Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+Message-ID: <20121008004504.GB12342@kroah.com>
 References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
  <1349654386-18378-1-git-send-email-kys@microsoft.com>
+ <1349654386-18378-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349654386-18378-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1349654386-18378-2-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 04:59:45PM -0700, K. Y. Srinivasan wrote:
-> The policy engine on the host expects the guest to report the
-> committed_as. Since this variable is not exported,
-> export this symbol.
+On Sun, Oct 07, 2012 at 04:59:46PM -0700, K. Y. Srinivasan wrote:
+> +config HYPERV_BALLOON
+> +	tristate "Microsoft Hyper-V Balloon driver"
+> +	depends on HYPERV
+> +	help
+> +	  Select this option to enable the Hyper-V Utilities.
 
-Why are these symbols not needed by either Xen or KVM or vmware, which
-I think all support the same thing, right?
+Your help text is wrong :(
 
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -87,6 +87,7 @@ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
->   * other variables. It can be updated by several CPUs frequently.
->   */
->  struct percpu_counter vm_committed_as ____cacheline_aligned_in_smp;
-> +EXPORT_SYMBOL(vm_committed_as);
->  
->  /*
->   * Check that a process has enough memory to allocate a new virtual
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index 45131b4..3914b7e 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -68,6 +68,7 @@ atomic_long_t mmap_pages_allocated;
->  
->  EXPORT_SYMBOL(mem_map);
->  EXPORT_SYMBOL(num_physpages);
-> +EXPORT_SYMBOL(vm_committed_as);
+> --- /dev/null
+> +++ b/drivers/hv/hv_balloon.c
+> @@ -0,0 +1,1043 @@
+> +/*
+> + * Copyright (c) 2012, Microsoft Corporation.
+> + *
+> + * Author:
+> + *   K. Y. Srinivasan <kys@microsoft.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published
+> + * by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + * NON INFRINGEMENT.  See the GNU General Public License for more
+> + * details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-EXPORT_SYMBOL_GPL() for these new ones?
+Unless you promise to keep track of the FSF's office buildings for the
+next 40+ years, just drop this paragraph entirely.
 
 greg k-h
