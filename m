@@ -1,141 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2JHWgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:36:52 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:47531 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190Ab2JHWg0 (ORCPT
+	id S1755316Ab2JHWdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:33:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41366 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2JHWdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:36:26 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] cputime: Separate irqtime accounting from generic vtime
-Date: Tue,  9 Oct 2012 00:36:08 +0200
-Message-Id: <1349735768-17586-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1349735768-17586-1-git-send-email-fweisbec@gmail.com>
-References: <1349735768-17586-1-git-send-email-fweisbec@gmail.com>
+	Mon, 8 Oct 2012 18:33:13 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 25/25] Documentation: add documentation on compiling for Android
+Date: Mon,  8 Oct 2012 19:32:50 -0300
+Message-Id: <1349735570-19339-26-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
+References: <1349735570-19339-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vtime_account() doesn't have the same role in
-CONFIG_VIRT_CPU_TIME_ACCOUNTING and CONFIG_IRQ_TIME_ACCOUNTING.
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-In the first case it handles time accounting in any context. In
-the second case it only handles irq time accounting.
+Add documentation for cross-compiling on Android including:
 
-So when vtime_account() is called from outside vtime_account_irq_*()
-this call is pointless to CONFIG_IRQ_TIME_ACCOUNTING.
+() instructions on how to set the Android NDK environment
+() how to cross-compile perf for Android
+() how to install on an Android device/emulator, set the runtime
+environment and run it
 
-To fix the confusion, change vtime_account() to irqtime_account_irq()
-in CONFIG_IRQ_TIME_ACCOUNTING. This way we ensure future account_vtime()
-calls won't waste useless cycles in the irqtime APIs.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1349678613-7045-4-git-send-email-irina.tirdea@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/hardirq.h |   26 ++++++++++++--------------
- kernel/sched/cputime.c  |    8 ++++----
- 2 files changed, 16 insertions(+), 18 deletions(-)
+ tools/perf/Documentation/android.txt |   75 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 75 insertions(+)
+ create mode 100644 tools/perf/Documentation/android.txt
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index c126ffb..dc2052c 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -131,17 +131,8 @@ extern void synchronize_irq(unsigned int irq);
- 
- struct task_struct;
- 
--#ifdef CONFIG_TICK_CPU_ACCOUNTING
--static inline void vtime_account(struct task_struct *tsk) { }
--static inline void vtime_account_irq_enter(struct task_struct *tsk,
--					   unsigned long offset) { }
--static inline void vtime_account_irq_exit(struct task_struct *tsk,
--					  unsigned long offset) { }
--#else /* !CONFIG_TICK_CPU_ACCOUNTING */
--extern void vtime_account(struct task_struct *tsk);
--#endif /* !CONFIG_TICK_CPU_ACCOUNTING */
--
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+extern void vtime_account(struct task_struct *tsk);
- extern void vtime_task_switch(struct task_struct *prev);
- extern void vtime_account_system(struct task_struct *tsk);
- extern void vtime_account_idle(struct task_struct *tsk);
-@@ -174,21 +165,28 @@ static inline void vtime_account_irq_exit(struct task_struct *tsk,
- #else /* !CONFIG_VIRT_CPU_ACCOUNTING */
- static inline void vtime_task_switch(struct task_struct *prev) { }
- static inline void vtime_account_system(struct task_struct *tsk) { }
--#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+extern void irqtime_account_irq(struct task_struct *tsk);
+diff --git a/tools/perf/Documentation/android.txt b/tools/perf/Documentation/android.txt
+new file mode 100644
+index 0000000..a39dbbb
+--- /dev/null
++++ b/tools/perf/Documentation/android.txt
+@@ -0,0 +1,75 @@
++How to compile perf for Android
++=========================================
 +
- static inline void vtime_account_irq_enter(struct task_struct *tsk,
- 					   unsigned long offset)
- {
--	vtime_account(tsk);
-+	irqtime_account_irq(tsk);
- }
- 
- static inline void vtime_account_irq_exit(struct task_struct *tsk,
- 					  unsigned long offset)
- {
--	vtime_account(tsk);
-+	irqtime_account_irq(tsk);
- }
--#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
-+#else /* !CONFIG_IRQ_TIME_ACCOUNTING */
-+static inline void vtime_account_irq_enter(struct task_struct *tsk,
-+					   unsigned long offset) { }
-+static inline void vtime_account_irq_exit(struct task_struct *tsk,
-+					  unsigned long offset) { }
-+#endif /* !CONFIG_IRQ_TIME_ACCOUNTING */
-+#endif /* !CONFIG_VIRT_CPU_ACCOUNTING */
- 
- 
- #if defined(CONFIG_TINY_RCU) || defined(CONFIG_TINY_PREEMPT_RCU)
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 81b763b..7ad407a 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -10,11 +10,11 @@
- 
- /*
-  * There are no locks covering percpu hardirq/softirq time.
-- * They are only modified in vtime_account, on corresponding CPU
-+ * They are only modified in irqtime_account_irq, on corresponding CPU
-  * with interrupts disabled. So, writes are safe.
-  * They are read and saved off onto struct rq in update_rq_clock().
-  * This may result in other CPU reading this CPU's irq time and can
-- * race with irq/vtime_account on this CPU. We would either get old
-+ * race with irqtime_account_irq on this CPU. We would either get old
-  * or new value with a side effect of accounting a slice of irq time to wrong
-  * task when irq is in progress while we read rq->clock. That is a worthy
-  * compromise in place of having locks on each irq in account_system_time.
-@@ -43,7 +43,7 @@ DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-  * Called before incrementing preempt_count on {soft,}irq_enter
-  * and before decrementing preempt_count on {soft,}irq_exit.
-  */
--void vtime_account(struct task_struct *curr)
-+void irqtime_account_irq(struct task_struct *curr)
- {
- 	unsigned long flags;
- 	s64 delta;
-@@ -73,7 +73,7 @@ void vtime_account(struct task_struct *curr)
- 	irq_time_write_end();
- 	local_irq_restore(flags);
- }
--EXPORT_SYMBOL_GPL(vtime_account);
-+EXPORT_SYMBOL_GPL(irqtime_account_irq);
- 
- static int irqtime_account_hi_update(void)
- {
++I. Set the Android NDK environment
++------------------------------------------------
++
++(a). Use the Android NDK
++------------------------------------------------
++1. You need to download and install the Android Native Development Kit (NDK).
++Set the NDK variable to point to the path where you installed the NDK:
++  export NDK=/path/to/android-ndk
++
++2. Set cross-compiling environment variables for NDK toolchain and sysroot.
++For arm:
++  export NDK_TOOLCHAIN=${NDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-
++  export NDK_SYSROOT=${NDK}/platforms/android-9/arch-arm
++For x86:
++  export NDK_TOOLCHAIN=${NDK}/toolchains/x86-4.6/prebuilt/linux-x86/bin/i686-linux-android-
++  export NDK_SYSROOT=${NDK}/platforms/android-9/arch-x86
++
++This method is not working for Android NDK versions up to Revision 8b.
++perf uses some bionic enhancements that are not included in these NDK versions.
++You can use method (b) described below instead.
++
++(b). Use the Android source tree
++-----------------------------------------------
++1. Download the master branch of the Android source tree.
++Set the environment for the target you want using:
++  source build/envsetup.sh
++  lunch
++
++2. Build your own NDK sysroot to contain latest bionic changes and set the
++NDK sysroot environment variable.
++  cd ${ANDROID_BUILD_TOP}/ndk
++For arm:
++  ./build/tools/build-ndk-sysroot.sh --abi=arm
++  export NDK_SYSROOT=${ANDROID_BUILD_TOP}/ndk/build/platforms/android-3/arch-arm
++For x86:
++  ./build/tools/build-ndk-sysroot.sh --abi=x86
++  export NDK_SYSROOT=${ANDROID_BUILD_TOP}/ndk/build/platforms/android-3/arch-x86
++
++3. Set the NDK toolchain environment variable.
++For arm:
++  export NDK_TOOLCHAIN=${ANDROID_TOOLCHAIN}/arm-linux-androideabi-
++For x86:
++  export NDK_TOOLCHAIN=${ANDROID_TOOLCHAIN}/i686-linux-android-
++
++II. Compile perf for Android
++------------------------------------------------
++You need to run make with the NDK toolchain and sysroot defined above:
++  make CROSS_COMPILE=${NDK_TOOLCHAIN} CFLAGS="--sysroot=${NDK_SYSROOT}"
++
++III. Install perf
++-----------------------------------------------
++You need to connect to your Android device/emulator using adb.
++Install perf using:
++  adb push perf /data/perf
++
++If you also want to use perf-archive you need busybox tools for Android.
++For installing perf-archive, you first need to replace #!/bin/bash with #!/system/bin/sh:
++  sed 's/#!\/bin\/bash/#!\/system\/bin\/sh/g' perf-archive >> /tmp/perf-archive
++  chmod +x /tmp/perf-archive
++  adb push /tmp/perf-archive /data/perf-archive
++
++IV. Environment settings for running perf
++------------------------------------------------
++Some perf features need environment variables to run properly.
++You need to set these before running perf on the target:
++  adb shell
++  # PERF_PAGER=cat
++
++IV. Run perf
++------------------------------------------------
++Run perf on your device/emulator to which you previously connected using adb:
++  # ./data/perf
 -- 
-1.7.5.4
+1.7.9.2.358.g22243
 
