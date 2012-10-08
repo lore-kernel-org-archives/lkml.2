@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2JHWIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:08:45 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43955 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab2JHWIm (ORCPT
+	id S1755159Ab2JHWKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:10:15 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46480 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab2JHWKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:08:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121003161702.GA22008@kroah.com>
-References: <20121002195042.GA16087@www.outflux.net>
-	<20121003132538.GE13192@linux.vnet.ibm.com>
-	<20121003161702.GA22008@kroah.com>
-Date: Mon, 8 Oct 2012 15:08:40 -0700
-X-Google-Sender-Auth: _8aPs2pHU-jtg0072I0ww2zf_D4
-Message-ID: <CAGXu5jL6N2qSokXFr17Re9DOneWx-+seSx7k_dk-A+0mgbOejQ@mail.gmail.com>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-From: Kees Cook <keescook@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
+	Mon, 8 Oct 2012 18:10:11 -0400
+Date: Mon, 8 Oct 2012 15:09:58 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+In-Reply-To: <506DB816.9090107@openvz.org>
+Message-ID: <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
+References: <50460CED.6060006@redhat.com> <20120906110836.22423.17638.stgit@zurg> <alpine.LSU.2.00.1210011418270.2940@eggly.anvils> <506AACAC.2010609@openvz.org> <alpine.LSU.2.00.1210031337320.1415@eggly.anvils> <506DB816.9090107@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 3, 2012 at 9:17 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
->> On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
->> > This config item has not carried much meaning for a while now and is
->> > almost always enabled by default. As agreed during the Linux kernel
->> > summit, it should be removed. As a first step, remove it from being
->> > listed, and default it to on. Once it has been removed from all
->> > subsystem Kconfigs, it will be dropped entirely.
->> >
->> > CC: Greg KH <gregkh@linuxfoundation.org>
->> > CC: "Eric W. Biederman" <ebiederm@xmission.com>
->> > CC: Serge Hallyn <serge.hallyn@canonical.com>
->> > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->> > CC: Andrew Morton <akpm@linux-foundation.org>
->> > CC: Frederic Weisbecker <fweisbec@gmail.com>
->> > Signed-off-by: Kees Cook <keescook@chromium.org>
->> > ---
->> >
->> > This is the first of a series of 202 patches removing EXPERIMENTAL from
->> > all the Kconfigs in the tree. Should I send them all to lkml (with all
->> > the associated CCs), or do people want to cherry-pick changes from my
->> > tree? I don't want to needlessly flood the list.
->> >
->> > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
->> >
->> > I figure this patch can stand alone to at least make EXPERIMENTAL go
->> > away from the menus, and give us a taste of what the removal would do
->> > to builds.
->>
->> OK, I will bite...  How should I flag an option that is initially only
->> intended for those willing to take some level of risk?
->
-> In the text say "You really don't want to enable this option, use at
-> your own risk!"  Or something like that :)
+On Thu, 4 Oct 2012, Konstantin Khlebnikov wrote:
 
-So, should I update the commit description to include a suggested
-alternative? (If so, which one?)
+> Here results of my test. Workload isn't very realistic, but at least it
+> threaded: compiling linux-3.6 with defconfig in 16 threads on tmpfs,
+> 512mb ram, dualcore cpu, ordinary hard disk. (test script in attachment)
+> 
+> average results for ten runs:
+> 
+> 		RA=3	RA=0	RA=1	RA=2	RA=4	Hugh	Shaohua
+> real time	500	542	528	519	500	523	522
+> user time	738	737	735	737	739	737	739
+> sys time	93	93	91	92	96	92	93
+> pgmajfault	62918	110533	92454	78221	54342	86601	77229
+> pgpgin	2070372	795228	1034046	1471010	3177192	1154532	1599388
+> pgpgout	2597278	2022037	2110020	2350380	2802670	2286671	2526570
+> pswpin	462747	138873	202148	310969	739431	232710	341320
+> pswpout	646363	502599	524613	584731	697797	568784	628677
+> 
+> So, last two columns shows mostly equal results: +4.6% and +4.4% in
+> comparison to vanilla kernel with RA=3, but your version shows more stable
+> results (std-error 2.7% against 4.8%) (all this numbers in huge table in
+> attachment)
 
-Who is going to carry this initial patch, btw?
+Thanks for doing this, Konstantin, but I'm stuck for anything much to say!
+Shaohua and I are both about 4.5% bad for this particular test, but I'm
+more consistently bad - hurrah!
 
--Kees
+I suspect (not a convincing argument) that if the test were just slightly
+different (a little more or a little less memory, SSD instead of hard
+disk, diskcache instead of tmpfs), then it would come out differently.
 
--- 
-Kees Cook
-Chrome OS Security
+Did you draw any conclusions from the numbers you found?
+
+I haven't done any more on this in the last few days, except to verify
+that once an anon_vma is judged random with Shaohua's, then it appears
+to be condemned to no-readahead ever after.
+
+That's probably something that a hack like I had in mine would fix,
+but that addition might change its balance further (and increase vma
+or anon_vma size) - not tried yet.
+
+All I want to do right now, is suggest to Andrew that he hold Shaohua's
+patch back from 3.7 for the moment: I'll send a response to Sep 7th's
+mm-commits mail to suggest that - but no great disaster if he ignores me.
+
+Hugh
+
+> 
+> Numbers from your tests formatted into table for better readability
+> 				
+> HDD		Vanilla	Shaohua	RA=3	RA=0	RA=4
+> SEQ, ANON	73921	76210	75611	121542	77950
+> SEQ, SHMEM	73601	73176	73855	118322	73534
+> RND, ANON	895392	831243	871569	841680	863871
+> RND, SHMEM	1058375	1053486	827935	756489	834804
+> 
+> SDD		Vanilla	Shaohua	RA=3	RA=0	RA=4
+> SEQ, ANON	24634	24198	24673	70018	21125
+> SEQ, SHMEM	24959	24932	25052	69678	21387
+> RND, ANON	43014	26146	28075	25901	28686
+> RND, SHMEM	45349	45215	28249	24332	28226
