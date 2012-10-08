@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2JHIKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:10:00 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:36125 "EHLO ogre.sisk.pl"
+	id S1753681Ab2JHIKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:10:06 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36137 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab2JHIJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:09:54 -0400
+	id S1751763Ab2JHIJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 04:09:56 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
 Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         mark gross <markgross@thegnar.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] PM / ACPI: Take device PM QoS flags into account
-Date: Mon, 08 Oct 2012 10:09:26 +0200
-Message-ID: <3734460.X8hLyTaasd@vostro.rjw.lan>
+Subject: [PATCH 6/7] PM / Domains: Check device PM QoS flags in pm_genpd_poweroff()
+Date: Mon, 08 Oct 2012 10:08:39 +0200
+Message-ID: <3595636.rclQsqiayj@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
 In-Reply-To: <1413438.1MkXj8vjQK@vostro.rjw.lan>
 References: <201209282351.10663.rjw@sisk.pl> <1413438.1MkXj8vjQK@vostro.rjw.lan>
@@ -32,116 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Make ACPI power management routines and PCI power management
-routines depending on ACPI take device PM QoS flags into account
-when deciding what power state to put the device into.
+Make the generic PM domains pm_genpd_poweroff() function take
+device PM QoS flags into account when deciding whether or not to
+remove power from the domain.
 
-In particular, after this change acpi_pm_device_sleep_state() will
-not return ACPI_STATE_D3_COLD as the deepest available low-power
-state if PM_QOS_FLAG_NO_POWER_OFF is requested for the device and it
-will not require remote wakeup to work for the device in the returned
-low-power state if there is at least one PM QoS flags request for the
-device, but PM_QOS_FLAG_REMOTE_WAKEUP is not requested for it.
-
-Accordingly, acpi_pci_set_power_state() will refuse to put the
-device into D3cold if PM_QOS_FLAG_NO_POWER_OFF is requested for it.
+After this change the routine will return -EBUSY without executing
+the domain's .power_off() callback if there is at least one PM QoS
+flags request for at least one device in the domain and at least of
+those request has at least one of the NO_POWER_OFF and REMOTE_WAKEUP
+flags set.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Reviewed-by: Jean Pihet <j-pihet@ti.com>
 ---
- drivers/acpi/sleep.c   |   21 +++++++++++++++++----
- drivers/pci/pci-acpi.c |    8 +++++++-
- 2 files changed, 24 insertions(+), 5 deletions(-)
+ drivers/base/power/domain.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-Index: linux/drivers/pci/pci-acpi.c
+Index: linux/drivers/base/power/domain.c
 ===================================================================
---- linux.orig/drivers/pci/pci-acpi.c
-+++ linux/drivers/pci/pci-acpi.c
-@@ -17,6 +17,7 @@
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -470,10 +470,19 @@ static int pm_genpd_poweroff(struct gene
+ 		return -EBUSY;
  
- #include <linux/pci-acpi.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pm_qos.h>
- #include "pci.h"
- 
- static DEFINE_MUTEX(pci_acpi_pm_notify_mtx);
-@@ -257,11 +258,16 @@ static int acpi_pci_set_power_state(stru
- 		return -ENODEV;
- 
- 	switch (state) {
-+	case PCI_D3cold:
-+		if (dev_pm_qos_flags(&dev->dev, PM_QOS_FLAG_NO_POWER_OFF) ==
-+				PM_QOS_FLAGS_ALL) {
-+			error = -EBUSY;
-+			break;
-+		}
- 	case PCI_D0:
- 	case PCI_D1:
- 	case PCI_D2:
- 	case PCI_D3hot:
--	case PCI_D3cold:
- 		error = acpi_bus_set_power(handle, state_conv[state]);
- 	}
- 
-Index: linux/drivers/acpi/sleep.c
-===================================================================
---- linux.orig/drivers/acpi/sleep.c
-+++ linux/drivers/acpi/sleep.c
-@@ -19,6 +19,7 @@
- #include <linux/acpi.h>
- #include <linux/module.h>
- #include <linux/pm_runtime.h>
-+#include <linux/pm_qos.h>
- 
- #include <asm/io.h>
- 
-@@ -711,6 +712,7 @@ int acpi_pm_device_sleep_state(struct de
- 	struct acpi_device *adev;
- 	char acpi_method[] = "_SxD";
- 	unsigned long long d_min, d_max;
-+	bool wakeup = false;
- 
- 	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
- 		return -EINVAL;
-@@ -718,6 +720,13 @@ int acpi_pm_device_sleep_state(struct de
- 		printk(KERN_DEBUG "ACPI handle has no context!\n");
- 		return -ENODEV;
- 	}
-+	if (d_max_in > ACPI_STATE_D3_HOT) {
+ 	not_suspended = 0;
+-	list_for_each_entry(pdd, &genpd->dev_list, list_node)
++	list_for_each_entry(pdd, &genpd->dev_list, list_node) {
 +		enum pm_qos_flags_status stat;
 +
-+		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-+		if (stat == PM_QOS_FLAGS_ALL)
-+			d_max_in = ACPI_STATE_D3_HOT;
++		stat = dev_pm_qos_flags(pdd->dev,
++					PM_QOS_FLAG_NO_POWER_OFF
++						| PM_QOS_FLAG_REMOTE_WAKEUP);
++		if (stat > PM_QOS_FLAGS_NONE)
++			return -EBUSY;
++
+ 		if (pdd->dev->driver && (!pm_runtime_suspended(pdd->dev)
+ 		    || pdd->dev->power.irq_safe))
+ 			not_suspended++;
 +	}
  
- 	acpi_method[2] = '0' + acpi_target_sleep_state;
- 	/*
-@@ -737,8 +746,14 @@ int acpi_pm_device_sleep_state(struct de
- 	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
- 	 * provided -- that's our fault recovery, we ignore retval.
- 	 */
--	if (acpi_target_sleep_state > ACPI_STATE_S0)
-+	if (acpi_target_sleep_state > ACPI_STATE_S0) {
- 		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
-+		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
-+			&& adev->wakeup.sleep_state >= acpi_target_sleep_state;
-+	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
-+			PM_QOS_FLAGS_NONE) {
-+		wakeup = adev->wakeup.flags.valid;
-+	}
- 
- 	/*
- 	 * If _PRW says we can wake up the system from the target sleep state,
-@@ -747,9 +762,7 @@ int acpi_pm_device_sleep_state(struct de
- 	 * (ACPI 3.x), it should return the maximum (lowest power) D-state that
- 	 * can wake the system.  _S0W may be valid, too.
- 	 */
--	if (acpi_target_sleep_state == ACPI_STATE_S0 ||
--	    (device_may_wakeup(dev) && adev->wakeup.flags.valid &&
--	     adev->wakeup.sleep_state >= acpi_target_sleep_state)) {
-+	if (wakeup) {
- 		acpi_status status;
- 
- 		acpi_method[3] = 'W';
+ 	if (not_suspended > genpd->in_progress)
+ 		return -EBUSY;
 
