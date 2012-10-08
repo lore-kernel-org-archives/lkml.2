@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab2JHTeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 15:34:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40403 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2JHTeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 15:34:17 -0400
-Date: Mon, 8 Oct 2012 16:34:10 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>
-Subject: Re: [ 068/108] HID: hidraw: add proper error handling to raw event
- reporting
-Message-ID: <20121008193409.GC3004@herton-Z68MA-D2H-B3>
-References: <20121007225834.673681075@decadent.org.uk>
- <20121007225844.105600523@decadent.org.uk>
+	id S1753078Ab2JHTkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 15:40:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072Ab2JHTkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 15:40:01 -0400
+Date: Mon, 8 Oct 2012 22:41:45 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Thomas Lendacky <tahm@linux.vnet.ibm.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, kvm@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+Message-ID: <20121008204145.GA17820@redhat.com>
+References: <cover.1348824232.git.mst@redhat.com>
+ <87vces2gxq.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121007225844.105600523@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87vces2gxq.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 11:59:42PM +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 03, 2012 at 04:14:17PM +0930, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
 > 
-> ------------------
+> > Thinking about Sasha's patches, we can reduce ring usage
+> > for virtio net small packets dramatically if we put
+> > virtio net header inline with the data.
+> > This can be done for free in case guest net stack allocated
+> > extra head room for the packet, and I don't see
+> > why would this have any downsides.
 > 
-> From: Jiri Kosina <jkosina@suse.cz>
+> I've been wanting to do this for the longest time... but...
 > 
-> commit b6787242f32700377d3da3b8d788ab3928bab849 upstream.
+> > Even though with my recent patches qemu
+> > no longer requires header to be the first s/g element,
+> > we need a new feature bit to detect this.
+> > A trivial qemu patch will be sent separately.
 > 
-> If kmemdup() in hidraw_report_event() fails, we are not propagating
-> this fact properly.
+> There's a reason I haven't done this.  I really, really dislike "my
+> implemention isn't broken" feature bits.  We could have an infinite
+> number of them, for each bug in each device.
 > 
-> Let hidraw_report_event() and hid_report_raw_event() return an error
-> value to the caller.
+> So my plan was to tie this assumption to the new PCI layout.
 
-This needs in addition a small fix on top, commit d6d7c87
-("HID: fix return value of hidraw_report_event() when !CONFIG_HIDRAW")
+I don't object but old qemu has this limitation for s390 as well,
+and that's not using PCI, right? So how do we detect
+new hypervisor there?
 
 -- 
-[]'s
-Herton
+MST
