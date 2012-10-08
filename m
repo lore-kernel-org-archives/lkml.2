@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2JHOCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 10:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1897 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab2JHOCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 10:02:38 -0400
-Date: Mon, 8 Oct 2012 16:04:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anton Arapov <anton@redhat.com>, Kyle McMartin <kmcmarti@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: misc bugfixes
-Message-ID: <20121008140407.GA8034@redhat.com>
+	id S1752888Ab2JHOEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 10:04:23 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42462 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2JHOEV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 10:04:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408E8@LONPMAILBOX01.citrite.net>
+References: <7CE799CC0E4DE04B88D5FDF226E18AC2CDFFB08D16@LONPMAILBOX01.citrite.net>
+	<20120807064752.22e0da81@corrin.poochiereds.net>
+	<7CE799CC0E4DE04B88D5FDF226E18AC2E07634EB82@LONPMAILBOX01.citrite.net>
+	<7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408DA@LONPMAILBOX01.citrite.net>
+	<CAH2r5msLxJVTwVrD9vs8ZOjQdRpbVyhZus4V6Su-Y8-hT229Ug@mail.gmail.com>
+	<7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408E8@LONPMAILBOX01.citrite.net>
+Date: Mon, 8 Oct 2012 09:04:20 -0500
+Message-ID: <CAH2r5mu4hXC-oZQiaQcSdN_bVUCvwR91BjT9px0mZF8pysfTuw@mail.gmail.com>
+Subject: Re: [PATCH v2] Convert properly UTF-8 to UTF-16
+From: Steve French <smfrench@gmail.com>
+To: Frediano Ziglio <frediano.ziglio@citrix.com>
+Cc: "sfrench@samba.org" <sfrench@samba.org>,
+        "jlayton@redhat.com" <jlayton@redhat.com>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
+On Mon, Oct 8, 2012 at 3:18 AM, Frediano Ziglio
+<frediano.ziglio@citrix.com> wrote:
+> On Wed, 2012-10-03 at 14:49 -0500, Steve French wrote:
+>> Merged - but doesn't the reverse also have to be added in cifs_from_utf16?  ie
+>>
+>>           utf16s_to_utf8s(uni, ... );
+>>
+>
+> Not strictly necessary, at least to be able to mount shares.
+>
+>> I am glad that someone added these multiword handling routines into
+>> the kernel for FAT - this has been something we have wanted for a long
+>> time in cifs (and smb2/smb3).  Note the comment in
+>> fs/cifs/cifs_unicode.c
+>>
+>> / * Note that some windows versions actually send multiword UTF-16 characters
+>>  * instead of straight UTF16-2. The linux nls routines however aren't able to
+>>  * deal with those characters properly. In the event that we get some of
+>>  * those characters, they won't be translated properly.
+>>  */
+>> int
+>> cifs_from_utf16(char *to, const __le16 *from, int tolen, int fromlen,
+>>                  const struct nls_table *codepage, bool mapchar)
+>>
+>
+> Should not be UCS-2 instead of UTF16-2 ??
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+Yes, UTF-16 should be used to indicate the change to UCS-2 to allow
+4 byte encoding of some characters.  Currently with your patch we
+have partial support for UTF-16 in cifs.ko, but most cifs (and smb2/smb3)
+servers presumably support UTF-16 now on the wire.
 
-Mostly bugfixes. Nothing really serious, but probably makes sense
-for 3.7 anyway, everything looks straightforward enough.
+>> We could really use some nls test cases for cifs/smb2/smb3/nfs4 which
+>> basically did various file, directory, symlink create/rename/delete
+>> operations with various hard to map characters so we can test copying
+>> to and from the server and ensure that we get the name mappings right
+>> for these (and don't ever regress).   Fortunately smb2/smb3 is only
+>> unicode so we don't have to deal with mappings to other codepages from
+>> utf8
+>>
+>
+> Do you have some framework/hook to put these tests ?
+>
+> Where did you merge ? I cannot find nothing at
+> http://gitweb.samba.org/?p=sfrench/cifs-2.6.git;a=summary
 
-Oleg Nesterov (19):
-      uprobes: Do not leak UTASK_BP_HIT if find_active_uprobe() fails
-      uprobes: Do not setup ->active_uprobe/state prematurely
-      uprobes: Fix UPROBE_SKIP_SSTEP checks in handle_swbp()
-      uprobes: Kill UTASK_BP_HIT state
-      uprobes: Move clear_thread_flag(TIF_UPROBE) to uprobe_notify_resume()
-      uprobes: Change write_opcode() to use FOLL_FORCE
-      uprobes: Change valid_vma() to demand VM_MAYEXEC rather than VM_EXEC
-      uprobes: Restrict valid_vma(false) to skip VM_SHARED vmas
-      uprobes: Kill set_swbp()->is_swbp_at_addr()
-      uprobes: Introduce copy_opcode(), kill read_opcode()
-      uprobes: Kill set_orig_insn()->is_swbp_at_addr()
-      uprobes: Simplify is_swbp_at_addr(), remove stale comments
-      uprobes/x86: Only rep+nop can be emulated correctly
-      uprobes: Don't return success if alloc_uprobe() fails
-      uprobes: Do not delete uprobe if uprobe_unregister() fails
-      uprobes: Fix handle_swbp() vs unregister() + register() race
-      uprobes: Introduce prepare_uprobe()
-      uprobes: Fix prepare_uprobe() race with itself
-      uprobes: Fix the racy uprobe->flags manipulation
+It is in the for-next (and for-linus) branch.
 
- arch/x86/kernel/signal.c  |    4 +-
- arch/x86/kernel/uprobes.c |   16 +--
- include/linux/uprobes.h   |   11 --
- kernel/events/uprobes.c   |  345 +++++++++++++++++++++------------------------
- 4 files changed, 165 insertions(+), 211 deletions(-)
+http://gitweb.samba.org/?p=sfrench/cifs-2.6.git;a=shortlog;h=refs/heads/for-next
 
+
+
+
+-- 
+Thanks,
+
+Steve
