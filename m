@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab2JHV6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:58:36 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:37318 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab2JHV6e (ORCPT
+	id S1755119Ab2JHV75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:59:57 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55169 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751705Ab2JHV7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:58:34 -0400
-Message-ID: <50734C6D.2000400@panasas.com>
-Date: Mon, 8 Oct 2012 14:58:05 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Mon, 8 Oct 2012 17:59:55 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/KsXj07B63ydZb0FsmRPEn
+Date: Mon, 8 Oct 2012 14:59:51 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: OMAP: Fix dependency for OMAP_DEBUG_LEDS
+Message-ID: <20121008215950.GV13011@atomide.com>
+References: <1349604805.6017.1.camel@phoenix>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Benny Halevy <bhalevy@tonian.com>,
-        <osd-dev@open-osd.org>, <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] exofs: drop lock/unlock super
-References: <50700A1A.7@gmail.com>
-In-Reply-To: <50700A1A.7@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349604805.6017.1.camel@phoenix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2012 03:38 AM, Marco Stornelli wrote:
-> Removed lock/unlock super.
+* Axel Lin <axel.lin@ingics.com> [121007 03:14]:
+> This fixes below build error when CONFIG_LEDS_CLASS is not set.
 > 
+>   LD      init/built-in.o
+> arch/arm/plat-omap/built-in.o: In function `fpga_probe':
+> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
+> arch/arm/plat-omap/built-in.o:arch/arm/plat-omap/debug-leds.c:113: more undefined references to `led_classdev_register' follow
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Hi Marco
+Thanks looks like I have already an earlier version of the same
+patch from you already queued.
 
-I was sure you guys where pushing this patch through some
-vfs tree. (Hence my Acked-by below). I have just sent Linus
-a pull request for the 3.7 Kernel. I could perhaps append this
-one and resend.
+Regards,
 
-I do want this patch, and it is completely independent and can
-go through my tree. Please tell me what do you want to do with
-this patch, should I push it? Or are you pushing it through Al
+Tony
 
-Thanks
-Boaz 
-
-> Acked-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> Acked-by: Boaz Harrosh <bharrosh@panasas.com>
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 > ---
->  fs/exofs/super.c |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
+>  arch/arm/plat-omap/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
-> index 59e3bbf..5e59280 100644
-> --- a/fs/exofs/super.c
-> +++ b/fs/exofs/super.c
-> @@ -389,8 +389,6 @@ static int exofs_sync_fs(struct super_block *sb, int wait)
->  	if (unlikely(ret))
->  		goto out;
+> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+> index ca83a76..c262781 100644
+> --- a/arch/arm/plat-omap/Kconfig
+> +++ b/arch/arm/plat-omap/Kconfig
+> @@ -43,6 +43,7 @@ config OMAP_DEBUG_DEVICES
 >  
-> -	lock_super(sb);
-> -
->  	ios->length = offsetof(struct exofs_fscb, s_dev_table_oid);
->  	memset(fscb, 0, ios->length);
->  	fscb->s_nextid = cpu_to_le64(sbi->s_nextid);
-> @@ -406,8 +404,6 @@ static int exofs_sync_fs(struct super_block *sb, int wait)
->  	if (unlikely(ret))
->  		EXOFS_ERR("%s: ore_write failed.\n", __func__);
+>  config OMAP_DEBUG_LEDS
+>  	def_bool y if NEW_LEDS
+> +	select LEDS_CLASS
+>  	depends on OMAP_DEBUG_DEVICES
 >  
-> -
-> -	unlock_super(sb);
->  out:
->  	EXOFS_DBGMSG("s_nextid=0x%llx ret=%d\n", _LLU(sbi->s_nextid), ret);
->  	ore_put_io_state(ios);
+>  config POWER_AVS_OMAP
+> -- 
+> 1.7.9.5
 > 
-
-
+> 
+> 
