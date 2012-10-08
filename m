@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab2JHIrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:47:47 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33902 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab2JHIrp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:47:45 -0400
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier@dowhile0.org>
-Subject: [PATCH 1/1] ARM: OMAP: Add maintainer entry for IGEP machines
-Date: Mon,  8 Oct 2012 10:47:34 +0200
-Message-Id: <1349686054-7486-1-git-send-email-javier@dowhile0.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1754213Ab2JHIsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:48:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43353 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754072Ab2JHIsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 04:48:14 -0400
+Date: Mon, 8 Oct 2012 09:48:07 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20121008084806.GH29125@suse.de>
+References: <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+ <20120928110712.GB29125@suse.de>
+ <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
+ <20120928124332.GC29125@suse.de>
+ <20121001142428.GA2798@avionic-0098.mockup.avionic-design.de>
+ <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
+ <20121002144135.GO29125@suse.de>
+ <20121002150307.GA1161@avionic-0098.mockup.avionic-design.de>
+ <20121002151217.GP29125@suse.de>
+ <20121008080654.GD13817@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121008080654.GD13817@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enric and I have been mantained this machine and while we
-are moving to device trees, it is good that people cc us
-when reporting bugs or regression on the board file until
-we have proper DT support.
+On Mon, Oct 08, 2012 at 05:06:54PM +0900, Minchan Kim wrote:
+> Hi Mel,
+> 
+> On Tue, Oct 02, 2012 at 04:12:17PM +0100, Mel Gorman wrote:
+> > On Tue, Oct 02, 2012 at 05:03:07PM +0200, Thierry Reding wrote:
+> > > On Tue, Oct 02, 2012 at 03:41:35PM +0100, Mel Gorman wrote:
+> > > > On Tue, Oct 02, 2012 at 02:48:14PM +0200, Thierry Reding wrote:
+> > > > > > So this really isn't all that new, but I just wanted to confirm my
+> > > > > > results from last week. We'll see if bisection shows up something
+> > > > > > interesting.
+> > > > > 
+> > > > > I just finished bisecting this and git reports:
+> > > > > 
+> > > > > 	3750280f8bd0ed01753a72542756a8c82ab27933 is the first bad commit
+> > > > > 
+> > > > > I'm attaching the complete bisection log and a diff of all the changes
+> > > > > applied on top of the bad commit to make it compile and run on my board.
+> > > > > Most of the patch is probably not important, though. There are two hunks
+> > > > > which have the pageblock changes I already posted an two other hunks
+> > > > > with the patch you posted earlier.
+> > > > > 
+> > > > > I hope this helps. If you want me to run any other tests, please let me
+> > > > > know.
+> > > > > 
+> > > > 
+> > > > Can you test with this on top please?
+> > > 
+> > > That doesn't build on top of the bad commit. Or is it supposed to go on
+> > > top of next-20120926?
+> > > 
+> > 
+> > It doesn't build or do you mean it doesn't apply? Assuming the problem
+> > was that it didn't apply then try this one. It applies on top of
+> > next-20120928 which is the closest tag I have to next-20120926.
+> > 
+> > ---8<---
+> > mm: compaction: Cache if a pageblock was scanned and no pages were isolated -fix3
+> > 
+> > CMA requires that the PG_migrate_skip hint be skipped but it was only
+> > skipping it when isolating pages for migration, not for free. Ensure
+> > cc->isolate_skip_hint gets passed in both cases.
+> > 
+> > This is a fix for
+> > mm-compaction-cache-if-a-pageblock-was-scanned-and-no-pages-were-isolated-fix.patch
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> 
+> But please resend below compile error fixing.
+> 
 
-Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
----
- MAINTAINERS |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Thanks Minchan. I did resent this patch to Andrew with the subject "[PATCH]
+mm: compaction: Cache if a pageblock was scanned and no pages were isolated
+-fix3". It should have had the build errors fixed but has not been
+picked up yet.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 63ce2a2..6b3c58d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -818,6 +818,14 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kristoffer/linux-hpc.git
- F:	arch/arm/mach-sa1100/jornada720.c
- F:	arch/arm/mach-sa1100/include/mach/jornada720.h
- 
-+ARM/IGEP MACHINE SUPPORT
-+M:	Enric Balletbo i Serra <eballetbo@gmail.com>
-+M:	Javier Martinez Canillas <javier@dowhile0.org>
-+L:	linux-omap@vger.kernel.org
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	arch/arm/mach-omap2/board-igep0020.c
-+
- ARM/INCOME PXA270 SUPPORT
- M:	Marek Vasut <marek.vasut@gmail.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 -- 
-1.7.7.6
-
+Mel Gorman
+SUSE Labs
