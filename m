@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab2JHWkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:40:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41352 "EHLO
+	id S1755510Ab2JHWkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:40:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41347 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab2JHWdK (ORCPT
+	with ESMTP id S1753213Ab2JHWdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:33:10 -0400
+	Mon, 8 Oct 2012 18:33:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/25] perf machine: Introduce find_thread method
-Date: Mon,  8 Oct 2012 19:32:38 -0300
-Message-Id: <1349735570-19339-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/25] perf machine: Carve up event processing specific from perf_tool
+Date: Mon,  8 Oct 2012 19:32:42 -0300
+Message-Id: <1349735570-19339-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
 References: <1349735570-19339-1-git-send-email-acme@infradead.org>
@@ -31,10 +31,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-There are cases where we want just to find a thread if it exists
-already, so provide a method for that.
+The perf_tool vtable expects methods that receive perf_tool and
+perf_sample entries, but for tools not interested in doing any special
+processing on non PERF_RECORD_SAMPLE events, like 'perf top', and for
+those not using perf_session, like 'perf trace', they were using
+perf_event__process passing tool and sample paramenters that were just
+not used.
 
-While doing that start moving 'machine' methods to a separate file.
+Provide 'machine' methods for this purpose and make the perf_event
+ones use them.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -44,197 +49,549 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8wpzqs9kfupng6xq8hx6lnxa@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ot9cc6mt025o8kbngzckcrx9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile       |    2 ++
- tools/perf/util/machine.c |   57 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/machine.h |   11 +++++++++
- tools/perf/util/thread.c  |   41 +-------------------------------
- tools/perf/util/thread.h  |    2 ++
- 5 files changed, 73 insertions(+), 40 deletions(-)
- create mode 100644 tools/perf/util/machine.c
- create mode 100644 tools/perf/util/machine.h
+ tools/perf/builtin-top.c  |    3 +-
+ tools/perf/util/event.c   |  211 +++----------------------------------------
+ tools/perf/util/machine.c |  220 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/machine.h |    8 ++
+ 4 files changed, 242 insertions(+), 200 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f9126f8..d80a333 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -300,6 +300,7 @@ LIB_H += util/evlist.h
- LIB_H += util/exec_cmd.h
- LIB_H += util/types.h
- LIB_H += util/levenshtein.h
-+LIB_H += util/machine.h
- LIB_H += util/map.h
- LIB_H += util/parse-options.h
- LIB_H += util/parse-events.h
-@@ -383,6 +384,7 @@ LIB_OBJS += $(OUTPUT)util/header.o
- LIB_OBJS += $(OUTPUT)util/callchain.o
- LIB_OBJS += $(OUTPUT)util/values.o
- LIB_OBJS += $(OUTPUT)util/debug.o
-+LIB_OBJS += $(OUTPUT)util/machine.o
- LIB_OBJS += $(OUTPUT)util/map.o
- LIB_OBJS += $(OUTPUT)util/pstack.o
- LIB_OBJS += $(OUTPUT)util/session.o
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-new file mode 100644
-index 0000000..9d36d7e
---- /dev/null
-+++ b/tools/perf/util/machine.c
-@@ -0,0 +1,57 @@
-+#include "machine.h"
-+#include "map.h"
-+#include "thread.h"
-+#include <stdbool.h>
-+
-+static struct thread *__machine__findnew_thread(struct machine *machine, pid_t pid,
-+						bool create)
-+{
-+	struct rb_node **p = &machine->threads.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct thread *th;
-+
-+	/*
-+	 * Font-end cache - PID lookups come in blocks,
-+	 * so most of the time we dont have to look up
-+	 * the full rbtree:
-+	 */
-+	if (machine->last_match && machine->last_match->pid == pid)
-+		return machine->last_match;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		th = rb_entry(parent, struct thread, rb_node);
-+
-+		if (th->pid == pid) {
-+			machine->last_match = th;
-+			return th;
-+		}
-+
-+		if (pid < th->pid)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	if (!create)
-+		return NULL;
-+
-+	th = thread__new(pid);
-+	if (th != NULL) {
-+		rb_link_node(&th->rb_node, parent, p);
-+		rb_insert_color(&th->rb_node, &machine->threads);
-+		machine->last_match = th;
-+	}
-+
-+	return th;
-+}
-+
-+struct thread *machine__findnew_thread(struct machine *machine, pid_t pid)
-+{
-+	return __machine__findnew_thread(machine, pid, true);
-+}
-+
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid)
-+{
-+	return __machine__findnew_thread(machine, pid, false);
-+}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-new file mode 100644
-index 0000000..54df0cd
---- /dev/null
-+++ b/tools/perf/util/machine.h
-@@ -0,0 +1,11 @@
-+#ifndef __PERF_MACHINE_H
-+#define __PERF_MACHINE_H
-+
-+#include <sys/types.h>
-+
-+struct thread;
-+struct machine;
-+
-+struct thread *machine__find_thread(struct machine *machine, pid_t pid);
-+
-+#endif /* __PERF_MACHINE_H */
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index fb4b7ea..fe3bb1e 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,7 +7,7 @@
- #include "util.h"
- #include "debug.h"
- 
--static struct thread *thread__new(pid_t pid)
-+struct thread *thread__new(pid_t pid)
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ff6db80..fb9da71 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -26,6 +26,7 @@
+ #include "util/color.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
++#include "util/machine.h"
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/thread.h"
+@@ -871,7 +872,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 						   &sample, machine);
+ 		} else if (event->header.type < PERF_RECORD_MAX) {
+ 			hists__inc_nr_events(&evsel->hists, event->header.type);
+-			perf_event__process(&top->tool, event, &sample, machine);
++			machine__process_event(machine, event);
+ 		} else
+ 			++session->hists.stats.nr_unknown_events;
+ 	}
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index eaaee22..0ae444e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -520,134 +520,15 @@ int perf_event__process_comm(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
  {
- 	struct thread *self = zalloc(sizeof(*self));
- 
-@@ -61,45 +61,6 @@ static size_t thread__fprintf(struct thread *self, FILE *fp)
- 	       map_groups__fprintf(&self->mg, verbose, fp);
+-	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_comm(event, stdout);
+-
+-	if (thread == NULL || thread__set_comm(thread, event->comm.comm)) {
+-		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
+-		return -1;
+-	}
+-
+-	return 0;
++	return machine__process_comm_event(machine, event);
  }
  
--struct thread *machine__findnew_thread(struct machine *self, pid_t pid)
+ int perf_event__process_lost(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+ 			     struct perf_sample *sample __maybe_unused,
+-			     struct machine *machine __maybe_unused)
 -{
--	struct rb_node **p = &self->threads.rb_node;
--	struct rb_node *parent = NULL;
--	struct thread *th;
--
--	/*
--	 * Font-end cache - PID lookups come in blocks,
--	 * so most of the time we dont have to look up
--	 * the full rbtree:
--	 */
--	if (self->last_match && self->last_match->pid == pid)
--		return self->last_match;
--
--	while (*p != NULL) {
--		parent = *p;
--		th = rb_entry(parent, struct thread, rb_node);
--
--		if (th->pid == pid) {
--			self->last_match = th;
--			return th;
--		}
--
--		if (pid < th->pid)
--			p = &(*p)->rb_left;
--		else
--			p = &(*p)->rb_right;
--	}
--
--	th = thread__new(pid);
--	if (th != NULL) {
--		rb_link_node(&th->rb_node, parent, p);
--		rb_insert_color(&th->rb_node, &self->threads);
--		self->last_match = th;
--	}
--
--	return th;
+-	dump_printf(": id:%" PRIu64 ": lost:%" PRIu64 "\n",
+-		    event->lost.id, event->lost.lost);
+-	return 0;
 -}
 -
- void thread__insert_map(struct thread *self, struct map *map)
+-static void perf_event__set_kernel_mmap_len(union perf_event *event,
+-					    struct map **maps)
+-{
+-	maps[MAP__FUNCTION]->start = event->mmap.start;
+-	maps[MAP__FUNCTION]->end   = event->mmap.start + event->mmap.len;
+-	/*
+-	 * Be a bit paranoid here, some perf.data file came with
+-	 * a zero sized synthesized MMAP event for the kernel.
+-	 */
+-	if (maps[MAP__FUNCTION]->end == 0)
+-		maps[MAP__FUNCTION]->end = ~0ULL;
+-}
+-
+-static int perf_event__process_kernel_mmap(struct perf_tool *tool
+-					   __maybe_unused,
+-					   union perf_event *event,
+-					   struct machine *machine)
++			     struct machine *machine)
  {
- 	map_groups__fixup_overlappings(&self->mg, map, verbose, stderr);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index f66610b..f2fa17c 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -3,6 +3,7 @@
+-	struct map *map;
+-	char kmmap_prefix[PATH_MAX];
+-	enum dso_kernel_type kernel_type;
+-	bool is_kernel_mmap;
+-
+-	machine__mmap_name(machine, kmmap_prefix, sizeof(kmmap_prefix));
+-	if (machine__is_host(machine))
+-		kernel_type = DSO_TYPE_KERNEL;
+-	else
+-		kernel_type = DSO_TYPE_GUEST_KERNEL;
+-
+-	is_kernel_mmap = memcmp(event->mmap.filename,
+-				kmmap_prefix,
+-				strlen(kmmap_prefix) - 1) == 0;
+-	if (event->mmap.filename[0] == '/' ||
+-	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
+-
+-		char short_module_name[1024];
+-		char *name, *dot;
+-
+-		if (event->mmap.filename[0] == '/') {
+-			name = strrchr(event->mmap.filename, '/');
+-			if (name == NULL)
+-				goto out_problem;
+-
+-			++name; /* skip / */
+-			dot = strrchr(name, '.');
+-			if (dot == NULL)
+-				goto out_problem;
+-			snprintf(short_module_name, sizeof(short_module_name),
+-					"[%.*s]", (int)(dot - name), name);
+-			strxfrchar(short_module_name, '-', '_');
+-		} else
+-			strcpy(short_module_name, event->mmap.filename);
+-
+-		map = machine__new_module(machine, event->mmap.start,
+-					  event->mmap.filename);
+-		if (map == NULL)
+-			goto out_problem;
+-
+-		name = strdup(short_module_name);
+-		if (name == NULL)
+-			goto out_problem;
+-
+-		map->dso->short_name = name;
+-		map->dso->sname_alloc = 1;
+-		map->end = map->start + event->mmap.len;
+-	} else if (is_kernel_mmap) {
+-		const char *symbol_name = (event->mmap.filename +
+-				strlen(kmmap_prefix));
+-		/*
+-		 * Should be there already, from the build-id table in
+-		 * the header.
+-		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
+-		if (kernel == NULL)
+-			goto out_problem;
+-
+-		kernel->kernel = kernel_type;
+-		if (__machine__create_kernel_maps(machine, kernel) < 0)
+-			goto out_problem;
+-
+-		perf_event__set_kernel_mmap_len(event, machine->vmlinux_maps);
+-
+-		/*
+-		 * Avoid using a zero address (kptr_restrict) for the ref reloc
+-		 * symbol. Effectively having zero here means that at record
+-		 * time /proc/sys/kernel/kptr_restrict was non zero.
+-		 */
+-		if (event->mmap.pgoff != 0) {
+-			maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps,
+-							 symbol_name,
+-							 event->mmap.pgoff);
+-		}
+-
+-		if (machine__is_default_guest(machine)) {
+-			/*
+-			 * preload dso of guest kernel and modules
+-			 */
+-			dso__load(kernel, machine->vmlinux_maps[MAP__FUNCTION],
+-				  NULL);
+-		}
+-	}
+-	return 0;
+-out_problem:
+-	return -1;
++	return machine__process_lost_event(machine, event);
+ }
  
- #include <linux/rbtree.h>
- #include <unistd.h>
-+#include <sys/types.h>
- #include "symbol.h"
+ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+@@ -657,43 +538,12 @@ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+ 		       event->mmap.len, event->mmap.pgoff, event->mmap.filename);
+ }
  
- struct thread {
-@@ -22,6 +23,7 @@ struct thread {
+-int perf_event__process_mmap(struct perf_tool *tool,
++int perf_event__process_mmap(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread;
+-	struct map *map;
+-	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	int ret = 0;
+-
+-	if (dump_trace)
+-		perf_event__fprintf_mmap(event, stdout);
+-
+-	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL ||
+-	    cpumode == PERF_RECORD_MISC_KERNEL) {
+-		ret = perf_event__process_kernel_mmap(tool, event, machine);
+-		if (ret < 0)
+-			goto out_problem;
+-		return 0;
+-	}
+-
+-	thread = machine__findnew_thread(machine, event->mmap.pid);
+-	if (thread == NULL)
+-		goto out_problem;
+-	map = map__new(&machine->user_dsos, event->mmap.start,
+-			event->mmap.len, event->mmap.pgoff,
+-			event->mmap.pid, event->mmap.filename,
+-			MAP__FUNCTION);
+-	if (map == NULL)
+-		goto out_problem;
+-
+-	thread__insert_map(thread, map);
+-	return 0;
+-
+-out_problem:
+-	dump_printf("problem processing PERF_RECORD_MMAP, skipping event.\n");
+-	return 0;
++	return machine__process_mmap_event(machine, event);
+ }
  
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp)
+@@ -708,19 +558,7 @@ int perf_event__process_fork(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
+-	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_task(event, stdout);
+-
+-	if (thread == NULL || parent == NULL ||
+-	    thread__fork(thread, parent) < 0) {
+-		dump_printf("problem processing PERF_RECORD_FORK, skipping event.\n");
+-		return -1;
+-	}
+-
+-	return 0;
++	return machine__process_fork_event(machine, event);
+ }
+ 
+ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
+@@ -728,15 +566,7 @@ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_task(event, stdout);
+-
+-	if (thread != NULL)
+-		machine__remove_thread(machine, thread);
+-
+-	return 0;
++	return machine__process_exit_event(machine, event);
+ }
+ 
+ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+@@ -762,29 +592,12 @@ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+ 	return ret;
+ }
+ 
+-int perf_event__process(struct perf_tool *tool, union perf_event *event,
+-			struct perf_sample *sample, struct machine *machine)
++int perf_event__process(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine)
+ {
+-	switch (event->header.type) {
+-	case PERF_RECORD_COMM:
+-		perf_event__process_comm(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_MMAP:
+-		perf_event__process_mmap(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_FORK:
+-		perf_event__process_fork(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_EXIT:
+-		perf_event__process_exit(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_LOST:
+-		perf_event__process_lost(tool, event, sample, machine);
+-	default:
+-		break;
+-	}
+-
+-	return 0;
++	return machine__process_event(machine, event);
+ }
+ 
+ void thread__find_addr_map(struct thread *self,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 9d36d7e..502eec0 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1,3 +1,5 @@
++#include "debug.h"
++#include "event.h"
+ #include "machine.h"
+ #include "map.h"
+ #include "thread.h"
+@@ -55,3 +57,221 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid)
+ {
+ 	return __machine__findnew_thread(machine, pid, false);
+ }
++
++int machine__process_comm_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
++
++	if (dump_trace)
++		perf_event__fprintf_comm(event, stdout);
++
++	if (thread == NULL || thread__set_comm(thread, event->comm.comm)) {
++		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++int machine__process_lost_event(struct machine *machine __maybe_unused,
++				union perf_event *event)
++{
++	dump_printf(": id:%" PRIu64 ": lost:%" PRIu64 "\n",
++		    event->lost.id, event->lost.lost);
++	return 0;
++}
++
++static void machine__set_kernel_mmap_len(struct machine *machine,
++					 union perf_event *event)
++{
++	machine->vmlinux_maps[MAP__FUNCTION]->start = event->mmap.start;
++	machine->vmlinux_maps[MAP__FUNCTION]->end   = (event->mmap.start +
++						       event->mmap.len);
++	/*
++	 * Be a bit paranoid here, some perf.data file came with
++	 * a zero sized synthesized MMAP event for the kernel.
++	 */
++	if (machine->vmlinux_maps[MAP__FUNCTION]->end == 0)
++		machine->vmlinux_maps[MAP__FUNCTION]->end = ~0ULL;
++}
++
++static int machine__process_kernel_mmap_event(struct machine *machine,
++					      union perf_event *event)
++{
++	struct map *map;
++	char kmmap_prefix[PATH_MAX];
++	enum dso_kernel_type kernel_type;
++	bool is_kernel_mmap;
++
++	machine__mmap_name(machine, kmmap_prefix, sizeof(kmmap_prefix));
++	if (machine__is_host(machine))
++		kernel_type = DSO_TYPE_KERNEL;
++	else
++		kernel_type = DSO_TYPE_GUEST_KERNEL;
++
++	is_kernel_mmap = memcmp(event->mmap.filename,
++				kmmap_prefix,
++				strlen(kmmap_prefix) - 1) == 0;
++	if (event->mmap.filename[0] == '/' ||
++	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
++
++		char short_module_name[1024];
++		char *name, *dot;
++
++		if (event->mmap.filename[0] == '/') {
++			name = strrchr(event->mmap.filename, '/');
++			if (name == NULL)
++				goto out_problem;
++
++			++name; /* skip / */
++			dot = strrchr(name, '.');
++			if (dot == NULL)
++				goto out_problem;
++			snprintf(short_module_name, sizeof(short_module_name),
++					"[%.*s]", (int)(dot - name), name);
++			strxfrchar(short_module_name, '-', '_');
++		} else
++			strcpy(short_module_name, event->mmap.filename);
++
++		map = machine__new_module(machine, event->mmap.start,
++					  event->mmap.filename);
++		if (map == NULL)
++			goto out_problem;
++
++		name = strdup(short_module_name);
++		if (name == NULL)
++			goto out_problem;
++
++		map->dso->short_name = name;
++		map->dso->sname_alloc = 1;
++		map->end = map->start + event->mmap.len;
++	} else if (is_kernel_mmap) {
++		const char *symbol_name = (event->mmap.filename +
++				strlen(kmmap_prefix));
++		/*
++		 * Should be there already, from the build-id table in
++		 * the header.
++		 */
++		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
++						     kmmap_prefix);
++		if (kernel == NULL)
++			goto out_problem;
++
++		kernel->kernel = kernel_type;
++		if (__machine__create_kernel_maps(machine, kernel) < 0)
++			goto out_problem;
++
++		machine__set_kernel_mmap_len(machine, event);
++
++		/*
++		 * Avoid using a zero address (kptr_restrict) for the ref reloc
++		 * symbol. Effectively having zero here means that at record
++		 * time /proc/sys/kernel/kptr_restrict was non zero.
++		 */
++		if (event->mmap.pgoff != 0) {
++			maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps,
++							 symbol_name,
++							 event->mmap.pgoff);
++		}
++
++		if (machine__is_default_guest(machine)) {
++			/*
++			 * preload dso of guest kernel and modules
++			 */
++			dso__load(kernel, machine->vmlinux_maps[MAP__FUNCTION],
++				  NULL);
++		}
++	}
++	return 0;
++out_problem:
++	return -1;
++}
++
++int machine__process_mmap_event(struct machine *machine, union perf_event *event)
++{
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct thread *thread;
++	struct map *map;
++	int ret = 0;
++
++	if (dump_trace)
++		perf_event__fprintf_mmap(event, stdout);
++
++	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL ||
++	    cpumode == PERF_RECORD_MISC_KERNEL) {
++		ret = machine__process_kernel_mmap_event(machine, event);
++		if (ret < 0)
++			goto out_problem;
++		return 0;
++	}
++
++	thread = machine__findnew_thread(machine, event->mmap.pid);
++	if (thread == NULL)
++		goto out_problem;
++	map = map__new(&machine->user_dsos, event->mmap.start,
++			event->mmap.len, event->mmap.pgoff,
++			event->mmap.pid, event->mmap.filename,
++			MAP__FUNCTION);
++	if (map == NULL)
++		goto out_problem;
++
++	thread__insert_map(thread, map);
++	return 0;
++
++out_problem:
++	dump_printf("problem processing PERF_RECORD_MMAP, skipping event.\n");
++	return 0;
++}
++
++int machine__process_fork_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
++
++	if (dump_trace)
++		perf_event__fprintf_task(event, stdout);
++
++	if (thread == NULL || parent == NULL ||
++	    thread__fork(thread, parent) < 0) {
++		dump_printf("problem processing PERF_RECORD_FORK, skipping event.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++int machine__process_exit_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__find_thread(machine, event->fork.tid);
++
++	if (dump_trace)
++		perf_event__fprintf_task(event, stdout);
++
++	if (thread != NULL)
++		machine__remove_thread(machine, thread);
++
++	return 0;
++}
++
++int machine__process_event(struct machine *machine, union perf_event *event)
++{
++	int ret;
++
++	switch (event->header.type) {
++	case PERF_RECORD_COMM:
++		ret = machine__process_comm_event(machine, event); break;
++	case PERF_RECORD_MMAP:
++		ret = machine__process_mmap_event(machine, event); break;
++	case PERF_RECORD_FORK:
++		ret = machine__process_fork_event(machine, event); break;
++	case PERF_RECORD_EXIT:
++		ret = machine__process_exit_event(machine, event); break;
++	case PERF_RECORD_LOST:
++		ret = machine__process_lost_event(machine, event); break;
++	default:
++		ret = -1;
++		break;
++	}
++
++	return ret;
++}
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 54df0cd..df152f1 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -5,7 +5,15 @@
+ 
+ struct thread;
  struct machine;
++union perf_event;
  
-+struct thread *thread__new(pid_t pid);
- void thread__delete(struct thread *self);
+ struct thread *machine__find_thread(struct machine *machine, pid_t pid);
  
- int thread__set_comm(struct thread *self, const char *comm);
++int machine__process_comm_event(struct machine *machine, union perf_event *event);
++int machine__process_exit_event(struct machine *machine, union perf_event *event);
++int machine__process_fork_event(struct machine *machine, union perf_event *event);
++int machine__process_lost_event(struct machine *machine, union perf_event *event);
++int machine__process_mmap_event(struct machine *machine, union perf_event *event);
++int machine__process_event(struct machine *machine, union perf_event *event);
++
+ #endif /* __PERF_MACHINE_H */
 -- 
 1.7.9.2.358.g22243
 
