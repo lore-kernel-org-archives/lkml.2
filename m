@@ -1,297 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab2JHFpZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 01:45:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10241 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2JHFpX convert rfc822-to-8bit (ORCPT
+	id S1752896Ab2JHFp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 01:45:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49514 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2JHFp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 01:45:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 07 Oct 2012 22:43:10 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 8 Oct 2012 11:15:15 +0530
-Subject: RE: [PATCH 5/5] regulator: tps65090: add external control support
- for DCDC
-Thread-Topic: [PATCH 5/5] regulator: tps65090: add external control support
- for DCDC
-Thread-Index: Ac2j2nFv7YLxH5wdQlC9RgOfcu2ubABPYo2Q
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF8AF38E@BGMAIL02.nvidia.com>
-References: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com>
- <1349536671-31714-7-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1349536671-31714-7-git-send-email-ldewangan@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 8 Oct 2012 01:45:56 -0400
+Date: Mon, 8 Oct 2012 07:45:42 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Andrew Jones <drjones@redhat.com>,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org
+Subject: Re: [PATCH] pwm: Get rid of HAVE_PWM
+Message-ID: <20121008054542.GA14907@avionic-0098.mockup.avionic-design.de>
+References: <1349330819-11924-1-git-send-email-thierry.reding@avionic-design.de>
+ <506DA487.9070400@metafoo.de>
+ <20121004182931.GA7228@avionic-0098.mockup.avionic-design.de>
+ <506DDA16.8070604@metafoo.de>
+ <20121004191308.GB7228@avionic-0098.mockup.avionic-design.de>
+ <CAMPhdO-PiKwYstKrGwdhrUG3+KWhPioAtzPVqtk52vss-4M+iw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+In-Reply-To: <CAMPhdO-PiKwYstKrGwdhrUG3+KWhPioAtzPVqtk52vss-4M+iw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:W+13vhBz1P9zWYvUc7e4+jJf4bGfj1GRyaIENeGipGf
+ UHYAJQgPaLj4onTXtyfg4T0zrA4AF5vvGkX9pjcNQpN8otRfFf
+ mjYREDIez7XyRbPKsouE48m2oHJQ9ehIIwH1j1yRgUAHJ9IlFh
+ i0zgDPK+Hx4m9qRIbpYj7TNb/23bu/9EPGEZW3JK4CmF75lGFt
+ uFO8zvm/d7nvihyQoMdtbeRpxLHuu8iEzpYCsjOqZ89TG5oLOU
+ DlR6WkrSM62HWfLuEm3i8aoAbOlz76fDXHL463BGZrrDfSkAF6
+ I7vUwaakG0Ogmmz6FxKn6vPDamEEXonw4hWg9kTeBt9herHBJl
+ 7NEMSixk4YFLP9cReGvQGOqwsbe1wXmabrJrQZwPVXe3NE+B+m
+ 0It9MLi54eWQJmFwRozyL4DciIpV/jNM9k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Laxman Dewangan
-> Sent: Saturday, October 06, 2012 8:48 PM
-> To: broonie@opensource.wolfsonmicro.com; lrg@ti.com;
-> sameo@linux.intel.com
-> Cc: Venu Byravarasu; axel.lin@gmail.com; linux-kernel@vger.kernel.org;
-> Laxman Dewangan
-> Subject: [PATCH 5/5] regulator: tps65090: add external control support for
-> DCDC
-> 
-> The TPS65090's DCDC outut can also be enable/disable through the
-> external digital input signal. Add support for enable/disable
-> either through register access via I2C or through external
-> control inputs. The external control inputs can be driven through
-> GPIOs also and hence adding support for passing the GPIO number.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/regulator/tps65090-regulator.c       |  130
-> +++++++++++++++++++++++---
->  include/linux/regulator/tps65090-regulator.h |    6 +
->  2 files changed, 122 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/regulator/tps65090-regulator.c
-> b/drivers/regulator/tps65090-regulator.c
-> index 279154b..e3f130f 100644
-> --- a/drivers/regulator/tps65090-regulator.c
-> +++ b/drivers/regulator/tps65090-regulator.c
-> @@ -18,6 +18,7 @@
-> 
->  #include <linux/module.h>
->  #include <linux/init.h>
-> +#include <linux/gpio.h>
->  #include <linux/slab.h>
->  #include <linux/err.h>
->  #include <linux/platform_device.h>
-> @@ -33,6 +34,18 @@ struct tps65090_regulator {
->  	struct regulator_dev	*rdev;
->  };
-> 
-> +static inline bool is_dcdc(int id)
-> +{
-> +	switch (id) {
-> +	case TPS65090_REGULATOR_DCDC1:
-> +	case TPS65090_REGULATOR_DCDC2:
-> +	case TPS65090_REGULATOR_DCDC3:
-> +		return true;
-> +	default:
-> +		return false;
-> +	}
-> +}
-> +
->  static int tps65090_voltage_get_voltage(struct regulator_dev *rdev)
->  {
->  	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
-> @@ -54,12 +67,17 @@ static int tps65090_voltage_list_voltage(struct
-> regulator_dev *rdev,
->  	return ri->microvolts;
->  }
-> 
-> -static struct regulator_ops tps65090_ops = {
-> +static struct regulator_ops tps65090_ext_control_ops = {
 
-Where tps65090_ext_control_ops are used?
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Oct 08, 2012 at 10:45:44AM +0800, Eric Miao wrote:
+> On Fri, Oct 5, 2012 at 3:13 AM, Thierry Reding
+> <thierry.reding@avionic-design.de> wrote:
+> > On Thu, Oct 04, 2012 at 08:48:54PM +0200, Lars-Peter Clausen wrote:
+> >> On 10/04/2012 08:29 PM, Thierry Reding wrote:
+> >> > On Thu, Oct 04, 2012 at 05:00:23PM +0200, Lars-Peter Clausen wrote:
+> >> >> On 10/04/2012 08:06 AM, Thierry Reding wrote:
+> >> >>> [...]
+> >> >>> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> >> >>> index 331d574..b38f23d 100644
+> >> >>> --- a/arch/mips/Kconfig
+> >> >>> +++ b/arch/mips/Kconfig
+> >> >>> @@ -219,7 +219,8 @@ config MACH_JZ4740
+> >> >>>   select GENERIC_GPIO
+> >> >>>   select ARCH_REQUIRE_GPIOLIB
+> >> >>>   select SYS_HAS_EARLY_PRINTK
+> >> >>> - select HAVE_PWM
+> >> >>> + select PWM
+> >> >>> + select PWM_JZ4740
+> >> >>>   select HAVE_CLK
+> >> >>>   select GENERIC_IRQ_CHIP
+> >> >>
+> >> >> I'm not sure if this is such a good idea, not all jz4740 based board
+> >> >> necessarily require PWM.
+> >> >
+> >> > This really only restores previous behaviour. But I agree that this =
+is
+> >> > potentially not what we want. Maybe we should just not select this f=
+or
+> >> > any boards but rather leave it up to some default configuration. If =
+so
+> >> > the patch can be made simpler by just removing the HAVE_PWM entries.
+> >>
+> >> At least for JZ4740 I think that is the better solution.
+> >
+> > Okay, I'll give other people the chance to comment on this. Especially
+> > for PXA there are many boards that use the PWM for backlight and it
+> > would be interesting to hear from them how they want this to be handled.
+>=20
+> I'd say the original intention to introduce HAVE_PWM (although PXA
+> makes a lot use of this, but I remember Russell was the first to propose
+> this), is for board config to indicate its potential usage of the PWM or
+> rather if PWM is available for use on the board, and then leave the
+> developer another config option to build or not-to-build.
 
-> +	.get_voltage	= tps65090_voltage_get_voltage,
-> +	.list_voltage	= tps65090_voltage_list_voltage,
-> +};
-> +
-> +static struct regulator_ops tps65090_reg_contol_ops = {
->  	.get_voltage	= tps65090_voltage_get_voltage,
->  	.list_voltage	= tps65090_voltage_list_voltage,
-> -	.enable = regulator_enable_regmap,
-> -	.disable = regulator_disable_regmap,
-> -	.is_enabled = regulator_is_enabled_regmap,
-> +	.enable		= regulator_enable_regmap,
-> +	.disable	= regulator_disable_regmap,
-> +	.is_enabled	= regulator_is_enabled_regmap,
->  };
-> 
->  static struct regulator_ops tps65090_ldo_ops = {
-> @@ -80,20 +98,76 @@ static struct regulator_ops tps65090_ldo_ops = {
->  }
-> 
->  static struct regulator_desc tps65090_regulator_desc[] = {
-> -	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, tps65090_ops),
-> -	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, tps65090_ops),
-> -	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, tps65090_ops),
-> -	tps65090_REG_DESC(FET1,  "infet1",  0x0F, tps65090_ops),
-> -	tps65090_REG_DESC(FET2,  "infet2",  0x10, tps65090_ops),
-> -	tps65090_REG_DESC(FET3,  "infet3",  0x11, tps65090_ops),
-> -	tps65090_REG_DESC(FET4,  "infet4",  0x12, tps65090_ops),
-> -	tps65090_REG_DESC(FET5,  "infet5",  0x13, tps65090_ops),
-> -	tps65090_REG_DESC(FET6,  "infet6",  0x14, tps65090_ops),
-> -	tps65090_REG_DESC(FET7,  "infet7",  0x15, tps65090_ops),
-> +	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET1,  "infet1",  0x0F,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET2,  "infet2",  0x10,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET3,  "infet3",  0x11,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET4,  "infet4",  0x12,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET5,  "infet5",  0x13,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET6,  "infet6",  0x14,
-> tps65090_reg_contol_ops),
-> +	tps65090_REG_DESC(FET7,  "infet7",  0x15,
-> tps65090_reg_contol_ops),
->  	tps65090_REG_DESC(LDO1,  "vsys_l1", 0,    tps65090_ldo_ops),
->  	tps65090_REG_DESC(LDO2,  "vsys_l2", 0,    tps65090_ldo_ops),
->  };
-> 
-> +static int __devinit tps65090_set_ext_control(
-> +	struct tps65090_regulator *ri, bool enable)
-> +{
-> +	int ret;
-> +	struct device *parent = ri->dev->parent;
-> +	unsigned int reg_en_reg = ri->desc->enable_reg;
-> +
-> +	if (enable)
-> +		ret = tps65090_set_bits(parent, reg_en_reg, 1);
-> +	else
-> +		ret =  tps65090_clr_bits(parent, reg_en_reg, 1);
-> +	if (ret < 0)
-> +		dev_err(ri->dev, "Error in updating reg 0x%x\n", reg_en_reg);
-> +	return ret;
-> +}
-> +
-> +static int __devinit tps65090_regulator_disable_ext_control(
-> +		struct tps65090_regulator *ri,
-> +		struct tps65090_regulator_platform_data *tps_pdata)
-> +{
-> +	int ret = 0;
-> +	struct device *parent = ri->dev->parent;
-> +	unsigned int reg_en_reg = ri->desc->enable_reg;
-> +
-> +	/*
-> +	 * First enable output for internal control if require.
-> +	 * And then disable external control.
-> +	 */
-> +	if (tps_pdata->reg_init_data->constraints.always_on ||
-> +			tps_pdata->reg_init_data->constraints.boot_on) {
-> +		ret =  tps65090_set_bits(parent, reg_en_reg, 0);
-> +		if (ret < 0) {
-> +			dev_err(ri->dev, "Error in set reg 0x%x\n",
-> reg_en_reg);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return tps65090_set_ext_control(ri, false);
-> +}
-> +
-> +static void __devinit tps65090_configure_regulator_config(
-> +		struct tps65090_regulator_platform_data *tps_pdata,
-> +		struct regulator_config *config)
-> +{
-> +	if (gpio_is_valid(tps_pdata->gpio)) {
-> +		int gpio_flag = GPIOF_OUT_INIT_LOW;
-> +
-> +		if (tps_pdata->reg_init_data->constraints.always_on ||
-> +				tps_pdata->reg_init_data-
-> >constraints.boot_on)
-> +			gpio_flag = GPIOF_OUT_INIT_HIGH;
-> +
-> +		config->ena_gpio = tps_pdata->gpio;
-> +		config->ena_gpio_flags = gpio_flag;
-> +	}
-> +}
-> +
->  static int __devinit tps65090_regulator_probe(struct platform_device *pdev)
->  {
->  	struct tps65090 *tps65090_mfd = dev_get_drvdata(pdev-
-> >dev.parent);
-> @@ -128,6 +202,23 @@ static int __devinit tps65090_regulator_probe(struct
-> platform_device *pdev)
->  		ri->dev = &pdev->dev;
->  		ri->desc = &tps65090_regulator_desc[num];
-> 
-> +		/* Configure for external control for DCDC*/
-> +		if (tps_pdata && is_dcdc(num) && tps_pdata->reg_init_data)
-> {
-> +			if (tps_pdata->enable_ext_control) {
-> +				tps65090_configure_regulator_config(
-> +						tps_pdata, &config);
-> +				ri->desc->ops = &tps65090_ext_control_ops;
-> +			} else {
-> +				ret =
-> tps65090_regulator_disable_ext_control(
-> +						ri, tps_pdata);
-> +				if (ret < 0) {
-> +					dev_err(&pdev->dev,
-> +						"failed disable ext
-> control\n");
-> +					goto scrub;
-> +				}
-> +			}
-> +		}
-> +
->  		config.dev = &pdev->dev;
->  		config.driver_data = ri;
->  		config.regmap = tps65090_mfd->rmap;
-> @@ -146,6 +237,17 @@ static int __devinit tps65090_regulator_probe(struct
-> platform_device *pdev)
->  			goto scrub;
->  		}
->  		ri->rdev = rdev;
-> +
-> +		/* Enable external control if it is require */
-> +		if (tps_pdata && is_dcdc(num) && tps_pdata->reg_init_data
-> &&
-> +				tps_pdata->enable_ext_control) {
-> +			ret = tps65090_set_ext_control(ri, true);
-> +			if (ret < 0) {
-> +				/* Increment num to get unregister rdev */
-> +				num++;
-> +				goto scrub;
-> +			}
-> +		}
->  	}
-> 
->  	platform_set_drvdata(pdev, pmic);
-> diff --git a/include/linux/regulator/tps65090-regulator.h
-> b/include/linux/regulator/tps65090-regulator.h
-> index 0b29ffa..3822136 100644
-> --- a/include/linux/regulator/tps65090-regulator.h
-> +++ b/include/linux/regulator/tps65090-regulator.h
-> @@ -46,11 +46,17 @@ enum {
->   *
->   * @reg_init_data: The regulator init data.
->   * @microvolts: The rail's voltage level.
-> + * @enable_ext_control: Enable extrenal control or not. Only available for
-> + *	DCDC1, DCDC2 and DCDC3.
-> + * @gpio: Gpio number if external control is enabled and controlled through
-> + *	gpio.
->   */
-> 
->  struct tps65090_regulator_platform_data {
->  	struct regulator_init_data *reg_init_data;
->  	int microvolts;
-> +	bool enable_ext_control;
-> +	int gpio;
->  };
-> 
->  #endif	/* __REGULATOR_TPS65090_H */
-> --
-> 1.7.1.1
+But with HAVE_PWM there was never a different configuration option to
+enable the PWM driver. All architectures that used the HAVE_PWM symbol
+built the driver based on its selection. The meaning seemed more like
+"the PWM API is available" rather than anything else.
 
+Given that, HAVE_PWM would now be replaced by just PWM since that makes
+the API available. Client drivers would still be able to compile
+properly but fail at runtime if no driver actually provided any PWM
+devices.
+
+Note that starting with 3.7 the API will even be available in the form
+of dummy implementations if PWM is not selected.
+
+> Personally I think removing HAVE_PWM will simplify the code a bit
+> and that's a good thing, on the other hand, how to keep a certain level
+> of flexibility mentioned above remains a small question. I guess with
+> device tree, this can be mitigated a bit.
+
+I think, given the above, that the best solution would be to not select
+any PWM-related symbols from boards and handle this via the board
+default configurations. I was just worrying that we were changing
+existing behaviour. On the other hand behaviour was already changed by
+making the drivers no longer conditional on HAVE_PWM.
+
+If nobody has any objections, my tendency would be to just not replace
+HAVE_PWM but just get rid of it. Of course, as I mentioned above, it
+would require the board default configurations to be updated and select
+the PWM and corresponding driver symbol in order to restore previous
+behaviour.
+
+Thierry
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQcmiGAAoJEN0jrNd/PrOhn34P/1eEvqotszDo06w1x1/nqglS
+q76wtUA+NMkMRBAxggJKuzRCsCnA5O5qaU6hJfpIiXyRTRviDzanXV8FpQfMeJkG
+xw8Z8MbU7JU1Nfb93+yKOoWpOn2nxO8Yu9QsIajSjxZfASx6n99Zx3sY3Ik27Odf
+0zsfMR8puYVAVk6y8lNvNcLcedzsUp5qWIBrqo47ZZ0VSV4s0gASnEOyLGnCOEGJ
+SwR7hFxoxNbaMPvLmwSp+NG+N4GgS+tlaz5X7tCsaPf43tNXqoea7yeE9vcw663Y
+IkbOsizRGjVv/0jyjq0eSbD3RLPiAHVa4OUEBUSBBbGbzG7NdQINBMtrgl0qIsqd
+1U2yPhsW9eCvfN3JUGYcWfKiYL5ZJbnVduKraUf89RFO6D17XRlKbK8JYesI6fl/
+orNMZGO5DtcHlybX/D+tqyHVBsYFN/Mi8KumeY/bB5GJ91eu69nc/GfDEKyU/aCt
+e1fbbtoCafBNElYC7AJgxhPAMTfxQu0Q4sPYEHWZ/g6e65pBxpQYyR+XP0azC3mD
+3oObkYNK1jVd1GLdHbCdEMjhVYGp6GxtWK9LWw+HS7CRCtr9Z1AhBcl/q0sSjQZ4
+GrYJxgjJdQFvecfOXKFX6ur7vr8PbdPrhRFo1EoidkJh25t4SBBgN7+jKskym+IG
+7uBfn7cbOlYL6Q7mdZ/q
+=FSef
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
