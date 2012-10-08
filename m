@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab2JHCY5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 22:24:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:47913 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab2JHCYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 22:24:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Kasatkin@ozlabs.org, Kees Cook <keescook@chromium.org>,
-        David Howells <dhowells@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Module xattr signatures
-In-Reply-To: <1349457006.20387.41.camel@falcor>
-References: <87a9w11yhs.fsf@rustcorp.com.au> <CALLzPKYTaOX0SNkT_z9snyEMSQ4paKLf3H-C=O0vM-Gc8O99UA@mail.gmail.com> <1349457006.20387.41.camel@falcor>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 08 Oct 2012 10:03:58 +1030
-Message-ID: <874nm5rh5l.fsf@rustcorp.com.au>
+	id S1752346Ab2JHCin (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 22:38:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54087 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2JHCil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 22:38:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1349195816-2225-6-git-send-email-arnd@arndb.de>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <1349195816-2225-6-git-send-email-arnd@arndb.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 8 Oct 2012 10:38:19 +0800
+Message-ID: <CAMPhdO_HYzn1nJfDoiCYU5oxfk-BL0t=0VeLCPYESb1_jzV_yQ@mail.gmail.com>
+Subject: Re: [PATCH 05/17] ARM: pxa: remove sharpsl_fatal_check function
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Stanislav Brabec <utx@penguin.cz>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
-> On Fri, 2012-10-05 at 17:42 +0300, Kasatkin, Dmitry wrote:
->> Hello,
->> 
->> On Fri, Oct 5, 2012 at 4:47 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> >
->> > Hi all,
->> >
->> >         Had a talk with Mimi, and IMA still wants xattr signatures on
->> > modules like they have for other files with EVM.  With Kees' patches now
->> > merged into my modules-wip branch (warning, rebases frequently), this
->> > should be pretty simple.  Dmitry?
->> >
->> 
->> Yes, there is no difference for IMA/EVM what type of file has a
->> signature to verify.
->> It just reads the signature from the xattr. With the module hook it
->> will just do the same
->> for modules as well. It is independent of appended signature verification.
->> The format of signatures is different at the moment.
+On Wed, Oct 3, 2012 at 12:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> The sharpsl_fatal_check has not been used since Pavel Machek removed
+> the caller in 99f329a2b "pxa/sharpsl_pm: zaurus c3000 aka spitz: fix
+> resume". Nobody has complained since 2009, so it's safe to assume we
+> can just remove the function.
 >
->> >         The question of whether this falls back to appended signatures
->> > if there's no xattr support, or whether we fix cpio depends on whether
->> > someone is prepared to do the latter.  As Mimi points out, AIX, bsd,
->> > solaris all have versions of cpio that support extended attributes, as
->> > does the bsdcpio Debian package, for example.
->> >
->> 
->> As I already said in one of my early mails, I am not sure at all if
->> IMA really needs to verify a signature,
->> if primary mechanism is to use appended signature.
+> Without this patch, building corgi_defconfig results in:
 >
-> Which is the preferred method is exactly the point. That depends on your
-> use case.  For systems with IMA-appraisal already enabled, there would
-> not be any reason for the appended signature verification.
+> /home/arnd/linux-arm/arch/arm/mach-pxa/sharpsl_pm.c:693:12: warning: 'sharpsl_fatal_check' defined but not used [-Wunused-function]
 >
-> Now, with the MODULE_CHECK hook, systems could define an IMA-appraisal
-> policy to appraise just kernel modules.
->
-> The remaining issue is how to deal with filesystems that don't have
-> extended attribute support.  As we've already had this discussion, lets
-> summarize the different options:
->
-> - don't support them
->
-> Not very friendly.
->
-> - modify the new syscall to pass the signature and signature length
->
-> Kees nixed this idea.
->
-> - fall back to appended signature verification
->
-> In addition to David Howell's version of the appended signature
-> verification, I would like having the existing EVM/IMA-appraisal
-> signature format, based on Dmitry's proposed kernel module patches, as
-> another option.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Stanislav Brabec <utx@penguin.cz>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-Or:
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
- - Reduce the set of filesystems which don't support xattrs to the empty
-   set ;)
+Let's get it cleaned up firstly. One can always reference the history for a
+sample implementation later if this is needed in the future.
 
-Which I prefer...
-Cheers,
-Rusty.
+> ---
+>  arch/arm/mach-pxa/sharpsl_pm.c |   48 ----------------------------------------
+>  1 file changed, 48 deletions(-)
+>
+> diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
+> index bdf4cb8..6c9658f 100644
+> --- a/arch/arm/mach-pxa/sharpsl_pm.c
+> +++ b/arch/arm/mach-pxa/sharpsl_pm.c
+> @@ -55,7 +55,6 @@
+>  #ifdef CONFIG_PM
+>  static int sharpsl_off_charge_battery(void);
+>  static int sharpsl_check_battery_voltage(void);
+> -static int sharpsl_fatal_check(void);
+>  #endif
+>  static int sharpsl_check_battery_temp(void);
+>  static int sharpsl_ac_check(void);
+> @@ -686,53 +685,6 @@ static int corgi_pxa_pm_enter(suspend_state_t state)
+>         return 0;
+>  }
+>
+> -/*
+> - * Check for fatal battery errors
+> - * Fatal returns -1
+> - */
+> -static int sharpsl_fatal_check(void)
+> -{
+> -       int buff[5], temp, i, acin;
+> -
+> -       dev_dbg(sharpsl_pm.dev, "sharpsl_fatal_check entered\n");
+> -
+> -       /* Check AC-Adapter */
+> -       acin = sharpsl_pm.machinfo->read_devdata(SHARPSL_STATUS_ACIN);
+> -
+> -       if (acin && (sharpsl_pm.charge_mode == CHRG_ON)) {
+> -               sharpsl_pm.machinfo->charge(0);
+> -               udelay(100);
+> -               sharpsl_pm.machinfo->discharge(1);      /* enable discharge */
+> -               mdelay(SHARPSL_WAIT_DISCHARGE_ON);
+> -       }
+> -
+> -       if (sharpsl_pm.machinfo->discharge1)
+> -               sharpsl_pm.machinfo->discharge1(1);
+> -
+> -       /* Check battery : check inserting battery ? */
+> -       for (i = 0; i < 5; i++) {
+> -               buff[i] = sharpsl_pm.machinfo->read_devdata(SHARPSL_BATT_VOLT);
+> -               mdelay(SHARPSL_CHECK_BATTERY_WAIT_TIME_VOLT);
+> -       }
+> -
+> -       if (sharpsl_pm.machinfo->discharge1)
+> -               sharpsl_pm.machinfo->discharge1(0);
+> -
+> -       if (acin && (sharpsl_pm.charge_mode == CHRG_ON)) {
+> -               udelay(100);
+> -               sharpsl_pm.machinfo->charge(1);
+> -               sharpsl_pm.machinfo->discharge(0);
+> -       }
+> -
+> -       temp = get_select_val(buff);
+> -       dev_dbg(sharpsl_pm.dev, "sharpsl_fatal_check: acin: %d, discharge voltage: %d, no discharge: %ld\n", acin, temp, sharpsl_pm.machinfo->read_devdata(SHARPSL_BATT_VOLT));
+> -
+> -       if ((acin && (temp < sharpsl_pm.machinfo->fatal_acin_volt)) ||
+> -                       (!acin && (temp < sharpsl_pm.machinfo->fatal_noacin_volt)))
+> -               return -1;
+> -       return 0;
+> -}
+> -
+>  static int sharpsl_off_charge_error(void)
+>  {
+>         dev_err(sharpsl_pm.dev, "Offline Charger: Error occurred.\n");
+> --
+> 1.7.10
+>
