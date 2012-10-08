@@ -1,100 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab2JHWaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:30:19 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43431 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2JHWaQ (ORCPT
+	id S1755334Ab2JHWdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:33:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41374 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab2JHWdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:30:16 -0400
-Date: Mon, 8 Oct 2012 15:29:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Dave Jones <davej@redhat.com>, Dave Airlie <airlied@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121008222939.GK2453@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121004015539.GA19958@srcf.ucam.org>
- <20121004143150.GA2464@linux.vnet.ibm.com>
- <20121005164642.GA10711@linux.vnet.ibm.com>
- <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
- <20121007014447.GB2485@linux.vnet.ibm.com>
- <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
- <20121007163029.GG2485@linux.vnet.ibm.com>
- <20121007201854.GA6628@redhat.com>
- <20121008010410.GL2485@linux.vnet.ibm.com>
- <CAGXu5jJVSOACDGxgggrR-dOc-_68dFi8_2pLRF-5wy6wN6uYgw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJVSOACDGxgggrR-dOc-_68dFi8_2pLRF-5wy6wN6uYgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100822-5406-0000-0000-000000EBA174
+	Mon, 8 Oct 2012 18:33:15 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 07/25] perf diff: Add weighted diff computation way to compare hist entries
+Date: Mon,  8 Oct 2012 19:32:32 -0300
+Message-Id: <1349735570-19339-8-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
+References: <1349735570-19339-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 03:07:24PM -0700, Kees Cook wrote:
-> On Sun, Oct 7, 2012 at 6:04 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Sun, Oct 07, 2012 at 04:18:54PM -0400, Dave Jones wrote:
-> >> On Sun, Oct 07, 2012 at 09:30:29AM -0700, Paul E. McKenney wrote:
-> >>
-> >>  > > I think Kconfig is mostly what distro would like to use the thing is
-> >>  > > the Kconfig text needs to be there upfront when its merged, not two
-> >>  > > months later, since then it too late for a distro to notice.
-> >>  > >
-> >>  > > I'd bet most distros would read the warnings, but in a lot of cases
-> >>  > > the warning don't exist until its too late.
-> >>  >
-> >>  > In the case of CONFIG_RCU_USER_QS you are quite right, the warning
-> >>  > should have been there from the beginning and was not.  I suppose you
-> >>  > could argue that the warning was not sufficiently harsh in the case of
-> >>  > CONFIG_RCU_FAST_NO_HZ, but either way it did get ignored:
-> >>
-> >> Maybe if we had a universally agreed upon tag for kconfig, like
-> >> "distro recommendation: N" that would make things obvious, and also allow
-> >> those of us unfortunate enough to maintain distro kernels to have something
-> >> to easily grep for.  This would also catch the case when you eventually (hopefully)
-> >> flip from an N to a Y.
-> >>
-> >> There will likely still be some distros that will decide they know better
-> >> (and I'm pretty sure eventually I'll find reason to do so myself), but it at least
-> >> gives the feature maintainer the "I told you so" clause.
-> >>
-> >> Something we do quite often for our in-development kernels is enable something
-> >> that's shiny, new and unproven, and then when we branch for a release, we turn
-> >> it back off.  It would be great if a lot of this kind of thing could be more automated.
-> >
-> > One approach would be to have CONFIG_DISTRO, so that experimental
-> > features could use "depends on !DISTRO", but also to have multiple
-> > "BLEEDING" symbols.  For example, given a CONFIG_DISTRO_BLEEDING_HPC
-> > and CONFIG_DISTRO_BLEEDING_RT, CONFIG_RCU_USER_QS might eventually
-> > use the following clause:
-> >
-> >         depends on !DISTRO || DISTRO_BLEEDING_HPC || DISTRO_BLEEDING_RT
-> >
-> > A normal distro would define DISTRO, a distro looking to provide bleeding-edge
-> > HPC or real-time features would also define DISTRO_BLEEDING_HPC or
-> > DISTRO_BLEEDING_RT, respectively.
-> >
-> > Does that make sense, or am I being overly naive?
-> 
-> I think we should avoid any global configs that disable things. We'll
-> just end up in the same place with distros again.
+From: Jiri Olsa <jolsa@redhat.com>
 
-So you believe that we should taint the kernel or splat on boot to
-warn distros off of features that might not be ready for 100 million
-users?  Or do you have some other approach in mind?
+Adding 'wdiff' as new computation way to compare hist entries.
 
-							Thanx, Paul
+If specified the 'Weighted diff' column is displayed with value 'd'
+computed as:
+
+   d = B->period * WEIGHT-A - A->period * WEIGHT-B
+
+  - A/B being matching hist entry from first/second file specified
+    (or perf.data/perf.data.old) respectively.
+  - period being the hist entry period value
+  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
+    behind ':' separator like '-c wdiff:1,2'.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349448287-18919-5-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-diff.txt |   15 ++++-
+ tools/perf/builtin-diff.c              |  116 ++++++++++++++++++++++++++++++--
+ tools/perf/ui/hist.c                   |   30 +++++++++
+ tools/perf/util/hist.h                 |    2 +
+ tools/perf/util/sort.h                 |    3 +
+ 5 files changed, 160 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index cff3d9b..fa413ac 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -78,7 +78,7 @@ OPTIONS
+ 
+ -c::
+ --compute::
+-        Differential computation selection - delta,ratio (default is delta).
++        Differential computation selection - delta,ratio,wdiff (default is delta).
+         If '+' is specified as a first character, the output is sorted based
+         on the computation results.
+         See COMPARISON METHODS section for more info.
+@@ -110,6 +110,19 @@ with:
+ 
+   - period being the hist entry period value
+ 
++wdiff
++~~~~~
++If specified the 'Weighted diff' column is displayed with value 'd' computed as:
++
++   d = B->period * WEIGHT-A - A->period * WEIGHT-B
++
++  - A/B being matching hist entry from first/second file specified
++    (or perf.data/perf.data.old) respectively.
++
++  - period being the hist entry period value
++
++  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
++    behind ':' separator like '-c wdiff:1,2'.
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index e13cfac..d78e838 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -27,24 +27,81 @@ static bool show_displacement;
+ static bool show_baseline_only;
+ static bool sort_compute;
+ 
++static s64 compute_wdiff_w1;
++static s64 compute_wdiff_w2;
++
+ enum {
+ 	COMPUTE_DELTA,
+ 	COMPUTE_RATIO,
++	COMPUTE_WEIGHTED_DIFF,
+ 	COMPUTE_MAX,
+ };
+ 
+ const char *compute_names[COMPUTE_MAX] = {
+ 	[COMPUTE_DELTA] = "delta",
+ 	[COMPUTE_RATIO] = "ratio",
++	[COMPUTE_WEIGHTED_DIFF] = "wdiff",
+ };
+ 
+ static int compute;
+ 
++static int setup_compute_opt_wdiff(char *opt)
++{
++	char *w1_str = opt;
++	char *w2_str;
++
++	int ret = -EINVAL;
++
++	if (!opt)
++		goto out;
++
++	w2_str = strchr(opt, ',');
++	if (!w2_str)
++		goto out;
++
++	*w2_str++ = 0x0;
++	if (!*w2_str)
++		goto out;
++
++	compute_wdiff_w1 = strtol(w1_str, NULL, 10);
++	compute_wdiff_w2 = strtol(w2_str, NULL, 10);
++
++	if (!compute_wdiff_w1 || !compute_wdiff_w2)
++		goto out;
++
++	pr_debug("compute wdiff w1(%" PRId64 ") w2(%" PRId64 ")\n",
++		  compute_wdiff_w1, compute_wdiff_w2);
++
++	ret = 0;
++
++ out:
++	if (ret)
++		pr_err("Failed: wrong weight data, use 'wdiff:w1,w2'\n");
++
++	return ret;
++}
++
++static int setup_compute_opt(char *opt)
++{
++	if (compute == COMPUTE_WEIGHTED_DIFF)
++		return setup_compute_opt_wdiff(opt);
++
++	if (opt) {
++		pr_err("Failed: extra option specified '%s'", opt);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int setup_compute(const struct option *opt, const char *str,
+ 			 int unset __maybe_unused)
+ {
+ 	int *cp = (int *) opt->value;
++	char *cstr = (char *) str;
++	char buf[50];
+ 	unsigned i;
++	char *option;
+ 
+ 	if (!str) {
+ 		*cp = COMPUTE_DELTA;
+@@ -53,19 +110,37 @@ static int setup_compute(const struct option *opt, const char *str,
+ 
+ 	if (*str == '+') {
+ 		sort_compute = true;
+-		str++;
++		cstr = (char *) ++str;
+ 		if (!*str)
+ 			return 0;
+ 	}
+ 
++	option = strchr(str, ':');
++	if (option) {
++		unsigned len = option++ - str;
++
++		/*
++		 * The str data are not writeable, so we need
++		 * to use another buffer.
++		 */
++
++		/* No option value is longer. */
++		if (len >= sizeof(buf))
++			return -EINVAL;
++
++		strncpy(buf, str, len);
++		buf[len] = 0x0;
++		cstr = buf;
++	}
++
+ 	for (i = 0; i < COMPUTE_MAX; i++)
+-		if (!strcmp(str, compute_names[i])) {
++		if (!strcmp(cstr, compute_names[i])) {
+ 			*cp = i;
+-			return 0;
++			return setup_compute_opt(option);
+ 		}
+ 
+ 	pr_err("Failed: '%s' is not computation method "
+-	       "(use 'delta' or 'ratio').\n", str);
++	       "(use 'delta','ratio' or 'wdiff')\n", str);
+ 	return -EINVAL;
+ }
+ 
+@@ -97,6 +172,23 @@ double perf_diff__compute_ratio(struct hist_entry *he)
+ 	return he->diff.period_ratio;
+ }
+ 
++s64 perf_diff__compute_wdiff(struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	u64 new_period = he->stat.period;
++	u64 old_period = pair ? pair->stat.period : 0;
++
++	he->diff.computed = true;
++
++	if (!pair)
++		he->diff.wdiff = 0;
++	else
++		he->diff.wdiff = new_period * compute_wdiff_w2 -
++				 old_period * compute_wdiff_w1;
++
++	return he->diff.wdiff;
++}
++
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period)
+ {
+@@ -275,6 +367,9 @@ static void hists__precompute(struct hists *hists)
+ 		case COMPUTE_RATIO:
+ 			perf_diff__compute_ratio(he);
+ 			break;
++		case COMPUTE_WEIGHTED_DIFF:
++			perf_diff__compute_wdiff(he);
++			break;
+ 		default:
+ 			BUG_ON(1);
+ 		}
+@@ -310,6 +405,13 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 
+ 		return cmp_doubles(l, r);
+ 	}
++	case COMPUTE_WEIGHTED_DIFF:
++	{
++		s64 l = left->diff.wdiff;
++		s64 r = right->diff.wdiff;
++
++		return r - l;
++	}
+ 	default:
+ 		BUG_ON(1);
+ 	}
+@@ -434,7 +536,8 @@ static const struct option options[] = {
+ 		    "Show position displacement relative to baseline"),
+ 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
+ 		    "Show only items with match in baseline"),
+-	OPT_CALLBACK('c', "compute", &compute, "delta,ratio (default delta)",
++	OPT_CALLBACK('c', "compute", &compute,
++		     "delta,ratio,wdiff:w1,w2 (default delta)",
+ 		     "Entries differential computation selection",
+ 		     setup_compute),
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+@@ -475,6 +578,9 @@ static void ui_init(void)
+ 	case COMPUTE_RATIO:
+ 		perf_hpp__column_enable(PERF_HPP__RATIO, true);
+ 		break;
++	case COMPUTE_WEIGHTED_DIFF:
++		perf_hpp__column_enable(PERF_HPP__WEIGHTED_DIFF, true);
++		break;
+ 	default:
+ 		BUG_ON(1);
+ 	};
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 659f2a2..522b4ec 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -286,6 +286,35 @@ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
+ 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ }
+ 
++static int hpp__header_wdiff(struct perf_hpp *hpp)
++{
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
++
++	return scnprintf(hpp->buf, hpp->size, fmt, "Weighted diff");
++}
++
++static int hpp__width_wdiff(struct perf_hpp *hpp __maybe_unused)
++{
++	return 14;
++}
++
++static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
++{
++	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
++	char buf[32] = " ";
++	s64 wdiff;
++
++	if (he->diff.computed)
++		wdiff = he->diff.wdiff;
++	else
++		wdiff = perf_diff__compute_wdiff(he);
++
++	if (wdiff != 0)
++		scnprintf(buf, sizeof(buf), "%14ld", wdiff);
++
++	return scnprintf(hpp->buf, hpp->size, fmt, buf);
++}
++
+ static int hpp__header_displ(struct perf_hpp *hpp)
+ {
+ 	return scnprintf(hpp->buf, hpp->size, "Displ.");
+@@ -332,6 +361,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
+ 	{ .cond = false, HPP__PRINT_FNS(period) },
+ 	{ .cond = false, HPP__PRINT_FNS(delta) },
+ 	{ .cond = false, HPP__PRINT_FNS(ratio) },
++	{ .cond = false, HPP__PRINT_FNS(wdiff) },
+ 	{ .cond = false, HPP__PRINT_FNS(displ) }
+ };
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a7ea28a..ce76f36 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -142,6 +142,7 @@ enum {
+ 	PERF_HPP__PERIOD,
+ 	PERF_HPP__DELTA,
+ 	PERF_HPP__RATIO,
++	PERF_HPP__WEIGHTED_DIFF,
+ 	PERF_HPP__DISPL,
+ 
+ 	PERF_HPP__MAX_INDEX
+@@ -207,4 +208,5 @@ unsigned int hists__sort_list_width(struct hists *self);
+ 
+ double perf_diff__compute_delta(struct hist_entry *he);
+ double perf_diff__compute_ratio(struct hist_entry *he);
++s64 perf_diff__compute_wdiff(struct hist_entry *he);
+ #endif	/* __PERF_HIST_H */
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 337aeef..13761d8 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -63,6 +63,9 @@ struct hist_entry_diff {
+ 
+ 	/* PERF_HPP__RATIO */
+ 	double	period_ratio;
++
++	/* HISTC_WEIGHTED_DIFF */
++	s64	wdiff;
+ };
+ 
+ /**
+-- 
+1.7.9.2.358.g22243
 
