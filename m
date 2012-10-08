@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab2JHLvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 07:51:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51339 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2JHLvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 07:51:19 -0400
-Date: Mon, 8 Oct 2012 13:51:16 +0200
-From: Jan Kara <jack@suse.cz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 05/16] vfs: bogus warnings in fs/namei.c
-Message-ID: <20121008115116.GA9243@quack.suse.cz>
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
- <1349448930-23976-6-git-send-email-arnd@arndb.de>
+	id S1750977Ab2JHLyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 07:54:23 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39355 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2JHLyV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 07:54:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Message-ID: <ba3f7b37-cfac-4b54-8aa1-2d7cace0ce4b@default>
+Date: Mon, 8 Oct 2012 04:54:08 -0700 (PDT)
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: <Ian.Campbell@citrix.com>
+Cc: <konrad.wilk@oracle.com>, <Andrew.Cooper3@citrix.com>,
+        <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <JBeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 01/11] kexec: introduce kexec_ops struct
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1349448930-23976-6-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-10-12 16:55:19, Arnd Bergmann wrote:
-> The follow_link() function always initializes its *p argument,
-> or returns an error, but not all versions of gcc figure this
-> out, so we have to work around this using the uninitialized_var()
-> macro.
-  Well, I'm somewhat sceptical to this approach. I agree that bogus
-warnings are not nice but later when the code is changed and possibly real
-use without initialization is added, we won't notice it. Without changing
-anything, we'd at least have a chance of catching it with gcc versions
-which were clever enough to not warn with the original code. Or
-alternatively if we unconditionally initialized the variable that would get
-rid of the warning and made the code more future-proof (that's what I
-usually end up doing)... I don't really care that much about the chosen
-solution, Al is the one to decide. But I wanted to point out there are
-downsides to your solution.
+Hi,
 
-								Honza
+> On Mon, 2012-10-01 at 12:36 +0100, Daniel Kiper wrote:
+> > On Fri, Sep 28, 2012 at 08:49:16AM +0100, Jan Beulich wrote:
+> > > >>> On 27.09.12 at 20:06, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > > > Some kexec/kdump implementations (e.g. Xen PVOPS) on different archs could
+> > > > not use default functions or require some changes in behavior of kexec/kdump
+> > > > generic code. To cope with that problem kexec_ops struct was introduced.
+> > > > It allows a developer to replace all or some functions and control some
+> > > > functionality of kexec/kdump generic code.
+> > >
+> > > I'm not convinced that doing this at the architecture independent
+> > > layer is really necessary/desirable. Nevertheless, if that's the right
+> > > place, then everything else looks good to me, except for a
+> > > cosmetic thing:
+> >
+> > I do not like this patch, too. However, this is the simplest
+> > solution. If you do not do that in that way then you must
+> > duplicate most of kernel/kexec.c functionality in architecture
+> > depndent files.
+>
+> It would have been a good idea to CC the maintainer of those files
+> directly with at least this patch if not the whole series.
 
-> 
-> Without this patch, building with arm-linux-gnueabi-gcc-4.6 results in:
-> 
-> fs/namei.c: In function 'link_path_walk':
-> fs/namei.c:649:24: warning: 'cookie' may be used uninitialized in this function [-Wuninitialized]
-> fs/namei.c:1544:9: note: 'cookie' was declared here
-> fs/namei.c: In function 'path_lookupat':
-> fs/namei.c:649:24: warning: 'cookie' may be used uninitialized in this function [-Wuninitialized]
-> fs/namei.c:1934:10: note: 'cookie' was declared here
-> fs/namei.c: In function 'path_openat':
-> fs/namei.c:649:24: warning: 'cookie' may be used uninitialized in this function [-Wuninitialized]
-> fs/namei.c:2899:9: note: 'cookie' was declared here
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Jan Kara <jack@suse.cz>
-> ---
->  fs/namei.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index dd1ed1b..62a1725 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -1543,7 +1543,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
->  
->  	do {
->  		struct path link = *path;
-> -		void *cookie;
-> +		void *uninitialized_var(cookie);
->  
->  		res = follow_link(&link, nd, &cookie);
->  		if (res)
-> @@ -1933,7 +1933,7 @@ static int path_lookupat(int dfd, const char *name,
->  	if (!err && !(flags & LOOKUP_PARENT)) {
->  		err = lookup_last(nd, &path);
->  		while (err > 0) {
-> -			void *cookie;
-> +			void *uninitialized_var(cookie);
->  			struct path link = path;
->  			err = may_follow_link(&link, nd);
->  			if (unlikely(err))
-> @@ -2902,7 +2902,7 @@ static struct file *path_openat(int dfd, const char *pathname,
->  	error = do_last(nd, &path, file, op, &opened, pathname);
->  	while (unlikely(error > 0)) { /* trailing symlink */
->  		struct path link = path;
-> -		void *cookie;
-> +		void *uninitialized_var(cookie);
->  		if (!(nd->flags & LOOKUP_FOLLOW)) {
->  			path_put_conditional(&path, nd);
->  			path_put(&nd->path);
-> -- 
-> 1.7.10
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks. I spotted later that maintainers are not in CC.
+I am going to prepare next version of patches with
+minor suggested fixes and repost them once again
+for review next week.
+
+> If they don't like this approach then there not much point in doing a
+> thorough reviewing of the other 10 patches I don't think, since I would
+> expect they will be required to change pretty substantially under those
+> circumstances.
+
+Sure.
+
+Daniel
