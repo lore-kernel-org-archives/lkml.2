@@ -1,207 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab2JHGxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:53:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:23238 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab2JHGxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:53:04 -0400
-X-IronPort-AV: E=Sophos;i="4.80,551,1344182400"; 
-   d="scan'208";a="5959660"
-Message-ID: <50727984.20401@cn.fujitsu.com>
-Date: Mon, 08 Oct 2012 14:58:12 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753568Ab2JHG6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:58:45 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:57556 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753467Ab2JHG6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 02:58:44 -0400
+Date: Mon, 8 Oct 2012 09:53:26 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
+Message-ID: <20121008065325.GB23811@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1349391501-15799-1-git-send-email-milinevskyy@gmail.com>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com> <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/08 14:52:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/08 14:52:32,
-	Serialize complete at 2012/10/08 14:52:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="St7VIuEGZ6dlpu13"
+Content-Disposition: inline
+In-Reply-To: <1349391501-15799-1-git-send-email-milinevskyy@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/05/2012 04:53 AM, KOSAKI Motohiro Wrote:
-> On Wed, Oct 3, 2012 at 5:58 AM, Yasuaki Ishimatsu
-> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> In the 1st case, acpi_memory_disable_device() will be called.
->> In the 2nd case, acpi_memory_device_remove() will be called.
->> acpi_memory_device_remove() will also be called when we unbind the
->> memory device from the driver acpi_memhotplug.
->>
->> acpi_memory_disable_device() has already implemented a code which
->> offlines memory and releases acpi_memory_info struct . But
->> acpi_memory_device_remove() has not implemented it yet.
->>
->> So the patch implements acpi_memory_remove_memory() for offlining
->> memory and releasing acpi_memory_info struct. And it is used by both
->> acpi_memory_device_remove() and acpi_memory_disable_device().
->>
->> Additionally, if the type is ACPI_BUS_REMOVAL_EJECT in
->> acpi_memory_device_remove() , it means that the user wants to eject
->> the memory device. In this case, acpi_memory_device_remove() calls
->> acpi_memory_remove_memory().
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>  drivers/acpi/acpi_memhotplug.c |   44 +++++++++++++++++++++++++++++++----------
->>  1 file changed, 34 insertions(+), 10 deletions(-)
->>
->> Index: linux-3.6/drivers/acpi/acpi_memhotplug.c
->> ===================================================================
->> --- linux-3.6.orig/drivers/acpi/acpi_memhotplug.c       2012-10-03 18:55:33.386378909 +0900
->> +++ linux-3.6/drivers/acpi/acpi_memhotplug.c    2012-10-03 18:55:58.624380688 +0900
->> @@ -306,24 +306,37 @@ static int acpi_memory_powerdown_device(
->>         return 0;
->>  }
->>
->> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>  {
->>         int result;
->>         struct acpi_memory_info *info, *n;
->>
->> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
-> 
-> Which lock protect this loop?
 
-There is no any lock to protect it now...
+--St7VIuEGZ6dlpu13
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> 
->> +               if (!info->enabled)
->> +                       return -EBUSY;
->> +
->> +               result = remove_memory(info->start_addr, info->length);
->> +               if (result)
->> +                       return result;
-> 
-> I suspect you need to implement rollback code instead of just return.
-> 
-> 
->> +
->> +               list_del(&info->list);
->> +               kfree(info);
->> +       }
->> +
->> +       return 0;
->> +}
->> +
->> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->> +{
->> +       int result;
->>
->>         /*
->>          * Ask the VM to offline this memory range.
->>          * Note: Assume that this function returns zero on success
->>          */
-> 
-> Write function comment instead of this silly comment.
-> 
->> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->> -               if (info->enabled) {
->> -                       result = remove_memory(info->start_addr, info->length);
->> -                       if (result)
->> -                               return result;
->> -               }
->> -               kfree(info);
->> -       }
->> +       result = acpi_memory_remove_memory(mem_device);
->> +       if (result)
->> +               return result;
->>
->>         /* Power-off and eject the device */
->>         result = acpi_memory_powerdown_device(mem_device);
-> 
-> This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
-> to release callback, but don't explain why.
+On Fri, Oct 05, 2012 at 01:58:21AM +0300, Dmytro Milinevskyy wrote:
+>=20
+> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
 
-Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
+missing commit log. NAK. Just resend with a proper commit log and I can
+apply.
 
-> 
-> 
-> 
-> 
-> 
->> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
->>  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->>  {
->>         struct acpi_memory_device *mem_device = NULL;
->> -
->> +       int result;
->>
->>         if (!device || !acpi_driver_data(device))
->>                 return -EINVAL;
->>
->>         mem_device = acpi_driver_data(device);
->> +
->> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
->> +               /*
->> +                * offline and remove memory only when the memory device is
->> +                * ejected.
->> +                */
-> 
-> This comment explain nothing. A comment should describe _why_ should we do.
-> e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
-> we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
+--=20
+balbi
 
-Hmm, we have 2 ways to remove a memory:
-1. SCI
-2. echo 1 >/sys/bus/acpi/devices/PNP0C80:XX/eject
+--St7VIuEGZ6dlpu13
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-In the 2nd case, there is no ACPI_NOTIFY_EJECT_REQUEST. We should offline
-the memory and remove it from kernel in the release callback. We will poweroff
-the memory device in acpi_bus_hot_remove_device(), so we must offline
-and remove it if the type is ACPI_BUS_REMOVAL_EJECT.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I guess we should not poweroff the memory device when we fail to offline it.
-But device_release_driver() doesn't returns any error...
+iQIcBAEBAgAGBQJQcnhlAAoJEIaOsuA1yqREoXMP/1kvbZi+QeqbkqM3TdA7tfFH
+Sehw2NauXN6HbUfUoLFV0Dz05Udr/ceksDaBqUS9FABOPsOTwnduPcfDxS3zBi4f
+hgP/u5KPGAw/ymkHMbngK9maTPBW1JBCzxahwKJZNNVJQb+AfTkmnndRuZk1BR+x
+qJS70RaNk/E4wCaNMlhEx05Hz5H401DZ77tAjFRfqQaWKW7X7uCjkNB1Y2YlAoDW
+0GM92C73kGzH1dpNV1iPgB6+7z1uAjF51wh/I0M1YuPoooM1FRgnyFft8Bf1FyNc
+0eozUygjEOHIIdsuHe5M/sywM5N8ofPOJTG9b+bLp15M3hp+4aIXTr9ROmQIR3iJ
+Kiv08D+QN9W9BLIeyRQGtYYKJaYH1uuwUETXrfK4s//uVPQZH/tv3JFggbQsQs3i
+NvlAEXggIVo0hKMwNVV2ntOf8Mtd+ThpzSjb7WMCdShAMstupHIfcBXT8VJpAgJs
+Ypyib3ndkrWzSWLLI6acghqK66XLUuz5GjlNkylccDkeqqLgvTrUg+OaS3kCrToz
+eo6DXMHfkRNHeoXaz0j9dMcAsEDRE7GUakmTOQfneLzvQM5kYMvjL7Y71MVhMpXh
+EQ5lHcAVuq7wQZVytiluqU4zOwxXWccUB3SUkowhvepaEFllLeNsyPcklj/eAhfI
+aqGYO2XDIRhJAZXWv+Pj
+=g3Q0
+-----END PGP SIGNATURE-----
 
-Thanks
-Wen Congyang
-
-> 
-> 
->> +               result = acpi_memory_remove_memory(mem_device);
->> +               if (result)
->> +                       return result;
->> +       }
->> +
->>         kfree(mem_device);
->>
->>         return 0;
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
+--St7VIuEGZ6dlpu13--
