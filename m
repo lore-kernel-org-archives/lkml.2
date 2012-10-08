@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2JHQpi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 12:45:38 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56748 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751823Ab2JHQpf (ORCPT
+	id S1754163Ab2JHQr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 12:47:26 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1400 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab2JHQrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 12:45:35 -0400
-Message-ID: <1349714729.15966.167.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: boot failure on i7-3317u in Samsung 900x3c
-From: Matt Fleming <matt@console-pimps.org>
-To: Mike Bakhterev <mike.bakhterev@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 08 Oct 2012 17:45:29 +0100
-In-Reply-To: <CACx33ghsnYz0VNwEbhuyn7ZgrtamHfrTKHR4E0b9Q+LpahcDXw@mail.gmail.com>
-References: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
-	 <1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CACx33ghsnYz0VNwEbhuyn7ZgrtamHfrTKHR4E0b9Q+LpahcDXw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Oct 2012 12:47:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 08 Oct 2012 09:45:09 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>, <grant.likely@secretlab.ca>,
+        <linus.walleij@linaro.org>
+CC: <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 0/3] mfd: tps6586x: Convert to irq domain
+Date: Mon, 8 Oct 2012 21:43:22 +0530
+Message-ID: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-08 at 21:17 +0600, Mike Bakhterev wrote:
-> > Does anyone have a clue how to diagnose this further? I still think it's
-> > a buggy UEFI implementation, especially since it ships with a CSM. Is it
-> > possible that these MCE errors are non-fatal on Win 7/8?
-> >
-> 
-> Are there any info on how to decode this MCE code? It is not covered
-> in Intel's manuals. Hard to reason without any knowledge.
+This patch series convert the irq implementation to use the
+irq domain.
+Accordingly, gpio driver and rtc registration is updated.
 
-mcelog should be able to parse your MCE codes.
+Laxman Dewangan (3):
+  mfd: Convert tps6586x to irq_domain
+  mfd: tps6586x: add irq io-resource for rtc sub driver
+  mfd: tps6586x: implement gpio_to_irq
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+ drivers/gpio/gpio-tps6586x.c |    9 ++++
+ drivers/mfd/tps6586x.c       |  103 +++++++++++++++++++++++++++++++-----------
+ include/linux/mfd/tps6586x.h |    1 +
+ 3 files changed, 87 insertions(+), 26 deletions(-)
 
