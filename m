@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2JHVpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:45:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44740 "EHLO mx2.suse.de"
+	id S1755140Ab2JHVpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:45:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab2JHVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:45:43 -0400
-Date: Mon, 8 Oct 2012 23:45:33 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        axboe@kernel.dk, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
-In-Reply-To: <20121008172207.GB14767@quack.suse.cz>
-Message-ID: <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>
-References: <505E2108.2060108@gmail.com> <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com> <20121008172207.GB14767@quack.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754115Ab2JHVpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 17:45:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: vgoyal@redhat.com, jmoyer@redhat.com, tj@kernel.org
+Subject: [PATCH 6/8] cfq-iosched: put cooperating queue at the front of service tree
+Date: Mon,  8 Oct 2012 17:44:58 -0400
+Message-Id: <1349732700-2694-7-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1349732700-2694-1-git-send-email-vgoyal@redhat.com>
+References: <1349732700-2694-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Oct 2012, Jan Kara wrote:
+Currently during select_queue(), if a cfqq runs out of requests, cfq
+checks if there is a cooperating queue doing IO nearby. If yes, it
+lets that queue run out of turn.
 
-> > I'm still seeing this on linux-next.
->   I think this is floppy related (see redo_fd_request() in the stack
-> trace). And there were quite some changes to the area recently. Adding
-> maintainer to CC.
+But while doing so, CFQ does not put that queue at the front of service
+tree and select it. It just forces it to be active queue.
 
-Hmm ... I don't immediately see how this is happening.
+This will not play very nice with new algorithm where we keep track
+of min_vdisktime on service tree and always select first queue on
+the service tree to run.
 
-Sasha, could you please do git bisect on drivers/block/floppy.c between 
-f6365201d and your git HEAD for starters (assuming that f6365201d works 
-well for you?).
+So instead of force setting active queue, put desired cooperating
+queue at the front of service tree (like preemption), and then
+go through get_next_cfqq() to select first queue on service tree.
 
-> > On Sat, Sep 22, 2012 at 4:35 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > > Hi all,
-> > >
-> > > While fuzzing with trinity inside a KVM tools guest running the latest linux-next kernel, I've stumbled on the following BUG.
-> > >
-> > > I've also hit a similar trace where the 'BUG_ON(ELV_ON_HASH(rq));' above that list_del_init() gets hit, so I guess it's a race
-> > > condition of some sorts.
-> > >
-> > >
-> > > [    9.900299] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> > > [    9.909508] IP: [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > > [    9.910191] PGD 0
-> > > [    9.910191] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > > [    9.910191] Dumping ftrace buffer:
-> > > [    9.910191]    (ftrace buffer empty)
-> > > [    9.910191] CPU 2
-> > > [    9.910191] Pid: 3996, comm: kworker/u:2 Tainted: G        W    3.6.0-rc6-next-20120921-sasha-00001-geb77a39-dirty #3
-> > > [    9.910191] RIP: 0010:[<ffffffff819ea637>]  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > > [    9.910191] RSP: 0000:ffff880034e11c88  EFLAGS: 00010007
-> > > [    9.910191] RAX: 0000000000000000 RBX: ffff880034e3ec00 RCX: dead000000200200
-> > > [    9.910191] RDX: 0000000000000000 RSI: ffffffff85366998 RDI: ffff880034e3ec00
-> > > [    9.910191] RBP: ffff880034e11c88 R08: 0000000000000000 R09: ffff88001af60928
-> > > [    9.910191] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-> > > [    9.910191] R13: ffffffff85366360 R14: 0000000000000000 R15: ffffffff85b4edd0
-> > > [    9.910191] FS:  0000000000000000(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
-> > > [    9.910191] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > > [    9.910191] CR2: 0000000000000000 CR3: 0000000004c26000 CR4: 00000000000406e0
-> > > [    9.910191] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > > [    9.910191] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > > [    9.910191] Process kworker/u:2 (pid: 3996, threadinfo ffff880034e10000, task ffff88001af60000)
-> > > [    9.910191] Stack:
-> > > [    9.910191]  ffff880034e11ca8 ffffffff819a1a45 ffff880034e3ec00 0000000000000000
-> > > [    9.910191]  ffff880034e11cc8 ffffffff819a1ae1 0000000000000000 ffff880034e3ec00
-> > > [    9.910191]  ffff880034e11ce8 ffffffff819a271e 0000000000000000 0000000000000000
-> > > [    9.910191] Call Trace:
+So end result still remains the same, just that this method will
+play better with new algorithm.
 
-Seems like the queue obtained in set_next_request() through
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-	q = unit[fdc_queue].gendisk->queue;
-
-is not a proper one. I am currently not sure why.
-
-> > > [    9.910191]  [<ffffffff819a1a45>] blk_dequeue_request+0x35/0xc0
-> > > [    9.910191]  [<ffffffff819a1ae1>] blk_start_request+0x11/0x40
-> > > [    9.910191]  [<ffffffff819a271e>] blk_fetch_request+0x1e/0x30
-> > > [    9.910191]  [<ffffffff81e5a89d>] redo_fd_request+0x9d/0x3f0
-> > > [    9.910191]  [<ffffffff8112a779>] process_one_work+0x3b9/0x770
-> > > [    9.910191]  [<ffffffff8112a628>] ? process_one_work+0x268/0x770
-> > > [    9.910191]  [<ffffffff81177a22>] ? get_lock_stats+0x22/0x70
-> > > [    9.910191]  [<ffffffff81e5a800>] ? start_motor+0x120/0x120
-> > > [    9.910191]  [<ffffffff8112b0fa>] worker_thread+0x2ba/0x3f0
-> > > [    9.910191]  [<ffffffff8112ae40>] ? rescuer_thread+0x2d0/0x2d0
-> > > [    9.910191]  [<ffffffff81135d83>] kthread+0xe3/0xf0
-> > > [    9.910191]  [<ffffffff81177aae>] ? put_lock_stats.isra.16+0xe/0x40
-> > > [    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-> > > [    9.910191]  [<ffffffff839f1e45>] kernel_thread_helper+0x5/0x10
-> > > [    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-> > > [    9.910191] Code: 6a 84 be 3e 00 00 00 48 c7 c7 7b d8 6a 84 31 c0 e8 8f c2 71 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00
-> > > ad de 48 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89 42 08
-> > > [    9.910191] RIP  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > > [    9.910191]  RSP <ffff880034e11c88>
-> > > [    9.910191] CR2: 0000000000000000
-> > >
-> > >
-> > > Thanks,
-> > > Sasha
-
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 6930eed..9ab6b4b 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2117,12 +2117,11 @@ static struct cfq_queue *cfq_get_next_queue_forced(struct cfq_data *cfqd)
+ /*
+  * Get and set a new active queue for service.
+  */
+-static struct cfq_queue *cfq_set_active_queue(struct cfq_data *cfqd,
+-					      struct cfq_queue *cfqq)
++static struct cfq_queue *cfq_set_active_queue(struct cfq_data *cfqd)
+ {
+-	if (!cfqq)
+-		cfqq = cfq_get_next_queue(cfqd);
++	struct cfq_queue *cfqq;
+ 
++	cfqq = cfq_get_next_queue(cfqd);
+ 	__cfq_set_active_queue(cfqd, cfqq);
+ 	return cfqq;
+ }
+@@ -2653,6 +2652,12 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+ 	 */
+ 	new_cfqq = cfq_close_cooperator(cfqd, cfqq);
+ 	if (new_cfqq) {
++		/*
++		 * This close cooperator queue will be selected next. Put
++		 * it at the front of servie tree and then go through normal
++		 * get_next_queue() logic.
++		 */
++		cfq_service_tree_add(cfqd, new_cfqq, 1);
+ 		if (!cfqq->new_cfqq)
+ 			cfq_setup_merge(cfqq, new_cfqq);
+ 		goto expire;
+@@ -2706,7 +2711,7 @@ new_queue:
+ 	if (!new_cfqq)
+ 		cfq_choose_cfqg(cfqd);
+ 
+-	cfqq = cfq_set_active_queue(cfqd, new_cfqq);
++	cfqq = cfq_set_active_queue(cfqd);
+ keep_queue:
+ 	return cfqq;
+ }
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.7.6
+
