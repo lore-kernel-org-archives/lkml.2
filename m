@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2JHAN5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:13:57 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48150 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab2JHANx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:13:53 -0400
-Date: Sun, 7 Oct 2012 17:13:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Kamran Amini <kamran.amini.eng@gmail.com>
-cc: Behnam Momeni <s.b.momeni@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: PROBLEM: It seems that /usr/bin/time program reports a wrong
- value for MaxRSS.
-In-Reply-To: <CAKMH-Ygp6mTtpt66cOj_wh5eicTgiH9bK9J=KPQfThTzU7-OLA@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1210071641150.8431@eggly.anvils>
-References: <CAKMH-Yhdxfq50fKR3TF8gc6i7JeAowD+Oc+dqpXOYvqiNiw=Vw@mail.gmail.com> <alpine.LSU.2.00.1210061344180.28972@eggly.anvils> <CAKMH-Ygp6mTtpt66cOj_wh5eicTgiH9bK9J=KPQfThTzU7-OLA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1751448Ab2JHAYX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:24:23 -0400
+Received: from r00tworld.com ([212.85.137.150]:58403 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873Ab2JHAYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 20:24:20 -0400
+From: "PaX Team" <pageexec@freemail.hu>
+To: Ard Biesheuvel <ard.biesheuvel@gmail.com>
+Date: Mon, 08 Oct 2012 02:23:50 +0200
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: Updated: [PATCH] hardening: add PROT_FINAL prot flag to mmap/mprotect
+Reply-to: pageexec@freemail.hu
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>,
+        spender@grsecurity.net
+Message-ID: <50721D16.9006.14F512C3@pageexec.freemail.hu>
+In-reply-to: <CAKFga-erNuJ8_aLtd1b0JS1YwX1LrsCEJjEeOT67V0AqLHj_SQ@mail.gmail.com>
+References: <E1T1N2q-0001xm-5X@morero.ard.nu>, <50702DF0.32447.D66E777@pageexec.freemail.hu>, <CAKFga-erNuJ8_aLtd1b0JS1YwX1LrsCEJjEeOT67V0AqLHj_SQ@mail.gmail.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Mon, 08 Oct 2012 02:24:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Oct 2012, Kamran Amini wrote:
-> On Sun, Oct 7, 2012 at 1:18 AM, Hugh Dickins <hughd@google.com> wrote:
-> > On Thu, 4 Oct 2012, Kamran Amini wrote:
-> >>
-> >> It seems that /usr/bin/time program reports a wrong value for MaxRSS.
-> >> The report shows MaxRSS, about 4 times the
-> >> actual allocated memory by a process and its children. MaxRSS (Maximum
-> >> Resident Set Size) is assumed to be maximum
-> >> allocated memory by a process and its children. This bug report talks
-> >> about this problem. More descriptions are provided in
-> >> time-problem.tar.gz file attached to this mail.
+On 7 Oct 2012 at 9:43, Ard Biesheuvel wrote:
+
+> 2012/10/6 PaX Team <pageexec@freemail.hu>:
+> > sadly, this is not true at all, for multiple reasons:
 > >
-> > You are right.
+> .. snip ...
 > >
-> > Well, time-problem.tar.gz goes into more detail than I had time
-> > to read, so I cannot promise that everything you say is right.
+> > cheers,
+> >   PaX Team
 > >
-> > But you're right that /usr/bin/time is reporting MaxRSS 4 times too much
-> > on x86, and many other architectures.  It expects rusage.ru_maxrss to be
-> > a count of pages, so mistakenly uses to ptok() upon it; whereas the Linux
-> > kernel supplies that number already in kilobytes (as "man 2 getrusage"
-> > makes clear).
-> >
-> > I see this was mentioned when 2.6.32's commit 1f10206cf8e9 "getrusage:
-> > fill ru_maxrss value" started putting the number there instead of zero:
-> >
-> >     Make ->ru_maxrss value in struct rusage filled accordingly to rss hiwater
-> >     mark.  This struct is filled as a parameter to getrusage syscall.
-> >     ->ru_maxrss value is set to KBs which is the way it is done in BSD
-> >     systems.  /usr/bin/time (gnu time) application converts ->ru_maxrss to KBs
-> >     which seems to be incorrect behavior.  Maintainer of this util was
-> >     notified by me with the patch which corrects it and cc'ed.
-> >
-> > It looks as if we were naive to expect a change in /usr/bin/time then:
-> > so far as I can see, time has stood still at time-1.7 ever since 1996.
-> > Its README does say:
-> >
-> >     Mail suggestions and bug reports for GNU time to
-> >     bug-gnu-utils@prep.ai.mit.edu.  Please include the version of
-> >     `time', which you can get by running `time --version', and the
-> >     operating system and C compiler you used.
-> >
-> > Please do so, if you have a chance, or let me know if you cannot and
-> > I'll do so: though I suspect the mail address is out-of-date by now,
-> > and that it should say bug-gnu-utils@gnu.org.
-> >
-> > You might also like to raise a bug with the distros you care about:
-> > maybe some already apply their own fix, or will do before time-1.8.
-> >
-> > But it does look as if you're the first in three years to notice and
-> > care!  So don't be surprised if it's not a high priority for anyone.
-> >
-> > And I don't think you need attach a .tar.gz: just explain in a few
-> > lines that Linux 2.6.32 and later fill ru_maxrss, but in kilobytes
-> > not pages: so /usr/bin/time displays 4 times the right number when
-> > it multiplies that up with ptok().  (I don't have a BSD system to
-> > confirm whether it's indeed wrong for BSD too.)
-> >
-> > Thanks,
-> > Hugh
 > 
-> Thanks for the reply.
-> 
-> I'm sorry.
-> I should have mentioned more details in my last email and I should
+> So can I summarize your position as that there is no merit at all in
+> the ability to inhibit future permissions of existing mappings?
 
-Please don't drown me in so many words, we don't need more details!
+i believe i answered this in the previous mail already:
 
-> have changed my subject to "It seems that wait4() system call fills
-> rusage.ru_maxrss with wrong value".
-> 
-> Actually, we have read time's source code and there is no bug in it.
+> there's certainly a point (i've been doing it for 12 years now), but to
+> make an mprotect flag into an actual security feature, it had better pass
+> simple tests, such as non-circumventability. any method relying on
+> userland playing nice is already suspect of being the wrong way and right
+> now i don't see how PROT_FINAL could be used for actual security.
 
-Not necessarily a bug, but line 395 of time-1.7/time.c says
-	      fprintf (fp, "%lu", ptok ((UL) resp->ru.ru_maxrss));
-and the comment on ptok (pages) has already mentioned that
-   Note: Some machines express getrusage statistics in terms of K,
-   others in terms of pages.  */
+so if PROT_FINAL wants to be useful, you'd have to present a case of
+how it does something useful *while* an exploited userland cannot get
+around it. in fact i think i already told you that presenting your own
+use case in more detail (read: source code, policy, etc) would be a
+great step in 'selling the idea'. the fact that you seem to be reluctant
+to follow up on this leaves me somewhat uneasy as it may be the sign
+of a proprietary vendor's trying to push some code into mainline that
+nobody else has a clear idea how it'd benefit the rest of us. you see,
+you're asking for a change in a system call, which is a very important
+boundary for kernel developers as they'll have to maintain it indefinitely.
+so the burden is on you to prove that either this is the only way to
+implement a useful feature or at least it is the optimal way as opposed
+to other approaches. i suggested you ways to both attack the initially
+presented concept and also how it may be improved, but i got no answers
+to them yet.
 
-> The time uses wait4() system call and  k_getrusage() function in
-> kernel/sys.c, line 1765  makes that 4 coefficient.
-> 
->        r->ru_maxrss = maxrss * (PAGE_SIZE / 1024); /* convert pages to KBs */
-> 
->     Comment says that this operation will convert the maxrss into KBs.
->     But we think it has been converted to KBs previously.
+cheers,
+  PaX Team
 
-It has not been converted to KBs previously; but /usr/bin/time
-mistakenly "converts it to KBs" a second time afterwards.
-
-The Linux kernel has chosen to report ru_maxrss in KBs, following BSD.
-I have not loaded up a BSD system to check, but I have now checked the
-FreeBSD getrusage(2) manpage online, and indeed that documents ru_maxrss
-as in kilobytes.
-
-So when Jiri Pirko made Linux kernel 2.6.32 fill ru_maxrss with
-something better than 0, he chose to follow BSD by doing it in KBs
-(a better, more portable, unit than number of pages anyway); and
-simultaneously alerted the time-1.7 maintainer (he doesn't mention
-who, and I didn't actually see the name in his mail's Cc list) that
-the BSD value was already shown wrongly, and the Linux value about
-to be shown wrongly.  He and we thought it easier to keep BSD and
-Linux in synch, but no fix to the time package has appeared.
-
-Hugh
