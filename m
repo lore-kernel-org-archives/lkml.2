@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab2JHApM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:45:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38137 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab2JHApI (ORCPT
+	id S1752691Ab2JHAqp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:46:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49460 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2JHAqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:45:08 -0400
-Date: Sun, 7 Oct 2012 17:45:04 -0700
+	Sun, 7 Oct 2012 20:46:43 -0400
+Date: Sun, 7 Oct 2012 17:46:40 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, akpm@linux-foundation.org, andi@firstfloor.org
-Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
-Message-ID: <20121008004504.GB12342@kroah.com>
-References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
- <1349654386-18378-1-git-send-email-kys@microsoft.com>
- <1349654386-18378-2-git-send-email-kys@microsoft.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:misc: ti-st: fix potential NULL pointer
+ dereference in st_register()
+Message-ID: <20121008004640.GC12342@kroah.com>
+References: <CAPgLHd_PcLZGPtXQUUJ3VZJub+27zTsDvHF6X2vUrKJ9cKZ+7w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349654386-18378-2-git-send-email-kys@microsoft.com>
+In-Reply-To: <CAPgLHd_PcLZGPtXQUUJ3VZJub+27zTsDvHF6X2vUrKJ9cKZ+7w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 04:59:46PM -0700, K. Y. Srinivasan wrote:
-> +config HYPERV_BALLOON
-> +	tristate "Microsoft Hyper-V Balloon driver"
-> +	depends on HYPERV
-> +	help
-> +	  Select this option to enable the Hyper-V Utilities.
+On Mon, Oct 08, 2012 at 08:41:36AM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> The dereference should be moved below the NULL test.
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/misc/ti-st/st_core.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+> index 46937b1..ee341ea 100644
+> --- a/drivers/misc/ti-st/st_core.c
+> +++ b/drivers/misc/ti-st/st_core.c
+> @@ -511,13 +511,14 @@ long st_register(struct st_proto_s *new_proto)
+>  	unsigned long flags = 0;
+>  
+>  	st_kim_ref(&st_gdata, 0);
+> -	pr_info("%s(%d) ", __func__, new_proto->chnl_id);
+>  	if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
+>  	    || new_proto->reg_complete_cb == NULL) {
+>  		pr_err("gdata/new_proto/recv or reg_complete_cb not ready");
+>  		return -EINVAL;
+>  	}
+>  
+> +	pr_info("%s(%d) ", __func__, new_proto->chnl_id);
 
-Your help text is wrong :(
-
-> --- /dev/null
-> +++ b/drivers/hv/hv_balloon.c
-> @@ -0,0 +1,1043 @@
-> +/*
-> + * Copyright (c) 2012, Microsoft Corporation.
-> + *
-> + * Author:
-> + *   K. Y. Srinivasan <kys@microsoft.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> + * NON INFRINGEMENT.  See the GNU General Public License for more
-> + * details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-
-Unless you promise to keep track of the FSF's office buildings for the
-next 40+ years, just drop this paragraph entirely.
+Why print this at all?  Can't you just drop it now?
 
 greg k-h
