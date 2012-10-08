@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2JHWZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:25:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57011 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab2JHWZa (ORCPT
+	id S1754799Ab2JHWaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:30:19 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43431 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2JHWaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:25:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349400892-25315-1-git-send-email-xiong@qca.qualcomm.com>
-References: <1349400892-25315-1-git-send-email-xiong@qca.qualcomm.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 8 Oct 2012 15:25:08 -0700
-X-Google-Sender-Auth: ooXbJQ5LWYJohPeU-VZWR2YdX3A
-Message-ID: <CAB=NE6VotAu-cugsn4==3TPX0OGPEFtdn1J+5+Rd_YfLcg9YDQ@mail.gmail.com>
-Subject: Re: [PATCH] compat-drivers: update ethernet driver alx in crap dir
-To: xiong@qca.qualcomm.com
-Cc: mcgrof@kernel.org, backports@vger.kernel.org, nic-devel@qualcomm.com,
-        Ren Cloud <cjren@qca.qualcomm.com>,
+	Mon, 8 Oct 2012 18:30:16 -0400
+Date: Mon, 8 Oct 2012 15:29:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Dave Jones <davej@redhat.com>, Dave Airlie <airlied@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        qca_vkondrat@qca.qualcomm.com
-Content-Type: text/plain; charset=UTF-8
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
+Message-ID: <20121008222939.GK2453@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121004015539.GA19958@srcf.ucam.org>
+ <20121004143150.GA2464@linux.vnet.ibm.com>
+ <20121005164642.GA10711@linux.vnet.ibm.com>
+ <CAFTL4hy434CQhT8WTvKmNzkO4k_isfKQOrCjgfYFYfMVgS7QDw@mail.gmail.com>
+ <20121007014447.GB2485@linux.vnet.ibm.com>
+ <CAPM=9tzoaZ3AWzA6MFnKAMzFgrarWW=JTLHSTzGBf0hoPQ_RmQ@mail.gmail.com>
+ <20121007163029.GG2485@linux.vnet.ibm.com>
+ <20121007201854.GA6628@redhat.com>
+ <20121008010410.GL2485@linux.vnet.ibm.com>
+ <CAGXu5jJVSOACDGxgggrR-dOc-_68dFi8_2pLRF-5wy6wN6uYgw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJVSOACDGxgggrR-dOc-_68dFi8_2pLRF-5wy6wN6uYgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100822-5406-0000-0000-000000EBA174
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 6:34 PM,  <xiong@qca.qualcomm.com> wrote:
-> From: xiong <xiong@qca.qualcomm.com>
->
-> 1. support new device id (0x10A0/0x10A1).
-> 2. add DEBUG_FS interface for diag/swoi functions.
->
-> Signed-off-by: Ren Cloud <cjren@qca.qualcomm.com>
-> Signed-off-by: xiong <xiong@qca.qualcomm.com>
+On Mon, Oct 08, 2012 at 03:07:24PM -0700, Kees Cook wrote:
+> On Sun, Oct 7, 2012 at 6:04 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Sun, Oct 07, 2012 at 04:18:54PM -0400, Dave Jones wrote:
+> >> On Sun, Oct 07, 2012 at 09:30:29AM -0700, Paul E. McKenney wrote:
+> >>
+> >>  > > I think Kconfig is mostly what distro would like to use the thing is
+> >>  > > the Kconfig text needs to be there upfront when its merged, not two
+> >>  > > months later, since then it too late for a distro to notice.
+> >>  > >
+> >>  > > I'd bet most distros would read the warnings, but in a lot of cases
+> >>  > > the warning don't exist until its too late.
+> >>  >
+> >>  > In the case of CONFIG_RCU_USER_QS you are quite right, the warning
+> >>  > should have been there from the beginning and was not.  I suppose you
+> >>  > could argue that the warning was not sufficiently harsh in the case of
+> >>  > CONFIG_RCU_FAST_NO_HZ, but either way it did get ignored:
+> >>
+> >> Maybe if we had a universally agreed upon tag for kconfig, like
+> >> "distro recommendation: N" that would make things obvious, and also allow
+> >> those of us unfortunate enough to maintain distro kernels to have something
+> >> to easily grep for.  This would also catch the case when you eventually (hopefully)
+> >> flip from an N to a Y.
+> >>
+> >> There will likely still be some distros that will decide they know better
+> >> (and I'm pretty sure eventually I'll find reason to do so myself), but it at least
+> >> gives the feature maintainer the "I told you so" clause.
+> >>
+> >> Something we do quite often for our in-development kernels is enable something
+> >> that's shiny, new and unproven, and then when we branch for a release, we turn
+> >> it back off.  It would be great if a lot of this kind of thing could be more automated.
+> >
+> > One approach would be to have CONFIG_DISTRO, so that experimental
+> > features could use "depends on !DISTRO", but also to have multiple
+> > "BLEEDING" symbols.  For example, given a CONFIG_DISTRO_BLEEDING_HPC
+> > and CONFIG_DISTRO_BLEEDING_RT, CONFIG_RCU_USER_QS might eventually
+> > use the following clause:
+> >
+> >         depends on !DISTRO || DISTRO_BLEEDING_HPC || DISTRO_BLEEDING_RT
+> >
+> > A normal distro would define DISTRO, a distro looking to provide bleeding-edge
+> > HPC or real-time features would also define DISTRO_BLEEDING_HPC or
+> > DISTRO_BLEEDING_RT, respectively.
+> >
+> > Does that make sense, or am I being overly naive?
+> 
+> I think we should avoid any global configs that disable things. We'll
+> just end up in the same place with distros again.
 
-Xiong,
+So you believe that we should taint the kernel or splat on boot to
+warn distros off of features that might not be ready for 100 million
+users?  Or do you have some other approach in mind?
 
- -- Vladimir, just a heads up -- this applies to you as well for the
-802.11ad wil6210 driver
- -- Greg, some review on your preference on this would be appreciated
+							Thanx, Paul
 
-The original alx crap patch was added into compat-wireless on the
-linux-3.5.y branch. Its been two kernel releases and alx is not yet
-upstream and users can only get alx via compat-drivers (technically
-compat-wireless as that was pre v3.7). v3.7 would be the *third*
-release in which this would happen... This is unfair to users and
-consumers of the Linux kernel and derails expectations and our
-arrangements for Linux kernel development. I realize that the goal was
-to get alx upstream ASAP but regardless of what the reason is, its not
-yet upstream. If you cannot work on alx on a timely manner to get
-upstream then please submit the driver to the staging area of the
-Linux kernel that Greg maintains so that other developers who may be
-able to help can submit patches to help you. Under staging your driver
-should be accepted so long as it compiles.
-
-I will update the documentation for crap/ patches for compat-drivers
-to make it clear now that crap/ patches can be used for adding
-components / pieces of code not yet ready for upstream but as far as
-full new drivers are concerned you only get one kernel release cycle
-for it to linger on crap/ under compat-drivers, if you haven't
-addressed upstreaming yet then it should go to drivers/staging/. That
-is crap/ should only be used as a shortcut because users exist that
-can use the driver but you *do* have a team properly resourced to
-address upstreaming properly in a timely manner.
-
-Linus should soon release v3.7-rc1 and new drivers are allowed to be
-merged during the RC cycles, as such my recommendation is instead of
-getting users to consume alx only through compat-drivers you now
-submit alx into staging to Greg in hopes that we can get it into
-v3.7-rcX some time, and at that time we can remove the crap/ patch
-from compat-drivers.
-
-Users should be able to consume new drivers through kernel.org and
-compat-drivers should only provide
-the framework for backporting and also categorizing quick fixes. It
-should not be used for ongoing
-updates for new drivers that users need.
-
-We must draw the line with crap/ patches somewhere.
-
-I'll then take this patch for now but do expect you to get alx into
-either staging or proper upstream for the v3.7-rcX. I welcome feedback
-from other folks on the proposed arrangement for crap/ patches for
-compat-drivers.
-
-https://backports.wiki.kernel.org/index.php/Documentation/compat-drivers/additional-patches#crap_patches
-
-  Luis
