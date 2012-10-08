@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab2JHNNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:13:40 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:32905 "EHLO zmc.proxad.net"
+	id S1753134Ab2JHNNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:13:46 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:32931 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990Ab2JHNNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:13:36 -0400
+	id S1753048Ab2JHNNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:13:40 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-mips@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 08/32 v4] MIPS: Alchemy: use the ehci platform driver
-Date: Mon,  8 Oct 2012 15:11:22 +0200
-Message-Id: <1349701906-16481-9-git-send-email-florian@openwrt.org>
+Subject: [PATCH 09/32 v4] USB: EHCI: remove Alchemy EHCI driver
+Date: Mon,  8 Oct 2012 15:11:23 +0200
+Message-Id: <1349701906-16481-10-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
@@ -26,10 +21,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the ehci platform driver power_{on,suspend,off} callbacks to perform the
-USB block gate enabling/disabling as what the ehci-au1xxx.c driver does.
-Update the db1200 and db1300 defconfigs to now select the EHCI platform
-driver.
+The platform code has been converted to use the ehci-platform driver instead
+thus obsoleting the ehci-au1xxx driver, which can be removed.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
@@ -39,87 +32,219 @@ Changes in v4:
 No changes in v3
 
 Changes in v2:
-- update impacted alchemy defconfigs accordingly
+- reworded commit message
 
- arch/mips/alchemy/common/platform.c |   23 ++++++++++++++++++++++-
- arch/mips/configs/db1200_defconfig  |    1 +
- arch/mips/configs/db1300_defconfig  |    1 +
- 3 files changed, 24 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-au1xxx.c |  184 ----------------------------------------
+ drivers/usb/host/ehci-hcd.c    |    5 --
+ 2 files changed, 189 deletions(-)
+ delete mode 100644 drivers/usb/host/ehci-au1xxx.c
 
-diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
-index c0f3ce6..b9a5f6d 100644
---- a/arch/mips/alchemy/common/platform.c
-+++ b/arch/mips/alchemy/common/platform.c
-@@ -17,6 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/serial_8250.h>
- #include <linux/slab.h>
-+#include <linux/usb/ehci_pdriver.h>
+diff --git a/drivers/usb/host/ehci-au1xxx.c b/drivers/usb/host/ehci-au1xxx.c
+deleted file mode 100644
+index 65c945e..0000000
+--- a/drivers/usb/host/ehci-au1xxx.c
++++ /dev/null
+@@ -1,184 +0,0 @@
+-/*
+- * EHCI HCD (Host Controller Driver) for USB.
+- *
+- * Bus Glue for AMD Alchemy Au1xxx
+- *
+- * Based on "ohci-au1xxx.c" by Matt Porter <mporter@kernel.crashing.org>
+- *
+- * Modified for AMD Alchemy Au1200 EHC
+- *  by K.Boge <karsten.boge@amd.com>
+- *
+- * This file is licenced under the GPL.
+- */
+-
+-#include <linux/platform_device.h>
+-#include <asm/mach-au1x00/au1000.h>
+-
+-
+-extern int usb_disabled(void);
+-
+-static int au1xxx_ehci_setup(struct usb_hcd *hcd)
+-{
+-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+-	int ret;
+-
+-	ehci->caps = hcd->regs;
+-	ret = ehci_setup(hcd);
+-
+-	ehci->need_io_watchdog = 0;
+-	return ret;
+-}
+-
+-static const struct hc_driver ehci_au1xxx_hc_driver = {
+-	.description		= hcd_name,
+-	.product_desc		= "Au1xxx EHCI",
+-	.hcd_priv_size		= sizeof(struct ehci_hcd),
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq			= ehci_irq,
+-	.flags			= HCD_MEMORY | HCD_USB2,
+-
+-	/*
+-	 * basic lifecycle operations
+-	 *
+-	 * FIXME -- ehci_init() doesn't do enough here.
+-	 * See ehci-ppc-soc for a complete implementation.
+-	 */
+-	.reset			= au1xxx_ehci_setup,
+-	.start			= ehci_run,
+-	.stop			= ehci_stop,
+-	.shutdown		= ehci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue		= ehci_urb_enqueue,
+-	.urb_dequeue		= ehci_urb_dequeue,
+-	.endpoint_disable	= ehci_endpoint_disable,
+-	.endpoint_reset		= ehci_endpoint_reset,
+-
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number	= ehci_get_frame,
+-
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data	= ehci_hub_status_data,
+-	.hub_control		= ehci_hub_control,
+-	.bus_suspend		= ehci_bus_suspend,
+-	.bus_resume		= ehci_bus_resume,
+-	.relinquish_port	= ehci_relinquish_port,
+-	.port_handed_over	= ehci_port_handed_over,
+-
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
+-
+-static int ehci_hcd_au1xxx_drv_probe(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd;
+-	struct resource *res;
+-	int ret;
+-
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+-	if (pdev->resource[1].flags != IORESOURCE_IRQ) {
+-		pr_debug("resource[1] is not IORESOURCE_IRQ");
+-		return -ENOMEM;
+-	}
+-	hcd = usb_create_hcd(&ehci_au1xxx_hc_driver, &pdev->dev, "Au1xxx");
+-	if (!hcd)
+-		return -ENOMEM;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = resource_size(res);
+-
+-	hcd->regs = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!hcd->regs) {
+-		pr_debug("devm_request_and_ioremap failed");
+-		ret = -ENOMEM;
+-		goto err1;
+-	}
+-
+-	if (alchemy_usb_control(ALCHEMY_USB_EHCI0, 1)) {
+-		printk(KERN_INFO "%s: controller init failed!\n", pdev->name);
+-		ret = -ENODEV;
+-		goto err1;
+-	}
+-
+-	ret = usb_add_hcd(hcd, pdev->resource[1].start,
+-			  IRQF_SHARED);
+-	if (ret == 0) {
+-		platform_set_drvdata(pdev, hcd);
+-		return ret;
+-	}
+-
+-	alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
+-err1:
+-	usb_put_hcd(hcd);
+-	return ret;
+-}
+-
+-static int ehci_hcd_au1xxx_drv_remove(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-
+-	usb_remove_hcd(hcd);
+-	alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
+-	usb_put_hcd(hcd);
+-	platform_set_drvdata(pdev, NULL);
+-
+-	return 0;
+-}
+-
+-#ifdef CONFIG_PM
+-static int ehci_hcd_au1xxx_drv_suspend(struct device *dev)
+-{
+-	struct usb_hcd *hcd = dev_get_drvdata(dev);
+-	bool do_wakeup = device_may_wakeup(dev);
+-	int rc;
+-
+-	rc = ehci_suspend(hcd, do_wakeup);
+-	alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
+-
+-	return rc;
+-}
+-
+-static int ehci_hcd_au1xxx_drv_resume(struct device *dev)
+-{
+-	struct usb_hcd *hcd = dev_get_drvdata(dev);
+-
+-	alchemy_usb_control(ALCHEMY_USB_EHCI0, 1);
+-	ehci_resume(hcd, false);
+-
+-	return 0;
+-}
+-
+-static const struct dev_pm_ops au1xxx_ehci_pmops = {
+-	.suspend	= ehci_hcd_au1xxx_drv_suspend,
+-	.resume		= ehci_hcd_au1xxx_drv_resume,
+-};
+-
+-#define AU1XXX_EHCI_PMOPS &au1xxx_ehci_pmops
+-
+-#else
+-#define AU1XXX_EHCI_PMOPS NULL
+-#endif
+-
+-static struct platform_driver ehci_hcd_au1xxx_driver = {
+-	.probe		= ehci_hcd_au1xxx_drv_probe,
+-	.remove		= ehci_hcd_au1xxx_drv_remove,
+-	.shutdown	= usb_hcd_platform_shutdown,
+-	.driver = {
+-		.name	= "au1xxx-ehci",
+-		.owner	= THIS_MODULE,
+-		.pm	= AU1XXX_EHCI_PMOPS,
+-	}
+-};
+-
+-MODULE_ALIAS("platform:au1xxx-ehci");
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index f2a9982..a954a95 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1219,11 +1219,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_hcd_sh_driver
+ #endif
  
- #include <asm/mach-au1x00/au1000.h>
- #include <asm/mach-au1x00/au1xxx_dbdma.h>
-@@ -122,6 +123,25 @@ static void __init alchemy_setup_uarts(int ctype)
- static u64 alchemy_ohci_dmamask = DMA_BIT_MASK(32);
- static u64 __maybe_unused alchemy_ehci_dmamask = DMA_BIT_MASK(32);
- 
-+/* Power on callback for the ehci platform driver */
-+static int alchemy_ehci_power_on(struct platform_device *pdev)
-+{
-+	return alchemy_usb_control(ALCHEMY_USB_EHCI0, 1);
-+}
-+
-+/* Power off/suspend callback for the ehci platform driver */
-+static void alchemy_ehci_power_off(struct platform_device *pdev)
-+{
-+	alchemy_usb_control(ALCHEMY_USB_EHCI0, 0);
-+}
-+
-+static struct usb_ehci_pdata alchemy_ehci_pdata = {
-+	.no_io_watchdog	= 1,
-+	.power_on	= alchemy_ehci_power_on,
-+	.power_off	= alchemy_ehci_power_off,
-+	.power_suspend	= alchemy_ehci_power_off,
-+};
-+
- static unsigned long alchemy_ohci_data[][2] __initdata = {
- 	[ALCHEMY_CPU_AU1000] = { AU1000_USB_OHCI_PHYS_ADDR, AU1000_USB_HOST_INT },
- 	[ALCHEMY_CPU_AU1500] = { AU1000_USB_OHCI_PHYS_ADDR, AU1500_USB_HOST_INT },
-@@ -188,9 +208,10 @@ static void __init alchemy_setup_usb(int ctype)
- 		res[1].start = alchemy_ehci_data[ctype][1];
- 		res[1].end = res[1].start;
- 		res[1].flags = IORESOURCE_IRQ;
--		pdev->name = "au1xxx-ehci";
-+		pdev->name = "ehci-platform";
- 		pdev->id = 0;
- 		pdev->dev.dma_mask = &alchemy_ehci_dmamask;
-+		pdev->dev.platform_data = &alchemy_ehci_pdata;
- 
- 		if (platform_device_register(pdev))
- 			printk(KERN_INFO "Alchemy USB: cannot add EHCI0\n");
-diff --git a/arch/mips/configs/db1200_defconfig b/arch/mips/configs/db1200_defconfig
-index 1f69249..d31ac85 100644
---- a/arch/mips/configs/db1200_defconfig
-+++ b/arch/mips/configs/db1200_defconfig
-@@ -117,6 +117,7 @@ CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
- # CONFIG_USB_DEVICE_CLASS is not set
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_HCD_PLATFORM=y
- CONFIG_USB_EHCI_ROOT_HUB_TT=y
- CONFIG_USB_OHCI_HCD=y
- CONFIG_MMC=y
-diff --git a/arch/mips/configs/db1300_defconfig b/arch/mips/configs/db1300_defconfig
-index 3590ab5..717e7b2 100644
---- a/arch/mips/configs/db1300_defconfig
-+++ b/arch/mips/configs/db1300_defconfig
-@@ -288,6 +288,7 @@ CONFIG_USB_ARCH_HAS_EHCI=y
- CONFIG_USB=y
- CONFIG_USB_DYNAMIC_MINORS=y
- CONFIG_USB_EHCI_HCD=y
-+CONFIG_USB_EHCI_HCD_PLATFORM=y
- CONFIG_USB_EHCI_ROOT_HUB_TT=y
- CONFIG_USB_EHCI_TT_NEWSCHED=y
- CONFIG_USB_OHCI_HCD=y
+-#ifdef CONFIG_MIPS_ALCHEMY
+-#include "ehci-au1xxx.c"
+-#define	PLATFORM_DRIVER		ehci_hcd_au1xxx_driver
+-#endif
+-
+ #ifdef CONFIG_USB_EHCI_HCD_OMAP
+ #include "ehci-omap.c"
+ #define        PLATFORM_DRIVER         ehci_hcd_omap_driver
 -- 
 1.7.9.5
 
