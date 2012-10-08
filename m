@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab2JHKHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 06:07:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21583 "EHLO relay.sw.ru"
+	id S1752328Ab2JHKH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 06:07:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26105 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab2JHKHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 06:07:52 -0400
+	id S1751612Ab2JHKHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 06:07:54 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 05/14] Add a __GFP_KMEMCG flag
-Date: Mon,  8 Oct 2012 14:06:11 +0400
-Message-Id: <1349690780-15988-6-git-send-email-glommer@parallels.com>
+Subject: [PATCH v4 11/14] memcg: allow a memcg with kmem charges to be destructed.
+Date: Mon,  8 Oct 2012 14:06:17 +0400
+Message-Id: <1349690780-15988-12-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349690780-15988-1-git-send-email-glommer@parallels.com>
 References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
@@ -27,60 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag is used to indicate to the callees that this allocation is a
-kernel allocation in process context, and should be accounted to
-current's memcg. It takes numerical place of the of the recently removed
-__GFP_NO_KSWAPD.
+Because the ultimate goal of the kmem tracking in memcg is to track slab
+pages as well, we can't guarantee that we'll always be able to point a
+page to a particular process, and migrate the charges along with it -
+since in the common case, a page will contain data belonging to multiple
+processes.
 
-[ v4: make flag unconditional, also declare it in trace code ]
+Because of that, when we destroy a memcg, we only make sure the
+destruction will succeed by discounting the kmem charges from the user
+charges when we try to empty the cgroup.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/gfp.h             | 3 ++-
- include/trace/events/gfpflags.h | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 02c1c97..9289d46 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -31,6 +31,7 @@ struct vm_area_struct;
- #define ___GFP_THISNODE		0x40000u
- #define ___GFP_RECLAIMABLE	0x80000u
- #define ___GFP_NOTRACK		0x200000u
-+#define ___GFP_KMEMCG		0x400000u
- #define ___GFP_OTHER_NODE	0x800000u
- #define ___GFP_WRITE		0x1000000u
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 724a08b..2f92f89 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -546,6 +546,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+ {
+ 	if (memcg_kmem_is_active(memcg))
+ 		static_key_slow_dec(&memcg_kmem_enabled_key);
++	/*
++	 * This check can't live in kmem destruction function,
++	 * since the charges will outlive the cgroup
++	 */
++	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
+ }
+ #else
+ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+@@ -3994,6 +3999,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
+ 	int node, zid, shrink;
+ 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+ 	struct cgroup *cgrp = memcg->css.cgroup;
++	u64 usage;
  
-@@ -87,7 +88,7 @@ struct vm_area_struct;
+ 	css_get(&memcg->css);
  
- #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
- #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
--
-+#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
- /*
-  * This may seem redundant, but it's a way of annotating false positives vs.
-  * allocations that simply cannot be supported (e.g. page tables).
-diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-index 9391706..730df12 100644
---- a/include/trace/events/gfpflags.h
-+++ b/include/trace/events/gfpflags.h
-@@ -36,6 +36,7 @@
- 	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
- 	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
- 	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
-+	{(unsigned long)__GFP_KMEMCG,		"GFP_KMEMCG"},		\
- 	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
- 	) : "GFP_NOWAIT"
- 
+@@ -4027,8 +4033,17 @@ move_account:
+ 		mem_cgroup_end_move(memcg);
+ 		memcg_oom_recover(memcg);
+ 		cond_resched();
++		/*
++		 * Kernel memory may not necessarily be trackable to a specific
++		 * process. So they are not migrated, and therefore we can't
++		 * expect their value to drop to 0 here.
++		 *
++		 * having res filled up with kmem only is enough
++		 */
++		usage = res_counter_read_u64(&memcg->res, RES_USAGE) -
++			res_counter_read_u64(&memcg->kmem, RES_USAGE);
+ 	/* "ret" should also be checked to ensure all lists are empty. */
+-	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
++	} while (usage > 0 || ret);
+ out:
+ 	css_put(&memcg->css);
+ 	return ret;
 -- 
 1.7.11.4
 
