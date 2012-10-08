@@ -1,156 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab2JHBwN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 21:52:13 -0400
-Received: from rain.florz.de ([62.216.164.86]:43002 "EHLO
-	rain.florz.dyndns.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750745Ab2JHBwL (ORCPT
+	id S1752860Ab2JHB5F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 21:57:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55092 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab2JHB5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 21:52:11 -0400
-Date: Mon, 8 Oct 2012 03:51:58 +0200
-From: Florian Zumbiehl <florz@florz.de>
-To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        eric.dumazet@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jpirko@redhat.com
-Subject: [PATCH v2] vlan: don't deliver frames for unknown vlans to
- protocols
-Message-ID: <20121008015158.GE25895@florz.florz.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 7 Oct 2012 21:57:03 -0400
+Date: Sun, 7 Oct 2012 22:56:39 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, walter harms <wharms@bfs.de>,
+        Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
+        rmallon@gmail.com, shubhrajyoti@ti.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for
+ i2c_msg initialization
+Message-ID: <20121007225639.364a41b4@infradead.org>
+In-Reply-To: <1349646718.15802.16.camel@joe-AO722>
+References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr>
+	<5071AEF3.6080108@bfs.de>
+	<alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>
+	<5071B834.1010200@bfs.de>
+	<alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6>
+	<1349633780.15802.8.camel@joe-AO722>
+	<alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6>
+	<1349645970.15802.12.camel@joe-AO722>
+	<alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6>
+	<1349646718.15802.16.camel@joe-AO722>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
-vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
-there was an rx_handler, as the rx_handler could cause the frame to be received
-on a different (virtual) vlan-capable interface where that vlan might be
-configured.
+Em Sun, 07 Oct 2012 14:51:58 -0700
+Joe Perches <joe@perches.com> escreveu:
 
-As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
-frames for unknown vlans to be delivered to the protocol stack as if they had
-been received untagged.
+> On Sun, 2012-10-07 at 23:43 +0200, Julia Lawall wrote:
+> > On Sun, 7 Oct 2012, Joe Perches wrote:
+> > >> Are READ and WRITE the action names?  They are really the important
+> > >> information in this case.
+> > >
+> > > Yes, most (all?) uses of _READ and _WRITE macros actually
+> > > perform some I/O.
+> > 
+> > I2C_MSG_READ_DATA?
+> > I2C_MSG_READ_INFO?
+> > I2C_MSG_READ_INIT?
+> > I2C_MSG_PREPARE_READ?
+> 
+> Dunno, naming is hard.  Maybe:
+> 
+> I2C_INPUT_MSG
+> I2C_OUTPUT_MSG
+> I2C_OP_MSG
 
-For example, if an ipv6 router advertisement that's tagged for a locally not
-configured vlan is received on an interface with macvlan interfaces attached,
-macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
-macvlan interfaces, which caused it to be passed to the protocol stack, leading
-to ipv6 addresses for the announced prefix being configured even though those
-are completely unusable on the underlying interface.
+READ/WRITE sounds better, IMHO, as it will generally match with the
+function names (they're generally named like foo_i2c_read or foo_reg_read).
+I think none of them uses input or output. Btw, with I2C buses, a
+register read is coded as a write ops, that sets the register's sub-address,
+followed by a read ops from that (and subsequent) registers.
 
-The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
-rx_handler, if there is one, sees the frame unchanged, but afterwards,
-before the frame is delivered to the protocol stack, it gets marked whether
-there is an rx_handler or not.
+I'm afraid that using INPUT/OUTPUT will sound confusing.
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
----
+So, IMHO, I2C_READ_MSG and I2C_WRITE_MSG sounds better.
 
-NOTE: This was tested on 3.5.4, but massaged to apply on a recent stable
-head--in any case this should be carefully reviewed by someone who knows the
-code well, in case that wasn't obvious anyhow.
+Btw, as the WRITE + READ operation is very common (I think it is
+much more common than a simple READ msg), it could make sense to have
+just one macro for it, like:
 
-This version completely avoids any new state that could need to be spilled
-to RAM, and instead re-checks existence and non-zeroness of the tag. What
-do you think?
+INIT_I2C_READ_SUBADDR() that would take both write and read values.
 
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index a810987..561e130 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net_device *dev)
- }
- 
- #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
-+#define vlan_tx_nonzero_tag_present(__skb) \
-+	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
- #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
- 
- #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
-@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
- extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
- extern u16 vlan_dev_vlan_id(const struct net_device *dev);
- 
--extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
-+extern bool vlan_do_receive(struct sk_buff **skb);
- extern struct sk_buff *vlan_untag(struct sk_buff *skb);
- 
- extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
-@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const struct net_device *dev)
- 	return 0;
- }
- 
--static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
-+static inline bool vlan_do_receive(struct sk_buff **skb)
- {
--	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
--		(*skb)->pkt_type = PACKET_OTHERHOST;
- 	return false;
- }
- 
-diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
-index 8ca533c..f981d37 100644
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -5,7 +5,7 @@
- #include <linux/export.h>
- #include "vlan.h"
- 
--bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
-+bool vlan_do_receive(struct sk_buff **skbp)
- {
- 	struct sk_buff *skb = *skbp;
- 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
- 	struct vlan_pcpu_stats *rx_stats;
- 
- 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
--	if (!vlan_dev) {
--		/* Only the last call to vlan_do_receive() should change
--		 * pkt_type to PACKET_OTHERHOST
--		 */
--		if (vlan_id && last_handler)
--			skb->pkt_type = PACKET_OTHERHOST;
-+	if (!vlan_dev)
- 		return false;
--	}
- 
- 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
- 	if (unlikely(!skb))
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8398836..c580708 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3273,18 +3273,18 @@ ncls:
- 				&& !skb_pfmemalloc_protocol(skb))
- 		goto drop;
- 
--	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		if (vlan_do_receive(&skb, !rx_handler))
-+		if (vlan_do_receive(&skb))
- 			goto another_round;
- 		else if (unlikely(!skb))
- 			goto unlock;
- 	}
- 
-+	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
-@@ -3304,6 +3304,9 @@ ncls:
- 		}
- 	}
- 
-+	if (vlan_tx_nonzero_tag_present(skb))
-+		skb->pkt_type = PACKET_OTHERHOST;
-+
- 	/* deliver only exact match when indicated */
- 	null_or_dev = deliver_exact ? skb->dev : NULL;
- 
+I also don't like the I2C_MSG_OP. The operations there are always
+read or write.
+
+So, IMHO, the better would be to code the read and write message init message 
+as something similar to:
+
+#define DECLARE_I2C_MSG_READ(_msg, _addr, _buf, _len, _flags)					\
+	struct i2c_msg _msg[1] = {								\
+		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) | I2C_M_RD }	\
+	}
+
+#define DECLARE_I2C_MSG_WRITE(_msg, _addr, _buf, _len, _flags)					\
+	struct i2c_msg _msg[1] = {								\
+		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) & ~I2C_M_RD }	\
+	}
+
+#define DECLARE_I2C_MSG_READ_SUBADDR(_msg, _addr, _subaddr, _sublen,_subflags, _buf,_len, _flags)	\
+	struct i2c_msg _msg[2] = {									\
+		{.addr = _addr, .buf = _subbuf, .len = _sublen, .flags = (_subflags) & ~I2C_M_RD }	\
+		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) | I2C_M_RD }		\
+	}
+
+
+Notes:
+
+1) in the case of DECLARE_I2C_MSG_READ_SUBADDR(), I'm almost sure that, in all cases, the
+first message will always have buffer size equal to 1. If so, you can simplify the number
+of arguments there.
+
+2) It could make sense to have, in fact, two versions for each, one with _FLAGS and another one
+without. On most cases, the one without flags are used.
+
+3) I bet that most of the cases where 2 messages are used, the first message has length equal
+to one, and it uses a fixed u8 constant with the I2C sub-address. So, maybe it would be nice
+to have a variant for this case.
+
+
+Cheers,
+Mauro
