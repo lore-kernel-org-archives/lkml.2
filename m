@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2JHTzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 15:55:09 -0400
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:44898 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab2JHTzG (ORCPT
+	id S1753670Ab2JHT5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 15:57:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53359 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab2JHT5K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 15:55:06 -0400
-Message-ID: <50732F8A.9090109@cs.tu-berlin.de>
-Date: Mon, 08 Oct 2012 21:54:50 +0200
-From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
+	Mon, 8 Oct 2012 15:57:10 -0400
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <50732F8A.9090109@cs.tu-berlin.de>
+References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com>
+ <5065B909.1060907@cs.tu-berlin.de> <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com>
+ <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com> <50732F8A.9090109@cs.tu-berlin.de>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 8 Oct 2012 21:56:48 +0200
+Message-ID: <CAPXgP10ipvmVTEV_e_8+q-xLksVbBaPqWWDfc8H+W8KUPohDLA@mail.gmail.com>
 Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
-References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de> <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com> <5065B909.1060907@cs.tu-berlin.de> <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com> <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com>
-In-Reply-To: <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com>
+To: =?UTF-8?Q?Jan_H=2E_Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.10.2012 21:24, schrieb Kay Sievers:
-> On Fri, Sep 28, 2012 at 4:56 PM, Kay Sievers <kay@vrfy.org> wrote:
->> On Fri, Sep 28, 2012 at 4:49 PM, "Jan H. Schönherr"
-> 
->>> Given that I'm able to fix the racing case, would you be in favor of
->>> this approach, or should we stick to the earlier version?
+On Mon, Oct 8, 2012 at 9:54 PM, "Jan H. Schönherr"
+<schnhrr@cs.tu-berlin.de> wrote:
+> Am 08.10.2012 21:24, schrieb Kay Sievers:
+>> On Fri, Sep 28, 2012 at 4:56 PM, Kay Sievers <kay@vrfy.org> wrote:
+>>> On Fri, Sep 28, 2012 at 4:49 PM, "Jan H. Schönherr"
 >>
->> I'm open to everything that makes sense. Let's see how it looks and we
->> can decide when we have something that passes the tests.
-> 
-> Jan,
-> any updates, did you try something else?
-> Or should we merge the first version for now?
+>>>> Given that I'm able to fix the racing case, would you be in favor of
+>>>> this approach, or should we stick to the earlier version?
+>>>
+>>> I'm open to everything that makes sense. Let's see how it looks and we
+>>> can decide when we have something that passes the tests.
+>>
+>> Jan,
+>> any updates, did you try something else?
+>> Or should we merge the first version for now?
+>
+> I'm working on it, though I cannot spend as much time as I want. :)
+>
+> My current version does mostly well for race-printk()s, now. But
+> there's still one issue to resolve and some polishing to do.
+>
+> If we can afford to wait a little longer, we might get a nicer
+> solution (and avoid a possible mostly-revert later).
 
-I'm working on it, though I cannot spend as much time as I want. :)
+Sure, no hurry, I was just going through my TODO emails. :)
 
-My current version does mostly well for race-printk()s, now. But
-there's still one issue to resolve and some polishing to do.
-
-If we can afford to wait a little longer, we might get a nicer
-solution (and avoid a possible mostly-revert later).
-
-Regards
-Jan
-
+Thanks,
+Kay
