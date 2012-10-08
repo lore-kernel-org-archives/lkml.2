@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab2JHVEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:04:51 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:57966 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab2JHVEq (ORCPT
+	id S1753886Ab2JHVIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:08:06 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27274 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750999Ab2JHVID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:04:46 -0400
-Date: Mon, 8 Oct 2012 14:04:40 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v3 7/8] perf tools: configure addr2line for
- cross-compiling
-Message-ID: <20121008210440.GJ2631@ghostprotocols.net>
-References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
- <1349678613-7045-8-git-send-email-irina.tirdea@gmail.com>
+	Mon, 8 Oct 2012 17:08:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+5OdD8e7/W4PtIwJZKaMOO
+Date: Mon, 8 Oct 2012 14:07:59 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: OMAP: rx51: Fix a section mismatch warn
+Message-ID: <20121008210759.GG13011@atomide.com>
+References: <1347460624-25259-1-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349678613-7045-8-git-send-email-irina.tirdea@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1347460624-25259-1-git-send-email-shubhrajyoti@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 08, 2012 at 09:43:32AM +0300, Irina Tirdea escreveu:
-> From: Irina Tirdea <irina.tirdea@intel.com>
-> 
-> When analyzing data recorded on a target with a different architecture than
-> the host, we must use addr2line from the toolchain for that architecture.
-> Add a command line option to set addr2line at runtime.
-> 
-> As we have architecture information of saved perf.data file, we can
-> also try to find cross-built addr2line path. The predefined triplets include
-> support for Android (arm, x86 and mips architectures).
+* Shubhrajyoti D <shubhrajyoti@ti.com> [120912 07:38]:
+> rx51_si4713_dev is referenced only from rx51_init_si4713.
+> So the memory for rx51_si4713_dev can be safely freed after init.
+> Also it references rx51_si4713_board_info which is __initdata_or_module.
 
-Comments made for the objdump patch applies here.
+Thanks applying into fixes.
 
-Also there are two patches here, no? One adding --addr2line and the
-other trying to find it automatically according the perf_session_env
-info in the perf.data header.
-
-- Arnaldo
+Tony
