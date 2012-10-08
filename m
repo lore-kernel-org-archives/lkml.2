@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab2JHRLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:11:51 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:60579 "EHLO mail.x86-64.org"
+	id S1754435Ab2JHRMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:12:50 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:60606 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab2JHRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:11:48 -0400
+	id S1754307Ab2JHRLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 13:11:49 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Tony Luck <tony.luck@intel.com>
 Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 0/6] AMD MCE injection improvs
-Date: Mon,  8 Oct 2012 19:11:27 +0200
-Message-Id: <1349716293-16723-1-git-send-email-bp@amd64.org>
+Subject: [PATCH 6/6] x86, RAS: Add an injector function
+Date: Mon,  8 Oct 2012 19:11:33 +0200
+Message-Id: <1349716293-16723-7-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <1349716293-16723-1-git-send-email-bp@amd64.org>
+References: <1349716293-16723-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-So this basically moves the mce-inject module to arch/x86/ras/ and adds
-a bunch of features to it.
+Selectively inject either a real MCE or a sw-only version which
+exercises the decoding code only. The hardware-injected MCE triggers a
+machine check exception (#MC) so that the MCE handler can be bothered to
+do something too.
 
-More importantly, though, it creates all the glue to add the
-arch/x86/ras/ directory to Kconfig. The idea is to gradually collect
-RAS-related stuff there.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/ras/amd/mce-inject.c | 50 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 48 insertions(+), 2 deletions(-)
 
-Tony, please take a look and let me know how do you find the general
-layout, etc.
-
-Thanks.
-
-Borislav Petkov (6):
-  x86, RAS: Add a barebones RAS subtree
-  x86, RAS: Move AMD MCE injection code into ras/
-  x86, RAS: Convert mce-inject module to debugfs
-  x86, RAS: Add function enabling direct writes to MCE MSRs
-  x86, RAS: Add attributes needed for HW injection
-  x86, RAS: Add an injector function
-
- arch/x86/Kconfig              |  10 ++
- arch/x86/Makefile             |   3 +
- arch/x86/ras/Kconfig          |  14 +++
- arch/x86/ras/Makefile         |   2 +
- arch/x86/ras/amd/Makefile     |   3 +
- arch/x86/ras/amd/mce-inject.c | 274 ++++++++++++++++++++++++++++++++++++++++++
- drivers/edac/Kconfig          |  10 --
- drivers/edac/mce_amd_inj.c    | 173 --------------------------
- 8 files changed, 306 insertions(+), 183 deletions(-)
- create mode 100644 arch/x86/ras/Kconfig
- create mode 100644 arch/x86/ras/Makefile
- create mode 100644 arch/x86/ras/amd/Makefile
- create mode 100644 arch/x86/ras/amd/mce-inject.c
- create mode 100644 arch/x86/ras/ras.c
- delete mode 100644 drivers/edac/mce_amd_inj.c
-
+diff --git a/arch/x86/ras/amd/mce-inject.c b/arch/x86/ras/amd/mce-inject.c
+index b55d69fbd6e3..24a1c870cd18 100644
+--- a/arch/x86/ras/amd/mce-inject.c
++++ b/arch/x86/ras/amd/mce-inject.c
+@@ -131,6 +131,53 @@ static int inj_extcpu_set(void *data, u64 val)
+ 
+ DEFINE_SIMPLE_ATTRIBUTE(extcpu_fops, inj_extcpu_get, inj_extcpu_set, "%llu\n");
+ 
++static void trigger_mce(void *info)
++{
++	asm volatile("int $18");
++}
++
++static void do_inject(void)
++{
++	u64 mcg_status = 0;
++	unsigned int cpu = i_mce.extcpu;
++	int this_cpu;
++	u8 b = i_mce.bank;
++
++	if (!(i_mce.inject_flags & MCJ_EXCEPTION)) {
++		amd_decode_mce(NULL, 0, &i_mce);
++		return;
++	}
++
++	/* prep MCE global settings for the injection */
++	mcg_status = MCG_STATUS_MCIP | MCG_STATUS_EIPV;
++
++	if (!(i_mce.status & MCI_STATUS_PCC))
++		mcg_status |= MCG_STATUS_RIPV;
++
++	this_cpu = get_cpu();
++
++	toggle_hw_mce_inject(cpu, true);
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCG_STATUS,
++		     (u32)mcg_status, (u32)(mcg_status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
++		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
++		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
++
++	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
++		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
++
++	toggle_hw_mce_inject(cpu, false);
++
++	smp_call_function_single(cpu, trigger_mce, NULL, 0);
++
++	put_cpu();
++
++}
++
+ /*
+  * This denotes into which bank we're injecting and triggers
+  * the injection, at the same time.
+@@ -147,8 +194,7 @@ static int inj_bank_set(void *data, u64 val)
+ 	}
+ 
+ 	m->bank = val;
+-
+-	amd_decode_mce(NULL, 0, m);
++	do_inject();
+ 
+ 	return 0;
+ }
 -- 
 1.8.0.rc0.18.gf84667d
 
