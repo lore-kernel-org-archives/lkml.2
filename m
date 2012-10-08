@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2JHVEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:04:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61052 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab2JHVEk (ORCPT
+	id S1754959Ab2JHVEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:04:51 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:57966 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2JHVEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:04:40 -0400
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Subject: [PATCH] usb: gadget: ncm: correct endianess conversion
-Date: Mon,  8 Oct 2012 23:59:03 +0300
-Message-Id: <1349729943-28995-1-git-send-email-milinevskyy@gmail.com>
-X-Mailer: git-send-email 1.7.12.2
+	Mon, 8 Oct 2012 17:04:46 -0400
+Date: Mon, 8 Oct 2012 14:04:40 -0700
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Irina Tirdea <irina.tirdea@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: Re: [PATCH v3 7/8] perf tools: configure addr2line for
+ cross-compiling
+Message-ID: <20121008210440.GJ2631@ghostprotocols.net>
+References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
+ <1349678613-7045-8-git-send-email-irina.tirdea@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349678613-7045-8-git-send-email-irina.tirdea@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert USB descriptor's fields to CPU byte order before using locally in USB NCM gadget driver.
-Tested on MIPS32 big-endian device.
+Em Mon, Oct 08, 2012 at 09:43:32AM +0300, Irina Tirdea escreveu:
+> From: Irina Tirdea <irina.tirdea@intel.com>
+> 
+> When analyzing data recorded on a target with a different architecture than
+> the host, we must use addr2line from the toolchain for that architecture.
+> Add a command line option to set addr2line at runtime.
+> 
+> As we have architecture information of saved perf.data file, we can
+> also try to find cross-built addr2line path. The predefined triplets include
+> support for Android (arm, x86 and mips architectures).
 
-Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
----
- drivers/usb/gadget/f_ncm.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Comments made for the objdump patch applies here.
 
-diff --git a/drivers/usb/gadget/f_ncm.c b/drivers/usb/gadget/f_ncm.c
-index b651b52..fce45ab 100644
---- a/drivers/usb/gadget/f_ncm.c
-+++ b/drivers/usb/gadget/f_ncm.c
-@@ -869,11 +869,11 @@ static struct sk_buff *ncm_wrap_ntb(struct gether *port,
- 	struct sk_buff	*skb2;
- 	int		ncb_len = 0;
- 	__le16		*tmp;
--	int		div = ntb_parameters.wNdpInDivisor;
--	int		rem = ntb_parameters.wNdpInPayloadRemainder;
--	int		pad;
--	int		ndp_align = ntb_parameters.wNdpInAlignment;
--	int		ndp_pad;
-+	int	div = le16_to_cpu(ntb_parameters.wNdpInDivisor);
-+	int	rem = le16_to_cpu(ntb_parameters.wNdpInPayloadRemainder);
-+	int	pad;
-+	int	ndp_align = le16_to_cpu(ntb_parameters.wNdpInAlignment);
-+	int	ndp_pad;
- 	unsigned	max_size = ncm->port.fixed_in_len;
- 	struct ndp_parser_opts *opts = ncm->parser_opts;
- 	unsigned	crc_len = ncm->is_crc ? sizeof(uint32_t) : 0;
--- 
-1.7.12.2
+Also there are two patches here, no? One adding --addr2line and the
+other trying to find it automatically according the perf_session_env
+info in the perf.data header.
 
+- Arnaldo
