@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab2JHXkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 19:40:16 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34656 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab2JHXkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 19:40:14 -0400
-Message-ID: <50736456.1010407@us.ibm.com>
-Date: Mon, 08 Oct 2012 16:40:06 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Avi Kivity <avi@redhat.com>, paulmck@linux.vnet.ibm.com,
-        Josh Boyer <jwboyer@redhat.com>,
-        Christian Hoffmann <email@christianhoffmann.info>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, tglx@linutronix.de
-Subject: Re: INFO: rcu_preempt detected stalls on CPUs/tasks: { 1} (detected
- by 0, t=10002 jiffies)
-References: <20120926043445.GB2524@linux.vnet.ibm.com> <20120926081501.GA28485@localhost> <20120926164543.GD2467@linux.vnet.ibm.com> <20120927025400.GA11434@localhost> <20120927042849.GA6556@linux.vnet.ibm.com> <20120927044044.GA22753@localhost> <20120928033511.GB2480@linux.vnet.ibm.com> <506828BF.9050409@redhat.com> <20120930112308.GA18839@localhost> <50682DDE.7010002@redhat.com> <20120930115937.GA21989@localhost>
-In-Reply-To: <20120930115937.GA21989@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100823-5406-0000-0000-000000EBE8F7
+	id S1753471Ab2JHXwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 19:52:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:36293 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2JHXw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 19:52:28 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Eric Dumazet <edumazet@google.com>
+cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Maxime Bizon <mbizon@freebox.fr>,
+        "David S. Miller" <davem@davemloft.net>, linuxppc-dev@ozlabs.org
+Subject: net: fix typo in freescale/ucc_geth.c
+In-reply-to: <20121008173653.1d17895964980c98af59c8ea@canb.auug.org.au>
+References: <20121008173653.1d17895964980c98af59c8ea@canb.auug.org.au>
+Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
+   message dated "Mon, 08 Oct 2012 17:36:53 +1100."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Tue, 09 Oct 2012 10:52:25 +1100
+Message-ID: <23452.1349740345@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2012 04:59 AM, Fengguang Wu wrote:
-> On Sun, Sep 30, 2012 at 01:32:46PM +0200, Avi Kivity wrote:
->> On 09/30/2012 01:23 PM, Fengguang Wu wrote:
->>> On Sun, Sep 30, 2012 at 01:10:55PM +0200, Avi Kivity wrote:
->>>> On 09/28/2012 05:35 AM, Paul E. McKenney wrote:
->>>>> On Thu, Sep 27, 2012 at 12:40:44PM +0800, Fengguang Wu wrote:
->>>>>> On Wed, Sep 26, 2012 at 09:28:50PM -0700, Paul E. McKenney wrote:
->>>>>>> On Thu, Sep 27, 2012 at 10:54:00AM +0800, Fengguang Wu wrote:
->>>>>>>> On Wed, Sep 26, 2012 at 09:45:43AM -0700, Paul E. McKenney wrote:
->>>>>>>>> On Wed, Sep 26, 2012 at 04:15:01PM +0800, Fengguang Wu wrote:
->>>>> [ . . . ]
->>>>>
->>>>>>>>> But could you also please send your .config file and a description of
->>>>>>>> .config attached.
->>>>>>>>
->>>>>>>>> the workload you are running?
->>>>>>>> It's basically the below commands. The exact initrd is not relevant in
->>>>>>>> this case because it's a boot time warning before user space is
->>>>>>>> started. The stalls roughly happen 1 time on every 10 boots.
->>>>>>> Yow!!!
->>>>>>>
->>>>>>> You have severe cross-CPU time-synchronization problems.  See for
->>>>>>> example the first dmesg, with the relevant part extracted right here.
->>>>>>> One CPU believes that it is about 37 seconds past boot, and the other
->>>>>>> CPU beleives that it is about 137 seconds past boot.  Given that large
->>>>>>> of a time difference, an RCU CPU stall warning is expected behavior.
->>>>>> Good spot! Yeah I noticed that huge timestamp gap, however didn't take
->>>>>> it seriously enough..
->>>>>>
->>>>>>> Get your two CPUs in agreement about what time it is, and I bet that
->>>>>>> the CPU stall warnings will go away.
->>>>>> Possibly KVM related? Because the warnings show up in many test boxes
->>>>>> running KVM and so is not likely some hardware specific issue.
->>>>> I vaguely recall seeing something recently.  But let's ask the KVM and
->>>>> timekeeping guys.
->>>> >From the logs it looks like hpet (why not kvmclock?) is used for the
->>>> clock, it should not generate such drifts since it is a global clock.
->>>> Can you verify current_clocksource on a boot that actually failed (in
->>>> case the clocksource is switched during runtime)?
->>> I've checked out the dmesg that's cited by Paul, attached. Yes it
->>> contains lines
->>>
->>> [    4.970051] Switching to clocksource hpet
->>>
->>> and then
->>>
->>> [    7.250353] Switching to clocksource tsc
->>>
->>> And there is no kvm-clock lines. Oh well for this particular kernel:
->>>
->> Ah, tsc will certainly break on kvm if the hardware doesn't provide a
->> constant tsc source.  I'm surprised the guest kernel didn't detect it
->> and switch back to hpet though.
-> Thanks, it's good to know the root cause. All the dmesgs show the same hpet+tsc
-> switching pattern (and never switch back):
->
-> $ grep Switching dmesg-kvm_bisect2-inn-*21
-> dmesg-kvm_bisect2-inn-41931-2012-09-27-10-37-51-3.6.0-rc7-bisect2-00078-g593d100-21:[    4.111415] Switching to clocksource hpet
-> dmesg-kvm_bisect2-inn-41931-2012-09-27-10-37-51-3.6.0-rc7-bisect2-00078-g593d100-21:[    6.550098] Switching to clocksource tsc
+The following patch: 
+  acb600d net: remove skb recycling
+added dev_free_skb() to drivers/net/ethernet/freescale/ucc_geth.c
 
-Is this still an open issue? Fengguang's mail sounds like its resolved, 
-but I'm not sure it is.
+This is a typo and should be dev_kfree_skb().  This fixes this.
 
-The switching from HPET -> TSC  I believe is expected, as the refined 
-calibration will delay the TSC from being registered for a few seconds.  
-However, its unclear why the TSC, if it is faulty, isn't being caught 
-and demoted by the clocksource watchdog.
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+---
+This hit as a compile error in next-20121008 with mpc85xx_defconfig.
 
-I'm also curious why this originally bisected down to 
-06ae115a1d551cd952d8  (when using the kvm clock) if it was more of a 
-hardware issue. And in those logs, I don't see the printk time-stamp 
-inconsistencies that were alluded to in this thread.
-
-Fengguang: Is this still reproducible? Do you have any details (dmesg) 
-about host system as well?
-
-thanks
--john
-
+diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
+index dfa0aaa..0a70bb5 100644
+--- a/drivers/net/ethernet/freescale/ucc_geth.c
++++ b/drivers/net/ethernet/freescale/ucc_geth.c
+@@ -3268,7 +3268,7 @@ static int ucc_geth_rx(struct ucc_geth_private *ugeth, u8 rxQ, int rx_work_limit
+ 			if (netif_msg_rx_err(ugeth))
+ 				ugeth_err("%s, %d: ERROR!!! skb - 0x%08x",
+ 					   __func__, __LINE__, (u32) skb);
+-			dev_free_skb(skb);
++			dev_kfree_skb(skb);
+ 
+ 			ugeth->rx_skbuff[rxQ][ugeth->skb_currx[rxQ]] = NULL;
+ 			dev->stats.rx_dropped++;
