@@ -1,57 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2JHPRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:17:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43399 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab2JHPR2 (ORCPT
+	id S1753947Ab2JHPU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:20:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53766 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab2JHPUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:17:28 -0400
+	Mon, 8 Oct 2012 11:20:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] asm-generic changes for 3.7
+Date: Mon, 8 Oct 2012 15:20:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
-	<1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
-Date: Mon, 8 Oct 2012 21:17:27 +0600
-Message-ID: <CACx33ghsnYz0VNwEbhuyn7ZgrtamHfrTKHR4E0b9Q+LpahcDXw@mail.gmail.com>
-Subject: Re: boot failure on i7-3317u in Samsung 900x3c
-From: Mike Bakhterev <mike.bakhterev@gmail.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210081520.09942.arnd@arndb.de>
+X-Provags-ID: V02:K0:iNwgfWTiiY75ijsqvLrkENfcUUnsq4ejpTSgtX27ou7
+ SRRiv9DouMW9l8qMQ3bnMQKJ0yw2F5tzg8Zou/nvu3Ha+gQKfh
+ kBW5hh64t2GQrLijcYf3RcafGrpKeJU17MBEpgthaOVsrEOHal
+ IIjOWaG1u8pG+Cngw4NCT07mobBEN1mygMSSFMwXZY8Aik3o5Q
+ 314iHMP3Sni0TnQRKrRScSk2KV59hcoSla/LhV4bYxIPx6xaMx
+ axXQ1/sdFuZbncRQJoSgK241qHpZ+U9ReCEhUoBvGj4RlgVgcX
+ vcMCevuuylvmZTYbBwFTVVXwGjDsIa8XEkFf2T+OwD5o4m22CY
+ KXrI118nm/7ij2x/U/kA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 8, 2012 at 4:09 PM, Matt Fleming <matt@console-pimps.org> wrote:
->
-> We've seen things like this before on Samsung laptops,
->
->         https://bugzilla.kernel.org/show_bug.cgi?id=47121
->
-> We attributed it to a buggy UEFI implementation.
->
+The following changes since commit f3dfd599af993385b40fc7a1c947afc12729bc4d:
 
-Thanks for the link. But what kind of bug this could be? And could it
-be worked around? How can i help?
+  UAPI: Fix conditional header installation handling (notably kvm_para.h on m68k) (2012-10-04 18:16:47 +0100)
 
-> So both Windows 7 and 8 boot successfully on your new laptop, but every
-> OS failed with the *same* MCE error on your first? That is interesting.
->
+are available in the git repository at:
 
-No. Windows-es didn't report any errors. The machine just broke
-someday when Windows 8 booted. Different Linux kernels fail with the
-same MCE. The same MCE rises sometimes (frequently, but not always)
-when i'm trying to write something to /sys entry for keyboard
-backlight or to rfkill bluetooth phy.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic.git tags/asm-generic
 
-> Does anyone have a clue how to diagnose this further? I still think it's
-> a buggy UEFI implementation, especially since it ships with a CSM. Is it
-> possible that these MCE errors are non-fatal on Win 7/8?
->
+for you to fetch changes up to c37d6154c0b9163c27e53cc1d0be3867b4abd760:
 
-Are there any info on how to decode this MCE code? It is not covered
-in Intel's manuals. Hard to reason without any knowledge.
+  Merge branch 'disintegrate-asm-generic' of git://git.infradead.org/users/dhowells/linux-headers into asm-generic (2012-10-04 22:57:51 +0200)
 
-- MB, respectfully
+----------------------------------------------------------------
+
+This has three changes for asm-generic that did not really fit into any
+other branch as normal asm-generic changes do. One is a fix for a
+build warning, the other two are more interesting:
+
+* A patch from Mark Brown to allow using the common clock infrastructure
+on all architectures, so we can use the clock API in architecture
+independent device drivers.
+
+* The UAPI split patches from David Howells for the asm-generic files.
+There are other architecture specific series that are going through
+the arch maintainer tree and that depend on this one.
+
+There may be a few small merge conflicts between Mark's patch and
+the following arch header file split patches. In each case the solution
+will be to keep the new "generic-y += clkdev.h" line, even if it
+ends up being the only line in the Kbuild file.
+
+----------------------------------------------------------------
+Arnd Bergmann (2):
+      asm-generic: xor: mark static functions as __maybe_unused
+      Merge branch 'disintegrate-asm-generic' of git://git.infradead.org/users/dhowells/linux-headers into asm-generic
+
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/asm-generic
+
+Mark Brown (1):
+      asm-generic: Add default clkdev.h
+
+ arch/alpha/include/asm/Kbuild                |    2 +
+ arch/avr32/include/asm/Kbuild                |    2 +
+ arch/cris/include/asm/Kbuild                 |    2 +
+ arch/frv/include/asm/Kbuild                  |    1 +
+ arch/h8300/include/asm/Kbuild                |    2 +
+ arch/hexagon/include/asm/Kbuild              |    1 +
+ arch/ia64/include/asm/Kbuild                 |    1 +
+ arch/m32r/include/asm/Kbuild                 |    2 +
+ arch/m68k/include/asm/Kbuild                 |    1 +
+ arch/microblaze/include/asm/Kbuild           |    1 +
+ arch/mn10300/include/asm/Kbuild              |    2 +
+ arch/openrisc/include/asm/Kbuild             |    1 +
+ arch/parisc/include/asm/Kbuild               |    1 +
+ arch/powerpc/include/asm/Kbuild              |    1 +
+ arch/s390/include/asm/Kbuild                 |    2 +
+ arch/score/include/asm/Kbuild                |    2 +
+ arch/sparc/include/asm/Kbuild                |    1 +
+ arch/tile/include/asm/Kbuild                 |    1 +
+ arch/um/include/asm/Kbuild                   |    2 +-
+ arch/unicore32/include/asm/Kbuild            |    1 +
+ arch/x86/include/asm/Kbuild                  |    6 +
+ arch/xtensa/include/asm/Kbuild               |    2 +
+ include/asm-generic/Kbuild                   |   35 -
+ include/asm-generic/bitsperlong.h            |   13 +-
+ include/asm-generic/clkdev.h                 |   28 +
+ include/asm-generic/int-l64.h                |   26 +-
+ include/asm-generic/int-ll64.h               |   31 +-
+ include/asm-generic/ioctl.h                  |   95 +--
+ include/asm-generic/kvm_para.h               |    5 +-
+ include/asm-generic/param.h                  |   17 +-
+ include/asm-generic/resource.h               |   66 +-
+ include/asm-generic/siginfo.h                |  297 +--------
+ include/asm-generic/signal.h                 |  117 +---
+ include/asm-generic/statfs.h                 |   81 +--
+ include/asm-generic/termios.h                |   49 +-
+ include/asm-generic/unistd.h                 |  907 +-------------------------
+ include/asm-generic/xor.h                    |    4 +-
+ include/uapi/asm-generic/Kbuild              |   35 +
+ include/{ => uapi}/asm-generic/auxvec.h      |    0
+ include/uapi/asm-generic/bitsperlong.h       |   15 +
+ include/{ => uapi}/asm-generic/errno-base.h  |    0
+ include/{ => uapi}/asm-generic/errno.h       |    0
+ include/{ => uapi}/asm-generic/fcntl.h       |    0
+ include/uapi/asm-generic/int-l64.h           |   34 +
+ include/uapi/asm-generic/int-ll64.h          |   39 ++
+ include/uapi/asm-generic/ioctl.h             |   98 +++
+ include/{ => uapi}/asm-generic/ioctls.h      |    0
+ include/{ => uapi}/asm-generic/ipcbuf.h      |    0
+ include/{ => uapi}/asm-generic/mman-common.h |    0
+ include/{ => uapi}/asm-generic/mman.h        |    0
+ include/{ => uapi}/asm-generic/msgbuf.h      |    0
+ include/uapi/asm-generic/param.h             |   19 +
+ include/{ => uapi}/asm-generic/poll.h        |    0
+ include/{ => uapi}/asm-generic/posix_types.h |    0
+ include/uapi/asm-generic/resource.h          |   68 ++
+ include/{ => uapi}/asm-generic/sembuf.h      |    0
+ include/{ => uapi}/asm-generic/setup.h       |    0
+ include/{ => uapi}/asm-generic/shmbuf.h      |    0
+ include/{ => uapi}/asm-generic/shmparam.h    |    0
+ include/uapi/asm-generic/siginfo.h           |  298 +++++++++
+ include/{ => uapi}/asm-generic/signal-defs.h |    0
+ include/uapi/asm-generic/signal.h            |  123 ++++
+ include/{ => uapi}/asm-generic/socket.h      |    0
+ include/{ => uapi}/asm-generic/sockios.h     |    0
+ include/{ => uapi}/asm-generic/stat.h        |    0
+ include/uapi/asm-generic/statfs.h            |   83 +++
+ include/{ => uapi}/asm-generic/swab.h        |    0
+ include/{ => uapi}/asm-generic/termbits.h    |    0
+ include/uapi/asm-generic/termios.h           |   50 ++
+ include/{ => uapi}/asm-generic/types.h       |    0
+ include/{ => uapi}/asm-generic/ucontext.h    |    0
+ include/uapi/asm-generic/unistd.h            |  902 +++++++++++++++++++++++++
+ security/apparmor/Makefile                   |    2 +-
+ 73 files changed, 1844 insertions(+), 1730 deletions(-)
+ create mode 100644 include/asm-generic/clkdev.h
+ rename include/{ => uapi}/asm-generic/auxvec.h (100%)
+ create mode 100644 include/uapi/asm-generic/bitsperlong.h
+ rename include/{ => uapi}/asm-generic/errno-base.h (100%)
+ rename include/{ => uapi}/asm-generic/errno.h (100%)
+ rename include/{ => uapi}/asm-generic/fcntl.h (100%)
+ create mode 100644 include/uapi/asm-generic/int-l64.h
+ create mode 100644 include/uapi/asm-generic/int-ll64.h
+ create mode 100644 include/uapi/asm-generic/ioctl.h
+ rename include/{ => uapi}/asm-generic/ioctls.h (100%)
+ rename include/{ => uapi}/asm-generic/ipcbuf.h (100%)
+ create mode 100644 include/uapi/asm-generic/kvm_para.h
+ rename include/{ => uapi}/asm-generic/mman-common.h (100%)
+ rename include/{ => uapi}/asm-generic/mman.h (100%)
+ rename include/{ => uapi}/asm-generic/msgbuf.h (100%)
+ create mode 100644 include/uapi/asm-generic/param.h
+ rename include/{ => uapi}/asm-generic/poll.h (100%)
+ rename include/{ => uapi}/asm-generic/posix_types.h (100%)
+ create mode 100644 include/uapi/asm-generic/resource.h
+ rename include/{ => uapi}/asm-generic/sembuf.h (100%)
+ rename include/{ => uapi}/asm-generic/setup.h (100%)
+ rename include/{ => uapi}/asm-generic/shmbuf.h (100%)
+ rename include/{ => uapi}/asm-generic/shmparam.h (100%)
+ create mode 100644 include/uapi/asm-generic/siginfo.h
+ rename include/{ => uapi}/asm-generic/signal-defs.h (100%)
+ create mode 100644 include/uapi/asm-generic/signal.h
+ rename include/{ => uapi}/asm-generic/socket.h (100%)
+ rename include/{ => uapi}/asm-generic/sockios.h (100%)
+ rename include/{ => uapi}/asm-generic/stat.h (100%)
+ create mode 100644 include/uapi/asm-generic/statfs.h
+ rename include/{ => uapi}/asm-generic/swab.h (100%)
+ rename include/{ => uapi}/asm-generic/termbits.h (100%)
+ create mode 100644 include/uapi/asm-generic/termios.h
+ rename include/{ => uapi}/asm-generic/types.h (100%)
+ rename include/{ => uapi}/asm-generic/ucontext.h (100%)
+ create mode 100644 include/uapi/asm-generic/unistd.h
