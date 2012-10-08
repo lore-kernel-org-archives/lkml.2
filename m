@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab2JHPRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:17:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60402 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab2JHPRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:17:02 -0400
-Date: Mon, 8 Oct 2012 16:16:56 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Mike Yoknis <mike.yoknis@hp.com>
-Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
-        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
-Message-ID: <20121008151656.GM29125@suse.de>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+	id S1753969Ab2JHPRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:17:31 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43399 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab2JHPR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 11:17:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <CACx33gg6Hmh8E0Mv5TLdi5ufZcppHMws8XAdfaThF_Y2QBb5vA@mail.gmail.com>
+	<1349690974.15966.113.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Mon, 8 Oct 2012 21:17:27 +0600
+Message-ID: <CACx33ghsnYz0VNwEbhuyn7ZgrtamHfrTKHR4E0b9Q+LpahcDXw@mail.gmail.com>
+Subject: Re: boot failure on i7-3317u in Samsung 900x3c
+From: Mike Bakhterev <mike.bakhterev@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi <linux-efi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
-> memmap_init_zone() loops through every Page Frame Number (pfn),
-> including pfn values that are within the gaps between existing
-> memory sections.  The unneeded looping will become a boot
-> performance issue when machines configure larger memory ranges
-> that will contain larger and more numerous gaps.
-> 
-> The code will skip across invalid sections to reduce the
-> number of loops executed.
-> 
-> Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+On Mon, Oct 8, 2012 at 4:09 PM, Matt Fleming <matt@console-pimps.org> wrote:
+>
+> We've seen things like this before on Samsung laptops,
+>
+>         https://bugzilla.kernel.org/show_bug.cgi?id=47121
+>
+> We attributed it to a buggy UEFI implementation.
+>
 
-This only helps SPARSEMEM and changes more headers than should be
-necessary. It would have been easier to do something simple like
+Thanks for the link. But what kind of bug this could be? And could it
+be worked around? How can i help?
 
-if (!early_pfn_valid(pfn)) {
-	pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
-	continue;
-}
+> So both Windows 7 and 8 boot successfully on your new laptop, but every
+> OS failed with the *same* MCE error on your first? That is interesting.
+>
 
-because that would obey the expectation that pages within a
-MAX_ORDER_NR_PAGES-aligned range are all valid or all invalid (ARM is the
-exception that breaks this rule). It would be less efficient on
-SPARSEMEM than what you're trying to merge but I do not see the need for
-the additional complexity unless you can show it makes a big difference
-to boot times.
+No. Windows-es didn't report any errors. The machine just broke
+someday when Windows 8 booted. Different Linux kernels fail with the
+same MCE. The same MCE rises sometimes (frequently, but not always)
+when i'm trying to write something to /sys entry for keyboard
+backlight or to rfkill bluetooth phy.
 
--- 
-Mel Gorman
-SUSE Labs
+> Does anyone have a clue how to diagnose this further? I still think it's
+> a buggy UEFI implementation, especially since it ships with a CSM. Is it
+> possible that these MCE errors are non-fatal on Win 7/8?
+>
+
+Are there any info on how to decode this MCE code? It is not covered
+in Intel's manuals. Hard to reason without any knowledge.
+
+- MB, respectfully
