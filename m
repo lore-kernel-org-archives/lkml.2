@@ -1,251 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab2JHICx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:02:53 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60202 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab2JHICt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:02:49 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-e6-507288a7e6aa
-Date: Mon, 8 Oct 2012 17:06:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20121008080654.GD13817@bbox>
-References: <20120928103815.GA15219@avionic-0098.mockup.avionic-design.de>
- <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
- <20120928110712.GB29125@suse.de>
- <20120928113924.GA25342@avionic-0098.mockup.avionic-design.de>
- <20120928124332.GC29125@suse.de>
- <20121001142428.GA2798@avionic-0098.mockup.avionic-design.de>
- <20121002124814.GA31316@avionic-0098.mockup.avionic-design.de>
- <20121002144135.GO29125@suse.de>
- <20121002150307.GA1161@avionic-0098.mockup.avionic-design.de>
- <20121002151217.GP29125@suse.de>
+	id S1753067Ab2JHIKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:10:00 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36125 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab2JHIJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 04:09:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Huang Ying <ying.huang@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        Jean Pihet <j-pihet@ti.com>, linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 7/7] PM / ACPI: Take device PM QoS flags into account
+Date: Mon, 08 Oct 2012 10:09:26 +0200
+Message-ID: <3734460.X8hLyTaasd@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1413438.1MkXj8vjQK@vostro.rjw.lan>
+References: <201209282351.10663.rjw@sisk.pl> <1413438.1MkXj8vjQK@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002151217.GP29125@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On Tue, Oct 02, 2012 at 04:12:17PM +0100, Mel Gorman wrote:
-> On Tue, Oct 02, 2012 at 05:03:07PM +0200, Thierry Reding wrote:
-> > On Tue, Oct 02, 2012 at 03:41:35PM +0100, Mel Gorman wrote:
-> > > On Tue, Oct 02, 2012 at 02:48:14PM +0200, Thierry Reding wrote:
-> > > > > So this really isn't all that new, but I just wanted to confirm my
-> > > > > results from last week. We'll see if bisection shows up something
-> > > > > interesting.
-> > > > 
-> > > > I just finished bisecting this and git reports:
-> > > > 
-> > > > 	3750280f8bd0ed01753a72542756a8c82ab27933 is the first bad commit
-> > > > 
-> > > > I'm attaching the complete bisection log and a diff of all the changes
-> > > > applied on top of the bad commit to make it compile and run on my board.
-> > > > Most of the patch is probably not important, though. There are two hunks
-> > > > which have the pageblock changes I already posted an two other hunks
-> > > > with the patch you posted earlier.
-> > > > 
-> > > > I hope this helps. If you want me to run any other tests, please let me
-> > > > know.
-> > > > 
-> > > 
-> > > Can you test with this on top please?
-> > 
-> > That doesn't build on top of the bad commit. Or is it supposed to go on
-> > top of next-20120926?
-> > 
-> 
-> It doesn't build or do you mean it doesn't apply? Assuming the problem
-> was that it didn't apply then try this one. It applies on top of
-> next-20120928 which is the closest tag I have to next-20120926.
-> 
-> ---8<---
-> mm: compaction: Cache if a pageblock was scanned and no pages were isolated -fix3
-> 
-> CMA requires that the PG_migrate_skip hint be skipped but it was only
-> skipping it when isolating pages for migration, not for free. Ensure
-> cc->isolate_skip_hint gets passed in both cases.
-> 
-> This is a fix for
-> mm-compaction-cache-if-a-pageblock-was-scanned-and-no-pages-were-isolated-fix.patch
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Minchan Kim <minchan@kernel.org>
+Make ACPI power management routines and PCI power management
+routines depending on ACPI take device PM QoS flags into account
+when deciding what power state to put the device into.
 
-But please resend below compile error fixing.
+In particular, after this change acpi_pm_device_sleep_state() will
+not return ACPI_STATE_D3_COLD as the deepest available low-power
+state if PM_QOS_FLAG_NO_POWER_OFF is requested for the device and it
+will not require remote wakeup to work for the device in the returned
+low-power state if there is at least one PM QoS flags request for the
+device, but PM_QOS_FLAG_REMOTE_WAKEUP is not requested for it.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 136debd..ee461b8 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -372,22 +372,14 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
-  * a free page).
-  */
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn)
- {
- 	unsigned long isolated, pfn, block_end_pfn;
--	struct zone *zone = NULL;
- 	LIST_HEAD(freelist);
+Accordingly, acpi_pci_set_power_state() will refuse to put the
+device into D3cold if PM_QOS_FLAG_NO_POWER_OFF is requested for it.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Jean Pihet <j-pihet@ti.com>
+---
+ drivers/acpi/sleep.c   |   21 +++++++++++++++++----
+ drivers/pci/pci-acpi.c |    8 +++++++-
+ 2 files changed, 24 insertions(+), 5 deletions(-)
+
+Index: linux/drivers/pci/pci-acpi.c
+===================================================================
+--- linux.orig/drivers/pci/pci-acpi.c
++++ linux/drivers/pci/pci-acpi.c
+@@ -17,6 +17,7 @@
  
--	/* cc needed for isolate_freepages_block to acquire zone->lock */
--	struct compact_control cc = {
--		.sync = true,
--	};
--
--	if (pfn_valid(start_pfn))
--		cc.zone = zone = page_zone(pfn_to_page(start_pfn));
--
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
--		if (!pfn_valid(pfn) || zone != page_zone(pfn_to_page(pfn)))
-+		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
- 			break;
+ #include <linux/pci-acpi.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pm_qos.h>
+ #include "pci.h"
  
- 		/*
-@@ -397,7 +389,7 @@ isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn)
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
+ static DEFINE_MUTEX(pci_acpi_pm_notify_mtx);
+@@ -257,11 +258,16 @@ static int acpi_pci_set_power_state(stru
+ 		return -ENODEV;
  
--		isolated = isolate_freepages_block(&cc, pfn, block_end_pfn,
-+		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
- 						   &freelist, true);
- 
- 		/*
-diff --git a/mm/internal.h b/mm/internal.h
-index 9d5d276..a3ce781 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -135,7 +135,8 @@ struct compact_control {
- };
- 
- unsigned long
--isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
-+isolate_freepages_range(struct compact_control *cc,
-+			unsigned long start_pfn, unsigned long end_pfn);
- unsigned long
- isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8e1be1c..d66efcb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5669,7 +5669,8 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
- }
- 
- /* [start, end) must belong to a single zone. */
--static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-+static int __alloc_contig_migrate_range(struct compact_control *cc,
-+					unsigned long start, unsigned long end)
- {
- 	/* This function is based on compact_zone() from compaction.c. */
- 	unsigned long nr_reclaimed;
-@@ -5677,26 +5678,17 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 	unsigned int tries = 0;
- 	int ret = 0;
- 
--	struct compact_control cc = {
--		.nr_migratepages = 0,
--		.order = -1,
--		.zone = page_zone(pfn_to_page(start)),
--		.sync = true,
--		.ignore_skip_hint = true,
--	};
--	INIT_LIST_HEAD(&cc.migratepages);
--
- 	migrate_prep_local();
- 
--	while (pfn < end || !list_empty(&cc.migratepages)) {
-+	while (pfn < end || !list_empty(&cc->migratepages)) {
- 		if (fatal_signal_pending(current)) {
- 			ret = -EINTR;
- 			break;
- 		}
- 
--		if (list_empty(&cc.migratepages)) {
--			cc.nr_migratepages = 0;
--			pfn = isolate_migratepages_range(cc.zone, &cc,
-+		if (list_empty(&cc->migratepages)) {
-+			cc->nr_migratepages = 0;
-+			pfn = isolate_migratepages_range(cc->zone, cc,
- 							 pfn, end, true);
- 			if (!pfn) {
- 				ret = -EINTR;
-@@ -5708,16 +5700,16 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
- 			break;
- 		}
- 
--		nr_reclaimed = reclaim_clean_pages_from_list(cc.zone,
--							&cc.migratepages);
--		cc.nr_migratepages -= nr_reclaimed;
-+		nr_reclaimed = reclaim_clean_pages_from_list(cc->zone,
-+							&cc->migratepages);
-+		cc->nr_migratepages -= nr_reclaimed;
- 
--		ret = migrate_pages(&cc.migratepages,
-+		ret = migrate_pages(&cc->migratepages,
- 				    alloc_migrate_target,
- 				    0, false, MIGRATE_SYNC);
+ 	switch (state) {
++	case PCI_D3cold:
++		if (dev_pm_qos_flags(&dev->dev, PM_QOS_FLAG_NO_POWER_OFF) ==
++				PM_QOS_FLAGS_ALL) {
++			error = -EBUSY;
++			break;
++		}
+ 	case PCI_D0:
+ 	case PCI_D1:
+ 	case PCI_D2:
+ 	case PCI_D3hot:
+-	case PCI_D3cold:
+ 		error = acpi_bus_set_power(handle, state_conv[state]);
  	}
  
--	putback_lru_pages(&cc.migratepages);
-+	putback_lru_pages(&cc->migratepages);
- 	return ret > 0 ? 0 : ret;
- }
+Index: linux/drivers/acpi/sleep.c
+===================================================================
+--- linux.orig/drivers/acpi/sleep.c
++++ linux/drivers/acpi/sleep.c
+@@ -19,6 +19,7 @@
+ #include <linux/acpi.h>
+ #include <linux/module.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pm_qos.h>
  
-@@ -5796,6 +5788,15 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	unsigned long outer_start, outer_end;
- 	int ret = 0, order;
+ #include <asm/io.h>
  
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start)),
-+		.sync = true,
-+		.ignore_skip_hint = true,
-+	};
-+	INIT_LIST_HEAD(&cc.migratepages);
+@@ -711,6 +712,7 @@ int acpi_pm_device_sleep_state(struct de
+ 	struct acpi_device *adev;
+ 	char acpi_method[] = "_SxD";
+ 	unsigned long long d_min, d_max;
++	bool wakeup = false;
+ 
+ 	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
+ 		return -EINVAL;
+@@ -718,6 +720,13 @@ int acpi_pm_device_sleep_state(struct de
+ 		printk(KERN_DEBUG "ACPI handle has no context!\n");
+ 		return -ENODEV;
+ 	}
++	if (d_max_in > ACPI_STATE_D3_HOT) {
++		enum pm_qos_flags_status stat;
 +
++		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
++		if (stat == PM_QOS_FLAGS_ALL)
++			d_max_in = ACPI_STATE_D3_HOT;
++	}
+ 
+ 	acpi_method[2] = '0' + acpi_target_sleep_state;
  	/*
- 	 * What we do here is we mark all pageblocks in range as
- 	 * MIGRATE_ISOLATE.  Because pageblock and max order pages may
-@@ -5825,7 +5826,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	if (ret)
- 		goto done;
+@@ -737,8 +746,14 @@ int acpi_pm_device_sleep_state(struct de
+ 	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
+ 	 * provided -- that's our fault recovery, we ignore retval.
+ 	 */
+-	if (acpi_target_sleep_state > ACPI_STATE_S0)
++	if (acpi_target_sleep_state > ACPI_STATE_S0) {
+ 		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
++		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
++			&& adev->wakeup.sleep_state >= acpi_target_sleep_state;
++	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
++			PM_QOS_FLAGS_NONE) {
++		wakeup = adev->wakeup.flags.valid;
++	}
  
--	ret = __alloc_contig_migrate_range(start, end);
-+	ret = __alloc_contig_migrate_range(&cc, start, end);
- 	if (ret)
- 		goto done;
+ 	/*
+ 	 * If _PRW says we can wake up the system from the target sleep state,
+@@ -747,9 +762,7 @@ int acpi_pm_device_sleep_state(struct de
+ 	 * (ACPI 3.x), it should return the maximum (lowest power) D-state that
+ 	 * can wake the system.  _S0W may be valid, too.
+ 	 */
+-	if (acpi_target_sleep_state == ACPI_STATE_S0 ||
+-	    (device_may_wakeup(dev) && adev->wakeup.flags.valid &&
+-	     adev->wakeup.sleep_state >= acpi_target_sleep_state)) {
++	if (wakeup) {
+ 		acpi_status status;
  
-@@ -5874,7 +5875,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	__reclaim_pages(zone, GFP_HIGHUSER_MOVABLE, end-start);
- 
- 	/* Grab isolated pages from freelists. */
--	outer_end = isolate_freepages_range(outer_start, end);
-+	outer_end = isolate_freepages_range(&cc, outer_start, end);
- 	if (!outer_end) {
- 		ret = -EBUSY;
- 		goto done;
+ 		acpi_method[3] = 'W';
 
--- 
-Kind regards,
-Minchan Kim
