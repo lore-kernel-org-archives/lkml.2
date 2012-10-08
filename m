@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311Ab2JHMDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 08:03:03 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40911 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab2JHMDA (ORCPT
+	id S1751391Ab2JHMHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 08:07:43 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:49431 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab2JHMHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 08:03:00 -0400
-Date: Mon, 8 Oct 2012 08:03:44 -0400
-From: Matt Porter <mporter@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 0/7] uio_pruss cleanup and platform support
-Message-ID: <20121008120344.GQ11149@beef>
-References: <1349456686-22736-1-git-send-email-mporter@ti.com>
- <5072B190.1060200@ti.com>
+	Mon, 8 Oct 2012 08:07:40 -0400
+X-IronPort-AV: E=Sophos;i="4.80,553,1344211200"; 
+   d="scan'208";a="210578340"
+From: David Vrabel <david.vrabel@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: x86@kernel.org, David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCHv2] x86: allow tracing of functions in arch/x86/kernel/rtc.c
+Date: Mon, 8 Oct 2012 13:07:30 +0100
+Message-ID: <1349698050-6560-1-git-send-email-david.vrabel@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1349435895-21269-1-git-send-email-david.vrabel@citrix.com>
+References: <1349435895-21269-1-git-send-email-david.vrabel@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5072B190.1060200@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 04:27:20PM +0530, Sekhar Nori wrote:
-> On 10/5/2012 10:34 PM, Matt Porter wrote:
-> 
-> > This series enables uio_pruss on DA850 and removes use of the
-> > private SRAM API by the driver. The driver previously was not
-> > enabled by any platform and the private SRAM API was accessing
-> > an invalid SRAM bank.
-> > 
-> > It is regression tested on AM180x EVM with suspend/resume due
-> > to the new use of the shared SRAM for both PM and PRUSS. The
-> > uio_pruss driver is tested on the same platform using the
-> > PRU_memAccessPRUDataRam and PRU_memAccessL3andDDR examples from
-> > the PRU userspace tools available from http://www.ti.com/tool/sprc940
-> 
-> I applied patches 2/7, 3/7 and 6/7 of this series for v3.8. I have some
-> comments on the board patch. Rest of the patches depend on acceptance of
-> 1/7 so I will take them only after that is accepted.
+Move native_read_tsc() to tsc.c to allow profiling to be re-enabled
+for rtc.c.
 
-Ok, thanks...and I'll post a v5 of 5/7 and 7/7 and those should be ready
-when 1/7 is accepted.
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+---
+Changes in v2:
+- re-add EXPORT_SYMBOL().
+---
+ arch/x86/kernel/Makefile |    1 -
+ arch/x86/kernel/rtc.c    |    6 ------
+ arch/x86/kernel/tsc.c    |    6 ++++++
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
--Matt
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..19dd3a6 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -9,7 +9,6 @@ CPPFLAGS_vmlinux.lds += -U$(UTS_MACHINE)
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not profile debug and lowlevel utilities
+ CFLAGS_REMOVE_tsc.o = -pg
+-CFLAGS_REMOVE_rtc.o = -pg
+ CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
+ CFLAGS_REMOVE_pvclock.o = -pg
+ CFLAGS_REMOVE_kvmclock.o = -pg
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index af6db6e..8ab7c62 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -195,12 +195,6 @@ void read_persistent_clock(struct timespec *ts)
+ 	ts->tv_nsec = 0;
+ }
+ 
+-unsigned long long native_read_tsc(void)
+-{
+-	return __native_read_tsc();
+-}
+-EXPORT_SYMBOL(native_read_tsc);
+-
+ 
+ static struct resource rtc_resources[] = {
+ 	[0] = {
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index cfa5d4f..06ccb50 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -77,6 +77,12 @@ unsigned long long
+ sched_clock(void) __attribute__((alias("native_sched_clock")));
+ #endif
+ 
++unsigned long long native_read_tsc(void)
++{
++	return __native_read_tsc();
++}
++EXPORT_SYMBOL(native_read_tsc);
++
+ int check_tsc_unstable(void)
+ {
+ 	return tsc_unstable;
+-- 
+1.7.2.5
+
