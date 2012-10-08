@@ -1,222 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab2JHNci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:32:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52993 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab2JHNcd convert rfc822-to-8bit (ORCPT
+	id S1751584Ab2JHNft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:35:49 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49833 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab2JHNfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:32:33 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
+	Mon, 8 Oct 2012 09:35:45 -0400
+Date: Mon, 8 Oct 2012 06:35:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: RE: [PATCH 1/2] pwm: pwm-tiecap: Add device-tree binding support
- for APWM driver
-Thread-Topic: [PATCH 1/2] pwm: pwm-tiecap: Add device-tree binding support
- for APWM driver
-Thread-Index: AQHNm9yobIMSc4CNQUWf2NRAW+lIrZelMnQAgAQMDBA=
-Date: Mon, 8 Oct 2012 13:31:19 +0000
-Deferred-Delivery: Mon, 8 Oct 2012 13:31:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9CA1E8@DBDE01.ent.ti.com>
-References: <1348658863-29428-1-git-send-email-avinashphilip@ti.com>
- <1348658863-29428-2-git-send-email-avinashphilip@ti.com>
- <20121002060014.GA4298@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121002060014.GA4298@avionic-0098.mockup.avionic-design.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+Message-ID: <20121008133539.GA15490@kroah.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+ <1349654386-18378-1-git-send-email-kys@microsoft.com>
+ <20121008004358.GA12342@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 11:30:14, Thierry Reding wrote:
-> On Wed, Sep 26, 2012 at 04:57:42PM +0530, Philip, Avinash wrote:
-> [...]
-> > +#include <linux/platform_data/ti-pwmss.h>
-> [...]
-> > +static struct pwmss_platform_data am33xx_data = {
-> > +	.has_configspace	= true,
-> > +};
+On Mon, Oct 08, 2012 at 03:35:50AM +0000, KY Srinivasan wrote:
 > 
-> This structure is defined in a public header. I don't see why it has to,
-> given that it's only used to associate some data with an of_device_id
-> entry below. Since AM33xx never had anything but OF support in the
-> mainline kernel I don't think we should add platform data.
-
-I will correct it. I was going through Sekhar's reply.
-
 > 
-> > +#ifdef CONFIG_OF
-> > +static const struct of_device_id ecap_of_match[] = {
-> > +	{
-> > +		.compatible	= "ti,am33xx-ecap",
-> > +		.data		= &am33xx_data,
-> > +	},
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, ecap_of_match);
-> > +#endif
-> > +
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Sunday, October 07, 2012 8:44 PM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> > apw@canonical.com; akpm@linux-foundation.org; andi@firstfloor.org
+> > Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+> > 
+> > On Sun, Oct 07, 2012 at 04:59:45PM -0700, K. Y. Srinivasan wrote:
+> > > The policy engine on the host expects the guest to report the
+> > > committed_as. Since this variable is not exported,
+> > > export this symbol.
+> > 
+> > Why are these symbols not needed by either Xen or KVM or vmware, which
+> > I think all support the same thing, right?
 > 
-> I don't quite see why we need to pass this platform data to the device
-> at all since there is no other variant anyway. I think this should only
-> be added if this turns out to be required at some point.
-> 
-> >  static int __devinit ecap_pwm_probe(struct platform_device *pdev)
-> >  {
-> >  	int ret;
-> >  	struct resource *r;
-> >  	struct clk *clk;
-> >  	struct ecap_pwm_chip *pc;
-> > +	struct pwmss_platform_data *pdata = pdev->dev.platform_data;
-> > +	const struct of_device_id *match;
-> > +	u16 regval;
-> > +	struct pinctrl *pinctrl;
-> > +
-> > +	match = of_match_device(of_match_ptr(ecap_of_match), &pdev->dev);
-> 
-> I've never seen of_match_ptr() used this way. Maybe you should think
-> about not #ifdef'ing OF specific code at all. That way ecap_of_match
-> will always exist and you could use the IS_ENABLED() macro to
-> conditionalize at compile time. The compiler will probably be clever
-> enough to optimize the ecap_of_match away if OF is not enabled.
+> The basic balloon driver does not need this symbol since the basic balloon driver
+> is not automatically driven by the host. On the Windows host we have a policy engine that
+> drives the balloon driver based on both guest level memory pressure that the guest
+> reports as well as other system level metrics the host maintains. We need this symbol to
+> drive the policy engine on the host.
 
-I will correct it.
+Ok, but you're going to have to get the -mm developers to agree that
+this is ok before I can accept it.
 
-> 
-> Given my comment earlier, since AM33xx is OF only you might just as well
-> add a depends on OF to this driver and things will become a lot easier.
+thanks,
 
-I will check & correct it.
-
-> 
-> > +
-> > +	if (match)
-> > +		pdata = (struct pwmss_platform_data *)match->data;
-> > +
-> > +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> > +	if (IS_ERR(pinctrl))
-> > +		dev_warn(&pdev->dev, "failed to configure pins from driver\n");
-> >  
-> >  	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-> >  	if (!pc) {
-> > @@ -211,6 +268,8 @@ static int __devinit ecap_pwm_probe(struct platform_device *pdev)
-> >  
-> >  	pc->chip.dev = &pdev->dev;
-> >  	pc->chip.ops = &ecap_pwm_ops;
-> > +	pc->chip.of_xlate = of_ecap_xlate;
-> > +	pc->chip.of_pwm_n_cells = PWM_CELL_SIZE;
-> >  	pc->chip.base = -1;
-> >  	pc->chip.npwm = 1;
-> >  
-> > @@ -231,13 +290,56 @@ static int __devinit ecap_pwm_probe(struct platform_device *pdev)
-> >  	}
-> >  
-> >  	pm_runtime_enable(&pdev->dev);
-> > +
-> > +	/*
-> > +	 * Some platform has extra PWM-subsystem common config space
-> > +	 * and requires special handling of clock gating.
-> > +	 */
-> > +	if (pdata && pdata->has_configspace) {
-> > +		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> > +		if (!r) {
-> > +			dev_err(&pdev->dev, "no memory resource defined\n");
-> > +			ret = -ENODEV;
-> > +			goto err_disable_clock;
-> > +		}
-> > +
-> > +		pc->config_base = devm_ioremap(&pdev->dev, r->start,
-> > +				resource_size(r));
-> > +		if (!pc->config_base) {
-> > +			dev_err(&pdev->dev, "failed to ioremap() registers\n");
-> > +			ret = -EADDRNOTAVAIL;
-> > +			goto err_disable_clock;
-> > +		}
-> 
-> Isn't this missing a request_mem_region()? I assume you don't do that
-> here because you need the same region in the EHRPWM driver, right?
-
-request_mem_region() is avoided as this region is shared across PWM
-sub modules ECAP & EHRPWM. 
-
-> This should be indication enough that the design is not right here.
-> I think we need a proper abstraction here. Can this not be done via
-> PM runtime support? If not, maybe this should be represented by
-> clock objects since the bit obviously enables a clock.
-
-It is not done as part of PM runtime as this is has nothing to
-do with clock tree of the SOC. The bits we were enabling here
-should consider as an enable of the individual sub module as
-part of IP integration. Hence we were handling these subsystem
-module enable in the driver itself.
-
-> 
-> > +
-> > +		/* Enable ECAP clock gating at PWM-subsystem common config */
-> > +		pm_runtime_get_sync(&pdev->dev);
-> > +		regval = readw(pc->config_base + PWMSS_CLKCONFIG);
-> > +		regval |= PWMSS_ECAP_CLK_EN;
-> > +		writew(regval, pc->config_base + PWMSS_CLKCONFIG);
-> > +		pm_runtime_put_sync(&pdev->dev);
-> > +	}
-> > +
-> >  	platform_set_drvdata(pdev, pc);
-> >  	return 0;
-> > +
-> > +err_disable_clock:
-> > +	pm_runtime_disable(&pdev->dev);
-> > +	return ret;
-> >  }
-> >  
-> >  static int __devexit ecap_pwm_remove(struct platform_device *pdev)
-> >  {
-> >  	struct ecap_pwm_chip *pc = platform_get_drvdata(pdev);
-> > +	u16 regval;
-> > +
-> > +	if (pc->config_base) {
-> > +		/* Disable ECAP clock gating at PWM-subsystem common config */
-> > +		pm_runtime_get_sync(&pdev->dev);
-> > +		regval = readw(pc->config_base + PWMSS_CLKCONFIG);
-> > +		regval &= ~PWMSS_ECAP_CLK_EN;
-> > +		writew(regval, pc->config_base + PWMSS_CLKCONFIG);
-> > +		pm_runtime_put_sync(&pdev->dev);
-> > +	}
-> >  
-> >  	pm_runtime_put_sync(&pdev->dev);
-> >  	pm_runtime_disable(&pdev->dev);
-> > @@ -247,6 +349,9 @@ static int __devexit ecap_pwm_remove(struct platform_device *pdev)
-> >  static struct platform_driver ecap_pwm_driver = {
-> >  	.driver = {
-> >  		.name = "ecap",
-> > +#ifdef CONFIG_OF
-> > +		.of_match_table = of_match_ptr(ecap_of_match),
-> > +#endif
-> 
-> If you use of_match_ptr() you don't need the additional #ifdef
-> CONFIG_OF. But as I already said I don't think you need this at all
-> anyway. You should really just depend on OF and be done with it.
-
-Ok I understood & will correct it.
-
-Thanks
-Avinash
-
-> 
-> Thierry
-> 
-
+greg k-h
