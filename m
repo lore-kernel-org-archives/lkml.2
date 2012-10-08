@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab2JHNRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:17:23 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:57245 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752664Ab2JHNRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:17:19 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: nsekhar@ti.com, gregkh@linuxfoundation.org
-Cc: Constantine Shulyupin <const@MakeLinux.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-Date: Mon,  8 Oct 2012 15:17:07 +0200
-Message-Id: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
+	id S1753384Ab2JHNOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:14:04 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:32952 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab2JHNNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:13:45 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 12/32 v4] USB: ohci: allow platform driver to specify the number of ports
+Date: Mon,  8 Oct 2012 15:11:26 +0200
+Message-Id: <1349701906-16481-13-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 77.127.126.110 authed with poster@makelinux.net}
+In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
+References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+This patch modifies the ohci platform driver to accept the num_ports
+parameter to be set via platform_data. Setting the number of ports must be
+done after the call to ohci_hcd_init().
 
-Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly 
-CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST 
-and set MUSB_OTG configuration by default
-because this configuration options are removed from Kconfig.
-
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
- 
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
- arch/arm/mach-davinci/usb.c |    6 ------
- 1 file changed, 6 deletions(-)
+Changes in v4:
+- rebased against greg's latest usb-next
 
-diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-index f77b953..34509ff 100644
---- a/arch/arm/mach-davinci/usb.c
-+++ b/arch/arm/mach-davinci/usb.c
-@@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
- };
+Changes in v3:
+- improved commit message
+
+ drivers/usb/host/ohci-platform.c |    4 ++++
+ include/linux/usb/ohci_pdriver.h |    2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
+index e24ec9f..1caaf65 100644
+--- a/drivers/usb/host/ohci-platform.c
++++ b/drivers/usb/host/ohci-platform.c
+@@ -31,6 +31,10 @@ static int ohci_platform_reset(struct usb_hcd *hcd)
+ 		ohci->flags |= OHCI_QUIRK_FRAME_NO;
  
- static struct musb_hdrc_platform_data usb_data = {
--#if defined(CONFIG_USB_MUSB_OTG)
- 	/* OTG requires a Mini-AB connector */
- 	.mode           = MUSB_OTG,
--#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
--	.mode           = MUSB_PERIPHERAL,
--#elif defined(CONFIG_USB_MUSB_HOST)
--	.mode           = MUSB_HOST,
--#endif
- 	.clock		= "usb",
- 	.config		= &musb_config,
- };
+ 	ohci_hcd_init(ohci);
++
++	if (pdata->num_ports)
++		ohci->num_ports = pdata->num_ports;
++
+ 	err = ohci_init(ohci);
+ 
+ 	return err;
+diff --git a/include/linux/usb/ohci_pdriver.h b/include/linux/usb/ohci_pdriver.h
+index 74e7755..012f2b7 100644
+--- a/include/linux/usb/ohci_pdriver.h
++++ b/include/linux/usb/ohci_pdriver.h
+@@ -25,6 +25,7 @@
+  * @big_endian_desc:	BE descriptors
+  * @big_endian_mmio:	BE registers
+  * @no_big_frame_no:	no big endian frame_no shift
++ * @num_ports:		number of ports
+  *
+  * These are general configuration options for the OHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -33,6 +34,7 @@ struct usb_ohci_pdata {
+ 	unsigned	big_endian_desc:1;
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	no_big_frame_no:1;
++	unsigned int	num_ports;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
 -- 
 1.7.9.5
 
