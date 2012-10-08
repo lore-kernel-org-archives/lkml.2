@@ -1,26 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2JHOf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 10:35:56 -0400
-Received: from smtp01.telecable.es ([212.89.0.156]:38551 "EHLO
-	smtp01.telecable.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2JHOfx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 10:35:53 -0400
-X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Oct 2012 10:35:53 EDT
-Message-ID: <50709097003A0D63@smtp01.telecable.es> (added by
-	    postmaster@telecable.es)
-Content-Type: text/plain; charset=US-ASCII
+	id S1753412Ab2JHOjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 10:39:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58741 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab2JHOji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 10:39:38 -0400
+Date: Mon, 8 Oct 2012 16:39:30 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] random: make it possible to enable debugging without
+ rebuild
+Message-ID: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Reply Needed
-To: linux-kernel@vger.kernel.org
-From: " K Xiang" <kuo3637@gmail.com>
-Date: Mon, 08 Oct 2012 09:31:19 -0500
-Reply-To: k.xianghk@qq.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your help is needed in a business proposal. contact me for more details info. Thanks, K. Xiang
+The module parameter that turns debugging mode (which basically means 
+printing a few extra lines during runtime) is in '#if 0' block. Forcing 
+everyone who would like to see how entropy is behaving on his system seems 
+to be a little bit too harsh.
+If we were concerned about speed, we could potentially turn 'debug' into
+a static key, but I don't think it's necessary.
+
+Drop the '#if 0' block to allow using the 'debug' parameter without rebuilding.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/char/random.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index b86eae9..9ac4443 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -399,7 +399,6 @@ static DECLARE_WAIT_QUEUE_HEAD(random_read_wait);
+ static DECLARE_WAIT_QUEUE_HEAD(random_write_wait);
+ static struct fasync_struct *fasync;
+ 
+-#if 0
+ static bool debug;
+ module_param(debug, bool, 0644);
+ #define DEBUG_ENT(fmt, arg...) do { \
+@@ -410,9 +409,6 @@ module_param(debug, bool, 0644);
+ 		blocking_pool.entropy_count,\
+ 		nonblocking_pool.entropy_count,\
+ 		## arg); } while (0)
+-#else
+-#define DEBUG_ENT(fmt, arg...) do {} while (0)
+-#endif
+ 
+ /**********************************************************************
+  *
+
+-- 
+Jiri Kosina
+SUSE Labs
