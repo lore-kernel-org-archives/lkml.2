@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2JHJZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 05:25:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49482 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab2JHJZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 05:25:53 -0400
-Date: Mon, 8 Oct 2012 11:25:47 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
-        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: imx: fix return value check in imx3_init_l2x0()
-Message-ID: <20121008092547.GK1322@pengutronix.de>
-References: <CAPgLHd8Rma5fSWPtjvLr18TEmmC=8kOjmSJtneO0Ecd1bvOrcg@mail.gmail.com>
+	id S1751408Ab2JHJYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 05:24:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39565 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084Ab2JHJYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 05:24:22 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <sshtylyov@mvista.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v3 1/7] usb: dwc3-omap: use device_for_each_child to handle child removal
+Date: Mon, 8 Oct 2012 14:53:50 +0530
+Message-ID: <1349688236-22814-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349688236-22814-1-git-send-email-kishon@ti.com>
+References: <1349688236-22814-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd8Rma5fSWPtjvLr18TEmmC=8kOjmSJtneO0Ecd1bvOrcg@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:25:30 up 107 days, 37 min, 80 users,  load average: 0.48, 2.01,
- 3.22
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 01:54:01PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> In case of error, the function ioremap() returns NULL
-> not ERR_PTR(). The IS_ERR() test in the return value
-> check should be replaced with NULL test.
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Used device_for_each_child() to handle child device (dwc3 core) removal
+during devexit of dwc3 omap.
 
-Appied, thanks
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/dwc3/dwc3-omap.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-Sascha
-
-
-> ---
->  arch/arm/mach-imx/mm-imx3.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/mm-imx3.c b/arch/arm/mach-imx/mm-imx3.c
-> index 9d2c843..b5deb05 100644
-> --- a/arch/arm/mach-imx/mm-imx3.c
-> +++ b/arch/arm/mach-imx/mm-imx3.c
-> @@ -108,9 +108,8 @@ void __init imx3_init_l2x0(void)
->  	}
->  
->  	l2x0_base = ioremap(MX3x_L2CC_BASE_ADDR, 4096);
-> -	if (IS_ERR(l2x0_base)) {
-> -		printk(KERN_ERR "remapping L2 cache area failed with %ld\n",
-> -				PTR_ERR(l2x0_base));
-> +	if (!l2x0_base) {
-> +		printk(KERN_ERR "remapping L2 cache area failed\n");
->  		return;
->  	}
->  
-> 
-> 
-
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 479dc04..e335da3 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -204,6 +204,15 @@ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
+ 	return IRQ_HANDLED;
+ }
+ 
++static int dwc3_omap_remove_core(struct device *dev, void *c)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++
++	platform_device_unregister(pdev);
++
++	return 0;
++}
++
+ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ {
+ 	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
+@@ -370,9 +379,8 @@ static int __devexit dwc3_omap_remove(struct platform_device *pdev)
+ {
+ 	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
+ 
+-	platform_device_unregister(omap->dwc3);
+-
+ 	dwc3_put_device_id(omap->dwc3->id);
++	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
+ 
+ 	return 0;
+ }
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.9.5
+
