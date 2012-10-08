@@ -1,173 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab2JHGAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:00:21 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36348 "EHLO bear.ext.ti.com"
+	id S1752242Ab2JHGDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:03:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59197 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104Ab2JHGAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:00:11 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
-        <rdunlap@xenotime.net>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
-Date: Mon, 8 Oct 2012 11:29:41 +0530
-Message-ID: <1349675983-23803-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349675983-23803-1-git-send-email-kishon@ti.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+	id S1750773Ab2JHGDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 02:03:44 -0400
+Date: Mon, 8 Oct 2012 08:03:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Wang YanQing <udknight@gmail.com>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
+        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
+        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
+Subject: Re: [PATCH v3]mconf: Add Save button
+Message-ID: <20121008060340.GB4148@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
+	lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
+	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
+References: <20121008050513.GA22078@udknight>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121008050513.GA22078@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ocp2scp was not having pdata support which makes *musb* fail for non-dt
-boot in OMAP platform. The pdata will have information about the devices
-that is connected to ocp2scp. ocp2scp driver will now make use of this
-information to create the devices that is attached to ocp2scp.
+On Mon, Oct 08, 2012 at 01:05:14PM +0800, Wang YanQing wrote:
+> mconf make me annoying I have to make menuconfig && exit to save the
+> config when I am tuning .config time by time, it is even worse I have
+> to search down to my desire submenu time by time.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/bus/omap-ocp2scp.c                 |   67 ++++++++++++++++++++++++++--
- include/linux/platform_data/omap_ocp2scp.h |   31 +++++++++++++
- 2 files changed, 95 insertions(+), 3 deletions(-)
- create mode 100644 include/linux/platform_data/omap_ocp2scp.h
+Well, there are a bunch of patches from Benjamin Poirier adding the
+possibility to jump to search results and you could use them to go to
+your desired submenu.
 
-diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
-index ff63560..5db8297 100644
---- a/drivers/bus/omap-ocp2scp.c
-+++ b/drivers/bus/omap-ocp2scp.c
-@@ -22,6 +22,26 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/platform_data/omap_ocp2scp.h>
-+
-+/**
-+ * _count_resources - count for the number of resources
-+ * @res: struct resource *
-+ *
-+ * Count and return the number of resources populated for the device that is
-+ * connected to ocp2scp.
-+ */
-+static unsigned _count_resources(struct resource *res)
-+{
-+	int cnt	= 0;
-+
-+	while (res->start != res->end) {
-+		cnt++;
-+		res++;
-+	}
-+
-+	return cnt;
-+}
- 
- static int ocp2scp_remove_devices(struct device *dev, void *c)
- {
-@@ -34,20 +54,61 @@ static int ocp2scp_remove_devices(struct device *dev, void *c)
- 
- static int __devinit omap_ocp2scp_probe(struct platform_device *pdev)
- {
--	int			ret;
--	struct device_node	*np = pdev->dev.of_node;
-+	int ret;
-+	unsigned res_cnt, i;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct platform_device *pdev_child;
-+	struct omap_ocp2scp_platform_data *pdata = pdev->dev.platform_data;
-+	struct omap_ocp2scp_dev *dev;
- 
- 	if (np) {
- 		ret = of_platform_populate(np, NULL, NULL, &pdev->dev);
- 		if (ret) {
--			dev_err(&pdev->dev, "failed to add resources for ocp2scp child\n");
-+			dev_err(&pdev->dev,
-+			    "failed to add resources for ocp2scp child\n");
- 			goto err0;
- 		}
-+	} else if (pdata) {
-+		for (i = 0, dev = *pdata->devices; i < pdata->dev_cnt; i++,
-+		    dev++) {
-+			res_cnt = _count_resources(dev->res);
-+
-+			pdev_child = platform_device_alloc(dev->drv_name, -1);
-+			if (!pdev_child) {
-+				dev_err(&pdev->dev,
-+				  "failed to allocate mem for ocp2scp child\n");
-+				goto err0;
-+			}
-+
-+			ret = platform_device_add_resources(pdev_child,
-+			    dev->res, res_cnt);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+				 "failed to add resources for ocp2scp child\n");
-+				goto err1;
-+			}
-+
-+			pdev_child->dev.parent	= &pdev->dev;
-+
-+			ret = platform_device_add(pdev_child);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+				   "failed to register ocp2scp child device\n");
-+				goto err1;
-+			}
-+		}
-+	} else {
-+		dev_err(&pdev->dev, "OCP2SCP initialized without plat data\n");
-+		return -EINVAL;
- 	}
-+
- 	pm_runtime_enable(&pdev->dev);
- 
- 	return 0;
- 
-+err1:
-+	platform_device_put(pdev_child);
-+
- err0:
- 	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
- 
-diff --git a/include/linux/platform_data/omap_ocp2scp.h b/include/linux/platform_data/omap_ocp2scp.h
-new file mode 100644
-index 0000000..5c6c393
---- /dev/null
-+++ b/include/linux/platform_data/omap_ocp2scp.h
-@@ -0,0 +1,31 @@
-+/*
-+ * omap_ocp2scp.h -- ocp2scp header file
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __DRIVERS_OMAP_OCP2SCP_H
-+#define __DRIVERS_OMAP_OCP2SCP_H
-+
-+struct omap_ocp2scp_dev {
-+	const char			*drv_name;
-+	struct resource			*res;
-+};
-+
-+struct omap_ocp2scp_platform_data {
-+	int				dev_cnt;
-+	struct omap_ocp2scp_dev		**devices;
-+};
-+#endif /* __DRIVERS_OMAP_OCP2SCP_H */
+They're not upstream yet, AFAICT, although Michal applied them.
+
+> So I add "Save" button to save our time. With "Save" button, I can use
+> CRTL-Z after save config, and then use "%" or fg to resume menuconfig
+> and go on tuning.
+
+Ok, IIUC, when you put menuconfig in the background, edit .config by
+hand in the shell and then do 'fg', you need to reload the edited
+.config back otherwise you lose your changes you just did by hand.
+
+And generally speaking, why exactly do you need to edit .config by hand,
+and, at same time, do it over menuconfig? IMO, with Benjamin's patches,
+you don't need to do that anymore, right?
+
+Thanks.
+
 -- 
-1.7.9.5
-
+Regards/Gruss,
+    Boris.
