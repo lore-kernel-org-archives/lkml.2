@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2JHTml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 15:42:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42894 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2JHTmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 15:42:36 -0400
-Date: Mon, 8 Oct 2012 12:42:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, kamezawa.hiroyu@jp.fujitsu.com,
-        minchan@kernel.org, shangw@linux.vnet.ibm.com, yinghai@kernel.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + mm-memblock-reduce-overhead-in-binary-search.patch added to
- -mm tree
-Message-Id: <20121008124234.3e8c511b.akpm@linux-foundation.org>
-In-Reply-To: <20120910115514.GC17437@dhcp22.suse.cz>
-References: <20120907235058.A33F75C0219@hpza9.eem.corp.google.com>
-	<20120910082035.GA13035@dhcp22.suse.cz>
-	<20120910094604.GA7365@hacker.(null)>
-	<20120910110550.GA17437@dhcp22.suse.cz>
-	<20120910113051.GA15193@hacker.(null)>
-	<20120910115514.GC17437@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1752971Ab2JHTqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 15:46:00 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40128 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750941Ab2JHTp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 15:45:58 -0400
+Message-ID: <1349725550.15802.21.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] random: make it possible to enable debugging
+ without rebuild
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Date: Mon, 08 Oct 2012 12:45:50 -0700
+In-Reply-To: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz>
+References: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Sep 2012 13:55:15 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On Mon, 2012-10-08 at 16:39 +0200, Jiri Kosina wrote:
+> The module parameter that turns debugging mode (which basically means 
+> printing a few extra lines during runtime) is in '#if 0' block. Forcing 
+> everyone who would like to see how entropy is behaving on his system seems 
+> to be a little bit too harsh.
+> If we were concerned about speed, we could potentially turn 'debug' into
+> a static key, but I don't think it's necessary.
+> 
+> Drop the '#if 0' block to allow using the 'debug' parameter without rebuilding.
 
-> > >OK. Thanks for the clarification. The main question remains, though. Is
-> > >this worth for memblock_is_memory?
-> > 
-> > There are many call sites need to call pfn_valid, how can you guarantee all
-> > the addrs are between memblock_start_of_DRAM() and memblock_end_of_DRAM(), 
-> > if not can this reduce possible overhead ? 
-> 
-> That was my question. I hoped for an answer in the patch description. I
-> am really not familiar with unicore32 which is the only user now.
-> 
-> > I add unlikely which means that this will not happen frequently. :-)
-> 
-> unlikely doesn't help much in this case. You would be doing the test for
-> every pfn_valid invocation anyway. So the main question is. Do you want
-> to optimize for something that doesn't happen often when it adds a cost
-> (not a big one but still) for the more probable cases?
-> I would say yes if we clearly see that the exceptional case really pays
-> off. Nothing in the changelog convinces me about that.
+I'd also convert the printk(KERN_DEBUG to pr_debug
+to avoid penalizing non-debug builds altogether.
 
-I don't believe Michal's questions have been resolved yet, so I'll keep
-this patch on hold for now.
+
 
