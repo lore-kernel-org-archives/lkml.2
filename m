@@ -1,98 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2JHACS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:02:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38683 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab2JHACP (ORCPT
+	id S1754755Ab2JHAN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:13:57 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48150 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab2JHANx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:02:15 -0400
-Date: Mon, 8 Oct 2012 11:02:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: build failure after merge of the thermal tree
-Message-Id: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI"
+	Sun, 7 Oct 2012 20:13:53 -0400
+Date: Sun, 7 Oct 2012 17:13:44 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kamran Amini <kamran.amini.eng@gmail.com>
+cc: Behnam Momeni <s.b.momeni@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: PROBLEM: It seems that /usr/bin/time program reports a wrong
+ value for MaxRSS.
+In-Reply-To: <CAKMH-Ygp6mTtpt66cOj_wh5eicTgiH9bK9J=KPQfThTzU7-OLA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1210071641150.8431@eggly.anvils>
+References: <CAKMH-Yhdxfq50fKR3TF8gc6i7JeAowD+Oc+dqpXOYvqiNiw=Vw@mail.gmail.com> <alpine.LSU.2.00.1210061344180.28972@eggly.anvils> <CAKMH-Ygp6mTtpt66cOj_wh5eicTgiH9bK9J=KPQfThTzU7-OLA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 7 Oct 2012, Kamran Amini wrote:
+> On Sun, Oct 7, 2012 at 1:18 AM, Hugh Dickins <hughd@google.com> wrote:
+> > On Thu, 4 Oct 2012, Kamran Amini wrote:
+> >>
+> >> It seems that /usr/bin/time program reports a wrong value for MaxRSS.
+> >> The report shows MaxRSS, about 4 times the
+> >> actual allocated memory by a process and its children. MaxRSS (Maximum
+> >> Resident Set Size) is assumed to be maximum
+> >> allocated memory by a process and its children. This bug report talks
+> >> about this problem. More descriptions are provided in
+> >> time-problem.tar.gz file attached to this mail.
+> >
+> > You are right.
+> >
+> > Well, time-problem.tar.gz goes into more detail than I had time
+> > to read, so I cannot promise that everything you say is right.
+> >
+> > But you're right that /usr/bin/time is reporting MaxRSS 4 times too much
+> > on x86, and many other architectures.  It expects rusage.ru_maxrss to be
+> > a count of pages, so mistakenly uses to ptok() upon it; whereas the Linux
+> > kernel supplies that number already in kilobytes (as "man 2 getrusage"
+> > makes clear).
+> >
+> > I see this was mentioned when 2.6.32's commit 1f10206cf8e9 "getrusage:
+> > fill ru_maxrss value" started putting the number there instead of zero:
+> >
+> >     Make ->ru_maxrss value in struct rusage filled accordingly to rss hiwater
+> >     mark.  This struct is filled as a parameter to getrusage syscall.
+> >     ->ru_maxrss value is set to KBs which is the way it is done in BSD
+> >     systems.  /usr/bin/time (gnu time) application converts ->ru_maxrss to KBs
+> >     which seems to be incorrect behavior.  Maintainer of this util was
+> >     notified by me with the patch which corrects it and cc'ed.
+> >
+> > It looks as if we were naive to expect a change in /usr/bin/time then:
+> > so far as I can see, time has stood still at time-1.7 ever since 1996.
+> > Its README does say:
+> >
+> >     Mail suggestions and bug reports for GNU time to
+> >     bug-gnu-utils@prep.ai.mit.edu.  Please include the version of
+> >     `time', which you can get by running `time --version', and the
+> >     operating system and C compiler you used.
+> >
+> > Please do so, if you have a chance, or let me know if you cannot and
+> > I'll do so: though I suspect the mail address is out-of-date by now,
+> > and that it should say bug-gnu-utils@gnu.org.
+> >
+> > You might also like to raise a bug with the distros you care about:
+> > maybe some already apply their own fix, or will do before time-1.8.
+> >
+> > But it does look as if you're the first in three years to notice and
+> > care!  So don't be surprised if it's not a high priority for anyone.
+> >
+> > And I don't think you need attach a .tar.gz: just explain in a few
+> > lines that Linux 2.6.32 and later fill ru_maxrss, but in kilobytes
+> > not pages: so /usr/bin/time displays 4 times the right number when
+> > it multiplies that up with ptok().  (I don't have a BSD system to
+> > confirm whether it's indeed wrong for BSD too.)
+> >
+> > Thanks,
+> > Hugh
+> 
+> Thanks for the reply.
+> 
+> I'm sorry.
+> I should have mentioned more details in my last email and I should
 
-Hi Zhang,
+Please don't drown me in so many words, we don't need more details!
 
-After merging the thermal tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> have changed my subject to "It seems that wait4() system call fills
+> rusage.ru_maxrss with wrong value".
+> 
+> Actually, we have read time's source code and there is no bug in it.
 
-drivers/thermal/cpu_cooling.c: In function 'get_idr':
-drivers/thermal/cpu_cooling.c:89:14: error: 'MAX_ID_MASK' undeclared (first=
- use in this function)
+Not necessarily a bug, but line 395 of time-1.7/time.c says
+	      fprintf (fp, "%lu", ptok ((UL) resp->ru.ru_maxrss));
+and the comment on ptok (pages) has already mentioned that
+   Note: Some machines express getrusage statistics in terms of K,
+   others in terms of pages.  */
 
-Caused by commit 023614183768 ("thermal: add generic cpufreq cooling
-implementation") interacting with commit 125c4c706b68 ("idr: rename
-MAX_LEVEL to MAX_IDR_LEVEL") which very recently entered Linus' tree.
+> The time uses wait4() system call and  k_getrusage() function in
+> kernel/sys.c, line 1765  makes that 4 coefficient.
+> 
+>        r->ru_maxrss = maxrss * (PAGE_SIZE / 1024); /* convert pages to KBs */
+> 
+>     Comment says that this operation will convert the maxrss into KBs.
+>     But we think it has been converted to KBs previously.
 
-I have applied the following fix patch for today:
+It has not been converted to KBs previously; but /usr/bin/time
+mistakenly "converts it to KBs" a second time afterwards.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Oct 2012 10:56:56 +1100
-Subject: [PATCH] thermal: fix for for MAX_ID_MASK to MAX_IDR_MASK rename
+The Linux kernel has chosen to report ru_maxrss in KBs, following BSD.
+I have not loaded up a BSD system to check, but I have now checked the
+FreeBSD getrusage(2) manpage online, and indeed that documents ru_maxrss
+as in kilobytes.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/thermal/cpu_cooling.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So when Jiri Pirko made Linux kernel 2.6.32 fill ru_maxrss with
+something better than 0, he chose to follow BSD by doing it in KBs
+(a better, more portable, unit than number of pages anyway); and
+simultaneously alerted the time-1.7 maintainer (he doesn't mention
+who, and I didn't actually see the name in his mail's Cc list) that
+the BSD value was already shown wrongly, and the Linux value about
+to be shown wrongly.  He and we thought it easier to keep BSD and
+Linux in synch, but no fix to the time package has appeared.
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 9050c1b..cc1c930 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -86,7 +86,7 @@ again:
- 	else if (unlikely(err))
- 		return err;
-=20
--	*id =3D *id & MAX_ID_MASK;
-+	*id =3D *id & MAX_IDR_MASK;
- 	return 0;
- }
-=20
---=20
-1.7.10.280.gaa39
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQchf9AAoJEECxmPOUX5FEXdwP/jZXOBu2jApcMptXGjYVotg5
-O2Ajj5RUZwI/3pura8Q9g707pXYvHipWXe3SZnN+NIrcutTX3xJ/XScT0E02z98U
-FfWXZ1/1vUFpgium5QlCAmnyINjEopzDKLTOX706+7CZRyOAsKETyRXvD0zvxo/1
-w3Jtdu7XTR/k0ZR3Kyfy45mZv82kvowrTj5UTBtmrjs0YYOuKM02e6GVZGAsLySm
-ChuJttXFNjuxZfJMWIDT0+d9iqF8buumc46gSwSZQxw/je1Uz59E1W1K8IJ/rD8H
-AuDQQQ/zZUimqQi4XGb8nHtwNn67qy3T/NrdnLB2oOjSsosz2aAdCYDjuN6v8a5J
-I3FVyuqnuDbJ5PHoYAjET79P3MkkdfS/+4h1kQ+sdoL9zwcugcCcV5Em2AdaZPu2
-spS+hSMfO9ndnZvchYK9KK5ynb/OdmSbDKvmpwRaqoHpW/6R+BJSPkGeg/jKwWkS
-zIWNaox7wfDXtDDlfrVLRj8bQN6gTKW1fkBD5iElx0xarVaDlwbLTmKoXCw/GK1q
-BY6xxpI8v0q1Ue9xdyEALhvNOlIVvB7OqlM+kvp68vw/nXU+5U7EFb7YjIy4KTn4
-1CYhlDK853e03jriC3tF49BBT58xO7x561P+U33ilGnjflO0Kx2cBBnN2HIv69je
-vA3chq8Dd2OzwBOY4ard
-=jeiF
------END PGP SIGNATURE-----
-
---Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI--
+Hugh
