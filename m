@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2JHGcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:32:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16094 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2JHGcC (ORCPT
+	id S1750760Ab2JHGcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:32:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55753 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab2JHGcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:32:02 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sun, 07 Oct 2012 23:29:49 -0700
-Message-ID: <50726B84.4020603@nvidia.com>
-Date: Mon, 8 Oct 2012 11:28:28 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 8 Oct 2012 02:32:17 -0400
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] regulator: tps65090: add external control support
- for DCDC
-References: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com> <1349536671-31714-7-git-send-email-ldewangan@nvidia.com> <D958900912E20642BCBC71664EFECE3E6DDF8AF38E@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDF8AF38E@BGMAIL02.nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <2779610.RIGYtRk86h@amdc1227>
+References: <1349093361-18820-1-git-send-email-thomas.abraham@linaro.org>
+	<2779610.RIGYtRk86h@amdc1227>
+Date: Mon, 8 Oct 2012 12:02:15 +0530
+Message-ID: <CAJuYYwSWL9e+php9B2bJ4GQ9AGLK32=q+0pFeSNHUMfhFNruoQ@mail.gmail.com>
+Subject: Re: [PATCH 0/2] ARM: Exynos4: Migrate to common clock framework.
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: chander.kashyap@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        mturquette@linaro.org, mturquette@ti.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 October 2012 11:15 AM, Venu Byravarasu wrote:
->> -----Original Message-----
->> From: Laxman Dewangan
->> Sent: Saturday, October 06, 2012 8:48 PM
->> To: broonie@opensource.wolfsonmicro.com; lrg@ti.com;
->> sameo@linux.intel.com
->> Cc: Venu Byravarasu; axel.lin@gmail.com; linux-kernel@vger.kernel.org;
->> Laxman Dewangan
->> Subject: [PATCH 5/5] regulator: tps65090: add external control support for
->> DCDC
->>
->>
->>   static int tps65090_voltage_get_voltage(struct regulator_dev *rdev)
->>   {
->>   	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
->> @@ -54,12 +67,17 @@ static int tps65090_voltage_list_voltage(struct
->> regulator_dev *rdev,
->>   	return ri->microvolts;
->>   }
->>
->> -static struct regulator_ops tps65090_ops = {
->> +static struct regulator_ops tps65090_ext_control_ops = {
-> Where tps65090_ext_control_ops are used?
+Hi Tomasz,
+
+Thanks for reviewing this patch series.
+
+On 3 October 2012 16:26, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Chander, Thomas,
 >
+> On Monday 01 of October 2012 17:39:19 chander.kashyap@linaro.org wrote:
+>> From: Thomas Abraham <thomas.abraham@linaro.org>
+>>
+>> This patch series migrates Exynos4 clock support to common clock
+>> framework. The first patch in this series removes the existing Exynos4
+>> clock support that uses the Samsung specific clock framework. The second
+>> patch in this series add Exynos4 clock support using common clock
+>> framework.
+>>
+>> Thomas Abraham (2):
+>>   ARM: Exynos4: Remove Samsung clock type support
+>>   ARM: Exynos4: Register clocks via common clock framework
+>
+> I think the order of changes is a little bit off here:
+>  - patch 1 will break all exynos4-based boards (what about bisects?)
+>  - patch 2 will be still broken until all related drivers get converted to
+> use clk_prepare(_enable) and clk_(disable_)unprepare.
 
+Ok. I got the sequence wrong and I have fixed this in the next version.
 
-It is used when external control is enabled.
-I have the code as
-ri->desc->ops = &tps65090_ext_control_ops;
+>
+> Shouldn't the order be exactly opposite, i.e.:
+>  - all the patches for prepare/unprepare first
+>  - then the patch adding common clock frameworks support for exynos4
+> (disabling the old clock code)
+>  - and finally the patch removing remaining (disabled by previous patch)
+> code.
+
+Right.
+
+>
+> Also, I assume that these patches doesn't consider native device tree
+> support (without auxdata, using OF-based clock lookup), correct me if I'm
+> wrong. If I'm right, since Exynos SoCs are going to be DT-only, is there
+> really a point for adding common clock framework support for non-DT
+> platforms (which are going to be eventually dropped anyway)?
+
+The non-dt Exynos4 platforms require some effort to get basic device
+tree support into them. Until then, the common clock support for them
+are required. I have added device tree support as well in the second
+version of this patch series.
+
+Thanks,
+Thomas.
+
+>
+> Best regards,
+> --
+> Tomasz Figa
+> Samsung Poland R&D Center
+>
