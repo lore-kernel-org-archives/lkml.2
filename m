@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2JHGDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:03:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59197 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773Ab2JHGDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:03:44 -0400
-Date: Mon, 8 Oct 2012 08:03:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Wang YanQing <udknight@gmail.com>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
-        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-Subject: Re: [PATCH v3]mconf: Add Save button
-Message-ID: <20121008060340.GB4148@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
-	lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-References: <20121008050513.GA22078@udknight>
+	id S1752702Ab2JHGNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:13:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:65004 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2JHGNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 02:13:14 -0400
+Message-ID: <50726E80.4040204@huawei.com>
+Date: Mon, 8 Oct 2012 14:11:12 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121008050513.GA22078@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+CC: LKML <linux-kernel@vger.kernel.org>, cgroups <cgroups@vger.kernel.org>,
+        Ben Blum <bblum@andrew.cmu.edu>, Tejun Heo <tj@kernel.org>
+Subject: Re: [REGRESSION] cgroup: notify_on_release may not be triggered in
+ some cases
+References: <20121004163716.64dae034dab9eafa2b6e6a8f@mxp.nes.nec.co.jp>
+In-Reply-To: <20121004163716.64dae034dab9eafa2b6e6a8f@mxp.nes.nec.co.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 01:05:14PM +0800, Wang YanQing wrote:
-> mconf make me annoying I have to make menuconfig && exit to save the
-> config when I am tuning .config time by time, it is even worse I have
-> to search down to my desire submenu time by time.
+On 2012/10/4 15:37, Daisuke Nishimura wrote:
+> notify_on_release must be triggered when the last process in a cgroup is
+> move to another. But if the first(and only) process in a cgroup is moved to
+> another, notify_on_release is not triggered.
+> 
+> 	# mkdir /cgroup/cpu/SRC
+> 	# mkdir /cgroup/cpu/DST
+> 	#
+> 	# echo 1 >/cgroup/cpu/SRC/notify_on_release
+> 	# echo 1 >/cgroup/cpu/DST/notify_on_release
+> 	#
+> 	# sleep 300 &
+> 	[1] 8629
+> 	#
+> 	# echo 8629 >/cgroup/cpu/SRC/tasks
+> 	# echo 8629 >/cgroup/cpu/DST/tasks
+> 	-> notify_on_release for /SRC must be triggered at this point,
+> 	   but it isn't.
+> 
+> This is because put_css_set() is called before setting CGRP_RELEASABLE
+> in cgroup_task_migrate(), and is a regression introduce by the
+> commit:74a1166d(cgroups: make procs file writable), which was merged
+> into v3.0.
+> 
+> Cc: Ben Blum <bblum@andrew.cmu.edu>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: <stable@vger.kernel.org> # v3.0.x and later
+> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> ---
+> This patch is based on v3.6.
+> 
+>  kernel/cgroup.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 7981850..7d01182 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1923,9 +1923,8 @@ static void cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+>  	 * trading it for newcg is protected by cgroup_mutex, we're safe to drop
+>  	 * it here; it will be freed under RCU.
+>  	 */
+> -	put_css_set(oldcg);
+> -
+>  	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
+> +	put_css_set(oldcg);
 
-Well, there are a bunch of patches from Benjamin Poirier adding the
-possibility to jump to search results and you could use them to go to
-your desired submenu.
+Good catch. Also we might end up with invalid memory access! 
 
-They're not upstream yet, AFAICT, although Michal applied them.
+Acked-by: Li Zefan <lizefan@huawei.com>
 
-> So I add "Save" button to save our time. With "Save" button, I can use
-> CRTL-Z after save config, and then use "%" or fg to resume menuconfig
-> and go on tuning.
+>  }
+>  
+>  /**
+> 
 
-Ok, IIUC, when you put menuconfig in the background, edit .config by
-hand in the shell and then do 'fg', you need to reload the edited
-.config back otherwise you lose your changes you just did by hand.
-
-And generally speaking, why exactly do you need to edit .config by hand,
-and, at same time, do it over menuconfig? IMO, with Benjamin's patches,
-you don't need to do that anymore, right?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
