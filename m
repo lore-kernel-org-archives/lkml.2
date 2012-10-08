@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2JHIpd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 04:45:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52046 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab2JHIp2 (ORCPT
+	id S1754172Ab2JHIrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 04:47:47 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33902 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383Ab2JHIrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 04:45:28 -0400
-Date: Mon, 8 Oct 2012 16:45:44 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
-        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-Subject: Re: [PATCH v3]mconf: Add Save button
-Message-ID: <20121008084544.GA1695@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Borislav Petkov <bp@alien8.de>, mmarek@suse.cz,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	rdunlap@xenotime.net, yann.morin.1998@free.fr, sakiwit@gmail.com,
-	lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-References: <20121008050513.GA22078@udknight>
- <20121008060340.GB4148@liondog.tnic>
- <20121008072249.GA29113@udknight>
- <20121008082832.GB19783@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121008082832.GB19783@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Oct 2012 04:47:45 -0400
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier@dowhile0.org>
+Subject: [PATCH 1/1] ARM: OMAP: Add maintainer entry for IGEP machines
+Date: Mon,  8 Oct 2012 10:47:34 +0200
+Message-Id: <1349686054-7486-1-git-send-email-javier@dowhile0.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 10:28:32AM +0200, Borislav Petkov wrote:
-> On Mon, Oct 08, 2012 at 03:22:49PM +0800, Wang YanQing wrote:
-> > With one terminal, I can do:
-> > 1: make menuconfig
-> > 2: ajust and use "Save" button to save .config
-> > 3: use CRTL-Z(konsole) to "menuconfig" run in background
-> > 3: make && test kernel
-> > 4: fg or "%1" to resume the menuconfig
-> 
-> I understand all that, but why do you think your usecase should be
-> in the kernel? I still fail to see its relevance for the majority of
-> people.
-No, I don't think it is only my usecase. Use fg,CRTL-Z is very normal
-in terminal or in vt(console), without save button you have to exit 
-menuconfig every time you want to save .config.
+Enric and I have been mantained this machine and while we
+are moving to device trees, it is good that people cc us
+when reporting bugs or regression on the board file until
+we have proper DT support.
 
-By the way,just a quick test, qconfig, xconfig, nconfig all have the
-Save button, why do them exist if we follow your opinion?
+Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
+---
+ MAINTAINERS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Thanks.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 63ce2a2..6b3c58d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -818,6 +818,14 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kristoffer/linux-hpc.git
+ F:	arch/arm/mach-sa1100/jornada720.c
+ F:	arch/arm/mach-sa1100/include/mach/jornada720.h
+ 
++ARM/IGEP MACHINE SUPPORT
++M:	Enric Balletbo i Serra <eballetbo@gmail.com>
++M:	Javier Martinez Canillas <javier@dowhile0.org>
++L:	linux-omap@vger.kernel.org
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++F:	arch/arm/mach-omap2/board-igep0020.c
++
+ ARM/INCOME PXA270 SUPPORT
+ M:	Marek Vasut <marek.vasut@gmail.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-- 
+1.7.7.6
+
