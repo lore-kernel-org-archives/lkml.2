@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2JHWdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:33:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41374 "EHLO
+	id S932074Ab2JHWdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:33:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41390 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab2JHWdP (ORCPT
+	with ESMTP id S1755336Ab2JHWdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:33:15 -0400
+	Mon, 8 Oct 2012 18:33:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/25] perf diff: Add weighted diff computation way to compare hist entries
-Date: Mon,  8 Oct 2012 19:32:32 -0300
-Message-Id: <1349735570-19339-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/25] perf trace: Add support for tracing workload given by command line
+Date: Mon,  8 Oct 2012 19:32:28 -0300
+Message-Id: <1349735570-19339-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
 References: <1349735570-19339-1-git-send-email-acme@infradead.org>
@@ -29,348 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Adding 'wdiff' as new computation way to compare hist entries.
+Now perf trace is able to trace specified workload by forking it like
+perf record does.  And also finish the tracing if the workload quits or
+gets SIGINT.
 
-If specified the 'Weighted diff' column is displayed with value 'd'
-computed as:
-
-   d = B->period * WEIGHT-A - A->period * WEIGHT-B
-
-  - A/B being matching hist entry from first/second file specified
-    (or perf.data/perf.data.old) respectively.
-  - period being the hist entry period value
-  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-    behind ':' separator like '-c wdiff:1,2'.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1349448287-18919-5-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1349413336-26936-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt |   15 ++++-
- tools/perf/builtin-diff.c              |  116 ++++++++++++++++++++++++++++++--
- tools/perf/ui/hist.c                   |   30 +++++++++
- tools/perf/util/hist.h                 |    2 +
- tools/perf/util/sort.h                 |    3 +
- 5 files changed, 160 insertions(+), 6 deletions(-)
+ tools/perf/builtin-trace.c |   43 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 36 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index cff3d9b..fa413ac 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -78,7 +78,7 @@ OPTIONS
- 
- -c::
- --compute::
--        Differential computation selection - delta,ratio (default is delta).
-+        Differential computation selection - delta,ratio,wdiff (default is delta).
-         If '+' is specified as a first character, the output is sorted based
-         on the computation results.
-         See COMPARISON METHODS section for more info.
-@@ -110,6 +110,19 @@ with:
- 
-   - period being the hist entry period value
- 
-+wdiff
-+~~~~~
-+If specified the 'Weighted diff' column is displayed with value 'd' computed as:
-+
-+   d = B->period * WEIGHT-A - A->period * WEIGHT-B
-+
-+  - A/B being matching hist entry from first/second file specified
-+    (or perf.data/perf.data.old) respectively.
-+
-+  - period being the hist entry period value
-+
-+  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-+    behind ':' separator like '-c wdiff:1,2'.
- 
- SEE ALSO
- --------
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index e13cfac..d78e838 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -27,24 +27,81 @@ static bool show_displacement;
- static bool show_baseline_only;
- static bool sort_compute;
- 
-+static s64 compute_wdiff_w1;
-+static s64 compute_wdiff_w2;
-+
- enum {
- 	COMPUTE_DELTA,
- 	COMPUTE_RATIO,
-+	COMPUTE_WEIGHTED_DIFF,
- 	COMPUTE_MAX,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index da1183f..4e9320b 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -52,6 +52,13 @@ struct trace {
+ 	struct perf_record_opts opts;
  };
  
- const char *compute_names[COMPUTE_MAX] = {
- 	[COMPUTE_DELTA] = "delta",
- 	[COMPUTE_RATIO] = "ratio",
-+	[COMPUTE_WEIGHTED_DIFF] = "wdiff",
- };
- 
- static int compute;
- 
-+static int setup_compute_opt_wdiff(char *opt)
++static bool done = false;
++
++static void sig_handler(int sig __maybe_unused)
 +{
-+	char *w1_str = opt;
-+	char *w2_str;
-+
-+	int ret = -EINVAL;
-+
-+	if (!opt)
-+		goto out;
-+
-+	w2_str = strchr(opt, ',');
-+	if (!w2_str)
-+		goto out;
-+
-+	*w2_str++ = 0x0;
-+	if (!*w2_str)
-+		goto out;
-+
-+	compute_wdiff_w1 = strtol(w1_str, NULL, 10);
-+	compute_wdiff_w2 = strtol(w2_str, NULL, 10);
-+
-+	if (!compute_wdiff_w1 || !compute_wdiff_w2)
-+		goto out;
-+
-+	pr_debug("compute wdiff w1(%" PRId64 ") w2(%" PRId64 ")\n",
-+		  compute_wdiff_w1, compute_wdiff_w2);
-+
-+	ret = 0;
-+
-+ out:
-+	if (ret)
-+		pr_err("Failed: wrong weight data, use 'wdiff:w1,w2'\n");
-+
-+	return ret;
++	done = true;
 +}
 +
-+static int setup_compute_opt(char *opt)
-+{
-+	if (compute == COMPUTE_WEIGHTED_DIFF)
-+		return setup_compute_opt_wdiff(opt);
-+
-+	if (opt) {
-+		pr_err("Failed: extra option specified '%s'", opt);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int setup_compute(const struct option *opt, const char *str,
- 			 int unset __maybe_unused)
+ static int trace__read_syscall_info(struct trace *trace, int id)
  {
- 	int *cp = (int *) opt->value;
-+	char *cstr = (char *) str;
-+	char buf[50];
- 	unsigned i;
-+	char *option;
- 
- 	if (!str) {
- 		*cp = COMPUTE_DELTA;
-@@ -53,19 +110,37 @@ static int setup_compute(const struct option *opt, const char *str,
- 
- 	if (*str == '+') {
- 		sort_compute = true;
--		str++;
-+		cstr = (char *) ++str;
- 		if (!*str)
- 			return 0;
- 	}
- 
-+	option = strchr(str, ':');
-+	if (option) {
-+		unsigned len = option++ - str;
-+
-+		/*
-+		 * The str data are not writeable, so we need
-+		 * to use another buffer.
-+		 */
-+
-+		/* No option value is longer. */
-+		if (len >= sizeof(buf))
-+			return -EINVAL;
-+
-+		strncpy(buf, str, len);
-+		buf[len] = 0x0;
-+		cstr = buf;
-+	}
-+
- 	for (i = 0; i < COMPUTE_MAX; i++)
--		if (!strcmp(str, compute_names[i])) {
-+		if (!strcmp(cstr, compute_names[i])) {
- 			*cp = i;
--			return 0;
-+			return setup_compute_opt(option);
- 		}
- 
- 	pr_err("Failed: '%s' is not computation method "
--	       "(use 'delta' or 'ratio').\n", str);
-+	       "(use 'delta','ratio' or 'wdiff')\n", str);
- 	return -EINVAL;
+ 	char tp_name[128];
+@@ -189,11 +196,12 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 	return 0;
  }
  
-@@ -97,6 +172,23 @@ double perf_diff__compute_ratio(struct hist_entry *he)
- 	return he->diff.period_ratio;
- }
- 
-+s64 perf_diff__compute_wdiff(struct hist_entry *he)
-+{
-+	struct hist_entry *pair = he->pair;
-+	u64 new_period = he->stat.period;
-+	u64 old_period = pair ? pair->stat.period : 0;
-+
-+	he->diff.computed = true;
-+
-+	if (!pair)
-+		he->diff.wdiff = 0;
-+	else
-+		he->diff.wdiff = new_period * compute_wdiff_w2 -
-+				 old_period * compute_wdiff_w1;
-+
-+	return he->diff.wdiff;
-+}
-+
- static int hists__add_entry(struct hists *self,
- 			    struct addr_location *al, u64 period)
+-static int trace__run(struct trace *trace)
++static int trace__run(struct trace *trace, int argc, const char **argv)
  {
-@@ -275,6 +367,9 @@ static void hists__precompute(struct hists *hists)
- 		case COMPUTE_RATIO:
- 			perf_diff__compute_ratio(he);
- 			break;
-+		case COMPUTE_WEIGHTED_DIFF:
-+			perf_diff__compute_wdiff(he);
-+			break;
- 		default:
- 			BUG_ON(1);
- 		}
-@@ -310,6 +405,13 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+ 	struct perf_evsel *evsel;
+ 	int err = -1, i, nr_events = 0, before;
++	const bool forks = argc > 0;
  
- 		return cmp_doubles(l, r);
- 	}
-+	case COMPUTE_WEIGHTED_DIFF:
-+	{
-+		s64 l = left->diff.wdiff;
-+		s64 r = right->diff.wdiff;
+ 	if (evlist == NULL) {
+ 		printf("Not enough memory to run!\n");
+@@ -214,6 +222,17 @@ static int trace__run(struct trace *trace)
+ 
+ 	perf_evlist__config_attrs(evlist, &trace->opts);
+ 
++	signal(SIGCHLD, sig_handler);
++	signal(SIGINT, sig_handler);
 +
-+		return r - l;
++	if (forks) {
++		err = perf_evlist__prepare_workload(evlist, &trace->opts, argv);
++		if (err < 0) {
++			printf("Couldn't run the workload!\n");
++			goto out_delete_evlist;
++		}
 +	}
- 	default:
- 		BUG_ON(1);
++
+ 	err = perf_evlist__open(evlist);
+ 	if (err < 0) {
+ 		printf("Couldn't create the events: %s\n", strerror(errno));
+@@ -227,6 +246,10 @@ static int trace__run(struct trace *trace)
  	}
-@@ -434,7 +536,8 @@ static const struct option options[] = {
- 		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
- 		    "Show only items with match in baseline"),
--	OPT_CALLBACK('c', "compute", &compute, "delta,ratio (default delta)",
-+	OPT_CALLBACK('c', "compute", &compute,
-+		     "delta,ratio,wdiff:w1,w2 (default delta)",
- 		     "Entries differential computation selection",
- 		     setup_compute),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
-@@ -475,6 +578,9 @@ static void ui_init(void)
- 	case COMPUTE_RATIO:
- 		perf_hpp__column_enable(PERF_HPP__RATIO, true);
- 		break;
-+	case COMPUTE_WEIGHTED_DIFF:
-+		perf_hpp__column_enable(PERF_HPP__WEIGHTED_DIFF, true);
-+		break;
- 	default:
- 		BUG_ON(1);
+ 
+ 	perf_evlist__enable(evlist);
++
++	if (forks)
++		perf_evlist__start_workload(evlist);
++
+ again:
+ 	before = nr_events;
+ 
+@@ -272,8 +295,15 @@ again:
+ 		}
+ 	}
+ 
+-	if (nr_events == before)
++	if (nr_events == before) {
++		if (done)
++			goto out_delete_evlist;
++
+ 		poll(evlist->pollfd, evlist->nr_fds, -1);
++	}
++
++	if (done)
++		perf_evlist__disable(evlist);
+ 
+ 	goto again;
+ 
+@@ -286,7 +316,8 @@ out:
+ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	const char * const trace_usage[] = {
+-		"perf trace [<options>]",
++		"perf trace [<options>] [<command>]",
++		"perf trace [<options>] -- <command> [<options>]",
+ 		NULL
  	};
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 659f2a2..522b4ec 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -286,6 +286,35 @@ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
+ 	struct trace trace = {
+@@ -326,8 +357,6 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	char bf[BUFSIZ];
+ 
+ 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+-	if (argc)
+-		usage_with_options(trace_usage, trace_options);
+ 
+ 	err = perf_target__validate(&trace.opts.target);
+ 	if (err) {
+@@ -343,8 +372,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return err;
+ 	}
+ 
+-	if (perf_target__none(&trace.opts.target))
++	if (!argc && perf_target__none(&trace.opts.target))
+ 		trace.opts.target.system_wide = true;
+ 
+-	return trace__run(&trace);
++	return trace__run(&trace, argc, argv);
  }
- 
-+static int hpp__header_wdiff(struct perf_hpp *hpp)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
-+
-+	return scnprintf(hpp->buf, hpp->size, fmt, "Weighted diff");
-+}
-+
-+static int hpp__width_wdiff(struct perf_hpp *hpp __maybe_unused)
-+{
-+	return 14;
-+}
-+
-+static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
-+	char buf[32] = " ";
-+	s64 wdiff;
-+
-+	if (he->diff.computed)
-+		wdiff = he->diff.wdiff;
-+	else
-+		wdiff = perf_diff__compute_wdiff(he);
-+
-+	if (wdiff != 0)
-+		scnprintf(buf, sizeof(buf), "%14ld", wdiff);
-+
-+	return scnprintf(hpp->buf, hpp->size, fmt, buf);
-+}
-+
- static int hpp__header_displ(struct perf_hpp *hpp)
- {
- 	return scnprintf(hpp->buf, hpp->size, "Displ.");
-@@ -332,6 +361,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	{ .cond = false, HPP__PRINT_FNS(period) },
- 	{ .cond = false, HPP__PRINT_FNS(delta) },
- 	{ .cond = false, HPP__PRINT_FNS(ratio) },
-+	{ .cond = false, HPP__PRINT_FNS(wdiff) },
- 	{ .cond = false, HPP__PRINT_FNS(displ) }
- };
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a7ea28a..ce76f36 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -142,6 +142,7 @@ enum {
- 	PERF_HPP__PERIOD,
- 	PERF_HPP__DELTA,
- 	PERF_HPP__RATIO,
-+	PERF_HPP__WEIGHTED_DIFF,
- 	PERF_HPP__DISPL,
- 
- 	PERF_HPP__MAX_INDEX
-@@ -207,4 +208,5 @@ unsigned int hists__sort_list_width(struct hists *self);
- 
- double perf_diff__compute_delta(struct hist_entry *he);
- double perf_diff__compute_ratio(struct hist_entry *he);
-+s64 perf_diff__compute_wdiff(struct hist_entry *he);
- #endif	/* __PERF_HIST_H */
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 337aeef..13761d8 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -63,6 +63,9 @@ struct hist_entry_diff {
- 
- 	/* PERF_HPP__RATIO */
- 	double	period_ratio;
-+
-+	/* HISTC_WEIGHTED_DIFF */
-+	s64	wdiff;
- };
- 
- /**
 -- 
 1.7.9.2.358.g22243
 
