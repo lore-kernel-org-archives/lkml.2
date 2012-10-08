@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2JHOAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 10:00:12 -0400
-Received: from lizzard.sbs.de ([194.138.37.39]:31901 "EHLO lizzard.sbs.de"
+	id S1752926Ab2JHOCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 10:02:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1897 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab2JHOAJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 10:00:09 -0400
-X-Greylist: delayed 659 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Oct 2012 10:00:08 EDT
-From: "Hildner, Christian" <christian.hildner@siemens.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Kiszka, Jan" <jan.kiszka@siemens.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Mon, 8 Oct 2012 15:49:03 +0200
-Subject: [PATCH] Fix endless looping between cascade() and
- internal_add_timer()
-Thread-Topic: [PATCH] Fix endless looping between cascade() and
- internal_add_timer()
-Thread-Index: Ac2lW61cie6zVh6YQeWnG2CUTeZXiQ==
-Message-ID: <98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net>
-Accept-Language: de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752294Ab2JHOCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 10:02:38 -0400
+Date: Mon, 8 Oct 2012 16:04:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Anton Arapov <anton@redhat.com>, Kyle McMartin <kmcmarti@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] uprobes: misc bugfixes
+Message-ID: <20121008140407.GA8034@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Hildner <christian.hildner@siemens.com>
+Ingo, please pull from
 
-This patch ensures that when cascade() is called timers within tv5 are not added endlessly to their own list again, instead they are added to the next lower tv level tv4 (as expected).
+  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
----
-Adding two (or more) timers with large values for "expires" (they have to reside within tv5 in the same list) leads to endless looping between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL is one and jiffies are crossing the value 1 << 18. The bug was introduced between 2.6.11 and 2.6.12 (and survived for quite some time).
+Mostly bugfixes. Nothing really serious, but probably makes sense
+for 3.7 anyway, everything looks straightforward enough.
 
-Tested with 2.6.14, patch is for 3.6.1 - see below.
+Oleg Nesterov (19):
+      uprobes: Do not leak UTASK_BP_HIT if find_active_uprobe() fails
+      uprobes: Do not setup ->active_uprobe/state prematurely
+      uprobes: Fix UPROBE_SKIP_SSTEP checks in handle_swbp()
+      uprobes: Kill UTASK_BP_HIT state
+      uprobes: Move clear_thread_flag(TIF_UPROBE) to uprobe_notify_resume()
+      uprobes: Change write_opcode() to use FOLL_FORCE
+      uprobes: Change valid_vma() to demand VM_MAYEXEC rather than VM_EXEC
+      uprobes: Restrict valid_vma(false) to skip VM_SHARED vmas
+      uprobes: Kill set_swbp()->is_swbp_at_addr()
+      uprobes: Introduce copy_opcode(), kill read_opcode()
+      uprobes: Kill set_orig_insn()->is_swbp_at_addr()
+      uprobes: Simplify is_swbp_at_addr(), remove stale comments
+      uprobes/x86: Only rep+nop can be emulated correctly
+      uprobes: Don't return success if alloc_uprobe() fails
+      uprobes: Do not delete uprobe if uprobe_unregister() fails
+      uprobes: Fix handle_swbp() vs unregister() + register() race
+      uprobes: Introduce prepare_uprobe()
+      uprobes: Fix prepare_uprobe() race with itself
+      uprobes: Fix the racy uprobe->flags manipulation
 
+ arch/x86/kernel/signal.c  |    4 +-
+ arch/x86/kernel/uprobes.c |   16 +--
+ include/linux/uprobes.h   |   11 --
+ kernel/events/uprobes.c   |  345 +++++++++++++++++++++------------------------
+ 4 files changed, 165 insertions(+), 211 deletions(-)
 
-diff -urN linux-3.6.1_orig/kernel/timer.c linux-3.6.1/kernel/timer.c
---- linux-3.6.1_orig/kernel/timer.c	2012-10-07 17:41:28.000000000 +0200
-+++ linux-3.6.1/kernel/timer.c	2012-10-08 09:34:40.000000000 +0200
-@@ -63,6 +63,7 @@
- #define TVR_SIZE (1 << TVR_BITS)
- #define TVN_MASK (TVN_SIZE - 1)
- #define TVR_MASK (TVR_SIZE - 1)
-+#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
- 
- struct tvec {
- 	struct list_head vec[TVN_SIZE];
-@@ -358,11 +359,12 @@
- 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
- 	} else {
- 		int i;
--		/* If the timeout is larger than 0xffffffff on 64-bit
--		 * architectures then we use the maximum timeout:
-+		/* If the timeout is larger than MAX_TVAL (on 64-bit
-+		 * architectures or with CONFIG_BASE_SMALL=1) then we
-+		 * use the maximum timeout.
- 		 */
--		if (idx > 0xffffffffUL) {
--			idx = 0xffffffffUL;
-+		if (idx > MAX_TVAL) {
-+			idx = MAX_TVAL;
- 			expires = idx + base->timer_jiffies;
- 		}
- 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
