@@ -1,42 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256Ab2JHPfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:35:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50229 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2JHPfo (ORCPT
+	id S1751483Ab2JHPgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:36:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43325 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab2JHPgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:35:44 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 8 Oct 2012 08:36:28 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: khali@linux-fr.org, yongjun_wei@trendmicro.com.cn,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: ina2xx: use module_i2c_driver to simplify the code
-Message-ID: <20121008153628.GA11734@roeck-us.net>
-References: <CAPgLHd99+yWL1br_FgWbj=5vnjRWoAAqe9ME6LS45aCj=Ga-Wg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd99+yWL1br_FgWbj=5vnjRWoAAqe9ME6LS45aCj=Ga-Wg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Oct 2012 11:36:36 -0400
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Alex Dubov <oakad@yahoo.com>, Linux-Next <linux-next@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Fixes for ms_block
+Date: Mon,  8 Oct 2012 17:36:20 +0200
+Message-Id: <1349710582-5410-1-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAMuHMdW7zfM1CxkXTCq2=ErkaAAxGVFyQSZdH3jwvUXr_8oOsg@mail.gmail.com>
+References: <CAMuHMdW7zfM1CxkXTCq2=ErkaAAxGVFyQSZdH3jwvUXr_8oOsg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 08:40:35PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Use the module_i2c_driver() macro to make the code smaller
-> and a bit simpler.
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi,
 
-Applied to -next.
+I finally found time to send the fix for the compile issue on m68k
+Among with small cosmetic fix to remove unused field that slipped thorough.
 
-Thanks,
-Guenter
+Do you know if my driver will be merged in 3.7 or later?
+I hope that the compile issue which I should have handled earlier is not to blame.
+
