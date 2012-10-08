@@ -1,319 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab2JHRMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:12:55 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:60592 "EHLO mail.x86-64.org"
+	id S1754313Ab2JHRO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:14:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36830 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754290Ab2JHRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:11:48 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/6] x86, RAS: Convert mce-inject module to debugfs
-Date: Mon,  8 Oct 2012 19:11:30 +0200
-Message-Id: <1349716293-16723-4-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <1349716293-16723-1-git-send-email-bp@amd64.org>
-References: <1349716293-16723-1-git-send-email-bp@amd64.org>
+	id S1754166Ab2JHRO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 13:14:27 -0400
+Date: Mon, 8 Oct 2012 19:14:24 +0200
+From: Jan Kara <jack@suse.cz>
+To: Neil Salstrom <salstrom@paintedocean.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: 3.6.0 kernel BUG at fs/dcache.c:967 during shutdown /
+ restart
+Message-ID: <20121008171424.GA14767@quack.suse.cz>
+References: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
+ <5070685A.1060605@paintedocean.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5070685A.1060605@paintedocean.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Sat 06-10-12 10:20:26, Neil Salstrom wrote:
+> 
+> I've not submitted a kernel bug before but I've read the bug
+> reporting pages.  I'll try to do my best and if you need more
+> information please let me know.  Please feel free to cc me on the
+> answer or if you have questions.
+> 
+> I'm using Linux Mint 13 (64 bit) on AMD hardware with a self
+> compiled 3.6.0 kernel for my MythTV HTPC.
+> 
+> Kernel version: Linux version 3.6.0 (gcc version 4.6.3
+> (Ubuntu/Linaro 4.6.3-1ubuntu5) ) #1 SMP Tue Oct 2 15:34:46 PDT 2012
+> 
+> CPU: model name      : AMD A6-3500 APU with Radeon(tm) HD Graphics
+> 
+> If you need any other system variables please let me know and I can
+> get those as well.
+> 
+> Upon shutdown or restart (from either the hard button on the case or
+> a "sudo shutdown -r now" the system crashes and does not actually
+> shut down.  I can ssh in to the system and a dmesg shows the
+> following:
+  There should be a line like:
+BUG: Dentry ... still in use (%d) [unmount of %s %s]
 
-This is a module which is used for debugging MCE decoding paths so its
-userspace interface should go to debugfs, where it belongs conceptually.
+just before the oops. Can you please post that one as well? Also I see that
+you are using nvidia module which taints the kernel. Can you try
+reproducing the issue without the module loaded?
 
-While at it, add a warning to the Kconfig text that this interface is
-unstable and no userspace scripts should rely all too much on it.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/ras/Kconfig          |  11 ++-
- arch/x86/ras/amd/mce-inject.c | 182 ++++++++++++++++++------------------------
- 2 files changed, 86 insertions(+), 107 deletions(-)
-
-diff --git a/arch/x86/ras/Kconfig b/arch/x86/ras/Kconfig
-index 9362f54bfe0f..4334ab92b3b0 100644
---- a/arch/x86/ras/Kconfig
-+++ b/arch/x86/ras/Kconfig
-@@ -2,10 +2,13 @@ menu "AMD RAS features"
- 	depends on X86_RAS && CPU_SUP_AMD
- 
- config X86_AMD_MCE_INJECT
--	tristate "Simple MCE injection interface over /sysfs"
-+	tristate "Inject MCEs"
-+	depends on DEBUG_FS
- 	default n
--	help
--	  This is a simple interface to inject MCEs over /sysfs and test
--	  the MCE decoding code.
-+	---help---
-+	  This is a simple debugfs interface to inject MCEs and test different
-+	  aspects of the MCE handling code.
-+
-+	  WARNING: Do not even assume that this interface is staying stable!
- 
- endmenu
-diff --git a/arch/x86/ras/amd/mce-inject.c b/arch/x86/ras/amd/mce-inject.c
-index 90aa317b09a6..66969eab5591 100644
---- a/arch/x86/ras/amd/mce-inject.c
-+++ b/arch/x86/ras/amd/mce-inject.c
-@@ -1,173 +1,149 @@
- /*
-- * A simple MCE injection facility for testing the MCE decoding code. This
-- * driver should be built as module so that it can be loaded on production
-- * kernels for testing purposes.
-+ * A simple MCE injection facility for testing different aspects of the RAS
-+ * code. This driver should be built as module so that it can be loaded
-+ * on production kernels for testing purposes.
-  *
-  * This file may be distributed under the terms of the GNU General Public
-  * License version 2.
-  *
-- * Copyright (c) 2010:  Borislav Petkov <borislav.petkov@amd.com>
-- *			Advanced Micro Devices Inc.
-+ * Copyright (c) 2010-12:  Borislav Petkov <borislav.petkov@amd.com>
-+ *			   Advanced Micro Devices Inc.
-  */
- 
- #include <linux/kobject.h>
-+#include <linux/debugfs.h>
- #include <linux/device.h>
--#include <linux/edac.h>
- #include <linux/module.h>
- #include <asm/mce.h>
- 
- #include "../../../drivers/edac/mce_amd.h"
- 
--struct edac_mce_attr {
--	struct attribute attr;
--	ssize_t (*show) (struct kobject *kobj, struct edac_mce_attr *attr, char *buf);
--	ssize_t (*store)(struct kobject *kobj, struct edac_mce_attr *attr,
--			 const char *buf, size_t count);
--};
--
--#define EDAC_MCE_ATTR(_name, _mode, _show, _store)			\
--static struct edac_mce_attr mce_attr_##_name = __ATTR(_name, _mode, _show, _store)
--
--static struct kobject *mce_kobj;
--
- /*
-  * Collect all the MCi_XXX settings
-  */
- static struct mce i_mce;
-+static struct dentry *dfs_inj;
- 
--#define MCE_INJECT_STORE(reg)						\
--static ssize_t edac_inject_##reg##_store(struct kobject *kobj,		\
--					 struct edac_mce_attr *attr,	\
--					 const char *data, size_t count)\
-+#define MCE_INJECT_SET(reg)						\
-+static int inj_##reg##_set(void *data, u64 val)				\
- {									\
--	int ret = 0;							\
--	unsigned long value;						\
--									\
--	ret = strict_strtoul(data, 16, &value);				\
--	if (ret < 0)							\
--		printk(KERN_ERR "Error writing MCE " #reg " field.\n");	\
--									\
--	i_mce.reg = value;						\
-+	struct mce *m = (struct mce *)data;				\
- 									\
--	return count;							\
-+	m->reg = val;							\
-+	return 0;							\
- }
- 
--MCE_INJECT_STORE(status);
--MCE_INJECT_STORE(misc);
--MCE_INJECT_STORE(addr);
-+MCE_INJECT_SET(status);
-+MCE_INJECT_SET(misc);
-+MCE_INJECT_SET(addr);
- 
--#define MCE_INJECT_SHOW(reg)						\
--static ssize_t edac_inject_##reg##_show(struct kobject *kobj,		\
--					struct edac_mce_attr *attr,	\
--					char *buf)			\
-+#define MCE_INJECT_GET(reg)						\
-+static int inj_##reg##_get(void *data, u64 *val)			\
- {									\
--	return sprintf(buf, "0x%016llx\n", i_mce.reg);			\
-+	struct mce *m = (struct mce *)data;				\
-+									\
-+	*val = m->reg;							\
-+	return 0;							\
- }
- 
--MCE_INJECT_SHOW(status);
--MCE_INJECT_SHOW(misc);
--MCE_INJECT_SHOW(addr);
-+MCE_INJECT_GET(status);
-+MCE_INJECT_GET(misc);
-+MCE_INJECT_GET(addr);
- 
--EDAC_MCE_ATTR(status, 0644, edac_inject_status_show, edac_inject_status_store);
--EDAC_MCE_ATTR(misc, 0644, edac_inject_misc_show, edac_inject_misc_store);
--EDAC_MCE_ATTR(addr, 0644, edac_inject_addr_show, edac_inject_addr_store);
-+DEFINE_SIMPLE_ATTRIBUTE(status_fops, inj_status_get, inj_status_set, "%llx\n");
-+DEFINE_SIMPLE_ATTRIBUTE(misc_fops, inj_misc_get, inj_misc_set, "%llx\n");
-+DEFINE_SIMPLE_ATTRIBUTE(addr_fops, inj_addr_get, inj_addr_set, "%llx\n");
- 
- /*
-  * This denotes into which bank we're injecting and triggers
-  * the injection, at the same time.
-  */
--static ssize_t edac_inject_bank_store(struct kobject *kobj,
--				      struct edac_mce_attr *attr,
--				      const char *data, size_t count)
-+static int inj_bank_set(void *data, u64 val)
- {
--	int ret = 0;
--	unsigned long value;
-+	struct mce *m = (struct mce *)data;
- 
--	ret = strict_strtoul(data, 10, &value);
--	if (ret < 0) {
--		printk(KERN_ERR "Invalid bank value!\n");
--		return -EINVAL;
--	}
--
--	if (value > 5)
--		if (boot_cpu_data.x86 != 0x15 || value > 6) {
--			printk(KERN_ERR "Non-existent MCE bank: %lu\n", value);
-+	if (val > 5) {
-+		if (boot_cpu_data.x86 != 0x15 || val > 6) {
-+			pr_err("Non-existent MCE bank: %llu\n", val);
- 			return -EINVAL;
- 		}
-+	}
- 
--	i_mce.bank = value;
-+	m->bank = val;
- 
--	amd_decode_mce(NULL, 0, &i_mce);
-+	amd_decode_mce(NULL, 0, m);
- 
--	return count;
-+	return 0;
- }
- 
--static ssize_t edac_inject_bank_show(struct kobject *kobj,
--				     struct edac_mce_attr *attr, char *buf)
-+static int inj_bank_get(void *data, u64 *val)
- {
--	return sprintf(buf, "%d\n", i_mce.bank);
--}
-+	struct mce *m = (struct mce *)data;
- 
--EDAC_MCE_ATTR(bank, 0644, edac_inject_bank_show, edac_inject_bank_store);
-+	*val = m->bank;
-+	return 0;
-+}
- 
--static struct edac_mce_attr *sysfs_attrs[] = { &mce_attr_status, &mce_attr_misc,
--					       &mce_attr_addr, &mce_attr_bank
-+DEFINE_SIMPLE_ATTRIBUTE(bank_fops, inj_bank_get, inj_bank_set, "%llu\n");
-+
-+struct dfs_node {
-+	char *name;
-+	struct dentry *d;
-+	const struct file_operations *fops;
-+} dfs_fls[] = {
-+	{ .name = "status",	.fops = &status_fops },
-+	{ .name = "misc",	.fops = &misc_fops },
-+	{ .name = "addr",	.fops = &addr_fops },
-+	{ .name = "bank",	.fops = &bank_fops },
- };
- 
--static int __init edac_init_mce_inject(void)
-+static int __init init_mce_inject(void)
- {
--	struct bus_type *edac_subsys = NULL;
--	int i, err = 0;
-+	int i;
- 
--	edac_subsys = edac_get_sysfs_subsys();
--	if (!edac_subsys)
-+	dfs_inj = debugfs_create_dir("mce-inject", NULL);
-+	if (!dfs_inj)
- 		return -EINVAL;
- 
--	mce_kobj = kobject_create_and_add("mce", &edac_subsys->dev_root->kobj);
--	if (!mce_kobj) {
--		printk(KERN_ERR "Error creating a mce kset.\n");
--		err = -ENOMEM;
--		goto err_mce_kobj;
--	}
-+	for (i = 0; i < ARRAY_SIZE(dfs_fls); i++) {
-+		dfs_fls[i].d = debugfs_create_file(dfs_fls[i].name,
-+						    S_IRUSR | S_IWUSR,
-+						    dfs_inj,
-+						    &i_mce,
-+						    dfs_fls[i].fops);
- 
--	for (i = 0; i < ARRAY_SIZE(sysfs_attrs); i++) {
--		err = sysfs_create_file(mce_kobj, &sysfs_attrs[i]->attr);
--		if (err) {
--			printk(KERN_ERR "Error creating %s in sysfs.\n",
--					sysfs_attrs[i]->attr.name);
--			goto err_sysfs_create;
--		}
-+		if (!dfs_fls[i].d)
-+			goto err_dfs_add;
- 	}
-+
- 	return 0;
- 
--err_sysfs_create:
-+err_dfs_add:
- 	while (--i >= 0)
--		sysfs_remove_file(mce_kobj, &sysfs_attrs[i]->attr);
-+		debugfs_remove(dfs_fls[i].d);
- 
--	kobject_del(mce_kobj);
-+	debugfs_remove(dfs_inj);
-+	dfs_inj = NULL;
- 
--err_mce_kobj:
--	edac_put_sysfs_subsys();
--
--	return err;
-+	return -ENOMEM;
- }
- 
--static void __exit edac_exit_mce_inject(void)
-+static void __exit exit_mce_inject(void)
- {
- 	int i;
- 
--	for (i = 0; i < ARRAY_SIZE(sysfs_attrs); i++)
--		sysfs_remove_file(mce_kobj, &sysfs_attrs[i]->attr);
-+	for (i = 0; i < ARRAY_SIZE(dfs_fls); i++)
-+		debugfs_remove(dfs_fls[i].d);
- 
--	kobject_del(mce_kobj);
-+	memset(&dfs_fls, 0, sizeof(dfs_fls));
- 
--	edac_put_sysfs_subsys();
-+	debugfs_remove(dfs_inj);
-+	dfs_inj = NULL;
- }
--
--module_init(edac_init_mce_inject);
--module_exit(edac_exit_mce_inject);
-+module_init(init_mce_inject);
-+module_exit(exit_mce_inject);
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Borislav Petkov <borislav.petkov@amd.com>");
- MODULE_AUTHOR("AMD Inc.");
--MODULE_DESCRIPTION("MCE injection facility for testing MCE decoding");
-+MODULE_DESCRIPTION("MCE injection facility for RAS testing");
+								Honza
+> 
+> [102792.710563] ------------[ cut here ]------------
+> [102792.710564] kernel BUG at fs/dcache.c:967!
+> [102792.710566] invalid opcode: 0000 [#1] SMP
+> [102792.710568] Modules linked in: nls_utf8 udf crc_itu_t nfsv4
+> binfmt_misc nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc
+> snd_hda_codec_hdmi xfs nvidia(PO) rc_imon_mce imon rc_core
+> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq_midi
+> snd_hwdep snd_rawmidi snd_pcm psmouse snd_seq_midi_event snd_seq
+> serio_raw snd_seq_device snd_timer snd soundcore snd_page_alloc
+> f71882fg r8169 ahci libahci
+> [102792.710587] CPU 0
+> [102792.710590] Pid: 29771, comm: umount Tainted: P           O
+> 3.6.0 #1 System manufacturer System Product Name/F1A55-M LX PLUS
+> [102792.710592] RIP: 0010:[<ffffffff8116c606>] [<ffffffff8116c606>]
+> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
+> [102792.710598] RSP: 0018:ffff880118f6dd98  EFLAGS: 00010296
+> [102792.710600] RAX: 000000000000005d RBX: ffff88011092acc0 RCX:
+> 00000000000013ae
+> [102792.710601] RDX: 0000000000004663 RSI: 0000000000000046 RDI:
+> ffffffff81bbf9bc
+> [102792.710602] RBP: ffff880118f6ddb8 R08: 000000000000000a R09:
+> 0000000000000000
+> [102792.710604] R10: 000000000000039a R11: 0000000000000399 R12:
+> ffff880110a5c900
+> [102792.710605] R13: ffff880118fa9d00 R14: ffff880118fa9d30 R15:
+> ffff8801180c9000
+> [102792.710607] FS:  00007f9cc4c16800(0000)
+> GS:ffff88011ec00000(0000) knlGS:0000000000000000
+> [102792.710608] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [102792.710609] CR2: 00007f9cc4241120 CR3: 0000000117993000 CR4:
+> 00000000000007f0
+> [102792.710611] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> 0000000000000000
+> [102792.710612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> 0000000000000400
+> [102792.710614] Process umount (pid: 29771, threadinfo
+> ffff880118f6c000, task ffff88007b8edb00)
+> [102792.710614] Stack:
+> [102792.710616]  ffff8801180c9350 ffff880110a5c6c0 ffff8801180c9000
+> ffffffffa0d0f3c0
+> [102792.710618]  ffff880118f6ddd8 ffffffff8116de93 0000000000000001
+> ffff8801180c9000
+> [102792.710620]  ffff880118f6de08 ffffffff811583bc ffff880110a5c760
+> 0000000000000014
+> [102792.710622] Call Trace:
+> [102792.710626]  [<ffffffff8116de93>] shrink_dcache_for_umount+0x33/0x60
+> [102792.710629]  [<ffffffff811583bc>] generic_shutdown_super+0x2c/0xf0
+> [102792.710632]  [<ffffffff81158516>] kill_anon_super+0x16/0x30
+> [102792.710634]  [<ffffffff81158557>] kill_litter_super+0x27/0x30
+> [102792.710650]  [<ffffffffa0d094a9>] rpc_kill_sb+0x99/0xc0 [sunrpc]
+> [102792.710653]  [<ffffffff8115877c>] deactivate_locked_super+0x3c/0xa0
+> [102792.710655]  [<ffffffff8115938e>] deactivate_super+0x4e/0x70
+> [102792.710658]  [<ffffffff81174416>] mntput_no_expire+0x106/0x160
+> [102792.710661]  [<ffffffff8117543e>] sys_umount+0x6e/0x3b0
+> [102792.710664]  [<ffffffff81583d96>] system_call_fastpath+0x1a/0x1f
+> [102792.710665] Code: 00 00 48 8b 40 28 4c 8b 08 48 8b 43 30 48 85
+> c0 74 04 48 8b 50 40 48 89 34 24 48 c7 c7 48 69 7c 81 48 89 de 31 c0
+> e8 09 62 40 00 <0f> 0b 0f 0b 66 0f 1f 44 00 00 55 48 89 e5 41 54 53
+> 66 66 66 66
+> [102792.710686] RIP  [<ffffffff8116c606>]
+> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
+> [102792.710689]  RSP <ffff880118f6dd98>
+> [102792.710705] ---[ end trace 6cebf99f8c65907b ]---
+> 
+> Thank you,
+> 
+> Neil
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
-1.8.0.rc0.18.gf84667d
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
