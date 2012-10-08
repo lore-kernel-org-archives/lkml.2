@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2JHPgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:36:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43325 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab2JHPgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:36:38 -0400
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alex Dubov <oakad@yahoo.com>, Linux-Next <linux-next@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 2/2] memstick: ms_block: fix complile issue.
-Date: Mon,  8 Oct 2012 17:36:22 +0200
-Message-Id: <1349710582-5410-3-git-send-email-maximlevitsky@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349710582-5410-1-git-send-email-maximlevitsky@gmail.com>
-References: <CAMuHMdW7zfM1CxkXTCq2=ErkaAAxGVFyQSZdH3jwvUXr_8oOsg@mail.gmail.com>
- <1349710582-5410-1-git-send-email-maximlevitsky@gmail.com>
+	id S1751387Ab2JHPks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:40:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2JHPkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 11:40:42 -0400
+Date: Mon, 8 Oct 2012 17:38:56 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-wireless@vger.kernel.org, johannes.berg@intel.com,
+        wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: iwl3945: order 5 allocation during ifconfig up; vm problem?
+Message-ID: <20121008153855.GA9737@redhat.com>
+References: <20120909213228.GA5538@elf.ucw.cz>
+ <alpine.DEB.2.00.1209091539530.16930@chino.kir.corp.google.com>
+ <20120910111113.GA25159@elf.ucw.cz>
+ <20120911162536.bd5171a1.akpm@linux-foundation.org>
+ <20120912101826.GL11266@suse.de>
+ <20121003113659.GD2259@redhat.com>
+ <alpine.DEB.2.00.1210031104120.29765@chino.kir.corp.google.com>
+ <20121005083659.GA2819@redhat.com>
+ <20121006120850.GB18025@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121006120850.GB18025@elf.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Geert Uytterhoeven
+On Sat, Oct 06, 2012 at 02:08:50PM +0200, Pavel Machek wrote:
+> On Fri 2012-10-05 10:37:00, Stanislaw Gruszka wrote:
+> > On Wed, Oct 03, 2012 at 11:07:13AM -0700, David Rientjes wrote:
+> > > On Wed, 3 Oct 2012, Stanislaw Gruszka wrote:
+> > > 
+> > > > So, can this problem be solved like on below patch, or I should rather
+> > > > split firmware loading into chunks similar like was already iwlwifi did?
+> > 
+> > Hmm, I looked at iwl3945 code and looks loading firmware in chunks is
+> > nothing that can be easily done. 3945 bootstrap code expect that runtime
+> > ucode will be placed in physically continue memory, and there are no
+> > separate instructions for copy and for execute, just one to perform both
+> > those actions. Maybe loading firmware in chunks can be done using
+> > undocumented features of the device, but I'm eager to do this.
+> 
+> Just allocate memory during boot?
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/7280352/
-arch/m68k/include/asm/hardirq.h:23:20: error: expected ')' before 'DRIVER_NAME'
-make[4]: *** [drivers/memstick/core/ms_block.o] Error 1
-
-The reason for this is that pr_fmt() references DRIVER_NAME and is defined
-before the first include, while DRIVER_NAME is only defined in ms_block.h,
-which is the last included file. If any subsequent include file uses pr_fmt()
-(e.g. the call to pr_crit() in arch/m68k/include/asm/hardirq.h), this
-causes a build
-failure.
-
-I suggest moving the DRIVER_NAME define to ms_block.c.
-Cfr. memstick.c and mspro_block.c, who already have their own definition.
-
-
-CC: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/memstick/core/ms_block.c |    2 +-
- drivers/memstick/core/ms_block.h |    2 --
- 2 files changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
-index c815fe5..71e5937 100644
---- a/drivers/memstick/core/ms_block.c
-+++ b/drivers/memstick/core/ms_block.c
-@@ -11,7 +11,7 @@
-  * Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
-  *
-  */
--
-+#define DRIVER_NAME "ms_block"
- #define pr_fmt(fmt) DRIVER_NAME ": " fmt
+On driver I can reserve memory during module load, but also this isn't
+something I prefer to do.
  
- #include <linux/module.h>
-diff --git a/drivers/memstick/core/ms_block.h b/drivers/memstick/core/ms_block.h
-index a2b2765..546b55e 100644
---- a/drivers/memstick/core/ms_block.h
-+++ b/drivers/memstick/core/ms_block.h
-@@ -277,8 +277,6 @@ static int msb_reset(struct msb_data *msb, bool full);
- static int h_msb_default_bad(struct memstick_dev *card,
- 						struct memstick_request **mrq);
- 
--#define DRIVER_NAME "ms_block"
--
- #define __dbg(level, format, ...) \
- 	do { \
- 		if (debug >= level) \
--- 
-1.7.9.5
+> > Pavel, do you still can reproduce this problem on released 3.6 ? 
+> 
+> It happened again yesterday on 3.6.0-rc6+. I don't think mm changed
+> between -rc6 and final...
 
+Could you check  __GFP_REPEAT oneline patch posted previously ?
+And if that fail again, provide full dmesg (on your previous messages
+there is vmap() failure, which I do not understand, where it come
+from) ?
+
+Thanks
+Stanislaw
