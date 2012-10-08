@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2JGX4A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 19:56:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38423 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334Ab2JGXz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 19:55:58 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1349645172.16173.152.camel@deadeye.wl.decadent.org.uk>
-References: <20120928182957.993484211@linuxfoundation.org> <20120928183018.599659336@linuxfoundation.org> <1349645172.16173.152.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [ 174/262] x86, avx: dont use avx instructions with "noxsave" boot param
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 08 Oct 2012 07:55:31 +0800
-To: Ben Hutchings <ben@decadent.org.uk>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <c43c49d3-cf80-49c4-b41e-12db7ce90c24@email.android.com>
+	id S1755186Ab2JHACS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:02:18 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38683 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab2JHACP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 20:02:15 -0400
+Date: Mon, 8 Oct 2012 11:02:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: build failure after merge of the thermal tree
+Message-Id: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userland should use a different query mechanism.  On the other hand, it will not hurt either.  On pre-xsave kernels AVX is a non-option.
+--Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ben Hutchings <ben@decadent.org.uk> wrote:
+Hi Zhang,
 
->On Fri, 2012-09-28 at 11:51 -0700, Greg Kroah-Hartman wrote:
->> From: Greg KH <gregkh@linuxfoundation.org>
->> 
->> 3.5-stable review patch.  If anyone has any objections, please let me
->know.
->> 
->> ------------------
->> 
->> From: Suresh Siddha <suresh.b.siddha@intel.com>
->> 
->> commit c6fd893da927c6cefb2ece22402765379921a834 upstream.
->> 
->> Clear AVX, AVX2 features along with clearing XSAVE feature bits,
->> as part of the parsing "noxsave" parameter.
->> 
->> Fixes the kernel boot panic with "noxsave" boot parameter.
->> 
->> We could have checked cpu_has_osxsave along with cpu_has_avx etc, but
->Peter
->> mentioned clearing the feature bits will be better for uses like
->> static_cpu_has() etc.
->
->This was marked as needed for 3.5 only - presumably because the kernel
->wasn't using AVX before this - but don't we also need to clear these
->bits even in earlier versions so userland knows not to use it?
->
->Ben.
->
->> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
->> Link:
->http://lkml.kernel.org/r/1343755754.2041.2.camel@sbsiddha-desk.sc.intel.com
->> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
->> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> 
->> ---
->>  arch/x86/kernel/cpu/common.c |    2 ++
->>  1 file changed, 2 insertions(+)
->> 
->> --- a/arch/x86/kernel/cpu/common.c
->> +++ b/arch/x86/kernel/cpu/common.c
->> @@ -144,6 +144,8 @@ static int __init x86_xsave_setup(char *
->>  {
->>  	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
->>  	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
->> +	setup_clear_cpu_cap(X86_FEATURE_AVX);
->> +	setup_clear_cpu_cap(X86_FEATURE_AVX2);
->>  	return 1;
->>  }
->>  __setup("noxsave", x86_xsave_setup);
+After merging the thermal tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+drivers/thermal/cpu_cooling.c: In function 'get_idr':
+drivers/thermal/cpu_cooling.c:89:14: error: 'MAX_ID_MASK' undeclared (first=
+ use in this function)
+
+Caused by commit 023614183768 ("thermal: add generic cpufreq cooling
+implementation") interacting with commit 125c4c706b68 ("idr: rename
+MAX_LEVEL to MAX_IDR_LEVEL") which very recently entered Linus' tree.
+
+I have applied the following fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 8 Oct 2012 10:56:56 +1100
+Subject: [PATCH] thermal: fix for for MAX_ID_MASK to MAX_IDR_MASK rename
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/thermal/cpu_cooling.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 9050c1b..cc1c930 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -86,7 +86,7 @@ again:
+ 	else if (unlikely(err))
+ 		return err;
+=20
+-	*id =3D *id & MAX_ID_MASK;
++	*id =3D *id & MAX_IDR_MASK;
+ 	return 0;
+ }
+=20
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQchf9AAoJEECxmPOUX5FEXdwP/jZXOBu2jApcMptXGjYVotg5
+O2Ajj5RUZwI/3pura8Q9g707pXYvHipWXe3SZnN+NIrcutTX3xJ/XScT0E02z98U
+FfWXZ1/1vUFpgium5QlCAmnyINjEopzDKLTOX706+7CZRyOAsKETyRXvD0zvxo/1
+w3Jtdu7XTR/k0ZR3Kyfy45mZv82kvowrTj5UTBtmrjs0YYOuKM02e6GVZGAsLySm
+ChuJttXFNjuxZfJMWIDT0+d9iqF8buumc46gSwSZQxw/je1Uz59E1W1K8IJ/rD8H
+AuDQQQ/zZUimqQi4XGb8nHtwNn67qy3T/NrdnLB2oOjSsosz2aAdCYDjuN6v8a5J
+I3FVyuqnuDbJ5PHoYAjET79P3MkkdfS/+4h1kQ+sdoL9zwcugcCcV5Em2AdaZPu2
+spS+hSMfO9ndnZvchYK9KK5ynb/OdmSbDKvmpwRaqoHpW/6R+BJSPkGeg/jKwWkS
+zIWNaox7wfDXtDDlfrVLRj8bQN6gTKW1fkBD5iElx0xarVaDlwbLTmKoXCw/GK1q
+BY6xxpI8v0q1Ue9xdyEALhvNOlIVvB7OqlM+kvp68vw/nXU+5U7EFb7YjIy4KTn4
+1CYhlDK853e03jriC3tF49BBT58xO7x561P+U33ilGnjflO0Kx2cBBnN2HIv69je
+vA3chq8Dd2OzwBOY4ard
+=jeiF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__8_Oct_2012_11_02_05_+1100_1gWC8GIGM.CwzHLI--
