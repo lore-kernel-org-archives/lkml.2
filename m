@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab2JHPrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:47:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39703 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab2JHPrU (ORCPT
+	id S1752211Ab2JHPsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:48:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49065 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab2JHPsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:47:20 -0400
-Date: Mon, 8 Oct 2012 10:47:11 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] proc: don't show nonexistent capabilities (v2)
-Message-ID: <20121008154711.GA16261@sergelap>
-References: <1349603814-1085468-1-git-send-email-avagin@openvz.org>
- <CAGXu5jL8VvfVu0XN7-HDwGt232ovvUBvjP5CJQt+6A3Jnv_OfQ@mail.gmail.com>
+	Mon, 8 Oct 2012 11:48:35 -0400
+Message-ID: <5072F52D.6090807@gmail.com>
+Date: Mon, 08 Oct 2012 23:45:49 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jL8VvfVu0XN7-HDwGt232ovvUBvjP5CJQt+6A3Jnv_OfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Hanjun Guo <guohanjun@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        Gong Chen <gong.chen@linux.intel.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [RFC PATCH v3 00/28] ACPI based system device hotplug framework
+References: <1349537256-21670-1-git-send-email-jiang.liu@huawei.com> <4290643.jEcV9mqAac@vostro.rjw.lan>
+In-Reply-To: <4290643.jEcV9mqAac@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> On Sun, Oct 7, 2012 at 2:56 AM, Andrew Vagin <avagin@openvz.org> wrote:
-> > Without this patch it is really hard to interpret a bounding set,
-> > if CAP_LAST_CAP is unknown for a current kernel.
-> >
-> > Non-existant capabilities can not be deleted from a bounding set
-> > with help of prctl.
-> >
-> > E.g.: Here are two examples without/with this patch.
-> > CapBnd: ffffffe0fdecffff
-> > CapBnd: 00000000fdecffff
-> >
-> > I suggest to hide non-existent capabilities. Here is two reasons.
-> > * It's logically and easier for using.
-> > * It helps to checkpoint-restore capabilities of tasks, because tasks
-> > can be restored on another kernel, where CAP_LAST_CAP is bigger.
-> >
-> > v2: Non-existent capabilities can not be removed from creds, because
-> >     in this case user cannot set all=eip. This patch cleans up non-existent
-> >     capabilities from content of /proc/pid/status
-> >
-> > Cc: Andrew G. Morgan <morgan@kernel.org>
-> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
-
-Basic capsh tests seem to have no problem with it.
-
-Thanks, Andrew.
-
-Reviewed-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-
-> > Cc: Pavel Emelyanov <xemul@parallels.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Signed-off-by: Andrew Vagin <avagin@openvz.org>
+On 10/08/2012 05:47 AM, Rafael J. Wysocki wrote:
+> Hi,
 > 
-> Seems sensible to me.
+> On Saturday 06 of October 2012 23:27:08 Jiang Liu wrote:
+>> The patchset is based on "5f3d2f2e1a63679cf1c4a4210f2f1cc2f335bef6"
+>> from git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+>> And you pull the changeset from git://github.com/jiangliu/linux.git acpihp
+>>
+>> Modern high-end server may support advanced hotplug features for system
+>> devices, including physical processor, memory board, IO extension board
+>> and/or computer node. The ACPI specifications have provided standard
+>> interfaces between firmware and OS to support device hotplug at runtime.
+>> This patch series provide an ACPI based hotplug framework to support system
+>> device hotplug at runtime, which will replace current existing ACPI device
+>> driver based CPU/memory/CONTAINER hotplug mechanism.
+>>
+>> The new ACPI system device hotplug framework has following design goals:
+>> 1) Provide a mechanism to detect hotplug slots by checking ACPI _EJ0 method,
+>> ACPI PRCT (platform RAS capabilities table) and other platform specific
+>> mechanisms.
 > 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
+> Which of the patches does that?
+Hi Rafael,
+	Thanks for your review:)
+Currently we have only implemented slot detection based on _EJ0 method. PRCT is
+still in plan because that spec is not in public domain yet, ACPI5.0 only reserves
+that key word without any detail information about it:(
+	The patch 1-4 implement the slot enumeration driver.
+
 > 
-> -Kees
+>> 2) Unify the way to enumerate ACPI based hotplug slots. All hotplug slots
+>> will be enumerated by the enumeration driver
 > 
-> -- 
-> Kees Cook
-> Chrome OS Security
+> What is the enumeration driver?
+The enumerator is a driver to create ACPI system device hotplug slots, which
+takes following responsibilities:
+1) walk the ACPI namespace to scan for hotpug slot with platform specific knowledge.
+2) create hotplug slot device for each hotplug slot found, later a hotplug driver
+will bind to those hotplug slots.
+3) Provide platform specific callback methods to control those hotplug slots,
+such as get slot capabilities, power on slot, power off slot etc.
+
+> 
+>> , instead of by ACPI device drivers.
+>> 3) Unify the way to handle ACPI hotplug events. All ACPI hotplug events
+>> for system devices will be handled by a generic ACPI hotplug driver,
+>> instead of handled by ACPI device drivers.
+> 
+> What are "system devices"
+System devices includes CPU, memory, PCI host bridge and node (ACPI module device
+contains CPU, memory and/or PCI host bridge).
+
+> 
+>> 4) Solve dependencies among hotplug slots. You need first to remove the
+>> memory device before removing a physical processor if a hotpluggable memory
+>> device is connected to a hotpluggable physical processor.
+>> 5) Provide better error handling and recover.
+>> 6) Provide interface to cancel ongoing hotplug operations. It may take a
+>> very long time to remove a memory device, so provide interface to cancel
+>> the operation. This is important especially for memory hot-removal.
+>> 7) Support new RAS features, such as socket/memory migration.
+>> 8) Provide better user interfaces to the hotplug functionalities.
+>> 9) Trigger hotplug events/operations by software. This feature is useful
+>>    for hardware fault management and power saving.
+> 
+> Well, this may or may not be OK.  I'm going to review the patches, but I can't
+> really say when it's going to happen (not really soon for sure).
+> 
+
+>>  create mode 100644 drivers/acpi/hotplug/slot_fake.c
+>>  create mode 100644 drivers/acpi/hotplug/state_machine.c
+>>  create mode 100644 drivers/acpi/hotplug/sysfs.c
+>>  create mode 100644 include/acpi/acpi_hotplug.h
+>>  delete mode 100644 include/acpi/container.h
+> 
+> And I seriously think this is too much material for a single patchset.
+> 
+> Please consider splitting it into smaller and well-documented series of
+> patches, so that the reviewers can understand things more easily.
+Thanks for your advice, I will split them into small groups next time.
+The patch set could be divided into four parts:
+patch 1-4: implement a ACPI system device hotplug slot enumerator
+patch 6-17: implement a hotplug driver to manage all ACPI system device hotplug slots
+patch 18-19: refine ACPI container driver to support new hotplug framework
+patch 20-28: refine ACPI processor driver to support new hotplug framewor, also with some code cleanup
+
+Thanks
+Gerry
+
