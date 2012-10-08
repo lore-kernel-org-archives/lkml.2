@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2JHKJG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 06:09:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34376 "EHLO relay.sw.ru"
+	id S1752506Ab2JHKJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 06:09:37 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22095 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab2JHKHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 06:07:53 -0400
+	id S1751872Ab2JHKGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 06:06:50 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -14,12 +14,10 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
         <devel@openvz.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 13/14] protect architectures where THREAD_SIZE >= PAGE_SIZE against fork bombs
-Date: Mon,  8 Oct 2012 14:06:19 +0400
-Message-Id: <1349690780-15988-14-git-send-email-glommer@parallels.com>
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v4 14/14] Add documentation about the kmem controller
+Date: Mon,  8 Oct 2012 14:06:20 +0400
+Message-Id: <1349690780-15988-15-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349690780-15988-1-git-send-email-glommer@parallels.com>
 References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
@@ -27,73 +25,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because those architectures will draw their stacks directly from the
-page allocator, rather than the slab cache, we can directly pass
-__GFP_KMEMCG flag, and issue the corresponding free_pages.
-
-This code path is taken when the architecture doesn't define
-CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
-THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the remaining
-architectures fall in this category.
-
-This will guarantee that every stack page is accounted to the memcg the
-process currently lives on, and will have the allocations to fail if
-they go over limit.
-
-For the time being, I am defining a new variant of THREADINFO_GFP, not
-to mess with the other path. Once the slab is also tracked by memcg, we
-can get rid of that flag.
-
-Tested to successfully protect against :(){ :|:& };:
-
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/thread_info.h | 2 ++
- kernel/fork.c               | 4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ Documentation/cgroups/memory.txt | 55 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 54 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-index ccc1899..e7e0473 100644
---- a/include/linux/thread_info.h
-+++ b/include/linux/thread_info.h
-@@ -61,6 +61,8 @@ extern long do_no_restart_syscall(struct restart_block *parm);
- # define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACK)
- #endif
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index c07f7b4..9b08548 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -71,6 +71,11 @@ Brief summary of control files.
+  memory.oom_control		 # set/show oom controls.
+  memory.numa_stat		 # show the number of memory usage per numa node
  
-+#define THREADINFO_GFP_ACCOUNTED (THREADINFO_GFP | __GFP_KMEMCG)
++ memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
++ memory.kmem.usage_in_bytes      # show current kernel memory allocation
++ memory.kmem.failcnt             # show the number of kernel memory usage hits limits
++ memory.kmem.max_usage_in_bytes  # show max kernel memory usage recorded
 +
- /*
-  * flag set/clear/test wrappers
-  * - pass TIF_xxxx constants to these functions
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 03b86f1..b3f6298 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -146,7 +146,7 @@ void __weak arch_release_thread_info(struct thread_info *ti)
- static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
- 						  int node)
- {
--	struct page *page = alloc_pages_node(node, THREADINFO_GFP,
-+	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
- 					     THREAD_SIZE_ORDER);
+  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
+  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
+  memory.kmem.tcp.failcnt            # show the number of tcp buf memory usage hits limits
+@@ -268,20 +273,62 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
+ different than user memory, since it can't be swapped out, which makes it
+ possible to DoS the system by consuming too much of this precious resource.
  
- 	return page ? page_address(page) : NULL;
-@@ -154,7 +154,7 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
++Kernel memory won't be accounted at all until it is limited. This allows for
++existing setups to continue working without disruption. Note that it is
++possible to account it without an effective limit by setting the limits
++to a very high number (like RESOURCE_MAX -1page). The limit cannot be set
++if the cgroup have children, or if there are already tasks in the cgroup.
++
++After a controller is first limited, it will be kept being accounted until it
++is removed. The memory limitation itself, can of course be removed by writing
++-1 to memory.kmem.limit_in_bytes
++
+ Kernel memory limits are not imposed for the root cgroup. Usage for the root
+-cgroup may or may not be accounted.
++cgroup may or may not be accounted. The memory used is accumulated into
++memory.kmem.usage_in_bytes, or in a separate counter when it makes sense.
++The main "kmem" counter is fed into the main counter, so kmem charges will
++also be visible from the user counter.
  
- static inline void free_thread_info(struct thread_info *ti)
- {
--	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
-+	free_accounted_pages((unsigned long)ti, THREAD_SIZE_ORDER);
- }
- # else
- static struct kmem_cache *thread_info_cache;
+ Currently no soft limit is implemented for kernel memory. It is future work
+ to trigger slab reclaim when those limits are reached.
+ 
+ 2.7.1 Current Kernel Memory resources accounted
+ 
++* stack pages: every process consumes some stack pages. By accounting into
++kernel memory, we prevent new processes from being created when the kernel
++memory usage is too high.
++
+ * sockets memory pressure: some sockets protocols have memory pressure
+ thresholds. The Memory Controller allows them to be controlled individually
+ per cgroup, instead of globally.
+ 
+ * tcp memory pressure: sockets memory pressure for the tcp protocol.
+ 
++2.7.3 Common use cases
++
++Because the "kmem" counter is fed to the main user counter, kernel memory can
++never be limited completely independently of user memory. Say "U" is the user
++limit, and "K" the kernel limit. There are three possible ways limits can be
++set:
++
++    U != 0, K = 0:
++    This is the standard memcg limitation mechanism already present before kmem
++    accounting. Kernel memory is completely ignored.
++
++    U,K != 0, K < U:
++    Kernel memory is effectively set as a percentage of the user memory. This
++    setup is useful in deployments where the total amount of memory per-cgroup
++    is overcommited. Overcommiting kernel memory limits is definitely not
++    recommended, since the box can still run out of non-reclaimable memory.
++    In this case, the admin could set up K so that the sum of all groups is
++    never greater than the total memory, and freely set U at the cost of his
++    QoS.
++
++    U,K != 0, K >= U:
++    Since kmem charges will also be fed to the user counter, this setup gives
++    the admin a unified view of memory. Reclaim will be triggered for the cgroup
++    for both kinds of memory.
++
+ 3. User Interface
+ 
+ 0. Configuration
+@@ -290,6 +337,7 @@ a. Enable CONFIG_CGROUPS
+ b. Enable CONFIG_RESOURCE_COUNTERS
+ c. Enable CONFIG_MEMCG
+ d. Enable CONFIG_MEMCG_SWAP (to use swap extension)
++d. Enable CONFIG_MEMCG_KMEM (to use kmem extension)
+ 
+ 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
+ # mount -t tmpfs none /sys/fs/cgroup
+@@ -406,6 +454,11 @@ About use_hierarchy, see Section 6.
+   Because rmdir() moves all pages to parent, some out-of-use page caches can be
+   moved to the parent. If you want to avoid that, force_empty will be useful.
+ 
++  Also, note that when memory.kmem.limit_in_bytes is set the charges due to
++  kernel pages will still be seen. This is not considered a failure and the
++  write will still return success. In this case, it is expected that
++  memory.kmem.usage_in_bytes == memory.usage_in_bytes.
++
+   About use_hierarchy, see Section 6.
+ 
+ 5.2 stat file
 -- 
 1.7.11.4
 
