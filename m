@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab2JHO22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 10:28:28 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52485 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752079Ab2JHO2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 10:28:25 -0400
-Message-ID: <1349706500.15966.165.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] x86: efi: Turn off efi_enabled after setup on mixed
- fw/kernel
-From: Matt Fleming <matt@console-pimps.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, mk@dee.su,
-        Marko Kohtala <marko.kohtala@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Date: Mon, 08 Oct 2012 15:28:20 +0100
-In-Reply-To: <1345412920-10906-1-git-send-email-olof@lixom.net>
-References: <1345412920-10906-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753326Ab2JHO2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 10:28:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166Ab2JHO21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 10:28:27 -0400
+Date: Mon, 8 Oct 2012 15:28:23 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+Message-ID: <20121008142823.GL29125@suse.de>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1349108796-32161-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-08-19 at 14:48 -0700, Olof Johansson wrote:
-> When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
-> efi_enabled once setup is done. Beyond setup, it is normally used to
-> determine if runtime services are available and we will have none.
+On Mon, Oct 01, 2012 at 06:26:36PM +0200, Jan Kara wrote:
+> On s390 any write to a page (even from kernel itself) sets architecture
+> specific page dirty bit. Thus when a page is written to via standard write, HW
+> dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
+> finds the dirty bit and calls set_page_dirty().
 > 
-> This will resolve issues stemming from efivars modprobe panicking on a
-> 32/64-bit setup, as well as some reboot issues on similar setups.
+> Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
+> filesystems. The bug we observed in practice is that buffers from the page get
+> freed, so when the page gets later marked as dirty and writeback writes it, XFS
+> crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
+> from xfs_count_page_state().
 > 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Cc: stable@kernel.org # 3.4 and 3.5
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> ---
->  arch/x86/kernel/setup.c     | 11 +++++++++++
->  arch/x86/platform/efi/efi.c | 14 ++++++++------
->  2 files changed, 19 insertions(+), 6 deletions(-)
+> Similar problem can also happen when zero_user_segment() call from
+> xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+> hardware dirty bit during writeback, later buffers get freed, and then page
+> unmapped.
+> 
+> Fix the issue by ignoring s390 HW dirty bit for page cache pages in
+> page_mkclean() and page_remove_rmap(). This is safe because when a page gets
+> marked as writeable in PTE it is also marked dirty in do_wp_page() or
+> do_page_fault(). When the dirty bit is cleared by clear_page_dirty_for_io(),
+> the page gets writeprotected in page_mkclean(). So pagecache page is writeable
+> if and only if it is dirty.
+> 
+> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> CC: Mel Gorman <mgorman@suse.de>
+> CC: linux-s390@vger.kernel.org
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-Olof,
-
-Would you mind resubmitting this patch and addressing Maarten's comment
-about efi_is_native()?
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Mel Gorman
+SUSE Labs
