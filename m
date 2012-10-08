@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab2JHCLy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 22:11:54 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:65439 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2JHCLv (ORCPT
+	id S1751757Ab2JHCOM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 22:14:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11515 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab2JHCOJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 22:11:51 -0400
-Message-ID: <50723661.6040107@gmail.com>
-Date: Mon, 08 Oct 2012 13:11:45 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Sun, 7 Oct 2012 22:14:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,549,1344236400"; 
+   d="scan'208";a="231800709"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: linux-next: build failure after merge of the thermal tree
+Thread-Topic: linux-next: build failure after merge of the thermal tree
+Thread-Index: AQHNpOhMvYTADJzIDkWI68ejLuTtcZeuqCug
+Date: Mon, 8 Oct 2012 02:14:05 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B90926322F516@SHSMSX101.ccr.corp.intel.com>
+References: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
+In-Reply-To: <20121008110205.1e0abbe228186fcf30afad74@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: Joe Perches <joe@perches.com>, Julia Lawall <julia.lawall@lip6.fr>,
-        walter harms <wharms@bfs.de>, Antti Palosaari <crope@iki.fi>,
-        kernel-janitors@vger.kernel.org, shubhrajyoti@ti.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for i2c_msg
- initialization
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr> <5071AEF3.6080108@bfs.de> <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6> <5071B834.1010200@bfs.de> <alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6> <1349633780.15802.8.camel@joe-AO722> <alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6> <1349645970.15802.12.camel@joe-AO722> <alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6> <1349646718.15802.16.camel@joe-AO722> <20121007225639.364a41b4@infradead.org>
-In-Reply-To: <20121007225639.364a41b4@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/12 12:56, Mauro Carvalho Chehab wrote:
-> Em Sun, 07 Oct 2012 14:51:58 -0700
-> Joe Perches <joe@perches.com> escreveu:
-> 
->> On Sun, 2012-10-07 at 23:43 +0200, Julia Lawall wrote:
->>> On Sun, 7 Oct 2012, Joe Perches wrote:
->>>>> Are READ and WRITE the action names?  They are really the important
->>>>> information in this case.
->>>>
->>>> Yes, most (all?) uses of _READ and _WRITE macros actually
->>>> perform some I/O.
->>>
->>> I2C_MSG_READ_DATA?
->>> I2C_MSG_READ_INFO?
->>> I2C_MSG_READ_INIT?
->>> I2C_MSG_PREPARE_READ?
->>
->> Dunno, naming is hard.  Maybe:
->>
->> I2C_INPUT_MSG
->> I2C_OUTPUT_MSG
->> I2C_OP_MSG
-> 
-> READ/WRITE sounds better, IMHO, as it will generally match with the
-> function names (they're generally named like foo_i2c_read or foo_reg_read).
-> I think none of them uses input or output. Btw, with I2C buses, a
-> register read is coded as a write ops, that sets the register's sub-address,
-> followed by a read ops from that (and subsequent) registers.
-> 
-> I'm afraid that using INPUT/OUTPUT will sound confusing.
-> 
-> So, IMHO, I2C_READ_MSG and I2C_WRITE_MSG sounds better.
-> 
-> Btw, as the WRITE + READ operation is very common (I think it is
-> much more common than a simple READ msg), it could make sense to have
-> just one macro for it, like:
-> 
-> INIT_I2C_READ_SUBADDR() that would take both write and read values.
-> 
-> I also don't like the I2C_MSG_OP. The operations there are always
-> read or write.
-> 
-> So, IMHO, the better would be to code the read and write message init message 
-> as something similar to:
-> 
-> #define DECLARE_I2C_MSG_READ(_msg, _addr, _buf, _len, _flags)					\
-> 	struct i2c_msg _msg[1] = {								\
-> 		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) | I2C_M_RD }	\
-> 	}
-> 
-> #define DECLARE_I2C_MSG_WRITE(_msg, _addr, _buf, _len, _flags)					\
-> 	struct i2c_msg _msg[1] = {								\
-> 		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) & ~I2C_M_RD }	\
-> 	}
-> 
-> #define DECLARE_I2C_MSG_READ_SUBADDR(_msg, _addr, _subaddr, _sublen,_subflags, _buf,_len, _flags)	\
-> 	struct i2c_msg _msg[2] = {									\
-> 		{.addr = _addr, .buf = _subbuf, .len = _sublen, .flags = (_subflags) & ~I2C_M_RD }	\
-> 		{.addr = _addr, .buf = _buf, .len = _len, .flags = (_flags) | I2C_M_RD }		\
-> 	}
+Hi,
 
-I think this is probably more confusing, not less. The macro takes 8
-arguments, and in many cases will wrap onto two or more lines. The large
-number of arguments also makes it difficult for a casual reader to
-determine exactly what it does. In comparison:
-
-	I2C_MSG_WRITE(info->i2c_addr, &reg, 1);
-	I2C_MSG_READ(info->i2c_addr, buf, sizeof(buf));
-
-is fairly self-explanatory, especially for someone familiar with i2c,
-without having to look up the macro definitions.
-
-> Notes:
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Monday, October 08, 2012 8:02 AM
+> To: Zhang, Rui
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Amit
+> Daniel Kachhap; Wu, Fengguang; Andrew Morton
+> Subject: linux-next: build failure after merge of the thermal tree
+> Importance: High
 > 
-> 1) in the case of DECLARE_I2C_MSG_READ_SUBADDR(), I'm almost sure that, in all cases, the
-> first message will always have buffer size equal to 1. If so, you can simplify the number
-> of arguments there.
+> Hi Zhang,
 > 
-> 2) It could make sense to have, in fact, two versions for each, one with _FLAGS and another one
-> without. On most cases, the one without flags are used.
+> After merging the thermal tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> 3) I bet that most of the cases where 2 messages are used, the first message has length equal
-> to one, and it uses a fixed u8 constant with the I2C sub-address. So, maybe it would be nice
-> to have a variant for this case.
+> drivers/thermal/cpu_cooling.c: In function 'get_idr':
+> drivers/thermal/cpu_cooling.c:89:14: error: 'MAX_ID_MASK' undeclared
+> (first use in this function)
+> 
+> Caused by commit 023614183768 ("thermal: add generic cpufreq cooling
+> implementation") interacting with commit 125c4c706b68 ("idr: rename
+> MAX_LEVEL to MAX_IDR_LEVEL") which very recently entered Linus' tree.
+> 
+> I have applied the following fix patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 8 Oct 2012 10:56:56 +1100
+> Subject: [PATCH] thermal: fix for for MAX_ID_MASK to MAX_IDR_MASK
+> rename
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-That ends up with a whole bunch of variants of the macro for something
-which should be very simple. The proposal has three macros, and the
-I2C_MSG_OP macro is only required for a one or two corner cases where
-non-standard flags are used.
+The patch looks good to me, thanks for the fix.
 
-~Ryan
-
-
-
-
+-rui
+> ---
+>  drivers/thermal/cpu_cooling.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/thermal/cpu_cooling.c
+> b/drivers/thermal/cpu_cooling.c index 9050c1b..cc1c930 100644
+> --- a/drivers/thermal/cpu_cooling.c
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -86,7 +86,7 @@ again:
+>  	else if (unlikely(err))
+>  		return err;
+> 
+> -	*id = *id & MAX_ID_MASK;
+> +	*id = *id & MAX_IDR_MASK;
+>  	return 0;
+>  }
+> 
+> --
+> 1.7.10.280.gaa39
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
