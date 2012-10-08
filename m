@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab2JHFUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 01:20:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24607 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751600Ab2JHFUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 01:20:44 -0400
-X-IronPort-AV: E=Sophos;i="4.80,551,1344182400"; 
-   d="scan'208";a="5957679"
-Message-ID: <507263F8.9040200@cn.fujitsu.com>
-Date: Mon, 08 Oct 2012 13:26:16 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1752444Ab2JHFW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 01:22:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54754 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751600Ab2JHFW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 01:22:57 -0400
+Message-ID: <50726319.8050900@ti.com>
+Date: Mon, 8 Oct 2012 10:52:33 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 0/10] memory-hotplug: hot-remove physical memory
-References: <506E43E0.70507@jp.fujitsu.com> <CAHGf_=qCZvL7xcOkea80Y995sZWkOMQLLVnuvLUto4W+qpUbWA@mail.gmail.com>
-In-Reply-To: <CAHGf_=qCZvL7xcOkea80Y995sZWkOMQLLVnuvLUto4W+qpUbWA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/08 13:20:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/08 13:20:36,
-	Serialize complete at 2012/10/08 13:20:36
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
+        <arnd@arndb.de>, <olof@lixom.net>, <rdunlap@xenotime.net>,
+        <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ARM: OMAP: ocp2scp: create omap device for ocp2scp
+References: <1349431628-2819-1-git-send-email-kishon@ti.com> <1349431628-2819-4-git-send-email-kishon@ti.com> <506F5F69.6040104@mvista.com>
+In-Reply-To: <506F5F69.6040104@mvista.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/06/2012 03:06 AM, KOSAKI Motohiro Wrote:
->> Known problems:
->> 1. memory can't be offlined when CONFIG_MEMCG is selected.
->>    For example: there is a memory device on node 1. The address range
->>    is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
->>    and memory11 under the directory /sys/devices/system/memory/.
->>    If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
->>    when we online pages. When we online memory8, the memory stored page cgroup
->>    is not provided by this memory device. But when we online memory9, the memory
->>    stored page cgroup may be provided by memory8. So we can't offline memory8
->>    now. We should offline the memory in the reversed order.
->>    When the memory device is hotremoved, we will auto offline memory provided
->>    by this memory device. But we don't know which memory is onlined first, so
->>    offlining memory may fail. In such case, you should offline the memory by
->>    hand before hotremoving the memory device.
-> 
-> Just iterate twice. 1st iterate: offline every non primary memory
-> block. 2nd iterate:
-> offline primary (i.e. first added) memory block. It may work.
-> 
+Hi,
 
-OK, I will try it.
+On Saturday 06 October 2012 04:00 AM, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 05-10-2012 12:07, Kishon Vijay Abraham I wrote:
+>
+>> Platfrom device for ocp2scp is created using omap_device_build in
+>> devices file. This is used for both omap4(musb) and omap5(dwc3).
+>>
+>> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+>> ---
+>>   arch/arm/mach-omap2/devices.c |   72
+>> +++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 72 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-omap2/devices.c
+>> b/arch/arm/mach-omap2/devices.c
+>> index c8c2117..e2ba505 100644
+>> --- a/arch/arm/mach-omap2/devices.c
+>> +++ b/arch/arm/mach-omap2/devices.c
+> [...]
+>> @@ -613,6 +614,76 @@ static void omap_init_vout(void)
+> [...]
+>
+>> +static void omap_init_ocp2scp(void)
+>> +{
+>> +    struct omap_hwmod    *oh;
+>> +    struct platform_device    *pdev;
+>> +    int            bus_id = -1, dev_cnt = 0, i;
+>> +    struct omap_ocp2scp_dev    *ocp2scp_dev;
+>> +    const char        *oh_name, *name;
+>> +    struct omap_ocp2scp_platform_data *pdata;
+>> +
+>> +    oh_name = "ocp2scp_usb_phy";
+>> +    name    = "omap-ocp2scp";
+>> +
+>> +    oh = omap_hwmod_lookup(oh_name);
+>> +    if (!oh) {
+>> +        pr_err("%s: could not find omap_hwmod for %s\n", __func__,
+>> +                                oh_name);
+>> +        return;
+>> +    }
+>> +
+>> +    pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+>> +    if (!pdata) {
+>> +        pr_err("%s: No memory for ocp2scp pdata\n", __func__);
+>> +        return;
+>> +    }
+>> +
+>> +    ocp2scp_dev = oh->dev_attr;
+>> +    dev_cnt = count_ocp2scp_devices(ocp2scp_dev);
+>> +
+>> +    if (!dev_cnt) {
+>> +        pr_err("%s: No devices connected to ocp2scp\n", __func__);
+>> +        return;
+>
+>     Don't you leak 'pdata' here?
+>
+>> +    }
+>> +
+>> +    pdata->devices = kzalloc(sizeof(struct omap_ocp2scp_dev *)
+>> +                    * dev_cnt, GFP_KERNEL);
+>> +    if (!pdata->devices) {
+>> +        pr_err("%s: No memory for ocp2scp pdata devices\n", __func__);
+>> +        return;
+>> +    }
+>> +
+>> +    for (i = 0; i<  dev_cnt; i++, ocp2scp_dev++)
+>> +        pdata->devices[i] = ocp2scp_dev;
+>> +
+>> +    pdata->dev_cnt    = dev_cnt;
+>> +
+>> +    pdev = omap_device_build(name, bus_id, oh, pdata, sizeof(*pdata),
+>> NULL,
+>> +                                0, false);
+>> +    if (IS_ERR(pdev)) {
+>> +        pr_err("Could not build omap_device for %s %s\n",
+>> +                        name, oh_name);
+>> +        return;
+>
+>     Don't you leak 'pdata' and 'pdata->devices' here?
+
+Will re-post the patch fixing it.
 
 Thanks
-Wen Congyang
+Kishon
