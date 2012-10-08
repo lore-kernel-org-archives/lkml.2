@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2JHUw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 16:52:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58466 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab2JHUwy (ORCPT
+	id S1754902Ab2JHUyP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 16:54:15 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:52286 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab2JHUyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 16:52:54 -0400
-Date: Mon, 8 Oct 2012 22:52:48 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: kernel@pengutronix.de, FlorianSchandinat@gmx.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: imxfb: Do not crash on reboot
-Message-ID: <20121008205248.GU1322@pengutronix.de>
-References: <1349703336-8105-1-git-send-email-fabio.estevam@freescale.com>
+	Mon, 8 Oct 2012 16:54:14 -0400
+Message-ID: <50733D72.9010100@gmail.com>
+Date: Mon, 08 Oct 2012 14:54:10 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349703336-8105-1-git-send-email-fabio.estevam@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 22:50:47 up 107 days, 12:02, 29 users,  load average: 9.36, 12.18,
- 12.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Dong Hao <haodong@linux.vnet.ibm.com>
+Subject: Re: [PATCH 12/12] perf kvm: add live mode
+References: <1349716656-48165-1-git-send-email-dsahern@gmail.com> <1349716656-48165-13-git-send-email-dsahern@gmail.com> <20121008203534.GF2631@ghostprotocols.net>
+In-Reply-To: <20121008203534.GF2631@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 10:35:36AM -0300, Fabio Estevam wrote:
-> Issuing a "reboot" command after the LCD times out causes the following
-> warnings:
-> 
-> Requesting system reboot
+On 10/8/12 2:35 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Oct 08, 2012 at 11:17:36AM -0600, David Ahern escreveu:
+> Overall it looks good, I like the fact you're not doing it the way perf
+> script does, i.e. that "pipe mode" thing, more or less like I'm doing on
+> 'perf trace', but I think this is the time to get rid of 'perf_session'
+> too for this specific "live mode" tools.
 
-[...]
+pipe mode would never work for this case. I'm looking at nested virt 
+case now and it shows 360,000 events per second.
 
-> 
-> This happens because "reboot" triggers imxfb_shutdown(), which calls
-> imxfb_disable_controller with the clocks already disabled.
-> 
-> To prevent this, add a clock enabled status so that we can check if the clocks
-> are enabled before disabling them. 
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/video/imxfb.c |   19 +++++++++++++------
->  1 file changed, 13 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
-> index f3363b2..6acf98a 100644
-> --- a/drivers/video/imxfb.c
-> +++ b/drivers/video/imxfb.c
-> @@ -134,6 +134,7 @@ struct imxfb_info {
->  	struct clk		*clk_ipg;
->  	struct clk		*clk_ahb;
->  	struct clk		*clk_per;
-> +	int			enabled;
->  
->  	/*
->  	 * These are the addresses we mapped
-> @@ -530,9 +531,12 @@ static void imxfb_enable_controller(struct imxfb_info *fbi)
->  	 */
->  	writel(RMCR_LCDC_EN_MX1, fbi->regs + LCDC_RMCR);
->  
-> -	clk_prepare_enable(fbi->clk_ipg);
-> -	clk_prepare_enable(fbi->clk_ahb);
-> -	clk_prepare_enable(fbi->clk_per);
-> +	if (!fbi->enabled) {
-> +		clk_prepare_enable(fbi->clk_ipg);
-> +		clk_prepare_enable(fbi->clk_ahb);
-> +		clk_prepare_enable(fbi->clk_per);
-> +		fbi->enabled = 1;
-> +	}
->  
->  	if (fbi->backlight_power)
->  		fbi->backlight_power(1);
-> @@ -551,9 +555,12 @@ static void imxfb_disable_controller(struct imxfb_info *fbi)
->  
->  	writel(0, fbi->regs + LCDC_RMCR);
->  
-> -	clk_disable_unprepare(fbi->clk_per);
-> -	clk_disable_unprepare(fbi->clk_ipg);
-> -	clk_disable_unprepare(fbi->clk_ahb);
-> +	if (fbi->enabled) {
-> +		clk_disable_unprepare(fbi->clk_per);
-> +		clk_disable_unprepare(fbi->clk_ipg);
-> +		clk_disable_unprepare(fbi->clk_ahb);
-> +		fbi->enabled = 0;
-> +	}
+> I'm almost getting there for 'trace' and 'top', just need to move the
+> ordered_samples code to evlist, then session, top, trace, kvm live and
+> script will not need to use 'perf_session' at all.
 
-I think the complete functions should be protected, not only the clocks.
+ok. you going to have that soon?
 
-Sascha
+> Also that 'perf_kvm__open_counters' really is just a third copy of code
+> in 'record' and 'top', right? You could move it to
+> 'perf_ev{list,open}__open' and solve this dup :-)
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+there's a TO-DO at the top of that function for that reason ;-) I copied 
+a fair bit from perf-stat. Now that it's working I can look at code 
+consolidation.
+
+> I applied the cleanups/simple stuff, will try to do some of the prep
+> work on ordered_samples to use on top and trace and then I think you
+> could look there so that we get to something that is useful for all
+> these !perf.data tools.
+
+On my Westmere based server I am not seeing problems with timestamps and 
+ordering (prior testing was on a Nehalem based server). It just 
+weathered a 5 minute or so barrage of > 100,000 events per second 
+(peaking at around 360k events/sec) with no problem.
+
+David
