@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2JHRLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:11:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34213 "EHLO mx1.redhat.com"
+	id S1754369Ab2JHRLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:11:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:60582 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab2JHRL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:11:28 -0400
-Date: Mon, 8 Oct 2012 19:13:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Roland McGrath <roland@hack.frob.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] exec: make de_thread() killable
-Message-ID: <20121008171301.GC3259@redhat.com>
-References: <CA+OH3v09PR9d=qKL4DNUYu_HYFY1CJxcB6DSUXoNp8BhB7k1-w@mail.gmail.com> <CA+55aFzczRxYCXPsNs9u9G=Ch770+f2f--Dyw47m5a8BRoz9TA@mail.gmail.com> <CA+OH3v1JKugp0PVOsHYrZ9wGS3oCDBMthMUeSgA6MPx_VDExQw@mail.gmail.com> <CA+55aFy2t=pk07WO0ob3tUUYq_X_FhpPdNHZwQR6ZthA=8K5fA@mail.gmail.com> <CA+OH3v3trHzrRdMFvccDx244jpWOxSRrv+kSCoMh=7ir-cqKCw@mail.gmail.com> <CA+55aFwbKMs6DFV9ZvuSLCKx+TESMfR8raDAYU0=b8uuyZRWuQ@mail.gmail.com> <CA+55aFxfJpSQ5VSx3L_xeHfTb1jqte9xAKLsj10J+pW-YS+SSw@mail.gmail.com> <20120920153522.GA15426@redhat.com> <20121008170812.GA3259@redhat.com> <20121008170844.GB3259@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121008170844.GB3259@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754275Ab2JHRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 13:11:48 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 1/6] x86, RAS: Add a barebones RAS subtree
+Date: Mon,  8 Oct 2012 19:11:28 +0200
+Message-Id: <1349716293-16723-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <1349716293-16723-1-git-send-email-bp@amd64.org>
+References: <1349716293-16723-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08, Oleg Nesterov wrote:
->
-> and execing thread waits for execing thread. Deadlock.
-      ^^^^^^^
-Sorry, typo in the changelog....
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-------------------------------------------------------------------------------
-[PATCH 1/1] exec: make de_thread() killable
+This should collect all x86 RAS-related stuff.
 
-Change de_thread() to use KILLABLE rather than UNINTERRUPTIBLE
-while waiting for other threads. The only complication is that
-we should clear ->group_exit_task and ->notify_count before we
-return, and we should do this under tasklist_lock. -EAGAIN is
-used to match the initial signal_group_exit() check/return, it
-doesn't really matter.
-
-This fixes the (unlikely) race with coredump. de_thread() checks
-signal_group_exit() before it starts to kill the subthreads, but
-this can't help if another CLONE_VM (but non CLONE_THREAD) task
-starts the coredumping after de_thread() unlocks ->siglock. In
-this case the killed sub-thread can block in exit_mm() waiting
-for coredump_finish(), execing thread waits for that sub-thead,
-and the coredumping thread waits for execing thread. Deadlock.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- fs/exec.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig      | 8 ++++++++
+ arch/x86/Makefile     | 3 +++
+ arch/x86/ras/Makefile | 1 +
+ 3 files changed, 12 insertions(+)
+ create mode 100644 arch/x86/ras/Makefile
+ create mode 100644 arch/x86/ras/ras.c
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -878,9 +878,11 @@ static int de_thread(struct task_struct 
- 		sig->notify_count--;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e0323d67ee42..e5cae3de52ff 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -687,6 +687,14 @@ config X86_CYCLONE_TIMER
+ 	def_bool y
+ 	depends on X86_SUMMIT
  
- 	while (sig->notify_count) {
--		__set_current_state(TASK_UNINTERRUPTIBLE);
-+		__set_current_state(TASK_KILLABLE);
- 		spin_unlock_irq(lock);
- 		schedule();
-+		if (unlikely(__fatal_signal_pending(tsk)))
-+			goto killed;
- 		spin_lock_irq(lock);
- 	}
- 	spin_unlock_irq(lock);
-@@ -898,9 +900,11 @@ static int de_thread(struct task_struct 
- 			write_lock_irq(&tasklist_lock);
- 			if (likely(leader->exit_state))
- 				break;
--			__set_current_state(TASK_UNINTERRUPTIBLE);
-+			__set_current_state(TASK_KILLABLE);
- 			write_unlock_irq(&tasklist_lock);
- 			schedule();
-+			if (unlikely(__fatal_signal_pending(tsk)))
-+				goto killed;
- 		}
- 
- 		/*
-@@ -994,6 +998,14 @@ no_thread_group:
- 
- 	BUG_ON(!thread_group_leader(tsk));
- 	return 0;
++config X86_RAS
++	def_bool y
++	prompt "X86 RAS features"
++	---help---
++	A collection of Reliability, Availability and Serviceability software
++	features which enable hardware error logging and reporting. Leave it
++	at 'y' unless you really know what you're doing.
 +
-+killed:
-+	/* protects against exit_notify() and __exit_signal() */
-+	read_lock(&tasklist_lock);
-+	sig->group_exit_task = NULL;
-+	sig->notify_count = 0;
-+	read_unlock(&tasklist_lock);
-+	return -EAGAIN;
- }
+ source "arch/x86/Kconfig.cpu"
  
- char *get_task_comm(char *buf, struct task_struct *tsk)
+ config HPET_TIMER
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 58790bd85c1d..2810e50b670d 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -163,6 +163,9 @@ libs-y  += arch/x86/lib/
+ # See arch/x86/Kbuild for content of core part of the kernel
+ core-y += arch/x86/
+ 
++# RAS support
++core-$(CONFIG_X86_RAS)		+= arch/x86/ras/
++
+ # drivers-y are linked after core-y
+ drivers-$(CONFIG_MATH_EMULATION) += arch/x86/math-emu/
+ drivers-$(CONFIG_PCI)            += arch/x86/pci/
+diff --git a/arch/x86/ras/Makefile b/arch/x86/ras/Makefile
+new file mode 100644
+index 000000000000..7a70bb5cd057
+--- /dev/null
++++ b/arch/x86/ras/Makefile
+@@ -0,0 +1 @@
++obj-y		:= ras.o
+diff --git a/arch/x86/ras/ras.c b/arch/x86/ras/ras.c
+new file mode 100644
+index 000000000000..e69de29bb2d1
+-- 
+1.8.0.rc0.18.gf84667d
 
