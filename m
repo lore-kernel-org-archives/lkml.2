@@ -1,150 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2JHLRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 07:17:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18660 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941Ab2JHLRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 07:17:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,553,1344236400"; 
-   d="asc'?scan'208";a="231953719"
-Message-ID: <1349695030.1992.48.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI fastmap for 3.7-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        Richard Weinberger <richard@nod.at>
-Date: Mon, 08 Oct 2012 14:17:10 +0300
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-oCJ/2+1oCBFtOk6T8X9W"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1752200Ab2JHLWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 07:22:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34859 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab2JHLWB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 07:22:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+	<9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+	<1349553966.12699.132.camel@kjgkr>
+	<50712AAA.5030807@gmail.com>
+	<002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+	<F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+	<004101cda52e$72210e20$56632a60$%kim@samsung.com>
+	<CAKYAXd_Y0Y0kLyqEm1FVO5TpvrN-WwnF40H3hMe5B7_cTe0nMw@mail.gmail.com>
+	<004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
+Date: Mon, 8 Oct 2012 20:21:59 +0900
+Message-ID: <CAKYAXd-YdpiM9GcAtoVbV=Wc_kzRkiXTWkNBvWaaYqU4Xks-jA@mail.gmail.com>
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Jaegeuk Kim <jaegeuk.kim@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        tytso@mit.edu, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/10/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> -----Original Message-----
+>> From: Namjae Jeon [mailto:linkinjeon@gmail.com]
+>> Sent: Monday, October 08, 2012 7:00 PM
+>> To: Jaegeuk Kim
+>> Cc: Vyacheslav Dubeyko; Marco Stornelli; Jaegeuk Kim; Al Viro;
+>> tytso@mit.edu;
+>> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> chur.lee@samsung.com; cm224.lee@samsung.com;
+>> jooyoung.hwang@samsung.com; linux-fsdevel@vger.kernel.org
+>> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+>>
+>> 2012/10/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> >> -----Original Message-----
+>> >> From: Vyacheslav Dubeyko [mailto:slava@dubeyko.com]
+>> >> Sent: Sunday, October 07, 2012 9:09 PM
+>> >> To: Jaegeuk Kim
+>> >> Cc: 'Marco Stornelli'; 'Jaegeuk Kim'; 'Al Viro'; tytso@mit.edu;
+>> >> gregkh@linuxfoundation.org; linux-
+>> >> kernel@vger.kernel.org; chur.lee@samsung.com; cm224.lee@samsung.com;
+>> >> jooyoung.hwang@samsung.com;
+>> >> linux-fsdevel@vger.kernel.org
+>> >> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+>> >>
+>> >> Hi,
+>> >>
+>> >> On Oct 7, 2012, at 1:31 PM, Jaegeuk Kim wrote:
+>> >>
+>> >> >> -----Original Message-----
+>> >> >> From: Marco Stornelli [mailto:marco.stornelli@gmail.com]
+>> >> >> Sent: Sunday, October 07, 2012 4:10 PM
+>> >> >> To: Jaegeuk Kim
+>> >> >> Cc: Vyacheslav Dubeyko; jaegeuk.kim@samsung.com; Al Viro;
+>> >> >> tytso@mit.edu; gregkh@linuxfoundation.org;
+>> >> >> linux-kernel@vger.kernel.org; chur.lee@samsung.com;
+>> >> >> cm224.lee@samsung.com;
+>> >> jooyoung.hwang@samsung.com;
+>> >> >> linux-fsdevel@vger.kernel.org
+>> >> >> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file
+>> >> >> system
+>> >> >>
+>> >> >> Il 06/10/2012 22:06, Jaegeuk Kim ha scritto:
+>> >> >>> 2012-10-06 (토), 17:54 +0400, Vyacheslav Dubeyko:
+>> >> >>>> Hi Jaegeuk,
+>> >> >>>
+>> >> >>> Hi.
+>> >> >>> We know each other, right? :)
+>> >> >>>
+>> >> >>>>
+>> >> >>>>> From:	 	김재극 <jaegeuk.kim@samsung.com>
+>> >> >>>>> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o' <tytso@mit.edu>,
+>> >> >> gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+>> >> >> chur.lee@samsung.com,
+>> >> cm224.lee@samsung.com,
+>> >> >> jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
+>> >> >>>>> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file
+>> >> >>>>> system
+>> >> >>>>> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
+>> >> >>>>>
+>> >> >>>>> This is a new patch set for the f2fs file system.
+>> >> >>>>>
+>> >> >>>>> What is F2FS?
+>> >> >>>>> =============
+>> >> >>>>>
+>> >> >>>>> NAND flash memory-based storage devices, such as SSD, eMMC, and
+>> >> >>>>> SD
+>> >> >>>>> cards, have
+>> >> >>>>> been widely being used for ranging from mobile to server
+>> >> >>>>> systems.
+>> >> >>>>> Since they are
+>> >> >>>>> known to have different characteristics from the conventional
+>> >> >>>>> rotational disks,
+>> >> >>>>> a file system, an upper layer to the storage device, should adapt
+>> >> >>>>> to
+>> >> >>>>> the changes
+>> >> >>>>> from the sketch.
+>> >> >>>>>
+>> >> >>>>> F2FS is a new file system carefully designed for the NAND flash
+>> >> >>>>> memory-based storage
+>> >> >>>>> devices. We chose a log structure file system approach, but we
+>> >> >>>>> tried
+>> >> >>>>> to adapt it
+>> >> >>>>> to the new form of storage. Also we remedy some known issues of
+>> >> >>>>> the
+>> >> >>>>> very old log
+>> >> >>>>> structured file system, such as snowball effect of wandering
+>> >> >>>>> tree
+>> >> >>>>> and high cleaning
+>> >> >>>>> overhead.
+>> >> >>>>>
+>> >> >>>>> Because a NAND-based storage device shows different
+>> >> >>>>> characteristics
+>> >> >>>>> according to
+>> >> >>>>> its internal geometry or flash memory management scheme aka FTL,
+>> >> >>>>> we
+>> >> >>>>> add various
+>> >> >>>>> parameters not only for configuring on-disk layout, but also for
+>> >> >>>>> selecting allocation
+>> >> >>>>> and cleaning algorithms.
+>> >> >>>>>
+>> >> >>>>
+>> >> >>>> What about F2FS performance? Could you share benchmarking results
+>> >> >>>> of
+>> >> >>>> the new file system?
+>> >> >>>>
+>> >> >>>> It is very interesting the case of aged file system. How is GC's
+>> >> >>>> implementation efficient? Could
+>> >> >> you share benchmarking results for the very aged file system state?
+>> >> >>>>
+>> >> >>>
+>> >> >>> Although I have benchmark results, currently I'd like to see the
+>> >> >>> results
+>> >> >>> measured by community as a black-box. As you know, the results are
+>> >> >>> very
+>> >> >>> dependent on the workloads and parameters, so I think it would be
+>> >> >>> better
+>> >> >>> to see other results for a while.
+>> >> >>> Thanks,
+>> >> >>>
+>> >> >>
+>> >> >> 1) Actually it's a strange approach. If you have got any results
+>> >> >> you
+>> >> >> should share them with the community explaining how (the workload,
+>> >> >> hw
+>> >> >> and so on) your benchmark works and the specific condition. I
+>> >> >> really
+>> >> >> don't like the approach "I've got the results but I don't say
+>> >> >> anything,
+>> >> >> if you want a number, do it yourself".
+>> >> >
+>> >> > It's definitely right, and I meant *for a while*.
+>> >> > I just wanted to avoid arguing with how to age file system in this
+>> >> > time.
+>> >> > Before then, I share the primitive results as follows.
+>> >> >
+>> >> > 1. iozone in Panda board
+>> >> > - ARM A9
+>> >> > - DRAM : 1GB
+>> >> > - Kernel: Linux 3.3
+>> >> > - Partition: 12GB (64GB Samsung eMMC)
+>> >> > - Tested on 2GB file
+>> >> >
+>> >> >           seq. read, seq. write, rand. read, rand. write
+>> >> > - ext4:    30.753         17.066       5.06         4.15
+>> >> > - f2fs:    30.71          16.906       5.073       15.204
+>> >> >
+>> >> > 2. iozone in Galaxy Nexus
+>> >> > - DRAM : 1GB
+>> >> > - Android 4.0.4_r1.2
+>> >> > - Kernel omap 3.0.8
+>> >> > - Partition: /data, 12GB
+>> >> > - Tested on 2GB file
+>> >> >
+>> >> >           seq. read, seq. write, rand. read,  rand. write
+>> >> > - ext4:    29.88        12.83         11.43          0.56
+>> >> > - f2fs:    29.70        13.34         10.79         12.82
+>> >> >
+>> >>
+>> >>
+>> >> This is results for non-aged filesystem state. Am I correct?
+>> >>
+>> >
+>> > Yes, right.
+>> >
+>> >>
+>> >> > Due to the company secret, I expect to show other results after
+>> >> > presenting f2fs at korea linux forum.
+>> >> >
+>> >> >> 2) For a new filesystem you should send the patches to
+>> >> >> linux-fsdevel.
+>> >> >
+>> >> > Yes, that was totally my mistake.
+>> >> >
+>> >> >> 3) It's not clear the pros/cons of your filesystem, can you share
+>> >> >> with
+>> >> >> us the main differences with the current fs already in mainline? Or
+>> >> >> is
+>> >> >> it a company secret?
+>> >> >
+>> >> > After forum, I can share the slides, and I hope they will be useful
+>> >> > to
+>> >> > you.
+>> >> >
+>> >> > Instead, let me summarize at a glance compared with other file
+>> >> > systems.
+>> >> > Here are several log-structured file systems.
+>> >> > Note that, F2FS operates on top of block device with consideration
+>> >> > on
+>> >> > the FTL behavior.
+>> >> > So, JFFS2, YAFFS2, and UBIFS are out-of scope, since they are
+>> >> > designed
+>> >> > for raw NAND flash.
+>> >> > LogFS is initially designed for raw NAND flash, but expanded to
+>> >> > block
+>> >> > device.
+>> >> > But, I don't know whether it is stable or not.
+>> >> > NILFS2 is one of major log-structured file systems, which supports
+>> >> > multiple snap-shots.
+>> >> > IMO, that feature is quite promising and important to users, but it
+>> >> > may
+>> >> > degrade the performance.
+>> >> > There is a trade-off between functionalities and performance.
+>> >> > F2FS chose high performance without any further fancy
+>> >> > functionalities.
+>> >> >
+>> >>
+>> >> Performance is a good goal. But fault-tolerance is also very important
+>> >> point. Filesystems are used by
+>> >> users, so, it is very important to guarantee reliability of data
+>> >> keeping.
+>> >> Degradation of performance
+>> >> by means of snapshots is arguable point. Snapshots can solve the
+>> >> problem
+>> >> not only some unpredictable
+>> >> environmental issues but also user's erroneous behavior.
+>> >>
+>> >
+>> > Yes, I agree. I concerned the multiple snapshot feature.
+>> > Of course, fault-tolerance is very important, and file system should
+>> > support
+>> > it as you know as power-off-recovery.
+>> > f2fs supports the recovery mechanism by adopting checkpoint similar to
+>> > snapshot.
+>> > But, f2fs does not support multiple snapshots for user convenience.
+>> > I just focused on the performance, and absolutely, the multiple
+>> > snapshot
+>> > feature is also a good alternative approach.
+>> > That may be a trade-off.
+>> >
+>> >> As I understand, it is not possible to have a perfect performance in
+>> >> all
+>> >> possible workloads. Could you
+>> >> point out what workloads are the best way of F2FS using?
+>> >
+>> > Basically I think the following workloads will be good for F2FS.
+>> > - Many random writes : it's LFS nature
+>> > - Small writes with frequent fsync : f2fs is optimized to reduce the
+>> > fsync
+>> > overhead.
+>> >
+>> >>
+>> >> > Maybe or obviously it is possible to optimize ext4 or btrfs to flash
+>> >> > storages.
+>> >> > IMHO, however, they are originally designed for HDDs, so that it may
+>> >> > or
+>> >> > may not suffer from
+>> >> fundamental designs.
+>> >> > I don't know, but why not designing a new file system for flash
+>> >> > storages
+>> >> > as a counterpart?
+>> >> >
+>> >>
+>> >> Yes, it is possible. But F2FS is not flash oriented filesystem as
+>> >> JFFS2,
+>> >> YAFFS2, UBIFS but block-
+>> >> oriented filesystem. So, F2FS design is restricted by block-layer's
+>> >> opportunities in the using of
+>> >> flash storages' peculiarities. Could you point out key points of F2FS
+>> >> design that makes this design
+>> >> fundamentally unique?
+>> >
+>> > As you can see the f2fs kernel document patch, I think one of the most
+>> > important features is to align operating units between f2fs and ftl.
+>> > Specifically, f2fs has section and zone, which are cleaning unit and
+>> > basic
+>> > allocation unit respectively.
+>> > Through these configurable units in f2fs, I think f2fs is able to reduce
+>> > the
+>> > unnecessary operations done by FTL.
+>> > And, in order to avoid changing IO patterns by the block-layer, f2fs
+>> > merges
+>> > itself some bios likewise ext4.
+>> Hello.
+>> The internal of eMMC and SSD is the blackbox from user side.
+>> How does the normal user easily set operating units alignment(page
+>> size and physical block size ?) between f2fs and ftl in storage device
+>> ?
+>
+> I've known that some works have been tried to figure out the units by
+> profiling the storage, AKA reverse engineering.
+> In most cases, the simplest way is to measure the latencies of consecutive
+> writes and analyze their patterns.
+> As you mentioned, in practical, users will not want to do this, so maybe we
+> need a tool to profile them to optimize f2fs.
+> In the current state, I think profiling is an another issue, and mkfs.f2fs
+> had better include this work in the future.
+Well, Format tool evaluates optimal block size whenever formatting? As
+you know, The size of Flash Based storage device is increasing every
+year. It means format time can be too long on larger devices(e.g. one
+device, one parition).
+> But, IMO, from the viewpoint of performance, default configuration is quite
+> enough now.
+At default(after cleanly format), Would you share performance
+difference between other log structured filesystems in comparison to
+f2fs instead of ext4 ?
 
---=-oCJ/2+1oCBFtOk6T8X9W
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-here is the second UBI pull request which contains a big new
-experimental feature. Please, pull with my apologies that it was exposed
-to linux-next for shorter time than I usually do. Details are in the
-signed tag.
-
-Thanks!
-
-The following changes since commit 55393ba1bdedc5ded79b34b4cc08898a7776cddb=
-:
-
-  UBI: fix trivial typo 'it' =3D> 'is' (2012-09-26 13:22:50 +0300)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-ubi.git tags/upstream-3.7-rc1-fastmap
-
-for you to fetch changes up to 76ac66e469f084d41742ba08923de76fbdc7dce3:
-
-  UBI: Wire-up fastmap (2012-10-03 16:39:37 +0300)
-
-----------------------------------------------------------------
-This pull request contains the UBI fastmap support implemented by Richard
-Weinberger from Linutronix. Fastmap is designed to address UBI's slow scann=
-ing
-issues. Namely, it introduces a new on-flash data-structure called "fastmap=
-",
-which stores the information about logical<->physical eraseblocks mappings.
-So now to get this information just read the fastmap, instead of doing full
-scan. More information here can be found in Richard's announcement in LKML
-(Subject: UBI: Fastmap request for inclusion (v19)):
-
-http://thread.gmane.org/gmane.linux.kernel/1364922/focus=3D1369109
-
-One thing I want to explicitly say is that fastmap did not have large
-enough linux-next exposure. It is partially my fault - I did not respond
-quickly enough. I _really_ apologize for this. But it had good testing and
-disabled by default, so I do not expect that we'll break anything.
-
-Fastmap is declared as experimental so far, and it is off by default. We
-did declare that the on-flash format may be changed. The reason for this is
-that no one used it in real production so far, so there is a high risk that
-something is missing. Besides, we do not have user-space tools supporting
-fastmap so far.
-
-Nevertheless, I suggest we merge this feature. Many people want UBI's scann=
-ing
-bottleneck to be fixed and merging fastmap now should accelerate its produc=
-tion
-use. The plan is to make it bullet-prove, somewhat clean-up, and make it th=
-e
-default for UBI. I do not know how many kernel releases will it take.
-
-Basically, I what I want to do for fastmap is something like Linus did for
-btrfs few years ago.
-
-----------------------------------------------------------------
-Richard Weinberger (10):
-      UBI: Add fastmap on-flash data structures
-      UBI: Add fastmap stuff to ubi.h
-      UBI: Export next_sqnum()
-      UBI: Add self_check_eba()
-      UBI: Add fastmap bits to build.c
-      UBI: Wire-up ->fm_sem
-      UBI: Add fastmap stuff to attach.c
-      UBI: Add fastmap support to the WL sub-system
-      UBI: Add fastmap core
-      UBI: Wire-up fastmap
-
- MAINTAINERS                 |    6 +
- drivers/mtd/ubi/Kconfig     |   21 +++
- drivers/mtd/ubi/Makefile    |    1 +
- drivers/mtd/ubi/attach.c    |  386 ++++++++++++++++++++++++++++++++-------=
----------
- drivers/mtd/ubi/build.c     |   70 ++++++++-
- drivers/mtd/ubi/eba.c       |  126 ++++++++++++++--
- drivers/mtd/ubi/fastmap.c   | 1537 +++++++++++++++++++++++++++++++++++++++=
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=
-++
- drivers/mtd/ubi/ubi-media.h |  137 +++++++++++++++++
- drivers/mtd/ubi/ubi.h       |  118 ++++++++++++++-
- drivers/mtd/ubi/wl.c        |  599 +++++++++++++++++++++++++++++++++++++++=
-+++++++++++++++++++++++++++---------
- 10 files changed, 2790 insertions(+), 211 deletions(-)
- create mode 100644 drivers/mtd/ubi/fastmap.c
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-oCJ/2+1oCBFtOk6T8X9W
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJQcrY2AAoJECmIfjd9wqK0bT8P/RWqQtTiDOylBSeEtFNSpk2q
-ejUR4IhGJZjJTcPv9fuXsixTpHyKvDhyam00PIe89QribFe5+9bVVR45VDN8aQYs
-PG+xuIP1/MUAbTIVfDMgTkZLR7Lbweg31W0lA7KaaUBkfpzf74obiQEtzDukR1tY
-Wk409d0iksz45Vgp4MFKeYVgC69IVYE+Mq97pL5rRz/sILVrmvE98rA5H5KyZLBa
-BrAJWvU6jg1XKVm1YZjIoy2LiIdCgCEOUvs7C6Y6PGu0nHsKqaGtsdWNPYhXLdtD
-mSPxcKz2fssO7EK7cexVX+/R6Pz1OyCiDcxUkplC74oI5Cq5A0gOlHyS6HLIslyP
-0nXj8dX7yDR06gqxC0Cl4zZJOr1ZO6057AlZrZJXGBXYqhSLzjNRRtchrUIkCQy/
-ZzR7c6HWHeOBbgQamYJYnhQmpGiQ4Oa774SujQFBxIN2C2Bu1t6q71FNB0/GS6y0
-Bw9R6meKxOt0unvzTpilKm6RJqpF9U9z7Fd1wdD4ia3cslhl6zMXTpVOIigiWiyD
-OJ0+N8eJprfU2G1z3qPRCuNUcjcoRcdb6uyiql/eW7Vnw/vs2KlQCQdEwdjwBrTf
-T4EW7qdve3pmfSZaMxe95h4OAXVS2FztgnqnUl2K1/FrBv9Jn2Vm4cvPg5ydiG52
-BjFKWV2iv+OonxAuA+U1
-=WLCA
------END PGP SIGNATURE-----
-
---=-oCJ/2+1oCBFtOk6T8X9W--
-
+Thanks.
+>
+> ps) f2fs doesn't care about the flash page size, but considers garbage
+> collection unit.
+>
+>>
+>> Thanks.
+>>
+>> >
+>> >>
+>> >> With the best regards,
+>> >> Vyacheslav Dubeyko.
+>> >>
+>> >>
+>> >> >>
+>> >> >> Marco
+>> >> >
+>> >> > ---
+>> >> > Jaegeuk Kim
+>> >> > Samsung
+>> >> >
+>> >> > --
+>> >> > To unsubscribe from this list: send the line "unsubscribe
+>> >> > linux-kernel"
+>> >> > in
+>> >> > the body of a message to majordomo@vger.kernel.org
+>> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>> >
+>> > ---
+>> > Jaegeuk Kim
+>> > Samsung
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
+>> > in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >
+>
+>
+> ---
+> Jaegeuk Kim
+> Samsung
+>
+>
+>
