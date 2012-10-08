@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2JHNUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:20:36 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:32924 "EHLO zmc.proxad.net"
+	id S1753581Ab2JHNVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:21:01 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:32895 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab2JHNNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:13:39 -0400
+	id S1752951Ab2JHNN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:13:29 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/32 v4] ARM: cns3xxx: use ehci platform driver
-Date: Mon,  8 Oct 2012 15:11:24 +0200
-Message-Id: <1349701906-16481-11-git-send-email-florian@openwrt.org>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 07/32 v4] USB: EHCI: add no_io_watchdog platform_data parameter to ehci-platform
+Date: Mon,  8 Oct 2012 15:11:21 +0200
+Message-Id: <1349701906-16481-8-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
@@ -22,97 +21,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the cns3xxx platform to use the ehci-platform driver
-instead of the ehci-cns3xxx platform driver.
+Enhance the ehci-platform driver to also accept no_io_watchdog as a platform
+data parameter. When no_io_watchdog is set to 1, the ehci controller will set
+ehci->need_io_watchdog to 0. Since most EHCI controllers do need the I/O
+watchdog to be on, only let those which need it to turn the watchdog off.
 
-The ehci-platform driver is provided with power_{on,off} callbacks to ensure
-proper block gating and USB configuration of the EHCI controller.
+Make sure that we change need_io_watchdog after the call to ehci_setup()
+because ehci_setup() will unconditionnaly set need_io_watchdog to 1.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes in v4:
 - rebased against greg's latest usb-next
 
-No changes in v2 and v3
+Changes in v3:
+- set need_io_watchdog after the call to ehci_setup()
 
- arch/arm/mach-cns3xxx/cns3420vb.c |   44 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 43 insertions(+), 1 deletion(-)
+Changes in v2:
+- reworked patch to introduce "no_io_watchdog" instead of "need_io_watchdog"
+- reworded commit message accordingly
 
-diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
-index 2c5fb4c..906094c 100644
---- a/arch/arm/mach-cns3xxx/cns3420vb.c
-+++ b/arch/arm/mach-cns3xxx/cns3420vb.c
-@@ -24,6 +24,7 @@
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/physmap.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/usb/ehci_pdriver.h>
- #include <asm/setup.h>
- #include <asm/mach-types.h>
- #include <asm/hardware/gic.h>
-@@ -32,6 +33,7 @@
- #include <asm/mach/time.h>
- #include <mach/cns3xxx.h>
- #include <mach/irqs.h>
-+#include <mach/pm.h>
- #include "core.h"
- #include "devices.h"
+ drivers/usb/host/ehci-platform.c |    2 ++
+ include/linux/usb/ehci_pdriver.h |    3 +++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 764e010..607adf9 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -38,6 +38,8 @@ static int ehci_platform_reset(struct usb_hcd *hcd)
+ 	if (retval)
+ 		return retval;
  
-@@ -125,13 +127,53 @@ static struct resource cns3xxx_usb_ehci_resources[] = {
++	if (pdata->no_io_watchdog)
++		ehci->need_io_watchdog = 0;
+ 	if (pdata->port_power_on)
+ 		ehci_port_power(ehci, 1);
+ 	if (pdata->port_power_off)
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index c9d09f8..67ac74b 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -29,6 +29,8 @@
+  *			initialization.
+  * @port_power_off:	set to 1 if the controller needs to be powered down
+  *			after initialization.
++ * @no_io_watchdog:	set to 1 if the controller does not need the I/O
++ *			watchdog to run.
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -41,6 +43,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	port_power_on:1;
+ 	unsigned	port_power_off:1;
++	unsigned	no_io_watchdog:1;
  
- static u64 cns3xxx_usb_ehci_dma_mask = DMA_BIT_MASK(32);
- 
-+static int csn3xxx_usb_ehci_power_on(struct platform_device *pdev)
-+{
-+	/*
-+	 * EHCI and OHCI share the same clock and power,
-+	 * resetting twice would cause the 1st controller been reset.
-+	 * Therefore only do power up  at the first up device, and
-+	 * power down at the last down device.
-+	 *
-+	 * Set USB AHB INCR length to 16
-+	 */
-+	if (atomic_inc_return(&usb_pwr_ref) == 1) {
-+		cns3xxx_pwr_power_up(1 << PM_PLL_HM_PD_CTRL_REG_OFFSET_PLL_USB);
-+		cns3xxx_pwr_clk_en(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
-+		cns3xxx_pwr_soft_rst(1 << PM_SOFT_RST_REG_OFFST_USB_HOST);
-+		__raw_writel((__raw_readl(MISC_CHIP_CONFIG_REG) | (0X2 << 24)),
-+			MISC_CHIP_CONFIG_REG);
-+	}
-+
-+	return 0;
-+}
-+
-+static void csn3xxx_usb_ehci_power_off(struct platform_device *pdev)
-+{
-+	/*
-+	 * EHCI and OHCI share the same clock and power,
-+	 * resetting twice would cause the 1st controller been reset.
-+	 * Therefore only do power up  at the first up device, and
-+	 * power down at the last down device.
-+	 */
-+	if (atomic_dec_return(&usb_pwr_ref) == 0)
-+		cns3xxx_pwr_clk_dis(1 << PM_CLK_GATE_REG_OFFSET_USB_HOST);
-+}
-+
-+static struct usb_ehci_pdata cns3xxx_usb_ehci_pdata = {
-+	.port_power_off	= 1,
-+	.power_on	= csn3xxx_usb_ehci_power_on,
-+	.power_off	= csn3xxx_usb_ehci_power_off,
-+};
-+
- static struct platform_device cns3xxx_usb_ehci_device = {
--	.name          = "cns3xxx-ehci",
-+	.name          = "ehci-platform",
- 	.num_resources = ARRAY_SIZE(cns3xxx_usb_ehci_resources),
- 	.resource      = cns3xxx_usb_ehci_resources,
- 	.dev           = {
- 		.dma_mask          = &cns3xxx_usb_ehci_dma_mask,
- 		.coherent_dma_mask = DMA_BIT_MASK(32),
-+		.platform_data     = &cns3xxx_usb_ehci_pdata,
- 	},
- };
- 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
 -- 
 1.7.9.5
 
