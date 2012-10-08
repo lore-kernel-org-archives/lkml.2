@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab2JHQfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 12:35:22 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:41384 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab2JHQfT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 12:35:19 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Changman Lee <cm224.lee@gmail.com>
-Cc: =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, jooyoung.hwang@samsung.com,
-        viro@zeniv.linux.org.uk, chur.lee@samsung.com, cm224.lee@samsung.com
-References: <001101cda2f1$50a23c40$f1e6b4c0$%kim@samsung.com>
-	<87mx00slyj.fsf@xmission.com>
-	<CAN863Pu_W4P74oQyJQnkXhUW+q-0zJR7F+gW_n6JqoOQOwG0ww@mail.gmail.com>
-Date: Mon, 08 Oct 2012 09:35:08 -0700
-In-Reply-To: <CAN863Pu_W4P74oQyJQnkXhUW+q-0zJR7F+gW_n6JqoOQOwG0ww@mail.gmail.com>
-	(Changman Lee's message of "Mon, 8 Oct 2012 21:28:40 +0900")
-Message-ID: <87r4p8gbwj.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754118Ab2JHQpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 12:45:04 -0400
+Received: from [65.55.88.15] ([65.55.88.15]:26406 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751823Ab2JHQo7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 12:44:59 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz1432I4015Izz1202h1d1ah1d2ahzz17326ah8275bh8275dhz2fh2a8h668h839h944he5bhf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
+To: Jiri Kosina <jkosina@suse.cz>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Mon, 8 Oct 2012 11:43:42 -0500
+Subject: Re: [PATCH] [RESEND] qla2xxx: fix potential deadlock on
+ ha->hardware_lock
+Thread-Topic: [PATCH] [RESEND] qla2xxx: fix potential deadlock on
+ ha->hardware_lock
+Thread-Index: Ac2ldBN8tnjqPjPzSlqXvRznbp/8yQ==
+Message-ID: <CC98FFD9.ECEC%saurav.kashyap@qlogic.com>
+In-Reply-To: <alpine.LNX.2.00.1210080922250.28357@pobox.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.10.0.110310
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19Q1yqmRwz1aPcT3+q2E0QcROf0Jyk33Do=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Changman Lee <cm224.lee@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 10/16] f2fs: add core inode operations
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changman Lee <cm224.lee@gmail.com> writes:
->> > +void update_inode(struct inode *inode, struct page *node_page)
->> > +{
->> > +     struct f2fs_node *rn;
->> > +     struct f2fs_inode *ri;
->> > +
->> > +     wait_on_page_writeback(node_page);
->> > +
->> > +     rn = page_address(node_page);
->> > +     ri = &(rn->i);
->> > +
->> > +     ri->i_mode = cpu_to_le16(inode->i_mode);
->> > +     ri->i_uid = cpu_to_le32(inode->i_uid);
->> > +     ri->i_gid = cpu_to_le32(inode->i_gid);
->> And make this:
->>         i_uid_write(inode, le32_to_cpu(ri->i_uid));
->>         i_gid_write(inode, le32_to_cpu(ri->i_gid));
->>
+Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+
+Thanks,
+~Saurav
+
+
+>Lockdep reports:
 >
-> You mean this. Right? :)
-> ri->i_uid = cpu_to_le32(i_uid_read(inode));
-> ri->i_gid = cpu_to_le32(i_gid_read(inode));
+>=== [ cut here ] ===
+> =========================================================
+> [ INFO: possible irq lock inversion dependency detected ]
+> 3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
+> ---------------------------------------------------------
+> qla2xxx_1_dpc/368 just changed the state of lock:
+>  (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>]
+>qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
+> but this lock was taken by another, HARDIRQ-safe lock in the past:
+>  (&(&ha->hardware_lock)->rlock){-.....}
+>
+>and interrupts could create inverse lock ordering between them.
+>
+>other info that might help us debug this:
+> Possible interrupt unsafe locking scenario:
+>
+>       CPU0                    CPU1
+>       ----                    ----
+>  lock(&(&ha->vport_slock)->rlock);
+>                               local_irq_disable();
+>                               lock(&(&ha->hardware_lock)->rlock);
+>                               lock(&(&ha->vport_slock)->rlock);
+>  <Interrupt>
+>    lock(&(&ha->hardware_lock)->rlock);
+>=== [ cut here ] ===
+>
+>Fix the potential deadlock by disabling IRQs while holding
+>ha->vport_slock.
+>
+>Reported-and-tested-by: Srivatsa S. Bhat
+><srivatsa.bhat@linux.vnet.ibm.com>
+>Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>---
+> drivers/scsi/qla2xxx/qla_init.c |    5 +++--
+> 1 files changed, 3 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/scsi/qla2xxx/qla_init.c
+>b/drivers/scsi/qla2xxx/qla_init.c
+>index 799a58b..48fca47 100644
+>--- a/drivers/scsi/qla2xxx/qla_init.c
+>+++ b/drivers/scsi/qla2xxx/qla_init.c
+>@@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>       uint8_t       domain;
+>       char            connect_type[22];
+>       struct qla_hw_data *ha = vha->hw;
+>+      unsigned long flags;
+>
+>       /* Get host addresses. */
+>       rval = qla2x00_get_adapter_id(vha,
+>@@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>       vha->d_id.b.area = area;
+>       vha->d_id.b.al_pa = al_pa;
+>
+>-      spin_lock(&ha->vport_slock);
+>+      spin_lock_irqsave(&ha->vport_slock, flags);
+>       qlt_update_vp_map(vha, SET_AL_PA);
+>-      spin_unlock(&ha->vport_slock);
+>+      spin_unlock_irqrestore(&ha->vport_slock, flags);
+>
+>       if (!vha->flags.init_done)
+>               ql_log(ql_log_info, vha, 0x2010,
+>
+>--
+>Jiri Kosina
+>SUSE Labs
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Yeah. ;)
 
-I did have that one backwards.
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
-Eric
