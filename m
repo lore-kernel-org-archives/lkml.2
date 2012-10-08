@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab2JHWfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:35:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41422 "EHLO
+	id S1755427Ab2JHWgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:36:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41421 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab2JHWdh (ORCPT
+	with ESMTP id S932091Ab2JHWdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Oct 2012 18:33:37 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/25] perf diff: Add -F option to display formula for computation
-Date: Mon,  8 Oct 2012 19:32:34 -0300
-Message-Id: <1349735570-19339-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 12/25] perf tools: Have the page size value available for all tools
+Date: Mon,  8 Oct 2012 19:32:37 -0300
+Message-Id: <1349735570-19339-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
 References: <1349735570-19339-1-git-send-email-acme@infradead.org>
@@ -29,224 +29,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Adding -F option to display the formula for specified computation.
+Its such a common need that we might as well have a global with that
+value.
 
-This is mainly to facilitate debugging, but can be useful anyway.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1349448287-18919-7-git-send-email-jolsa@redhat.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-mwfqji9f17k5j81l1404dk3q@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt |    4 ++
- tools/perf/builtin-diff.c              |   67 +++++++++++++++++++++++++++++++-
- tools/perf/ui/hist.c                   |   24 +++++++++++-
- tools/perf/ui/stdio/hist.c             |    2 +-
- tools/perf/util/hist.h                 |    2 +
- 5 files changed, 96 insertions(+), 3 deletions(-)
+ tools/perf/builtin-test.c          |    2 --
+ tools/perf/perf.c                  |    2 ++
+ tools/perf/util/evlist.c           |    3 ---
+ tools/perf/util/session.c          |    4 +---
+ tools/perf/util/trace-event-read.c |    2 --
+ tools/perf/util/util.c             |    2 ++
+ tools/perf/util/util.h             |    2 ++
+ 7 files changed, 7 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 21cc2ef..194f37d 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -87,6 +87,10 @@ OPTIONS
- --period::
-         Show period values for both compared hist entries.
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 484f26c..e2d9872d 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -35,7 +35,6 @@ static int test__vmlinux_matches_kallsyms(void)
+ 	struct map *kallsyms_map, *vmlinux_map;
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+-	long page_size = sysconf(_SC_PAGE_SIZE);
+ 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
  
-+-F::
-+--formula::
-+        Show formula for given computation.
-+
- COMPARISON METHODS
- ------------------
- delta
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 2411dd1..dd9c064 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -25,6 +25,7 @@ static char	  diff__default_sort_order[] = "dso,symbol";
- static bool  force;
- static bool show_displacement;
- static bool show_period;
-+static bool show_formula;
- static bool show_baseline_only;
- static bool sort_compute;
+ 	/*
+@@ -1007,7 +1006,6 @@ static void segfault_handler(int sig __maybe_unused,
  
-@@ -190,6 +191,62 @@ s64 perf_diff__compute_wdiff(struct hist_entry *he)
- 	return he->diff.wdiff;
- }
- 
-+static int formula_delta(struct hist_entry *he, char *buf, size_t size)
-+{
-+	struct hist_entry *pair = he->pair;
-+
-+	if (!pair)
-+		return -1;
-+
-+	return scnprintf(buf, size,
-+			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
-+			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
-+			  he->stat.period, he->hists->stats.total_period,
-+			  pair->stat.period, pair->hists->stats.total_period);
-+}
-+
-+static int formula_ratio(struct hist_entry *he, char *buf, size_t size)
-+{
-+	struct hist_entry *pair = he->pair;
-+	double new_period = he->stat.period;
-+	double old_period = pair ? pair->stat.period : 0;
-+
-+	if (!pair)
-+		return -1;
-+
-+	return scnprintf(buf, size, "%.0F / %.0F", new_period, old_period);
-+}
-+
-+static int formula_wdiff(struct hist_entry *he, char *buf, size_t size)
-+{
-+	struct hist_entry *pair = he->pair;
-+	u64 new_period = he->stat.period;
-+	u64 old_period = pair ? pair->stat.period : 0;
-+
-+	if (!pair)
-+		return -1;
-+
-+	return scnprintf(buf, size,
-+		  "(%" PRIu64 " * " "%" PRId64 ") - (%" PRIu64 " * " "%" PRId64 ")",
-+		  new_period, compute_wdiff_w2, old_period, compute_wdiff_w1);
-+}
-+
-+int perf_diff__formula(char *buf, size_t size, struct hist_entry *he)
-+{
-+	switch (compute) {
-+	case COMPUTE_DELTA:
-+		return formula_delta(he, buf, size);
-+	case COMPUTE_RATIO:
-+		return formula_ratio(he, buf, size);
-+	case COMPUTE_WEIGHTED_DIFF:
-+		return formula_wdiff(he, buf, size);
-+	default:
-+		BUG_ON(1);
-+	}
-+
-+	return -1;
-+}
-+
- static int hists__add_entry(struct hists *self,
- 			    struct addr_location *al, u64 period)
+ static int __test__rdpmc(void)
  {
-@@ -543,6 +600,8 @@ static const struct option options[] = {
- 		     setup_compute),
- 	OPT_BOOLEAN('p', "period", &show_period,
- 		    "Show period values."),
-+	OPT_BOOLEAN('F', "formula", &show_formula,
-+		    "Show formula."),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
-@@ -571,7 +630,10 @@ static void ui_init(void)
- 	/* No overhead column. */
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD, false);
+-	long page_size = sysconf(_SC_PAGE_SIZE);
+ 	volatile int tmp = 0;
+ 	u64 i, loops = 1000;
+ 	int n;
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 6d50eb0..d480d8a 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -440,6 +440,8 @@ int main(int argc, const char **argv)
+ {
+ 	const char *cmd;
  
--	/* Display baseline/delta/ratio/displacement/periods columns. */
-+	/*
-+	 * Display baseline/delta/ratio/displacement/
-+	 * formula/periods columns.
-+	 */
- 	perf_hpp__column_enable(PERF_HPP__BASELINE, true);
++	page_size = sysconf(_SC_PAGE_SIZE);
++
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+ 		cmd = "perf-help";
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 186b877..a41dc4a 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -325,8 +325,6 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
  
- 	switch (compute) {
-@@ -591,6 +653,9 @@ static void ui_init(void)
- 	if (show_displacement)
- 		perf_hpp__column_enable(PERF_HPP__DISPL, true);
+ union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
+ {
+-	/* XXX Move this to perf.c, making it generally available */
+-	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
+ 	struct perf_mmap *md = &evlist->mmap[idx];
+ 	unsigned int head = perf_mmap__read_head(md);
+ 	unsigned int old = md->prev;
+@@ -528,7 +526,6 @@ out_unmap:
+ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
+ 		      bool overwrite)
+ {
+-	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
+ 	struct perf_evsel *evsel;
+ 	const struct cpu_map *cpus = evlist->cpus;
+ 	const struct thread_map *threads = evlist->threads;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8cdd232..15abe40 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1375,15 +1375,13 @@ int __perf_session__process_events(struct perf_session *session,
+ {
+ 	u64 head, page_offset, file_offset, file_pos, progress_next;
+ 	int err, mmap_prot, mmap_flags, map_idx = 0;
+-	size_t	page_size, mmap_size;
++	size_t	mmap_size;
+ 	char *buf, *mmaps[8];
+ 	union perf_event *event;
+ 	uint32_t size;
  
-+	if (show_formula)
-+		perf_hpp__column_enable(PERF_HPP__FORMULA, true);
-+
- 	if (show_period) {
- 		perf_hpp__column_enable(PERF_HPP__PERIOD, true);
- 		perf_hpp__column_enable(PERF_HPP__PERIOD_BASELINE, true);
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 2fadaff..305eb79 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -359,6 +359,27 @@ static int hpp__entry_displ(struct perf_hpp *hpp,
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
- }
+ 	perf_tool__fill_defaults(tool);
  
-+static int hpp__header_formula(struct perf_hpp *hpp)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%70s";
-+
-+	return scnprintf(hpp->buf, hpp->size, fmt, "Formula");
-+}
-+
-+static int hpp__width_formula(struct perf_hpp *hpp __maybe_unused)
-+{
-+	return 70;
-+}
-+
-+static int hpp__entry_formula(struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	const char *fmt = symbol_conf.field_sep ? "%s" : "%-70s";
-+	char buf[96] = " ";
-+
-+	perf_diff__formula(buf, sizeof(buf), he);
-+	return scnprintf(hpp->buf, hpp->size, fmt, buf);
-+}
-+
- #define HPP__COLOR_PRINT_FNS(_name)		\
- 	.header	= hpp__header_ ## _name,		\
- 	.width	= hpp__width_ ## _name,		\
-@@ -383,7 +404,8 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	{ .cond = false, HPP__PRINT_FNS(delta) },
- 	{ .cond = false, HPP__PRINT_FNS(ratio) },
- 	{ .cond = false, HPP__PRINT_FNS(wdiff) },
--	{ .cond = false, HPP__PRINT_FNS(displ) }
-+	{ .cond = false, HPP__PRINT_FNS(displ) },
-+	{ .cond = false, HPP__PRINT_FNS(formula) }
- };
+-	page_size = sysconf(_SC_PAGESIZE);
+-
+ 	page_offset = page_size * (data_offset / page_size);
+ 	file_offset = page_offset;
+ 	head = data_offset - page_offset;
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 719ed74..3741572 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -47,8 +47,6 @@ int file_bigendian;
+ int host_bigendian;
+ static int long_size;
  
- #undef HPP__COLOR_PRINT_FNS
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index fbd4e32..f0ee204 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -342,7 +342,7 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 	const char *sep = symbol_conf.field_sep;
- 	const char *col_width = symbol_conf.col_width_list_str;
- 	int idx, nr_rows = 0;
--	char bf[64];
-+	char bf[96];
- 	struct perf_hpp dummy_hpp = {
- 		.buf	= bf,
- 		.size	= sizeof(bf),
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 5604791..c751624 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -145,6 +145,7 @@ enum {
- 	PERF_HPP__RATIO,
- 	PERF_HPP__WEIGHTED_DIFF,
- 	PERF_HPP__DISPL,
-+	PERF_HPP__FORMULA,
+-static unsigned long	page_size;
+-
+ static ssize_t calc_data_size;
+ static bool repipe;
  
- 	PERF_HPP__MAX_INDEX
- };
-@@ -210,4 +211,5 @@ unsigned int hists__sort_list_width(struct hists *self);
- double perf_diff__compute_delta(struct hist_entry *he);
- double perf_diff__compute_ratio(struct hist_entry *he);
- s64 perf_diff__compute_wdiff(struct hist_entry *he);
-+int perf_diff__formula(char *buf, size_t size, struct hist_entry *he);
- #endif	/* __PERF_HIST_H */
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 9966459..637b5cc 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -10,6 +10,8 @@
+ /*
+  * XXX We need to find a better place for these things...
+  */
++unsigned int page_size;
++
+ bool perf_host  = true;
+ bool perf_guest = false;
+ 
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 70fa70b..a6b83f8 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -263,4 +263,6 @@ char *rtrim(char *s);
+ 
+ void dump_stack(void);
+ 
++extern unsigned int page_size;
++
+ #endif
 -- 
 1.7.9.2.358.g22243
 
