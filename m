@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2JHGoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:44:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45412 "EHLO
+	id S1753427Ab2JHGo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:44:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40084 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2JHGoJ (ORCPT
+	with ESMTP id S1751230Ab2JHGoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:44:09 -0400
+	Mon, 8 Oct 2012 02:44:54 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -14,86 +14,118 @@ To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
 Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 0/8] perf tools: fixes for Android
-Date: Mon,  8 Oct 2012 09:43:25 +0300
-Message-Id: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
+Subject: [PATCH 1/8] perf tools: add on_exit implementation
+Date: Mon,  8 Oct 2012 09:43:26 +0300
+Message-Id: <1349678613-7045-2-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
+References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+From: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
 
-Hi,
+on_exit() is only available in new versions of glibc.
+It is not implemented in Bionic and will lead to linking errors when
+compiling for Android.
 
-I have gathered in this set all remaining patches with Android fixes.
+Implement a wrapper for on_exit using atexit.
 
-Starting from Bernhard's patch [1], I added 2 patches (patch 1 and 2) that
-include on_exit implementation and Android support in the Makefile.
-I have also added some documentation on building for Android (patch 3).
+The implementation for on_exit is the one sent by Bernhard Rosenkraenzer in
+https://lkml.org/lkml/2012/8/23/316. The configuration part from the Makefile
+is different than the one from the original patch.
 
-I have included version 3 for the patchset "perf: android: configure hardcoded
-paths" [2]. Changes for v3:
-() add documentation and update Makefile for Android for patch 4 and 5
-() move the detection of cross-build objdump path in one file (common.c) so that
-is available for addr2line as well. (patch 6)
-() implement detection of cross-build path for addr2line (patch 7)
+Signed-off-by: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+---
+ tools/perf/Makefile                 |    6 ++++++
+ tools/perf/builtin-record.c         |   32 ++++++++++++++++++++++++++++++++
+ tools/perf/config/feature-tests.mak |   11 ++++++++++-
+ 3 files changed, 48 insertions(+), 1 deletion(-)
 
-I have also included version 3 for the patch "perf stat: implement --big-num
-grouping" [3] (patch 8). Changes for v3:
-() replace LOCALE_SUPPORT with NO_LOCALE for consistency with recent changes
-done by Namhyung
-
-Thanks,
-Irina
-
-[1] https://lkml.org/lkml/2012/8/23/316
-[2] https://lkml.org/lkml/2012/9/23/100
-[3] https://lkml.org/lkml/2012/9/23/128
-
-Bernhard Rosenkraenzer (1):
-  perf tools: add on_exit implementation
-
-Irina Tirdea (6):
-  perf tools: update Makefile for Android
-  Documentation: add documentation on compiling for Android
-  perf tools: configure tmp path at build time
-  perf tools: configure shell path at compile time
-  perf tools: configure addr2line for cross-compiling
-  perf stat: implement --big-num grouping
-
-Namhyung Kim (1):
-  perf tools: Try to find cross-built objdump path
-
- tools/perf/Documentation/android.txt       |   94 ++++++++++++++++
- tools/perf/Documentation/jit-interface.txt |    4 +-
- tools/perf/Documentation/perf-annotate.txt |    2 +
- tools/perf/Documentation/perf-report.txt   |    2 +
- tools/perf/Makefile                        |   64 +++++++++--
- tools/perf/arch/common.c                   |  164 ++++++++++++++++++++++++++++
- tools/perf/arch/common.h                   |   12 ++
- tools/perf/builtin-annotate.c              |    9 ++
- tools/perf/builtin-help.c                  |    2 +-
- tools/perf/builtin-record.c                |   32 ++++++
- tools/perf/builtin-report.c                |    7 ++
- tools/perf/builtin-script.c                |   12 +-
- tools/perf/builtin-stat.c                  |  112 +++++++++++++++++--
- tools/perf/config/feature-tests.mak        |   38 ++++++-
- tools/perf/perf-archive.sh                 |   13 ++-
- tools/perf/util/annotate.c                 |   13 ++-
- tools/perf/util/annotate.h                 |    1 -
- tools/perf/util/dso-test-data.c            |    2 +-
- tools/perf/util/map.c                      |    3 +-
- tools/perf/util/pmu.c                      |    2 +-
- tools/perf/util/sort.c                     |   16 ++-
- tools/perf/util/symbol.c                   |    4 +-
- tools/perf/util/trace-event-info.c         |    2 +-
- 23 files changed, 574 insertions(+), 36 deletions(-)
- create mode 100644 tools/perf/Documentation/android.txt
- create mode 100644 tools/perf/arch/common.c
- create mode 100644 tools/perf/arch/common.h
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f9126f8..0e468b5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -751,6 +751,12 @@ ifndef NO_STRLCPY
+ 	endif
+ endif
+ 
++ifndef NO_ON_EXIT
++	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),),y)
++		BASIC_CFLAGS += -DHAVE_ON_EXIT
++	endif
++endif
++
+ ifndef NO_BACKTRACE
+        ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
+                BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e9231659..73b5d7f 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -31,6 +31,38 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
++#ifndef HAVE_ON_EXIT
++#ifndef ATEXIT_MAX
++#define ATEXIT_MAX 32
++#endif
++static int __on_exit_count = 0;
++typedef void (*on_exit_func_t) (int, void *);
++static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
++static void *__on_exit_args[ATEXIT_MAX];
++static int __exitcode = 0;
++static void __handle_on_exit_funcs(void);
++static int on_exit(on_exit_func_t function, void *arg);
++#define exit(x) (exit)(__exitcode = (x))
++
++static int on_exit(on_exit_func_t function, void *arg)
++{
++	if (__on_exit_count == ATEXIT_MAX)
++		return -ENOMEM;
++	else if (__on_exit_count == 0)
++		atexit(__handle_on_exit_funcs);
++	__on_exit_funcs[__on_exit_count] = function;
++	__on_exit_args[__on_exit_count++] = arg;
++	return 0;
++}
++
++static void __handle_on_exit_funcs(void)
++{
++	int i;
++	for (i = 0; i < __on_exit_count; i++)
++		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
++}
++#endif
++
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 4add41b..eaeb0fd 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -203,4 +203,13 @@ int main(void)
+ 	return audit_open();
+ }
+ endef
+-endif
+\ No newline at end of file
++endif
++
++define SOURCE_ON_EXIT
++#include <stdio.h>
++
++int main(void)
++{
++	return on_exit(NULL, NULL);
++}
++endef
 -- 
 1.7.9.5
 
