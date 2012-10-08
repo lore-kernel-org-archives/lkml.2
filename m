@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab2JHXyD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 19:54:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39074 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2JHXxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 19:53:48 -0400
-Date: Mon, 8 Oct 2012 16:53:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] make CONFIG_EXPERIMENTAL invisible and default
-Message-ID: <20121008235344.GC8157@kroah.com>
-References: <20121002195042.GA16087@www.outflux.net>
- <20121003132538.GE13192@linux.vnet.ibm.com>
- <20121003161702.GA22008@kroah.com>
- <CAGXu5jL6N2qSokXFr17Re9DOneWx-+seSx7k_dk-A+0mgbOejQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jL6N2qSokXFr17Re9DOneWx-+seSx7k_dk-A+0mgbOejQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754127Ab2JHXyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 19:54:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:39302 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab2JHXyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 19:54:23 -0400
+Message-ID: <1349740469.32656.2.camel@concordia>
+Subject: Re: [PATCH 0/5] Move some OF functionality from pseries to generic
+ OF code
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Cc: devicetree-discuss@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Date: Tue, 09 Oct 2012 10:54:29 +1100
+In-Reply-To: <506B2E63.5090900@linux.vnet.ibm.com>
+References: <506B2E63.5090900@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 03:08:40PM -0700, Kees Cook wrote:
-> On Wed, Oct 3, 2012 at 9:17 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Oct 03, 2012 at 06:25:38AM -0700, Paul E. McKenney wrote:
-> >> On Tue, Oct 02, 2012 at 12:50:42PM -0700, Kees Cook wrote:
-> >> > This config item has not carried much meaning for a while now and is
-> >> > almost always enabled by default. As agreed during the Linux kernel
-> >> > summit, it should be removed. As a first step, remove it from being
-> >> > listed, and default it to on. Once it has been removed from all
-> >> > subsystem Kconfigs, it will be dropped entirely.
-> >> >
-> >> > CC: Greg KH <gregkh@linuxfoundation.org>
-> >> > CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> >> > CC: Serge Hallyn <serge.hallyn@canonical.com>
-> >> > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >> > CC: Andrew Morton <akpm@linux-foundation.org>
-> >> > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> >> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> >> > ---
-> >> >
-> >> > This is the first of a series of 202 patches removing EXPERIMENTAL from
-> >> > all the Kconfigs in the tree. Should I send them all to lkml (with all
-> >> > the associated CCs), or do people want to cherry-pick changes from my
-> >> > tree? I don't want to needlessly flood the list.
-> >> >
-> >> > http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/experimental
-> >> >
-> >> > I figure this patch can stand alone to at least make EXPERIMENTAL go
-> >> > away from the menus, and give us a taste of what the removal would do
-> >> > to builds.
-> >>
-> >> OK, I will bite...  How should I flag an option that is initially only
-> >> intended for those willing to take some level of risk?
-> >
-> > In the text say "You really don't want to enable this option, use at
-> > your own risk!"  Or something like that :)
-> 
-> So, should I update the commit description to include a suggested
-> alternative? (If so, which one?)
+On Tue, 2012-10-02 at 13:11 -0500, Nathan Fontenot wrote:
+> This set of patches moves some OF code that has been living
+> in the pseries tree over to the generic OF code base. The
+> functionality being migrated over is something that, I believe,
+> should live in the generic code base. The specific functionality
+> being migrated to generic OF code is;
 
-Which do you prefer?
+Your changes collide with commit 475d0094293:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=475d0094293b51353e342d1198377967dbc48169
 
-> Who is going to carry this initial patch, btw?
 
-You?  :)
+At a quick glance they don't look like they conflict in concept, just
+textually.
 
-greg k-h
+cheers
+
+
