@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab2JHGpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:45:46 -0400
+	id S1753696Ab2JHGq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:46:29 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:40084 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab2JHGpc (ORCPT
+	with ESMTP id S1753505Ab2JHGpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:45:32 -0400
+	Mon, 8 Oct 2012 02:45:16 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v3 7/8] perf tools: configure addr2line for cross-compiling
-Date: Mon,  8 Oct 2012 09:43:32 +0300
-Message-Id: <1349678613-7045-8-git-send-email-irina.tirdea@gmail.com>
+Subject: [PATCH v3 4/8] perf tools: configure tmp path at build time
+Date: Mon,  8 Oct 2012 09:43:29 +0300
+Message-Id: <1349678613-7045-5-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
 References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
@@ -27,231 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-When analyzing data recorded on a target with a different architecture than
-the host, we must use addr2line from the toolchain for that architecture.
-Add a command line option to set addr2line at runtime.
+Temporary perf files are hardcoded to point to /tmp. Android does not have
+a /tmp directory so it needs to set this path at compile time.
 
-As we have architecture information of saved perf.data file, we can
-also try to find cross-built addr2line path. The predefined triplets include
-support for Android (arm, x86 and mips architectures).
+Add a compile-time definition (PERF_TMP_DIR) in the Makefile that sets the path
+to temp directory. By default it points to /tmp.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Documentation/android.txt       |   18 ++++++++++++++++++
- tools/perf/Documentation/perf-annotate.txt |    2 ++
- tools/perf/Documentation/perf-report.txt   |    2 ++
- tools/perf/arch/common.c                   |    5 +++++
- tools/perf/arch/common.h                   |    2 ++
- tools/perf/builtin-annotate.c              |    5 +++++
- tools/perf/builtin-report.c                |    6 ++++++
- tools/perf/util/annotate.c                 |   13 ++++++++++++-
- tools/perf/util/sort.c                     |   16 +++++++++++++---
- 9 files changed, 65 insertions(+), 4 deletions(-)
+ tools/perf/Documentation/android.txt       |    1 +
+ tools/perf/Documentation/jit-interface.txt |    4 +++-
+ tools/perf/Makefile                        |   17 ++++++++++++++++-
+ tools/perf/perf-archive.sh                 |   13 +++++++++++--
+ tools/perf/util/dso-test-data.c            |    2 +-
+ tools/perf/util/map.c                      |    3 ++-
+ tools/perf/util/pmu.c                      |    2 +-
+ tools/perf/util/symbol.c                   |    4 +++-
+ tools/perf/util/trace-event-info.c         |    2 +-
+ 9 files changed, 39 insertions(+), 9 deletions(-)
 
 diff --git a/tools/perf/Documentation/android.txt b/tools/perf/Documentation/android.txt
-index 24fd01c..c2a8017 100644
+index a39dbbb..24fd01c 100644
 --- a/tools/perf/Documentation/android.txt
 +++ b/tools/perf/Documentation/android.txt
-@@ -74,3 +74,21 @@ IV. Run perf
+@@ -68,6 +68,7 @@ Some perf features need environment variables to run properly.
+ You need to set these before running perf on the target:
+   adb shell
+   # PERF_PAGER=cat
++  # PERF_TMP_DIR=/data/local/tmp
+ 
+ IV. Run perf
  ------------------------------------------------
- Run perf on your device/emulator to which you previously connected using adb:
-   # ./data/perf
+diff --git a/tools/perf/Documentation/jit-interface.txt b/tools/perf/Documentation/jit-interface.txt
+index a8656f5..10cb6ec 100644
+--- a/tools/perf/Documentation/jit-interface.txt
++++ b/tools/perf/Documentation/jit-interface.txt
+@@ -1,7 +1,9 @@
+ perf supports a simple JIT interface to resolve symbols for dynamic code generated
+ by a JIT.
+ 
+-The JIT has to write a /tmp/perf-%d.map  (%d = pid of process) file
++The JIT has to write a $PERF_TMP_DIR/perf-%d.map  (%d = pid of process) file.
++You can set $PERF_TMP_DIR at compile time in the Makefile.
++By default it is /tmp.
+ 
+ This is a text file.
+ 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1a23118..9b1f84c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -141,6 +141,7 @@ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
+ lib = lib
++PERF_TMP_DIR = /tmp
+ 
+ export prefix bindir sharedir sysconfdir
+ 
+@@ -177,6 +178,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS)),y)
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
++	PERF_TMP_DIR = /data/local/tmp
+ endif
+ 
+ # Guard against environment variables
+@@ -255,7 +257,8 @@ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+ 	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+ 
+ $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+-$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
++$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu.c $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+ 
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+@@ -887,6 +890,18 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
++$(OUTPUT)util/dso-test-data.o: util/dso-test-data.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
 +
-+V. Analyze data recorded in Android on the host
-+------------------------------------------------
-+perf report and perf annotate use objdump and addr2line tools from Linux.
-+For analyzing data recorded for a different architecture you need to use the
-+versions provided in the toolchain for that architecture. The detection of the
-+proper toolchain is done at runtime; all you need to do is set some environment
-+variables before running perf annotate/report:
-+1. set CROSS_COMPILE
-+  export CROSS_COMPILE=${NDK_TOOLCHAIN}
-+or
-+2. add the path to the toolchain to PATH
-+  export PATH=$PATH:${ANDROID_TOOLCHAIN}
-+or
-+3. set the Android environment if you have the source tree
-+(this will set $PATH for you as mentioned above)
-+  source build/envsetup.sh
-+  lunch
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index c8ffd9f..177906a 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -87,6 +87,8 @@ OPTIONS
++$(OUTPUT)util/map.o: util/map.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
++
++$(OUTPUT)util/symbol.o: util/symbol.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
++
++$(OUTPUT)util/trace-event-info.o: util/trace-event-info.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
++
+ $(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
- --objdump=<path>::
-         Path to objdump binary.
-+--addr2line=<path>::
-+        Path to addr2line binary.
+diff --git a/tools/perf/perf-archive.sh b/tools/perf/perf-archive.sh
+index e919306..058c3b7 100644
+--- a/tools/perf/perf-archive.sh
++++ b/tools/perf/perf-archive.sh
+@@ -18,7 +18,16 @@ else
+         PERF_BUILDID_DIR=$PERF_BUILDID_DIR/
+ fi
  
- SEE ALSO
- --------
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index f4d91be..b6bb26e 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -170,6 +170,8 @@ OPTIONS
+-BUILDIDS=$(mktemp /tmp/perf-archive-buildids.XXXXXX)
++#
++# PERF_TMP_DIR environment variable set by perf
++# path to temp directory, default to /tmp
++#
++if [ -z $PERF_TMP_DIR ]; then
++	PERF_TMP_DIR=/tmp
++fi
++
++
++BUILDIDS=$(mktemp $PERF_TMP_DIR/perf-archive-buildids.XXXXXX)
+ NOBUILDID=0000000000000000000000000000000000000000
  
- --objdump=<path>::
-         Path to objdump binary.
-+--addr2line=<path>::
-+        Path to addr2line binary.
+ perf buildid-list -i $PERF_DATA --with-hits | grep -v "^$NOBUILDID " > $BUILDIDS
+@@ -28,7 +37,7 @@ if [ ! -s $BUILDIDS ] ; then
+ 	exit 1
+ fi
  
- SEE ALSO
- --------
-diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
-index 1db891f..e84b139 100644
---- a/tools/perf/arch/common.c
-+++ b/tools/perf/arch/common.c
-@@ -157,3 +157,8 @@ void try_objdump_path(struct perf_session *session)
+-MANIFEST=$(mktemp /tmp/perf-archive-manifest.XXXXXX)
++MANIFEST=$(mktemp $PERF_TMP_DIR/perf-archive-manifest.XXXXXX)
+ PERF_BUILDID_LINKDIR=$(readlink -f $PERF_BUILDID_DIR)/
+ 
+ cut -d ' ' -f 1 $BUILDIDS | \
+diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
+index c6caede..ca81e65 100644
+--- a/tools/perf/util/dso-test-data.c
++++ b/tools/perf/util/dso-test-data.c
+@@ -18,7 +18,7 @@ do { \
+ 
+ static char *test_file(int size)
  {
- 	objdump_path = try_binutils_path(session, "objdump");
- }
-+
-+void try_addr2line_path(struct perf_session *session)
-+{
-+	addr2line_path = try_binutils_path(session, "addr2line");
-+}
-diff --git a/tools/perf/arch/common.h b/tools/perf/arch/common.h
-index d88ecc3..ca95f0a 100644
---- a/tools/perf/arch/common.h
-+++ b/tools/perf/arch/common.h
-@@ -4,7 +4,9 @@
- #include "session.h"
+-	static char buf_templ[] = "/tmp/test-XXXXXX";
++	static char buf_templ[] = PERF_TMP_DIR "/test-XXXXXX";
+ 	char *templ = buf_templ;
+ 	int fd, i;
+ 	unsigned char *buf;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 6109fa4..4e69b57 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -59,7 +59,8 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		no_dso = is_no_dso_memory(filename);
  
- extern const char *objdump_path;
-+extern const char *addr2line_path;
+ 		if (anon) {
+-			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
++			snprintf(newfilename, sizeof(newfilename),
++				 PERF_TMP_DIR "/perf-%d.map", pid);
+ 			filename = newfilename;
+ 		}
  
- void try_objdump_path(struct perf_session *session);
-+void try_addr2line_path(struct perf_session *session);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8a2229d..5ebde18 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -637,7 +637,7 @@ static char *test_format_dir_get(void)
+ 	static char dir[PATH_MAX];
+ 	unsigned int i;
  
- #endif /* ARCH_PERF_COMMON_H */
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 8d90ab5..6f3b21a 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -189,6 +189,8 @@ static int __cmd_annotate(struct perf_annotate *ann)
+-	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
++	snprintf(dir, PATH_MAX, PERF_TMP_DIR "/perf-pmu-test-format-XXXXXX");
+ 	if (!mkdtemp(dir))
+ 		return NULL;
  
- 	if (!objdump_path)
- 		try_objdump_path(session);
-+	if (!addr2line_path)
-+		try_addr2line_path(session);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e2e8c69..d8aca82 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1051,7 +1051,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
  
- 	ret = perf_session__process_events(session, &ann->tool);
- 	if (ret)
-@@ -288,6 +290,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-+	OPT_STRING(0, "addr2line", &addr2line_path, "path",
-+		   "addr2line binary to use for obtaining "
-+		   "file names and line numbers"),
- 	OPT_END()
- 	};
+ 	dso->adjust_symbols = 0;
  
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index e1549bc..b1a1949 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -642,6 +642,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "use branch records for histogram filling", parse_branch_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
-+	OPT_STRING(0, "addr2line", &addr2line_path, "path",
-+		   "addr2line binary to use for obtaining "
-+		   "file names and line numbers"),
- 	OPT_END()
- 	};
+-	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
++	if (strncmp
++	    (dso->name, PERF_TMP_DIR "/perf-",
++	     strlen(PERF_TMP_DIR "/perf-")) == 0) {
+ 		struct stat st;
  
-@@ -673,6 +676,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
+ 		if (lstat(dso->name, &st) < 0)
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index a8d81c3..e50ea61 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -481,7 +481,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 		int temp_fd;
  
-+	if (!addr2line_path)
-+		try_addr2line_path(session);
-+
- 	if (sort__branch_mode == -1 && has_br_stack)
- 		sort__branch_mode = 1;
+ 		snprintf(tdata->temp_file, sizeof(tdata->temp_file),
+-			 "/tmp/perf-XXXXXX");
++			 PERF_TMP_DIR "/perf-XXXXXX");
+ 		if (!mkstemp(tdata->temp_file))
+ 			die("Can't make temp file");
  
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index f0a9103..bf5573f 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -18,6 +18,7 @@
- 
- const char 	*disassembler_style;
- const char	*objdump_path;
-+const char	*addr2line_path;
- 
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -894,10 +895,18 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 	struct source_line *src_line;
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	char symfs_filename[PATH_MAX];
- 
- 	if (!h->sum)
- 		return 0;
- 
-+	snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-+		symbol_conf.symfs, filename);
-+	if (access(symfs_filename, R_OK)) {
-+		snprintf(symfs_filename, sizeof(symfs_filename), "%s",
-+			 filename);
-+	}
-+
- 	src_line = notes->src->lines = calloc(len, sizeof(struct source_line));
- 	if (!notes->src->lines)
- 		return -1;
-@@ -915,7 +924,9 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 			continue;
- 
- 		offset = start + i;
--		sprintf(cmd, "addr2line -e %s %016" PRIx64, filename, offset);
-+		sprintf(cmd, "%s -e %s %016" PRIx64,
-+			addr2line_path ? addr2line_path : "addr2line",
-+			symfs_filename, offset);
- 		fp = popen(cmd, "r");
- 		if (!fp)
- 			continue;
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b5b1b92..037ab89 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1,5 +1,6 @@
- #include "sort.h"
- #include "hist.h"
-+#include "../arch/common.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -256,12 +257,21 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 	FILE *fp;
- 	char cmd[PATH_MAX + 2], *path = self->srcline, *nl;
- 	size_t line_len;
-+	char symfs_dso_name[PATH_MAX];
- 
--	if (path != NULL)
-+	if (path != NULL || !self->ms.map)
- 		goto out_path;
- 
--	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
--		 self->ms.map->dso->long_name, self->ip);
-+	snprintf(symfs_dso_name, sizeof(symfs_dso_name), "%s%s",
-+		 symbol_conf.symfs, self->ms.map->dso->long_name);
-+	if (access(symfs_dso_name, R_OK)) {
-+		snprintf(symfs_dso_name, sizeof(symfs_dso_name), "%s",
-+			 self->ms.map->dso->long_name);
-+	}
-+
-+	snprintf(cmd, sizeof(cmd), "%s -e %s %016" PRIx64,
-+		 addr2line_path ? addr2line_path : "addr2line",
-+		 symfs_dso_name, self->ip);
- 	fp = popen(cmd, "r");
- 	if (!fp)
- 		goto out_ip;
 -- 
 1.7.9.5
 
