@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab2JHAt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:49:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45491 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2JHAtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:49:23 -0400
-Date: Mon, 8 Oct 2012 10:11:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, David Howells <dhowells@redhat.com>
-Subject: linux-next: manual merge of the ia64 tree with the asm-generic tree
-Message-Id: <20121008101131.a99cc80086482d0b1fc2c230@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Oct_2012_10_11_31_+1100_GKxfQq+Mp5xvujJY"
+	id S1752771Ab2JHAvn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:51:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19912 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab2JHAvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 20:51:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,549,1344236400"; 
+   d="scan'208";a="153494404"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Len Brown <lenb@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "Tang, Feng" <feng.tang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: RE: [RESEND PATCH v4 0/2] ACPI: DBGP/DBG2 early console support for
+ LPIA.
+Thread-Topic: [RESEND PATCH v4 0/2] ACPI: DBGP/DBG2 early console support
+ for LPIA.
+Thread-Index: AQHNnUOrBkDYuFk+Zkq7bu7tl07myJesJCkAgAJ+ZUA=
+Date: Mon, 8 Oct 2012 00:51:35 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88B9C2E4@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1347453194.git.zetalog@gmail.com>
+ <cover.1348652044.git.lv.zheng@intel.com> <5065457E.4040500@zytor.com>
+ <50707BB0.8050301@kernel.org>
+In-Reply-To: <50707BB0.8050301@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q980plYY029047
 
---Signature=_Mon__8_Oct_2012_10_11_31_+1100_GKxfQq+Mp5xvujJY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> go ahead and take the series in tip 3.8, Peter, thanks.
+> 
+> I looked over this series a while back and my feedback was that it should be
+> disabled by default and enabled by bootparam -- like other earlyprink -- else an
+> issue here would render a system un-bootable.  I see that LV has addressed
+> that in the latest version.
+> LV,
+> have you addressed the feedback from Konrad?
 
-Hi all,
+I missed the mail from Konrad. Thanks for your reminder.
+I'll find it and update my patches according to his suggestion.
 
-Today's linux-next merge of the ia64 tree got a conflict in
-arch/ia64/include/asm/Kbuild between commit e7a570ff7dff ("asm-generic:
-Add default clkdev.h") from the asm-generic tree and commit f68301fee715
-("UAPI: (Scripted) Disintegrate arch/ia64/include/asm") from the ia64
-tree.
+Best regards/Lv Zheng
 
-I fixed it up (see below - I am not sure if this is the correct fix) and
-can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/ia64/include/asm/Kbuild
-index 58f3d14,e69de29..0000000
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@@ -1,16 -1,0 +1,1 @@@
-- include include/asm-generic/Kbuild.asm
--=20
-- header-y +=3D break.h
-- header-y +=3D cmpxchg.h
-- header-y +=3D fpu.h
-- header-y +=3D gcc_intrin.h
-- header-y +=3D ia64regs.h
-- header-y +=3D intel_intrin.h
-- header-y +=3D intrinsics.h
-- header-y +=3D perfmon.h
-- header-y +=3D perfmon_default_smpl.h
-- header-y +=3D ptrace_offsets.h
-- header-y +=3D rse.h
-- header-y +=3D ucontext.h
-- header-y +=3D ustack.h
- +generic-y +=3D clkdev.h
-
---Signature=_Mon__8_Oct_2012_10_11_31_+1100_GKxfQq+Mp5xvujJY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQcgwjAAoJEECxmPOUX5FEj+UQAKa1RzvHgnAJdew0rikEgWjc
-lrvb3wy6TxgqdvnySJPrAN6z/wJOr4Hjw04c5JZNVcNzaq7dzsZ7pR4Mz6hdLPe9
-vnR2mvNDG4e9QsD5wNhbip9vLnrwnMCFxkzrO5MBCi61rSnQq78KFE3jWFS4Wx2q
-F7ab1Ny9Ej3l2bbKQNeoj2gyNXYOe19ugdtwWpPmDIivufEpqVULeapGFCjYW9gu
-LUg1XjWlJ7YuPINsB48ZKeGjJLtWyZkzV+2L0Zydzd321w4+d1BnRHuSLGSUETsT
-JatEA3F4c7zw9xfrriqkIbSIzYWL/Bjcu72S9WWvSYN/wlkPFffEYawi16bbiTTR
-9blLI7aUuwKR1powC9m6ipbNLsBmDebiRXGgE1DdyooolUUfLaEyEZaA8UKfx2bW
-3QRoPilZlHvNQ0x9O+fNVulVRPk8ACQHMBGFWAUw19Aj8qkcW6XboIESs76PBVfs
-Y1RbrU5tI6VynXylmpTSSqm7lG1tjTG5AKPrAIuI3GgBJS6zsj0aPMbOPm5Rxhd2
-c1hwNQeqti5WtaHWBu3lNV9ppUDiHVkSm2PeGJWoID1EYmlFZ+K/jrqtWShxZ0Dr
-afqQMbYkEeRC5NuwWdTilMbTZC0zHY0PvbBxiZLY+IsJUw8fUg5d6aK4NfXYMU5C
-s2N0w1aBB0lgB+oXNw3s
-=Rij1
------END PGP SIGNATURE-----
-
---Signature=_Mon__8_Oct_2012_10_11_31_+1100_GKxfQq+Mp5xvujJY--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
