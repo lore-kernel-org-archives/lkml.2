@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab2JHHCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 03:02:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35386 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab2JHHB6 (ORCPT
+	id S1753777Ab2JHHJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 03:09:43 -0400
+Received: from smtp2.infineon.com ([217.10.60.23]:31988 "EHLO
+	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518Ab2JHHJl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 03:01:58 -0400
+	Mon, 8 Oct 2012 03:09:41 -0400
+X-SBRS: None
+From: <Peter.Huewe@infineon.com>
+To: <key@linux.vnet.ibm.com>, <jgunthorpe@obsidianresearch.com>
+CC: <linux-kernel@vger.kernel.org>, <tpmdd-devel@lists.sourceforge.net>
+Subject: RE: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
+ the TPM has not been started
+Thread-Topic: [tpmdd-devel] [PATCH] TPM: Issue TPM_STARTUP at driver load if
+ the TPM has not been started
+Thread-Index: AQHNn2pdOsnXAeayo0enYmQRsgYYcpekKczggABV0gCAAA83gIAACCAAgAS3loCABbi+wA==
+Date: Mon, 8 Oct 2012 07:09:33 +0000
+Message-ID: <74A44E99E3274B4CB570415926B37D440EC19C@MUCSE501.eu.infineon.com>
+References: <20120930233012.GH30637@obsidianresearch.com>
+ <74A44E99E3274B4CB570415926B37D440EAA91@MUCSE501.eu.infineon.com>
+ <20121001161536.GC31620@obsidianresearch.com>
+ <20121001171003.GA1117@ennui.austin.ibm.com>
+ <20121001173908.GA22342@obsidianresearch.com>
+ <20121004174114.GA6520@ennui.austin.ibm.com>
+In-Reply-To: <20121004174114.GA6520@ennui.austin.ibm.com>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.8.248]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Mon, 8 Oct 2012 15:01:57 +0800
-Message-ID: <CA+U0gVjD9mBxR5=r1qv69MHN9b7Dd1PPRnEzchZpYuOU_W1eNw@mail.gmail.com>
-Subject: CPU utilization between physical CPU and virtual CPU in KVM
-From: Dennis Chen <kernel.org.gnu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: qemu-devel@nongnu.org, libvir-list@redhat.com, dennis.chen@tnsoft.com.cn
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hi Kent,
+>  Peter, you mentioned you have some embedded setups, would you be able
+> to test?
 
-I am confused by the following observed scenario:
+I could probably test it on the beagleboard c4 with our Infineon SLB9635 TT1.2 I2C TPM, 
+but I'm currently not sure if I have the suspend/resume thing currently running correctly.
 
-In my 4-CPU (KVM supported, 2 core with 2 thread for each) host
-machine box, I create only one VM with 3-vCPU through virsh/libvirt
-tools and also I pin this VM process to the physical processor 3. I
-guess the CPU utilization for the processor 3 will not exceed 100%,
-then I create 3 process (dead loop-- while(1);) and bind each of them
-to vCPU[0-2] respectively, through the "top -c" command in VM
-environment, I can see the CPU utilization for each of the vCPU is
-about 100%, but interesting, I found that the CPU utilization of
-processor 3 in the host machine is about 300% with "toc -c" command.
-why does a single process bound to a CPU can get ~300% cpu bandwidth
-in this case, does the kernel scheduler dispatch the idle cycle
-capacity of the CPUs to the virtual CPU of the VM, other word, the
-scheduler knows the vCPU info in the VM process?
+Apart from that I also have some 'ancient' x86 systems without TPM bios integration here 
+(so the BIOS doesn't even know anything about a tpm), there I could test our LPC based tpms (SLB9635 / SLB9655).
 
-For the same case, if I create another 4 new dead-loop processes and
-bind them to the physical CPU[0-3] equally, then I find the vCPU0/1 in
-VM will not be 100%, eg. 32%,  (I think the scheduler in the guest OS
-doesn't know it's running in a virtual environment, so the utilization
-of the vCPU will not change to adapt to the physical processor
-utilization, but it did, why?
+Unfortunately it'll take some time, due to other priorities.
+Please tell me when the patch is ready for testing.
 
--org-gnu
+Thanks,
+Peter
+
+
