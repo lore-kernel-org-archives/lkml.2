@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2JHNQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:16:23 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:33276 "EHLO zmc.proxad.net"
+	id S1753906Ab2JHNQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:16:26 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:33268 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753564Ab2JHNOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753563Ab2JHNOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Oct 2012 09:14:51 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 27/32 v2] USB: EHCI: make ehci-platform use dev_err() instead of pr_err()
-Date: Mon,  8 Oct 2012 15:11:41 +0200
-Message-Id: <1349701906-16481-28-git-send-email-florian@openwrt.org>
+Subject: [PATCH 26/32 v2] USB: move common alchemy USB routines to arch/mips/alchemy/common.c
+Date: Mon,  8 Oct 2012 15:11:40 +0200
+Message-Id: <1349701906-16481-27-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
@@ -21,45 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the ehci-platform driver to make use of the dev_err()
-functions instead of pr_err().
+A previous patch converted the Alchemy platform to use the OHCI and EHCI
+platform drivers. As a result, all the common logic to handle USB present in
+drivers/usb/host/alchemy-common.c has no reason to remain here, so we move it
+to arch/mips/alchemy/common/usb.c which is a more appropriate place. This
+change was suggested by Manuel Lauss.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
 Changes in v2:
 - rebased against greg's latest usb-next
 
- drivers/usb/host/ehci-platform.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/mips/alchemy/common/Makefile                  |    2 +-
+ .../mips/alchemy/common/usb.c                      |    0
+ drivers/usb/host/Makefile                          |    1 -
+ 3 files changed, 1 insertion(+), 2 deletions(-)
+ rename drivers/usb/host/alchemy-common.c => arch/mips/alchemy/common/usb.c (100%)
 
-diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
-index 607adf9..6516717 100644
---- a/drivers/usb/host/ehci-platform.c
-+++ b/drivers/usb/host/ehci-platform.c
-@@ -98,12 +98,12 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
+diff --git a/arch/mips/alchemy/common/Makefile b/arch/mips/alchemy/common/Makefile
+index 407ebc0..cb83d8d 100644
+--- a/arch/mips/alchemy/common/Makefile
++++ b/arch/mips/alchemy/common/Makefile
+@@ -6,7 +6,7 @@
+ #
  
- 	irq = platform_get_irq(dev, 0);
- 	if (irq < 0) {
--		pr_err("no irq provided");
-+		dev_err(&dev->dev, "no irq provided");
- 		return irq;
- 	}
- 	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	if (!res_mem) {
--		pr_err("no memory recourse provided");
-+		dev_err(&dev->dev, "no memory recourse provided");
- 		return -ENXIO;
- 	}
+ obj-y += prom.o time.o clocks.o platform.o power.o setup.o \
+-	sleeper.o dma.o dbdma.o vss.o irq.o
++	sleeper.o dma.o dbdma.o vss.o irq.o usb.o
  
-@@ -124,7 +124,7 @@ static int __devinit ehci_platform_probe(struct platform_device *dev)
- 	hcd->rsrc_len = resource_size(res_mem);
- 
- 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
--		pr_err("controller already in use");
-+		dev_err(&dev->dev, "controller already in use");
- 		err = -EBUSY;
- 		goto err_put_hcd;
- 	}
+ # optional gpiolib support
+ ifeq ($(CONFIG_ALCHEMY_GPIO_INDIRECT),)
+diff --git a/drivers/usb/host/alchemy-common.c b/arch/mips/alchemy/common/usb.c
+similarity index 100%
+rename from drivers/usb/host/alchemy-common.c
+rename to arch/mips/alchemy/common/usb.c
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 9e0a89c..332ed89 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -40,6 +40,5 @@ obj-$(CONFIG_USB_HWA_HCD)	+= hwa-hc.o
+ obj-$(CONFIG_USB_IMX21_HCD)	+= imx21-hcd.o
+ obj-$(CONFIG_USB_FSL_MPH_DR_OF)	+= fsl-mph-dr-of.o
+ obj-$(CONFIG_USB_OCTEON2_COMMON) += octeon2-common.o
+-obj-$(CONFIG_MIPS_ALCHEMY)	+= alchemy-common.o
+ obj-$(CONFIG_USB_HCD_BCMA)	+= bcma-hcd.o
+ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
 -- 
 1.7.9.5
 
