@@ -1,73 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab2JHPnP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:43:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6317 "EHLO mga01.intel.com"
+	id S1751786Ab2JHPoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:44:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30437 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab2JHPnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:43:12 -0400
+	id S1750857Ab2JHPoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 11:44:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,554,1344236400"; 
-   d="scan'208";a="231288453"
-Message-ID: <5072F497.2000703@intel.com>
-Date: Mon, 08 Oct 2012 08:43:19 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        x86@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
- addresses
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org> <506F3670.4020202@intel.com> <20121005200245.GQ16230@one.firstfloor.org> <506F6BF2.8030500@intel.com> <20121006175751.GS16230@one.firstfloor.org>
-In-Reply-To: <20121006175751.GS16230@one.firstfloor.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="232043033"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, tboot-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Qiaowei Ren <qiaowei.ren@intel.com>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+Subject: [PATCH 1/1] x86: add a new SMP bring up way for tboot case
+Date: Tue,  9 Oct 2012 07:38:42 +0800
+Message-Id: <1349739522-4363-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2012 10:57 AM, Andi Kleen wrote:
->> Inlining everything did speed things up a bit, but I still didn't reach
->> the same speed I achieved using the patch set.  However I did notice the
->> resulting swiotlb code was considerably larger.
-> Thanks. So your patch makes sense, but imho should pursue the inlining
-> in parallel for other call sites.
+tboot provides a better AP wakeup mechanism based on cpu MWAIT feature for
+OS/VMM. With this mechanism, system will boot faster and will NOT require
+VT to be enabled. But it requires that OS/VMM must have support it, otherwise
+system can never boot up.
 
-I'll try to take a look at getting that done this morning.
+Once this mechanism is enabled, tboot will put APs waiting in MWAIT loops
+before launching kernel. kernel can check the new flag field in v6 tboot
+shared page for the hint. If the bit TB_FLAG_AP_WAKE_SUPPORT in flag field
+is set, kernel BSP has to write the monitored memory (tboot->ap_wake_trigger)
+to bring APs out of MWAIT loops. The sipi vector should be written in
+tboot->ap_wake_addr before waking up APs.
 
->> assembly, is replaced with 8 lines of assembly and becomes inline.  In
->> addition we drop the number of calls to __phys_addr from 9 to 2 by
->> dropping them all from swiotlb.  By my math I am probably saving about
->> 120 instructions per packet.  I suspect all of that would probably be
->> cutting the number of instructions per packet enough to probably account
->> for a 5% difference when you consider I am running at about 1.5Mpps per
->> core on a 2.7Ghz processor.
-> Maybe it's just me, but that's somehow sad for one if() and a subtraction
+Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+Signed-off-by: Gang Wei <gang.wei@intel.com>
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ arch/x86/kernel/smpboot.c |   21 +++++++++++----------
+ arch/x86/kernel/tboot.c   |   17 +++++++++++++++++
+ include/linux/tboot.h     |   17 +++++++++++++++++
+ 3 files changed, 45 insertions(+), 10 deletions(-)
 
-Well there is also all of the setup of the call on the function stack. 
-By my count just the portion that is used in the standard case is about
-9 lines of assembly.  By inlining it and dropping the if case we can
-probably drop it to 1.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..884c3e7 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -662,8 +662,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	/* start_ip had better be page-aligned! */
+ 	unsigned long start_ip = real_mode_header->trampoline_start;
+ 
+-	unsigned long boot_error = 0;
+-	int timeout;
++	int timeout, boot_error = 0;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -710,14 +709,16 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		}
+ 	}
+ 
+-	/*
+-	 * Kick the secondary CPU. Use the method in the APIC driver
+-	 * if it's defined - or use an INIT boot APIC message otherwise:
+-	 */
+-	if (apic->wakeup_secondary_cpu)
+-		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+-	else
+-		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++	if (!tboot_wake_up(apicid, start_ip)) {
++		/*
++		 * Kick the secondary CPU. Use the method in the APIC driver
++		 * if it's defined - or use an INIT boot APIC message otherwise:
++		 */
++		if (apic->wakeup_secondary_cpu)
++			boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
++		else
++			boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++	}
+ 
+ 	if (!boot_error) {
+ 		/*
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index f84fe00..dc153a1 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -101,6 +101,8 @@ void __init tboot_probe(void)
+ 	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
+ 	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
+ 	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
++	if (tboot->version >= 6)
++		pr_info("flags: 0x%08x\n", tboot->flags);
+ }
+ 
+ static pgd_t *tboot_pg_dir;
+@@ -453,3 +455,18 @@ int tboot_force_iommu(void)
+ 
+ 	return 1;
+ }
++
++int tboot_wake_up(int apicid, unsigned long sipi_vec)
++{
++	if (!tboot_enabled())
++		return 0;
++
++	if ((tboot->version >= 6) &&
++	    (tboot->flags & TB_FLAG_AP_WAKE_SUPPORT)) {
++		tboot->ap_wake_addr = sipi_vec;
++		tboot->ap_wake_trigger = apicid;
++		return 1;
++	}
++
++	return 0;
++}
+diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+index c75128b..d65f7e9 100644
+--- a/include/linux/tboot.h
++++ b/include/linux/tboot.h
+@@ -124,8 +124,23 @@ struct tboot {
+ 
+ 	/* number of processors in wait-for-SIPI */
+ 	u32 num_in_wfs;
++
++	/*
++	 * version 6+ fields:
++	 */
++
++	u32 flags;
++
++	/* phys addr of kernel/VMM SIPI vector */
++	u64 ap_wake_addr;
++
++	/* kernel/VMM writes APIC ID to wake AP */
++	u32 ap_wake_trigger;
+ } __packed;
+ 
++/* kernel/VMM use INIT-SIPI-SIPI if clear, ap_wake_* if set */
++#define TB_FLAG_AP_WAKE_SUPPORT 0X00000001
++
+ /*
+  * UUID for tboot data struct to facilitate matching
+  * defined as {663C8DFF-E8B3-4b82-AABF-19EA4D057A08} by tboot, which is
+@@ -146,6 +161,7 @@ extern void tboot_shutdown(u32 shutdown_type);
+ extern struct acpi_table_header *tboot_get_dmar_table(
+ 				      struct acpi_table_header *dmar_tbl);
+ extern int tboot_force_iommu(void);
++extern int tboot_wake_up(int apicid, unsigned long sipi_vec);
+ 
+ #else
+ 
+@@ -156,6 +172,7 @@ extern int tboot_force_iommu(void);
+ 					do { } while (0)
+ #define tboot_get_dmar_table(dmar_tbl)	(dmar_tbl)
+ #define tboot_force_iommu()		0
++#define tboot_wake_up(apicid, sipi_vec) 0
+ 
+ #endif /* !CONFIG_INTEL_TXT */
+ 
+-- 
+1.7.9.5
 
-> BTW __pa used to be a simple subtraction, the if () was just added to
-> handle the few call sites for x86-64 that do __pa(&text_symbol).
-> Maybe we should just go back to the old __pa_symbol() for those cases,
-> then __pa could be the simple subtraction it used to was again
-> and it could be inlined and everyone would be happy.
->
-> -Andi
-
-What I am probably looking at doing is splitting the function in two as
-you suggest where we have a separate function for the text symbol case. 
-I will probably also take the 32 bit approach and add a debug version
-that is still a separate function for uses such as determining if we
-have any callers who should be using __pa_symbol instead of __pa.
-
-Thanks,
-
-Alex
