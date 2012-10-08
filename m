@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2JHHb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 03:31:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:36063 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab2JHHbW (ORCPT
+	id S1753884Ab2JHHdI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 03:33:08 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47315 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab2JHHdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 03:31:22 -0400
-X-AuditID: cbfee61b-b7f2b6d000000f14-e5-50728149fec2
-From: Tomasz Figa <t.figa@samsung.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: chander.kashyap@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        mturquette@linaro.org, mturquette@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: Exynos4: Register clocks via common clock
- framework
-Date: Mon, 08 Oct 2012 09:31:16 +0200
-Message-id: <1888016.dshEnlClG6@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.9.2 (Linux/3.6.0-gentoo; KDE/4.9.2; x86_64; ; )
-In-reply-to: <CAJuYYwQCPOFMnQrA-n42hQFtK3TXQtJSjkQZmVgh_4pqnMi8iw@mail.gmail.com>
-References: <1349093361-18820-1-git-send-email-thomas.abraham@linaro.org>
- <2552746.GKROWAIKW8@amdc1227>
- <CAJuYYwQCPOFMnQrA-n42hQFtK3TXQtJSjkQZmVgh_4pqnMi8iw@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t9jAV3PxqIAg2VLOCwu75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLmP/nPXvCTrWLuHfUGxt2sXYycHBICJhL3D12GssUk
-	Ltxbz9bFyMUhJLCIUWL7qttsIAkhgRYmiZvfDEFsNgE1ic8Nj8DiIgJ6EgeffmQFaWAWOMUo
-	0d61GCwhLBAsMfXFccYuRg4OFgFVieu/3EDCvAKaEs3vboCV8AuoS7zb9pQJxBYVcJbY0jQf
-	LM4J1Dql5SIjxBEbGCWe7ZvKBNEsKPFj8j0WEJtZQF5i3/6prBC2lsT6nceZJjAKzkJSNgtJ
-	2SwkZQsYmVcxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBIfoM+kdjKsaLA4xCnAwKvHwftQr
-	ChBiTSwrrsw9xCjBwawkwiuWDRTiTUmsrEotyo8vKs1JLT7EKM3BoiTO2+yREiAkkJ5Ykpqd
-	mlqQWgSTZeLglGpg5Hk1NzTc3Weh5lTt/ccemy7o1G5nSNc8uGjqlO+f9urNfv/hT7YxP4+v
-	S1/kvYMmMvPfL1WuVJRZVvy6+exazRd+es9TW7Tsn4XNMXK18r8omswdt2O+4ZFV2ZMv1E0W
-	8DKLc2rfx7Q2IcjqnZojW8mPP7lfbTc99nXXUfRoEZk1oXyeP6+MEktxRqKhFnNRcSIAlxN2
-	Uk0CAAA=
+	Mon, 8 Oct 2012 03:33:04 -0400
+Date: Mon, 8 Oct 2012 08:32:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 04/10] of/i2c: Add support for I2C_CLIENT_WAKE when
+ booting with Device Tree
+Message-ID: <20121008073258.GA9707@gmail.com>
+References: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
+ <1349451107-8009-5-git-send-email-lee.jones@linaro.org>
+ <506F2334.1040009@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <506F2334.1040009@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 of October 2012 12:04:18 Thomas Abraham wrote:
-> Hi Tomasz,
+On Fri, 05 Oct 2012, Rob Herring wrote:
+
+> On 10/05/2012 10:31 AM, Lee Jones wrote:
+> > It's important for wakeup sources such as keyboards, power buttons
+> > and the like to identify themselves as wakeup devices. Until now
+> > this has not been possible when platforms are booting via Device
+> > Tree.
 > 
-> On 3 October 2012 19:40, Tomasz Figa <t.figa@samsung.com> wrote:
-> > Hi Chander, Thomas,
+> A similar feature from Olof already went in for 3.7.
+
+Ah yes, I see it. Thanks Rob.
+
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: devicetree-discuss@lists.ozlabs.org
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/of/of_i2c.c |    3 +++
+> >  1 file changed, 3 insertions(+)
 > > 
-> > I can see one more problem here.
+> > diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+> > index 1e173f3..2f20019 100644
+> > --- a/drivers/of/of_i2c.c
+> > +++ b/drivers/of/of_i2c.c
+> > @@ -61,6 +61,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+> >  		info.of_node = of_node_get(node);
+> >  		info.archdata = &dev_ad;
+> >  
+> > +		if (of_get_property(node, "i2c-client-wake", NULL))
+> > +			info.flags |= I2C_CLIENT_WAKE;
+> > +
+> >  		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
+> >  
+> >  		result = i2c_new_device(adap, &info);
 > > 
-> > Based on the fact that sdhci-s3c driver receives only the endpoint gate
-> > clock (hsmmc), doesn't the following setup make the driver unable to
-> > change the frequency of this clock?
-> 
-> The driver never changes the clock frequency of the core system clocks
-> nor of the endpoint. There are internal dividers inside the sdhci
-> controller which are divide to acheive required clock speed.
 
-What is the use of sdhci_cmu_set_clock (which calls clk_set_rate) in sdhci-
-s3c, then?
-
-I think you are missing CLK_SET_RATE_PARENT flags in clocks of which rate 
-can be changed by the driver.
-
-Best regards,
 -- 
-Tomasz Figa
-Samsung Poland R&D Center
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
