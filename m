@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab2JHWdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 18:33:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41366 "EHLO
+	id S1755298Ab2JHWdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 18:33:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41355 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2JHWdN (ORCPT
+	with ESMTP id S1754213Ab2JHWdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 18:33:13 -0400
+	Mon, 8 Oct 2012 18:33:10 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 25/25] Documentation: add documentation on compiling for Android
-Date: Mon,  8 Oct 2012 19:32:50 -0300
-Message-Id: <1349735570-19339-26-git-send-email-acme@infradead.org>
+Subject: [PATCH 18/25] perf tools: Remove duplicated include from trace-event-python.c
+Date: Mon,  8 Oct 2012 19:32:43 -0300
+Message-Id: <1349735570-19339-19-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1349735570-19339-1-git-send-email-acme@infradead.org>
 References: <1349735570-19339-1-git-send-email-acme@infradead.org>
@@ -29,112 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Add documentation for cross-compiling on Android including:
+Remove duplicated include.
 
-() instructions on how to set the Android NDK environment
-() how to cross-compile perf for Android
-() how to install on an Android device/emulator, set the runtime
-environment and run it
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1349678613-7045-4-git-send-email-irina.tirdea@gmail.com
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Link: http://lkml.kernel.org/r/CAPgLHd8fz+TznMVRdhzPb45WtZQXhVxadRQcLxUC4O9aX+SUbA@mail.gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/android.txt |   75 ++++++++++++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
- create mode 100644 tools/perf/Documentation/android.txt
+ .../util/scripting-engines/trace-event-python.c    |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/android.txt b/tools/perf/Documentation/android.txt
-new file mode 100644
-index 0000000..a39dbbb
---- /dev/null
-+++ b/tools/perf/Documentation/android.txt
-@@ -0,0 +1,75 @@
-+How to compile perf for Android
-+=========================================
-+
-+I. Set the Android NDK environment
-+------------------------------------------------
-+
-+(a). Use the Android NDK
-+------------------------------------------------
-+1. You need to download and install the Android Native Development Kit (NDK).
-+Set the NDK variable to point to the path where you installed the NDK:
-+  export NDK=/path/to/android-ndk
-+
-+2. Set cross-compiling environment variables for NDK toolchain and sysroot.
-+For arm:
-+  export NDK_TOOLCHAIN=${NDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-
-+  export NDK_SYSROOT=${NDK}/platforms/android-9/arch-arm
-+For x86:
-+  export NDK_TOOLCHAIN=${NDK}/toolchains/x86-4.6/prebuilt/linux-x86/bin/i686-linux-android-
-+  export NDK_SYSROOT=${NDK}/platforms/android-9/arch-x86
-+
-+This method is not working for Android NDK versions up to Revision 8b.
-+perf uses some bionic enhancements that are not included in these NDK versions.
-+You can use method (b) described below instead.
-+
-+(b). Use the Android source tree
-+-----------------------------------------------
-+1. Download the master branch of the Android source tree.
-+Set the environment for the target you want using:
-+  source build/envsetup.sh
-+  lunch
-+
-+2. Build your own NDK sysroot to contain latest bionic changes and set the
-+NDK sysroot environment variable.
-+  cd ${ANDROID_BUILD_TOP}/ndk
-+For arm:
-+  ./build/tools/build-ndk-sysroot.sh --abi=arm
-+  export NDK_SYSROOT=${ANDROID_BUILD_TOP}/ndk/build/platforms/android-3/arch-arm
-+For x86:
-+  ./build/tools/build-ndk-sysroot.sh --abi=x86
-+  export NDK_SYSROOT=${ANDROID_BUILD_TOP}/ndk/build/platforms/android-3/arch-x86
-+
-+3. Set the NDK toolchain environment variable.
-+For arm:
-+  export NDK_TOOLCHAIN=${ANDROID_TOOLCHAIN}/arm-linux-androideabi-
-+For x86:
-+  export NDK_TOOLCHAIN=${ANDROID_TOOLCHAIN}/i686-linux-android-
-+
-+II. Compile perf for Android
-+------------------------------------------------
-+You need to run make with the NDK toolchain and sysroot defined above:
-+  make CROSS_COMPILE=${NDK_TOOLCHAIN} CFLAGS="--sysroot=${NDK_SYSROOT}"
-+
-+III. Install perf
-+-----------------------------------------------
-+You need to connect to your Android device/emulator using adb.
-+Install perf using:
-+  adb push perf /data/perf
-+
-+If you also want to use perf-archive you need busybox tools for Android.
-+For installing perf-archive, you first need to replace #!/bin/bash with #!/system/bin/sh:
-+  sed 's/#!\/bin\/bash/#!\/system\/bin\/sh/g' perf-archive >> /tmp/perf-archive
-+  chmod +x /tmp/perf-archive
-+  adb push /tmp/perf-archive /data/perf-archive
-+
-+IV. Environment settings for running perf
-+------------------------------------------------
-+Some perf features need environment variables to run properly.
-+You need to set these before running perf on the target:
-+  adb shell
-+  # PERF_PAGER=cat
-+
-+IV. Run perf
-+------------------------------------------------
-+Run perf on your device/emulator to which you previously connected using adb:
-+  # ./data/perf
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 730c663..14683df 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -32,7 +32,6 @@
+ #include "../event.h"
+ #include "../thread.h"
+ #include "../trace-event.h"
+-#include "../evsel.h"
+ 
+ PyMODINIT_FUNC initperf_trace_context(void);
+ 
 -- 
 1.7.9.2.358.g22243
 
