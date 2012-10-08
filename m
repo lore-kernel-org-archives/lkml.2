@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2JHNgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:36:07 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:11430
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752239Ab2JHNgF (ORCPT
+	id S1752568Ab2JHNjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:39:17 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63539 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab2JHNjP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:36:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <kernel@pengutronix.de>
-CC: <FlorianSchandinat@gmx.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] video: imxfb: Do not crash on reboot
-Date: Mon, 8 Oct 2012 10:35:36 -0300
-Message-ID: <1349703336-8105-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 8 Oct 2012 09:39:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+In-Reply-To: <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
+References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
+ <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Mon, 8 Oct 2012 10:38:53 -0300
+Message-ID: <CAKi4VAKj0C7-Ug4M=s7wSFGZeP5Tr0Tt1vyg41tKhf01mA+vcQ@mail.gmail.com>
+Subject: Re: [ANNOUNCE] kmod 10
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-modules <linux-modules@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-hotplug <linux-hotplug@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issuing a "reboot" command after the LCD times out causes the following
-warnings:
+On Sun, Sep 16, 2012 at 11:34 PM, Jan Engelhardt <jengelh@inai.de> wrote:
+>
+> On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
+>>
+>>kmod 10 is out:
+>>
+>>ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
+>>ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
+>
+> make check fails here with glibc-2.15, gcc-4.7, x86_64,
+> due to what seems to be duplicated symbols(?):
+>
+>
+> + make check V=1
+> Making check in .
+> make --no-print-directory testsuite/uname.la testsuite/path.la testsuite/init_module.la testsuite/delete_module.la testsuite/libtestsuite.la testsuite/test-init testsuite/test-testsuite testsuite/test-loaded testsuite/test-modinfo testsuite/test-alias testsuite/test-new-module testsuite/test-modprobe testsuite/test-blacklist testsuite/test-dependencies
+> depbase=`echo testsuite/uname.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
+> /bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
+>  fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/uname.lo testsuite/uname.c &&\
+> mv -f $depbase.Tpo $depbase.Plo
+> libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
+>  synchronous-unwind-tables -g -MT testsuite/uname.lo -MD -MP -MF testsuite/.deps/uname.Tpo -c testsuite/uname.c  -fPIC -DPIC -o testsuite/.libs/uname.o
+> cc1: warning: /usr/local/include: No such file or directory [enabled by default]
+> /bin/sh ./libtool  --tag=CC   --mode=link gcc -std=gnu99 -std=gnu99 -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables -g avoid-version -module -shared -export-dynamic -rpath /nowhere -ldl  -o testsuite/uname.
+>  la  testsuite/uname.lo
+> libtool: link: gcc -std=gnu99 -shared  -fPIC -DPIC  testsuite/.libs/uname.o   -ldl  -O2   -Wl,-soname -Wl,uname.so.0 -o testsuite/.libs/uname.so.0.0.0
+> libtool: link: (cd "testsuite/.libs" && rm -f "uname.so.0" && ln -s "uname.so.0.0.0" "uname.so.0")
+> libtool: link: (cd "testsuite/.libs" && rm -f "uname.so" && ln -s "uname.so.0.0.0" "uname.so")
+> libtool: link: ( cd "testsuite/.libs" && rm -f "uname.la" && ln -s "../uname.la" "uname.la" )
+> depbase=`echo testsuite/path.lo | sed 's|[^/]*$|.deps/&|;s|\.lo$||'`;\
+> /bin/sh ./libtool  --tag=CC   --mode=compile gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I.  -include ./config.h -I./libkmod -DROOTPREFIX=\"""\" -DSYSCONFDIR=\""/etc"\" -DLIBEXECDIR=\""/usr/lib"\" -I/usr/local/include    -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -
+>  fstack-protector -funwind-tables -fasynchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF $depbase.Tpo -c -o testsuite/path.lo testsuite/path.c &&\
+> mv -f $depbase.Tpo $depbase.Plo
+> libtool: compile:  gcc -std=gnu99 -std=gnu99 -DHAVE_CONFIG_H -I. -include ./config.h -I./libkmod -DROOTPREFIX=\"\" -DSYSCONFDIR=\"/etc\" -DLIBEXECDIR=\"/usr/lib\" -I/usr/local/include -pipe -DANOTHER_BRICK_IN_THE -Wall -W -Wextra -Wno-inline -Wvla -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wstrict-aliasing=2 -Wwrite-strings -Wno-long-long -Wno-overlength-strings -Wno-unused-parameter -Wno-missing-field-initializers -Wno-unused-result -Wnested-externs -Wchar-subscripts -Wtype-limits -Wuninitialized -fno-common -fdiagnostics-show-option -fvisibility=hidden -ffunction-sections -fdata-sections -fomit-frame-pointer -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fa
+>  synchronous-unwind-tables -g -MT testsuite/path.lo -MD -MP -MF testsuite/.deps/path.Tpo -c testsuite/path.c  -fPIC -DPIC -o testsuite/.libs/path.o
+> cc1: warning: /usr/local/include: No such file or directory [enabled by default]
+> {standard input}: Assembler messages:
+> {standard input}:418: Error: symbol `open64' is already defined
+> {standard input}:678: Error: symbol `stat64' is already defined
+> {standard input}:758: Error: symbol `lstat64' is already defined
+> {standard input}:1234: Error: symbol `__xstat64' is already defined
+> {standard input}:1396: Error: symbol `__lxstat64' is already defined
+> make[2]: *** [testsuite/path.lo] Error 1
+> make[1]: *** [check-am] Error 2
+> make: *** [check-recursive] Error 1
+> error: Bad exit status from /var/tmp/rpm-tmp.Eq2Axz (%check)
 
-Requesting system reboot
-------------[ cut here ]------------
-WARNING: at drivers/clk/clk.c:471 clk_disable+0x24/0x50()
-Modules linked in:
-[<c001ad90>] (unwind_backtrace+0x0/0xf4) from [<c0025aac>] (warn_slowpath_common+0x48/0x60)
-[<c0025aac>] (warn_slowpath_common+0x48/0x60) from [<c0025ae0>] (warn_slowpath_null+0x1c/0x24)
-[<c0025ae0>] (warn_slowpath_null+0x1c/0x24) from [<c03960a0>] (clk_disable+0x24/0x50)
-[<c03960a0>] (clk_disable+0x24/0x50) from [<c02695a0>] (imxfb_disable_controller+0x48/0x7c)
-[<c02695a0>] (imxfb_disable_controller+0x48/0x7c) from [<c029d838>] (platform_drv_shutdown+0x18/0x1c)
-[<c029d838>] (platform_drv_shutdown+0x18/0x1c) from [<c02990fc>] (device_shutdown+0x48/0x14c)
-[<c02990fc>] (device_shutdown+0x48/0x14c) from [<c003d09c>] (kernel_restart_prepare+0x2c/0x3c)
-[<c003d09c>] (kernel_restart_prepare+0x2c/0x3c) from [<c003d0e4>] (kernel_restart+0xc/0x48)
-[<c003d0e4>] (kernel_restart+0xc/0x48) from [<c003d1e8>] (sys_reboot+0xc0/0x1bc)
-[<c003d1e8>] (sys_reboot+0xc0/0x1bc) from [<c0014ca0>] (ret_fast_syscall+0x0/0x2c)
----[ end trace da6b502ca79c854f ]---
-------------[ cut here ]------------
-WARNING: at drivers/clk/clk.c:380 clk_unprepare+0x1c/0x2c()
-Modules linked in:
-[<c001ad90>] (unwind_backtrace+0x0/0xf4) from [<c0025aac>] (warn_slowpath_common+0x48/0x60)
-[<c0025aac>] (warn_slowpath_common+0x48/0x60) from [<c0025ae0>] (warn_slowpath_null+0x1c/0x24)
-[<c0025ae0>] (warn_slowpath_null+0x1c/0x24) from [<c0396338>] (clk_unprepare+0x1c/0x2c)
-[<c0396338>] (clk_unprepare+0x1c/0x2c) from [<c02695a8>] (imxfb_disable_controller+0x50/0x7c)
-[<c02695a8>] (imxfb_disable_controller+0x50/0x7c) from [<c029d838>] (platform_drv_shutdown+0x18/0x1c)
-[<c029d838>] (platform_drv_shutdown+0x18/0x1c) from [<c02990fc>] (device_shutdown+0x48/0x14c)
-[<c02990fc>] (device_shutdown+0x48/0x14c) from [<c003d09c>] (kernel_restart_prepare+0x2c/0x3c)
-[<c003d09c>] (kernel_restart_prepare+0x2c/0x3c) from [<c003d0e4>] (kernel_restart+0xc/0x48)
-[<c003d0e4>] (kernel_restart+0xc/0x48) from [<c003d1e8>] (sys_reboot+0xc0/0x1bc)
-[<c003d1e8>] (sys_reboot+0xc0/0x1bc) from [<c0014ca0>] (ret_fast_syscall+0x0/0x2c)
----[ end trace da6b502ca79c8550 ]---
-------------[ cut here ]------------
-
-This happens because "reboot" triggers imxfb_shutdown(), which calls
-imxfb_disable_controller with the clocks already disabled.
-
-To prevent this, add a clock enabled status so that we can check if the clocks
-are enabled before disabling them. 
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/video/imxfb.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
-index f3363b2..6acf98a 100644
---- a/drivers/video/imxfb.c
-+++ b/drivers/video/imxfb.c
-@@ -134,6 +134,7 @@ struct imxfb_info {
- 	struct clk		*clk_ipg;
- 	struct clk		*clk_ahb;
- 	struct clk		*clk_per;
-+	int			enabled;
- 
- 	/*
- 	 * These are the addresses we mapped
-@@ -530,9 +531,12 @@ static void imxfb_enable_controller(struct imxfb_info *fbi)
- 	 */
- 	writel(RMCR_LCDC_EN_MX1, fbi->regs + LCDC_RMCR);
- 
--	clk_prepare_enable(fbi->clk_ipg);
--	clk_prepare_enable(fbi->clk_ahb);
--	clk_prepare_enable(fbi->clk_per);
-+	if (!fbi->enabled) {
-+		clk_prepare_enable(fbi->clk_ipg);
-+		clk_prepare_enable(fbi->clk_ahb);
-+		clk_prepare_enable(fbi->clk_per);
-+		fbi->enabled = 1;
-+	}
- 
- 	if (fbi->backlight_power)
- 		fbi->backlight_power(1);
-@@ -551,9 +555,12 @@ static void imxfb_disable_controller(struct imxfb_info *fbi)
- 
- 	writel(0, fbi->regs + LCDC_RMCR);
- 
--	clk_disable_unprepare(fbi->clk_per);
--	clk_disable_unprepare(fbi->clk_ipg);
--	clk_disable_unprepare(fbi->clk_ahb);
-+	if (fbi->enabled) {
-+		clk_disable_unprepare(fbi->clk_per);
-+		clk_disable_unprepare(fbi->clk_ipg);
-+		clk_disable_unprepare(fbi->clk_ahb);
-+		fbi->enabled = 0;
-+	}
- }
- 
- static int imxfb_blank(int blank, struct fb_info *info)
--- 
-1.7.9.5
+For completeness of ML archives: it's fixed on git:
+http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=commit;h=d6423417778d049b07a3091c3972160be99c9173
 
 
+Lucas De Marchi
