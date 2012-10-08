@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab2JHJYs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 05:24:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39593 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab2JHJYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 05:24:31 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <sshtylyov@mvista.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH v3 7/7] usb: dwc3: core: add dt support for dwc3 core
-Date: Mon, 8 Oct 2012 14:53:56 +0530
-Message-ID: <1349688236-22814-8-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349688236-22814-1-git-send-email-kishon@ti.com>
-References: <1349688236-22814-1-git-send-email-kishon@ti.com>
+	id S1751692Ab2JHJZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 05:25:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49482 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab2JHJZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 05:25:53 -0400
+Date: Mon, 8 Oct 2012 11:25:47 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: imx: fix return value check in imx3_init_l2x0()
+Message-ID: <20121008092547.GK1322@pengutronix.de>
+References: <CAPgLHd8Rma5fSWPtjvLr18TEmmC=8kOjmSJtneO0Ecd1bvOrcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd8Rma5fSWPtjvLr18TEmmC=8kOjmSJtneO0Ecd1bvOrcg@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:25:30 up 107 days, 37 min, 80 users,  load average: 0.48, 2.01,
+ 3.22
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added dwc3 support for dwc3 core and update the documentation with
-device tree binding information.
+On Thu, Sep 27, 2012 at 01:54:01PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> In case of error, the function ioremap() returns NULL
+> not ERR_PTR(). The IS_ERR() test in the return value
+> check should be replaced with NULL test.
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/usb/dwc3.txt |   23 +++++++++++++++++++++++
- drivers/usb/dwc3/core.c                        |   14 ++++++++++++--
- 2 files changed, 35 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/dwc3.txt
+Appied, thanks
 
-diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-new file mode 100644
-index 0000000..9ec9316
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-@@ -0,0 +1,23 @@
-+synopsys DWC3 CORE
-+
-+DWC3- USB3 CONTROLLER
-+
-+Required properties:
-+ - compatible: must be "synopsys,dwc3"
-+ - reg : Address and length of the register set for the device
-+ - interrupts: Interrupts used by the dwc3 controller.
-+ - interrupt-parent: the phandle for the interrupt controller that
-+   services interrupts for this device.
-+
-+Optional properties:
-+ - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
-+
-+This is usually a subnode to DWC3 glue to which it is connected.
-+
-+dwc3@4a030000 {
-+	compatible = "synopsys,dwc3";
-+	reg = <0x4a030000 0xcfff>;
-+	interrupts = <0 92 4>
-+	interrupt-parent = <&gic>
-+	tx-fifo-resize;
-+};
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 08a5738..4335a17 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -484,8 +484,7 @@ static int __devinit dwc3_probe(struct platform_device *pdev)
- 	else
- 		dwc->maximum_speed = DWC3_DCFG_SUPERSPEED;
- 
--	if (of_get_property(node, "tx-fifo-resize", NULL))
--		dwc->needs_fifo_resize = true;
-+	dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
- 
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
-@@ -602,11 +601,22 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id of_dwc3_match[] = {
-+	{
-+		.compatible = "synopsys,dwc3"
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_dwc3_match);
-+#endif
-+
- static struct platform_driver dwc3_driver = {
- 	.probe		= dwc3_probe,
- 	.remove		= __devexit_p(dwc3_remove),
- 	.driver		= {
- 		.name	= "dwc3",
-+		.of_match_table	= of_match_ptr(of_dwc3_match),
- 	},
- };
- 
+Sascha
+
+
+> ---
+>  arch/arm/mach-imx/mm-imx3.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mm-imx3.c b/arch/arm/mach-imx/mm-imx3.c
+> index 9d2c843..b5deb05 100644
+> --- a/arch/arm/mach-imx/mm-imx3.c
+> +++ b/arch/arm/mach-imx/mm-imx3.c
+> @@ -108,9 +108,8 @@ void __init imx3_init_l2x0(void)
+>  	}
+>  
+>  	l2x0_base = ioremap(MX3x_L2CC_BASE_ADDR, 4096);
+> -	if (IS_ERR(l2x0_base)) {
+> -		printk(KERN_ERR "remapping L2 cache area failed with %ld\n",
+> -				PTR_ERR(l2x0_base));
+> +	if (!l2x0_base) {
+> +		printk(KERN_ERR "remapping L2 cache area failed\n");
+>  		return;
+>  	}
+>  
+> 
+> 
+
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
