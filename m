@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab2JHOEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 10:04:23 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42462 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab2JHOEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 10:04:21 -0400
+	id S1752990Ab2JHOF0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 10:05:26 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1205 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab2JHOFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 10:05:23 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Date: Mon, 8 Oct 2012 19:36:42 +0530
+From: "Jayachandran C." <jchandra@broadcom.com>
+To: "Florian Fainelli" <florian@openwrt.org>
+cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Jayachandran C" <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/32 v4] MIPS: Netlogic: use ehci-platform driver
+Message-ID: <20121008140641.GC30932@jayachandranc.netlogicmicro.com>
+References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
+ <1349701906-16481-6-git-send-email-florian@openwrt.org>
 MIME-Version: 1.0
-In-Reply-To: <7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408E8@LONPMAILBOX01.citrite.net>
-References: <7CE799CC0E4DE04B88D5FDF226E18AC2CDFFB08D16@LONPMAILBOX01.citrite.net>
-	<20120807064752.22e0da81@corrin.poochiereds.net>
-	<7CE799CC0E4DE04B88D5FDF226E18AC2E07634EB82@LONPMAILBOX01.citrite.net>
-	<7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408DA@LONPMAILBOX01.citrite.net>
-	<CAH2r5msLxJVTwVrD9vs8ZOjQdRpbVyhZus4V6Su-Y8-hT229Ug@mail.gmail.com>
-	<7CE799CC0E4DE04B88D5FDF226E18AC2E08D0408E8@LONPMAILBOX01.citrite.net>
-Date: Mon, 8 Oct 2012 09:04:20 -0500
-Message-ID: <CAH2r5mu4hXC-oZQiaQcSdN_bVUCvwR91BjT9px0mZF8pysfTuw@mail.gmail.com>
-Subject: Re: [PATCH v2] Convert properly UTF-8 to UTF-16
-From: Steve French <smfrench@gmail.com>
-To: Frediano Ziglio <frediano.ziglio@citrix.com>
-Cc: "sfrench@samba.org" <sfrench@samba.org>,
-        "jlayton@redhat.com" <jlayton@redhat.com>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        "samba-technical@lists.samba.org" <samba-technical@lists.samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1349701906-16481-6-git-send-email-florian@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 7C6C03663PS2978763-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 8, 2012 at 3:18 AM, Frediano Ziglio
-<frediano.ziglio@citrix.com> wrote:
-> On Wed, 2012-10-03 at 14:49 -0500, Steve French wrote:
->> Merged - but doesn't the reverse also have to be added in cifs_from_utf16?  ie
->>
->>           utf16s_to_utf8s(uni, ... );
->>
->
-> Not strictly necessary, at least to be able to mount shares.
->
->> I am glad that someone added these multiword handling routines into
->> the kernel for FAT - this has been something we have wanted for a long
->> time in cifs (and smb2/smb3).  Note the comment in
->> fs/cifs/cifs_unicode.c
->>
->> / * Note that some windows versions actually send multiword UTF-16 characters
->>  * instead of straight UTF16-2. The linux nls routines however aren't able to
->>  * deal with those characters properly. In the event that we get some of
->>  * those characters, they won't be translated properly.
->>  */
->> int
->> cifs_from_utf16(char *to, const __le16 *from, int tolen, int fromlen,
->>                  const struct nls_table *codepage, bool mapchar)
->>
->
-> Should not be UCS-2 instead of UTF16-2 ??
+On Mon, Oct 08, 2012 at 03:11:19PM +0200, Florian Fainelli wrote:
+> The EHCI platform driver is suitable for use by the Netlogic XLR platform
+> since there is nothing specific that the EHCI XLR platform driver does.
+> 
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+> Changes in v4:
+> - rebased against greg's latest usb-next
+> No changes in v3
+> 
+> Changes in v2:
+> - really change driver name to "ehci-platform"
+> - slightly reworded commit message
+> 
+>  arch/mips/netlogic/xlr/platform.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+> index 71b44d8..144c5c6 100644
+> --- a/arch/mips/netlogic/xlr/platform.c
+> +++ b/arch/mips/netlogic/xlr/platform.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/serial_8250.h>
+>  #include <linux/serial_reg.h>
+>  #include <linux/i2c.h>
+> +#include <linux/usb/ehci_pdriver.h>
+>  
+>  #include <asm/netlogic/haldefs.h>
+>  #include <asm/netlogic/xlr/iomap.h>
+> @@ -123,8 +124,12 @@ static u64 xls_usb_dmamask = ~(u32)0;
+>  		},							\
+>  	}
+>  
+> +static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+> +	.caps_offset	= 0,
+> +};
+> +
 
-Yes, UTF-16 should be used to indicate the change to UCS-2 to allow
-4 byte encoding of some characters.  Currently with your patch we
-have partial support for UTF-16 in cifs.ko, but most cifs (and smb2/smb3)
-servers presumably support UTF-16 now on the wire.
+Do we need to initilaize static data to 0?
 
->> We could really use some nls test cases for cifs/smb2/smb3/nfs4 which
->> basically did various file, directory, symlink create/rename/delete
->> operations with various hard to map characters so we can test copying
->> to and from the server and ensure that we get the name mappings right
->> for these (and don't ever regress).   Fortunately smb2/smb3 is only
->> unicode so we don't have to deal with mappings to other codepages from
->> utf8
->>
->
-> Do you have some framework/hook to put these tests ?
->
-> Where did you merge ? I cannot find nothing at
-> http://gitweb.samba.org/?p=sfrench/cifs-2.6.git;a=summary
+JC.
 
-It is in the for-next (and for-linus) branch.
-
-http://gitweb.samba.org/?p=sfrench/cifs-2.6.git;a=shortlog;h=refs/heads/for-next
-
-
-
-
--- 
-Thanks,
-
-Steve
