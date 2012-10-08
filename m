@@ -1,122 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2JHBYd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 21:24:33 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54342 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab2JHBYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 21:24:30 -0400
-Date: Sun, 7 Oct 2012 21:24:26 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Christoph Anton Mitterer <calestyo@scientia.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RNG: is it possible to spoil /dev/random by seeding it from
- (evil) TRNGs
-Message-ID: <20121008012426.GB468@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Christoph Anton Mitterer <calestyo@scientia.net>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1349357555.3396.15.camel@fermat.scientia.net>
- <20121004224942.GA23970@thunk.org>
- <1349656891.6470.16.camel@fermat.scientia.net>
+	id S1753071Ab2JHBwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 21:52:13 -0400
+Received: from rain.florz.de ([62.216.164.86]:43002 "EHLO
+	rain.florz.dyndns.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750745Ab2JHBwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 21:52:11 -0400
+Date: Mon, 8 Oct 2012 03:51:58 +0200
+From: Florian Zumbiehl <florz@florz.de>
+To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        eric.dumazet@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jpirko@redhat.com
+Subject: [PATCH v2] vlan: don't deliver frames for unknown vlans to
+ protocols
+Message-ID: <20121008015158.GE25895@florz.florz.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349656891.6470.16.camel@fermat.scientia.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 02:41:31AM +0200, Christoph Anton Mitterer wrote:
-> I just wondered because I remembered David Shaw (one of the main
-> developers from gpg) to imply[0] some time ago, that an "evil" entropy
-> source would actually be a problem:
+6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
+vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
+there was an rx_handler, as the rx_handler could cause the frame to be received
+on a different (virtual) vlan-capable interface where that vlan might be
+configured.
 
-I've looked at his message, I didn't see any justification for his
-concern/assertion.  So I can't really comment on it since he didn't
-give any reason for his belief.
+As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
+frames for unknown vlans to be delivered to the protocol stack as if they had
+been received untagged.
 
-> Some notes though (guess you're the maintainer anyway):
-> 1) With respect to the sources of entropy... would it make sense for the
-> kernel to follow ideas from haveged[1].
-> I mean we all now that especially disk-less server systems have problems
-> with the current sources.
-> Or is that intended to be kept in userspace?
+For example, if an ipv6 router advertisement that's tagged for a locally not
+configured vlan is received on an interface with macvlan interfaces attached,
+macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
+macvlan interfaces, which caused it to be passed to the protocol stack, leading
+to ipv6 addresses for the announced prefix being configured even though those
+are completely unusable on the underlying interface.
 
-We've made a lot of changes in how we gather entropy recently, so that
-we're gathering a lot more entropy even on disk-less server systems.
-We are using the time stamp counter, so in some ways we are using a
-scheme which isn't that far off from haveged.  Historically,
-/dev/random was created back before high resolution counters were not
-always available on all CPU's, and so we depended on interrupts being
-unpredictable.  What haveged does instead is to depend on cycle
-counters, and count on some amount of uncertainty to cause differences
-in the expected cycle counter when performing a known fixed workload.
-What we are now doing is depending on the cycle counter on interrupts
-which are will be at least as unpredictable and probably more so, than
-haveged's fixed workload.
+The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
+rx_handler, if there is one, sees the frame unchanged, but afterwards,
+before the frame is delivered to the protocol stack, it gets marked whether
+there is an rx_handler or not.
 
-That's because we have an avantage of having access to the interrupt
-timing information, which is something haveged doesn't have, since it
-is a userspace solution.  So I think what we have right now in
-/dev/random is better than what haveged has as a userspace-only
-collection algorithm.
+Signed-off-by: Florian Zumbiehl <florz@florz.de>
+---
 
-> 2) At some places, the documentation mentiones that SHA is used... any
-> sense in "upgrading" to stronger/more secure (especially as it says the
-> hash is used to protect the internal state of the pool) and faster
-> algos?
+NOTE: This was tested on 3.5.4, but massaged to apply on a recent stable
+head--in any case this should be carefully reviewed by someone who knows the
+code well, in case that wasn't obvious anyhow.
 
-We're not using SHA has a traditional cryptographic hash; so the
-weaknesses caused by being able to find collisions in somewhat faster
-than brute force aren't a problem.  We are hashing 4k bits of input to
-produce 80 bits of output (we take the 160 bits output of SHA-1 and
-xor them togethre to fold what we expose to the outside world to only
-80 bits).  So there will always be collisions --- the pigeon hole
-princple states that with 2**4096 possible inputs, and only 2**80
-possible outputs, there will be definitely be collisions where
-multiple inputs result in the same hash.  The trick is being able to
-find all of the possible collisions --- and then being able to figure
-out which one was really the one that represents the state of the
-entropy pool at a particular point in time.  This is a very different
-sort of analysis than simply being able to find two known inputs that
-result in the same output.
+This version completely avoids any new state that could need to be spilled
+to RAM, and instead re-checks existence and non-zeroness of the tag. What
+do you think?
 
-So I'm not particularly worried at this point.  The other thing to
-note is that the possible alternatives to SHA-1 (i.e., SHA-2 and
-SHA-3) are actually slower, not faster.  So we would be giving up
-performance if we were to use them.
-
-> 3) Some places note that things are not so cryptographically strong...
-> which sounds a bit worrying...
-
-There is a specific tradeoff going in these places.  For example,
-there are certain TCP hijacking attacks where so long as we can
-prevent the attacker from being able to guess the next TCP sequence
-number in less than say, five or ten minutes, we are fine.  We don't
-need to protect this "secret" for more than a very limited amount of
-time.  In addiiton, networking performance is very important.  If it
-took several seconds to establish a TCP conneciton --- that would be
-bad; consider what that would do for a web server!
-
-The bottom line is that strength is not the only thing that we have to
-engineer for.  If we did that for airplanes, for example, they would
-never fly or require so much fuel as to be economically impractical.
-Good engineering is to understand what strength is require, adding a
-appropriate safety margin, and then saying, *enough*.
-
-> 4) Were "newer" developments in PRNGs already taken into account? E.g.
-> the Mersenne Twister (which is AFAIK however not cryptographically
-> secure; at least in it's native form)
-
-The problems solved by the Mersenne Twister are quite different from
-the problems we are trying to solve in a cryptographic random number
-generator.  PRNG's and CRNG's are very different animals.  You might
-as well ask a basketball coach if they have taken into account the
-latest scocer strategies...
-
-					- Ted
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index a810987..561e130 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net_device *dev)
+ }
+ 
+ #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
++#define vlan_tx_nonzero_tag_present(__skb) \
++	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
+ #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
+ 
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
+ extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
+ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+ 
+-extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
++extern bool vlan_do_receive(struct sk_buff **skb);
+ extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+ 
+ extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
+@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const struct net_device *dev)
+ 	return 0;
+ }
+ 
+-static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
++static inline bool vlan_do_receive(struct sk_buff **skb)
+ {
+-	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
+-		(*skb)->pkt_type = PACKET_OTHERHOST;
+ 	return false;
+ }
+ 
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 8ca533c..f981d37 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -5,7 +5,7 @@
+ #include <linux/export.h>
+ #include "vlan.h"
+ 
+-bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
++bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+ 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
+@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
+ 	struct vlan_pcpu_stats *rx_stats;
+ 
+ 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
+-	if (!vlan_dev) {
+-		/* Only the last call to vlan_do_receive() should change
+-		 * pkt_type to PACKET_OTHERHOST
+-		 */
+-		if (vlan_id && last_handler)
+-			skb->pkt_type = PACKET_OTHERHOST;
++	if (!vlan_dev)
+ 		return false;
+-	}
+ 
+ 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
+ 	if (unlikely(!skb))
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 8398836..c580708 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3273,18 +3273,18 @@ ncls:
+ 				&& !skb_pfmemalloc_protocol(skb))
+ 		goto drop;
+ 
+-	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (vlan_tx_tag_present(skb)) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+ 			pt_prev = NULL;
+ 		}
+-		if (vlan_do_receive(&skb, !rx_handler))
++		if (vlan_do_receive(&skb))
+ 			goto another_round;
+ 		else if (unlikely(!skb))
+ 			goto unlock;
+ 	}
+ 
++	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+@@ -3304,6 +3304,9 @@ ncls:
+ 		}
+ 	}
+ 
++	if (vlan_tx_nonzero_tag_present(skb))
++		skb->pkt_type = PACKET_OTHERHOST;
++
+ 	/* deliver only exact match when indicated */
+ 	null_or_dev = deliver_exact ? skb->dev : NULL;
+ 
