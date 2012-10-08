@@ -1,64 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab2JHNft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:35:49 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49833 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab2JHNfp (ORCPT
+	id S1752692Ab2JHNgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:36:07 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:11430
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752239Ab2JHNgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:35:45 -0400
-Date: Mon, 8 Oct 2012 06:35:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
-Message-ID: <20121008133539.GA15490@kroah.com>
-References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
- <1349654386-18378-1-git-send-email-kys@microsoft.com>
- <20121008004358.GA12342@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	Mon, 8 Oct 2012 09:36:05 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <kernel@pengutronix.de>
+CC: <FlorianSchandinat@gmx.de>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] video: imxfb: Do not crash on reboot
+Date: Mon, 8 Oct 2012 10:35:36 -0300
+Message-ID: <1349703336-8105-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 03:35:50AM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: Sunday, October 07, 2012 8:44 PM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> > apw@canonical.com; akpm@linux-foundation.org; andi@firstfloor.org
-> > Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
-> > 
-> > On Sun, Oct 07, 2012 at 04:59:45PM -0700, K. Y. Srinivasan wrote:
-> > > The policy engine on the host expects the guest to report the
-> > > committed_as. Since this variable is not exported,
-> > > export this symbol.
-> > 
-> > Why are these symbols not needed by either Xen or KVM or vmware, which
-> > I think all support the same thing, right?
-> 
-> The basic balloon driver does not need this symbol since the basic balloon driver
-> is not automatically driven by the host. On the Windows host we have a policy engine that
-> drives the balloon driver based on both guest level memory pressure that the guest
-> reports as well as other system level metrics the host maintains. We need this symbol to
-> drive the policy engine on the host.
+Issuing a "reboot" command after the LCD times out causes the following
+warnings:
 
-Ok, but you're going to have to get the -mm developers to agree that
-this is ok before I can accept it.
+Requesting system reboot
+------------[ cut here ]------------
+WARNING: at drivers/clk/clk.c:471 clk_disable+0x24/0x50()
+Modules linked in:
+[<c001ad90>] (unwind_backtrace+0x0/0xf4) from [<c0025aac>] (warn_slowpath_common+0x48/0x60)
+[<c0025aac>] (warn_slowpath_common+0x48/0x60) from [<c0025ae0>] (warn_slowpath_null+0x1c/0x24)
+[<c0025ae0>] (warn_slowpath_null+0x1c/0x24) from [<c03960a0>] (clk_disable+0x24/0x50)
+[<c03960a0>] (clk_disable+0x24/0x50) from [<c02695a0>] (imxfb_disable_controller+0x48/0x7c)
+[<c02695a0>] (imxfb_disable_controller+0x48/0x7c) from [<c029d838>] (platform_drv_shutdown+0x18/0x1c)
+[<c029d838>] (platform_drv_shutdown+0x18/0x1c) from [<c02990fc>] (device_shutdown+0x48/0x14c)
+[<c02990fc>] (device_shutdown+0x48/0x14c) from [<c003d09c>] (kernel_restart_prepare+0x2c/0x3c)
+[<c003d09c>] (kernel_restart_prepare+0x2c/0x3c) from [<c003d0e4>] (kernel_restart+0xc/0x48)
+[<c003d0e4>] (kernel_restart+0xc/0x48) from [<c003d1e8>] (sys_reboot+0xc0/0x1bc)
+[<c003d1e8>] (sys_reboot+0xc0/0x1bc) from [<c0014ca0>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace da6b502ca79c854f ]---
+------------[ cut here ]------------
+WARNING: at drivers/clk/clk.c:380 clk_unprepare+0x1c/0x2c()
+Modules linked in:
+[<c001ad90>] (unwind_backtrace+0x0/0xf4) from [<c0025aac>] (warn_slowpath_common+0x48/0x60)
+[<c0025aac>] (warn_slowpath_common+0x48/0x60) from [<c0025ae0>] (warn_slowpath_null+0x1c/0x24)
+[<c0025ae0>] (warn_slowpath_null+0x1c/0x24) from [<c0396338>] (clk_unprepare+0x1c/0x2c)
+[<c0396338>] (clk_unprepare+0x1c/0x2c) from [<c02695a8>] (imxfb_disable_controller+0x50/0x7c)
+[<c02695a8>] (imxfb_disable_controller+0x50/0x7c) from [<c029d838>] (platform_drv_shutdown+0x18/0x1c)
+[<c029d838>] (platform_drv_shutdown+0x18/0x1c) from [<c02990fc>] (device_shutdown+0x48/0x14c)
+[<c02990fc>] (device_shutdown+0x48/0x14c) from [<c003d09c>] (kernel_restart_prepare+0x2c/0x3c)
+[<c003d09c>] (kernel_restart_prepare+0x2c/0x3c) from [<c003d0e4>] (kernel_restart+0xc/0x48)
+[<c003d0e4>] (kernel_restart+0xc/0x48) from [<c003d1e8>] (sys_reboot+0xc0/0x1bc)
+[<c003d1e8>] (sys_reboot+0xc0/0x1bc) from [<c0014ca0>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace da6b502ca79c8550 ]---
+------------[ cut here ]------------
 
-thanks,
+This happens because "reboot" triggers imxfb_shutdown(), which calls
+imxfb_disable_controller with the clocks already disabled.
 
-greg k-h
+To prevent this, add a clock enabled status so that we can check if the clocks
+are enabled before disabling them. 
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/video/imxfb.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
+index f3363b2..6acf98a 100644
+--- a/drivers/video/imxfb.c
++++ b/drivers/video/imxfb.c
+@@ -134,6 +134,7 @@ struct imxfb_info {
+ 	struct clk		*clk_ipg;
+ 	struct clk		*clk_ahb;
+ 	struct clk		*clk_per;
++	int			enabled;
+ 
+ 	/*
+ 	 * These are the addresses we mapped
+@@ -530,9 +531,12 @@ static void imxfb_enable_controller(struct imxfb_info *fbi)
+ 	 */
+ 	writel(RMCR_LCDC_EN_MX1, fbi->regs + LCDC_RMCR);
+ 
+-	clk_prepare_enable(fbi->clk_ipg);
+-	clk_prepare_enable(fbi->clk_ahb);
+-	clk_prepare_enable(fbi->clk_per);
++	if (!fbi->enabled) {
++		clk_prepare_enable(fbi->clk_ipg);
++		clk_prepare_enable(fbi->clk_ahb);
++		clk_prepare_enable(fbi->clk_per);
++		fbi->enabled = 1;
++	}
+ 
+ 	if (fbi->backlight_power)
+ 		fbi->backlight_power(1);
+@@ -551,9 +555,12 @@ static void imxfb_disable_controller(struct imxfb_info *fbi)
+ 
+ 	writel(0, fbi->regs + LCDC_RMCR);
+ 
+-	clk_disable_unprepare(fbi->clk_per);
+-	clk_disable_unprepare(fbi->clk_ipg);
+-	clk_disable_unprepare(fbi->clk_ahb);
++	if (fbi->enabled) {
++		clk_disable_unprepare(fbi->clk_per);
++		clk_disable_unprepare(fbi->clk_ipg);
++		clk_disable_unprepare(fbi->clk_ahb);
++		fbi->enabled = 0;
++	}
+ }
+ 
+ static int imxfb_blank(int blank, struct fb_info *info)
+-- 
+1.7.9.5
+
+
