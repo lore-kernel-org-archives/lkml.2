@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2JHRHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:07:32 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:48870 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952Ab2JHRH1 (ORCPT
+	id S1754221Ab2JHRIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:08:13 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:17387 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2JHRIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:07:27 -0400
-Message-ID: <1349716040.2674.19.camel@lorien2>
-Subject: Re: [PATCH v4] dma-debug: New interfaces to debug dma mapping errors
+	Mon, 8 Oct 2012 13:08:11 -0400
+Message-ID: <1349716086.2674.20.camel@lorien2>
+Subject: [PATCH v5] dma-debug: New interfaces to debug dma mapping errors
 From: Shuah Khan <shuah.khan@hp.com>
 Reply-To: shuah.khan@hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, stern@rowland.harvard.edu,
-        joerg.roedel@amd.com, bhelgaas@google.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        stern@rowland.harvard.edu, joerg.roedel@amd.com, bhelgaas@google.com
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
         devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
-Date: Mon, 08 Oct 2012 11:07:20 -0600
-In-Reply-To: <20121005155108.d8d88fd2.akpm@linux-foundation.org>
-References: <1347843171.4370.13.camel@lorien2>
-	 <1348621517.3091.6.camel@lorien2> <1349276159.3192.4.camel@lorien2>
-	 <1349400193.2547.29.camel@lorien2>
-	 <20121005155108.d8d88fd2.akpm@linux-foundation.org>
+Date: Mon, 08 Oct 2012 11:08:06 -0600
 Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
@@ -32,185 +26,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-05 at 15:51 -0700, Andrew Morton wrote:
+Add dma-debug interface debug_dma_mapping_error() to debug drivers that fail
+to check dma mapping errors on addresses returned by dma_map_single() and
+dma_map_page() interfaces. This interface clears a flag set by
+debug_dma_map_page() to indicate that dma_mapping_error() has been called by
+the driver. When driver does unmap, debug_dma_unmap() checks the flag and if
+this flag is still set, prints warning message that includes call trace that
+leads up to the unmap. This interface can be called from dma_mapping_error()
+routines to enable dma mapping error check debugging.
 
-> 
-> Still seems overly complicated to me, but whatev.
-> 
-> I think the way to handle this is pretty simple: set a flag in the dma
-> entry when someone runs dma_mapping_error() and, if that flag wasn't
-> set at unmap time, emit a loud warning.
-> 
-> From my reading of the code, this patch indeed does that, along with a
-> bunch of other (unnecessary?) stuff.  But boy, the changelog conceals
-> this information well!
+Tested: Intel iommu and swiotlb (iommu=soft) on x86-64 with
+        CONFIG_DMA_API_DEBUG enabled and disabled.
 
-Are you referring to the system wide error counters when you say
-unnecessary stuff. The reason I added those was to catch errors when
-drivers don't do unmap. Several drivers fail to do unmap. Checking flag
-from unmap debug interfaces, doesn't cover these cases. However, I think
-the value of system wide counters is limited in the sense that they
-don't really identify the driver that needs fixing. In that sense it can
-be deemed unnecessary. I dropped them in v5 patch, which I am sending
-out.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ Documentation/DMA-API.txt          |   12 ++++++
+ arch/x86/include/asm/dma-mapping.h |    1 +
+ include/linux/dma-debug.h          |    7 ++++
+ lib/dma-debug.c                    |   71 ++++++++++++++++++++++++++++++++++--
+ 4 files changed, 87 insertions(+), 4 deletions(-)
 
-I also changed the changelog to be clear.
+diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
+index 66bd97a..78a6c56 100644
+--- a/Documentation/DMA-API.txt
++++ b/Documentation/DMA-API.txt
+@@ -678,3 +678,15 @@ out of dma_debug_entries. These entries are preallocated at boot. The number
+ of preallocated entries is defined per architecture. If it is too low for you
+ boot with 'dma_debug_entries=<your_desired_number>' to overwrite the
+ architectural default.
++
++void debug_dmap_mapping_error(struct device *dev, dma_addr_t dma_addr);
++
++dma-debug interface debug_dma_mapping_error() to debug drivers that fail
++to check dma mapping errors on addresses returned by dma_map_single() and
++dma_map_page() interfaces. This interface clears a flag set by
++debug_dma_map_page() to indicate that dma_mapping_error() has been called by
++the driver. When driver does unmap, debug_dma_unmap() checks the flag and if
++this flag is still set, prints warning message that includes call trace that
++leads up to the unmap. This interface can be called from dma_mapping_error()
++routines to enable dma mapping error check debugging.
++
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index f7b4c79..808dae6 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -47,6 +47,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
++	debug_dma_mapping_error(dev, dma_addr);
+ 	if (ops->mapping_error)
+ 		return ops->mapping_error(dev, dma_addr);
+ 
+diff --git a/include/linux/dma-debug.h b/include/linux/dma-debug.h
+index 171ad8a..fc0e34c 100644
+--- a/include/linux/dma-debug.h
++++ b/include/linux/dma-debug.h
+@@ -39,6 +39,8 @@ extern void debug_dma_map_page(struct device *dev, struct page *page,
+ 			       int direction, dma_addr_t dma_addr,
+ 			       bool map_single);
+ 
++extern void debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr);
++
+ extern void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 				 size_t size, int direction, bool map_single);
+ 
+@@ -105,6 +107,11 @@ static inline void debug_dma_map_page(struct device *dev, struct page *page,
+ {
+ }
+ 
++static inline void debug_dma_mapping_error(struct device *dev,
++					  dma_addr_t dma_addr)
++{
++}
++
+ static inline void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 					size_t size, int direction,
+ 					bool map_single)
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index b9087bf..94aa94e 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -45,6 +45,12 @@ enum {
+ 	dma_debug_coherent,
+ };
+ 
++enum map_err_types {
++	MAP_ERR_CHECK_NOT_APPLICABLE,
++	MAP_ERR_NOT_CHECKED,
++	MAP_ERR_CHECKED,
++};
++
+ #define DMA_DEBUG_STACKTRACE_ENTRIES 5
+ 
+ struct dma_debug_entry {
+@@ -57,6 +63,7 @@ struct dma_debug_entry {
+ 	int              direction;
+ 	int		 sg_call_ents;
+ 	int		 sg_mapped_ents;
++	enum map_err_types  map_err_type;
+ #ifdef CONFIG_STACKTRACE
+ 	struct		 stack_trace stacktrace;
+ 	unsigned long	 st_entries[DMA_DEBUG_STACKTRACE_ENTRIES];
+@@ -114,6 +121,12 @@ static struct device_driver *current_driver                    __read_mostly;
+ 
+ static DEFINE_RWLOCK(driver_name_lock);
+ 
++static const char *const maperr2str[] = {
++	[MAP_ERR_CHECK_NOT_APPLICABLE] = "dma map error check not applicable",
++	[MAP_ERR_NOT_CHECKED] = "dma map error not checked",
++	[MAP_ERR_CHECKED] = "dma map error checked",
++};
++
+ static const char *type2name[4] = { "single", "page",
+ 				    "scather-gather", "coherent" };
+ 
+@@ -376,11 +389,12 @@ void debug_dma_dump_mappings(struct device *dev)
+ 		list_for_each_entry(entry, &bucket->list, list) {
+ 			if (!dev || dev == entry->dev) {
+ 				dev_info(entry->dev,
+-					 "%s idx %d P=%Lx D=%Lx L=%Lx %s\n",
++					 "%s idx %d P=%Lx D=%Lx L=%Lx %s %s\n",
+ 					 type2name[entry->type], idx,
+ 					 (unsigned long long)entry->paddr,
+ 					 entry->dev_addr, entry->size,
+-					 dir2name[entry->direction]);
++					 dir2name[entry->direction],
++					 maperr2str[entry->map_err_type]);
+ 			}
+ 		}
+ 
+@@ -838,13 +852,28 @@ static __init int dma_debug_entries_cmdline(char *str)
+ __setup("dma_debug=", dma_debug_cmdline);
+ __setup("dma_debug_entries=", dma_debug_entries_cmdline);
+ 
++/* Calling dma_mapping_error() from dma-debug api will result in calling
++   debug_dma_mapping_error() - need internal mapping error routine to
++   avoid debug checks */
++#ifndef DMA_ERROR_CODE
++#define DMA_ERROR_CODE 0
++#endif
++static inline int has_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	const struct dma_map_ops *ops = get_dma_ops(dev);
++	if (ops->mapping_error)
++		return ops->mapping_error(dev, dma_addr);
++
++	return (dma_addr == DMA_ERROR_CODE);
++}
++
+ static void check_unmap(struct dma_debug_entry *ref)
+ {
+ 	struct dma_debug_entry *entry;
+ 	struct hash_bucket *bucket;
+ 	unsigned long flags;
+ 
+-	if (dma_mapping_error(ref->dev, ref->dev_addr)) {
++	if (unlikely(has_mapping_error(ref->dev, ref->dev_addr))) {
+ 		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
+ 			   "to free an invalid DMA memory address\n");
+ 		return;
+@@ -910,6 +939,15 @@ static void check_unmap(struct dma_debug_entry *ref)
+ 			   dir2name[ref->direction]);
+ 	}
+ 
++	if (entry->map_err_type == MAP_ERR_NOT_CHECKED) {
++		err_printk(ref->dev, entry,
++			   "DMA-API: device driver failed to check map error"
++			   "[device address=0x%016llx] [size=%llu bytes] "
++			   "[mapped as %s]",
++			   ref->dev_addr, ref->size,
++			   type2name[entry->type]);
++	}
++
+ 	hash_bucket_del(entry);
+ 	dma_entry_free(entry);
+ 
+@@ -1017,7 +1055,7 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ 	if (unlikely(global_disable))
+ 		return;
+ 
+-	if (unlikely(dma_mapping_error(dev, dma_addr)))
++	if (unlikely(has_mapping_error(dev, dma_addr)))
+ 		return;
+ 
+ 	entry = dma_entry_alloc();
+@@ -1030,6 +1068,7 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ 	entry->dev_addr  = dma_addr;
+ 	entry->size      = size;
+ 	entry->direction = direction;
++	entry->map_err_type = MAP_ERR_NOT_CHECKED;
+ 
+ 	if (map_single)
+ 		entry->type = dma_debug_single;
+@@ -1045,6 +1084,30 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+ }
+ EXPORT_SYMBOL(debug_dma_map_page);
+ 
++void debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	struct dma_debug_entry ref;
++	struct dma_debug_entry *entry;
++	struct hash_bucket *bucket;
++	unsigned long flags;
++
++	if (unlikely(global_disable))
++		return;
++
++	ref.dev = dev;
++	ref.dev_addr = dma_addr;
++	bucket = get_hash_bucket(&ref, &flags);
++	entry = bucket_find_exact(bucket, &ref);
++
++	if (!entry)
++		goto out;
++
++	entry->map_err_type = MAP_ERR_CHECKED;
++out:
++	put_hash_bucket(bucket, &flags);
++}
++EXPORT_SYMBOL(debug_dma_mapping_error);
++
+ void debug_dma_unmap_page(struct device *dev, dma_addr_t addr,
+ 			  size_t size, int direction, bool map_single)
+ {
+-- 
+1.7.9.5
 
-> 
-> >  Documentation/DMA-API.txt          |   13 +++++
-> >  arch/x86/include/asm/dma-mapping.h |    1 +
-> >  include/linux/dma-debug.h          |    7 +++
-> >  lib/dma-debug.c                    |  110 ++++++++++++++++++++++++++++++++++--
-> 
-> Please, go through Documentation/DMA-API-HOWTO.txt with a toothcomb and
-> ensure that all this is appropriately covered and that the examples are
-> completed for error checking.
-> 
-> >
-> > ...
-> >
-> > +static inline int check_mapping_error(struct device *dev, dma_addr_t dma_addr)
-> > +{
-> > +	const struct dma_map_ops *ops = get_dma_ops(dev);
-> > +	if (ops->mapping_error)
-> > +		return ops->mapping_error(dev, dma_addr);
-> > +
-> > +	return (dma_addr == DMA_ERROR_CODE);
-> > +}
-> 
-> I'm not a fan of functions called check_foo() because I never know
-> whether their return value means "foo is true" or "foo is false".  It
-> doesn't help that the return value here is undocumented.  Names such as
-> has_mapping_error() or mapping_has_error() will remove this question,
-> thereby making the call sites more readable.
-
-Changed the name to has_mapping_error().
-
-> 
-> >  static void check_unmap(struct dma_debug_entry *ref)
-> >  {
-> >  	struct dma_debug_entry *entry;
-> >  	struct hash_bucket *bucket;
-> >  	unsigned long flags;
-> >  
-> > -	if (dma_mapping_error(ref->dev, ref->dev_addr)) {
-> > +	if (unlikely(check_mapping_error(ref->dev, ref->dev_addr))) {
-> > +		unmap_errors += 1;
-> >  		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
-> >  			   "to free an invalid DMA memory address\n");
-> >  		return;
-> > @@ -915,6 +975,15 @@ static void check_unmap(struct dma_debug_entry *ref)
-> >  			   dir2name[ref->direction]);
-> >  	}
-> >  
-> > +	if (entry->map_err_type == MAP_ERR_NOT_CHECKED) {
-> > +		err_printk(ref->dev, entry,
-> > +			   "DMA-API: device driver failed to check map error"
-> > +			   "[device address=0x%016llx] [size=%llu bytes] "
-> > +			   "[mapped as %s]",
-> > +			   ref->dev_addr, ref->size,
-> > +			   type2name[entry->type]);
-> > +	}
-> 
-> It's important that this warning be associated with a backtrace so we
-> can identify the offending call site in the usual fashion. 
-> err_printk() does include a backtrace under some circumstances, but
-> those circumstances hurt my brain.
-> 
-> Is it guaranteed that we'll have that backtrace?  If not, I'd suggest
-> making it so.
-
-Yes it does. Here is one from my test run:
-
-[ 5232.368453] e1000e 0000:00:19.0: DMA-API: device driver failed to
-check map error[device address=0x00000000ffe4e1c0] [size=1522 bytes]
-[mapped as single]
-
-[ 5232.368546] Pid: 0, comm: swapper/1 Not tainted 3.6.0-next-20121002+
-#2
-[ 5232.368549] Call Trace:
-[ 5232.368553]  <IRQ>  [<ffffffff81055faf>] warn_slowpath_common
-+0x7f/0xc0
-[ 5232.368570]  [<ffffffff810560a6>] warn_slowpath_fmt+0x46/0x50
-[ 5232.368579]  [<ffffffff81341fbe>] check_unmap+0x48e/0x860
-[ 5232.368588]  [<ffffffff81092ee9>] ? check_preempt_wakeup+0x1c9/0x270
-[ 5232.368595]  [<ffffffff8134251c>] debug_dma_unmap_page+0x5c/0x60
-[ 5232.368616]  [<ffffffffa0016e4e>] e1000_clean_rx_irq+0x1be/0x410
-[e1000e]
-[ 5232.368626]  [<ffffffff8108c885>] ? wake_up_process+0x15/0x20
-[ 5232.368644]  [<ffffffffa001b35c>] e1000e_poll+0x7c/0x400 [e1000e]
-[ 5232.368653]  [<ffffffff8107e539>] ? enqueue_hrtimer+0x39/0xc0
-[ 5232.368662]  [<ffffffff815756c4>] net_rx_action+0x134/0x240
-[ 5232.368670]  [<ffffffff813b15c3>] ? arch_local_irq_enable+0x8/0xd
-[ 5232.368678]  [<ffffffff8105e9d0>] __do_softirq+0xc0/0x240
-[ 5232.368688]  [<ffffffff816856ce>] ? _raw_spin_lock+0xe/0x20
-[ 5232.368697]  [<ffffffff8168f31c>] call_softirq+0x1c/0x30
-[ 5232.368706]  [<ffffffff81016315>] do_softirq+0x65/0xa0
-[ 5232.368713]  [<ffffffff8105ecae>] irq_exit+0x8e/0xb0
-[ 5232.368721]  [<ffffffff8168fba3>] do_IRQ+0x63/0xe0
-[ 5232.368728]  [<ffffffff81685cad>] common_interrupt+0x6d/0x6d
-[ 5232.368731]  <EOI>  [<ffffffff813b15c3>] ? arch_local_irq_enable
-+0x8/0xd
-[ 5232.368744]  [<ffffffff813b2159>] acpi_idle_enter_c1+0x94/0xb9
-[ 5232.368752]  [<ffffffff81533fd9>] cpuidle_enter+0x19/0x20
-[ 5232.368758]  [<ffffffff815346ac>] cpuidle_idle_call+0xac/0x290
-[ 5232.368767]  [<ffffffff8101d59f>] cpu_idle+0xcf/0x120
-[ 5232.368775]  [<ffffffff81670bc6>] start_secondary+0x1ec/0x1f3
-[ 5232.368780] ---[ end trace 58eeb6eaa1eca88f ]---
-[ 5232.368782] Mapped at:
-[ 5232.368785]  [<ffffffff81340fcb>] debug_dma_map_page+0x8b/0x150
-[ 5232.368792]  [<ffffffffa001823f>] e1000_alloc_rx_buffers+0x15f/0x2d0
-[e1000e]
-[ 5232.368808]  [<ffffffffa0016f8b>] e1000_clean_rx_irq+0x2fb/0x410
-[e1000e]
-[ 5232.368823]  [<ffffffffa001b35c>] e1000e_poll+0x7c/0x400 [e1000e]
-[ 5232.368838]  [<ffffffff815756c4>] net_rx_action+0x134/0x240
-
-> 
-> >  	hash_bucket_del(entry);
-> >  	dma_entry_free(entry);
-> >  
-> >
-> > ...
-> >
-> > +void debug_dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-> > +{
-> > +	struct dma_debug_entry ref;
-> > +	struct dma_debug_entry *entry;
-> > +	struct hash_bucket *bucket;
-> > +	unsigned long flags;
-> > +
-> > +	if (unlikely(global_disable))
-> > +		return;
-> > +
-> > +	ref.dev = dev;
-> > +	ref.dev_addr = dma_addr;
-> > +	bucket = get_hash_bucket(&ref, &flags);
-> > +	entry = bucket_find_exact(bucket, &ref);
-> > +
-> > +	if (!entry) {
-> > +		/* very likley dma-api didn't call debug_dma_map_page() or
-> > +		   debug_dma_map_page() detected mapping error */
-> > +		if (map_errors_not_checked)
-> > +			map_errors_not_checked -= 1;
-> > +		goto out;
-> > +	}
-> > +
-> > +	entry->map_err_type = MAP_ERR_CHECKED;
-> > +out:
-> > +	put_hash_bucket(bucket, &flags);
-> > +}
-> > +EXPORT_SYMBOL(debug_dma_mapping_error);
-> 
-> Well, it's a global, exported-to-modules symbol.  Some formal
-> documentation is appropriate for such things.
-
-I added information on what it does and who can/should call to
-DMA-API.txt
-> 
-> >
-> > ...
-> >
-> 
 
 
