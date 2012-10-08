@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab2JHXXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 19:23:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23199 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2JHXXm (ORCPT
+	id S1752128Ab2JHXY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 19:24:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59236 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2JHXYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 19:23:42 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=2bXsuTSFsZPLnirZKZgA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349738619.24256.1.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.4.12-rt20
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 08 Oct 2012 19:23:39 -0400
-In-Reply-To: <CAP=VYLrg2ouS+fODQMtxAguZ84h-v5T66aX48vTOCdsMhbBckg@mail.gmail.com>
-References: <1349720414.6755.111.camel@gandalf.local.home>
-	 <CAP=VYLrg2ouS+fODQMtxAguZ84h-v5T66aX48vTOCdsMhbBckg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Oct 2012 19:24:51 -0400
+Date: Tue, 9 Oct 2012 00:24:47 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        Benny Halevy <bhalevy@tonian.com>, osd-dev@open-osd.org,
+        linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] exofs: drop lock/unlock super
+Message-ID: <20121008232447.GR2616@ZenIV.linux.org.uk>
+References: <50700A1A.7@gmail.com>
+ <50734C6D.2000400@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50734C6D.2000400@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-08 at 19:05 -0400, Paul Gortmaker wrote:
-> On Mon, Oct 8, 2012 at 2:20 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Dear RT Folks,
-> >
-> > I'm pleased to announce the 3.4.12-rt20 stable release.
-> >
-> >
-> > This release is just an update to the new stable 3.4.12 version
-> > and no RT specific changes have been made.
+On Mon, Oct 08, 2012 at 02:58:05PM -0700, Boaz Harrosh wrote:
+> Hi Marco
 > 
-> Did I miss something that ruled out the inclusion of your fix for
-> moving the per-cpu softirq lock init after setup_per_cpu_areas?
+> I was sure you guys where pushing this patch through some
+> vfs tree. (Hence my Acked-by below). I have just sent Linus
+> a pull request for the 3.7 Kernel. I could perhaps append this
+> one and resend.
 > 
+> I do want this patch, and it is completely independent and can
+> go through my tree. Please tell me what do you want to do with
+> this patch, should I push it? Or are you pushing it through Al
 
-Nope, this was just a stable release. I keep stable merges separate from
-added -rt patches. I need to add that, but I was waiting on more patches
-coming from Thomas as he releases the 3.6-rt release (hopefully soon ;-)
-
--- Steve
-
-
+This series is slated for tonight push; I'm testing the tree right
+now...
