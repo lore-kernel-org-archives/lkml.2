@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2JHSGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 14:06:35 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36303 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582Ab2JHSGd convert rfc822-to-8bit (ORCPT
+	id S1754628Ab2JHSJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 14:09:15 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15491 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754561Ab2JHSJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 14:06:33 -0400
-Date: Mon, 8 Oct 2012 19:06:28 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes
-Message-ID: <20121008180628.GC3204@arm.com>
+	Mon, 8 Oct 2012 14:09:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+A0ujlPesbVSBS6D7k+tDC
+Date: Mon, 8 Oct 2012 11:09:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Deepak Saxena <dsaxena@plexity.net>, Chris Ball <cjb@laptop.org>,
+        Matt Mackall <mpm@selenic.com>, Venkatraman S <svenkatr@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove
+ include plat/cpu.h
+Message-ID: <20121008180900.GL3874@atomide.com>
+References: <20121008173452.10603.53886.stgit@muffinssi>
+ <20121008173557.10603.18539.stgit@muffinssi>
 MIME-Version: 1.0
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 08 Oct 2012 18:06:29.0024 (UTC) FILETIME=[A3BEEA00:01CDA57F]
-X-MC-Unique: 112100819063105801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121008173557.10603.18539.stgit@muffinssi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+* Tony Lindgren <tony@atomide.com> [121008 10:37]:
+> Drivers should not use cpu_is_omap or cpu_class_is_omap macros,
+> they should be private to the platform init code. And we'll be
+> removing plat/cpu.h and only have a private soc.h for the
+> arch/arm/*omap* code.
+> 
+> This patch is intended as preparation for the core omap changes
+> and removes the need to include plat/cpu.h from several drivers.
+> This is needed for the ARM common zImage support.
+> 
+> These changes are OK to do because:
+> 
+> - omap-rng.c and hsmmc.c don't need plat/cpu.h
+> 
+> - omap-aes.c and omap-sham.c get the proper platform_data
+>   passed to them so they don't need extra checks in the driver
+> 
+> - omap-dma.c and omap-pcm.c can test the arch locally as
+>   omap1 and omap2 cannot be compiled together because of
+>   conflicting compiler flags
 
-Please pull the tag below. There are two fixes and removal of the
-arm64-specific compat_sys_sendfile (I pushed the generic implementation
-separately and it now got into mainline). Thanks.
 
-The following changes since commit e9eca4de957ac33744fb994ccacd4a5102e445a8:
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -40,7 +40,6 @@
+>  #include <linux/pm_runtime.h>
+>  #include <linux/platform_data/mmc-omap.h>
+>  #include <mach/hardware.h>
+> -#include <plat/cpu.h>
+>  
+>  /* OMAP HSMMC Host Controller Registers */
+>  #define OMAP_HSMMC_SYSSTATUS	0x0014
 
-  Merge tag 'upstream-3.7-rc1-fastmap' of git://git.infradead.org/linux-ubi (2012-10-08 20:40:45 +0900)
+Actually I'll fold this mmc change into an earlier patch
+I've posted as "ARM: OMAP: Split plat/mmc.h into local headers
+and platform_data".
 
-are available in the git repository at:
+Regards,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git arm64-fixes
-
-for you to fetch changes up to 6916fd086f0c5d7871ad3986300ba30d63616925:
-
-  arm64: Enable interrupts before calling do_notify_resume() (2012-10-08 18:04:21 +0100)
-
-----------------------------------------------------------------
-AArch64 fixes:
-- Use swiotlb_init() instead of swiotlb_init_with_default_size(). The
-  latter is now a static function (commit 74838b7 "swiotlb: add the late
-  swiotlb initialization function with iotlb memory").
-- Enable interrupts before calling do_notify_resume().
-
-AArch64 clean-up:
-- Use the generic implementation of compat_sys_sendfile() on arm64 as
-  commit 8f9c0119 (introducing the function) has been merged.
-
-----------------------------------------------------------------
-Catalin Marinas (3):
-      arm64: Call swiotlb_init() instead of swiotlb_init_with_default_size()
-      arm64: Use the generic compat_sys_sendfile() implementation
-      arm64: Enable interrupts before calling do_notify_resume()
-
- arch/arm64/include/asm/unistd32.h |    1 +
- arch/arm64/kernel/entry.S         |    1 +
- arch/arm64/kernel/sys_compat.c    |   20 --------------------
- arch/arm64/mm/dma-mapping.c       |    6 ++----
- arch/arm64/mm/init.c              |    5 +----
- arch/arm64/mm/mm.h                |    1 +
- 6 files changed, 6 insertions(+), 28 deletions(-)
-
+Tony
