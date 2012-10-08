@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab2JHGpd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 02:45:33 -0400
+	id S1753644Ab2JHGpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 02:45:43 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:40084 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2JHGp0 (ORCPT
+	with ESMTP id S1753599Ab2JHGpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 02:45:26 -0400
+	Mon, 8 Oct 2012 02:45:35 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -14,11 +14,10 @@ To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
 Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v3 6/8] perf tools: Try to find cross-built objdump path
-Date: Mon,  8 Oct 2012 09:43:31 +0300
-Message-Id: <1349678613-7045-7-git-send-email-irina.tirdea@gmail.com>
+Subject: [PATCH v3 8/8] perf stat: implement --big-num grouping
+Date: Mon,  8 Oct 2012 09:43:33 +0300
+Message-Id: <1349678613-7045-9-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
 References: <1349678613-7045-1-git-send-email-irina.tirdea@gmail.com>
@@ -26,265 +25,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-As we have architecture information of saved perf.data file, we can
-try to find cross-built objdump path.
+In glibc, printf supports ' to group numbers with thousands' grouping
+characters. Bionic does not support ' for printf.
 
-The triplets include support for Android (arm, x86 and mips architectures).
+Implement thousands's grouping for numbers according to locale.
+The implementation uses the algorithm from glibc
+(http://www.gnu.org/software/libc/).
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Bionic does not implement locales, so we need to add a configuration
+option LOCALE_SUPPORT. If it is not defined, default values for thousands
+separator and grouping are used.
+
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Makefile           |    2 +
- tools/perf/arch/common.c      |  159 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/arch/common.h      |   10 +++
- tools/perf/builtin-annotate.c |    4 ++
- tools/perf/builtin-report.c   |    1 +
- tools/perf/util/annotate.h    |    1 -
- 6 files changed, 176 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/common.c
- create mode 100644 tools/perf/arch/common.h
+ tools/perf/Makefile                 |    6 ++
+ tools/perf/builtin-stat.c           |  112 ++++++++++++++++++++++++++++++++---
+ tools/perf/config/feature-tests.mak |   18 ++++++
+ 3 files changed, 129 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 29caf9a..5149b8a 100644
+index 5149b8a..bc75b2a 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -426,6 +426,8 @@ LIB_OBJS += $(OUTPUT)ui/helpline.o
- LIB_OBJS += $(OUTPUT)ui/hist.o
- LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+@@ -783,6 +783,12 @@ ifndef NO_BACKTRACE
+        endif
+ endif
  
-+LIB_OBJS += $(OUTPUT)arch/common.o
++ifndef NO_LOCALE
++       ifeq ($(call try-cc,$(SOURCE_LOCALE),),y)
++               BASIC_CFLAGS += -DLOCALE_SUPPORT
++       endif
++endif
 +
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
- # Benchmark modules
-diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
-new file mode 100644
-index 0000000..1db891f
---- /dev/null
-+++ b/tools/perf/arch/common.c
-@@ -0,0 +1,159 @@
-+#include <stdio.h>
-+#include <sys/utsname.h>
-+#include "common.h"
-+
-+const char *const arm_triplets[] = {
-+	"arm-eabi-",
-+	"arm-linux-androideabi-",
-+	"arm-unknown-linux-",
-+	"arm-unknown-linux-gnu-",
-+	"arm-unknown-linux-gnueabi-",
-+	NULL
-+};
-+
-+const char *const powerpc_triplets[] = {
-+	"powerpc-unknown-linux-gnu-",
-+	"powerpc64-unknown-linux-gnu-",
-+	NULL
-+};
-+
-+const char *const s390_triplets[] = {
-+	"s390-ibm-linux-",
-+	NULL
-+};
-+
-+const char *const sh_triplets[] = {
-+	"sh-unknown-linux-gnu-",
-+	"sh64-unknown-linux-gnu-",
-+	NULL
-+};
-+
-+const char *const sparc_triplets[] = {
-+	"sparc-unknown-linux-gnu-",
-+	"sparc64-unknown-linux-gnu-",
-+	NULL
-+};
-+
-+const char *const x86_triplets[] = {
-+	"x86_64-pc-linux-gnu-",
-+	"x86_64-unknown-linux-gnu-",
-+	"i686-pc-linux-gnu-",
-+	"i586-pc-linux-gnu-",
-+	"i486-pc-linux-gnu-",
-+	"i386-pc-linux-gnu-",
-+	"i686-linux-android-",
-+	"i686-android-linux-",
-+	NULL
-+};
-+
-+const char *const mips_triplets[] = {
-+	"mips-unknown-linux-gnu-",
-+	"mipsel-linux-android-",
-+	NULL
-+};
-+
-+static bool lookup_path(char *name)
+ ifdef ASCIIDOC8
+ 	export ASCIIDOC8
+ endif
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 93b9011..855e918 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -60,6 +60,8 @@
+ #include <sys/prctl.h>
+ #include <locale.h>
+ 
++/* max double number have E+308 + \0 + sign */
++#define MAX_NR_STR 310
+ #define DEFAULT_SEPARATOR	" "
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
+@@ -631,18 +633,112 @@ static void print_ll_cache_misses(int cpu,
+ 	fprintf(output, " of all LL-cache hits   ");
+ }
+ 
++/* Group the digits according to the grouping rules of the current locale.
++   The interpretation of GROUPING is as in `struct lconv' from <locale.h>.  */
++static int group_number_locale(char *number, char **gnumber)
 +{
-+	bool found = false;
-+	char *path, *tmp;
-+	char buf[PATH_MAX];
-+	char *env = getenv("PATH");
++	const char *thousands_sep = NULL, *grouping = NULL;
++	int glen, tlen, dest_alloc_size, src_size, ret = 0, cnt;
++	char *dest_alloc_ptr, *dest_end, *src_start, *src_end;
 +
-+	if (!env)
-+		return false;
++#ifndef LOCALE_SUPPORT
++	thousands_sep = ",";
++	grouping = "\x3";
++#else
++	struct lconv *lc = localeconv();
++	if (lc != NULL) {
++		thousands_sep = lc->thousands_sep;
++		grouping = lc->grouping;
++	}
++#endif
 +
-+	env = strdup(env);
-+	if (!env)
-+		return false;
++	*gnumber = NULL;
++	/* No grouping */
++	if (thousands_sep == NULL || grouping == NULL ||
++	    *thousands_sep == '\0' || *grouping == CHAR_MAX || *grouping <= 0) {
++		*gnumber = strdup(number);
++		if (*gnumber == NULL)
++			ret = -ENOMEM;
++		goto out;
++	}
 +
-+	path = strtok_r(env, ":", &tmp);
-+	while (path) {
-+		scnprintf(buf, sizeof(buf), "%s/%s", path, name);
-+		if (access(buf, F_OK) == 0) {
-+			found = true;
-+			break;
++	glen = *grouping++;
++	tlen = strlen(thousands_sep);
++
++	src_size = strlen(number);
++	/* Worst case scenario we have 1-character grouping */
++	dest_alloc_size = (src_size + src_size * tlen) * sizeof(char);
++	dest_alloc_ptr = zalloc(dest_alloc_size);
++	if (dest_alloc_ptr == NULL) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	/* -1 for '\0' */
++	dest_end = dest_alloc_ptr + dest_alloc_size - 1;
++
++	src_start = number;
++	src_end = number + src_size;
++
++	while (src_end > src_start) {
++		*--dest_end = *--src_end;
++		if (--glen == 0 && src_end > src_start) {
++			/* A new group */
++			cnt = tlen;
++			do
++				*--dest_end = thousands_sep[--cnt];
++			while (cnt > 0);
++
++			if (*grouping == CHAR_MAX || *grouping < 0) {
++				/* No further grouping to be done.
++				   Copy the rest of the number. */
++				do
++					*--dest_end = *--src_end;
++				while (src_end > src_start);
++				break;
++			} else if (*grouping != '\0') {
++				glen = *grouping++;
++			} else {
++				/* The previous grouping repeats ad infinitum */
++				glen = grouping[-1];
++			}
 +		}
-+		path = strtok_r(NULL, ":", &tmp);
 +	}
-+	free(env);
-+	return found;
++
++	/* Make a copy with the exact needed size of the grouped number */
++	*gnumber = strdup(dest_end);
++	if (*gnumber == NULL) {
++		ret = -ENOMEM;
++		goto out_free_dest;
++	}
++
++	/* fall through */
++out_free_dest:
++	free(dest_alloc_ptr);
++out:
++	return ret;
 +}
 +
-+static int lookup_triplets(const char *const *triplets, const char *name)
-+{
-+	int i;
-+	char buf[PATH_MAX];
+ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ {
+ 	double total, ratio = 0.0;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt;
++	char avgstr[MAX_NR_STR], *pavgstr;
++	int ret;
+ 
+-	if (csv_output)
+-		fmt = "%s%.0f%s%s";
+-	else if (big_num)
+-		fmt = "%s%'18.0f%s%-25s";
+-	else
+-		fmt = "%s%18.0f%s%-25s";
++	sprintf(avgstr, "%.0f", avg);
++	pavgstr = avgstr;
 +
-+	for (i = 0; triplets[i] != NULL; i++) {
-+		scnprintf(buf, sizeof(buf), "%s%s", triplets[i], name);
-+		if (lookup_path(buf))
-+			return i;
-+	}
-+	return -1;
-+}
-+
-+static char *try_binutils_path(struct perf_session *session, const char *name)
-+{
-+	int idx;
-+	char *arch, *env;
-+	struct utsname uts;
-+	const char *const *path_list;
-+	char buf[PATH_MAX];
-+
-+	if (uname(&uts) < 0)
-+		return NULL;
-+
-+	/*
-+	 * We don't need to try to find objdump path for native system.
-+	 * Just use default "objdump".
-+	 */
-+	if (!strcmp(uts.machine, session->header.env.arch))
-+		return NULL;
-+
-+	env = getenv("CROSS_COMPILE");
-+	if (env) {
-+		scnprintf(buf, sizeof(buf), "%s%s", env, name);
-+		if (buf[0] == '/') {
-+			if (access(buf, F_OK) == 0)
-+				return strdup(buf);
-+
-+			return NULL;
++	if (csv_output) {
++		fmt = "%s%s%s%s";
++	} else {
++		fmt = "%s%18s%s%-25s";
++		if (big_num) {
++			ret = group_number_locale(avgstr, &pavgstr);
++			if (ret < 0)
++				pavgstr = avgstr;
 +		}
-+
-+		if (lookup_path(buf))
-+			return strdup(buf);
 +	}
+ 
+ 	if (no_aggr)
+ 		sprintf(cpustr, "CPU%*d%s",
+@@ -651,7 +747,9 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 	else
+ 		cpu = 0;
+ 
+-	fprintf(output, fmt, cpustr, avg, csv_sep, perf_evsel__name(evsel));
++	fprintf(output, fmt, cpustr, pavgstr, csv_sep, perf_evsel__name(evsel));
++	if (pavgstr != avgstr)
++		free(pavgstr);
+ 
+ 	if (evsel->cgrp)
+ 		fprintf(output, "%s%s", csv_sep, evsel->cgrp->name);
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 3ef5ec9..ec3a6f1 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -222,3 +222,21 @@ int main(void)
+ 	return on_exit(NULL, NULL);
+ }
+ endef
 +
-+	arch = session->header.env.arch;
++ifndef NO_LOCALE
++define SOURCE_LOCALE
++#include <locale.h>
 +
-+	if (!strcmp(arch, "arm"))
-+		path_list = arm_triplets;
-+	else if (!strcmp(arch, "powerpc"))
-+		path_list = powerpc_triplets;
-+	else if (!strcmp(arch, "sh"))
-+		path_list = sh_triplets;
-+	else if (!strcmp(arch, "s390"))
-+		path_list = s390_triplets;
-+	else if (!strcmp(arch, "sparc"))
-+		path_list = sparc_triplets;
-+	else if (!strcmp(arch, "x86") || !strcmp(arch, "i386") ||
-+		 !strcmp(arch, "i486") || !strcmp(arch, "i586") ||
-+		 !strcmp(arch, "i686"))
-+		path_list = x86_triplets;
-+	else if (!strcmp(arch, "mips"))
-+		path_list = mips_triplets;
-+	else
-+		BUG_ON(1);
-+
-+	idx = lookup_triplets(path_list, name);
-+	if (idx < 0)
-+		return NULL;
-+
-+	scnprintf(buf, sizeof(buf), "%s%s", path_list[idx], name);
-+	return strdup(buf);
-+}
-+
-+void try_objdump_path(struct perf_session *session)
++int main(void)
 +{
-+	objdump_path = try_binutils_path(session, "objdump");
++	char *thousands_sep, *grouping;
++
++	struct lconv *lc = localeconv();
++	if (lc != NULL) {
++		thousands_sep = lc->thousands_sep;
++		grouping = lc->grouping;
++	}
++	return 0;
 +}
-diff --git a/tools/perf/arch/common.h b/tools/perf/arch/common.h
-new file mode 100644
-index 0000000..d88ecc3
---- /dev/null
-+++ b/tools/perf/arch/common.h
-@@ -0,0 +1,10 @@
-+#ifndef ARCH_PERF_COMMON_H
-+#define ARCH_PERF_COMMON_H
-+
-+#include "session.h"
-+
-+extern const char *objdump_path;
-+
-+void try_objdump_path(struct perf_session *session);
-+
-+#endif /* ARCH_PERF_COMMON_H */
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 9ea3854..8d90ab5 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -28,6 +28,7 @@
- #include "util/hist.h"
- #include "util/session.h"
- #include "util/tool.h"
-+#include "arch/common.h"
- 
- #include <linux/bitmap.h>
- 
-@@ -186,6 +187,9 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 			goto out_delete;
- 	}
- 
-+	if (!objdump_path)
-+		try_objdump_path(session);
-+
- 	ret = perf_session__process_events(session, &ann->tool);
- 	if (ret)
- 		goto out_delete;
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a61725d..e1549bc 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -33,6 +33,7 @@
- #include "util/thread.h"
- #include "util/sort.h"
- #include "util/hist.h"
-+#include "arch/common.h"
- 
- #include <linux/bitmap.h>
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 39242dc..a4dd25a 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -154,6 +154,5 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
- #endif
- 
- extern const char	*disassembler_style;
--extern const char	*objdump_path;
- 
- #endif	/* __PERF_ANNOTATE_H */
++endef
++endif
 -- 
 1.7.9.5
 
