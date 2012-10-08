@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2JHVoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:44:46 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56623 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab2JHVon (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:44:43 -0400
-Date: Mon, 8 Oct 2012 14:44:39 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
-        fweisbec@gmail.com, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Dong Hao <haodong@linux.vnet.ibm.com>
-Subject: Re: [PATCH 12/12] perf kvm: add live mode
-Message-ID: <20121008214439.GM2631@ghostprotocols.net>
-References: <1349716656-48165-1-git-send-email-dsahern@gmail.com>
- <1349716656-48165-13-git-send-email-dsahern@gmail.com>
- <20121008203534.GF2631@ghostprotocols.net>
- <50733D72.9010100@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50733D72.9010100@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755081Ab2JHVpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:45:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab2JHVpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 17:45:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: vgoyal@redhat.com, jmoyer@redhat.com, tj@kernel.org
+Subject: [PATCH 2/8] cfq-iosched: make new_cfqq variable bool
+Date: Mon,  8 Oct 2012 17:44:54 -0400
+Message-Id: <1349732700-2694-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1349732700-2694-1-git-send-email-vgoyal@redhat.com>
+References: <1349732700-2694-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 08, 2012 at 02:54:10PM -0600, David Ahern escreveu:
-> On 10/8/12 2:35 PM, Arnaldo Carvalho de Melo wrote:
-> >Em Mon, Oct 08, 2012 at 11:17:36AM -0600, David Ahern escreveu:
-> >Overall it looks good, I like the fact you're not doing it the way perf
-> >script does, i.e. that "pipe mode" thing, more or less like I'm doing on
-> >'perf trace', but I think this is the time to get rid of 'perf_session'
-> >too for this specific "live mode" tools.
+Make new_cfqq bool. Also set the variable in the beginning of function.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index c0b492e..ad5f9b6 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1618,7 +1618,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	unsigned long rb_key;
+ 	struct cfq_rb_root *st;
+ 	int left;
+-	int new_cfqq = 1;
++	bool new_cfqq = RB_EMPTY_NODE(&cfqq->rb_node);
  
-> pipe mode would never work for this case. I'm looking at nested virt
-> case now and it shows 360,000 events per second.
-
-Right, 'pipe mode' is an interesting construct, but its too inneficient
-for same machine record/report, and for networking one we need to have
-splice/sendfile, i.e. feed a socket directly in the kernel with what we
-stash in mmap.
+ 	st = st_for(cfqq->cfqg, cfqq_class(cfqq), cfqq_type(cfqq));
+ 	if (cfq_class_idle(cfqq)) {
+@@ -1645,8 +1645,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		rb_key += __cfqq ? __cfqq->rb_key : jiffies;
+ 	}
  
-> >I'm almost getting there for 'trace' and 'top', just need to move the
-> >ordered_samples code to evlist, then session, top, trace, kvm live and
-> >script will not need to use 'perf_session' at all.
-> 
-> ok. you going to have that soon?
+-	if (!RB_EMPTY_NODE(&cfqq->rb_node)) {
+-		new_cfqq = 0;
++	if (!new_cfqq) {
+ 		/*
+ 		 * same position, nothing more to do
+ 		 */
+-- 
+1.7.7.6
 
-I hope to have it by the end of this week, perhaps earlier.
- 
-> >Also that 'perf_kvm__open_counters' really is just a third copy of code
-> >in 'record' and 'top', right? You could move it to
-> >'perf_ev{list,open}__open' and solve this dup :-)
-> 
-> there's a TO-DO at the top of that function for that reason ;-) I
-> copied a fair bit from perf-stat. Now that it's working I can look
-> at code consolidation.
-
-Ok, just scratching again an old itch :-)
- 
-> >I applied the cleanups/simple stuff, will try to do some of the prep
-> >work on ordered_samples to use on top and trace and then I think you
-> >could look there so that we get to something that is useful for all
-> >these !perf.data tools.
-> 
-> On my Westmere based server I am not seeing problems with timestamps
-> and ordering (prior testing was on a Nehalem based server). It just
-> weathered a 5 minute or so barrage of > 100,000 events per second
-> (peaking at around 360k events/sec) with no problem.
-
-Interesting, but does this involves consuming samples from multiple
-CPUs?
-
-- Arnaldo
