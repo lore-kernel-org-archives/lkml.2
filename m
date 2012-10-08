@@ -1,72 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2JHFg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 01:36:57 -0400
-Received: from nm1-vm3.bullet.mail.gq1.yahoo.com ([98.136.218.82]:40002 "HELO
-	nm1-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751751Ab2JHFgx (ORCPT
+	id S1753012Ab2JHFhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 01:37:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13066 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2JHFhP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 01:36:53 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Oct 2012 01:36:53 EDT
-X-Yahoo-Newman-Id: 756883.87645.bm@smtp203.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: bfs4KMYVM1kSCLsgpoOJKG8nbFR34uO58FdfFLMpqdG5TI6
- 8hys9CeiO0VbS0h0VfIgaMB1UyDBfBNrt.QsBm5bnaB7njpljO2h8T4ryeeh
- KqxXuxYqusnG.H_4K0j9cR32lXrW2f5cxKw3Xb0nOczXQD8VjL5Zu8SUS_7U
- 9f_Jary189AHazy5kCW0YCIN1bROpy4tWIcsM7bswXI9tjJOGO16Y2xJCFQO
- 32QyZL_gQ7np74AwctYyRf1VObY6rVANI.UokmuVPW9b5K2MIn9RC_PIu2Cw
- ejH76AUmObsUR6.YJT4VxYp5aLLyy0ldzXCIs8bu_yjrdg3i2jcRMG7togDM
- DgBBJSLFmPOVfQ.4qBjdKLHVQ1LHo3Z8YTqip74Kwd8jWX8Ww7VwpibaB4dY
- EFubt_jNfeY75NINgrJAg4Jr6q8x08Ev9DL5TNnj4JhVGx2JENpEui3iZoqT
- VeSAZGuyGp2tXQbIy1OpVETk-
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Mon, 8 Oct 2012 00:30:09 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: [REGRESSION]: hibernation issues on 3.5.4/3.5.5
-Message-ID: <20121008053006.GA2569@ymail.com>
+	Mon, 8 Oct 2012 01:37:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 07 Oct 2012 22:37:15 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Oct 2012 11:07:10 +0530
+Subject: RE: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+Thread-Topic: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+Thread-Index: Ac2kpD48w52NXWEsTGasZkandVTErAAcjZQQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDF8AF387@BGMAIL02.nvidia.com>
+References: <1349623340-21807-1-git-send-email-ldewangan@nvidia.com>
+ <1349623340-21807-5-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1349623340-21807-5-git-send-email-ldewangan@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+> -----Original Message-----
+> From: Laxman Dewangan
+> Sent: Sunday, October 07, 2012 8:52 PM
+> To: sameo@linux.intel.com
+> Cc: linux-kernel@vger.kernel.org; Venu Byravarasu; Laxman Dewangan
+> Subject: [PATCH 4/5] mfd: tps65090: move register access APIs to header
+> 
+> Since tps65090 register is accessed via regmap, moving
+> the register access APIs to header and making it as inline.
 
-I am experiencing problems with hibernation (echo disk >
-/sys/power/state) on both 3.5.4 and 3.5.5. Note: Problem did not
-exist up through 3.5.2 (I skipped 3.5.3).
+Why should we move function implementation to header file? 
+Also by making inline, doesn't the output binary size increase?
 
-Upon resume from hibernation, the % loading progress indicator
-appears. At some point the image stops loading and the system
-reverts to a standard cold-boot sequence.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  drivers/mfd/tps65090.c       |   34 ----------------------------------
+>  include/linux/mfd/tps65090.h |   39
+> +++++++++++++++++++++++++++++++++++----
+>  2 files changed, 35 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index 3cfc9dc..355a077 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/i2c.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/mfd/tps65090.h>
+> -#include <linux/regmap.h>
+>  #include <linux/err.h>
+> 
+>  #define NUM_INT_REG 2
+> @@ -78,39 +77,6 @@ static struct mfd_cell tps65090s[] = {
+>  	},
+>  };
+> 
+> -int tps65090_write(struct device *dev, int reg, uint8_t val)
+> -{
+> -	struct tps65090 *tps = dev_get_drvdata(dev);
+> -	return regmap_write(tps->rmap, reg, val);
+> -}
+> -EXPORT_SYMBOL_GPL(tps65090_write);
+> -
+> -int tps65090_read(struct device *dev, int reg, uint8_t *val)
+> -{
+> -	struct tps65090 *tps = dev_get_drvdata(dev);
+> -	unsigned int temp_val;
+> -	int ret;
+> -	ret = regmap_read(tps->rmap, reg, &temp_val);
+> -	if (!ret)
+> -		*val = temp_val;
+> -	return ret;
+> -}
+> -EXPORT_SYMBOL_GPL(tps65090_read);
+> -
+> -int tps65090_set_bits(struct device *dev, int reg, uint8_t bit_num)
+> -{
+> -	struct tps65090 *tps = dev_get_drvdata(dev);
+> -	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), ~0u);
+> -}
+> -EXPORT_SYMBOL_GPL(tps65090_set_bits);
+> -
+> -int tps65090_clr_bits(struct device *dev, int reg, uint8_t bit_num)
+> -{
+> -	struct tps65090 *tps = dev_get_drvdata(dev);
+> -	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), 0u);
+> -}
+> -EXPORT_SYMBOL_GPL(tps65090_clr_bits);
+> -
+>  static void tps65090_irq_lock(struct irq_data *data)
+>  {
+>  	struct tps65090 *tps65090 = irq_data_get_irq_chip_data(data);
+> diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+> index 6c57622..1a5f916 100644
+> --- a/include/linux/mfd/tps65090.h
+> +++ b/include/linux/mfd/tps65090.h
+> @@ -23,6 +23,7 @@
+>  #define __LINUX_MFD_TPS65090_H
+> 
+>  #include <linux/irq.h>
+> +#include <linux/regmap.h>
+> 
+>  struct tps65090 {
+>  	struct device		*dev;
+> @@ -40,9 +41,39 @@ struct tps65090_platform_data {
+>   * NOTE: the functions below are not intended for use outside
+>   * of the TPS65090 sub-device drivers
+>   */
+> -extern int tps65090_write(struct device *dev, int reg, uint8_t val);
+> -extern int tps65090_read(struct device *dev, int reg, uint8_t *val);
+> -extern int tps65090_set_bits(struct device *dev, int reg, uint8_t bit_num);
+> -extern int tps65090_clr_bits(struct device *dev, int reg, uint8_t bit_num);
+> +static inline int tps65090_write(struct device *dev, int reg, uint8_t val)
+> +{
+> +	struct tps65090 *tps = dev_get_drvdata(dev);
+> +
+> +	return regmap_write(tps->rmap, reg, val);
+> +}
+> +
+> +static inline int tps65090_read(struct device *dev, int reg, uint8_t *val)
+> +{
+> +	struct tps65090 *tps = dev_get_drvdata(dev);
+> +	unsigned int temp_val;
+> +	int ret;
+> +
+> +	ret = regmap_read(tps->rmap, reg, &temp_val);
+> +	if (!ret)
+> +		*val = temp_val;
+> +	return ret;
+> +}
+> +
+> +static inline int tps65090_set_bits(struct device *dev, int reg,
+> +		uint8_t bit_num)
+> +{
+> +	struct tps65090 *tps = dev_get_drvdata(dev);
+> +
+> +	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), ~0u);
+> +}
+> +
+> +static inline int tps65090_clr_bits(struct device *dev, int reg,
+> +		uint8_t bit_num)
+> +{
+> +	struct tps65090 *tps = dev_get_drvdata(dev);
+> +
+> +	return regmap_update_bits(tps->rmap, reg, BIT(bit_num), 0u);
+> +}
+> 
+>  #endif /*__LINUX_MFD_TPS65090_H */
+> --
+> 1.7.1.1
 
-Logs (attached below) reveal it is erroring out with "Invalid LZO
-uncompressed length".
-
-Many thanks for your help.
-
-~ Andy
-
-=======
-
-[    2.354392] PM: Checking hibernation image partition /dev/hda2
-[    2.354414] PM: Hibernation image partition 3:2 present
-[    2.354415] PM: Looking for hibernation image.
-[    2.379577] PM: Image signature found, resuming
-[    2.406288] PM: Marking nosave pages: [mem 0x0009f000-0x000fffff]
-[    2.406294] PM: Basic memory bitmaps created
-[    2.406295] PM: Preparing processes for restore.
-[    2.406298] Freezing user space processes ... (elapsed 0.00 seconds) done.
-[    2.406604] PM: Loading hibernation image.
-[    3.162702] PM: Using 1 thread(s) for decompression.
-[    3.162702] PM: Loading and decompressing image data (161994 pages) ...     ^H^H^H^H  0%%^H^H^H^H  1%%^H^H^H^H  2%%^H^H^H^H  3%%^H^H^H^H  4%%^H^H^H^H  5%%^H^H^H^H  6%%^H^H^H^H  7%%^H^H^H^H  8%%^H^H^H^H  9%%^H^H^H^H 10%%^H^H^H^H 11%%^H^H^H^H 12%%^H^H^H^H 13%%^H^H^H^H 14%%^H^H^H^H 15%%^H^H^H^H 16%%^H^H^H^H 17%%^H^H^H^H 18%%^H^H^H^H 19%%^H^H^H^H 20%%^H^H^H^H 21%%^H^H^H^H 22%%^H^H^H^H 23%%^H^H^H^H 24%%^H^H^H^H 25%%^H^H^H^H 26%%^H^H^H^H 27%%^H^H^H^H 28%%^H^H^H^H 29%%^H^H^H^H 30%%^H^H^H^H 31%%^H^H^H^H 32%%^H^H^H^H 33%%^H^H^H^H 34%%^H^H^H^H 35%%^H^H^H^H 36%%^H^H^H^H 37%%^H^H^H^H 38%%^H^H^H^H 39%%^H^H^H^H 40%%^H^H^H^H 41%%^H^H^H^H 42%%^H^H^H^H 43%%^H^H^H^H 44%%^H^H^H^H 45%%^H^H^H^H 46%%^H^H^H^H 47%%^H^H^H^H 48%%^H^H^H^H 49%%^H^H^H^H 50%%^H^H^H^H 51%%^H^H^H^H 52%%^H^H^H^H 53%%^H^H^H^H 54%%^H^H^H^H 55%%^H^H^H^H 56%%^H^H^H^H 57%%^H^H^H^H 58%%^H^H^H^H 59%%^H^H^H^H 60%%^H^H^H^H 61%%^H^H^H^H 62%%
-[    7.730534] PM: Invalid LZO uncompressed length
-[    7.730743]
-[    7.730880] PM: Read 647976 kbytes in 4.56 seconds (142.10 MB/s)
-[    7.731616] PM: Error -1 resuming
-[    8.224207] PM: Failed to load hibernation image, recovering.
-[    8.279520] Restarting tasks ... done.
-[    8.279783] PM: Basic memory bitmaps freed
-[    8.306034] PM: Hibernation image not present or could not be loaded.
