@@ -1,104 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2JHRWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 13:22:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37198 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab2JHRWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 13:22:09 -0400
-Date: Mon, 8 Oct 2012 19:22:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jkosina@suse.cz
-Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
-Message-ID: <20121008172207.GB14767@quack.suse.cz>
-References: <505E2108.2060108@gmail.com>
- <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>
+	id S1754418Ab2JHRgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 13:36:13 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:30583 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753010Ab2JHRgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 13:36:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+UZ6dAhfwPXhfRFbtOifDO
+Subject: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove include
+ plat/cpu.h
+To: linux-arm-kernel@lists.infradead.org
+From: Tony Lindgren <tony@atomide.com>
+Cc: alsa-devel@alsa-project.org, linux-omap@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Deepak Saxena <dsaxena@plexity.net>, Chris Ball <cjb@laptop.org>,
+        Matt Mackall <mpm@selenic.com>, Venkatraman S <svenkatr@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-crypto@vger.kernel.org
+Date: Mon, 08 Oct 2012 10:35:57 -0700
+Message-ID: <20121008173557.10603.18539.stgit@muffinssi>
+In-Reply-To: <20121008173452.10603.53886.stgit@muffinssi>
+References: <20121008173452.10603.53886.stgit@muffinssi>
+User-Agent: StGit/0.16-2-g0d85
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 07-10-12 14:26:42, Sasha Levin wrote:
-> Ping?
-> 
-> I'm still seeing this on linux-next.
-  I think this is floppy related (see redo_fd_request() in the stack
-trace). And there were quite some changes to the area recently. Adding
-maintainer to CC.
+Drivers should not use cpu_is_omap or cpu_class_is_omap macros,
+they should be private to the platform init code. And we'll be
+removing plat/cpu.h and only have a private soc.h for the
+arch/arm/*omap* code.
 
-									Honza
+This patch is intended as preparation for the core omap changes
+and removes the need to include plat/cpu.h from several drivers.
+This is needed for the ARM common zImage support.
 
-> On Sat, Sep 22, 2012 at 4:35 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > Hi all,
-> >
-> > While fuzzing with trinity inside a KVM tools guest running the latest linux-next kernel, I've stumbled on the following BUG.
-> >
-> > I've also hit a similar trace where the 'BUG_ON(ELV_ON_HASH(rq));' above that list_del_init() gets hit, so I guess it's a race
-> > condition of some sorts.
-> >
-> >
-> > [    9.900299] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> > [    9.909508] IP: [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > [    9.910191] PGD 0
-> > [    9.910191] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [    9.910191] Dumping ftrace buffer:
-> > [    9.910191]    (ftrace buffer empty)
-> > [    9.910191] CPU 2
-> > [    9.910191] Pid: 3996, comm: kworker/u:2 Tainted: G        W    3.6.0-rc6-next-20120921-sasha-00001-geb77a39-dirty #3
-> > [    9.910191] RIP: 0010:[<ffffffff819ea637>]  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > [    9.910191] RSP: 0000:ffff880034e11c88  EFLAGS: 00010007
-> > [    9.910191] RAX: 0000000000000000 RBX: ffff880034e3ec00 RCX: dead000000200200
-> > [    9.910191] RDX: 0000000000000000 RSI: ffffffff85366998 RDI: ffff880034e3ec00
-> > [    9.910191] RBP: ffff880034e11c88 R08: 0000000000000000 R09: ffff88001af60928
-> > [    9.910191] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-> > [    9.910191] R13: ffffffff85366360 R14: 0000000000000000 R15: ffffffff85b4edd0
-> > [    9.910191] FS:  0000000000000000(0000) GS:ffff880029800000(0000) knlGS:0000000000000000
-> > [    9.910191] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [    9.910191] CR2: 0000000000000000 CR3: 0000000004c26000 CR4: 00000000000406e0
-> > [    9.910191] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [    9.910191] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [    9.910191] Process kworker/u:2 (pid: 3996, threadinfo ffff880034e10000, task ffff88001af60000)
-> > [    9.910191] Stack:
-> > [    9.910191]  ffff880034e11ca8 ffffffff819a1a45 ffff880034e3ec00 0000000000000000
-> > [    9.910191]  ffff880034e11cc8 ffffffff819a1ae1 0000000000000000 ffff880034e3ec00
-> > [    9.910191]  ffff880034e11ce8 ffffffff819a271e 0000000000000000 0000000000000000
-> > [    9.910191] Call Trace:
-> > [    9.910191]  [<ffffffff819a1a45>] blk_dequeue_request+0x35/0xc0
-> > [    9.910191]  [<ffffffff819a1ae1>] blk_start_request+0x11/0x40
-> > [    9.910191]  [<ffffffff819a271e>] blk_fetch_request+0x1e/0x30
-> > [    9.910191]  [<ffffffff81e5a89d>] redo_fd_request+0x9d/0x3f0
-> > [    9.910191]  [<ffffffff8112a779>] process_one_work+0x3b9/0x770
-> > [    9.910191]  [<ffffffff8112a628>] ? process_one_work+0x268/0x770
-> > [    9.910191]  [<ffffffff81177a22>] ? get_lock_stats+0x22/0x70
-> > [    9.910191]  [<ffffffff81e5a800>] ? start_motor+0x120/0x120
-> > [    9.910191]  [<ffffffff8112b0fa>] worker_thread+0x2ba/0x3f0
-> > [    9.910191]  [<ffffffff8112ae40>] ? rescuer_thread+0x2d0/0x2d0
-> > [    9.910191]  [<ffffffff81135d83>] kthread+0xe3/0xf0
-> > [    9.910191]  [<ffffffff81177aae>] ? put_lock_stats.isra.16+0xe/0x40
-> > [    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-> > [    9.910191]  [<ffffffff839f1e45>] kernel_thread_helper+0x5/0x10
-> > [    9.910191]  [<ffffffff81135ca0>] ? insert_kthread_work+0x90/0x90
-> > [    9.910191] Code: 6a 84 be 3e 00 00 00 48 c7 c7 7b d8 6a 84 31 c0 e8 8f c2 71 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00
-> > ad de 48 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89 42 08
-> > [    9.910191] RIP  [<ffffffff819ea637>] __list_del_entry+0xb7/0xe0
-> > [    9.910191]  RSP <ffff880034e11c88>
-> > [    9.910191] CR2: 0000000000000000
-> >
-> >
-> > Thanks,
-> > Sasha
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+These changes are OK to do because:
+
+- omap-rng.c and hsmmc.c don't need plat/cpu.h
+
+- omap-aes.c and omap-sham.c get the proper platform_data
+  passed to them so they don't need extra checks in the driver
+
+- omap-dma.c and omap-pcm.c can test the arch locally as
+  omap1 and omap2 cannot be compiled together because of
+  conflicting compiler flags
+
+Cc: Deepak Saxena <dsaxena@plexity.net>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Venkatraman S <svenkatr@ti.com>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-crypto@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Cc: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/char/hw_random/omap-rng.c |    2 --
+ drivers/crypto/omap-aes.c         |    6 ------
+ drivers/crypto/omap-sham.c        |    8 --------
+ drivers/dma/omap-dma.c            |    9 +++++++--
+ drivers/mmc/host/omap_hsmmc.c     |    1 -
+ sound/soc/omap/omap-pcm.c         |    9 +++++++--
+ 6 files changed, 14 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index a5effd8..45e467d 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -27,8 +27,6 @@
+ 
+ #include <asm/io.h>
+ 
+-#include <plat/cpu.h>
+-
+ #define RNG_OUT_REG		0x00		/* Output register */
+ #define RNG_STAT_REG		0x04		/* Status register
+ 							[0] = STAT_BUSY */
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index 3e61feb..649a146 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -29,7 +29,6 @@
+ #include <crypto/scatterwalk.h>
+ #include <crypto/aes.h>
+ 
+-#include <plat/cpu.h>
+ #include <plat-omap/dma-omap.h>
+ 
+ /* OMAP TRM gives bitfields as start:end, where start is the higher bit
+@@ -941,11 +940,6 @@ static int __init omap_aes_mod_init(void)
+ {
+ 	pr_info("loading %s driver\n", "omap-aes");
+ 
+-	if (!cpu_class_is_omap2() || omap_type() != OMAP2_DEVICE_TYPE_SEC) {
+-		pr_err("Unsupported cpu\n");
+-		return -ENODEV;
+-	}
+-
+ 	return  platform_driver_register(&omap_aes_driver);
+ }
+ 
+diff --git a/drivers/crypto/omap-sham.c b/drivers/crypto/omap-sham.c
+index 6d79695..d76fe06 100644
+--- a/drivers/crypto/omap-sham.c
++++ b/drivers/crypto/omap-sham.c
+@@ -37,7 +37,6 @@
+ #include <crypto/hash.h>
+ #include <crypto/internal/hash.h>
+ 
+-#include <plat/cpu.h>
+ #include <plat-omap/dma-omap.h>
+ #include <mach/irqs.h>
+ 
+@@ -1289,13 +1288,6 @@ static int __init omap_sham_mod_init(void)
+ {
+ 	pr_info("loading %s driver\n", "omap-sham");
+ 
+-	if (!cpu_class_is_omap2() ||
+-		(omap_type() != OMAP2_DEVICE_TYPE_SEC &&
+-			omap_type() != OMAP2_DEVICE_TYPE_EMU)) {
+-		pr_err("Unsupported cpu\n");
+-		return -ENODEV;
+-	}
+-
+ 	return platform_driver_register(&omap_sham_driver);
+ }
+ 
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 0b4fa50..56d9253 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -19,9 +19,14 @@
+ 
+ #include "virt-dma.h"
+ 
+-#include <plat/cpu.h>
+ #include <plat-omap/dma-omap.h>
+ 
++#ifdef CONFIG_ARCH_OMAP2PLUS
++#define dma_omap2plus()	1
++#else
++#define dma_omap2plus()	0
++#endif
++
+ struct omap_dmadev {
+ 	struct dma_device ddev;
+ 	spinlock_t lock;
+@@ -438,7 +443,7 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
+ 		omap_disable_dma_irq(c->dma_ch, OMAP_DMA_BLOCK_IRQ);
+ 	}
+ 
+-	if (!cpu_class_is_omap1()) {
++	if (dma_omap2plus()) {
+ 		omap_set_dma_src_burst_mode(c->dma_ch, OMAP_DMA_DATA_BURST_16);
+ 		omap_set_dma_dest_burst_mode(c->dma_ch, OMAP_DMA_DATA_BURST_16);
+ 	}
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 85b164e..24df035 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -40,7 +40,6 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/mmc-omap.h>
+ #include <mach/hardware.h>
+-#include <plat/cpu.h>
+ 
+ /* OMAP HSMMC Host Controller Registers */
+ #define OMAP_HSMMC_SYSSTATUS	0x0014
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index 340874e..52977aa 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -32,9 +32,14 @@
+ #include <sound/dmaengine_pcm.h>
+ #include <sound/soc.h>
+ 
+-#include <plat/cpu.h>
+ #include "omap-pcm.h"
+ 
++#ifdef CONFIG_ARCH_OMAP1
++#define pcm_omap1510()	cpu_is_omap1510()
++#else
++#define pcm_omap1510()	0
++#endif
++
+ static const struct snd_pcm_hardware omap_pcm_hardware = {
+ 	.info			= SNDRV_PCM_INFO_MMAP |
+ 				  SNDRV_PCM_INFO_MMAP_VALID |
+@@ -159,7 +164,7 @@ static snd_pcm_uframes_t omap_pcm_pointer(struct snd_pcm_substream *substream)
+ {
+ 	snd_pcm_uframes_t offset;
+ 
+-	if (cpu_is_omap1510())
++	if (pcm_omap1510())
+ 		offset = snd_dmaengine_pcm_pointer_no_residue(substream);
+ 	else
+ 		offset = snd_dmaengine_pcm_pointer(substream);
+
