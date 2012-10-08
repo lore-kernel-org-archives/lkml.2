@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab2JHJYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 05:24:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47131 "EHLO bear.ext.ti.com"
+	id S1752217Ab2JHJY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 05:24:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39590 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab2JHJYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751580Ab2JHJYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Oct 2012 05:24:30 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <sshtylyov@mvista.com>, <grant.likely@secretlab.ca>,
@@ -13,9 +13,9 @@ To: <sshtylyov@mvista.com>, <grant.likely@secretlab.ca>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v3 3/7] usb: dwc3-omap: use runtime API's to enable clocks
-Date: Mon, 8 Oct 2012 14:53:52 +0530
-Message-ID: <1349688236-22814-4-git-send-email-kishon@ti.com>
+Subject: [PATCH v3 2/7] usb: dwc3-omap: use of_platform API to create dwc3 core pdev
+Date: Mon, 8 Oct 2012 14:53:51 +0530
+Message-ID: <1349688236-22814-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349688236-22814-1-git-send-email-kishon@ti.com>
 References: <1349688236-22814-1-git-send-email-kishon@ti.com>
@@ -25,47 +25,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before accessing any register, runtime API's should be invoked to enable
-the clocks. runtime API's are added here to prevent abort during register
-access.
+Used of_platform_populate() to populate dwc3 core platform_device
+from device tree data. Since now the allocation of unique device id is
+handled be of_*, removed the call to dwc3_get_device_id.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/dwc3/dwc3-omap.c |   52 ++++++++----------------------------------
+ 1 file changed, 10 insertions(+), 42 deletions(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index cb4037a..850a0cf 100644
+index e335da3..cb4037a 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -43,6 +43,7 @@
- #include <linux/spinlock.h>
- #include <linux/platform_device.h>
- #include <linux/platform_data/dwc3-omap.h>
-+#include <linux/pm_runtime.h>
- #include <linux/dma-mapping.h>
+@@ -47,6 +47,7 @@
  #include <linux/ioport.h>
  #include <linux/io.h>
-@@ -272,6 +273,13 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ #include <linux/of.h>
++#include <linux/of_platform.h>
+ 
+ #include "core.h"
+ 
+@@ -130,7 +131,6 @@ struct dwc3_omap {
+ 	/* device lock */
+ 	spinlock_t		lock;
+ 
+-	struct platform_device	*dwc3;
+ 	struct device		*dev;
+ 
+ 	int			irq;
+@@ -218,12 +218,10 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ 	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
+ 	struct device_node	*node = pdev->dev.of_node;
+ 
+-	struct platform_device	*dwc3;
+ 	struct dwc3_omap	*omap;
+ 	struct resource		*res;
+ 	struct device		*dev = &pdev->dev;
+ 
+-	int			devid;
+ 	int			size;
+ 	int			ret = -ENOMEM;
+ 	int			irq;
+@@ -260,34 +258,19 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	devid = dwc3_get_device_id();
+-	if (devid < 0)
+-		return -ENODEV;
+-
+-	dwc3 = platform_device_alloc("dwc3", devid);
+-	if (!dwc3) {
+-		dev_err(dev, "couldn't allocate dwc3 device\n");
+-		goto err1;
+-	}
+-
+ 	context = devm_kzalloc(dev, resource_size(res), GFP_KERNEL);
+ 	if (!context) {
+ 		dev_err(dev, "couldn't allocate dwc3 context memory\n");
+-		goto err2;
++		return -ENOMEM;
+ 	}
+ 
+ 	spin_lock_init(&omap->lock);
+-	dma_set_coherent_mask(&dwc3->dev, dev->coherent_dma_mask);
+ 
+-	dwc3->dev.parent = dev;
+-	dwc3->dev.dma_mask = dev->dma_mask;
+-	dwc3->dev.dma_parms = dev->dma_parms;
+ 	omap->resource_size = resource_size(res);
+ 	omap->context	= context;
+ 	omap->dev	= dev;
  	omap->irq	= irq;
  	omap->base	= base;
+-	omap->dwc3	= dwc3;
  
-+	pm_runtime_enable(dev);
-+	ret = pm_runtime_get_sync(dev);
-+	if (ret < 0) {
-+		dev_err(dev, "get_sync failed with err %d\n", ret);
-+		return ret;
-+	}
-+
  	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
  
- 	utmi_mode = of_get_property(node, "utmi-mode", &size);
-@@ -348,6 +356,8 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+@@ -332,7 +315,7 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ 	if (ret) {
+ 		dev_err(dev, "failed to request IRQ #%d --> %d\n",
+ 				omap->irq, ret);
+-		goto err2;
++		return ret;
+ 	}
+ 
+ 	/* enable all IRQs */
+@@ -351,35 +334,20 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+ 
+ 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
+ 
+-	ret = platform_device_add_resources(dwc3, pdev->resource,
+-			pdev->num_resources);
+-	if (ret) {
+-		dev_err(dev, "couldn't add resources to dwc3 device\n");
+-		goto err2;
+-	}
+-
+-	ret = platform_device_add(dwc3);
+-	if (ret) {
+-		dev_err(dev, "failed to register dwc3 device\n");
+-		goto err2;
++	if (node) {
++		ret = of_platform_populate(node, NULL, NULL, dev);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"failed to add create dwc3 core\n");
++			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+-
+-err2:
+-	platform_device_put(dwc3);
+-
+-err1:
+-	dwc3_put_device_id(devid);
+-
+-	return ret;
+ }
  
  static int __devexit dwc3_omap_remove(struct platform_device *pdev)
  {
-+	pm_runtime_put_sync(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
+-	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
+-
+-	dwc3_put_device_id(omap->dwc3->id);
  	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
  
  	return 0;
