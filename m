@@ -1,55 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab2JHAli (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:41:38 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46292 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2JHAlg (ORCPT
+	id S1752321Ab2JHAlq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:41:46 -0400
+Received: from mailgw01.dd24.net ([193.46.215.41]:54503 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab2JHAll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:41:36 -0400
-MIME-Version: 1.0
-Date: Mon, 8 Oct 2012 08:41:36 +0800
-Message-ID: <CAPgLHd_PcLZGPtXQUUJ3VZJub+27zTsDvHF6X2vUrKJ9cKZ+7w@mail.gmail.com>
-Subject: [PATCH] drivers:misc: ti-st: fix potential NULL pointer dereference
- in st_register()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 7 Oct 2012 20:41:41 -0400
+Subject: Re: RNG: is it possible to spoil /dev/random by seeding it from
+ (evil) TRNGs
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20121004224942.GA23970@thunk.org>
+References: <1349357555.3396.15.camel@fermat.scientia.net>
+	 <20121004224942.GA23970@thunk.org>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-JKWdfNuPRVHMOMAwH1/Q"
+Date: Mon, 08 Oct 2012 02:41:31 +0200
+Message-ID: <1349656891.6470.16.camel@fermat.scientia.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-The dereference should be moved below the NULL test.
+--=-JKWdfNuPRVHMOMAwH1/Q
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+Hi Ted.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/misc/ti-st/st_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 46937b1..ee341ea 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -511,13 +511,14 @@ long st_register(struct st_proto_s *new_proto)
- 	unsigned long flags = 0;
- 
- 	st_kim_ref(&st_gdata, 0);
--	pr_info("%s(%d) ", __func__, new_proto->chnl_id);
- 	if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
- 	    || new_proto->reg_complete_cb == NULL) {
- 		pr_err("gdata/new_proto/recv or reg_complete_cb not ready");
- 		return -EINVAL;
- 	}
- 
-+	pr_info("%s(%d) ", __func__, new_proto->chnl_id);
-+
- 	if (new_proto->chnl_id >= ST_MAX_CHANNELS) {
- 		pr_err("chnl_id %d not supported", new_proto->chnl_id);
- 		return -EPROTONOSUPPORT;
+Thanks for your prompt reply.
+
+
+On Thu, 2012-10-04 at 18:49 -0400, Theodore Ts'o wrote:
+> It is impossible by design.  Or specifically, /dev/random was designed
+> so that it can be world-writeable, and an attacker can feed in any
+> kind of input he or she wants, and it will not allow the attacker to
+> know anything more about the state of the entropy pool than he or she
+> knew before they started mixing inputs in.
+
+I just wondered because I remembered David Shaw (one of the main
+developers from gpg) to imply[0] some time ago, that an "evil" entropy
+source would actually be a problem:
+> Not completely useless given the Linux random design, but
+> certainly an evil source of entropy would be a serious problem.  "
+
+
+
+> There are comments that go into more detail about the design in
+> drivers/char/random.c.
+I had a short glance at it,... but I guess it goes a bit above my
+understanding of entropy theory... well at least without without putting
+some effort into it.
+
+Some notes though (guess you're the maintainer anyway):
+1) With respect to the sources of entropy... would it make sense for the
+kernel to follow ideas from haveged[1].
+I mean we all now that especially disk-less server systems have problems
+with the current sources.
+Or is that intended to be kept in userspace?
+
+2) At some places, the documentation mentiones that SHA is used... any
+sense in "upgrading" to stronger/more secure (especially as it says the
+hash is used to protect the internal state of the pool) and faster
+algos?
+
+3) Some places note that things are not so cryptographically strong...
+which sounds a bit worrying...
+
+4) Were "newer" developments in PRNGs already taken into account? E.g.
+the Mersenne Twister (which is AFAIK however not cryptographically
+secure; at least in it's native form)
+
+
+Thanks again,
+Chris.
+
+
+[0]
+http://lists.gnupg.org/pipermail/gnupg-users/2009-September/037301.html
+[1] http://www.issihosts.com/haveged/
+[2] http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+
+--=-JKWdfNuPRVHMOMAwH1/Q
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISTzCCBXUw
+ggNdoAMCAQICAwEBgjANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwG
+A1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290
+MB4XDTEyMDcyMzE0NTY0NVoXDTE0MDcyMzE0NTY0NVowfDEhMB8GA1UEAxMYQ2hyaXN0b3BoIEFu
+dG9uIE1pdHRlcmVyMSQwIgYJKoZIhvcNAQkBFhVjYWxlc3R5b0BzY2llbnRpYS5uZXQxMTAvBgkq
+hkiG9w0BCQEWIm1haWxAY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyLm5hbWUwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQCq/4X3Urm/IHCIYUyqPrBN6FZ2pmd8V5epPyDlveqtdYvLBLNy
+gP3G3KhGoCA4Jf49KYGmbqk+F7fVWcG1zcdwEx7itKJyj39nYf2HWXogxUSfKFptbOgpsTcEWuxg
+ka2EkJuErTvYbwCEKT7mn4v6ScuFBc3Q+Hswlt1jbqjczi+OxcU1skvxM5jGjzRwYPUsiHZJRkWp
+ogbbhNWZNbwXiMPln380TAlryRAr5UE0dSe1dg1qHhF6HSNKwaer0+Dcd/goL4XQhHxCAGZKfCK0
+wVRf1SeEsS9FDGMMjW2b6HpHF+OVXuagjrxSWHttx0+Ez/PZDXpeZpjXatzzmlJFAgMBAAGjggEm
+MIIBIjAMBgNVHRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlm
+aWNhdGUgZm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzBABgNVHSUE
+OTA3BggrBgEFBQcDBAYIKwYBBQUHAwIGCisGAQQBgjcKAwQGCisGAQQBgjcKAwMGCWCGSAGG+EIE
+ATAyBggrBgEFBQcBAQQmMCQwIgYIKwYBBQUHMAGGFmh0dHA6Ly9vY3NwLmNhY2VydC5vcmcwRAYD
+VR0RBD0wO4EVY2FsZXN0eW9Ac2NpZW50aWEubmV0gSJtYWlsQGNocmlzdG9waC5hbnRvbi5taXR0
+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
+E/xzWfdmQnQeiuP43NJvmJzLR5iVQAX76QIDAQABo4ICDTCCAgkwHQYDVR0OBBYEFHWocWBMiBPw
+eNmJd7VtxYnfvLF6MIGjBgNVHSMEgZswgZiAFBa1MhvUx/Pg5o7zvdKwOu6yORjRoX2kezB5MRAw
+DgYDVQQKEwdSb290IENBMR4wHAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMT
+GUNBIENlcnQgU2lnbmluZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0
+Lm9yZ4IBADAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEwTzAjBggrBgEFBQcwAYYXaHR0
+cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZy9j
+YS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUFBwIBFiVodHRwOi8vd3d3LkNB
+Y2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMDQGCWCGSAGG+EIBCAQnFiVodHRwOi8vd3d3LkNBY2Vy
+dC5vcmcvaW5kZXgucGhwP2lkPTEwMFAGCWCGSAGG+EIBDQRDFkFUbyBnZXQgeW91ciBvd24gY2Vy
+dGlmaWNhdGUgZm9yIEZSRUUsIGdvIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzANBgkqhkiG9w0B
+AQsFAAOCAgEAKSiFrkSpua+keRPwqKMrl2DzXO7jL8H24magEa42Nzp2FQRT6kL1+erAFdimgtnk
+Ya5yCylckEPoQbLhd9sCE0R4R1WvWPzMmPZFudEg+NghB/5tqnPUs8YH6QmFzDvytr4sHCXVcYw5
+tS7qvhiBurCTuA/j5tcmjDFacgOEUuam9TMiRQrICw2KuDZvkAmhq73X1U4ucaLUrvqnVCvrNY1a
+t1SIL+50n+1IFsoNSNCU06ykovYk35LjvetDQJFuHBiOVrSCEvOpk5/UvJytnHXuWpcbled0LRwP
+sCyXn/upMzl65wM6ko4i9owN5Nl+DXYY9wH575aWolVzwDxxtB0aVkO3wwqNcvziEAkLQc6MlKD5
+A/1xc0uKVzPljnR+FQEA5sxKHOd/lRktxaUMi7u17YWzXNPfuLnyyscNARSscFjFjI0z1J1moxpQ
+lSP8SOAGQxLZzaeGOS82cqOAEOTh89HLWxrA5ICafBNzBk/bo2skCrqzHLxKeLvl43U4pUinoh6v
+dtRe9ziGVlqJztbDp3myUqDG8YW0JYzyP5azENmNbFc7n2+GOhiCIjbIsJE42yqhk6qEP/UnZa5z
+1cjV03fqS53HQbvHwOOgP+R9pI1z5hJL36Fzc3M6gOjVy44vy+oTp9ZBi6z6PInXJPVOtOBhkrfz
+N5jEvpajt4oxggK9MIICuQIBATBbMFQxFDASBgNVBAoTC0NBY2VydCBJbmMuMR4wHAYDVQQLExVo
+dHRwOi8vd3d3LkNBY2VydC5vcmcxHDAaBgNVBAMTE0NBY2VydCBDbGFzcyAzIFJvb3QCAwEBgjAJ
+BgUrDgMCGgUAoIIBNzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0x
+MjEwMDgwMDQxMjhaMCMGCSqGSIb3DQEJBDEWBBS2W4KloVt1nS3qiitNQQujodlO4DBqBgkrBgEE
+AYI3EAQxXTBbMFQxFDASBgNVBAoTC0NBY2VydCBJbmMuMR4wHAYDVQQLExVodHRwOi8vd3d3LkNB
+Y2VydC5vcmcxHDAaBgNVBAMTE0NBY2VydCBDbGFzcyAzIFJvb3QCAwEBgjBsBgsqhkiG9w0BCRAC
+CzFdoFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0FjZXJ0
+Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDAQGCMA0GCSqGSIb3DQEBAQUABIIB
+AEI2fQjhQcaJBiKFUKALg6opQMwahXvqAE9oz/EL5kSyaowUsgxjtXMTGqU7A1rNS6gxHET1nrci
+SnZrQWUMiNAG5U1gEY46Fpzpck70Rm7cO0but/Y1kgoOMxBpHutxM869kCZ6t0k6+rBOD5QRFct2
+BhbBjW3mmlfLKbYau3H4RiUUVu/Fi/PuMhB/3IT2VZ1NmcVNIvFYzX13FDcyg+V7HTd2nf4L1DPc
+9uBKMoCZ17EmndJkWfjY2IeeqqFFQnOntyiy6Y5irEBs4jpaXn3tF9oiRpCHjczEFBIALfk41Gyj
+41WhJMQlEesJdjDLNXtq5xqowKlwbiPpboDEalcAAAAAAAA=
+
+
+--=-JKWdfNuPRVHMOMAwH1/Q--
 
