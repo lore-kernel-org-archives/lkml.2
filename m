@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab2JHNRv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:17:51 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:33074 "EHLO zmc.proxad.net"
+	id S1753726Ab2JHNSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:18:18 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:33046 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010Ab2JHNOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:14:03 -0400
+	id S1753287Ab2JHNN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:13:59 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 21/32 v4] USB: OHCI: remove Netlogic XLS OHCI platform driver
-Date: Mon,  8 Oct 2012 15:11:35 +0200
-Message-Id: <1349701906-16481-22-git-send-email-florian@openwrt.org>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Jayachandran C <jayachandranc@netlogicmicro.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 20/32 v4] MIPS: Netlogic: convert to use OHCI platform driver
+Date: Mon,  8 Oct 2012 15:11:34 +0200
+Message-Id: <1349701906-16481-21-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349701906-16481-1-git-send-email-florian@openwrt.org>
 References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
@@ -21,8 +22,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users have been converted to use the OHCI platform driver instead, thus
-making ohci-xls obsolete, remove it.
+The OHCI platform driver is suitable for use by the Netlogic XLR platform
+so use this driver instead of the OHCI XLS platform driver.
 
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
@@ -32,187 +33,53 @@ Changes in v4:
 No changes in v3
 
 Changes in v2:
-- reworded commit message
+- really make the code register the "ohci-platform" driver instead of "ohci-xls"
 
- drivers/usb/host/ohci-hcd.c |    5 --
- drivers/usb/host/ohci-xls.c |  152 -------------------------------------------
- 2 files changed, 157 deletions(-)
- delete mode 100644 drivers/usb/host/ohci-xls.c
+ arch/mips/netlogic/xlr/platform.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 501f4af..35f08b8 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1168,11 +1168,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ohci_hcd_tilegx_driver
- #endif
+diff --git a/arch/mips/netlogic/xlr/platform.c b/arch/mips/netlogic/xlr/platform.c
+index 144c5c6..507230e 100644
+--- a/arch/mips/netlogic/xlr/platform.c
++++ b/arch/mips/netlogic/xlr/platform.c
+@@ -16,6 +16,7 @@
+ #include <linux/serial_reg.h>
+ #include <linux/i2c.h>
+ #include <linux/usb/ehci_pdriver.h>
++#include <linux/usb/ohci_pdriver.h>
  
--#ifdef CONFIG_CPU_XLR
--#include "ohci-xls.c"
--#define PLATFORM_DRIVER		ohci_xls_driver
--#endif
--
- #ifdef CONFIG_USB_OHCI_HCD_PLATFORM
- #include "ohci-platform.c"
- #define PLATFORM_DRIVER		ohci_platform_driver
-diff --git a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
-deleted file mode 100644
-index 84201cd..0000000
---- a/drivers/usb/host/ohci-xls.c
-+++ /dev/null
-@@ -1,152 +0,0 @@
--/*
-- * OHCI HCD for Netlogic XLS processors.
-- *
-- * (C) Copyright 2011 Netlogic Microsystems Inc.
-- *
-- *  Based on ohci-au1xxx.c, and other Linux OHCI drivers.
-- *
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file COPYING in the main directory of this archive for
-- * more details.
-- */
--
--#include <linux/platform_device.h>
--#include <linux/signal.h>
--
--static int ohci_xls_probe_internal(const struct hc_driver *driver,
--			struct platform_device *dev)
--{
--	struct resource *res;
--	struct usb_hcd *hcd;
--	int retval, irq;
--
--	/* Get our IRQ from an earlier registered Platform Resource */
--	irq = platform_get_irq(dev, 0);
--	if (irq < 0) {
--		dev_err(&dev->dev, "Found HC with no IRQ\n");
--		return -ENODEV;
--	}
--
--	/* Get our Memory Handle */
--	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&dev->dev, "MMIO Handle incorrect!\n");
--		return -ENODEV;
--	}
--
--	hcd = usb_create_hcd(driver, &dev->dev, "XLS");
--	if (!hcd) {
--		retval = -ENOMEM;
--		goto err1;
--	}
--	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = resource_size(res);
--
--	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
--			driver->description)) {
--		dev_dbg(&dev->dev, "Controller already in use\n");
--		retval = -EBUSY;
--		goto err2;
--	}
--
--	hcd->regs = ioremap_nocache(hcd->rsrc_start, hcd->rsrc_len);
--	if (hcd->regs == NULL) {
--		dev_dbg(&dev->dev, "error mapping memory\n");
--		retval = -EFAULT;
--		goto err3;
--	}
--
--	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
--	if (retval != 0)
--		goto err4;
--	return retval;
--
--err4:
--	iounmap(hcd->regs);
--err3:
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--err2:
--	usb_put_hcd(hcd);
--err1:
--	dev_err(&dev->dev, "init fail, %d\n", retval);
--	return retval;
--}
--
--static int ohci_xls_reset(struct usb_hcd *hcd)
--{
--	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
--
--	ohci_hcd_init(ohci);
--	return ohci_init(ohci);
--}
--
--static int __devinit ohci_xls_start(struct usb_hcd *hcd)
--{
--	struct ohci_hcd *ohci;
--	int ret;
--
--	ohci = hcd_to_ohci(hcd);
--	ret = ohci_run(ohci);
--	if (ret < 0) {
--		dev_err(hcd->self.controller, "can't start %s\n",
--			hcd->self.bus_name);
--		ohci_stop(hcd);
--		return ret;
--	}
--	return 0;
--}
--
--static struct hc_driver ohci_xls_hc_driver = {
--	.description	= hcd_name,
--	.product_desc	= "XLS OHCI Host Controller",
--	.hcd_priv_size	= sizeof(struct ohci_hcd),
--	.irq		= ohci_irq,
--	.flags		= HCD_MEMORY | HCD_USB11,
--	.reset		= ohci_xls_reset,
--	.start		= ohci_xls_start,
--	.stop		= ohci_stop,
--	.shutdown	= ohci_shutdown,
--	.urb_enqueue	= ohci_urb_enqueue,
--	.urb_dequeue	= ohci_urb_dequeue,
--	.endpoint_disable = ohci_endpoint_disable,
--	.get_frame_number = ohci_get_frame,
--	.hub_status_data = ohci_hub_status_data,
--	.hub_control	= ohci_hub_control,
--#ifdef CONFIG_PM
--	.bus_suspend	= ohci_bus_suspend,
--	.bus_resume	= ohci_bus_resume,
--#endif
--	.start_port_reset = ohci_start_port_reset,
--};
--
--static int ohci_xls_probe(struct platform_device *dev)
--{
--	int ret;
--
--	pr_debug("In ohci_xls_probe");
--	if (usb_disabled())
--		return -ENODEV;
--	ret = ohci_xls_probe_internal(&ohci_xls_hc_driver, dev);
--	return ret;
--}
--
--static int ohci_xls_remove(struct platform_device *dev)
--{
--	struct usb_hcd *hcd = platform_get_drvdata(dev);
--
--	usb_remove_hcd(hcd);
--	iounmap(hcd->regs);
--	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
--	usb_put_hcd(hcd);
--	return 0;
--}
--
--static struct platform_driver ohci_xls_driver = {
--	.probe		= ohci_xls_probe,
--	.remove		= ohci_xls_remove,
--	.shutdown	= usb_hcd_platform_shutdown,
--	.driver		= {
--		.name	= "ohci-xls-0",
--		.owner	= THIS_MODULE,
--	},
--};
+ #include <asm/netlogic/haldefs.h>
+ #include <asm/netlogic/xlr/iomap.h>
+@@ -128,12 +129,14 @@ static struct usb_ehci_pdata xls_usb_ehci_pdata = {
+ 	.caps_offset	= 0,
+ };
+ 
++static struct usb_ohci_pdata xls_usb_ohci_pdata;
++
+ static struct platform_device xls_usb_ehci_device =
+ 			 USB_PLATFORM_DEV("ehci-platform", 0, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_0 =
+-			 USB_PLATFORM_DEV("ohci-xls-0", 1, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ohci-platform", 1, PIC_USB_IRQ);
+ static struct platform_device xls_usb_ohci_device_1 =
+-			 USB_PLATFORM_DEV("ohci-xls-1", 2, PIC_USB_IRQ);
++			 USB_PLATFORM_DEV("ohci-platform", 2, PIC_USB_IRQ);
+ 
+ static struct platform_device *xls_platform_devices[] = {
+ 	&xls_usb_ehci_device,
+@@ -182,10 +185,12 @@ int xls_platform_usb_init(void)
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_0.resource[0].start = memres;
+ 	xls_usb_ohci_device_0.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ohci_device_0.dev.platform_data = &xls_usb_ohci_pdata;
+ 
+ 	memres += 0x400;
+ 	xls_usb_ohci_device_1.resource[0].start = memres;
+ 	xls_usb_ohci_device_1.resource[0].end = memres + 0x400 - 1;
++	xls_usb_ohci_device_1.dev.platform_data = &xls_usb_ohci_pdata;
+ 
+ 	return platform_add_devices(xls_platform_devices,
+ 				ARRAY_SIZE(xls_platform_devices));
 -- 
 1.7.9.5
 
