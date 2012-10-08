@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2JHKJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 06:09:03 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20055 "EHLO relay.sw.ru"
+	id S1752496Ab2JHKJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 06:09:06 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34376 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559Ab2JHKHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 06:07:54 -0400
+	id S1751515Ab2JHKHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 06:07:53 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v4 09/14] memcg: kmem accounting lifecycle management
-Date: Mon,  8 Oct 2012 14:06:15 +0400
-Message-Id: <1349690780-15988-10-git-send-email-glommer@parallels.com>
+Subject: [PATCH v4 13/14] protect architectures where THREAD_SIZE >= PAGE_SIZE against fork bombs
+Date: Mon,  8 Oct 2012 14:06:19 +0400
+Message-Id: <1349690780-15988-14-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <1349690780-15988-1-git-send-email-glommer@parallels.com>
 References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
@@ -27,169 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because kmem charges can outlive the cgroup, we need to make sure that
-we won't free the memcg structure while charges are still in flight.
-For reviewing simplicity, the charge functions will issue
-mem_cgroup_get() at every charge, and mem_cgroup_put() at every
-uncharge.
+Because those architectures will draw their stacks directly from the
+page allocator, rather than the slab cache, we can directly pass
+__GFP_KMEMCG flag, and issue the corresponding free_pages.
 
-This can get expensive, however, and we can do better. mem_cgroup_get()
-only really needs to be issued once: when the first limit is set. In the
-same spirit, we only need to issue mem_cgroup_put() when the last charge
-is gone.
+This code path is taken when the architecture doesn't define
+CONFIG_ARCH_THREAD_INFO_ALLOCATOR (only ia64 seems to), and has
+THREAD_SIZE >= PAGE_SIZE. Luckily, most - if not all - of the remaining
+architectures fall in this category.
 
-We'll need an extra bit in kmem_accounted for that: KMEM_ACCOUNTED_DEAD.
-it will be set when the cgroup dies, if there are charges in the group.
-If there aren't, we can proceed right away.
+This will guarantee that every stack page is accounted to the memcg the
+process currently lives on, and will have the allocations to fail if
+they go over limit.
 
-Our uncharge function will have to test that bit every time the charges
-drop to 0. Because that is not the likely output of
-res_counter_uncharge, this should not impose a big hit on us: it is
-certainly much better than a reference count decrease at every
-operation.
+For the time being, I am defining a new variant of THREADINFO_GFP, not
+to mess with the other path. Once the slab is also tracked by memcg, we
+can get rid of that flag.
 
-[ v3: merged all lifecycle related patches in one ]
+Tested to successfully protect against :(){ :|:& };:
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Frederic Weisbecker <fweisbec@redhat.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 ---
- mm/memcontrol.c | 56 +++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 7 deletions(-)
+ include/linux/thread_info.h | 2 ++
+ kernel/fork.c               | 4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index dda54f0..634c7b5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -344,6 +344,7 @@ struct mem_cgroup {
- /* internal only representation about the status of kmem accounting. */
- enum {
- 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-+	KMEM_ACCOUNTED_DEAD, /* dead memcg, pending kmem charges */
- };
- 
- /* first bit */
-@@ -354,6 +355,22 @@ static void memcg_kmem_set_active(struct mem_cgroup *memcg)
- {
- 	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
- }
-+
-+static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
-+{
-+	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
-+}
-+
-+static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
-+{
-+	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted))
-+		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
-+}
-+
-+static bool memcg_kmem_dead(struct mem_cgroup *memcg)
-+{
-+	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
-+}
+diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
+index ccc1899..e7e0473 100644
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -61,6 +61,8 @@ extern long do_no_restart_syscall(struct restart_block *parm);
+ # define THREADINFO_GFP		(GFP_KERNEL | __GFP_NOTRACK)
  #endif
  
- /* Stuffs for move charges at task migration. */
-@@ -2690,10 +2707,16 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
- 
- static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
- {
--	res_counter_uncharge(&memcg->kmem, size);
- 	res_counter_uncharge(&memcg->res, size);
- 	if (do_swap_account)
- 		res_counter_uncharge(&memcg->memsw, size);
++#define THREADINFO_GFP_ACCOUNTED (THREADINFO_GFP | __GFP_KMEMCG)
 +
-+	/* Not down to 0 */
-+	if (res_counter_uncharge(&memcg->kmem, size))
-+		return;
-+
-+	if (memcg_kmem_dead(memcg))
-+		mem_cgroup_put(memcg);
- }
- 
  /*
-@@ -2732,13 +2755,9 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
- 		return true;
- 	}
- 
--	mem_cgroup_get(memcg);
--
- 	ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order);
- 	if (!ret)
- 		*_memcg = memcg;
--	else
--		mem_cgroup_put(memcg);
- 
- 	css_put(&memcg->css);
- 	return (ret == 0);
-@@ -2754,7 +2773,6 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
- 	/* The page allocation failed. Revert */
- 	if (!page) {
- 		memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
--		mem_cgroup_put(memcg);
- 		return;
- 	}
- 
-@@ -2795,7 +2813,6 @@ void __memcg_kmem_uncharge_page(struct page *page, int order)
- 
- 	VM_BUG_ON(mem_cgroup_is_root(memcg));
- 	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
--	mem_cgroup_put(memcg);
- }
- #endif /* CONFIG_MEMCG_KMEM */
- 
-@@ -4180,6 +4197,13 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
- 			goto out;
- 
- 		memcg_kmem_set_active(memcg);
-+		/*
-+		 * kmem charges can outlive the cgroup. In the case of slab
-+		 * pages, for instance, a page contain objects from various
-+		 * processes, so it is unfeasible to migrate them away. We
-+		 * need to reference count the memcg because of that.
-+		 */
-+		mem_cgroup_get(memcg);
- 	} else
- 		ret = res_counter_set_limit(&memcg->kmem, val);
- out:
-@@ -4193,6 +4217,10 @@ static void memcg_propagate_kmem(struct mem_cgroup *memcg,
- 				 struct mem_cgroup *parent)
+  * flag set/clear/test wrappers
+  * - pass TIF_xxxx constants to these functions
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 03b86f1..b3f6298 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -146,7 +146,7 @@ void __weak arch_release_thread_info(struct thread_info *ti)
+ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 						  int node)
  {
- 	memcg->kmem_accounted = parent->kmem_accounted;
-+#ifdef CONFIG_MEMCG_KMEM
-+	if (memcg_kmem_is_active(memcg))
-+		mem_cgroup_get(memcg);
-+#endif
- }
+-	struct page *page = alloc_pages_node(node, THREADINFO_GFP,
++	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
+ 					     THREAD_SIZE_ORDER);
  
- /*
-@@ -4876,6 +4904,20 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+ 	return page ? page_address(page) : NULL;
+@@ -154,7 +154,7 @@ static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
+ 
+ static inline void free_thread_info(struct thread_info *ti)
  {
- 	mem_cgroup_sockets_destroy(memcg);
-+
-+	memcg_kmem_mark_dead(memcg);
-+
-+	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
-+		return;
-+
-+	/*
-+	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
-+	 * path here, being careful not to race with memcg_uncharge_kmem: it is
-+	 * possible that the charges went down to 0 between mark_dead and the
-+	 * res_counter read, so in that case, we don't need the put
-+	 */
-+	if (memcg_kmem_dead(memcg))
-+		mem_cgroup_put(memcg);
+-	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
++	free_accounted_pages((unsigned long)ti, THREAD_SIZE_ORDER);
  }
- #else
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ # else
+ static struct kmem_cache *thread_info_cache;
 -- 
 1.7.11.4
 
