@@ -1,100 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab2JHA1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Oct 2012 20:27:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33105 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab2JHA1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Oct 2012 20:27:06 -0400
-Date: Mon, 8 Oct 2012 11:26:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: linux-next: manual merge of the sound tree with the v4l-dvb tree
-Message-Id: <20121008112657.d0c141b6f15c148c636a3a6a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Oct_2012_11_26_57_+1100_oeq3bHSJRIWroa3J"
+	id S1751567Ab2JHAf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Oct 2012 20:35:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38029 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab2JHAf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Oct 2012 20:35:56 -0400
+Date: Mon, 8 Oct 2012 01:35:53 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm for 3.7-rc1 (part 2)
+Message-ID: <alpine.DEB.2.00.1210080132110.20143@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__8_Oct_2012_11_26_57_+1100_oeq3bHSJRIWroa3J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Takashi,
+Hi Linus,
 
-Today's linux-next merge of the sound tree got a conflict in
-arch/arm/mach-davinci/include/mach/da8xx.h between commit 154d54a8ce99
-("[media] ARM: davinci: da850: Add SoC related definitions for VPIF")
-from the v4l-dvb tree and commit 896f66b7de29 ("ASoC/ARM: Davinci: McASP:
-split asp header into platform and audio specific") from the sound tree.
+This is the follow-up pull, 3 pieces
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+a) exynos next stuff, was delayed but looks okay to me, one patch in v4l 
+bits but it was acked by v4l person.
+b) UAPI disintegration bits
+c) intel fixes - DP fixes, hang fixes, other misc fixes.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Dave.
 
-diff --cc arch/arm/mach-davinci/include/mach/da8xx.h
-index 13d2295,c74a6ab..0000000
---- a/arch/arm/mach-davinci/include/mach/da8xx.h
-+++ b/arch/arm/mach-davinci/include/mach/da8xx.h
-@@@ -16,18 -16,15 +16,18 @@@
-  #include <linux/platform_device.h>
-  #include <linux/davinci_emac.h>
-  #include <linux/spi/spi.h>
-+ #include <linux/platform_data/davinci_asp.h>
- +#include <linux/videodev2.h>
- =20
-  #include <mach/serial.h>
-  #include <mach/edma.h>
-- #include <mach/asp.h>
- -#include <mach/i2c.h>
- -#include <mach/mmc.h>
- -#include <mach/usb.h>
-  #include <mach/pm.h>
- -#include <mach/spi.h>
- +#include <linux/platform_data/i2c-davinci.h>
- +#include <linux/platform_data/mmc-davinci.h>
- +#include <linux/platform_data/usb-davinci.h>
- +#include <linux/platform_data/spi-davinci.h>
- +
- +#include <media/davinci/vpif_types.h>
- =20
-  extern void __iomem *da8xx_syscfg0_base;
-  extern void __iomem *da8xx_syscfg1_base;
+The following changes since commit 0b8e74c6f44094189dbe78baf4101acc7570c6af:
 
---Signature=_Mon__8_Oct_2012_11_26_57_+1100_oeq3bHSJRIWroa3J
-Content-Type: application/pgp-signature
+  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2012-10-07 17:49:05 +0900)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBCAAGBQJQch3RAAoJEECxmPOUX5FEhVYP/2DQvw1gLlsPIJk8HMkhTadA
-Y55++73DRuHhF62/3W9MoSi7khY8+/TQt5d7p47QIbSHJhUPQW0mFwyIFLLU65zu
-s+6nag+HeblByMkInFp/iFGi/IXfjHuVPgigDmt/BtU2E9wZ5kMYtSJVx5u6dUTA
-BCfshfYaiGcN1a7FAoScyhYWMi+X2uNlIgScQ5No5x4CodH0wywyx0y+dYUw97Xg
-F0r2O92WHzPHmyzNice0SvB0d72uu0AcRqJb/U9mOUJ9z1LncClmhhFaabA3Exi9
-Rd2nrt6HeV1QrkMp9HtFUZsyE+up6TUKT1dKr7NoHgiBhIkFduF2m4A3CwP5ugON
-vReqcosxDtxIDFZgvb44P768wrZBRJ/grqXx3emKVJQRwP23Qa+HTekD48X7GtvG
-pPxEPua4ah/g3lg3cyMKwiH5ESs2KVPLdbyYzkiwO9cLFKmMI17i0zwy+4Mchjh5
-I+z3pB5Ql5Rnzaz1k5l4cWUVG23BuGGHd/PJoHJgevQZNidsucfwTQzVfgTjoHF3
-cBckgnnPh70oygxm/S8SiNw+nclcNOb5NVCvEgNP/pWu67itW08+N1QVuyHhZ7qa
-wOuNkP4TAEXrqpF7GLi9LlmAw2w2H0OsPlrVm4Ry/nQ+D60YDjbKf068UhVbbWwh
-zKGBjMHtAUFmtUuNoK9f
-=G3H7
------END PGP SIGNATURE-----
 
---Signature=_Mon__8_Oct_2012_11_26_57_+1100_oeq3bHSJRIWroa3J--
+  git://people.freedesktop.org/~airlied/linux.git drm-next
+
+for you to fetch changes up to 1f31c69dac71bebc0f00bc8534a6345782045501:
+
+  Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-next (2012-10-07 21:13:54 +1000)
+
+----------------------------------------------------------------
+
+Adam Jackson (6):
+      drm: Export drm_probe_ddc()
+      drm/dp: Update DPCD defines
+      drm/i915/dp: Fetch downstream port info if needed during DPCD fetch
+      drm/i915/dp: Be smarter about connection sense for branch devices
+      drm/dp: Document DP spec versions for various DPCD registers
+      drm/dp: Make sink count DP 1.2 aware
+
+Ben Widawsky (2):
+      drm/i915: Fix set_caching locking
+      drm/i915: Fix GT_MODE default value
+
+Chris Wilson (3):
+      drm/i915: Actually invalidate the TLB for the SandyBridge HW contexts w/a
+      drm/i915: Flush the pending flips on the CRTC before modification
+      drm/i915: Try harder to complete DP training pattern 1
+
+Daniel Vetter (2):
+      drm/i915: call drm_handle_vblank before finish_page_flip
+      drm/i915: don't frob the vblank ts in finish_page_flip
+
+Dave Airlie (3):
+      Merge branch 'disintegrate-drm' of git://git.infradead.org/users/dhowells/linux-headers into drm-next
+      Merge branch 'exynos-drm-next' of git://git.infradead.org/users/kmpark/linux-samsung into drm-next
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-next
+
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/drm
+
+Dmitry Rogozhkin (1):
+      drm/i915: EBUSY status handling added to i915_gem_fault().
+
+Inki Dae (16):
+      drm/exynos: added device object to subdrv's remove callback as argument
+      drm/exynos: separated subdrv_probe function into two parts.
+      drm/exynos: separeated fimd_power_on into some parts.
+      drm/exynos: fixed duplicated mode setting.
+      drm/exynos: add wait_for_vblank callback interface.
+      drm/exynos: make sure that hardware overlay for fimd is disabled
+      drm/exynos: make sure that hardware overlay for hdmi is disabled
+      drm/exynos: check NV12M format specific to Exynos properly
+      drm/exynos: update crtc to plane safely
+      drm/exynos: Disable plane when released
+      drm/exynos: add pid to g2d_runqueue_node
+      drm/exynos: fix duplicated mutex lock issue
+      drm/exynos: check crtc's dpms mode at page flip
+      drm/exynos: check crtc's dpms mode at SetCrtc
+      drm/exynos: support drm_wait_vblank feature for VIDI
+      drm/exynos: fix display power call issue.
+
+Jani Nikula (1):
+      drm/i915: use adjusted_mode instead of mode for checking the 6bpc force flag
+
+Jesse Barnes (1):
+      drm/i915: set swizzling to none on VLV
+
+Joonyoung Shim (2):
+      drm/exynos: fix to calculate CRTC shown via screen
+      drm/exynos: fix kcalloc size of g2d cmdlist node
+
+Leela Krishna Amudala (1):
+      drm/exynos: add platform_device_id table and driver data for drm fimd
+
+Mika Kuoppala (1):
+      drm/i915: print warning if vmi915_gem_fault error is not handled
+
+Rahul Sharma (9):
+      drm: exynos: remove drm hdmi platform data struct
+      drm: exynos: hdmi: add support for exynos5 ddc
+      drm: exynos: hdmi: add support for exynos5 hdmiphy
+      drm: exynos: hdmi: add support for platform variants for mixer
+      drm: exynos: hdmi: add support to disable video processor in mixer
+      drm: exynos: hdmi: add support for exynos5 mixer
+      drm: exynos: hdmi: replace is_v13 with version check in hdmi
+      drm: exynos: hdmi: add support for exynos5 hdmi
+      drm: exynos: hdmi: remove drm common hdmi platform data struct
+
+Sachin Kamat (1):
+      drm/exynos: Fix potential NULL pointer dereference
+
+Tomasz Stanislawski (5):
+      media: s5p-hdmi: add HPD GPIO to platform data
+      drm: exynos: hdmi: support for platform variants
+      drm: exynos: hdmi: fix interrupt handling
+      drm: exynos: hdmi: use s5p-hdmi platform data
+      drm: exynos: hdmi: turn off HPD interrupt in HDMI chip
+
+ drivers/gpu/drm/drm_edid.c                    |    3 +-
+ drivers/gpu/drm/exynos/exynos_ddc.c           |   22 +-
+ drivers/gpu/drm/exynos/exynos_drm_connector.c |   50 +-
+ drivers/gpu/drm/exynos/exynos_drm_connector.h |    4 +
+ drivers/gpu/drm/exynos/exynos_drm_core.c      |  100 ++-
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c      |   20 +-
+ drivers/gpu/drm/exynos/exynos_drm_drv.h       |   19 +-
+ drivers/gpu/drm/exynos/exynos_drm_encoder.c   |  116 ++-
+ drivers/gpu/drm/exynos/exynos_drm_fb.c        |   65 +-
+ drivers/gpu/drm/exynos/exynos_drm_fb.h        |   20 +-
+ drivers/gpu/drm/exynos/exynos_drm_fbdev.c     |    3 +
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c      |  117 ++-
+ drivers/gpu/drm/exynos/exynos_drm_g2d.c       |    5 +-
+ drivers/gpu/drm/exynos/exynos_drm_hdmi.c      |   62 +-
+ drivers/gpu/drm/exynos/exynos_drm_hdmi.h      |    3 +
+ drivers/gpu/drm/exynos/exynos_drm_plane.c     |   58 +-
+ drivers/gpu/drm/exynos/exynos_drm_vidi.c      |   24 +-
+ drivers/gpu/drm/exynos/exynos_hdmi.c          |  196 +++--
+ drivers/gpu/drm/exynos/exynos_hdmiphy.c       |   12 +-
+ drivers/gpu/drm/exynos/exynos_mixer.c         |  240 +++++--
+ drivers/gpu/drm/exynos/regs-mixer.h           |    3 +
+ drivers/gpu/drm/i915/i915_gem.c               |   14 +-
+ drivers/gpu/drm/i915/i915_gem_context.c       |    2 +-
+ drivers/gpu/drm/i915/i915_gem_tiling.c        |    5 +-
+ drivers/gpu/drm/i915/i915_irq.c               |   16 +-
+ drivers/gpu/drm/i915/i915_reg.h               |    3 +
+ drivers/gpu/drm/i915/intel_display.c          |   52 +-
+ drivers/gpu/drm/i915/intel_dp.c               |   73 +-
+ drivers/gpu/drm/i915/intel_drv.h              |    2 +
+ drivers/gpu/drm/i915/intel_pm.c               |    5 +
+ include/drm/Kbuild                            |   15 -
+ include/drm/drm_crtc.h                        |    1 +
+ include/drm/drm_dp_helper.h                   |  101 ++-
+ include/drm/exynos_drm.h                      |  175 +----
+ include/drm/i915_drm.h                        |  920 +-----------------------
+ include/media/s5p_hdmi.h                      |    2 +
+ include/uapi/drm/Kbuild                       |   15 +
+ include/{ => uapi}/drm/drm.h                  |    0
+ include/{ => uapi}/drm/drm_fourcc.h           |    0
+ include/{ => uapi}/drm/drm_mode.h             |    0
+ include/{ => uapi}/drm/drm_sarea.h            |    0
+ include/uapi/drm/exynos_drm.h                 |  203 ++++++
+ include/{ => uapi}/drm/i810_drm.h             |    0
+ include/uapi/drm/i915_drm.h                   |  947 +++++++++++++++++++++++++
+ include/{ => uapi}/drm/mga_drm.h              |    0
+ include/{ => uapi}/drm/nouveau_drm.h          |    0
+ include/{ => uapi}/drm/r128_drm.h             |    0
+ include/{ => uapi}/drm/radeon_drm.h           |    0
+ include/{ => uapi}/drm/savage_drm.h           |    0
+ include/{ => uapi}/drm/sis_drm.h              |    0
+ include/{ => uapi}/drm/via_drm.h              |    0
+ include/{ => uapi}/drm/vmwgfx_drm.h           |    0
+ 52 files changed, 2267 insertions(+), 1426 deletions(-)
+ rename include/{ => uapi}/drm/drm.h (100%)
+ rename include/{ => uapi}/drm/drm_fourcc.h (100%)
+ rename include/{ => uapi}/drm/drm_mode.h (100%)
+ rename include/{ => uapi}/drm/drm_sarea.h (100%)
+ create mode 100644 include/uapi/drm/exynos_drm.h
+ rename include/{ => uapi}/drm/i810_drm.h (100%)
+ create mode 100644 include/uapi/drm/i915_drm.h
+ rename include/{ => uapi}/drm/mga_drm.h (100%)
+ rename include/{ => uapi}/drm/nouveau_drm.h (100%)
+ rename include/{ => uapi}/drm/r128_drm.h (100%)
+ rename include/{ => uapi}/drm/radeon_drm.h (100%)
+ rename include/{ => uapi}/drm/savage_drm.h (100%)
+ rename include/{ => uapi}/drm/sis_drm.h (100%)
+ rename include/{ => uapi}/drm/via_drm.h (100%)
+ rename include/{ => uapi}/drm/vmwgfx_drm.h (100%)
