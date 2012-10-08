@@ -1,101 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab2JHPUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 11:20:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43184 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2JHPUc (ORCPT
+	id S1753927Ab2JHPdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 11:33:38 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:35976 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752893Ab2JHPde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 11:20:32 -0400
+	Mon, 8 Oct 2012 11:33:34 -0400
+From: Rabin Vincent <rabin.vincent@stericsson.com>
+To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <rabin@rab.in>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [PATCH] mm: show migration types in show_mem
+Date: Mon, 8 Oct 2012 17:32:18 +0200
+Message-ID: <1349710338-13955-1-git-send-email-rabin.vincent@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-In-Reply-To: <201210081104.58789.hverkuil@xs4all.nl>
-References: <1337620326-18593-1-git-send-email-manjunatha_halli@ti.com> <201210081104.58789.hverkuil@xs4all.nl>
-From: halli manjunatha <hallimanju@gmail.com>
-Date: Mon, 8 Oct 2012 10:20:09 -0500
-Message-ID: <CAMT6PyccUxdkT1jrrzHbQFw-UMBO9XXBWbCnatOz+Gt591T9dQ@mail.gmail.com>
-Subject: Re: [PATCH V7 0/5] [Media] Radio: Fixes and New features for FM
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Manjunatha Halli <x0130808@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans,
+This is useful to diagnose the reason for page allocation failure for
+cases where there appear to be several free pages.
 
-Sure.. right now I am busy with some other work so I will submit the
-V8 within few days :)
+Example, with this alloc_pages(GFP_ATOMIC) failure:
 
-Manju
+ swapper/0: page allocation failure: order:0, mode:0x0
+ ...
+ Mem-info:
+ Normal per-cpu:
+ CPU    0: hi:   90, btch:  15 usd:  48
+ CPU    1: hi:   90, btch:  15 usd:  21
+ active_anon:0 inactive_anon:0 isolated_anon:0
+  active_file:0 inactive_file:84 isolated_file:0
+  unevictable:0 dirty:0 writeback:0 unstable:0
+  free:4026 slab_reclaimable:75 slab_unreclaimable:484
+  mapped:0 shmem:0 pagetables:0 bounce:0
+ Normal free:16104kB min:2296kB low:2868kB high:3444kB active_anon:0kB
+ inactive_anon:0kB active_file:0kB inactive_file:336kB unevictable:0kB
+ isolated(anon):0kB isolated(file):0kB present:331776kB mlocked:0kB
+ dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:300kB
+ slab_unreclaimable:1936kB kernel_stack:328kB pagetables:0kB unstable:0kB
+ bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+ lowmem_reserve[]: 0 0
 
-On Mon, Oct 8, 2012 at 4:04 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
->
-> Hi Manjunatha,
->
-> Can you make a v8? The tuner band issues have been settled and are now
-> merged,
-> so it would be good to finalize this.
->
-> On Mon May 21 2012 19:12:01 manjunatha_halli@ti.com wrote:
-> > From: Manjunatha Halli <x0130808@ti.com>
-> >
-> > Mauro and the list,
-> >
-> > This version 7 of patchset resolves the comments received from
-> > Han's on patchset v6. Also removed the frequency band handling
-> > from this patch set.
-> >
-> > This patchset creates new control class 'V4L2_CTRL_CLASS_FM_RX' for FM
-> > RX,
-> > introduces 2 new CID's for FM RX and and 1 new CID for FM TX. Also adds
-> > 1
-> > field in struct v4l2_hw_freq_seek.
-> >
-> > This patch adds few new features to TI's FM driver features
-> > are listed below,
-> >
-> > 1) FM TX RDS Support (RT, PS, AF, PI, PTY)
-> > 2) FM RX Russian band support
-> > 3) FM RX AF set/get
-> > 4) FM RX De-emphasis mode set/get
-> >
-> > Along with new features this patch also fixes few issues in the driver
-> > like default rssi level for seek, unnecessory logs etc.
-> >
-> > Manjunatha Halli (5):
-> >   WL128x: Add support for FM TX RDS
-> >   New control class and features for FM RX
-> >   Add new CID for FM TX RDS Alternate Frequency
-> >   Media: Update docs for V4L2 FM new features
-> >   WL12xx: Add support for FM new features
-> >
-> >  Documentation/DocBook/media/v4l/compat.xml         |    3 +
-> >  Documentation/DocBook/media/v4l/controls.xml       |   77
-> > ++++++++++++++++++++
-> >  Documentation/DocBook/media/v4l/dev-rds.xml        |    5 +-
-> >  .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    7 ++
-> >  drivers/media/radio/wl128x/fmdrv.h                 |    2 +-
-> >  drivers/media/radio/wl128x/fmdrv_common.c          |   30 +++++---
-> >  drivers/media/radio/wl128x/fmdrv_common.h          |   25 +++++--
-> >  drivers/media/radio/wl128x/fmdrv_rx.c              |   13 +++-
-> >  drivers/media/radio/wl128x/fmdrv_tx.c              |   41 +++++------
-> >  drivers/media/radio/wl128x/fmdrv_tx.h              |    3 +-
-> >  drivers/media/radio/wl128x/fmdrv_v4l2.c            |   74
-> > +++++++++++++++++++
-> >  drivers/media/video/v4l2-ctrls.c                   |   18 ++++-
-> >  include/linux/videodev2.h                          |   10 +++
-> >  13 files changed, 255 insertions(+), 53 deletions(-)
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Before the patch, it's hard (for me, at least) to say why all these free
+chunks weren't considered for allocation:
 
+ Normal: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 1*256kB 1*512kB
+ 1*1024kB 1*2048kB 3*4096kB = 16128kB
 
+After the patch, it's obvious that the reason is that all of these are
+in the MIGRATE_CMA (C) freelist:
 
+ Normal: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 1*256kB (C) 1*512kB
+ (C) 1*1024kB (C) 1*2048kB (C) 3*4096kB (C) = 16128kB
 
---
-Regards
-Halli
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+---
+ mm/page_alloc.c | 42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c13ea75..cbe5373 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2818,6 +2818,31 @@ out:
+ 
+ #define K(x) ((x) << (PAGE_SHIFT-10))
+ 
++static void show_migration_types(unsigned char type)
++{
++	static const char types[MIGRATE_TYPES] = {
++		[MIGRATE_UNMOVABLE]	= 'U',
++		[MIGRATE_RECLAIMABLE]	= 'E',
++		[MIGRATE_MOVABLE]	= 'M',
++		[MIGRATE_RESERVE]	= 'R',
++#ifdef CONFIG_CMA
++		[MIGRATE_CMA]		= 'C',
++#endif
++		[MIGRATE_ISOLATE]	= 'I',
++	};
++	char tmp[MIGRATE_TYPES + 1];
++	char *p = tmp;
++	int i;
++
++	for (i = 0; i < MIGRATE_TYPES; i++) {
++		if (type & (1 << i))
++			*p++ = types[i];
++	}
++
++	*p = '\0';
++	printk("(%s) ", tmp);
++}
++
+ /*
+  * Show free area list (used inside shift_scroll-lock stuff)
+  * We also calculate the percentage fragmentation. We do this by counting the
+@@ -2942,6 +2967,7 @@ void show_free_areas(unsigned int filter)
+ 
+ 	for_each_populated_zone(zone) {
+  		unsigned long nr[MAX_ORDER], flags, order, total = 0;
++		unsigned char types[MAX_ORDER];
+ 
+ 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
+ 			continue;
+@@ -2950,12 +2976,24 @@ void show_free_areas(unsigned int filter)
+ 
+ 		spin_lock_irqsave(&zone->lock, flags);
+ 		for (order = 0; order < MAX_ORDER; order++) {
+-			nr[order] = zone->free_area[order].nr_free;
++			struct free_area *area = &zone->free_area[order];
++			int type;
++
++			nr[order] = area->nr_free;
+ 			total += nr[order] << order;
++
++			types[order] = 0;
++			for (type = 0; type < MIGRATE_TYPES; type++) {
++				if (!list_empty(&area->free_list[type]))
++					types[order] |= 1 << type;
++			}
+ 		}
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+-		for (order = 0; order < MAX_ORDER; order++)
++		for (order = 0; order < MAX_ORDER; order++) {
+ 			printk("%lu*%lukB ", nr[order], K(1UL) << order);
++			if (nr[order])
++				show_migration_types(types[order]);
++		}
+ 		printk("= %lukB\n", K(total));
+ 	}
+ 
+-- 
+1.7.11.3
+
