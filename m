@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2JHVOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 17:14:32 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:23688 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754380Ab2JHVOa (ORCPT
+	id S1755008Ab2JHVTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 17:19:35 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63188 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2JHVT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 17:14:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18WhKIYNo8BfOksmbcsRd71
-Date: Mon, 8 Oct 2012 14:14:26 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: axel.lin@gmail.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: OMAP: OMAP_DEBUG_LEDS needs to select LEDS_CLASS
-Message-ID: <20121008211426.GJ13011@atomide.com>
-References: <1347939042.15578.1.camel@phoenix>
- <CAK5ve-LXv76vuBLHQQtREHn_ZogUsbyqzz2-uTHT_Ps-9vS3Pw@mail.gmail.com>
- <CAF+7xWnJj4XovwT5K_BDN8Q4GBLogsCb29Ro9t0Taek95HaPDg@mail.gmail.com>
- <CAK5ve-L92DqDv7ZApaaN5BOby+oPf2Ate-3jvgkadm7gfXZLcg@mail.gmail.com>
+	Mon, 8 Oct 2012 17:19:28 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>, "'al piszcz'" <ap@solarrain.com>
+Cc: <linux-acpi@vger.kernel.org>, <e1000-devel@lists.sf.net>
+References: <CAO9zADyRC8sSChC1whP+b46CsgObW-ygfsmdRxSPKcfW0Z9FGQ@mail.gmail.com>
+In-Reply-To: <CAO9zADyRC8sSChC1whP+b46CsgObW-ygfsmdRxSPKcfW0Z9FGQ@mail.gmail.com>
+Subject: RE: 3.6.0 ACPI: e1000e - Invalid Power Resource to register! (Supermicro X9SCM-F) - Disabling IRQ #44
+Date: Mon, 8 Oct 2012 17:19:26 -0400
+Message-ID: <01c001cda59a$99179aa0$cb46cfe0$@lucidpixels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-L92DqDv7ZApaaN5BOby+oPf2Ate-3jvgkadm7gfXZLcg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQI8ajB71/BnSrlhaFoHT1XKycDJMZbSYJgA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Bryan Wu <bryan.wu@canonical.com> [120918 01:03]:
-> On Tue, Sep 18, 2012 at 2:49 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> > 2012/9/18 Bryan Wu <bryan.wu@canonical.com>:
-> >> On Tue, Sep 18, 2012 at 11:30 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> >>> This fixes below build error when CONFIG_LEDS_CLASS is not set.
-> >>>
-> >>>   LD      init/built-in.o
-> >>> arch/arm/plat-omap/built-in.o: In function `fpga_probe':
-> >>> arch/arm/plat-omap/debug-leds.c:113: undefined reference to `led_classdev_register'
-> >>> make: *** [vmlinux] Error 1
-> >>>
-> >>
-> >> Thanks for posting this. But I think Tony has already fixed it in mainline:
-> >> --
-> >> commit 359f64f7b3997e94ee71039b5fcdc1278b9b77c4
-> >> Author: Tony Lindgren <tony@atomide.com>
-> >> Date:   Wed Sep 15 10:18:51 2010 -0700
-> >>
-> >>     omap: Fix compile dependency to LEDS_CLASS
-> >>
-> >>     If we LEDS_CLASS is not selected, we will get undefined reference
-> >>     to `led_classdev_register'.
-> >>
-> >>     Signed-off-by: Tony Lindgren <tony@atomide.com>
-> >
-> > Commit 359f64f7b was commited on Sep 15 2010.
-> > This patch is against current linux-next tree.
-> > I got the build error on linux-next tree (next-20120917).
-> >
-> 
-> Obviously, linux-next is not updated to latest mainline, -:D
+Kernel: 3.6.0 (x86_64)
+Distribution: Debian Testing
 
-Thanks I'll apply this to fixes.
+I was copying 600GB of files from Samba/Linux to a Windows host, it
+copied around 500GB, then this happened, it disabled the network
+interface on my Supermicro X9CM-F board (on-board) -- the first
+interface, any idea why this happened?
 
-Regards,
+[93593.565667] irq 44: nobody cared (try booting with the "irqpoll" option)
+[93593.565673] Pid: 0, comm: swapper/0 Not tainted 3.6.0 #4
+[93593.565675] Call Trace:
+[    0.971861] ACPI: Invalid Power Resource to register!
+[93593.565677]  <IRQ>  [<ffffffff810a6fe1>] __report_bad_irq+0x31/0xd0
+[93593.565690]  [<ffffffff810a72c3>] note_interrupt+0x1a3/0x1f0
+[93593.565694]  [<ffffffff810a4e59>] handle_irq_event_percpu+0x89/0x160
+[93593.565697]  [<ffffffff810a4f6c>] handle_irq_event+0x3c/0x60
+[93593.565700]  [<ffffffff810a7b7f>] handle_edge_irq+0x6f/0x110
+[93593.565705]  [<ffffffff81003c6d>] handle_irq+0x1d/0x30
+[93593.565709]  [<ffffffff81003b65>] do_IRQ+0x55/0xd0
+[93593.565714]  [<ffffffff815fdb27>] common_interrupt+0x67/0x67
+[93593.565715]  <EOI>  [<ffffffff8107d1ed>] ?
+__hrtimer_start_range_ns+0x1bd/0x3b0
+[93593.565728]  [<ffffffff81383894>] ? acpi_idle_enter_c1+0xaa/0xcf
+[93593.565731]  [<ffffffff81383873>] ? acpi_idle_enter_c1+0x89/0xcf
+[93593.565735]  [<ffffffff814a1719>] cpuidle_enter+0x19/0x20
+[93593.565738]  [<ffffffff814a1a98>] cpuidle_idle_call+0x88/0x100
+[93593.565750]  [<ffffffff8100a39f>] cpu_idle+0x5f/0xd0
+[93593.565752]  [<ffffffff815e9a24>] rest_init+0x68/0x74
+[93593.565755]  [<ffffffff81a8ca86>] start_kernel+0x2a8/0x2b5
+[93593.565756]  [<ffffffff81a8c5dd>] ? repair_env_string+0x5e/0x5e
+[93593.565758]  [<ffffffff81a8c2fd>] x86_64_start_reservations+0x101/0x105
+[93593.565759]  [<ffffffff81a8c3d9>] x86_64_start_kernel+0xd8/0xdc
+[93593.565760] handlers:
+[93593.565762] [<ffffffff8140c330>] e1000_msix_other
+[93593.565763] Disabling IRQ #44
 
-Tony
+---
+
+A known issue with this hardware/nics it appears:
+https://www.centos.org/modules/newbb/viewtopic.php?topic_id=34820
+
+Hopefully someone from Intel can chime in.
+
+Justin.
+
