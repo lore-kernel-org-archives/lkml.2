@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2JHHYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 03:24:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40114 "EHLO mx2.suse.de"
+	id S1753844Ab2JHH0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 03:26:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40175 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab2JHHYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 03:24:08 -0400
-Date: Mon, 8 Oct 2012 09:23:54 +0200 (CEST)
+	id S1753482Ab2JHH0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 03:26:12 -0400
+Date: Mon, 8 Oct 2012 09:26:01 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>, linux-driver@qlogic.com,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-Cc: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] [RESEND] qla2xxx: fix potential deadlock on
- ha->hardware_lock
-In-Reply-To: <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1210080922250.28357@pobox.suse.cz>
-References: <506D80C2.5040405@linux.vnet.ibm.com> <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Subject: [PATCH] [RESEND] mm, slab: release slab_mutex earlier in
+ kmem_cache_destroy()
+In-Reply-To: <alpine.DEB.2.00.1210031148520.2412@chino.kir.corp.google.com>
+Message-ID: <alpine.LNX.2.00.1210080924310.28357@pobox.suse.cz>
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz> <20121002170149.GC2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz> <alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+ <20121002233138.GD2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz> <20121003001530.GF2465@linux.vnet.ibm.com> <alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz> <0000013a26fb253a-fb5df733-ad41-47c1-af1d-3d6739e417de-000000@email.amazonses.com>
+ <alpine.LNX.2.00.1210031631150.23544@pobox.suse.cz> <506C52FC.4040305@linux.vnet.ibm.com> <alpine.LNX.2.00.1210031703500.23544@pobox.suse.cz> <alpine.DEB.2.00.1210031148520.2412@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,65 +29,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep reports:
+Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on 
+__stop_machine()") introduced slab_mutex -> cpu_hotplug.lock dependency 
+through kmem_cache_destroy() -> rcu_barrier() -> _rcu_barrier() -> 
+get_online_cpus().
+
+Lockdep thinks that this might actually result in ABBA deadlock,
+and reports it as below:
 
 === [ cut here ] ===
- =========================================================
- [ INFO: possible irq lock inversion dependency detected ]
- 3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
- ---------------------------------------------------------
- qla2xxx_1_dpc/368 just changed the state of lock:
-  (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
- but this lock was taken by another, HARDIRQ-safe lock in the past:
-  (&(&ha->hardware_lock)->rlock){-.....}
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
+ -------------------------------------------------------
+ kworker/u:2/40 is trying to acquire lock:
+  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
 
-and interrupts could create inverse lock ordering between them.
+ but task is already holding lock:
+  (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
 
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
+ which lock already depends on the new lock.
 
-       CPU0                    CPU1
-       ----                    ----
-  lock(&(&ha->vport_slock)->rlock);
-                               local_irq_disable();
-                               lock(&(&ha->hardware_lock)->rlock);
-                               lock(&(&ha->vport_slock)->rlock);
-  <Interrupt>
-    lock(&(&ha->hardware_lock)->rlock);
+ the existing dependency chain (in reverse order) is:
+
+ -> #2 (slab_mutex){+.+.+.}:
+        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+        [<ffffffff810ae921>] lock_acquire+0x121/0x190
+        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+        [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
+        [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
+        [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
+        [<ffffffff8155719d>] _cpu_up+0xba/0x14e
+        [<ffffffff815572ed>] cpu_up+0xbc/0x117
+        [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
+        [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
+        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+
+ -> #1 (cpu_hotplug.lock){+.+.+.}:
+        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+        [<ffffffff810ae921>] lock_acquire+0x121/0x190
+        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+        [<ffffffff81049197>] get_online_cpus+0x37/0x50
+        [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
+        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+        [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
+        [<ffffffff8118cc01>] deactivate_super+0x61/0x70
+        [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
+        [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
+        [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
+        [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
+        [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+        [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+        [<ffffffff810ae921>] lock_acquire+0x121/0x190
+        [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+        [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+        [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+        [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+        [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+        [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
+        [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
+        [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
+        [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
+        [<ffffffff81454b79>] ops_exit_list+0x39/0x60
+        [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
+        [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
+        [<ffffffff81069f3e>] worker_thread+0x12e/0x320
+        [<ffffffff8106f73e>] kthread+0x9e/0xb0
+        [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+
+ other info that might help us debug this:
+
+ Chain exists of:
+   rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(slab_mutex);
+                                lock(cpu_hotplug.lock);
+                                lock(slab_mutex);
+   lock(rcu_sched_state.barrier_mutex);
+
+  *** DEADLOCK ***
 === [ cut here ] ===
 
-Fix the potential deadlock by disabling IRQs while holding ha->vport_slock.
+This is actually a false positive. Lockdep has no way of knowing the fact
+that the ABBA can actually never happen, because of special semantics of
+cpu_hotplug.refcount and its handling in cpu_hotplug_begin(); the mutual
+exclusion there is not achieved through mutex, but through
+cpu_hotplug.refcount.
 
-Reported-and-tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
+until everyone who called get_online_cpus() will call put_online_cpus()"
+semantics is totally invisible to lockdep.
+
+This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
+is being called with it unlocked. It has two advantages:
+
+- it slightly reduces hold time of slab_mutex; as it's used to protect
+  the cachep list, it's not necessary to hold it over kmem_cache_free()
+  call any more
+- it silences the lockdep false positive warning, as it avoids lockdep ever
+  learning about slab_mutex -> cpu_hotplug.lock dependency
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/scsi/qla2xxx/qla_init.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ mm/slab_common.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index 799a58b..48fca47 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
- 	uint8_t       domain;
- 	char		connect_type[22];
- 	struct qla_hw_data *ha = vha->hw;
-+	unsigned long flags;
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 9c21725..069a24e6 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -168,6 +168,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 		list_del(&s->list);
  
- 	/* Get host addresses. */
- 	rval = qla2x00_get_adapter_id(vha,
-@@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
- 	vha->d_id.b.area = area;
- 	vha->d_id.b.al_pa = al_pa;
+ 		if (!__kmem_cache_shutdown(s)) {
++			mutex_unlock(&slab_mutex);
+ 			if (s->flags & SLAB_DESTROY_BY_RCU)
+ 				rcu_barrier();
  
--	spin_lock(&ha->vport_slock);
-+	spin_lock_irqsave(&ha->vport_slock, flags);
- 	qlt_update_vp_map(vha, SET_AL_PA);
--	spin_unlock(&ha->vport_slock);
-+	spin_unlock_irqrestore(&ha->vport_slock, flags);
- 
- 	if (!vha->flags.init_done)
- 		ql_log(ql_log_info, vha, 0x2010,
+@@ -175,12 +176,14 @@ void kmem_cache_destroy(struct kmem_cache *s)
+ 			kmem_cache_free(kmem_cache, s);
+ 		} else {
+ 			list_add(&s->list, &slab_caches);
++			mutex_unlock(&slab_mutex);
+ 			printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
+ 				s->name);
+ 			dump_stack();
+ 		}
++	} else {
++		mutex_unlock(&slab_mutex);
+ 	}
+-	mutex_unlock(&slab_mutex);
+ 	put_online_cpus();
+ }
+ EXPORT_SYMBOL(kmem_cache_destroy);
 
 -- 
 Jiri Kosina
