@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2JHNmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 09:42:03 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37693 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab2JHNmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 09:42:00 -0400
+	id S1752049Ab2JHNp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 09:45:26 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:43448 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750941Ab2JHNpY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 09:45:24 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202h1d1ah1d2ahzz8275dhz2fh2a8h683h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: RE: [PATCH 1/2] mm: Export vm_committed_as
+Thread-Topic: [PATCH 1/2] mm: Export vm_committed_as
+Thread-Index: AQHNpOUVxeGuP2ksmkqoWwiw1ukrt5eukjYAgAAumACAAKkDgIAAAKbQ
+Date: Mon, 8 Oct 2012 13:45:07 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930A1FBC6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+ <1349654386-18378-1-git-send-email-kys@microsoft.com>
+ <20121008004358.GA12342@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121008133539.GA15490@kroah.com>
+In-Reply-To: <20121008133539.GA15490@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <505695E3.7040603@gmail.com>
-References: <CAMOw1v6MYW6O2f4AR9yRvh200j5R6mFTRqDT3TFbG-TjknmUmw@mail.gmail.com>
- <alpine.LNX.2.01.1209170427220.6182@nerf07.vanv.qr> <505695E3.7040603@gmail.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Mon, 8 Oct 2012 10:41:37 -0300
-Message-ID: <CAKi4VAKt_TxM1mZ5aczL=e4jd1EGmr4bgTWfrX5nN+-z3YiWCA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] kmod 10
-To: Bruce Dubbs <bruce.dubbs@gmail.com>
-Cc: Jan Engelhardt <jengelh@inai.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-modules <linux-modules@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 12:15 AM, Bruce Dubbs <bruce.dubbs@gmail.com> wrote:
-> Jan Engelhardt wrote:
->>
->>
->> On Thursday 2012-09-06 21:37, Lucas De Marchi wrote:
->>>
->>>
->>> kmod 10 is out:
->>>
->>> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.xz
->>> ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-10.tar.sign
->>
->>
->> make check fails here with glibc-2.15, gcc-4.7, x86_64,
->> due to what seems to be duplicated symbols(?)
->
->
-> On my LFS system, glibc-2.16, gcc-4.7.1, x86_64, I do not see these errors:
->
-> ./configure --prefix=/usr --bindir=/bin --libdir=/lib \
->             --sysconfdir=/etc --with-xz --with-zlib
-> make
-> make check
->
-> ==================
-> All 9 tests passed
-> ==================
->
-> What is interesting is that if I run the checks again:
->
-> make check
->
-> I get:
->
-> TESTSUITE: running modprobe_softdep_loop, in forked context
-> TESTSUITE: ERR: rootfs
-> /usr/src/kmod/kmod-10/testsuite/rootfs/test-modprobe/softdep-loop is dirty,
-> please run 'make rootfs' before runnning this test
-> TESTSUITE: ERR: 'modprobe_softdep_loop' [16407] exited with return code 1
-> TESTSUITE: ERR: FAILED: modprobe_softdep_loop
-> FAIL: testsuite/test-modprobe
->
-> TESTSUITE: running test_insert, in forked context
-> TESTSUITE: ERR: rootfs /usr/src/kmod/kmod-10/testsuite/rootfs/test-init/ is
-> dirty, please run 'make rootfs' before runnning this test
-> TESTSUITE: ERR: 'test_insert' [16373] exited with return code 1
-> TESTSUITE: ERR: FAILED: test_insert
-> FAIL: testsuite/test-init
->
-> ==============================================
-> 2 of 9 tests failed
-> Please report to linux-modules@vger.kernel.org
-> ==============================================
->
-> 'make rootfs' does not do anything but make distclean && configure && make
-> && make check is clean for me.
 
-"make rootfs" was completely wrong, it's fixed now and queued for kmod 11:
-http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=commit;h=84afccb91db106ad81effc88c2851ceddeda06ea
 
-and
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, October 08, 2012 9:36 AM
+> To: KY Srinivasan
+> Cc: olaf@aepfle.de; linux-kernel@vger.kernel.org; andi@firstfloor.org;
+> apw@canonical.com; devel@linuxdriverproject.org; akpm@linux-foundation.org
+> Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+> 
+> On Mon, Oct 08, 2012 at 03:35:50AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Sunday, October 07, 2012 8:44 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> olaf@aepfle.de;
+> > > apw@canonical.com; akpm@linux-foundation.org; andi@firstfloor.org
+> > > Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+> > >
+> > > On Sun, Oct 07, 2012 at 04:59:45PM -0700, K. Y. Srinivasan wrote:
+> > > > The policy engine on the host expects the guest to report the
+> > > > committed_as. Since this variable is not exported,
+> > > > export this symbol.
+> > >
+> > > Why are these symbols not needed by either Xen or KVM or vmware, which
+> > > I think all support the same thing, right?
+> >
+> > The basic balloon driver does not need this symbol since the basic balloon driver
+> > is not automatically driven by the host. On the Windows host we have a policy
+> engine that
+> > drives the balloon driver based on both guest level memory pressure that the
+> guest
+> > reports as well as other system level metrics the host maintains. We need this
+> symbol to
+> > drive the policy engine on the host.
+> 
+> Ok, but you're going to have to get the -mm developers to agree that
+> this is ok before I can accept it.
 
-http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=commit;h=cf814054dd9a1f5240bc684769275e40ab81ba6e
+Andi Kleen suggested that I send the patch to Andrew Morton for acceptance.
+That is why I have included both Andrew Morton and Andi Kleen in the email list
+for these patches. Should I have sent that patch to a different email alias for
+acceptance by the mm developers.
+
+Regards,
+
+K. Y 
 
 
 
-Lucas De Marchi
