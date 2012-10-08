@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab2JHTwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 15:52:30 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46205 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2JHTw2 (ORCPT
+	id S1753877Ab2JHTzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 15:55:09 -0400
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:44898 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab2JHTzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 15:52:28 -0400
-Date: Mon, 8 Oct 2012 12:52:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Aristeu Rozanski <aris@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup.h:566 suspicious rcu_dereference_check() usage!
-Message-ID: <20121008195207.GG2453@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121006131607.GA12798@localhost>
+	Mon, 8 Oct 2012 15:55:06 -0400
+Message-ID: <50732F8A.9090109@cs.tu-berlin.de>
+Date: Mon, 08 Oct 2012 21:54:50 +0200
+From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Kay Sievers <kay@vrfy.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de> <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com> <5065B909.1060907@cs.tu-berlin.de> <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com> <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com>
+In-Reply-To: <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121006131607.GA12798@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100819-5518-0000-0000-0000083CE137
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 09:16:07PM +0800, Fengguang Wu wrote:
-> Hi Aristeu,
+Am 08.10.2012 21:24, schrieb Kay Sievers:
+> On Fri, Sep 28, 2012 at 4:56 PM, Kay Sievers <kay@vrfy.org> wrote:
+>> On Fri, Sep 28, 2012 at 4:49 PM, "Jan H. SchÃ¶nherr"
 > 
-> I got the below warning in linus/master and linux-next, and it's
-> bisected down to:
+>>> Given that I'm able to fix the racing case, would you be in favor of
+>>> this approach, or should we stick to the earlier version?
+>>
+>> I'm open to everything that makes sense. Let's see how it looks and we
+>> can decide when we have something that passes the tests.
+> 
+> Jan,
+> any updates, did you try something else?
+> Or should we merge the first version for now?
 
-Cristian Rodríguez reported what looks like the same bug.  Does the
-patch below fix it?
+I'm working on it, though I cannot spend as much time as I want. :)
 
-							Thanx, Paul
+My current version does mostly well for race-printk()s, now. But
+there's still one issue to resolve and some polishing to do.
 
-------------------------------------------------------------------------
+If we can afford to wait a little longer, we might get a nicer
+solution (and avoid a possible mostly-revert later).
 
-device_cgroup: Restore rcu_read_lock() protection to devcgroup_inode_mknod()
-
-Commit ad676077 (device_cgroup: convert device_cgroup internally to
-policy + exceptions) restructured devcgroup_inode_mknod(), removing
-rcu_read_lock() in the process.  However, RCU read-side protection
-is required by the call to task_devcgroup(), so this commit restores
-the rcu_read_lock() and rcu_read_unlock().
-
-Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 44dfc41..c686110 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -576,9 +576,12 @@ int __devcgroup_inode_permission(struct inode *inode, int mask)
- 
- int devcgroup_inode_mknod(int mode, dev_t dev)
- {
--	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	struct dev_cgroup *dev_cgroup;
-+	int ret;
- 	short type;
- 
-+	rcu_read_lock();
-+	dev_cgroup = task_devcgroup(current);
- 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
- 		return 0;
- 
-@@ -587,7 +590,9 @@ int devcgroup_inode_mknod(int mode, dev_t dev)
- 	else
- 		type = DEV_CHAR;
- 
--	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-+	ret =  __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
- 					    MINOR(dev), ACC_MKNOD);
-+	rcu_read_unlock();
-+	return ret;
- 
- }
+Regards
+Jan
 
