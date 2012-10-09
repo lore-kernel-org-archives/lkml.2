@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2JIM1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:27:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46504 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752890Ab2JIM1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:27:16 -0400
-Message-ID: <507417EA.3010008@ti.com>
-Date: Tue, 9 Oct 2012 17:56:18 +0530
-From: Afzal Mohammed <x0148406@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1754249Ab2JIM14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:27:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62065 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab2JIM1w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 08:27:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 05/16] vfs: bogus warnings in fs/namei.c
+Date: Tue, 9 Oct 2012 12:27:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-6-git-send-email-arnd@arndb.de> <20121008115116.GA9243@quack.suse.cz>
+In-Reply-To: <20121008115116.GA9243@quack.suse.cz>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Nori, Sekhar" <nsekhar@ti.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/6] omap-am33xx rtc dt support
-References: <cover.1343383616.git.afzal@ti.com> <50256797.3020505@ti.com> <C8443D0743D26F4388EA172BF4E2A7A93E9BA4EB@DBDE01.ent.ti.com>
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93E9BA4EB@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210091227.46324.arnd@arndb.de>
+X-Provags-ID: V02:K0:fFqnY5mWnTncU7Y+evbYjqdYheObY6tAYm2ISrFvKKx
+ qaUdCLpBkdiQbAUxZVcDfLW0x8Jw3DMUJmKFYnAHpyo0SXW/gP
+ mBAeipxoAMzx4ik5EjVWvjwQd1Wgy3ffzRkOJYQp9iBVQfc4Q7
+ oDsRKz32ISMl/IaCz83Y/suJ6YuGldXjdp4ONXF1XzqeA+vd3J
+ KPX6wdNT5qJPihQeqFk8E8IviXlMhqGpXNMgFe239GEbXtkK5B
+ rTIgYGTDO+WNoM0+S8ySyWotdeUg4rDxciuDppTm9U9JdPleka
+ bX/Ri+vfa0TnESzwPhbqkcUvtoxKjkCgoNSRaM92eld+jm46H+
+ x/gqosNLsDIJzJ/sBb0U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Monday 08 October 2012, Jan Kara wrote:
+> On Fri 05-10-12 16:55:19, Arnd Bergmann wrote:
+> > The follow_link() function always initializes its *p argument,
+> > or returns an error, but not all versions of gcc figure this
+> > out, so we have to work around this using the uninitialized_var()
+> > macro.
+>   Well, I'm somewhat sceptical to this approach. I agree that bogus
+> warnings are not nice but later when the code is changed and possibly real
+> use without initialization is added, we won't notice it. Without changing
+> anything, we'd at least have a chance of catching it with gcc versions
+> which were clever enough to not warn with the original code. Or
+> alternatively if we unconditionally initialized the variable that would get
+> rid of the warning and made the code more future-proof (that's what I
+> usually end up doing)... I don't really care that much about the chosen
+> solution, Al is the one to decide. But I wanted to point out there are
+> downsides to your solution.
 
+I'll drop the patch for now and won't send it from my tree then. I agree
+that uninitialized_var() is not ideal, but none of the alternatives seemed
+better.
 
-On Monday 27 August 2012 01:05 PM, Mohammed, Afzal wrote:
-> On Sat, Aug 11, 2012 at 01:27:11, Nori, Sekhar wrote:
->> On 7/27/2012 5:53 PM, Afzal Mohammed wrote:
+With my latest compiler, I don't actually see the warnings any more, so
+maybe someone fixed gcc instead, or this went away after another change.
+I'll let you know if it comes back so we can discuss about a better fix then.
 
->>> This series makes rtc-omap driver DT capable, adds AM33xx
->>> RTC DT support along with a few enchancments to the driver.
->>>
->>> rtc-omap driver is made intelligent enough to handle kicker
->>> mechanism. This helps in removing kicker mechanism support
->>> done for DaVinci at platform level.
->>>
->>> This has been tested on Beaglebone (AM33xx platform) and on
->>> DaVinci DA850 EVM.
-
->> I tested patches 1-5 on AM18x EVM using rtcwake and hwclock commands.
->> Also tested on DT enabled AM18x EVM using hwclock.
->>
->> For patched 1-5:
->>
->> Acked-by: Sekhar Nori<nsekhar@ti.com>
->>
->> Alessandro,
->>
->> I assume you would want me to queue 2/6 through DaVinci tree. That patch
->> depends on 1/6 being accepted and merged by you. Let me know how you
->> want to move forward here.
-> Can you please help 1-5 patches in this series to get into mainline.
-> 1-5 of this series is a prerequisite for adding RTC support for AM335X
-> SoC's, which is present in beaglebone, AM335X EVM.
-
-This series which adds rtc support for AM335x SoC (ARM
-Cortex-A8 from TI) based boards (like beagle bone) and
-in the process making omap rtc driver device tree capable
-was posted after addressing review comments around
-July end. It seems rtc maintainer is not active and you
-are taking care of the rtc patches.
-
-Patches 1-5 has been Acked by DaVinci maintainer.
-
-Can you please help this series reach mainline, let me
-know whether this series needs to be reposted.
-
-I waited to see response from rtc maintainer, it seems wait went
-too far and this mail should have been sent a couple of weeks
-before start of merge window.
-
-As merge window is coming to an end, I feel it may be bad to
-ask you this , but still: would it be possible to get the series in
-during this merge window.
-
-A recap of what this series is about,
-
-omap-rtc driver used by DaVinci and OMAP1 platforms is being
-reused for AM335x. Kicker release mechanism that is handled
-by DaVinci platform code has been moved to rtc driver. AM335x
-also needs to handle kicker mechanism. DT support has been
-added to omap-rtc driver, this was necessitated as AM335x
-supports only DT boot (DaVinci platform is also going DT way)
-Patch 6 adds AM335x DT support (this probably should go
-through omap tree). This series has been tested on beagle bone
-and DaVinci DA850 EVM.
-
-Regards
-Afzal
+	Arnd
