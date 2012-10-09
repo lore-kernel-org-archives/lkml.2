@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab2JISBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:01:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35743 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab2JISB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:01:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,561,1344236400"; 
-   d="scan'208";a="202446611"
-From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Jenny TC <jenny.tc@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: 
-Date: Tue,  9 Oct 2012 22:13:31 +0530
-Message-Id: <1349801011-19336-1-git-send-email-ramakrishna.pallala@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756673Ab2JISCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:02:03 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:57365 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab2JISB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 14:01:59 -0400
+Date: Tue, 9 Oct 2012 20:01:56 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf: Handln new rbtree implementation
+Message-ID: <20121009180156.GA245@x4>
+References: <20121009170734.GB32508@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121009170734.GB32508@aftab.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 0/2] power_supply: Add power supply throttling support
+Perf build fails with the new rbtree implementation:
 
-During charging battery temperature and charger chip temperature will
-go up. This can also result in increased skin temperature.
+../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such
+file or
+directory                                                                                      
+compilation terminated.                                                  
+make[2]: *** [util/rbtree.o] Error 1                                    
+make[1]: *** [perf_install] Error 2                                     
+make: *** [tools/perf_install] Error 2
 
-This patchset adds the power supply throttling support
-and also registers the power supply as cooling device.
+Fix by updating the Makefile and adding a btree_augmented.h wrapper.
 
-PATCH 1/2: Add support for CHARGE_CONTROL_* attributes
-This adds the power supply attributes for CHARGE_CONTROL_*
-These new attributes will the enable user space to implement
-custom charging algorithms based on platform state.
+Reported-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+---
+ tools/perf/Makefile                                  | 3 ++-
+ tools/perf/util/include/linux/rbtree.h               | 1 -
+ tools/perf/util/include/linux/rbtree_augmented.h     | 2 ++
+ tools/perf/util/scripting-engines/trace-event-perl.c | 2 +-
+ 4 files changed, 5 insertions(+), 3 deletions(-)
+ create mode 100644 tools/perf/util/include/linux/rbtree_augmented.h
 
-PATCH 2/2: Register power supply for thermal cooling device
-This patch registers the power supply as cooling device with
-thermal framework.
-
- Documentation/power/power_supply_class.txt |    3 +++
- drivers/power/power_supply_sysfs.c         |    2 ++
- include/linux/power_supply.h               |    2 ++
- drivers/power/power_supply_core.c |  100 +++++++++++++++++++++++++++++++++++++
- include/linux/power_supply.h      |    1 +
- 4 files changed, 108 insertions(+), 0 deletions(-)
-
-Thanks,
-Ramakrishna Pallala
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 86258c2..9546ff5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -268,6 +268,7 @@ LIB_H += util/include/linux/magic.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
++LIB_H += util/include/linux/rbtree_augmented.h
+ LIB_H += util/include/linux/string.h
+ LIB_H += util/include/linux/types.h
+ LIB_H += util/include/linux/linkage.h
+@@ -906,7 +907,7 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+ $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
+diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+index 9bcdc84..2a030c5 100644
+--- a/tools/perf/util/include/linux/rbtree.h
++++ b/tools/perf/util/include/linux/rbtree.h
+@@ -1,3 +1,2 @@
+ #include <stdbool.h>
+-#include <stdbool.h>
+ #include "../../../../include/linux/rbtree.h"
+diff --git a/tools/perf/util/include/linux/rbtree_augmented.h b/tools/perf/util/include/linux/rbtree_augmented.h
+new file mode 100644
+index 0000000..9d6fcdf
+--- /dev/null
++++ b/tools/perf/util/include/linux/rbtree_augmented.h
+@@ -0,0 +1,2 @@
++#include <stdbool.h>
++#include "../../../../include/linux/rbtree_augmented.h"
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index f80605e..f53889d 100644
+-- 
+Markus
