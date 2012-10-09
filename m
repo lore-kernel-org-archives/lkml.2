@@ -1,228 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab2JIFob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 01:44:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36570 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab2JIFo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 01:44:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,558,1344236400"; 
-   d="p7s'?scan'208";a="203266047"
-From: "Wei, Gang" <gang.wei@intel.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Ben Guthro <ben@guthro.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: Possible regression: BUG in fs/sysfs/group.c:65
-Thread-Topic: Possible regression: BUG in fs/sysfs/group.c:65
-Thread-Index: AQHNox8E1Kp1ekh1gUKX3firu5n7P5erBRIp//+LP4CABemhAA==
-Date: Tue, 9 Oct 2012 05:44:22 +0000
-Message-ID: <D0B11485C64D4B47B66902F8A4E901BE34D016@SHSMSX101.ccr.corp.intel.com>
-References: <CAOvdn6X+vPT6PH+mmhocR7pdJP4HLE8RFbVtScGFakzFci3=hQ@mail.gmail.com>
- <87zk40ss2h.fsf@xmission.com> <20121005191927.GA14645@ennui.austin.ibm.com>
-In-Reply-To: <20121005191927.GA14645@ennui.austin.ibm.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_00AF_01CDA624.302113C0"
+	id S1751963Ab2JIFo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 01:44:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51446 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2JIFo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 01:44:57 -0400
+Message-ID: <5073B9C4.9070009@gmail.com>
+Date: Tue, 09 Oct 2012 13:44:36 +0800
+From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
+To: jack@suse.cz
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        serge.hallyn@canonical.com, containers@lists.linux-foundation.org
+Subject: [PATCH] ext2: fix return values on parse_options() failure
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_00AF_01CDA624.302113C0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 
-Kent Yoder wrote on=A02012-10-06:
-> On Fri, Oct 05, 2012 at 11:16:06AM -0700, Eric W. Biederman wrote:
->> Ben Guthro <ben@guthro.net> writes:
->>=20
->>> I am seeing a regression in today's (Oct 5) kernel - 2 WARNINGS, and =
-a
->>> BUG below that seems to occur upon resuming from S3.
->>>=20
->>> I can start a bisection with 3.6 - but wanted to check to see if
->>> anyone else is also experiencing this failure...
->>=20
->> I took a quick look and this is a deterministic failure.  The same
->> file is being added to sysfs twice.
->>=20
->> Since the routine causing this failure appears to be sys_add_ppi I
->> expect the commit that added this failure mode is the commit below.
->>=20
->> Xiaoyan Zhang, Kent Yoder can you guys look at this see why the tpm
->> code is adding itself multiple times into sysfs?
->=20
->   It looks like the ppi sysfs teardown code is MIA. Xiaoyan, can you =
-add
-> it to tpm_ppi.c, with a caller in tpm_unregister_hardware?
+parse_options() in ext2 should return 0 when parse the mount options fails.
 
-I will try to provide a fix.
+Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+---
+ fs/ext2/super.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Jimmy
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 6c205d0..fa04d02 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -469,7 +469,7 @@ static int parse_options(char *options, struct super_block *sb)
+ 			uid = make_kuid(current_user_ns(), option);
+ 			if (!uid_valid(uid)) {
+ 				ext2_msg(sb, KERN_ERR, "Invalid uid value %d", option);
+-				return -1;
++				return 0;
 
-------=_NextPart_000_00AF_01CDA624.302113C0
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIdxjCCAyAw
-ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
-dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
-ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
-ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
-KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
-uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
-wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
-aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
-dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
-EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
-IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
-CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
-hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
-7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
-ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
-ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
-MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
-EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
-Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
-IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
-ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
-uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
-lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
-iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
-Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
-Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
-AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
-tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
-Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAA
-AAAABzANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
-YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUx
-OTI1MTNaFw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
-b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIw
-DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7Cr
-cIQ+FGa2KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZ
-EqbDUS+vBuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pO
-gBnnAbZHmEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFB
-WFgiv1QIusdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMC
-AwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfL
-UWB+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhT
-x+hdMsKCgOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQa
-xgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3Lmlu
-dGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3kl
-MjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0lu
-dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYw
-gdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNh
-dGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcw
-AoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMv
-SW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUA
-A4IBAQCUY/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4J
-cyna7fpC8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZks
-nDIlTVUvbR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN
-7Y+3MKEdSMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXs
-aV5NyJzBwB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIFijCCBHKgAwIBAgIKYSCKYgAAAAAA
-CDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRp
-b24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI3
-MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3Jh
-dGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIwDQYJ
-KoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc7KB+eiYElmrcEWE32WUdHvWG
-+IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+AArc0la87Olybzm8K9jXEfTB
-vTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63NKdc2bT804HRf6YptZFa4k6Y
-N94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9Ruk8yN+3N6n9fUo/qBigiF2kE
-n9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXTH5l575H4Lq++77OFv38CAwEA
-AaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7GKvdZsggQkCVvw939imYxMCvF
-MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQ5oFY2ekKQ
-/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxK
-xEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVs
-LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBD
-QS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVs
-JTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMw
-YwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVz
-L0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZg
-aHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50
-ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IB
-AQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65JT+oYgpIAtfEsYXeUJu1cChq
-pb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO8jOmN4jTjfJq3ElZ7yFWpy7r
-B3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNsHDNrJZX1vxlM78Lb1hjskTEN
-PmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiLDUqzy1Z6KL7TcOS/PCl8RHCJ
-XkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIF+zCCBOOgAwIBAgIKHtX06gABAACWPTAN
-BgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
-KzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0IwHhcNMTIwNjA4MDgw
-NTExWhcNMTUwNTE1MTkzNzI2WjA3MRIwEAYDVQQDEwlXZWksIEdhbmcxITAfBgkqhkiG9w0BCQEW
-Emdhbmcud2VpQGludGVsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALNyfS4y
-C6aDo3DZ/oId96Dvi8CB5SJyDUcMhpKWZtzqPX2mMOqQNgv4qAtHUjt4ibyPSjGZ+0EM3r63384g
-GcVR8+uxiuijBIOCkis6oGQ+TmBl1i28KobkE4jNnLCES0keisfNdzO8vAOxIFbT9KxQl1f1Mfvs
-ZfyGfFYB53gHCh1VxdZ7a2XKaON+l2YYx2p5xGGZtDDb61ajXSGvdHK+qMIfo7LMoZmY42t5Nawg
-izwcqBPUOLR+JXOtyGGiXZx3wZPeRmZx/eCMPBhSlfewpvUrK8W0kL591Lv0HeUVEJye2bOmlLo1
-DeIp6KH9JujFB33KhHXvNsugc9IYUVMCAwEAAaOCAugwggLkMAsGA1UdDwQEAwIHgDA8BgkrBgEE
-AYI3FQcELzAtBiUrBgEEAYI3FQiGw4x1hJnlUYP9gSiFjp9TgpHACWeB3r05lfBDAgFkAgEIMB0G
-A1UdDgQWBBQYdG5bBKSgjlBUQ6dpUm2vjlkEKDAfBgNVHSMEGDAWgBQOxir3WbIIEJAlb8Pd/Ypm
-MTArxTCBzwYDVR0fBIHHMIHEMIHBoIG+oIG7hldodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
-b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5j
-cmyGYGh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
-RXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNybDCB9QYIKwYBBQUHAQEE
-gegwgeUwbAYIKwYBBQUHMAKGYGh0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlm
-aWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNy
-dDB1BggrBgEFBQcwAoZpaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9j
-ZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0Io
-MSkuY3J0MB8GA1UdJQQYMBYGCCsGAQUFBwMEBgorBgEEAYI3CgMMMCkGCSsGAQQBgjcVCgQcMBow
-CgYIKwYBBQUHAwQwDAYKKwYBBAGCNwoDDDBBBgNVHREEOjA4oCIGCisGAQQBgjcUAgOgFAwSZ2Fu
-Zy53ZWlAaW50ZWwuY29tgRJnYW5nLndlaUBpbnRlbC5jb20wDQYJKoZIhvcNAQEFBQADggEBAHuy
-cX8AxjwfC5zmWDh0QpY8vDSgyLXaUDYKm2+ATDJDn5kALJgxAqaThvqGTH+oz73HQ7L8v7QxM0Yp
-1IQd/k5GeqMzhuXEoPM4rcORlOlvRqxBJNZUuYwxvyYaUpLU1W8EsOB2zB31ykzdXH93b6ZpfJk7
-8eqZuq00xHxU9mw4PXlWPnn1NDBYD1JH/ufCmpFk6sBE2bBf2u2miBEwHoRUyoH1nbu78aOs4mE6
-fRC9NutIriNPI2790R3FAY8dLWl3nrpXs80TrUCptat61uNRJDH06KXe81QCtvDVlBGbZ4gqWR3P
-ZGsnJKeOLOO38PQvFFm1Xjs4DVYiPVYyCTIwggZCMIIFKqADAgECAgoUmebGAAEAAFPVMA0GCSqG
-SIb3DQEBBQUAMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkG
-A1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTAeFw0xMDEyMDEwOTMxMzla
-Fw0xMzExMTUwOTMxMzlaMDcxEjAQBgNVBAMTCVdlaSwgR2FuZzEhMB8GCSqGSIb3DQEJARYSZ2Fu
-Zy53ZWlAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlkDjEHBe0Gg1
-dZhmebTYRY4qWGcBCKuEGfp8DuoVXyv3gW6bXc8TcWRSXj0vxL/+/RKObwVc17Cu2XcO0MTU1EOo
-ohTEl/QDnBvj0qeqKnkZGmAM0cCU7+m07N0ATPEzg0t2gJUA8dVO37iAo1KMQ72ovMJ1LU+x7tno
-d6PhrgXLmbjkEjQZnHwLvuI2TdiKKDvJtd6xz6DQuIBSPyn4wYsckGQcb5NlEiQCkCaPM/ZtcKcm
-Kxu0g1TfW7zIWuRhkPIOyin/bsN8RBTTq8lL74yFgTB4ybAMp13wtROVAN5FLYE31CAgJ69EBNix
-xTBNsLtv+KM6sXsbDccp3H5JwQIDAQABo4IDLzCCAyswCwYDVR0PBAQDAgQwMD0GCSsGAQQBgjcV
-BwQwMC4GJisGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4S52UGHhP9OAgFkAgEMMEQGCSqG
-SIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggq
-hkiG9w0DBzAdBgNVHQ4EFgQUwmKbKrf26Ot7Acv/+2aZDzj7gaQwHwYDVR0jBBgwFoAUqhZmr7c9
-VlNgrg3C7fPuB8tRYH4wgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZXaHR0cDovL3d3dy5pbnRlbC5j
-b20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
-JTIwM0EoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L0NS
-TC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQSgxKS5jcmwwgfUG
-CCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
-b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
-MjAzQSgxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3Vpbmcl
-MjBDQSUyMDNBKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDBDApBgkrBgEE
-AYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwQwQQYDVR0RBDowOKAiBgorBgEEAYI3
-FAIDoBQMEmdhbmcud2VpQGludGVsLmNvbYESZ2FuZy53ZWlAaW50ZWwuY29tMA0GCSqGSIb3DQEB
-BQUAA4IBAQAPFjqbkKIbnvnYwFG/QpKUm2yGzieys9IJny7PU2fVV4ksTL7emcpCfhFtlg7cPEgU
-7Rx6gG4hO+ZBx9oojImSGWj44Pj3EzSyRRaN+UK1VVESHgE2HKmETsAnRN/wulP9ahPJNmEOklBg
-oX6BJg9NYTqp8gDS6m1QBQoh/C2/51MGcmTecM4g5BuEpgmvxovlPDHlnSq390NXwXtdh1lM5qbo
-V9FBWFCR1Q7mf7n2Y6b/9m9bn9gMzbdwjMrnpYIiC5rN5WBDQtuzAios8OheGSTX0A1npuGZ3cvP
-NlPbRAoD7TVAdGhr+ZztVLA0+IFYmQqHV2C8q3TybgPnp1/uMYIDhjCCA4ICAQEwZDBWMQswCQYD
-VQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVy
-bmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ICCh7V9OoAAQAAlj0wCQYFKw4DAhoFAKCCAfcwGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDA5MDU0NDIyWjAjBgkqhkiG
-9w0BCQQxFgQUT0a/haChk0gWPr6CSoK92Vb1KrMwcwYJKwYBBAGCNxAEMWYwZDBWMQswCQYDVQQG
-EwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFs
-IEJhc2ljIElzc3VpbmcgQ0EgM0ECChSZ5sYAAQAAU9UwdQYLKoZIhvcNAQkQAgsxZqBkMFYxCzAJ
-BgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0
-ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQQIKFJnmxgABAABT1TCBqwYJKoZIhvcNAQkPMYGdMIGa
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCgYIKoZIhvcNAwcwCwYJYIZIAWUDBAECMA4GCCqG
-SIb3DQMCAgIAgDAHBgUrDgMCBzANBggqhkiG9w0DAgIBQDANBggqhkiG9w0DAgIBKDAHBgUrDgMC
-GjALBglghkgBZQMEAgMwCwYJYIZIAWUDBAICMAsGCWCGSAFlAwQCATANBgkqhkiG9w0BAQEFAASC
-AQCv+fh8K1zZvQrKDfkGK6/hXPQ3jc8DVTVb2D8rXoAygOk7dNAtXZWssIolcUr6qsoaofb3AbSB
-xpdVeePcWE7QgtclPr0wpHcVYm+XQ/DSBZkw42+FnXCRFyTjIaP/F6vP+QfVU8ghvNK9834O+l0G
-R76Uw4BNri8xRW5FrmBW0zjNXYzqPDxYpanWOEQyxAdLFXPoVzeAf/ogB1Fv2D2or9yhgcD0kR6I
-ss5G5ldMHLPas7h/bbDZKuKGJ35LJReedW5We6GDu+Nb0IbG7lvO7q8tBcmBOsVIkEI0BrkpyPsJ
-+54mFm2XKqqvEEd2Os2RZVU0IIIH4czhNGX07FnaAAAAAAAA
-
-------=_NextPart_000_00AF_01CDA624.302113C0--
+ 			}
+ 			sbi->s_resuid = uid;
+@@ -480,7 +480,7 @@ static int parse_options(char *options, struct super_block *sb)
+ 			gid = make_kgid(current_user_ns(), option);
+ 			if (!gid_valid(gid)) {
+ 				ext2_msg(sb, KERN_ERR, "Invalid gid value %d", option);
+-				return -1;
++				return 0;
+ 			}
+ 			sbi->s_resgid = gid;
+ 			break;
+-- 1.7.1
