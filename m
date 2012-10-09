@@ -1,125 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab2JITfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:35:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18239 "EHLO mga02.intel.com"
+	id S1756778Ab2JITf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:35:28 -0400
+Received: from fieldses.org ([174.143.236.118]:38765 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755675Ab2JITfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:35:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,561,1344236400"; 
-   d="scan'208";a="224464912"
-Date: Tue, 9 Oct 2012 12:35:09 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: WANG Siyuan <wangsiyuanbuaa@gmail.com>
-Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: usb 3.0 hard drive doesn't work
-Message-ID: <20121009193509.GA14107@xanatos>
-References: <CAKhuMP=DB2WGzNN2dXoFuJtSRCneBrToUb43KjU_OsQCrJP_UA@mail.gmail.com>
- <5071F4C5.6000104@gmail.com>
- <CAKhuMP=wkE910qXgmDX-_hqJtV_FMgBA6TRP3hSLy42sWru7Bg@mail.gmail.com>
+	id S1756686Ab2JITfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 15:35:11 -0400
+Date: Tue, 9 Oct 2012 15:35:06 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
+ connecting local transports
+Message-ID: <20121009193506.GA19680@fieldses.org>
+References: <20121008105437.18668.99905.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKhuMP=wkE910qXgmDX-_hqJtV_FMgBA6TRP3hSLy42sWru7Bg@mail.gmail.com>
+In-Reply-To: <20121008105437.18668.99905.stgit@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is probably a known issue.  Other Western Digital hard drives had
-issues with the Link PM feature that went into 3.5.  Can you please test
-with this branch:
+Cc'ing Eric since I seem to recall he suggested doing it this way?
 
-git clone git://git.kernel.org/pub/scm/linux/kernel/git/sarah/xhci.git -b for-usb-linus-pending
+Seems OK to me, but maybe that swap_root should be in common code?  (Or
+maybe we could use set_fs_root()?)
 
-In particular, I think this patch will help you, if you want to just try
-that:
+I'm assuming it's up to Trond to take this.--b.
 
-http://git.kernel.org/?p=linux/kernel/git/sarah/xhci.git;a=commit;h=ae8963adb4ad8c5f2a89ca1d99fb7bb721e7599f
-
-Sarah Sharp
-
-On Tue, Oct 09, 2012 at 09:51:55AM +0800, WANG Siyuan wrote:
-> hi, Daniel
-> my usb 3.0 hard drive doesn't have external power. this is a "western
-> digital" usb hard drive: WDBACY5000AWT
-> here is a Product Specifications:
-> http://www.wdc.com/wdproducts/library/AAG/ENG/4178-705131.pdf
+On Mon, Oct 08, 2012 at 02:56:32PM +0400, Stanislav Kinsbursky wrote:
+> Today, there is a problem in connecting of local SUNRPC thansports. These
+> transports uses UNIX sockets and connection itself is done by rpciod
+> workqueue.
+> But all local transports are connecting in rpciod context. I.e. UNIX sockets
+> lookup is done in context of process file system root.
+> This works nice until we will try to mount NFS from process with other root -
+> for example in container. This container can have it's own (nested) root and
+> rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
+> this container will register new service (Lockd for example) in global rpcbind
+> - not containers's one.
+> This patch solves the problem by switching rpciod kernel thread's file system
+> root to the right one (stored on transport) while connecting of local
+> transports.
 > 
-> i start my laptop with ubuntu, the usb3.0 port could use the usb3.0
-> hard drive. but the write speed is only 50MB/s (test with dd)
-> but archlinux cannot recognize the hard drive.
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  net/sunrpc/xprtsock.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 50 insertions(+), 2 deletions(-)
 > 
-> thank you for replaying.
+> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+> index aaaadfb..ecbced1 100644
+> --- a/net/sunrpc/xprtsock.c
+> +++ b/net/sunrpc/xprtsock.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/sunrpc/svcsock.h>
+>  #include <linux/sunrpc/xprtsock.h>
+>  #include <linux/file.h>
+> +#include <linux/fs_struct.h>
+>  #ifdef CONFIG_SUNRPC_BACKCHANNEL
+>  #include <linux/sunrpc/bc_xprt.h>
+>  #endif
+> @@ -255,6 +256,11 @@ struct sock_xprt {
+>  	void			(*old_state_change)(struct sock *);
+>  	void			(*old_write_space)(struct sock *);
+>  	void			(*old_error_report)(struct sock *);
+> +
+> +	/*
+> +	 * Saved transport creator root. Required for local transports only.
+> +	 */
+> +	struct path		root;
+>  };
+>  
+>  /*
+> @@ -1876,6 +1882,30 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
+>  	return kernel_connect(sock, xs_addr(xprt), xprt->addrlen, 0);
+>  }
+>  
+> +/*
+> + * __xs_local_swap_root - swap current root to tranport's root helper.
+> + * @new_root - path to set to current fs->root.
+> + * @old_root - optinal paoinet to save current root to
+> + *
+> + * This routine is requieed to connecting unix sockets to absolute path in
+> + * proper root environment.
+> + * Note: no path_get() will be called. I.e. caller have to hold reference to
+> + * new_root.
+> + */
+> +static void __xs_local_swap_root(struct path *new_root, struct path *old_root)
+> +{
+> +	struct fs_struct *fs = current->fs;
+> +
+> +	spin_lock(&fs->lock);
+> +	write_seqcount_begin(&fs->seq);
+> +	if (old_root)
+> +		*old_root = fs->root;
+> +	fs->root = *new_root;
+> +	write_seqcount_end(&fs->seq);
+> +	spin_unlock(&fs->lock);
+> +}
+> +
+> +
+>  /**
+>   * xs_local_setup_socket - create AF_LOCAL socket, connect to a local endpoint
+>   * @xprt: RPC transport to connect
+> @@ -1891,6 +1921,7 @@ static void xs_local_setup_socket(struct work_struct *work)
+>  	struct rpc_xprt *xprt = &transport->xprt;
+>  	struct socket *sock;
+>  	int status = -EIO;
+> +	struct path root;
+>  
+>  	current->flags |= PF_FSTRANS;
+>  
+> @@ -1907,7 +1938,10 @@ static void xs_local_setup_socket(struct work_struct *work)
+>  	dprintk("RPC:       worker connecting xprt %p via AF_LOCAL to %s\n",
+>  			xprt, xprt->address_strings[RPC_DISPLAY_ADDR]);
+>  
+> +	__xs_local_swap_root(&transport->root, &root);
+>  	status = xs_local_finish_connecting(xprt, sock);
+> +	__xs_local_swap_root(&root, NULL);
+> +
+>  	switch (status) {
+>  	case 0:
+>  		dprintk("RPC:       xprt %p connected to %s\n",
+> @@ -2256,6 +2290,18 @@ static void xs_connect(struct rpc_task *task)
+>  	}
+>  }
+>  
+> +static void xs_local_destroy(struct rpc_xprt *xprt)
+> +{
+> +	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+> +	struct path root = transport->root;
+> +
+> +	dprintk("RPC:       xs_local_destroy xprt %p\n", xprt);
+> +
+> +	xs_destroy(xprt);
+> +
+> +	path_put(&root);
+> +}
+> +
+>  /**
+>   * xs_local_print_stats - display AF_LOCAL socket-specifc stats
+>   * @xprt: rpc_xprt struct containing statistics
+> @@ -2475,7 +2521,7 @@ static struct rpc_xprt_ops xs_local_ops = {
+>  	.send_request		= xs_local_send_request,
+>  	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
+>  	.close			= xs_close,
+> -	.destroy		= xs_destroy,
+> +	.destroy		= xs_local_destroy,
+>  	.print_stats		= xs_local_print_stats,
+>  };
+>  
+> @@ -2654,8 +2700,10 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
+>  	dprintk("RPC:       set up xprt to %s via AF_LOCAL\n",
+>  			xprt->address_strings[RPC_DISPLAY_ADDR]);
+>  
+> -	if (try_module_get(THIS_MODULE))
+> +	if (try_module_get(THIS_MODULE)) {
+> +		get_fs_root(current->fs, &transport->root);
+>  		return xprt;
+> +	}
+>  	ret = ERR_PTR(-EINVAL);
+>  out_err:
+>  	xprt_free(xprt);
 > 
-> On Mon, Oct 8, 2012 at 5:31 AM, Daniel Mack <zonque@gmail.com> wrote:
-> > (cc linux-usb)
-> >
-> > On 07.10.2012 10:48, 王思源 wrote:
-> >> hi,
-> >> i have a usb 3.0 hard drive and a laptop with usb 3.0 port.
-> >> when the hard drive is connected to the usb 3.0 port, the drive could
-> >> not be found.
-> >> the dmesg output is listed below.
-> >> additinal info:
-> >> 1) the usb 3.0 hard drive can be found when connected to usb 2.0 port.
-> >> 2) the usb 2.0 hard drive can be found when connected to usb 3.0 port.
-> >> 3) mouse works when connected to the usb 3.0 port.
-> >> 4) it is archlinux and kernel version is 3.5.5-1-ARCH
-> >> it seems that it is not the linux driver's problem, because the mouse
-> >> could work and the hard drive is found due to the dmesg.
-> >> is this a bug?
-> >> would someone help me?
-> >> thank you!
-> >>
-> >> dmesg out put when usb 3.0 hard drive is conneted to usb 3.0 port:
-> >> [  646.077385] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
-> >> [  646.171319] usbcore: registered new interface driver uas
-> >> [  646.175313] Initializing USB Mass Storage driver...
-> >> [  646.175501] scsi4 : usb-storage 2-2:1.0
-> >> [  646.175665] usbcore: registered new interface driver usb-storage
-> >> [  646.175667] USB Mass Storage support registered.
-> >> [  657.149403] scsi 4:0:0:0: Direct-Access     WD       My Passport
-> >> 0730 1016 PQ: 0 ANSI: 6
-> >> [  657.149974] sd 4:0:0:0: [sdb] 976707584 512-byte logical blocks:
-> >> (500 GB/465 GiB)
-> >> [  657.150223] sd 4:0:0:0: [sdb] Write Protect is off
-> >> [  657.150232] sd 4:0:0:0: [sdb] Mode Sense: 47 00 10 08
-> >> [  657.150456] sd 4:0:0:0: [sdb] No Caching mode page present
-> >> [  657.150462] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-> >> [  657.151436] sd 4:0:0:0: [sdb] No Caching mode page present
-> >> [  657.151440] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-> >> [  657.159907]  sdb: sdb1
-> >> [  657.160852] sd 4:0:0:0: [sdb] No Caching mode page present
-> >> [  657.160858] sd 4:0:0:0: [sdb] Assuming drive cache: write through
-> >> [  657.160861] sd 4:0:0:0: [sdb] Attached SCSI disk
-> >> [  657.268875] usb 2-2: Device not responding to set address.
-> >> [  657.471456] usb 2-2: Device not responding to set address.
-> >> [  657.674211] usb 2-2: device not accepting address 2, error -71
-> >> [  657.780745] usb 2-2: Device not responding to set address.
-> >> [  657.983519] usb 2-2: Device not responding to set address.
-> >> [  658.186214] usb 2-2: device not accepting address 2, error -71
-> >> [  658.292717] usb 2-2: Device not responding to set address.
-> >> [  658.495537] usb 2-2: Device not responding to set address.
-> >
-> > From the logs, this smells like a power supply problem. Can you connect
-> > an external supply or do you have a powered USB3 hub? It's possible that
-> > it draws less power in USB2.0 mode, so that would explain what you describe.
-> >
-> > But I could be wrong alltogether :)
-> >
-> >
-> > Daniel
-> >
-> 
-> 
-> 
-> -- 
-> 王思源
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
