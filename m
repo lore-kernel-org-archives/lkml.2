@@ -1,88 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab2JIIcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:32:20 -0400
-Received: from cha92-13-88-165-248-19.fbx.proxad.net ([88.165.248.19]:59260
-	"EHLO jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752786Ab2JIIcQ (ORCPT
+	id S1754054Ab2JIIkj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 04:40:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:32828 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2JIIkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:32:16 -0400
-X-Greylist: delayed 1464 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Oct 2012 04:32:16 EDT
-Date: Tue, 9 Oct 2012 10:07:35 +0200
-From: Mike Hommey <mh@glandium.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
-Message-ID: <20121009080735.GA24375@glandium.org>
-References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
+	Tue, 9 Oct 2012 04:40:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
-X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349496603-20775-3-git-send-email-cheiny@synaptics.com>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+	<1349496603-20775-3-git-send-email-cheiny@synaptics.com>
+Date: Tue, 9 Oct 2012 10:40:35 +0200
+Message-ID: <CACRpkdZ0cQPQHDCYiyQb+Qb_8nGh=4rw2CixKgAFvb-3c1LpSg@mail.gmail.com>
+Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christopher Heiny <cheiny@synaptics.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 28, 2012 at 11:16:30PM -0400, John Stultz wrote:
-> fd based interfaces vs madvise:
-> 	In talking with Taras Glek, he pointed out that for his
-> 	needs, the fd based interface is a little annoying, as it
-> 	requires having to get access to tmpfs file and mmap it in,
-> 	then instead of just referencing a pointer to the data he
-> 	wants to mark volatile, he has to calculate the offset from
-> 	start of the mmap and pass those file offsets to the interface.
-> 	Instead he mentioned that using something like madvise would be
-> 	much nicer, since they could just pass a pointer to the object
-> 	in memory they want to make volatile and avoid the extra work.
-> 
-> 	I'm not opposed to adding an madvise interface for this as
-> 	well, but since we have a existing use case with Android's
-> 	ashmem, I want to make sure we support this existing behavior.
-> 	Specifically as with ashmem  applications can be sharing
-> 	these tmpfs fds, and so file-relative volatile ranges make
-> 	more sense if you need to coordinate what data is volatile
-> 	between two applications.
-> 
-> 	Also, while I agree that having an madvise interface for
-> 	volatile ranges would be nice, it does open up some more
-> 	complex implementation issues, since with files, there is a
-> 	fixed relationship between pages and the files' address_space
-> 	mapping, where you can't have pages shared between different
-> 	mappings. This makes it easy to hang the volatile-range tree
-> 	off of the mapping (well, indirectly via a hash table). With
-> 	general anonymous memory, pages can be shared between multiple
-> 	processes, and as far as I understand, don't have any grouping
-> 	structure we could use to determine if the page is in a
-> 	volatile range or not. We would also need to determine more
-> 	complex questions like: What are the semantics of volatility
-> 	with copy-on-write pages?  I'm hoping to investigate this
-> 	idea more deeply soon so I can be sure whatever is pushed has
-> 	a clear plan of how to address this idea. Further thoughts
-> 	here would be appreciated.
+On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
 
-Note it doesn't have to be a vs. situation. madvise could be an
-additional way to interface with volatile ranges on a given fd.
+> rmi_bus.c implements the basic functionality of the RMI bus.  This file is
+> greatly simplified compared to the previous patch - we've switched from
+> "do it yourself" device/driver binding to using device_type to distinguish
+> between the two kinds of devices on the bus (sensor devices and function
+> specific devices) and using the standard bus implementation to manage devices
+> and drivers.
 
-That is, madvise doesn't have to mean anonymous memory. As a matter of
-fact, MADV_WILLNEED/MADV_DONTNEED are usually used on mmaped files.
-Similarly, there could be a way to use madvise to mark volatile ranges,
-without the application having to track what memory ranges are
-associated to what part of what file, which the kernel already tracks.
+So I think you really want Greg KH to look at this bus implementation
+now. Please include Greg on future mailings...
 
-Mike
+It looks much improved from previous versions, and sorry if I am now
+adding even more comments, but it's because you cleared out some
+noise that was disturbing my perception so I can cleanly review
+the architecture of this thing now. (I'm impressed by your work and
+new high-speed turnaround time!)
+
+> +#ifdef CONFIG_RMI4_DEBUG
+> +#include <linux/debugfs.h>
+> +#endif
+
+As noted previously, drop the #ifdef:s
+
+> +#ifdef CONFIG_RMI4_DEBUG
+> +static struct dentry *rmi_debugfs_root;
+> +#endif
+
+I'd use #ifdef CONFIG_DEBUG_FS and try to
+move this declaration closer to the actual debugfs
+code block.
+
+Apart from this the core bus looks good to me, but it's not my
+area of expertise...
+
+(...)
+> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
+
+> +#ifdef CONFIG_RMI4_DEBUG
+
+I'd just use CONFIG_DEBUG_FS
+
+> +struct driver_debugfs_data {
+> +       bool done;
+> +       struct rmi_device *rmi_dev;
+> +};
+
+(...)
+> +#define DELAY_NAME "delay"
+
+This is only used in one place, why not just use the string
+"delay" there?
+
+(...)
+> +       if (IS_ENABLED(CONFIG_RMI4_SPI) && !strncmp("spi", info->proto, 3)) {
+> +               data->debugfs_delay = debugfs_create_file(DELAY_NAME,
+> +                               RMI_RW_ATTR, rmi_dev->debugfs_root, rmi_dev,
+> +                               &delay_fops);
+
+i.e. there.
+
+(...)
+> +/* Useful helper functions for u8* */
+> +
+> +static bool u8_is_any_set(u8 *target, int size)
+> +{
+> +       int i;
+> +       /* We'd like to use find_first_bit, but it ALWAYS returns 1,
+> +       *  no matter what we pass it.  So we have to do this the hard way.
+> +       *  return find_first_bit((long unsigned int *)  target, size) != 0;
+> +       */
+> +       for (i = 0; i < size; i++) {
+> +               if (target[i])
+> +                       return true;
+> +       }
+> +       return false;
+> +}
+
+Instead of:
+
+if (u8_is_any_set(foo, 128) {}
+
+Why can't you use:
+
+if (!bitmap_empty(foo, 128*8) {}
+
+?
+
+If you look at the implementation in the <linux/bitmap.h> header
+and __bitmap_empty() in lib/bitmap.c you will realize that this
+function is already optimized like this (and I actually don't think
+the RMI4 code is performance-critical for these functions anyway,
+but prove me wrong!)
+
+> +
+> +/** This is here because all those casts made for some ugly code.
+> + */
+> +static void u8_and(u8 *dest, u8 *target1, u8 *target2, int nbits)
+> +{
+> +       bitmap_and((long unsigned int *) dest,
+> +                  (long unsigned int *) target1,
+> +                  (long unsigned int *) target2,
+> +                  nbits);
+> +}
+
+Hm, getting rid of unreadable casts is a valid case.
+
+I'll be OK with this but maybe the real solution is to introduce such
+helpers into <linux/bitmap.h>?
+
+(...)
+> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
+> +{
+> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
+> +       struct device *dev = &rmi_dev->dev;
+> +       struct rmi_function_container *entry;
+> +       u8 irq_status[data->num_of_irq_regs];
+
+Looking at this...
+
+What does the data->num_of_irq_regs actually contain?
+
+I just fear that it is something constant like always 2 or always 4,
+so there is actually, in reality, a 16 or 32 bit register hiding in there.
+
+In that case what you should do is to represent it as a u16 or u32 here,
+just or the bits into a status word, and then walk over that status
+word with something like ffs(bitword); ...
+
+(...)
+> +static int standard_resume(struct rmi_device *rmi_dev)
+
+Standard eh? :-)
+
+Atleast prefix with rmi4_*...
+
+> +static int rmi_driver_suspend(struct device *dev)
+> +{
+> +       struct rmi_device *rmi_dev = to_rmi_device(dev);
+> +       return standard_suspend(rmi_dev);
+> +}
+> +
+> +static int rmi_driver_resume(struct device *dev)
+> +{
+> +       struct rmi_device *rmi_dev = to_rmi_device(dev);
+> +       return standard_resume(rmi_dev);
+> +}
+
+If all these two are doing are to call another function with almost
+the same name, what is the point? Just sink the code from
+"standard_suspend()" and "standard_resume()" into these
+functions and remove a pointless layer of abstraction.
+
+Apart from this the core driver looks good to me.
+
+(...)
+> diff --git a/drivers/input/rmi4/rmi_driver.h b/drivers/input/rmi4/rmi_driver.h
+
+(...)
+> +#define simple_show_union_struct(regtype, propname, fmt)\
+> +static ssize_t tricat(rmi_fn_, FNUM, _##propname##_show)(struct device *dev,\
+> +                               struct device_attribute *attr, char *buf) {\
+> +       struct rmi_function_container *fc;\
+> +       struct FUNCTION_DATA *data;\
+> +\
+> +       fc = to_rmi_function_container(dev);\
+> +       data = fc->data;\
+> +\
+> +       return snprintf(buf, PAGE_SIZE, fmt,\
+> +                       data->regtype.propname);\
+> +}
+
+OK I see the point, but is there really no other way to do this than
+to #define huge static inlines like these? Is it really not possible to
+create just generic functions instead of going this far?
+
+(same comment for all)
+
+> +union pdt_properties {
+> +       struct {
+> +               u8 reserved_1:6;
+> +               u8 has_bsr:1;
+> +               u8 reserved_2:1;
+> +       } __attribute__((__packed__));
+> +       u8 regs[1];
+
+I don't understand what this union is trying to achieve.
+
+regs[1] does not look right considering what you're trying to
+achieve. Since the above fields require a regs[2] (9 bits!)
+to be stored. Maybe write out what you're trying to do here
+so I can understand it? (If everyone else in the world gets
+it immediately, it's maybe me that need fixing instead...)
+
+Apart from these remarks it's looking real nice now!
+
+Yours,
+Linus Walleij
