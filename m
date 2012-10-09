@@ -1,127 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab2JIQbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:31:31 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56017 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab2JIQb3 (ORCPT
+	id S1753090Ab2JIQjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:39:23 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:45546 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab2JIQjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:31:29 -0400
+	Tue, 9 Oct 2012 12:39:21 -0400
+X-IronPort-AV: E=Sophos;i="4.80,561,1344211200"; 
+   d="scan'208";a="15046111"
+Message-ID: <50745336.5080101@citrix.com>
+Date: Tue, 9 Oct 2012 18:39:18 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <201210091535.56487.arnd@arndb.de>
-References: <201210091535.56487.arnd@arndb.de>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 10 Oct 2012 00:31:07 +0800
-Message-ID: <CAGsJ_4xemz4EBdWPDrdkhD5HsCXJcO_kkKGugEa9C7_rieyq8A@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: sirf: remove sirfsoc_gpio_set_pull function
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry Song <Baohua.Song@csr.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jan Beulich <JBeulich@suse.com>
+CC: "Oliver Chick (Intern)" <oliver.chick@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH v2] Persistent grant maps for xen blk drivers
+References: <1348242767-23732-1-git-send-email-oliver.chick@citrix.com> <506061E6020000780009D4AB@nat28.tlf.novell.com>
+In-Reply-To: <506061E6020000780009D4AB@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 24/09/12 13:36, Jan Beulich wrote:
+>>>> On 21.09.12 at 17:52, Oliver Chick <oliver.chick@citrix.com> wrote:
+>> Changes since v1:
+>>
+>>  * Maximum number of persistent grants per device now 64, rather than
+>>    256, as this is the actual maxmimum request in a (1 page) ring.
+> 
+> As said previously, I don't see why this needs to have a separate
+> #define at all - it's simply __RING_SIZE(). No adding this would
+> also imply that - apart from perhaps documenting the new xenstore
+> nodes - io/blkif.h would need changing at all (which otherwise would
+> require a hypervisor side patch to be submitted too).
 
-2012/10/9 Arnd Bergmann <arnd@arndb.de>:
-> The prima2 platform advertises needing no mach/gpio.h header file,
-> but its pinctrl driver now has a sirfsoc_gpio_set_pull function
-> that uses constants defined in arch/arm/mach-prima2/include/mach/gpio.h,
-> which fails to build.
->
-> Fortunately, the sirfsoc_gpio_set_pull is not used anywhere in the
-> kernel, so we can safely remove it. Any out of tree drivers using
-> it will have to be converted to use proper pinctrl functions to
-> do the same.
->
+I've been working on this a little bit more, and __RING_SIZE returns 32
+for all ring types (blkif, blkif_x86_32 and blkif_x86_64), any specific
+reason to choose __RING_SIZE()*2?
 
-i understand we want to delete the mach/gpio.h. originally we had
-sirfsoc_gpio_set_pull() as a prima2 customized pull config function.
-
-i will take care moving to the dt mapping for pullup/down/none.
-
-
-> Without this patch, building prima2_defconfig results in:
->
-> drivers/pinctrl/pinctrl-sirf.c: In function 'sirfsoc_gpio_set_pull':
-> drivers/pinctrl/pinctrl-sirf.c:1331:7: error: 'SIRFSOC_GPIO_PULL_NONE' undeclared (first use in this function)
-> drivers/pinctrl/pinctrl-sirf.c:1331:7: note: each undeclared identifier is reported only once for each function it appears in
-> drivers/pinctrl/pinctrl-sirf.c:1334:7: error: 'SIRFSOC_GPIO_PULL_UP' undeclared (first use in this function)
-> drivers/pinctrl/pinctrl-sirf.c:1338:7: error: 'SIRFSOC_GPIO_PULL_DOWN' undeclared (first use in this function)
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Barry Song <Baohua.Song@csr.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-
-Acked-by: Barry Song <Baohua.Song@csr.com>
-
->
-> diff --git a/arch/arm/mach-prima2/include/mach/gpio.h b/arch/arm/mach-prima2/include/mach/gpio.h
-> deleted file mode 100644
-> index 1904bb0..0000000
-> --- a/arch/arm/mach-prima2/include/mach/gpio.h
-> +++ /dev/null
-> @@ -1,13 +0,0 @@
-> -#ifndef __MACH_GPIO_H
-> -#define __MACH_GPIO_H
-> -
-> -/* Pull up/down values */
-> -enum sirfsoc_gpio_pull {
-> -       SIRFSOC_GPIO_PULL_NONE,
-> -       SIRFSOC_GPIO_PULL_UP,
-> -       SIRFSOC_GPIO_PULL_DOWN,
-> -};
-> -
-> -void sirfsoc_gpio_set_pull(unsigned gpio, unsigned mode);
-> -
-> -#endif
-> diff --git a/drivers/pinctrl/pinctrl-sirf.c b/drivers/pinctrl/pinctrl-sirf.c
-> index 675497c..9ecacf3 100644
-> --- a/drivers/pinctrl/pinctrl-sirf.c
-> +++ b/drivers/pinctrl/pinctrl-sirf.c
-> @@ -1323,41 +1323,6 @@ static inline struct sirfsoc_gpio_bank *sirfsoc_gpio_to_bank(unsigned int gpio)
->         return &sgpio_bank[gpio / SIRFSOC_GPIO_BANK_SIZE];
->  }
->
-> -void sirfsoc_gpio_set_pull(unsigned gpio, unsigned mode)
-> -{
-> -       struct sirfsoc_gpio_bank *bank = sirfsoc_gpio_to_bank(gpio);
-> -       int idx = sirfsoc_gpio_to_offset(gpio);
-> -       u32 val, offset;
-> -       unsigned long flags;
-> -
-> -       offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
-> -
-> -       spin_lock_irqsave(&sgpio_lock, flags);
-> -
-> -       val = readl(bank->chip.regs + offset);
-> -
-> -       switch (mode) {
-> -       case SIRFSOC_GPIO_PULL_NONE:
-> -               val &= ~SIRFSOC_GPIO_CTL_PULL_MASK;
-> -               break;
-> -       case SIRFSOC_GPIO_PULL_UP:
-> -               val |= SIRFSOC_GPIO_CTL_PULL_MASK;
-> -               val |= SIRFSOC_GPIO_CTL_PULL_HIGH;
-> -               break;
-> -       case SIRFSOC_GPIO_PULL_DOWN:
-> -               val |= SIRFSOC_GPIO_CTL_PULL_MASK;
-> -               val &= ~SIRFSOC_GPIO_CTL_PULL_HIGH;
-> -               break;
-> -       default:
-> -               break;
-> -       }
-> -
-> -       writel(val, bank->chip.regs + offset);
-> -
-> -       spin_unlock_irqrestore(&sgpio_lock, flags);
-> -}
-> -EXPORT_SYMBOL(sirfsoc_gpio_set_pull);
-> -
->  static inline struct sirfsoc_gpio_bank *sirfsoc_irqchip_to_bank(struct gpio_chip *chip)
->  {
->         return container_of(to_of_mm_gpio_chip(chip), struct sirfsoc_gpio_bank, chip);
-
--barry
