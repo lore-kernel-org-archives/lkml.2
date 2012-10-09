@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2JIPfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:35:23 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:5463
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755347Ab2JIPfN (ORCPT
+	id S1756300Ab2JIPf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:35:26 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:38439
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756267Ab2JIPfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:35:13 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Tue, 9 Oct 2012 11:35:23 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1155h)
-X-WSS-ID: 0MBMTYJ-02-KFU-02
+X-WSS-ID: 0MBMTYR-01-5PL-02
 X-M-MSG: 
 From: Andre Przywara <andre.przywara@amd.com>
 To: <mingo@elte.hu>, <peterz@infradead.org>
 CC: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
         Andre Przywara <andre.przywara@amd.com>
 Subject: [PATCH] x86/perf: Fix virtualization sanity check
-Date: Tue, 9 Oct 2012 17:38:34 +0200
-Message-ID: <1349797115-28346-1-git-send-email-andre.przywara@amd.com>
+Date: Tue, 9 Oct 2012 17:38:35 +0200
+Message-ID: <1349797115-28346-2-git-send-email-andre.przywara@amd.com>
 X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1349797115-28346-1-git-send-email-andre.przywara@amd.com>
+References: <1349797115-28346-1-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
