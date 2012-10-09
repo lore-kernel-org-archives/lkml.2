@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab2JIPYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:24:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50610 "EHLO
+	id S1756216Ab2JIPYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:24:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64805 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab2JIPYH (ORCPT
+	with ESMTP id S1755782Ab2JIPX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:24:07 -0400
+	Tue, 9 Oct 2012 11:23:28 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        <arnd@arndb.de>, bryan.wu@canonical.com, catalin.marinas@arm.com,
-        dave.martin@linaro.org, jeremy@goop.org, jonathan.austin@arm.com,
-        konrad.wilk@oracle.com, leif.lindholm@arm.com,
-        linus.walleij@linaro.org, damm@opensource.se, mmarek@suse.cz,
-        rjw@sisk.pl, stefano.stabellini@eu.citrix.com, sboyd@codeaurora.org,
-        tglx@linutronix.de, will.deacon@arm.com, xen-devel@lists.xensource.com
-Subject: [GIT PULL 0/9] ARM architecture fixes for 3.7
-Date: Tue,  9 Oct 2012 17:22:54 +0200
-Message-Id: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 9/9] ARM: warnings in arch/arm/include/asm/uaccess.h
+Date: Tue,  9 Oct 2012 17:23:03 +0200
+Message-Id: <1349796183-30648-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-X-Provags-ID: V02:K0:yDMisN99TU4omIRjUsuBeYvP0ndX8ZwpmCJoiA1Icfb
- s6WI3MDb1Oma4n4DC2WHiHX27dk9zISJUPesd649uL9K0NZs9g
- VNy8ymUAIDGpIQVTGyiqpX7fpyAYXfxUBpUJa86jV1uz9ZsVqr
- cIw1FdzWOm7yu7W6DlIH+CBwT6e40ajLABdif3C9gnljBGWycz
- vqz4paDR3JWWnDm0hui6oCxD7w+ALiIbglDFaa8YRfyXdIWkQa
- l1ibAnENHmwmBw+DpQe7TL2Hc4I8p7fXUizhQCecDXK+S2BaLS
- 8TyiKrvFvEM7QvllO30lB6ZpKM5xRcmSf6mFNeO/GlX9yNvUes
- gtQJNPOnhN6Q9JoA7kGDSURBRoRdx7SUvdhGOoGLjKzM5Eqmll
- cnghweeL4359x6wzTzH9kwlOVaTwqRd7zk=
+In-Reply-To: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:14sXwOa1Qj/ckr9sokrMTqKYxEpNgN9Abb4SiyTh1nD
+ npaV3bg9yhlHZWJLUhjM+dMb06MVgRkigWw0OkoYQSLlK933uQ
+ +6U6DXWde3QarWnjsuZ1+k5P7i25LBQCJe0sfKRDT2yKTWsPF1
+ Mby/MwZxXERdK+tm9QZLuEX3cLBPQ9fxj75mad9YBC2hFX8M0U
+ fE/u0VXF4I6C71vrxkH9lfvhz/ug+HeshONJtKhg7QsUh1d/yT
+ 6/MOuJFmMPmXy4hey9Tr2U33sTSSSrOqo52sESL3lOUirgKofv
+ +sjkDTtYuG4GLKmLvab9ztCqo7iC9SXqgH574DkjO92mo95NQM
+ JjlJLnnyv4yGmTTnSDM8kVuVnuXzPSWAvouHB6aK1NL63QauUK
+ cyKJCKUiaeFQXdNyf5W98dyY5SdmYtWjjM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: <arnd@arndb.de>
+On NOMMU ARM, the __addr_ok() and __range_ok() macros do not evaluate
+their arguments, which may lead to harmless build warnings in some
+code where the variables are not used otherwise. Adding a cast to void
+gets rid of the warning and does not make any semantic changes.
 
-Hi Russell,
+Without this patch, building at91x40_defconfig results in:
 
-Here are some patches that belong into your domain, I hope you can
-just send the lot to Linus the next time you send other patches.
+fs/read_write.c: In function 'rw_copy_check_uvector':
+fs/read_write.c:684:9: warning: unused variable 'buf' [-Wunused-variable]
 
-These bug fixes all address problems found with automated build testing.
-Some of them have been around for a long time, other bugs are
-regressions since the merge window.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ arch/arm/include/asm/uaccess.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-	Arnd
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 77bd79f..7e1f760 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -200,8 +200,8 @@ extern int __put_user_8(void *, unsigned long long);
+ #define USER_DS			KERNEL_DS
+ 
+ #define segment_eq(a,b)		(1)
+-#define __addr_ok(addr)		(1)
+-#define __range_ok(addr,size)	(0)
++#define __addr_ok(addr)		((void)(addr),1)
++#define __range_ok(addr,size)	((void)(addr),0)
+ #define get_fs()		(KERNEL_DS)
+ 
+ static inline void set_fs(mm_segment_t fs)
+-- 
+1.7.10
 
-The following changes since commit 0e51793e162ca432fc5f04178cf82b80a92c2659:
-
-  Merge branch 'for-linus' of git://git.linaro.org/people/rmk/linux-arm (2012-10-07 21:20:57 +0900)
-
-are available in the git repository at:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-rmk
-
-for you to fetch changes up to 93c6cee8e966ceb78a08e6a69a3afc948b74d254:
-
-  ARM: warnings in arch/arm/include/asm/uaccess.h (2012-10-09 17:07:44 +0200)
-
-----------------------------------------------------------------
-Arnd Bergmann (9):
-      ARM: kprobes: make more tests conditional
-      ARM: export set_irq_flags
-      ARM: Fix another build warning in arch/arm/mm/alignment.c
-      ARM: export default read_current_timer
-      ARM: Xen: fix initial build problems:
-      ARM: pass -marm to gcc by default for both C and assembler
-      ARM: be really quiet when building with 'make -s'
-      ARM: binfmt_flat: unused variable 'persistent'
-      ARM: warnings in arch/arm/include/asm/uaccess.h
-
- arch/arm/Kconfig                   |    1 +
- arch/arm/Makefile                  |   13 +++++++------
- arch/arm/boot/Makefile             |   10 +++++-----
- arch/arm/include/asm/flat.h        |    2 +-
- arch/arm/include/asm/uaccess.h     |    4 ++--
- arch/arm/kernel/irq.c              |    2 ++
- arch/arm/kernel/kprobes-test-arm.c |    4 ++++
- arch/arm/lib/delay.c               |    1 +
- arch/arm/mm/alignment.c            |    4 +++-
- arch/arm/tools/Makefile            |    2 +-
- drivers/xen/Kconfig                |    2 ++
- drivers/xen/sys-hypervisor.c       |    1 +
- 12 files changed, 30 insertions(+), 16 deletions(-)
-
-Cc: bryan.wu@canonical.com
-Cc: catalin.marinas@arm.com
-Cc: dave.martin@linaro.org
-Cc: jeremy@goop.org
-Cc: jonathan.austin@arm.com
-Cc: konrad.wilk@oracle.com
-Cc: leif.lindholm@arm.com
-Cc: linus.walleij@linaro.org
-Cc: damm@opensource.se
-Cc: mmarek@suse.cz
-Cc: rjw@sisk.pl
-Cc: rmk+kernel@arm.linux.org.uk
-Cc: stefano.stabellini@eu.citrix.com
-Cc: sboyd@codeaurora.org
-Cc: tglx@linutronix.de
-Cc: will.deacon@arm.com
-Cc: xen-devel@lists.xensource.com
