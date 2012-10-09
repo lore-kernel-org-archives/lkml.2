@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab2JIHrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 03:47:07 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:44309
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932257Ab2JIHrB (ORCPT
+	id S1753978Ab2JIHxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 03:53:47 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:48233 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab2JIHxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 03:47:01 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzz6d524h8275bh8275dhz2dh2a8h668h839hd25he5bhf0ah107ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <5073D77B.7060802@analog.com>
-Date: Tue, 9 Oct 2012 09:51:23 +0200
-From: Michael Hennerich <michael.hennerich@analog.com>
-Reply-To: <michael.hennerich@analog.com>
-Organization: Analog Devices Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 9 Oct 2012 03:53:44 -0400
+Message-ID: <5073D802.9050207@openvz.org>
+Date: Tue, 09 Oct 2012 11:53:38 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120831 Firefox/10.0.7 Iceape/2.7.7
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: use module_i2c_driver to simplify the code
-References: <CAPgLHd8ONvLXiAZG5brCuATwkyUW2MbWPwS9rQZn7Sru7qmFGw@mail.gmail.com>
-In-Reply-To: <CAPgLHd8ONvLXiAZG5brCuATwkyUW2MbWPwS9rQZn7Sru7qmFGw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Hugh Dickins <hughd@google.com>
+CC: Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+References: <50460CED.6060006@redhat.com> <20120906110836.22423.17638.stgit@zurg> <alpine.LSU.2.00.1210011418270.2940@eggly.anvils> <506AACAC.2010609@openvz.org> <alpine.LSU.2.00.1210031337320.1415@eggly.anvils> <506DB816.9090107@openvz.org> <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2012 04:09 PM, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hugh Dickins wrote:
+> On Thu, 4 Oct 2012, Konstantin Khlebnikov wrote:
 >
-> Use the module_i2c_driver() macro to make the code smaller
-> and a bit simpler.
+>> Here results of my test. Workload isn't very realistic, but at least it
+>> threaded: compiling linux-3.6 with defconfig in 16 threads on tmpfs,
+>> 512mb ram, dualcore cpu, ordinary hard disk. (test script in attachment)
+>>
+>> average results for ten runs:
+>>
+>> 		RA=3	RA=0	RA=1	RA=2	RA=4	Hugh	Shaohua
+>> real time	500	542	528	519	500	523	522
+>> user time	738	737	735	737	739	737	739
+>> sys time	93	93	91	92	96	92	93
+>> pgmajfault	62918	110533	92454	78221	54342	86601	77229
+>> pgpgin	2070372	795228	1034046	1471010	3177192	1154532	1599388
+>> pgpgout	2597278	2022037	2110020	2350380	2802670	2286671	2526570
+>> pswpin	462747	138873	202148	310969	739431	232710	341320
+>> pswpout	646363	502599	524613	584731	697797	568784	628677
+>>
+>> So, last two columns shows mostly equal results: +4.6% and +4.4% in
+>> comparison to vanilla kernel with RA=3, but your version shows more stable
+>> results (std-error 2.7% against 4.8%) (all this numbers in huge table in
+>> attachment)
 >
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
+> Thanks for doing this, Konstantin, but I'm stuck for anything much to say!
+> Shaohua and I are both about 4.5% bad for this particular test, but I'm
+> more consistently bad - hurrah!
 >
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->   drivers/mfd/adp5520.c | 12 +-----------
->   1 file changed, 1 insertion(+), 11 deletions(-)
+> I suspect (not a convincing argument) that if the test were just slightly
+> different (a little more or a little less memory, SSD instead of hard
+> disk, diskcache instead of tmpfs), then it would come out differently.
+
+Yes, results depends mostly on tmpfs.
+
 >
-> diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
-> index ea8b947..94e7a6d 100644
-> --- a/drivers/mfd/adp5520.c
-> +++ b/drivers/mfd/adp5520.c
-> @@ -360,17 +360,7 @@ static struct i2c_driver adp5520_driver = {
->   	.id_table 	= adp5520_id,
->   };
->   
-> -static int __init adp5520_init(void)
-> -{
-> -	return i2c_add_driver(&adp5520_driver);
-> -}
-> -module_init(adp5520_init);
-> -
-> -static void __exit adp5520_exit(void)
-> -{
-> -	i2c_del_driver(&adp5520_driver);
-> -}
-> -module_exit(adp5520_exit);
-> +module_i2c_driver(adp5520_driver);
->   
->   MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
->   MODULE_DESCRIPTION("ADP5520(01) PMIC-MFD Driver");
->
->
+> Did you draw any conclusions from the numbers you found?
+
+Yeah, I have some ideas:
+
+Numbers for vanilla kernel shows strong dependence between time and readahead
+size. Seems like main problem is that tmpfs does not have it's own readahead,
+it can only rely on swap-in readahead. There are about 25% readahead hits for RA=3.
+As "pswpin" row shows both your and Shaohua patches makes readahead smaller.
 
 
--- 
-Greetings,
-Michael
+Plus tmpfs doesn't keeps copy for clean pages in the swap (unlike to anon pages).
+On swapin path it always marks page dirty and releases swap-entry.
+I didn't have any measurements but this particular test definitely re-reads
+some files multiple times and writes them back to the swap after that.
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
-Margaret Seif
-
+>
+> I haven't done any more on this in the last few days, except to verify
+> that once an anon_vma is judged random with Shaohua's, then it appears
+> to be condemned to no-readahead ever after.
+>
+> That's probably something that a hack like I had in mine would fix,
+> but that addition might change its balance further (and increase vma
+> or anon_vma size) - not tried yet.
+>
+> All I want to do right now, is suggest to Andrew that he hold Shaohua's
+> patch back from 3.7 for the moment: I'll send a response to Sep 7th's
+> mm-commits mail to suggest that - but no great disaster if he ignores me.
+>
+> Hugh
+>
+>>
+>> Numbers from your tests formatted into table for better readability
+>> 				
+>> HDD		Vanilla	Shaohua	RA=3	RA=0	RA=4
+>> SEQ, ANON	73921	76210	75611	121542	77950
+>> SEQ, SHMEM	73601	73176	73855	118322	73534
+>> RND, ANON	895392	831243	871569	841680	863871
+>> RND, SHMEM	1058375	1053486	827935	756489	834804
+>>
+>> SDD		Vanilla	Shaohua	RA=3	RA=0	RA=4
+>> SEQ, ANON	24634	24198	24673	70018	21125
+>> SEQ, SHMEM	24959	24932	25052	69678	21387
+>> RND, ANON	43014	26146	28075	25901	28686
+>> RND, SHMEM	45349	45215	28249	24332	28226
 
