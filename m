@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab2JIWyK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:54:10 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53311 "EHLO smtp.outflux.net"
+	id S1757094Ab2JIWyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:54:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39441 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755937Ab2JIWyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:54:08 -0400
-Date: Tue, 9 Oct 2012 15:54:01 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Kees Cook <keescook@chromium.org>, PaX Team <pageexec@freemail.hu>
-Subject: [PATCH v2] fix stack memory content leak via UNAME26
-Message-ID: <20121009225401.GA10219@www.outflux.net>
+	id S1756776Ab2JIWyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 18:54:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Igor Murzov <e-mail@date.by>
+Cc: linux-acpi@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, Sergey V <sftp.mtuci@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI video: Ignore AE_AML_PACKAGE_LIMIT errors after _DOD evaluation.
+Date: Wed, 10 Oct 2012 00:58:10 +0200
+Message-ID: <1357974.cUcUJdG05H@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.0-2.10-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1349821146-19155-1-git-send-email-e-mail@date.by>
+References: <1349821146-19155-1-git-send-email-e-mail@date.by>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents. This fixes it by initializing the stack buffer to zero,
-defensively calculating the length of copy_to_user() call, and making
-the len argument unsigned.
+On Wednesday 10 of October 2012 02:19:06 Igor Murzov wrote:
+> This should fix brightness controls on some laptops.
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47861
+> 
+> Signed-off-by: Igor Murzov <e-mail@date.by>
 
-CVE-2012-0957
+Put more detials into the changelog, please.  The BZ entry linked above
+may or may not be accessible when the changelog is read by someone.
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: stable@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/acpi/video.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+> index 1e0a9e1..01bb58d 100644
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -1349,8 +1349,12 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
+>  	struct acpi_device *dev;
+>  
+>  	status = acpi_video_device_enumerate(video);
+> -	if (status)
+> -		return status;
+> +	if (status) {
+> +		if (status == AE_AML_PACKAGE_LIMIT)
+> +			status = 0; /* Ignore this error */
+> +		else
+> +			return status;
+> +	}
 
----
-v2:
- - corrected credit to PaX Team.
- - moved stack clearing into if case to avoid penalty to common case.
----
- kernel/sys.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+First off, please add a comment explaining _why_ we're ignoring the error.
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c5cb5b9..2300248 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1265,13 +1265,13 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
- {
- 	int ret = 0;
--	char buf[65];
- 
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
-+		const char *rest = UTS_RELEASE;
-+		char buf[65] = { 0 };
- 		int ndots = 0;
- 		unsigned v;
- 
-@@ -1283,7 +1283,9 @@ static int override_release(char __user *release, int len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
-+		snprintf(buf, sizeof(buf), "2.6.%u%s", v, rest);
-+		if (sizeof(buf) < len)
-+			len = sizeof(buf);
- 		ret = copy_to_user(release, buf, len);
- 	}
- 	return ret;
--- 
-1.7.9.5
+Second, what about adding just:
+
+if (status == AE_AML_PACKAGE_LIMIT)
+	status = 0;
+
+before the "if (status)" check?
+
+>  
+>  	list_for_each_entry(dev, &device->children, node) {
+
+Thanks,
+Rafael
 
 
 -- 
-Kees Cook
-Chrome OS Security
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
