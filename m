@@ -1,228 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2JIFhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 01:37:21 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:34319 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750999Ab2JIFhT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 01:37:19 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Date: Tue, 9 Oct 2012 07:37:02 +0200
-Subject: RE: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Topic: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Thread-Index: Ac2hekJQukkkX5cJRMOWjSdav3E+FQAZyvbAAP+ZlnA=
-Message-ID: <F45880696056844FA6A73F415B568C695B697CB0C9@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
- <1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
- <20120928160045.GD2625@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
- <20121001155940.GA1957@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
- <20121003151748.GA5745@kroah.com> 
-Accept-Language: en-US
+	id S1752148Ab2JIFob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 01:44:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36570 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab2JIFo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 01:44:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,558,1344236400"; 
+   d="p7s'?scan'208";a="203266047"
+From: "Wei, Gang" <gang.wei@intel.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Ben Guthro <ben@guthro.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: RE: Possible regression: BUG in fs/sysfs/group.c:65
+Thread-Topic: Possible regression: BUG in fs/sysfs/group.c:65
+Thread-Index: AQHNox8E1Kp1ekh1gUKX3firu5n7P5erBRIp//+LP4CABemhAA==
+Date: Tue, 9 Oct 2012 05:44:22 +0000
+Message-ID: <D0B11485C64D4B47B66902F8A4E901BE34D016@SHSMSX101.ccr.corp.intel.com>
+References: <CAOvdn6X+vPT6PH+mmhocR7pdJP4HLE8RFbVtScGFakzFci3=hQ@mail.gmail.com>
+ <87zk40ss2h.fsf@xmission.com> <20121005191927.GA14645@ennui.austin.ibm.com>
+In-Reply-To: <20121005191927.GA14645@ennui.austin.ibm.com>
+Accept-Language: zh-CN, en-US
 Content-Language: en-US
-X-MS-Has-Attach: 
+X-MS-Has-Attach: yes
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
+	micalg=SHA1; boundary="----=_NextPart_000_00AF_01CDA624.302113C0"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On Wed, Oct 03, 2012 at 05:54:08AM +0200, Arun MURTHY wrote:
-> > > > On Mon, Oct 01, 2012 at 07:30:38AM +0200, Arun MURTHY wrote:
-> > > > > > On Fri, Sep 28, 2012 at 01:35:01PM +0530, Arun Murthy wrote:
-> > > > > > > +#include <linux/module.h>
-> > > > > > > +#include <linux/slab.h>
-> > > > > > > +#include <linux/err.h>
-> > > > > > > +#include <linux/printk.h>
-> > > > > > > +#include <linux/modem_shm/modem.h>
-> > > > > > > +
-> > > > > > > +static struct class *modem_class;
-> > > > > >
-> > > > > > What's wrong with a bus_type instead?
-> > > > >
-> > > > > Can I know the advantage of using bus_type over class?
-> > > >
-> > > > You have devices living on a bus, and it's much more descriptive
-> > > > than a class (which we are going to eventually get rid of one of
-> > > > these
-> > days...).
-> > > >
-> > > > Might I ask why you choose a class over a bus_type?
-> > >
-> > > Basically my requirement is to create a central entity for accessing
-> > > and releasing modem from APE.
-> >
-> > What is an "APE"?
-> >
-> > And what do you mean by "accessing" and "releasing"?
-> 
-> APE - Application Processor Engine
-> There are two processors but on a single chip, one being the APE and other is
-> the modem. So 'accessing' means requesting access or waking-up the co-
-> processor and releasing means allowing the co-processor to sleep.
-> 
-> 
-> >
-> > > Since this is done by different clients the central entity should be
-> > > able to handle the request and play safely, since this has more
-> > > affect in system suspend and deep sleep. Using class helps me in
-> > > achieving this and also create an entry to user space which can be
-> > > used in the later parts. Moreover this not something like a bus or
-> > > so, so I didn't use bus instead went with a simple class approach.
-> >
-> > But as you have devices that are "binding" to this "controller", a bus
-> > might make more sense, right?
-> 
-> Have explained above regarding the platform, the concept of bus doesn't
-> come into picture at all. Here its just waking-up the modem and allowing it to
-> go to sleep.
-> 
-> >
-> > I don't see how a class helps out for you here more than anything
-> > else, what are you expecting from the class interface?  You aren't
-> > using the reference counting logic it provides, so why use it at all?
-> 
-> I am using the reference counting logic in class such as
-> class_for_each_device.
-> 
-> >
-> > Actually, why use the driver core at all in the first place if you
-> > aren't needing the devices to show up in sysfs (as you don't have a
-> > device, you are just a mediator)?
-> 
-> Yes I am something like a mediator, but since this is associated with many
-> clients, there should be some central entity to take inputs from all the clients
-> and act accordingly. This MAF does that. Sysfs will also be created for this
-> MAF in the coming versions.
-> 
-> >
-> > > > > > > +int modem_release(struct modem_desc *mdesc) {
-> > > > > > > +	if (!mdesc->release)
-> > > > > > > +		return -EFAULT;
-> > > > > > > +
-> > > > > > > +	if (modem_is_requested(mdesc)) {
-> > > > > > > +		atomic_dec(&mdesc->mclients->cnt);
-> > > > > > > +		if (atomic_read(&mdesc->use_cnt) == 1) {
-> > > > > > > +			mdesc->release(mdesc);
-> > > > > > > +			atomic_dec(&mdesc->use_cnt);
-> > > > > > > +		}
-> > > > > >
-> > > > > > Eeek, why aren't you using the built-in reference counting
-> > > > > > that the struct device provided to you, and instead are rolling your
-> own?
-> > > > > > This happens in many places, why?
-> > > > >
-> > > > > My usage of counters over here is for each modem there are many
-> > clients.
-> > > > > Each of the clients will have a ref to modem_desc. Each of them
-> > > > > use this for requesting and releasing the modem. One counter for
-> > > > > tracking the request and release for each client which is done
-> > > > > by variable 'cnt' in
-> > > > struct clients.
-> > > > > The counter use_cnt is used for tracking the modem
-> > > > > request/release irrespective of the clients and counter cli_cnt
-> > > > > is used for restricting the modem_get to the no of clients defined in
-> no_clients.
-> > > > >
-> > > > > So totally 3 counter one for restricting the usage of modem_get
-> > > > > by clients, second for restricting modem request/release at top
-> > > > > level, and 3rd for restricting modem release/request for per
-> > > > > client per modem
-> > > > basis.
-> > > > >
-> > > > > Can you let me know if the same can be achieved by using
-> > > > > built-in ref counting?
-> > > >
-> > > > Yes, because you don't need all of those different levels, just
-> > > > stick with one and you should be fine. :)
-> > > >
-> > >
-> > > No, checks at all these levels are required, I have briefed out the need
-> also.
-> >
-> > I still don't understand, sorry.
-> 
-> The pictorial view by Anish should help in understanding.
->            Modem                 Client1     Client2    Client3    Client4
-> State  turn-on                   request
-> State  no-state-change                     request
-> State  no-state-change                                   request
-> State  no-state-change				request
-> State  no-state-change      release
-> State  no-state-change                                   release
-> State  no-state-change                     release
-> State   turn-off					release
-> 
-> This is just a simple straight forward example.
-> 
-> >
-> > > This will have effect on system power management, i.e suspend and
-> > > deep sleep.
-> >
-> > How does power management matter?  If you tie into the driver model
-> > properly, power management comes "for free" so you don't have to do
-> > anything special about it.  Why not use that logic instead of trying
-> > to roll your own?
-> 
-> As said there are two processors on a single chip playing over here. One
-> being the APE(Application Processor Engine) and other is Modem. Since they
-> are on a single chip but for APE entering into deep sleep modem should be
-> released.
-> 
-> >
-> > > We restrict that the drivers should request modem only once and
-> > > release only once, but we cannot rely on the clients hence a check
-> > > for the same has to be done in the MAF.
-> >
-> > You can't rely on the clients to do what?  And why can't you rely on them?
-> > What is going to happen?  Who is a "client" here?  Other kernel code?
-> 
-> Yes, let me take my driver itself as an example. Here the clients are the
-> shared memory driver, sim driver, security etc. Shared memory driver is the
-> communicating media between the APE and Modem and hence needs to
-> wake-up the modem and after completion should allow modem to enter
-> sleep.
-> Similarly it's the same for sim driver also.
-> We define that the clients such as shared memory driver and the sim driver
-> should request for modem only one and then release only once and also
-> since this is a MAF shouldn't it take care of checking the same?
-> 
-> >
-> > I really don't understand your model at all as to what you are trying
-> > to mediate and manage here, sorry.  I suggest writing it all up as
-> > your first patch (documentation is good), so that we can properly
-> > review your implementation and not argue about how to implement
-> > something that I honestly don't understand.
-> 
-> Sorry for that. Actually my 4th patch in this patchset includes the
-> documentation.
-> Since it's the kernel doc I have made it as the last patch in this patchset, else
-> kernel doc compilation will fail.
-> Please feel free to refer the 4th patch for the documentation part and if still
-> not clear I can provide more explanation on this.
-> 
-> >
-> > > Also the no of clients should be defined and hence a check for the
-> > > same is done in MAF.
-> >
-> > Defined where?  What is "MAF"?
-> 
-> This driver is MAF(Modem Access Framework).
-> 
+------=_NextPart_000_00AF_01CDA624.302113C0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
+Kent Yoder wrote on=A02012-10-06:
+> On Fri, Oct 05, 2012 at 11:16:06AM -0700, Eric W. Biederman wrote:
+>> Ben Guthro <ben@guthro.net> writes:
+>>=20
+>>> I am seeing a regression in today's (Oct 5) kernel - 2 WARNINGS, and =
+a
+>>> BUG below that seems to occur upon resuming from S3.
+>>>=20
+>>> I can start a bisection with 3.6 - but wanted to check to see if
+>>> anyone else is also experiencing this failure...
+>>=20
+>> I took a quick look and this is a deterministic failure.  The same
+>> file is being added to sysfs twice.
+>>=20
+>> Since the routine causing this failure appears to be sys_add_ppi I
+>> expect the commit that added this failure mode is the commit below.
+>>=20
+>> Xiaoyan Zhang, Kent Yoder can you guys look at this see why the tpm
+>> code is adding itself multiple times into sysfs?
+>=20
+>   It looks like the ppi sysfs teardown code is MIA. Xiaoyan, can you =
+add
+> it to tpm_ppi.c, with a caller in tpm_unregister_hardware?
 
-Any further comments?
+I will try to provide a fix.
 
-Thanks and Regards,
-Arun R Murthy
-------------------
+Jimmy
+
+------=_NextPart_000_00AF_01CDA624.302113C0
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIdxjCCAyAw
+ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
+dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
+ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
+ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
+KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
+uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
+wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
+aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
+dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
+EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
+IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
+CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
+hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
+7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
+ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
+ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
+MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
+EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
+Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
+IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
+ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
+uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
+lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
+iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
+Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
+Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
+AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
+tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
+Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFijCCBHKgAwIBAgIKYR6AtwAA
+AAAABzANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
+YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUx
+OTI1MTNaFw0xNTA1MTUxOTM1MTNaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
+b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTCCASIw
+DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMGPgGLnOO5IOzlHRfr1XfCVb97V4BR2QVpPZ7Cr
+cIQ+FGa2KHD/6dPjwxOIrtFTdfW4BYikdFmxUZVBWRWZ5Vye2cCdGzFWqIEOE1e17nNx1jM8Z6GZ
+EqbDUS+vBuPlBFHKQoVm5BaNIHpyn2XZxqwjV9j5/crIfPrCGstk+2ztUhVS8OHEgzO784PgD9pO
+gBnnAbZHmEM1FYYmQ6ibS+gVCHzobDYG+YReRiHpFKWBxpUuP+X0WYFw/Ja1JW7N8pELAFDw0UFB
+WFgiv1QIusdLvSy8mcsLJ5wy050OVcxShqoUxhw/wvyuuoQxvmEPjhRa1C2oSCmGN0003GMhQWMC
+AwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKoWZq+3PVZTYK4Nwu3z7gfL
+UWB+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBTCKwhT
+x+hdMsKCgOmWwLgjQsAV+TAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQa
+xgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3Lmlu
+dGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3kl
+MjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0lu
+dGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYw
+gdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNh
+dGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcw
+AoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMv
+SW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUA
+A4IBAQCUY/1d0MS6VPTlIcOho1XWh193PD5kJDJSPdphLHQdM1oKA+whMdIBoY1VzTDDK+C+Ey4J
+cyna7fpC8uVmn/Rz/i9MZtyc7qezPtZTn9UyORvJmddH+Ox/RycGwe3ags8jUdspECorYOkJyZks
+nDIlTVUvbR7wyY+gGJYqxWXqrcVFEiMsWu8/OIlf7F2gAYMBw1kZ55dn4lWBIM0WqvReWpPvhYeN
+7Y+3MKEdSMkQ7TZiNbfdZ5D/8KfWNMTJ4VHltOgCL1lA5tx/F4R1920skpL5eu3Sj650RUe3rOXs
+aV5NyJzBwB31+1zsmleVdFD0k/Fw9HxXbAQE35ucN/7CMIIFijCCBHKgAwIBAgIKYSCKYgAAAAAA
+CDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRp
+b24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wOTA1MTUxOTI3
+MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3Jh
+dGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc7KB+eiYElmrcEWE32WUdHvWG
++IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+AArc0la87Olybzm8K9jXEfTB
+vTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63NKdc2bT804HRf6YptZFa4k6Y
+N94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9Ruk8yN+3N6n9fUo/qBigiF2kE
+n9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXTH5l575H4Lq++77OFv38CAwEA
+AaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7GKvdZsggQkCVvw939imYxMCvF
+MAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQ5oFY2ekKQ
+/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTAfBgNVHSMEGDAWgBQaxgxK
+xEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGphk5odHRwOi8vd3d3LmludGVs
+LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBQb2xpY3klMjBD
+QS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVs
+JTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB4wYIKwYBBQUHAQEEgdYwgdMw
+YwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVz
+L0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNydDBsBggrBgEFBQcwAoZg
+aHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZpY2F0ZXMvSW50
+ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0MA0GCSqGSIb3DQEBBQUAA4IB
+AQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65JT+oYgpIAtfEsYXeUJu1cChq
+pb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO8jOmN4jTjfJq3ElZ7yFWpy7r
+B3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNsHDNrJZX1vxlM78Lb1hjskTEN
+PmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiLDUqzy1Z6KL7TcOS/PCl8RHCJ
+XkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIF+zCCBOOgAwIBAgIKHtX06gABAACWPTAN
+BgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24x
+KzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3VpbmcgQ0EgM0IwHhcNMTIwNjA4MDgw
+NTExWhcNMTUwNTE1MTkzNzI2WjA3MRIwEAYDVQQDEwlXZWksIEdhbmcxITAfBgkqhkiG9w0BCQEW
+Emdhbmcud2VpQGludGVsLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALNyfS4y
+C6aDo3DZ/oId96Dvi8CB5SJyDUcMhpKWZtzqPX2mMOqQNgv4qAtHUjt4ibyPSjGZ+0EM3r63384g
+GcVR8+uxiuijBIOCkis6oGQ+TmBl1i28KobkE4jNnLCES0keisfNdzO8vAOxIFbT9KxQl1f1Mfvs
+ZfyGfFYB53gHCh1VxdZ7a2XKaON+l2YYx2p5xGGZtDDb61ajXSGvdHK+qMIfo7LMoZmY42t5Nawg
+izwcqBPUOLR+JXOtyGGiXZx3wZPeRmZx/eCMPBhSlfewpvUrK8W0kL591Lv0HeUVEJye2bOmlLo1
+DeIp6KH9JujFB33KhHXvNsugc9IYUVMCAwEAAaOCAugwggLkMAsGA1UdDwQEAwIHgDA8BgkrBgEE
+AYI3FQcELzAtBiUrBgEEAYI3FQiGw4x1hJnlUYP9gSiFjp9TgpHACWeB3r05lfBDAgFkAgEIMB0G
+A1UdDgQWBBQYdG5bBKSgjlBUQ6dpUm2vjlkEKDAfBgNVHSMEGDAWgBQOxir3WbIIEJAlb8Pd/Ypm
+MTArxTCBzwYDVR0fBIHHMIHEMIHBoIG+oIG7hldodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
+b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5j
+cmyGYGh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvQ1JML0ludGVsJTIw
+RXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNybDCB9QYIKwYBBQUHAQEE
+gegwgeUwbAYIKwYBBQUHMAKGYGh0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlm
+aWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNy
+dDB1BggrBgEFBQcwAoZpaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9j
+ZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwM0Io
+MSkuY3J0MB8GA1UdJQQYMBYGCCsGAQUFBwMEBgorBgEEAYI3CgMMMCkGCSsGAQQBgjcVCgQcMBow
+CgYIKwYBBQUHAwQwDAYKKwYBBAGCNwoDDDBBBgNVHREEOjA4oCIGCisGAQQBgjcUAgOgFAwSZ2Fu
+Zy53ZWlAaW50ZWwuY29tgRJnYW5nLndlaUBpbnRlbC5jb20wDQYJKoZIhvcNAQEFBQADggEBAHuy
+cX8AxjwfC5zmWDh0QpY8vDSgyLXaUDYKm2+ATDJDn5kALJgxAqaThvqGTH+oz73HQ7L8v7QxM0Yp
+1IQd/k5GeqMzhuXEoPM4rcORlOlvRqxBJNZUuYwxvyYaUpLU1W8EsOB2zB31ykzdXH93b6ZpfJk7
+8eqZuq00xHxU9mw4PXlWPnn1NDBYD1JH/ufCmpFk6sBE2bBf2u2miBEwHoRUyoH1nbu78aOs4mE6
+fRC9NutIriNPI2790R3FAY8dLWl3nrpXs80TrUCptat61uNRJDH06KXe81QCtvDVlBGbZ4gqWR3P
+ZGsnJKeOLOO38PQvFFm1Xjs4DVYiPVYyCTIwggZCMIIFKqADAgECAgoUmebGAAEAAFPVMA0GCSqG
+SIb3DQEBBQUAMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkG
+A1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQTAeFw0xMDEyMDEwOTMxMzla
+Fw0xMzExMTUwOTMxMzlaMDcxEjAQBgNVBAMTCVdlaSwgR2FuZzEhMB8GCSqGSIb3DQEJARYSZ2Fu
+Zy53ZWlAaW50ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlkDjEHBe0Gg1
+dZhmebTYRY4qWGcBCKuEGfp8DuoVXyv3gW6bXc8TcWRSXj0vxL/+/RKObwVc17Cu2XcO0MTU1EOo
+ohTEl/QDnBvj0qeqKnkZGmAM0cCU7+m07N0ATPEzg0t2gJUA8dVO37iAo1KMQ72ovMJ1LU+x7tno
+d6PhrgXLmbjkEjQZnHwLvuI2TdiKKDvJtd6xz6DQuIBSPyn4wYsckGQcb5NlEiQCkCaPM/ZtcKcm
+Kxu0g1TfW7zIWuRhkPIOyin/bsN8RBTTq8lL74yFgTB4ybAMp13wtROVAN5FLYE31CAgJ69EBNix
+xTBNsLtv+KM6sXsbDccp3H5JwQIDAQABo4IDLzCCAyswCwYDVR0PBAQDAgQwMD0GCSsGAQQBgjcV
+BwQwMC4GJisGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OCkcAJZ4S52UGHhP9OAgFkAgEMMEQGCSqG
+SIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggq
+hkiG9w0DBzAdBgNVHQ4EFgQUwmKbKrf26Ot7Acv/+2aZDzj7gaQwHwYDVR0jBBgwFoAUqhZmr7c9
+VlNgrg3C7fPuB8tRYH4wgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZXaHR0cDovL3d3dy5pbnRlbC5j
+b20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENB
+JTIwM0EoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L0NS
+TC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjAzQSgxKS5jcmwwgfUG
+CCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0
+b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
+MjAzQSgxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
+cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3Vpbmcl
+MjBDQSUyMDNBKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYKKwYBBAGCNwoDBDApBgkrBgEE
+AYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwQwQQYDVR0RBDowOKAiBgorBgEEAYI3
+FAIDoBQMEmdhbmcud2VpQGludGVsLmNvbYESZ2FuZy53ZWlAaW50ZWwuY29tMA0GCSqGSIb3DQEB
+BQUAA4IBAQAPFjqbkKIbnvnYwFG/QpKUm2yGzieys9IJny7PU2fVV4ksTL7emcpCfhFtlg7cPEgU
+7Rx6gG4hO+ZBx9oojImSGWj44Pj3EzSyRRaN+UK1VVESHgE2HKmETsAnRN/wulP9ahPJNmEOklBg
+oX6BJg9NYTqp8gDS6m1QBQoh/C2/51MGcmTecM4g5BuEpgmvxovlPDHlnSq390NXwXtdh1lM5qbo
+V9FBWFCR1Q7mf7n2Y6b/9m9bn9gMzbdwjMrnpYIiC5rN5WBDQtuzAios8OheGSTX0A1npuGZ3cvP
+NlPbRAoD7TVAdGhr+ZztVLA0+IFYmQqHV2C8q3TybgPnp1/uMYIDhjCCA4ICAQEwZDBWMQswCQYD
+VQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVy
+bmFsIEJhc2ljIElzc3VpbmcgQ0EgM0ICCh7V9OoAAQAAlj0wCQYFKw4DAhoFAKCCAfcwGAYJKoZI
+hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDA5MDU0NDIyWjAjBgkqhkiG
+9w0BCQQxFgQUT0a/haChk0gWPr6CSoK92Vb1KrMwcwYJKwYBBAGCNxAEMWYwZDBWMQswCQYDVQQG
+EwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFs
+IEJhc2ljIElzc3VpbmcgQ0EgM0ECChSZ5sYAAQAAU9UwdQYLKoZIhvcNAQkQAgsxZqBkMFYxCzAJ
+BgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0
+ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQQIKFJnmxgABAABT1TCBqwYJKoZIhvcNAQkPMYGdMIGa
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCgYIKoZIhvcNAwcwCwYJYIZIAWUDBAECMA4GCCqG
+SIb3DQMCAgIAgDAHBgUrDgMCBzANBggqhkiG9w0DAgIBQDANBggqhkiG9w0DAgIBKDAHBgUrDgMC
+GjALBglghkgBZQMEAgMwCwYJYIZIAWUDBAICMAsGCWCGSAFlAwQCATANBgkqhkiG9w0BAQEFAASC
+AQCv+fh8K1zZvQrKDfkGK6/hXPQ3jc8DVTVb2D8rXoAygOk7dNAtXZWssIolcUr6qsoaofb3AbSB
+xpdVeePcWE7QgtclPr0wpHcVYm+XQ/DSBZkw42+FnXCRFyTjIaP/F6vP+QfVU8ghvNK9834O+l0G
+R76Uw4BNri8xRW5FrmBW0zjNXYzqPDxYpanWOEQyxAdLFXPoVzeAf/ogB1Fv2D2or9yhgcD0kR6I
+ss5G5ldMHLPas7h/bbDZKuKGJ35LJReedW5We6GDu+Nb0IbG7lvO7q8tBcmBOsVIkEI0BrkpyPsJ
++54mFm2XKqqvEEd2Os2RZVU0IIIH4czhNGX07FnaAAAAAAAA
+
+------=_NextPart_000_00AF_01CDA624.302113C0--
