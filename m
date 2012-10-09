@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab2JIL7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 07:59:25 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:33596 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab2JIL7X (ORCPT
+	id S1753732Ab2JIMAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:00:38 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56130 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab2JIMAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 07:59:23 -0400
+	Tue, 9 Oct 2012 08:00:35 -0400
 MIME-Version: 1.0
-X-Originating-IP: [93.172.255.235]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057923BD9B59E3@EXDCVYMBSTM005.EQ1STM.local>
-References: <20121001024544.GA12711@localhost> <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
- <CAK=WgbYK2rFw7iFV1fGUb1saXrsH+yh=2Etmuj5+6ob6cCKntw@mail.gmail.com> <81C3A93C17462B4BBD7E272753C1057923BD9B59E3@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 9 Oct 2012 13:52:49 +0200
-Message-ID: <CAK=WgbaNHBVeF_A0jyNpRvnsO_BbkJGxKzyroC6pO1x+OELe0w@mail.gmail.com>
-Subject: Re: [remoteproc:for-next 6/9] remoteproc_virtio.c:(.text+0x238e7e):
- undefined reference to `vring_transport_features'
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
+References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com>
+	<CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
+	<CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
+Date: Tue, 9 Oct 2012 14:00:34 +0200
+Message-ID: <CACRpkdb+txD9hfhs7pfnzmDuU59VXEdzJc86z=tdy2yqYBCqOg@mail.gmail.com>
+Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Drasko DRASKOVIC <drasko.draskovic@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
-
-On Tue, Oct 9, 2012 at 12:30 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> Sorry for not responding sooner, but I thought this issue was solved with
-> your patch  "remoteproc: fix (again) the virtio-related build breakage"
-> (https://lkml.org/lkml/2012/10/6/85).
+On Fri, Oct 5, 2012 at 3:16 PM, Drasko DRASKOVIC
+<drasko.draskovic@gmail.com> wrote:
+> [Me]
+>> If I understand correctly the below more or less exports
+>> struct irq_chip to userspace,
+>> trying to hide it by instead exposing a property of the
+>> containing struct gpio_chip and it worries me.
 >
-> I'm not sure I understand why you would want to add a dependency to ARM.
-> But if you're uncomfortable by having STE_MODEM_RPROC directly selectable,
-> perhaps we could let it be selected by arch specific Kconfig files,  e.g. mach-ux500?
+> No, it should not.
 
-I would just like the Kconfig dependencies to reflect the "real world":
+You are exporting all of the defines from irq.h,
+IRQ_TYPE_NONE, IRQ_TYPE_EDGE_FALLING, etc
+to userspace. These are defined in <linux/irq.h> and that file
+has this comment on top:
 
-E.g., if there's no chance the STE modem is going to be used on x86,
-then let's not ask x86 folks about it.
+/*
+ * Please do not include this file in generic code.  There is currently
+ * no requirement for any architecture to implement anything held
+ * within this file.
+ *
+ * Thanks. --rmk
+ */
 
-Does limiting the STE modem to certain platform/architectures make
-sense ? (if not, that's ok)
+And that comment is even only about generic *KERNEL* code,
+userspace is way, way more than that.
 
-Thanks,
-Ohad.
+> It operates only on already exported gpiochip
+> (similar to gpio_export_link()).
+> It just helps exported GPIO be configured in "interrupt" and not in
+> "normal" mode.
+
+So can you explain exactly why userspace want to configure
+GPIO pins in interrupt mode, when there is no way whatsoever
+for userspace to handle these IRQs?
+
+Yours,
+Linus Walleij
