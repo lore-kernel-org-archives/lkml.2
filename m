@@ -1,182 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2JIJb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:31:27 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44788 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab2JIJbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:31:25 -0400
+	id S1754658Ab2JIJc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:32:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34964 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab2JIJc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 05:32:56 -0400
+Date: Tue, 9 Oct 2012 10:32:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+Message-ID: <20121009093250.GP29125@suse.de>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz>
+ <alpine.LSU.2.00.1210082029190.2237@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <1349496603-20775-6-git-send-email-cheiny@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
-	<1349496603-20775-6-git-send-email-cheiny@synaptics.com>
-Date: Tue, 9 Oct 2012 11:31:23 +0200
-Message-ID: <CACRpkdZht7RfL48FjxnCKD9R7tHaKdQjM=hO47coMkoctPH_tw@mail.gmail.com>
-Subject: Re: [RFC PATCH 05/06] input/rmi4: F01 - device control
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1210082029190.2237@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 6, 2012 at 6:10 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+On Mon, Oct 08, 2012 at 09:24:40PM -0700, Hugh Dickins wrote:
+> > <SNIP>
+> > CC: Mel Gorman <mgorman@suse.de>
+> 
+> and I'm grateful to Mel's ack for reawakening me to it...
+> 
+> > CC: linux-s390@vger.kernel.org
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> 
+> but I think it's wrong.
+> 
 
-> RMI Function 01 implements basic device control and power management
-> behaviors for the RMI4 sensor.  Since the last patch, we've decoupled rmi_f01.c
-> implementation from rmi_driver.c, so rmi_f01.c acts as a standard driver
-> module to handle F01 devices on the RMI bus.
->
-> Like other modules, a number of attributes have been moved from sysfs to
-> debugfs, depending on their expected use.
->
->
-> rmi_f01.h exports definitions that we expect to be used by other functionality
-> in the future (such as firmware reflash).
->
->
-> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
->
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-> Cc: Joeri de Gram <j.de.gram@gmail.com>
->
-> ---
+Dang.
 
-There is liberal whitespacing above. (No big deal, but anyway.)
+> > ---
+> >  mm/rmap.c |   16 ++++++++++++++--
+> >  1 files changed, 14 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/mm/rmap.c b/mm/rmap.c
+> > index 0f3b7cd..6ce8ddb 100644
+> > --- a/mm/rmap.c
+> > +++ b/mm/rmap.c
+> > @@ -973,7 +973,15 @@ int page_mkclean(struct page *page)
+> >  		struct address_space *mapping = page_mapping(page);
+> >  		if (mapping) {
+> >  			ret = page_mkclean_file(mapping, page);
+> > -			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+> > +			/*
+> > +			 * We ignore dirty bit for pagecache pages. It is safe
+> > +			 * as page is marked dirty iff it is writeable (page is
+> > +			 * marked as dirty when it is made writeable and
+> > +			 * clear_page_dirty_for_io() writeprotects the page
+> > +			 * again).
+> > +			 */
+> > +			if (PageSwapCache(page) &&
+> > +			    page_test_and_clear_dirty(page_to_pfn(page), 1))
+> >  				ret = 1;
+> 
+> This part you could cut out: page_mkclean() is not used on SwapCache pages.
+> I believe you are safe to remove the page_test_and_clear_dirty() from here.
+> 
+> >  		}
+> >  	}
+> > @@ -1183,8 +1191,12 @@ void page_remove_rmap(struct page *page)
+> >  	 * this if the page is anon, so about to be freed; but perhaps
+> >  	 * not if it's in swapcache - there might be another pte slot
+> >  	 * containing the swap entry, but page not yet written to swap.
+> > +	 * For pagecache pages, we don't care about dirty bit in storage
+> > +	 * key because the page is writeable iff it is dirty (page is marked
+> > +	 * as dirty when it is made writeable and clear_page_dirty_for_io()
+> > +	 * writeprotects the page again).
+> >  	 */
+> > -	if ((!anon || PageSwapCache(page)) &&
+> > +	if (PageSwapCache(page) &&
+> >  	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+> >  		set_page_dirty(page);
+> 
+> But here's where I think the problem is.  You're assuming that all
+> filesystems go the same mapping_cap_account_writeback_dirty() (yeah,
+> there's no such function, just a confusing maze of three) route as XFS.
+> 
+> But filesystems like tmpfs and ramfs (perhaps they're the only two
+> that matter here) don't participate in that, and wait for an mmap'ed
+> page to be seen modified by the user (usually via pte_dirty, but that's
+> a no-op on s390) before page is marked dirty; and page reclaim throws
+> away undirtied pages.
+> 
+> So, if I'm understanding right, with this change s390 would be in danger
+> of discarding shm, and mmap'ed tmpfs and ramfs pages - whereas pages
+> written with the write system call would already be PageDirty and secure.
+> 
 
-(...)
-> +/**
-> + * @reset - set this bit to force a firmware reset of the sensor.
-> + */
-> +union f01_device_commands {
-> +       struct {
-> +               bool reset:1;
-> +               u8 reserved:7;
-> +       } __attribute__((__packed__));
-> +       u8 reg;
-> +};
+In the case of ramfs, what marks the page clean so it could be discarded? It
+does not participate in dirty accounting so it's not going to clear the
+dirty flag in clear_page_dirty_for_io(). It doesn't have a writepage
+handler that would use an end_io handler to clear the page after "IO"
+completes. I am not seeing how a ramfs page can get discarded at the moment.
 
-I'm still scared by these unions. I see what you're doing but my
-preferred style of driver writing is to use a simple u8 if you just treat
-it the right way with some |= and &= ...
+shm and tmpfs are indeed different and I did not take them into account
+(ba dum tisch) when reviewing. For those pages would it be sufficient to
+check the following?
 
-#include <linux/bitops.h>
+PageSwapCache(page) || (page->mapping && !bdi_cap_account_dirty(page->mapping)
 
-#define F01_RESET BIT(0)
+The problem the patch dealt with involved buffers associated with the page
+and that shouldn't be a problem for tmpfs, right? I recognise that this
+might work just because of co-incidence and set off your "Yuck" detector
+and you'll prefer the proposed solution below.
 
-u8 my_command = F01_RESET;
+> You mention above that even the kernel writing to the page would mark
+> the s390 storage key dirty.  I think that means that these shm and
+> tmpfs and ramfs pages would all have dirty storage keys just from the
+> clear_highpage() used to prepare them originally, and so would have
+> been found dirty anyway by the existing code here in page_remove_rmap(),
+> even though other architectures would regard them as clean and removable.
+> 
+> If that's the case, then maybe we'd do better just to mark them dirty
+> when faulted in the s390 case.  Then your patch above should (I think)
+> be safe.  Though I'd then be VERY tempted to adjust the SwapCache case
+> too (I've not thought through exactly what that patch would be, just
+> one or two suitably placed SetPageDirtys, I think), and eliminate
+> page_test_and_clear_dirty() altogether - no tears shed by any of us!
+>  
 
-send(&my_command);
+Do you mean something like this?
 
-I will not insist on this because it's a bit about programming style.
-For memory-mapped devices we usually do it my way, but this
-is more like some protocol and I know protocols like to do things
-with structs and stuff so no big deal.
+diff --git a/mm/memory.c b/mm/memory.c
+index 5736170..c66166f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3316,7 +3316,20 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		} else {
+ 			inc_mm_counter_fast(mm, MM_FILEPAGES);
+ 			page_add_file_rmap(page);
+-			if (flags & FAULT_FLAG_WRITE) {
++
++			/*
++			 * s390 depends on the dirty flag from the storage key
++			 * being propagated when the page is unmapped from the
++			 * page tables. For dirty-accounted mapping, we instead
++			 * depend on the page being marked dirty on writes and
++			 * being write-protected on clear_page_dirty_for_io.
++			 * The same protection does not apply for tmpfs pages
++			 * that do not participate in dirty accounting so mark
++			 * them dirty at fault time to avoid the data being
++			 * lost
++			 */
++			if (flags & FAULT_FLAG_WRITE ||
++			    !bdi_cap_account_dirty(page->mapping)) {
+ 				dirty_page = page;
+ 				get_page(dirty_page);
+ 			}
 
-> +#ifdef CONFIG_RMI4_DEBUG
-> +struct f01_debugfs_data {
-> +       bool done;
-> +       struct rmi_function_container *fc;
-> +};
-> +
-> +static int f01_debug_open(struct inode *inodep, struct file *filp)
-> +{
-> +       struct f01_debugfs_data *data;
-> +       struct rmi_function_container *fc = inodep->i_private;
-> +
-> +       data = devm_kzalloc(&fc->dev, sizeof(struct f01_debugfs_data),
-> +               GFP_KERNEL);
+Could something like this result in more writes to swap? Lets say there
+is an unmapped tmpfs file with data on it -- a process maps it, reads the
+entire mapping and exits. The page is now dirty and potentially will have
+to be rewritten to swap. That seems bad. Did I miss your point?
 
-Wait, you probably did this because I requested it, but I was maybe
-wrong?
+> A separate worry came to mind as I thought about your patch: where
+> in page migration is s390's dirty storage key migrated from old page
+> to new?  And if there is a problem there, that too should be fixed
+> by what I propose in the previous paragraph.
+> 
 
-Will this not re-allocate a chunk every time you look at a debugfs
-file? So it leaks memory?
+hmm, very good question. It should have been checked in
+migrate_page_copy() where it could be done under the page lock before
+the PageDirty check. Martin?
 
-In that case common kzalloc() and kfree() is the way to go, as it
-is for dynamic buffers. Sorry for screwing things up for you. :-(
-
-> +       for (i = 0; i < f01->irq_count && *local_buf != 0;
-> +            i++, local_buf += 2) {
-> +               int irq_shift;
-> +               int interrupt_enable;
-> +               int result;
-> +
-> +               irq_reg = i / 8;
-> +               irq_shift = i % 8;
-
-Please stop doing these arithmetics-turned-maths things.
-
-irq_reg = i >> 8;
-irq_shift = i & 0xFF;
-
-(...)
-> +static ssize_t rmi_fn_01_interrupt_enable_show(struct device *dev,
-> +                               struct device_attribute *attr, char *buf)
-> +{
-> +       struct rmi_function_container *fc;
-> +       struct f01_data *data;
-> +       int i, len, total_len = 0;
-> +       char *current_buf = buf;
-> +
-> +       fc = to_rmi_function_container(dev);
-> +       data = fc->data;
-> +       /* loop through each irq value and copy its
-> +        * string representation into buf */
-> +       for (i = 0; i < data->irq_count; i++) {
-> +               int irq_reg;
-> +               int irq_shift;
-> +               int interrupt_enable;
-> +
-> +               irq_reg = i / 8;
-> +               irq_shift = i % 8;
-
-Dito.
-
-(...)
-> +static int f01_probe(struct device *dev);
-
-Do you really need to forward-declare this?
-
-(...)
-> +static struct rmi_function_handler function_handler = {
-> +       .driver = {
-> +               .owner = THIS_MODULE,
-> +               .name = "rmi_f01",
-> +               .bus = &rmi_bus_type,
-> +               .probe = f01_probe,
-> +               .remove = f01_remove_device,
-> +       },
-> +       .func = 0x01,
-> +       .config = rmi_f01_config,
-> +       .attention = rmi_f01_attention,
-> +
-> +#ifdef CONFIG_PM
-> +       .suspend = rmi_f01_suspend,
-> +       .resume = rmi_f01_resume,
-> +#endif  /* CONFIG_PM */
-> +};
-
-Just move this block of struct *below* the probe function...
-
-> +static __devinit int f01_probe(struct device *dev)
-
-Header file looks OK (if these unions is the way to go...)
-
-Yours,
-Linus Walleij
+-- 
+Mel Gorman
+SUSE Labs
