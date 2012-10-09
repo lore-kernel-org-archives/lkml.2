@@ -1,42 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab2JIRhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:37:20 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:53787 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756415Ab2JIRhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:37:14 -0400
-Date: Tue, 9 Oct 2012 11:37:06 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
- program headers
-Message-ID: <20121009173706.GE4124@obsidianresearch.com>
-References: <20120930232116.GC30637@obsidianresearch.com>
- <20121001153952.GB2100@linaro.org>
- <20121001160639.GA31620@obsidianresearch.com>
- <20121005084500.GI4625@n2100.arm.linux.org.uk>
- <20121008102413.GC2302@linaro.org>
+	id S1756555Ab2JIRiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:38:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33380 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756415Ab2JIRir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 13:38:47 -0400
+Date: Tue, 9 Oct 2012 10:37:26 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-2aa8eab029b319b2b458b3ba393bbba31961ea96@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1349716656-48165-12-git-send-email-dsahern@gmail.com>
+References: <1349716656-48165-12-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm:
+  Only process events for vcpus of interest
+Git-Commit-ID: 2aa8eab029b319b2b458b3ba393bbba31961ea96
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121008102413.GC2302@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:37:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 11:24:13AM +0100, Dave Martin wrote:
+Commit-ID:  2aa8eab029b319b2b458b3ba393bbba31961ea96
+Gitweb:     http://git.kernel.org/tip/2aa8eab029b319b2b458b3ba393bbba31961ea96
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Mon, 8 Oct 2012 11:17:35 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 8 Oct 2012 17:14:13 -0300
 
-> Partly this came from some side speculation about whether we could do
-> things like privileged read-only permissions on newer CPUs, for preventing
-> unintended or undesired writes to the kernel's code or read-only data.
+perf kvm: Only process events for vcpus of interest
 
-Some other arches page protect the kernel, but that tends to be at
-odds with the desire to use huge pages for the kernel mapping, and
-independent of the load headers..
+Minimizing processing overhead for each sample - which becomes important
+for the upcoming live mode when it has to deal with 100+k events per
+second.
 
-Jason
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Dong Hao <haodong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1349716656-48165-12-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-kvm.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 260abc5..b98095e 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -416,7 +416,10 @@ static double kvm_event_rel_stddev(int vcpu_id, struct kvm_event *event)
+ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ 			     u64 time_diff)
+ {
+-	kvm_update_event_stats(&event->total, time_diff);
++	if (vcpu_id == -1) {
++		kvm_update_event_stats(&event->total, time_diff);
++		return true;
++	}
+ 
+ 	if (!kvm_event_expand(event, vcpu_id))
+ 		return false;
+@@ -432,6 +435,12 @@ static bool handle_end_event(struct perf_kvm *kvm,
+ {
+ 	struct kvm_event *event;
+ 	u64 time_begin, time_diff;
++	int vcpu;
++
++	if (kvm->trace_vcpu == -1)
++		vcpu = -1;
++	else
++		vcpu = vcpu_record->vcpu_id;
+ 
+ 	event = vcpu_record->last_event;
+ 	time_begin = vcpu_record->start_time;
+@@ -461,7 +470,7 @@ static bool handle_end_event(struct perf_kvm *kvm,
+ 	BUG_ON(timestamp < time_begin);
+ 
+ 	time_diff = timestamp - time_begin;
+-	return update_kvm_event(event, vcpu_record->vcpu_id, time_diff);
++	return update_kvm_event(event, vcpu, time_diff);
+ }
+ 
+ static
+@@ -498,6 +507,11 @@ static bool handle_kvm_event(struct perf_kvm *kvm,
+ 	if (!vcpu_record)
+ 		return true;
+ 
++	/* only process events for vcpus user cares about */
++	if ((kvm->trace_vcpu != -1) &&
++	    (kvm->trace_vcpu != vcpu_record->vcpu_id))
++		return true;
++
+ 	if (kvm->events_ops->is_begin_event(evsel, sample, &key))
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
+ 
