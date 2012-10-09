@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab2JII5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:57:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48316 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2JII5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:57:24 -0400
-Date: Tue, 9 Oct 2012 16:57:05 +0800
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: marcel@holtmann.org, johan.hedberg@gmail.com, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, davej@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        levinsasha928@gmail.com
-Subject: Re: [PATCH resend] net, bluetooth: don't attempt to free a channel
- that wasn't created
-Message-ID: <20121009085705.GA9748@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Sasha Levin <sasha.levin@oracle.com>, marcel@holtmann.org,
-	johan.hedberg@gmail.com, davem@davemloft.net,
-	linux-bluetooth@vger.kernel.org, davej@redhat.com,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	levinsasha928@gmail.com
-References: <1349729312-14259-1-git-send-email-sasha.levin@oracle.com>
+	id S1754494Ab2JII6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 04:58:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37950 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754169Ab2JII6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 04:58:02 -0400
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Afzal Mohammed <afzal@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
+Date: Tue, 9 Oct 2012 14:27:20 +0530
+Message-ID: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349729312-14259-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sasha,
+With recent changes in omap gpmc driver code, in case of DT
+boot mode, where bootloader does not configure gpmc cs space
+will result into kernel BUG() inside gpmc_mem_init() function,
+as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
+gpmc_config7[0].baseaddress is set to '0' on reset.
 
-* Sasha Levin <sasha.levin@oracle.com> [2012-10-08 16:48:32 -0400]:
+This use-case is applicable for any board/EVM which doesn't have
+any peripheral connected to gpmc cs0, for example BeagleXM and
+BeagleBone, so DT boot mode fails.
 
-> We may currently attempt to free a channel which wasn't created due to
-> an error in the initialization path, this would cause a NULL ptr deref.
-> 
-> This would cause the following oops:
-> 
-> [   12.919073] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> [   12.919131] IP: [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
-> [   12.919135] PGD 0
-> [   12.919138] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [   12.919193] Dumping ftrace buffer:
-> [   12.919242]    (ftrace buffer empty)
-> [   12.919314] Modules linked in:
-> [   12.919318] CPU 1
-> [   12.919319] Pid: 6210, comm: krfcommd Tainted: G        W    3.6.0-next-20121004-sasha-00005-gb010653-dirty #30
-> [   12.919374] RIP: 0010:[<ffffffff836645c4>]  [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
-> [   12.919377] RSP: 0000:ffff880066933c38  EFLAGS: 00010246
-> [   12.919378] RAX: ffffffff8366c780 RBX: 0000000000000000 RCX: 6666666666666667
-> [   12.919379] RDX: 0000000000000fa0 RSI: ffffffff84d3f79e RDI: 0000000000000010
-> [   12.919381] RBP: ffff880066933c48 R08: ffffffff859989f8 R09: 0000000000000001
-> [   12.919382] R10: 0000000000000000 R11: 7fffffffffffffff R12: 0000000000000000
-> [   12.919383] R13: ffff88009b00a200 R14: ffff88009b00a200 R15: 0000000000000001
-> [   12.919385] FS:  0000000000000000(0000) GS:ffff880033600000(0000) knlGS:0000000000000000
-> [   12.919437] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [   12.919440] CR2: 0000000000000010 CR3: 0000000005026000 CR4: 00000000000406e0
-> [   12.919446] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   12.919451] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   12.919504] Process krfcommd (pid: 6210, threadinfo ffff880066932000, task ffff880065c4b000)
-> [   12.919506] Stack:
-> [   12.919510]  ffff88009b00a200 ffff880032084000 ffff880066933c68 ffffffff8366c7bc
-> [   12.919513]  7fffffffffffffff ffff880032084000 ffff880066933c98 ffffffff833ae0ae
-> [   12.919516]  ffff880066933ca8 0000000000000000 0000000000000000 ffff88009b00a200
-> [   12.919517] Call Trace:
-> [   12.919522]  [<ffffffff8366c7bc>] l2cap_sock_destruct+0x3c/0x80
-> [   12.919527]  [<ffffffff833ae0ae>] __sk_free+0x1e/0x1f0
-> [   12.919530]  [<ffffffff833ae2f7>] sk_free+0x17/0x20
-> [   12.919585]  [<ffffffff8366ca4e>] l2cap_sock_alloc.constprop.5+0x9e/0xd0
-> [   12.919591]  [<ffffffff8366cb9e>] l2cap_sock_create+0x7e/0x100
-> [   12.919652]  [<ffffffff83a4f32a>] ? _raw_read_lock+0x6a/0x80
-> [   12.919658]  [<ffffffff836402c4>] ? bt_sock_create+0x74/0x110
-> [   12.919660]  [<ffffffff83640308>] bt_sock_create+0xb8/0x110
-> [   12.919664]  [<ffffffff833aa232>] __sock_create+0x282/0x3b0
-> [   12.919720]  [<ffffffff833aa0b0>] ? __sock_create+0x100/0x3b0
-> [   12.919725]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
-> [   12.919779]  [<ffffffff833aa37f>] sock_create_kern+0x1f/0x30
-> [   12.919784]  [<ffffffff83675714>] rfcomm_l2sock_create+0x44/0x70
-> [   12.919787]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
-> [   12.919790]  [<ffffffff836785fe>] rfcomm_run+0x4e/0x1f0
-> [   12.919846]  [<ffffffff836785b0>] ? rfcomm_process_sessions+0x17e0/0x17e0
-> [   12.919852]  [<ffffffff81138ee3>] kthread+0xe3/0xf0
-> [   12.919908]  [<ffffffff8117b12e>] ? put_lock_stats.isra.14+0xe/0x40
-> [   12.919914]  [<ffffffff81138e00>] ? flush_kthread_work+0x1f0/0x1f0
-> [   12.919968]  [<ffffffff83a5077c>] ret_from_fork+0x7c/0x90
-> [   12.919973]  [<ffffffff81138e00>] ? flush_kthread_work+0x1f0/0x1f0
-> [   12.920161] Code: 83 ec 08 f6 05 ff 58 44 02 04 74 1b 8b 4f 10 48 89 fa 48 c7 c6 d9 d7 d4 84 48 c7 c7 80 9e aa 85 31 c0 e8 80
-> ac 3a fe 48 8d 7b 10 <f0> 83 6b 10 01 0f 94 c0 84 c0 74 05 e8 8b e0 ff ff 48 83 c4 08
-> [   12.920165] RIP  [<ffffffff836645c4>] l2cap_chan_put+0x34/0x50
-> [   12.920166]  RSP <ffff880066933c38>
-> [   12.920167] CR2: 0000000000000010
-> [   12.920417] ---[ end trace 5a9114e8a158ab84 ]---
-> 
-> Introduced in commit 61d6ef3e ("Bluetooth: Make better use of l2cap_chan
-> reference counting").
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  net/bluetooth/l2cap_sock.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+This patch adds of_have_populated_dt() check before creating
+device, so that for DT boot mode, gpmc probe will not be called
+which is expected behavior, as gpmc is not supported yet from DT.
 
-Patch has been applied to bluetooth-next. Thanks.
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Cc: Afzal Mohammed <afzal@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc Paul Walmsley <paul@pwsan.com>
+---
+This should go in for rc1, as this breaks AM33xx boot.
 
-	Gustavo
+ arch/arm/mach-omap2/gpmc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+index 8ab1e1b..c68f9e1 100644
+--- a/arch/arm/mach-omap2/gpmc.c
++++ b/arch/arm/mach-omap2/gpmc.c
+@@ -981,6 +981,10 @@ static int __init omap_gpmc_init(void)
+ 	struct platform_device *pdev;
+ 	char *oh_name = "gpmc";
+
++	/* If dtb is there, the devices will be created dynamically */
++	if (of_have_populated_dt())
++		return -ENODEV;
++
+ 	oh = omap_hwmod_lookup(oh_name);
+ 	if (!oh) {
+ 		pr_err("Could not look up %s\n", oh_name);
+--
+1.7.0.4
+
