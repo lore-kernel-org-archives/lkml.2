@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2JIRNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:13:00 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38995 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab2JIRM6 (ORCPT
+	id S1755369Ab2JIRN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:13:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31958 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab2JIRN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:12:58 -0400
-Date: Tue, 09 Oct 2012 13:12:56 -0400 (EDT)
-Message-Id: <20121009.131256.607485133133230904.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for sparc [ver #2]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <21204.1349774160@warthog.procyon.org.uk>
-References: <21204.1349774160@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 9 Oct 2012 13:13:56 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=swrB9e8O9tExfjkHIvsA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349802833.24256.25.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.6.1-rt1
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <cbe@osadl.org>
+Date: Tue, 09 Oct 2012 13:13:53 -0400
+In-Reply-To: <alpine.LFD.2.02.1210091811540.10988@ionos>
+References: <alpine.LFD.2.02.1210091535140.10988@ionos>
+	 <1349795389.24256.20.camel@gandalf.local.home>
+	 <alpine.LFD.2.02.1210091811540.10988@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Tue, 09 Oct 2012 10:16:00 +0100
+On Tue, 2012-10-09 at 18:19 +0200, Thomas Gleixner wrote:
+>  
+> > I've started looking at playing with the NAPI code again, and trying to
+> > see if I can add an ENAPI interface (Even Newer API), where the driver
+> > uses its own interrupt thread, and instead of having the polling in the
+> > network softirq, it can do the polling in its own thread.
+> 
+> It's pretty close to the behaviour I enforced with this change. Let's
+> play with that and figure out what influence it has on the network
+> throughput performance on RT. That needs probably a different
+> scheduling scheme than what Carsten needs for his deterministic
+> behaviour.
+> 
 
-> Can you merge the following branch into the sparc tree please.
-> 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Now that the fixups and the asm-generic chunk have been merged, I've
-> regenerated the patches to get rid of those dependencies and to take account of
-> any changes made so far in the merge window.  If you have already pulled the
-> older version of the branch aimed at you, then please feel free to ignore this
-> request.
-> 
-> The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
-> 
->   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-sparc-20121009
-> 
-> for you to fetch changes up to 5457982641fb3f5fb08ce22a853dd5474645c66d:
-> 
->   UAPI: (Scripted) Disintegrate arch/sparc/include/asm (2012-10-09 09:47:43 +0100)
+I was actually looking at the change for mainline, not for -rt ;-)
 
-Pulled, thanks David.
+-- Steve
+
+
