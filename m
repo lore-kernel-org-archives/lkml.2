@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2JIO0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:26:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49688 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab2JIO0m (ORCPT
+	id S1756070Ab2JIO1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:27:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39553 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab2JIO13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:26:42 -0400
+	Tue, 9 Oct 2012 10:27:29 -0400
+Date: Tue, 9 Oct 2012 17:26:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Sjur BRENDELAND <sjur.brandeland@stericsson.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [remoteproc:for-next 6/9] remoteproc_virtio.c:(.text+0x238e7e):
+ undefined reference to `vring_transport_features'
+Message-ID: <20121009142644.GD4587@mwanda>
+References: <20121001024544.GA12711@localhost>
+ <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
+ <CAK=WgbYK2rFw7iFV1fGUb1saXrsH+yh=2Etmuj5+6ob6cCKntw@mail.gmail.com>
+ <81C3A93C17462B4BBD7E272753C1057923BD9B59E3@EXDCVYMBSTM005.EQ1STM.local>
+ <CAK=WgbaNHBVeF_A0jyNpRvnsO_BbkJGxKzyroC6pO1x+OELe0w@mail.gmail.com>
+ <20121009132847.GC4587@mwanda>
+ <CAK=WgbadhpEaP=ObM8rT=+xnEmh3xzb_ORThDfutH+jDOCf2mQ@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [116.14.92.167]
-In-Reply-To: <s5hfw5ng5jw.wl%tiwai@suse.de>
-References: <CAMVG2st1-3kz-KRrm-zXZOGw8=QnyYbB3n5e8Z36xAbmD4b5RQ@mail.gmail.com>
-	<s5hvceli0ht.wl%tiwai@suse.de>
-	<CAMVG2ss7hmJAEt-vEsNBmTVDWMYCPyPo0UC34DKDBnr7t5gn8g@mail.gmail.com>
-	<s5htxu4ezc7.wl%tiwai@suse.de>
-	<s5hr4p8ez6u.wl%tiwai@suse.de>
-	<CAMVG2svG+SNY7B=SiCL9taRGhdZtGKZ6javtpRBPUdvB825BEg@mail.gmail.com>
-	<s5hfw5ng5jw.wl%tiwai@suse.de>
-Date: Tue, 9 Oct 2012 22:26:40 +0800
-Message-ID: <CAMVG2subEHt6LYCBhj=Qwb=d1rsrZ3hMcYntRPDXWbtXGfp=jw@mail.gmail.com>
-Subject: Re: [3.6-rc7] switcheroo race with Intel HDA...
-From: Daniel J Blueman <daniel@quora.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbadhpEaP=ObM8rT=+xnEmh3xzb_ORThDfutH+jDOCf2mQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2012 21:04, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 9 Oct 2012 19:23:56 +0800,
-> Daniel J Blueman wrote:
->> On 9 October 2012 18:07, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Tue, 09 Oct 2012 12:04:08 +0200,
->> > Takashi Iwai wrote:
->> >> At Tue, 9 Oct 2012 00:34:09 +0800,
->> >> Daniel J Blueman wrote:
->> >> > On 8 October 2012 20:58, Takashi Iwai <tiwai@suse.de> wrote:
->> >> > > At Tue, 25 Sep 2012 13:20:05 +0800,
->> >> > > Daniel J Blueman wrote:
->> >> > >> On my Macbook with a discrete Nvidia GPU, there is a race between
->> >> > >> selecting the integrated GPU and putting the discrete GPU into D3 [1],
->> >> > >> reliably causing a kernel oops [2].
->> >> > >>
->> >> > >> Introducing a delay of ~1s between the calls prevents this. When the
->> >> > >> second 'OFF' write path executes, it looks like struct azx at
->> >> > >> card->private_data hasn't yet been allocated yet [3], so there is
->> >> > >> likely some locking missing.
->> >> > >
->> >> > > It's rather pci_get_drvdata() returning NULL (i.e. card is NULL, thus
->> >> > > card->private_data causes Oops).  Could you check the patch like below
->> >> > > and see whether you get a kernel warning (but no Oops) or the problem
->> >> > > gets fixed by shifting the assignment of pci drvdata?
->> >> > [...]
->> >> >
->> >> > Good patching. Calling pci_set_drvdata later prevents the oops in HDA,
->> >> > though we see unexpected 0x0 responses in the response ring buffer
->> >> > [1], which we don't see when there's a >~1.5s delay between IGD and
->> >> > OFF.
->> >>
->> >> If the previous patch fixed, it means that the switching occurred
->> >> during the device was being probed.  Maybe a better approach to
->> >> register the VGA switcheroo after the proper initialization.
->> >>
->> >> The patch below is a revised one.  Please give it a try.
->> >
->> > Also, it's not clear which card spews the spurious response.
->> > Apply the patch below in addition.
->> [...]
->>
->> hda-intel: 0000:01:00.1: spurious response 0x0:0x0, last cmd=0x1f0004
->> $ lspci -s :1:0.1
->> 01:00.1 Audio device: NVIDIA Corporation Device 0e1b (rev ff)
->>
->> It's the NVIDIA device which presumably hasn't completed it's
->> transition to D3 at the time the OFF is executed.
->
-> OK, then could you try the patch below on the top of previous two
-> patches?
+On Tue, Oct 09, 2012 at 04:15:15PM +0200, Ohad Ben-Cohen wrote:
+> On Tue, Oct 9, 2012 at 3:28 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > Unless there is a good reason why
+> 
+> That's what I'm asking. Is there an inherent coupling with some
+> platform/architecture ? E.g., OMAP remote processors only go with
+> OMAP chips.
 
-The first IGD switcheroo command fails to switch to the integrated GPU:
+If it already compiles fine on x86 then there is no advantage to
+disabling it.
 
-# cat /sys/kernel/debug/vgaswitcheroo/switch
-0:DIS:+:Pwr:0000:01:00.0
-1:IGD: :Pwr:0000:00:02.0
-2:DIS-Audio: :Pwr:0000:01:00.1
-# echo IGD >/sys/kernel/debug/vgaswitcheroo/switch
-vga_switcheroo: client 1 refused switch
+regards,
+dan carpenter
 
-I also instrumented snd_hda_lock_devices, but none of the failure
-paths are being taken, which would leave inconsistent state, as the
-return value isn't checked.
-
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
