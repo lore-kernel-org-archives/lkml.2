@@ -1,41 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab2JIWfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:35:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55180 "EHLO mx1.redhat.com"
+	id S1755930Ab2JIWlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:41:13 -0400
+Received: from fieldses.org ([174.143.236.118]:51580 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab2JIWfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:35:12 -0400
-Date: Tue, 9 Oct 2012 15:35:04 -0700
-From: Zach Brown <zab@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tytso@mit.edu
-Subject: Re: [PATCH 3/5] aio: Rewrite refcounting
-Message-ID: <20121009223504.GS26187@lenny.home.zabbo.net>
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
- <1349764760-21093-3-git-send-email-koverstreet@google.com>
- <20121009182755.GN26187@lenny.home.zabbo.net>
- <20121009222153.GG29494@google.com>
+	id S1755016Ab2JIWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 18:41:11 -0400
+Date: Tue, 9 Oct 2012 18:41:09 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: David Howells <dhowells@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Disintegrate UAPI for nfs
+Message-ID: <20121009224109.GB25826@fieldses.org>
+References: <30732.1349789436@warthog.procyon.org.uk>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA90901876D@SACEXCMBX04-PRD.hq.netapp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121009222153.GG29494@google.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90901876D@SACEXCMBX04-PRD.hq.netapp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Alright... send it out then.
+On Tue, Oct 09, 2012 at 02:13:30PM +0000, Myklebust, Trond wrote:
+> On Tue, 2012-10-09 at 14:30 +0100, David Howells wrote:
+> > Can you merge the following branch into the nfs tree please.
+> > 
+> > This is to complete part of the Userspace API (UAPI) disintegration for which
+> > the preparatory patches were pulled recently.  After these patches, userspace
+> > headers will be segregated into:
+> > 
+> > 	include/uapi/linux/.../foo.h
+> > 
+> > for the userspace interface stuff, and:
+> > 
+> > 	include/linux/.../foo.h
+> > 
+> > for the strictly kernel internal stuff.
+> > 
+> > ---
+> > The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+> > 
+> >   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+> > 
+> > are available in the git repository at:
+> > 
+> > 
+> >   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-nfs-20121009
+> > 
+> > for you to fetch changes up to e3dd9a52cb5552c46c2a4ca7ccdfb4dab5c72457:
+> > 
+> >   UAPI: (Scripted) Disintegrate include/linux/sunrpc (2012-10-09 09:49:04 +0100)
+> > 
+> > ----------------------------------------------------------------
+> > UAPI Disintegration 2012-10-09
+> > 
+> > ----------------------------------------------------------------
+> > David Howells (2):
+> >       UAPI: (Scripted) Disintegrate include/linux/nfsd
+> >       UAPI: (Scripted) Disintegrate include/linux/sunrpc
+> > 
+> >  include/linux/nfsd/Kbuild           |   5 --
+> >  include/linux/nfsd/debug.h          |  31 +--------
+> >  include/linux/nfsd/export.h         |  52 +--------------
+> >  include/linux/nfsd/nfsfh.h          | 111 +-------------------------------
+> >  include/linux/nfsd/stats.h          |   8 +--
+> >  include/linux/sunrpc/Kbuild         |   1 -
+> >  include/linux/sunrpc/debug.h        |  39 +-----------
+> >  include/uapi/linux/nfsd/Kbuild      |   5 ++
+> >  include/{ => uapi}/linux/nfsd/cld.h |   0
+> >  include/uapi/linux/nfsd/debug.h     |  40 ++++++++++++
+> >  include/uapi/linux/nfsd/export.h    |  58 +++++++++++++++++
+> >  include/uapi/linux/nfsd/nfsfh.h     | 122 ++++++++++++++++++++++++++++++++++++
+> >  include/uapi/linux/nfsd/stats.h     |  17 +++++
+> >  include/uapi/linux/sunrpc/Kbuild    |   1 +
+> >  include/uapi/linux/sunrpc/debug.h   |  48 ++++++++++++++
+> >  15 files changed, 296 insertions(+), 242 deletions(-)
+> >  rename include/{ => uapi}/linux/nfsd/cld.h (100%)
+> >  create mode 100644 include/uapi/linux/nfsd/debug.h
+> >  create mode 100644 include/uapi/linux/nfsd/export.h
+> >  create mode 100644 include/uapi/linux/nfsd/nfsfh.h
+> >  create mode 100644 include/uapi/linux/nfsd/stats.h
+> >  create mode 100644 include/uapi/linux/sunrpc/debug.h
+> 
+> These files look like they are mainly NFS server related, so perhaps it
+> is better to merge through Bruce's tree.
+> 
+> Bruce?
 
-Workin' on it! :)
+Sure, I'll take it, thanks.
 
-> Also, do you know which branch Jens has his patches in?
-
-http://git.kernel.dk/?p=linux-block.git;a=commit;h=6b6723fc3e4f24dbd80526df935ca115ead578c6
-
-https://plus.google.com/111643045511375507360/posts
-
-As far as I know, he hasn't had a chance to work on it recently.
-
-- z
+--b.
