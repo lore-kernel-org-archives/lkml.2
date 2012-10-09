@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab2JIHET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 03:04:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35240 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811Ab2JIHES (ORCPT
+	id S1752105Ab2JIHFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 03:05:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41755 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab2JIHFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 03:04:18 -0400
-Date: Tue, 9 Oct 2012 16:04:09 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "lrg@ti.com" <lrg@ti.com>, "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] regulator: tps65090: add external control support
- for DCDC
-Message-ID: <20121009070407.GU8237@opensource.wolfsonmicro.com>
-References: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com>
- <1349536671-31714-7-git-send-email-ldewangan@nvidia.com>
- <20121009062841.GL8237@opensource.wolfsonmicro.com>
- <5073C25F.4030900@nvidia.com>
+	Tue, 9 Oct 2012 03:05:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5073C25F.4030900@nvidia.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121009041947.GB8237@opensource.wolfsonmicro.com>
+References: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	<CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com>
+	<20121009041947.GB8237@opensource.wolfsonmicro.com>
+Date: Tue, 9 Oct 2012 15:05:30 +0800
+Message-ID: <CACVXFVOT+_nWxZOV0hckVrJwafgb_qr35eKaYg9j=toEJ2DNMQ@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Don't attempt to allocate zero bytes with vmalloc()
+From: Ming Lei <ming.lei@canonical.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:51:19AM +0530, Laxman Dewangan wrote:
-> On Tuesday 09 October 2012 11:58 AM, Mark Brown wrote:
+On Tue, Oct 9, 2012 at 12:19 PM, Mark Brown
+> It seems better to punt that decision to callers - for example, the case
 
-> >There's support for GPIO driven enable lines in the framework already,
-> >this driver should be able to use this happily, this sort of hardware is
-> >exactly the use case it was written for.
+In fact, -ENOENT is returned to caller for non-direct loading situation,
+see_request_firmware_load().
 
-> yes, I am using the gpio driven enable lines in the framework.
-> This patch does the some configuration in register to enable external
-> control and configure the regulator_config (fill gpio related stuff
-> in config)  before registering
-> the regulator. There is no call of gpio libs from the driver.
+I understand drivers(caller) may be cheated if a zero-length firmware
+image is obtained. In normal situation, one firmware image should
+include something, instead of nothing, :-)
 
-The code seemed way more complex than that...  did you notice the fact
-that if a GPIO is specified then the register enable/disable control
-will be ignored if provided?
+> I ran into this with was a driver that was using a zero length firmware
+> to say that it didn't want to load an optional image but also didn't
+> want to have to time out if that was the case.  That doesn't seem
+
+If so, I am wondering why the driver has to call request_firmware()?
+Looks just bypassing request_firmware() is fine for the driver, doesn't it?
+
+Thanks,
+--
+Ming Lei
