@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab2JIO47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:56:59 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:28168 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab2JIO4y (ORCPT
+	id S1754526Ab2JIO5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:57:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49649 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab2JIO5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:56:54 -0400
-Message-ID: <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
-From: Mike Yoknis <mike.yoknis@hp.com>
-Reply-To: mike.yoknis@hp.com
-To: Mel Gorman <mgorman@suse.de>
-Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
-        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Tue, 09 Oct 2012 08:56:37 -0600
-In-Reply-To: <20121008151656.GM29125@suse.de>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-	 <20121008151656.GM29125@suse.de>
-Organization: Hewlett-Packard
+	Tue, 9 Oct 2012 10:57:19 -0400
+Message-ID: <50743B15.4020700@windriver.com>
+Date: Tue, 9 Oct 2012 10:56:21 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Jonathan Nieder <jrnieder@gmail.com>, <stable@vger.kernel.org>,
+        Ana Guerrero <ana@debian.org>, Willy Tarreau <w@1wt.eu>,
+        Takashi Iwai <tiwai@suse.de>, Seth Heasley <seth.heasley@intel.com>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2.6.32.y, 2.6.34.y] ALSA: hda - ALSA HD Audio patch for
+ Intel Panther Point DeviceIDs
+References: <201104201059.57882.seth.heasley@intel.com>  <s5htydsiw20.wl%tiwai@suse.de> <20121009010734.GA24147@elie.Belkin> <1349747733.6336.19.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1349747733.6336.19.camel@deadeye.wl.decadent.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
-> On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
-> > memmap_init_zone() loops through every Page Frame Number (pfn),
-> > including pfn values that are within the gaps between existing
-> > memory sections.  The unneeded looping will become a boot
-> > performance issue when machines configure larger memory ranges
-> > that will contain larger and more numerous gaps.
-> > 
-> > The code will skip across invalid sections to reduce the
-> > number of loops executed.
-> > 
-> > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+On 12-10-08 09:55 PM, Ben Hutchings wrote:
+> On Mon, 2012-10-08 at 18:07 -0700, Jonathan Nieder wrote:
+>> From: Seth Heasley <seth.heasley@intel.com>
+>> Date: Wed, 20 Apr 2011 10:59:57 -0700
+>>
+>> commit d2edeb7c6f1dada8ca7d5c23e42d604e92ae0c76 upstream.
+>>
+>> This patch adds the HD Audio Controller DeviceIDs for the Intel Panther Point PCH.
+>>
+>> [jn: backported for 2.6.32.y by Ana Guerrero]
+>>
+>> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+>> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> Tested-by: Ana Guerrero <ana@debian.org> # EliteBook 8570w
+>> Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+>> ---
+>> Hi Willy and Paul,
+>>
+>> Please consider
+>>
+>>   d2edeb7c6f1d ALSA: hda - ALSA HD Audio patch for Intel Panther Point
+>>                DeviceIDs
+>>
+>> for application to the 2.6.32.y and 2.6.34.y trees.
+>>
+>> It does what it says on the cover.  The patch was merged in the 3.0
+>> cycle, so newer stable kernels don't need it.  Backported and
+>> tested[1] against Debian's 2.6.32.y-based kernel by Ana (cc-ed) --
+>> thanks!
+>>
+>> Thoughts of all kinds welcome, as always.
+> [...]
 > 
-> This only helps SPARSEMEM and changes more headers than should be
-> necessary. It would have been easier to do something simple like
+> I queued up a whole series of device ID updates for Debian stable, as
+> they didn't obviously depend on other changes:
 > 
-> if (!early_pfn_valid(pfn)) {
-> 	pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
-> 	continue;
-> }
+> cea310e ALSA: hda_intel: ALSA HD Audio patch for Intel Patsburg DeviceIDs
+> e35d4b1 ALSA: hda: add Vortex86MX PCI ids
+> 0f0714c ALSA: hda - Add support for VMware controller
+> d2edeb7 ALSA: hda - ALSA HD Audio patch for Intel Panther Point DeviceIDs
+
+I found that d2edeb7c6f depends (only trivially, on context) on b686453543f,
+which makes a blanket class for intel IDs so that "...the driver will work
+with any new control chips in future."   In that respect, I guess it too
+(b68645) is in the same class as the other "add more IDs" patches?
+
+Paul.
+--
+
 > 
-> because that would obey the expectation that pages within a
-> MAX_ORDER_NR_PAGES-aligned range are all valid or all invalid (ARM is the
-> exception that breaks this rule). It would be less efficient on
-> SPARSEMEM than what you're trying to merge but I do not see the need for
-> the additional complexity unless you can show it makes a big difference
-> to boot times.
+> (They can be cherry-picked cleanly in the above order.)  But if I've
+> missed some post-2.6.32 dependencies then I would like to know.
 > 
-
-Mel,
-I, too, was concerned that pfn_valid() was defined in so many header
-files.  But, I did not feel that it was appropriate for me to try to
-restructure things to consolidate those definitions just to add this one
-new function.  Being a kernel newbie I did not believe that I had a good
-enough understanding of what combinations and permutations of CONFIG and
-architecture may have made all of those different definitions necessary,
-so I left them in.
-
-Yes, indeed, this fix is targeted for systems that have holes in memory.
-That is where we see the problem.  We are creating large computer
-systems and we would like for those machines to perform well, including
-boot times.
-
-Let me pass along the numbers I have.  We have what we call an
-"architectural simulator".  It is a computer program that pretends that
-it is a computer system.  We use it to test the firmware before real
-hardware is available.  We have booted Linux on our simulator.  As you
-would expect it takes longer to boot on the simulator than it does on
-real hardware.
-
-With my patch - boot time 41 minutes
-Without patch - boot time 94 minutes
-
-These numbers do not scale linearly to real hardware.  But indicate to
-me a place where Linux can be improved.
-
-Mike Yoknis
-
-
+> Ben.
+> 
