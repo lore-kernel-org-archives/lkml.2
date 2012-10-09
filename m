@@ -1,80 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab2JIQmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:42:19 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49505 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab2JIQmR (ORCPT
+	id S1754679Ab2JIQnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:43:20 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:19435 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab2JIQnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:42:17 -0400
-Date: Tue, 9 Oct 2012 12:30:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] xen-blkfront: handle backend CLOSED without CLOSING
-Message-ID: <20121009163023.GG31499@phenom.dumpdata.com>
-References: <1348243464-15903-1-git-send-email-david.vrabel@citrix.com>
- <1348243464-15903-3-git-send-email-david.vrabel@citrix.com>
- <5061EFB2.1080407@citrix.com>
- <5069D097.60606@citrix.com>
- <20121002200255.GA668@phenom.dumpdata.com>
- <506EC79D.5080206@citrix.com>
- <506EE6CD020000780009FF4E@nat28.tlf.novell.com>
- <506F0370.6050905@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506F0370.6050905@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 9 Oct 2012 12:43:16 -0400
+Message-ID: <1349800566.23493.9.camel@misato.fc.hp.com>
+Subject: Re: acpi : acpi_bus_trim() stops removing devices when failing to
+ remove the device
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        wency@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Tue, 09 Oct 2012 10:36:06 -0600
+In-Reply-To: <5073E4CC.3090600@jp.fujitsu.com>
+References: <5073E4CC.3090600@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 04:57:36PM +0100, David Vrabel wrote:
-> On 05/10/12 12:55, Jan Beulich wrote:
-> >>>> On 05.10.12 at 13:42, David Vrabel <david.vrabel@citrix.com> wrote:
-> >> On 02/10/12 21:02, Konrad Rzeszutek Wilk wrote:
-> >>> On Mon, Oct 01, 2012 at 06:19:19PM +0100, David Vrabel wrote:
-> >>>> On 25/09/12 18:53, David Vrabel wrote:
-> >>>>> On 21/09/12 17:04, David Vrabel wrote:
-> >>>>>> From: David Vrabel <david.vrabel@citrix.com>
-> >>>>>>
-> >>>>>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
-> >>>>>> CLOSED.  If a backend does transition to CLOSED too soon then the
-> >>>>>> frontend may not see the CLOSING state and will not properly shutdown.
-> >>>>>>
-> >>>>>> So, treat an unexpected backend CLOSED state the same as CLOSING.
-> >>>>>
-> >>>>> Didn't handle the frontend block device being mounted. Updated patch here.
-> >>>>
-> >>>> Konrad, can you ack this updated patch if you're happy with it.
-> >>>
-> >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >>>
-> >>> Or should I just carry it in my for-jens-3.7 bug-fixes queue and ask
-> >>> Jen to pull it once rc0 is out?
-> >>
-> >> This seems easiest, if Jan is happy with the patch.
-> > 
-> > I see the point of your explanation yesterday, but am still not
-> > convinced that the early cleanup in spite of active users of the
-> > disk can't cause any problems (like dangling pointers or NULL
-> > dereferences).
+On Tue, 2012-10-09 at 17:48 +0900, Yasuaki Ishimatsu wrote:
+> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
+> number. But acpi_bus_remove() cannot return error number correctly.
+> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
+> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
+> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
+> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
+> even if the device is running on the system. In this case, the system cannot
+> work well.
 > 
-> I tested it some more and it is broken.  Please apply the first version
-> instead.
+> Vasilis hit the bug at memory hotplug and reported it as follow:
+> https://lkml.org/lkml/2012/9/26/318
+> 
+> So acpi_bus_trim() should check whether device was removed or not correctly.
+> The patch adds error check into some functions to remove the device.
+> 
+> Applying the patch, acpi_bus_trim() stops removing devices when failing
+> to remove the device. But I think there is no impact with the
+> exceptionof CPU and Memory hotplug path. Because other device also fails
+> but the fail is an irregular case like device is NULL.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>  drivers/acpi/scan.c    |   15 ++++++++++++---
+>  drivers/base/dd.c      |   22 +++++++++++++++++-----
+>  include/linux/device.h |    2 +-
+>  3 files changed, 30 insertions(+), 9 deletions(-)
+> 
+> Index: linux-3.6/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/acpi/scan.c	2012-10-09 17:25:40.956496325 +0900
+> +++ linux-3.6/drivers/acpi/scan.c	2012-10-09 17:25:55.405497800 +0900
+> @@ -445,12 +445,17 @@ static int acpi_device_remove(struct dev
+>  {
+>  	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>  	struct acpi_driver *acpi_drv = acpi_dev->driver;
+> +	int ret;
+>  
+>  	if (acpi_drv) {
+>  		if (acpi_drv->ops.notify)
+>  			acpi_device_remove_notify_handler(acpi_dev);
+> -		if (acpi_drv->ops.remove)
+> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
+> +		if (acpi_drv->ops.remove) {
+> +			ret = acpi_drv->ops.remove(acpi_dev,
+> +						   acpi_dev->removal_type);
+> +			if (ret)
 
-OK, can we do this once more - can you repost the patches, but CC the
-invidiual maintainers? The FB and KBD need to go through Florian I think?
+Hi Yasuaki,
 
+Shouldn't the notify handler be reinstalled here if it was removed by
+the acpi_device_remove_notify_handler() above?
+
+Thanks,
+-Toshi
+
+> +				return ret;
+> +		}
+>  	}
+>  	acpi_dev->driver = NULL;
+>  	acpi_dev->driver_data = NULL;
+> @@ -1226,11 +1231,15 @@ static int acpi_device_set_context(struc
+>  
+>  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>  {
+> +	int ret;
+> +
+>  	if (!dev)
+>  		return -EINVAL;
+>  
+>  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+> -	device_release_driver(&dev->dev);
+> +	ret = device_release_driver(&dev->dev);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (!rmdevice)
+>  		return 0;
+> Index: linux-3.6/drivers/base/dd.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/base/dd.c	2012-10-01 08:47:46.000000000 +0900
+> +++ linux-3.6/drivers/base/dd.c	2012-10-09 17:25:55.442497825 +0900
+> @@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
+>   * __device_release_driver() must be called with @dev lock held.
+>   * When called for a USB interface, @dev->parent lock must be held as well.
+>   */
+> -static void __device_release_driver(struct device *dev)
+> +static int __device_release_driver(struct device *dev)
+>  {
+>  	struct device_driver *drv;
+> +	int ret = 0;
+>  
+>  	drv = dev->driver;
+>  	if (drv) {
+> @@ -493,9 +494,11 @@ static void __device_release_driver(stru
+>  		pm_runtime_put_sync(dev);
+>  
+>  		if (dev->bus && dev->bus->remove)
+> -			dev->bus->remove(dev);
+> +			ret = dev->bus->remove(dev);
+>  		else if (drv->remove)
+> -			drv->remove(dev);
+> +			ret = drv->remove(dev);
+> +		if (ret)
+> +			goto rollback;
+>  		devres_release_all(dev);
+>  		dev->driver = NULL;
+>  		dev_set_drvdata(dev, NULL);
+> @@ -506,6 +509,12 @@ static void __device_release_driver(stru
+>  						     dev);
+>  
+>  	}
+> +
+> +	return ret;
+> +
+> +rollback:
+> +	driver_sysfs_add(dev);
+> +	return ret;
+>  }
+>  
+>  /**
+> @@ -515,16 +524,19 @@ static void __device_release_driver(stru
+>   * Manually detach device from driver.
+>   * When called for a USB interface, @dev->parent lock must be held.
+>   */
+> -void device_release_driver(struct device *dev)
+> +int device_release_driver(struct device *dev)
+>  {
+> +	int ret;
+>  	/*
+>  	 * If anyone calls device_release_driver() recursively from
+>  	 * within their ->remove callback for the same device, they
+>  	 * will deadlock right here.
+>  	 */
+>  	device_lock(dev);
+> -	__device_release_driver(dev);
+> +	ret = __device_release_driver(dev);
+>  	device_unlock(dev);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(device_release_driver);
+>  
+> Index: linux-3.6/include/linux/device.h
+> ===================================================================
+> --- linux-3.6.orig/include/linux/device.h	2012-10-01 08:47:46.000000000 +0900
+> +++ linux-3.6/include/linux/device.h	2012-10-09 17:25:55.479497852 +0900
+> @@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
+>   * for information on use.
+>   */
+>  extern int __must_check device_bind_driver(struct device *dev);
+> -extern void device_release_driver(struct device *dev);
+> +extern int device_release_driver(struct device *dev);
+>  extern int  __must_check device_attach(struct device *dev);
+>  extern int __must_check driver_attach(struct device_driver *drv);
+>  extern int __must_check device_reprobe(struct device *dev);
 > 
-> blkfront needs to cancel and complete with an error requests that are
-> are still on the ring after the backend has disconnected and it needs to
-> complete with an error all requests submitted while disconnected.
-> Otherwise, if there is outstanding requests or new requests then
-> del_gendisk() blocks waiting for the I/O to complete.
-> 
-> David
+
+
