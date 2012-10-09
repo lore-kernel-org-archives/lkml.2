@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab2JIJQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:16:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16395 "EHLO mx1.redhat.com"
+	id S1755053Ab2JIJQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:16:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26157 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754904Ab2JIJQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:16:12 -0400
+	id S1755029Ab2JIJQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 05:16:11 -0400
 From: David Howells <dhowells@redhat.com>
-To: jejb@parisc-linux.org
-Cc: dhowells@redhat.com, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Disintegrate UAPI for parisc [ver #2]
-Date: Tue, 09 Oct 2012 10:15:45 +0100
-Message-ID: <21164.1349774145@warthog.procyon.org.uk>
+To: chris@zankel.net
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for xtensa [ver #2]
+Date: Tue, 09 Oct 2012 10:16:09 +0100
+Message-ID: <21232.1349774169@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you merge the following branch into the parisc tree please.
+Can you merge the following branch into the xtensa tree please.
 
 This is to complete part of the UAPI disintegration for which the preparatory
 patches were pulled recently.
@@ -35,89 +34,88 @@ The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
 are available in the git repository at:
 
 
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-parisc-20121009
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-xtensa-20121009
 
-for you to fetch changes up to 7869b46c99d8de719f7543d6ba432a7fcc3c78b3:
+for you to fetch changes up to 91a0696e40414e9f1554cd91060f6b404d545cb3:
 
-  UAPI: (Scripted) Disintegrate arch/parisc/include/asm (2012-10-09 09:47:22 +0100)
+  UAPI: (Scripted) Disintegrate arch/xtensa/include/asm (2012-10-09 09:47:57 +0100)
 
 ----------------------------------------------------------------
 UAPI Disintegration 2012-10-09
 
 ----------------------------------------------------------------
 David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/parisc/include/asm
+      UAPI: (Scripted) Disintegrate arch/xtensa/include/asm
 
- arch/parisc/include/asm/Kbuild                   |   2 -
- arch/parisc/include/asm/pdc.h                    | 423 +-----------
- arch/parisc/include/asm/ptrace.h                 |  46 +-
- arch/parisc/include/asm/signal.h                 | 113 +--
- arch/parisc/include/asm/termios.h                |  41 +-
- arch/parisc/include/asm/unistd.h                 | 835 +---------------------
- arch/parisc/include/uapi/asm/Kbuild              |  32 +
- arch/parisc/include/{ => uapi}/asm/auxvec.h      |   0
- arch/parisc/include/{ => uapi}/asm/bitsperlong.h |   0
- arch/parisc/include/{ => uapi}/asm/byteorder.h   |   0
- arch/parisc/include/{ => uapi}/asm/errno.h       |   0
- arch/parisc/include/{ => uapi}/asm/fcntl.h       |   0
- arch/parisc/include/{ => uapi}/asm/ioctl.h       |   0
- arch/parisc/include/{ => uapi}/asm/ioctls.h      |   0
- arch/parisc/include/{ => uapi}/asm/ipcbuf.h      |   0
- arch/parisc/include/{ => uapi}/asm/kvm_para.h    |   0
- arch/parisc/include/{ => uapi}/asm/mman.h        |   0
- arch/parisc/include/{ => uapi}/asm/msgbuf.h      |   0
- arch/parisc/include/{ => uapi}/asm/param.h       |   0
- arch/parisc/include/uapi/asm/pdc.h               | 427 ++++++++++++
- arch/parisc/include/{ => uapi}/asm/poll.h        |   0
- arch/parisc/include/{ => uapi}/asm/posix_types.h |   0
- arch/parisc/include/uapi/asm/ptrace.h            |  47 ++
- arch/parisc/include/{ => uapi}/asm/resource.h    |   0
- arch/parisc/include/{ => uapi}/asm/sembuf.h      |   0
- arch/parisc/include/{ => uapi}/asm/setup.h       |   0
- arch/parisc/include/{ => uapi}/asm/shmbuf.h      |   0
- arch/parisc/include/{ => uapi}/asm/sigcontext.h  |   0
- arch/parisc/include/{ => uapi}/asm/siginfo.h     |   0
- arch/parisc/include/uapi/asm/signal.h            | 118 ++++
- arch/parisc/include/{ => uapi}/asm/socket.h      |   0
- arch/parisc/include/{ => uapi}/asm/sockios.h     |   0
- arch/parisc/include/{ => uapi}/asm/stat.h        |   0
- arch/parisc/include/{ => uapi}/asm/statfs.h      |   0
- arch/parisc/include/{ => uapi}/asm/swab.h        |   0
- arch/parisc/include/{ => uapi}/asm/termbits.h    |   0
- arch/parisc/include/uapi/asm/termios.h           |  43 ++
- arch/parisc/include/{ => uapi}/asm/types.h       |   0
- arch/parisc/include/uapi/asm/unistd.h            | 837 +++++++++++++++++++++++
- 39 files changed, 1511 insertions(+), 1453 deletions(-)
- rename arch/parisc/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/errno.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/mman.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/param.h (100%)
- create mode 100644 arch/parisc/include/uapi/asm/pdc.h
- rename arch/parisc/include/{ => uapi}/asm/poll.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/parisc/include/uapi/asm/ptrace.h
- rename arch/parisc/include/{ => uapi}/asm/resource.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/sembuf.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/setup.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/parisc/include/uapi/asm/signal.h
- rename arch/parisc/include/{ => uapi}/asm/socket.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/stat.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/swab.h (100%)
- rename arch/parisc/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/parisc/include/uapi/asm/termios.h
- rename arch/parisc/include/{ => uapi}/asm/types.h (100%)
- create mode 100644 arch/parisc/include/uapi/asm/unistd.h
+ arch/xtensa/include/asm/Kbuild                   |   1 -
+ arch/xtensa/include/asm/param.h                  |  20 +-
+ arch/xtensa/include/asm/ptrace.h                 |  66 +--
+ arch/xtensa/include/asm/signal.h                 | 134 +----
+ arch/xtensa/include/asm/termios.h                |  43 +-
+ arch/xtensa/include/asm/types.h                  |  15 +-
+ arch/xtensa/include/asm/unistd.h                 | 698 +---------------------
+ arch/xtensa/include/uapi/asm/Kbuild              |  31 +
+ arch/xtensa/include/{ => uapi}/asm/auxvec.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/xtensa/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/xtensa/include/{ => uapi}/asm/errno.h       |   0
+ arch/xtensa/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/xtensa/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/xtensa/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/kvm_para.h    |   0
+ arch/xtensa/include/{ => uapi}/asm/mman.h        |   0
+ arch/xtensa/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/xtensa/include/uapi/asm/param.h             |  30 +
+ arch/xtensa/include/{ => uapi}/asm/poll.h        |   0
+ arch/xtensa/include/{ => uapi}/asm/posix_types.h |   0
+ arch/xtensa/include/uapi/asm/ptrace.h            |  77 +++
+ arch/xtensa/include/{ => uapi}/asm/resource.h    |   0
+ arch/xtensa/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/setup.h       |   0
+ arch/xtensa/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/xtensa/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/xtensa/include/uapi/asm/signal.h            | 148 +++++
+ arch/xtensa/include/{ => uapi}/asm/socket.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/sockios.h     |   0
+ arch/xtensa/include/{ => uapi}/asm/stat.h        |   0
+ arch/xtensa/include/{ => uapi}/asm/statfs.h      |   0
+ arch/xtensa/include/{ => uapi}/asm/swab.h        |   0
+ arch/xtensa/include/{ => uapi}/asm/termbits.h    |   0
+ arch/xtensa/include/uapi/asm/termios.h           |  56 ++
+ arch/xtensa/include/uapi/asm/types.h             |  28 +
+ arch/xtensa/include/uapi/asm/unistd.h            | 709 +++++++++++++++++++++++
+ 39 files changed, 1086 insertions(+), 970 deletions(-)
+ rename arch/xtensa/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/xtensa/include/uapi/asm/param.h
+ rename arch/xtensa/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/xtensa/include/uapi/asm/ptrace.h
+ rename arch/xtensa/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/sembuf.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/setup.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/xtensa/include/uapi/asm/signal.h
+ rename arch/xtensa/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/xtensa/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/xtensa/include/uapi/asm/termios.h
+ create mode 100644 arch/xtensa/include/uapi/asm/types.h
+ create mode 100644 arch/xtensa/include/uapi/asm/unistd.h
 .
