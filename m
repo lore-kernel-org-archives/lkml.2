@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab2JILcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 07:32:22 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53501 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752553Ab2JILcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 07:32:18 -0400
-X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03a.oce.net;RD:smtp02.oce.com;EFVD:NLI
-X-SpamScore: 23
-X-BigFish: VS23(zzzz1ce5h1202h1d1ah1cabh1d2ahzz8275bhz2ei87h668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441hff4s129fs1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: <linux-serial@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [REPOST] RFC: sched: Prevent wakeup to enter critical section needlessly
-Date: Tue, 9 Oct 2012 13:30:35 +0200
-Message-ID: <1349782235-8896-1-git-send-email-meltedpianoman@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com>
-References: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com>
-X-OriginalArrivalTime: 09 Oct 2012 11:30:37.0706 (UTC) FILETIME=[814526A0:01CDA611]
+	id S1752781Ab2JILcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 07:32:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39022 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752467Ab2JILcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 07:32:17 -0400
+Date: Tue, 9 Oct 2012 12:32:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: CMA broken in next-20120926
+Message-ID: <20121009113211.GS29125@suse.de>
+References: <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
+ <201210091040.10811.b.zolnierkie@samsung.com>
+ <20121009101143.GQ29125@suse.de>
+ <201210091308.30306.b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: oce.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <201210091308.30306.b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the waitqueue task list to be non empty before entering the critical
-section. This prevents locking the spin lock needlessly in case the queue
-was empty, and therefor also prevent scheduling overhead on a PREEMPT_RT
-system.
+On Tue, Oct 09, 2012 at 01:08:30PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> On Tuesday 09 October 2012 12:11:43 Mel Gorman wrote:
+> > On Tue, Oct 09, 2012 at 10:40:10AM +0200, Bartlomiej Zolnierkiewicz wrote:
+> > > I also need following patch to make CONFIG_CMA=y && CONFIG_COMPACTION=y case
+> > > work:
+> > > 
+> > > From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > > Subject: [PATCH] mm: compaction: cache if a pageblock was scanned and no pages were isolated - cma fix
+> > > 
+> > > Patch "mm: compaction: cache if a pageblock was scanned and no pages
+> > > were isolated" needs a following fix to successfully boot next-20121002
+> > > kernel (same with next-20121008) with CONFIG_CMA=y and CONFIG_COMPACTION=y
+> > > (with applied -fix1, -fix2, -fix3 patches from Mel Gorman and also with
+> > > cmatest module from Thierry Reding compiled in).
+> > > 
+> > 
+> > Why is it needed to make it boot? CMA should not care about the
+> 
+> It boots without Thierry's cmatest module but then fails on CMA
+> allocation attempt (I used out-of-tree /dev/cma_test interface to
+> generate CMA allocation request from user-space).
+> 
 
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
----
+I see.
 
- REPOST:
- Request for comments:
- - Does this make any sense?
- - I assume that I can safely use the list_empty_careful() function here, but is
-   that correct?
+> > PG_migrate_skip hint being set because it should always ignore it in
+> > alloc_contig_range() due to cc->ignore_skip_hint. It's not obvious to
+> > me why this fixes a boot failure and I wonder if it's papering over some
+> > underlying problem. Can you provide more details please?
+> 
+> I just compared CONFIG_COMPACTION=n and =y cases initially, figured
+> out the difference and did the change.  However on a closer look it
+> seems that {get,clear,set}_pageblock_skip() use incorrect bit ranges
+> (please compare to bit ranges used by {get,set}_pageblock_flags()
+> used for migration types) and can overwrite pageblock migratetype of
+> the next pageblock in the bitmap
 
- Background to this patch:
- Testing on a PREEMPT_RT system with TTY serial communication. Each time the TTY
- line discipline is dereferenced the Idle handling wait queue is woken up (see
- function put_ldisc in /drivers/tty/tty_ldisc.c)
- However line discipline idle handling is not used very often so the wait queue
- is empty most of the time. But still the wake_up() function enters the critical
- section guarded by spin locks. This causes additional scheduling overhead when
- a lower priority thread has control of that same lock.
+You're right.
 
- kernel/sched/core.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+> (I wonder how could this code ever
+> worked before?).
+> 
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c177472..c1667c4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3090,9 +3090,19 @@ void __wake_up(wait_queue_head_t *q, unsigned int mode,
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&q->lock, flags);
--	__wake_up_common(q, mode, nr_exclusive, 0, key);
--	spin_unlock_irqrestore(&q->lock, flags);
-+	/*
-+	 * We can check for list emptiness outside the lock by using the
-+	 * "careful" check that verifies both the next and prev pointers, so
-+	 * that there cannot be any half-pending updates in progress.
-+	 *
-+	 * This prevents the wake up to enter the critical section needlessly
-+	 * when the task list is empty.
-+	 */
-+	if (!list_empty_careful(&q->task_list)) {
-+		spin_lock_irqsave(&q->lock, flags);
-+		__wake_up_common(q, mode, nr_exclusive, 0, key);
-+		spin_unlock_irqrestore(&q->lock, flags);
-+	}
- }
- EXPORT_SYMBOL(__wake_up);
- 
+Because it would corrupt the adjacent block and muck up the migratetype.
+This would hurt fragmentation avoidance but it would not be obvious for
+a long time. When I was checking this, I only checked that the values of
+the block being set were correct, I missed that I was corrupting the
+adjacent blocks.
+
+> > > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > > ---
+> > >  mm/compaction.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > Index: b/mm/compaction.c
+> > > ===================================================================
+> > > --- a/mm/compaction.c	2012-10-08 18:10:53.491679716 +0200
+> > > +++ b/mm/compaction.c	2012-10-08 18:11:33.615679713 +0200
+> > > @@ -117,7 +117,8 @@ static void update_pageblock_skip(struct
+> > >  			bool migrate_scanner)
+> > >  {
+> > >  	struct zone *zone = cc->zone;
+> > > -	if (!page)
+> > > +
+> > > +	if (!page || cc->ignore_skip_hint)
+> > >  		return;
+> > >  
+> > >  	if (!nr_isolated) {
+> 
+> The patch below also fixes the issue for me:
+> 
+> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Subject: [PATCH] mm: compaction: fix bit ranges in {get,clear,set}_pageblock_skip() 
+> 
+> {get,clear,set}_pageblock_skip() use incorrect bit ranges (please compare
+> to bit ranges used by {get,set}_pageblock_flags() used for migration types)
+> and can overwrite pageblock migratetype of the next pageblock in the bitmap.
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+Can you resend this patch on its own to Andrew asking for it to be picked
+up please? This thread is quite long and could easily get lost in the
+noise. Thanks
+
 -- 
-1.7.9.5
-
-
+Mel Gorman
+SUSE Labs
