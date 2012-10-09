@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab2JIEka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:40:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45327 "EHLO
+	id S1752121Ab2JIEkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:40:37 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:45368 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab2JIEkY (ORCPT
+	with ESMTP id S1751461Ab2JIEkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:40:24 -0400
+	Tue, 9 Oct 2012 00:40:32 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 05/10] x86, mm: Remove early_memremap workaround for page table accessing
-Date: Mon,  8 Oct 2012 21:39:13 -0700
-Message-Id: <1349757558-10856-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/10] x86, mm: only keep initial mapping for ram
+Date: Mon,  8 Oct 2012 21:39:14 -0700
+Message-Id: <1349757558-10856-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
 References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not needed that anymore after patches include premaping page table buf
-and not clear initial page table wrongly.
+0 mean any e820 type will be kept, and only hole is removed.
+
+change to E820_RAM and E820_RESERVED_KERN only.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_64.c |   38 ++++----------------------------------
- 1 files changed, 4 insertions(+), 34 deletions(-)
+ arch/x86/mm/init_64.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 61b3c44..4b21950 100644
+index 4b21950..aab1fc1 100644
 --- a/arch/x86/mm/init_64.c
 +++ b/arch/x86/mm/init_64.c
-@@ -329,36 +329,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 	if (pfn >= pgt_buf_top)
- 		panic("alloc_low_page: ran out of memory");
- 
--	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
-+	adr = __va(pfn * PAGE_SIZE);
- 	clear_page(adr);
- 	*phys  = pfn * PAGE_SIZE;
- 	return adr;
- }
- 
--static __ref void *map_low_page(void *virt)
--{
--	void *adr;
--	unsigned long phys, left;
--
--	if (after_bootmem)
--		return virt;
--
--	phys = __pa(virt);
--	left = phys & (PAGE_SIZE - 1);
--	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
--	adr = (void *)(((unsigned long)adr) | left);
--
--	return adr;
--}
--
--static __ref void unmap_low_page(void *adr)
--{
--	if (after_bootmem)
--		return;
--
--	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-@@ -428,10 +404,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-+				pte = (pte_t *)pmd_page_vaddr(*pmd);
- 				last_map_addr = phys_pte_init(pte, address,
- 								end, prot);
--				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -467,7 +442,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 
- 		pte = alloc_low_page(&pte_phys);
- 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
--		unmap_low_page(pte);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-@@ -501,10 +475,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				pmd = map_low_page(pmd_offset(pud, 0));
-+				pmd = pmd_offset(pud, 0);
- 				last_map_addr = phys_pmd_init(pmd, addr, end,
- 							 page_size_mask, prot);
--				unmap_low_page(pmd);
- 				__flush_tlb_all();
- 				continue;
- 			}
-@@ -541,7 +514,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		pmd = alloc_low_page(&pmd_phys);
- 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
- 					      prot);
--		unmap_low_page(pmd);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pud_populate(&init_mm, pud, __va(pmd_phys));
-@@ -577,17 +549,15 @@ kernel_physical_mapping_init(unsigned long start,
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-+			pud = (pud_t *)pgd_page_vaddr(*pgd);
- 			last_map_addr = phys_pud_init(pud, __pa(start),
- 						 __pa(end), page_size_mask);
--			unmap_low_page(pud);
+@@ -349,7 +349,8 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 		next = (addr & PAGE_MASK) + PAGE_SIZE;
+ 		if (addr >= end) {
+ 			if (!after_bootmem &&
+-			    !e820_any_mapped(addr & PAGE_MASK, next, 0))
++			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RESERVED_KERN))
+ 				set_pte(pte, __pte(0));
  			continue;
  		}
- 
- 		pud = alloc_low_page(&pud_phys);
- 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
- 						 page_size_mask);
--		unmap_low_page(pud);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pgd_populate(&init_mm, pgd, __va(pud_phys));
+@@ -396,7 +397,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		next = (address & PMD_MASK) + PMD_SIZE;
+ 		if (address >= end) {
+ 			if (!after_bootmem &&
+-			    !e820_any_mapped(address & PMD_MASK, next, 0))
++			    !e820_any_mapped(address & PMD_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(address & PMD_MASK, next, E820_RESERVED_KERN))
+ 				set_pmd(pmd, __pmd(0));
+ 			continue;
+ 		}
+@@ -468,7 +470,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		next = (addr & PUD_MASK) + PUD_SIZE;
+ 		if (addr >= end) {
+ 			if (!after_bootmem &&
+-			    !e820_any_mapped(addr & PUD_MASK, next, 0))
++			    !e820_any_mapped(addr & PUD_MASK, next, E820_RAM) &&
++			    !e820_any_mapped(addr & PUD_MASK, next, E820_RESERVED_KERN))
+ 				set_pud(pud, __pud(0));
+ 			continue;
+ 		}
 -- 
 1.7.7
 
