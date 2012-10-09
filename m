@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2JIXrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:47:21 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35895 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab2JIXrS (ORCPT
+	id S1752664Ab2JIXxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:53:06 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36307 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2JIXxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:47:18 -0400
+	Tue, 9 Oct 2012 19:53:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5074B8B5.3010307@jp.fujitsu.com>
+Date: Wed, 10 Oct 2012 08:52:21 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121009233927.GX2616@ZenIV.linux.org.uk>
-References: <20110917001215.GA961@zombie.hq.fstein.net>
-	<CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
-	<20121009233927.GX2616@ZenIV.linux.org.uk>
-Date: Tue, 9 Oct 2012 16:47:17 -0700
-Message-ID: <CAOH1cHmueHV9AiPkNSHXpEKm94nf2XZM9STv=qd7fJ+-n1VK-Q@mail.gmail.com>
-Subject: Re: linux-audit: reconstruct path names from syscall events?
-From: Mark Moseley <moseleymark@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: john@feurix.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build failure after merge of the origin tree
+References: <20121010102150.81c192c6fdf60689dc823b20@canb.auug.org.au> <20121009164514.b7a7e227.akpm@linux-foundation.org>
+In-Reply-To: <20121009164514.b7a7e227.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 4:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Oct 09, 2012 at 04:09:18PM -0700, Mark Moseley wrote:
+Hi Stephen,
+
+2012/10/10 8:45, Andrew Morton wrote:
+> On Wed, 10 Oct 2012 10:21:50 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >
->> If you see my recent linux-audit posting, another related thing (at
->> least as far as missing relevant information in the logs) is that the
->> audit logs are logging pathnames relative to the chroot, instead of
->> the pathnames relative to the root of the OS itself. You'd expect a
->> process chroot'd to /chroot, accessing (from the perspective of the
->> OS) /chroot/etc/password would get logged as /chroot/etc/password but
->> is rather logged as /etc/password.
+>> Hi Linus,
 >>
->> I don't have a working LXC install handy, but I'd imagine the audit
->> subsystem would log relative to the container's / instead of the
->> host's / too.
+>> In Linus' tree, today's linux-next build (powerpc ppc64_defconfig) failed
+>> like this:
+>>
+>> arch/powerpc/platforms/pseries/hotplug-memory.c: In function 'pseries_remove_memblock':
+>> arch/powerpc/platforms/pseries/hotplug-memory.c:103:17: error: unused variable 'pfn' [-Werror=unused-variable]
+>>
+>> Caused by commit d760afd4d257 ("memory-hotplug: suppress "Trying to free
+>> nonexistent resource <XXXXXXXXXXXXXXXX-YYYYYYYYYYYYYYYY>" warning").
+>>
+>> I can't see what the point of the "pfn" variable is
 >
-> BTW, what makes you think that container's root is even reachable from
-> "the host's /"?  There is no such thing as "root of the OS itself"; different
-> processes can (and in case of containers definitely do) run in different
-> namespaces.  With entirely different filesystems mounted in those, and
-> no promise whatsoever that any specific namespace happens to have all
-> filesystems mounted somewhere in it...
+> This:
+>
+> --- a/arch/powerpc/platforms/pseries/hotplug-memory.c~a
+> +++ a/arch/powerpc/platforms/pseries/hotplug-memory.c
+> @@ -101,7 +101,7 @@ static int pseries_remove_memblock(unsig
+>   	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
+>   	for (i = 0; i < sections_to_remove; i++) {
+>   		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
+> -		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
+> +		ret = __remove_pages(zone, pfn, PAGES_PER_SECTION);
+>   		if (ret)
+>   			return ret;
+>   	}
 
-Nothing beyond guesswork, since it's been a while since I've played
-with LXC. In any case, I was struggling a bit for the correct
-terminology.
+I believe the error to be fixed with this patch.
+Could you try it?
 
-Am I similarly off-base with regards to the chroot'd scenario?
+Thanks,
+Yasuaki Ishimatsu
+
+>
+>> and this patch never
+>> appeared in linux-next before being merged.  :-(
+>
+> It was first sighted October 3.
+>
+>> I have reverted that commit for today.
+>>
+>> If this patch truly was authored yesterday (according the Author Date in
+>> git), why was it merged yesterday while still under discussion?  And the
+>> latest update to it still has this build problem ... did anyone even try
+>> to build this for powerpc (since that architecture was obviously
+>> affected)?
+>
+> Apparently not - the ppc bit was a best-effort fixup for a patch which
+> addresses an x86 problem.
+>
+
+
