@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab2JIGEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:04:06 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58217 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2JIGDr (ORCPT
+	id S1753539Ab2JIGEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:04:11 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34159 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab2JIGD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:03:47 -0400
+	Tue, 9 Oct 2012 02:03:57 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Len Brown <len.brown@intel.com>, stable@vger.kernel.org
-Subject: [PATCH 27/30] ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
-Date: Tue,  9 Oct 2012 01:54:17 -0400
-Message-Id: <67bfa9b60bd689601554526d144b21d529f78a09.1349761836.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 29/30] ACPI idle, CPU hotplug: Fix NULL pointer dereference during hotplug
+Date: Tue,  9 Oct 2012 01:54:19 -0400
+Message-Id: <cf31cd1a0c692a1445c80756055875088fa29982.1349761836.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc1
 In-Reply-To: <1349762060-25334-1-git-send-email-lenb@kernel.org>
 References: <1349762060-25334-1-git-send-email-lenb@kernel.org>
@@ -25,58 +26,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-By enlarging the GPE storm threshold back to 20, that laptop's
-EC works fine with interrupt mode instead of polling mode.
+On a KVM guest, when a CPU is taken offline and brought back online, we hit
+the following NULL pointer dereference:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=45151
+[   45.400843] Unregister pv shared memory for cpu 1
+[   45.412331] smpboot: CPU 1 is now offline
+[   45.529894] SMP alternatives: lockdep: fixing up alternatives
+[   45.533472] smpboot: Booting Node 0 Processor 1 APIC 0x1
+[   45.411526] kvm-clock: cpu 1, msr 0:7d14601, secondary cpu clock
+[   45.571370] KVM setup async PF for cpu 1
+[   45.572331] kvm-stealtime: cpu 1, msr 7d0e040
+[   45.575031] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[   45.576017] IP: [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017] PGD 5dfb067 PUD 5da8067 PMD 0
+[   45.576017] Oops: 0000 [#1] SMP
+[   45.576017] Modules linked in:
+[   45.576017] CPU 0
+[   45.576017] Pid: 607, comm: stress_cpu_hotp Not tainted 3.6.0-padata-tp-debug #3 Bochs Bochs
+[   45.576017] RIP: 0010:[<ffffffff81519f98>]  [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017] RSP: 0018:ffff880005d93ce8  EFLAGS: 00010286
+[   45.576017] RAX: ffff880005d93fd8 RBX: 0000000000000000 RCX: 0000000000000006
+[   45.576017] RDX: 0000000000000006 RSI: 2222222222222222 RDI: 0000000000000000
+[   45.576017] RBP: ffff880005d93cf8 R08: 2222222222222222 R09: 2222222222222222
+[   45.576017] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[   45.576017] R13: 0000000000000000 R14: ffffffff81c8cca0 R15: 0000000000000001
+[   45.576017] FS:  00007f91936ae700(0000) GS:ffff880007c00000(0000) knlGS:0000000000000000
+[   45.576017] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   45.576017] CR2: 0000000000000000 CR3: 0000000005db3000 CR4: 00000000000006f0
+[   45.576017] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   45.576017] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   45.576017] Process stress_cpu_hotp (pid: 607, threadinfo ffff880005d92000, task ffff8800066bbf40)
+[   45.576017] Stack:
+[   45.576017]  ffff880007a96400 0000000000000000 ffff880005d93d28 ffffffff813ac689
+[   45.576017]  ffff880007a96400 ffff880007a96400 0000000000000002 ffffffff81cd8d01
+[   45.576017]  ffff880005d93d58 ffffffff813aa498 0000000000000001 00000000ffffffdd
+[   45.576017] Call Trace:
+[   45.576017]  [<ffffffff813ac689>] acpi_processor_hotplug+0x55/0x97
+[   45.576017]  [<ffffffff813aa498>] acpi_cpu_soft_notify+0x93/0xce
+[   45.576017]  [<ffffffff816ae47d>] notifier_call_chain+0x5d/0x110
+[   45.576017]  [<ffffffff8109730e>] __raw_notifier_call_chain+0xe/0x10
+[   45.576017]  [<ffffffff81069050>] __cpu_notify+0x20/0x40
+[   45.576017]  [<ffffffff81069085>] cpu_notify+0x15/0x20
+[   45.576017]  [<ffffffff816978f1>] _cpu_up+0xee/0x137
+[   45.576017]  [<ffffffff81697983>] cpu_up+0x49/0x59
+[   45.576017]  [<ffffffff8168758d>] store_online+0x9d/0xe0
+[   45.576017]  [<ffffffff8140a9f8>] dev_attr_store+0x18/0x30
+[   45.576017]  [<ffffffff812322c0>] sysfs_write_file+0xe0/0x150
+[   45.576017]  [<ffffffff811b389c>] vfs_write+0xac/0x180
+[   45.576017]  [<ffffffff811b3be2>] sys_write+0x52/0xa0
+[   45.576017]  [<ffffffff816b31e9>] system_call_fastpath+0x16/0x1b
+[   45.576017] Code: 48 c7 c7 40 e5 ca 81 e8 07 d0 18 00 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 10 48 89 5d f0 4c 89 65 f8 48 89 fb <f6> 07 02 75 13 48 8b 5d f0 4c 8b 65 f8 c9 c3 66 0f 1f 84 00 00
+[   45.576017] RIP  [<ffffffff81519f98>] cpuidle_disable_device+0x18/0x80
+[   45.576017]  RSP <ffff880005d93ce8>
+[   45.576017] CR2: 0000000000000000
+[   45.656079] ---[ end trace 433d6c9ac0b02cef ]---
 
-Reported-and-Tested-by: Francesco <trentini@dei.unipd.it>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
+Analysis:
+Commit 3d339dc (cpuidle / ACPI : move cpuidle_device field out of the
+acpi_processor_power structure()) made the allocation of the dev structure
+(struct cpuidle) of a CPU dynamic, whereas previously it was statically
+allocated. And this dynamic allocation occurs in acpi_processor_power_init()
+if pr->flags.power evaluates to non-zero.
+
+On KVM guests, pr->flags.power evaluates to zero, hence dev is never
+allocated. This causes the NULL pointer (dev) dereference in
+cpuidle_disable_device() during a subsequent CPU online operation. Fix this
+by ensuring that dev is non-NULL before dereferencing.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
-cc: stable@vger.kernel.org
 ---
- drivers/acpi/ec.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/cpuidle/cpuidle.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 615264c..a51df96 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -930,6 +930,17 @@ static int ec_flag_msi(const struct dmi_system_id *id)
- 	return 0;
- }
- 
-+/*
-+ * Clevo M720 notebook actually works ok with IRQ mode, if we lifted
-+ * the GPE storm threshold back to 20
-+ */
-+static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
-+{
-+	pr_debug("Setting the EC GPE storm threshold to 20\n");
-+	ec_storm_threshold  = 20;
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -961,10 +972,13 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc.") }, NULL},
-+	{
-+	ec_enlarge_storm_threshold, "CLEVO hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
- 	{},
- };
- 
--
- int __init acpi_ec_ecdt_probe(void)
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index e28f6ea..7f15b85 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -368,7 +368,7 @@ EXPORT_SYMBOL_GPL(cpuidle_enable_device);
+  */
+ void cpuidle_disable_device(struct cpuidle_device *dev)
  {
- 	acpi_status status;
+-	if (!dev->enabled)
++	if (!dev || !dev->enabled)
+ 		return;
+ 	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return;
 -- 
 1.8.0.rc1
 
