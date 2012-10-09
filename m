@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2JIGuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:50:40 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:40209 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab2JIGud convert rfc822-to-8bit (ORCPT
+	id S1752751Ab2JIGx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:53:57 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37287 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab2JIGxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:50:33 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: Zhao Hongjiang <zhaohongjiang37@gmail.com>, jack@suse.cz,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@canonical.com, containers@lists.linux-foundation.org
-References: <5073BABF.8090206@gmail.com>
-	<alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
-Date: Mon, 08 Oct 2012 23:50:26 -0700
-In-Reply-To: <alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
-	(=?utf-8?B?Ikx1a8OhxaE=?= Czerner"'s message of "Tue, 9 Oct 2012 08:19:42
- +0200 (CEST)")
-Message-ID: <87k3v0cf65.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+NXTOnJSTYzd7PWjjMPhxS+wYCt0Qx/Co=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: =?ISO-8859-1?Q?***;Luk=c3=a1=c5=a1 Czerner <lczerner@redhat.com>?=
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] ext3: fix return values on parse_options() failure
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Tue, 9 Oct 2012 02:53:54 -0400
+From: Robin Dong <robin.k.dong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Robin Dong <sanbai@taobao.com>, Tejun Heo <tj@kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: [PATCH V3] block/throttle: Add IO throttled information in blkio.throttle
+Date: Tue,  9 Oct 2012 14:53:45 +0800
+Message-Id: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukáš Czerner <lczerner@redhat.com> writes:
+From: Robin Dong <sanbai@taobao.com>
 
-> On Tue, 9 Oct 2012, Zhao Hongjiang wrote:
->
->> Date: Tue, 09 Oct 2012 13:48:47 +0800
->> From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
->> To: jack@suse.cz
->> Cc: akpm@linux-foundation.org, adilger.kernel@dilger.ca,
->>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
->>     Eric W. Biederman <ebiederm@xmission.com>, serge.hallyn@canonical.com,
->>     containers@lists.linux-foundation.org
->> Subject: [PATCH] ext3: fix return values on parse_options() failure
->> 
->> From: Zhao Hongjiang <zhaohongjiang@huawei.com>
->> 
->> parse_options() in ext3 should return 0 when parse the mount options fails.
->> 
->
-> Ah, it really is a joy to read the parse_options() :). But this fix
-> makes sense, thanks for catching it.
->
-> Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Currently, if the IO is throttled by io-throttle, the SA has no idea of
+the situation and can't report it to the real application user about
+that he/she has to do something. So this patch adds a new interface
+named blkio.throttle.io_queued which indicates how many IOs are
+currently throttled.
 
-Ugh.  I goofed that up.  How annoying that ext4 is different than ext3
-and ext2 in this regard.
+The nr_queued[] of struct throtl_grp is of type "unsigned int" and updates
+to it are atomic both at 32bit and 64bit platforms, so we could just
+read tg->nr_queued only under blkcg->lock.
 
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Changelog from v2:
+	Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
+
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: Robin Dong <sanbai@taobao.com>
+---
+ block/blk-throttle.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
+
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index a9664fa..e410448 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -953,6 +953,32 @@ static u64 tg_prfill_cpu_rwstat(struct seq_file *sf,
+ 	return __blkg_prfill_rwstat(sf, pd, &rwstat);
+ }
+ 
++static u64 tg_prfill_io_queued(struct seq_file *sf,
++				struct blkg_policy_data *pd, int off)
++{
++	static const char *rwstr[] = {
++		[READ]	= "Read",
++		[WRITE]	= "Write",
++	};
++	struct throtl_grp *tg = pd_to_tg(pd);
++	const char *dname = NULL;
++	unsigned int v;
++	int i;
++
++	if (pd->blkg->q->backing_dev_info.dev)
++		dname = dev_name(pd->blkg->q->backing_dev_info.dev);
++
++	if (!dname)
++		return 0;
++
++	for (i = 0; i <= WRITE; i++)
++		seq_printf(sf, "%s %s %u\n", dname, rwstr[i], tg->nr_queued[i]);
++
++	v = tg->nr_queued[READ] + tg->nr_queued[WRITE];
++	seq_printf(sf, "%s Total %u\n", dname, v);
++	return v;
++}
++
+ static int tg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
+ 			       struct seq_file *sf)
+ {
+@@ -963,6 +989,16 @@ static int tg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
+ 	return 0;
+ }
+ 
++static int tg_print_io_queued(struct cgroup *cgrp, struct cftype *cft,
++			       struct seq_file *sf)
++{
++	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
++
++	blkcg_print_blkgs(sf, blkcg, tg_prfill_io_queued, &blkcg_policy_throtl,
++			  cft->private, true);
++	return 0;
++}
++
+ static u64 tg_prfill_conf_u64(struct seq_file *sf, struct blkg_policy_data *pd,
+ 			      int off)
+ {
+@@ -1085,6 +1121,10 @@ static struct cftype throtl_files[] = {
+ 		.private = offsetof(struct tg_stats_cpu, serviced),
+ 		.read_seq_string = tg_print_cpu_rwstat,
+ 	},
++	{
++		.name = "throttle.io_queued",
++		.read_seq_string = tg_print_io_queued,
++	},
+ 	{ }	/* terminate */
+ };
+ 
+-- 
+1.7.1
+
