@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab2JIKQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 06:16:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab2JIKQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 06:16:23 -0400
-Date: Tue, 9 Oct 2012 11:16:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Colin Cross <ccross@android.com>, Arve Hj?nnev?g <arve@android.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        kernel-team@android.com
-Subject: Re: [RFC] vmevent: Implement pressure attribute
-Message-ID: <20121009101618.GR29125@suse.de>
-References: <20121004110524.GA1821@lizard>
- <20121005092912.GA29125@suse.de>
- <20121007081414.GA18047@lizard>
- <20121008094646.GI29125@suse.de>
- <507380F8.4000401@linaro.org>
+	id S1755362Ab2JIKQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 06:16:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53785 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754392Ab2JIKQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 06:16:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,560,1344182400"; 
+   d="scan'208";a="5969188"
+Message-ID: <5073FAD1.1000403@cn.fujitsu.com>
+Date: Tue, 09 Oct 2012 18:22:09 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <507380F8.4000401@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
+        peterz@infradead.org, miaox@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com> <5073E18A.2090203@cn.fujitsu.com> <5073E2BF.9050306@cn.fujitsu.com> <alpine.DEB.2.00.1210090259250.24261@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210090259250.24261@chino.kir.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 18:16:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 18:16:25,
+	Serialize complete at 2012/10/09 18:16:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 06:42:16PM -0700, John Stultz wrote:
-> On 10/08/2012 02:46 AM, Mel Gorman wrote:
-> >On Sun, Oct 07, 2012 at 01:14:17AM -0700, Anton Vorontsov wrote:
-> >>And here we just try to let userland to assist, userland can tell "oh,
-> >>don't bother with swapping or draining caches, I can just free some
-> >>memory".
-> >>
-> >>Quite interesting, this also very much resembles volatile mmap ranges
-> >>(i.e. the work that John Stultz is leading in parallel).
-> >>
-> >Agreed. I haven't been paying close attention to those patches but it
-> >seems to me that one possiblity is that a listener for a vmevent would
-> >set volatile ranges in response.
+At 10/09/2012 06:04 PM, David Rientjes Wrote:
+> On Tue, 9 Oct 2012, Tang Chen wrote:
 > 
-> I don't have too much to comment on the rest of this mail, but just
-> wanted to pipe in here, as the volatile ranges have caused some
-> confusion.
+>>>> Eek, the nid shouldn't be -1 yet, though, for cpu hotplug since this
+>>>> should be called at CPU_DYING level and migrate_tasks() still sees a valid
+>>>> cpu.
+>>
+>> As Wen said below, nid is now set to -1 when cpu is hotremoved.
+>> I reproduce this problem in this situation:
+>>
+>> all cpus are online, and hot remove a system board directorily, without
+>> offlining any cpu.
+>>
+>> As a result, the removed cpu's nid is set to -1, and this causes
+>> problems.
+>>
 > 
-> While your suggestion would be possible, with volatile ranges, I've
-> been promoting a more hands off-approach from the application
-> perspective, where the application always would mark data that could
-> be regenerated as volatile, unmarking it when accessing it.
+> Let's add Andrew to the cc list then, because I'm nacking 
+> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch in the -mm 
+> tree for this reason.
 > 
-> This way the application doesn't need to be responsive to memory
-> pressure, the kernel just takes what it needs from what the
-> application made available.
+> We can only clear a cpu-to-node mapping when the cpu is completely 
+> offline, not before or during the CPU_DYING stage.  Kernel code, such as 
+
+I clear cpu-to-node mapping when the cpu is hotremoved. If the cpu is onlined,
+it will be offlined before clearing cpu-to-node mapping.
+
+Here is the code in driver/acpi/processor_driver.c:
+=============
+static int acpi_processor_handle_eject(struct acpi_processor *pr)
+{
+	if (cpu_online(pr->id))
+		cpu_down(pr->id);      <========== cpu is offlined here.
+
+	arch_unregister_cpu(pr->id);
+	acpi_unmap_lsapic(pr->id);     <========== I clear the mapping here.
+	return (0);
+}
+=============
+
+The real problem is that: we don't migrate this task to another cpu when
+the cpu is offlined. I guess this task is not in running state, and it
+is not in the cpu's runqueue.
+
+Thanks
+Wen Congyang
+
+> the sched code that you are now trying to "fix", depends on this mapping 
+> to work correctly; obviously no audit was done of cpu hotplug code 
+> depending on it before the patch was proposed.
 > 
-> Only when the application needs the data again, would it mark it
-> non-volatile (or alternatively with the new SIGBUS semantics, access
-> the purged volatile data and catch a SIGBUS), find the data was
-> purged and regenerate it.
+> I say "fix" because even this workaround isn't a good solution since it 
+> would be much better to pick another cpu on the same node as the offlining 
+> cpu for the runqueue before falling back to the set of all allowed nodes.  
+> We lose all NUMA affinity information with that patch.  There's no reason 
+> why we shouldn't know the node of a cpu that is being offlined.
+> 
+> So nack to cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch.  
+> After it's removed because it's buggy, this "fix" will no longer be 
+> necessary.
 > 
 
-Ok understood.
-
-> That said, hybrid approaches like you suggested would be possible,
-> but at a certain point, if we're waiting for a notification to take
-> action, it might be better just to directly free that memory, rather
-> then just setting it as volatile, and leaving it to the kernel then
-> reclaim it for you.
-> 
-
-That's fine. I did not mean to suggest that volatile and vmevents on
-memory pressure should be related or depending on each other in any way.
-
-
--- 
-Mel Gorman
-SUSE Labs
+This patch is try to fix a bug: the kernel will be panicked after removing a
+node.
