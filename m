@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab2JIUO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:14:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64943 "EHLO
+	id S1756880Ab2JIUPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:15:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61859 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784Ab2JIUOT (ORCPT
+	with ESMTP id S1754096Ab2JIUPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:14:19 -0400
+	Tue, 9 Oct 2012 16:15:04 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: arm@kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Ben Dooks <ben-linux@fluff.org>,
         Dominik Brodowski <linux@dominikbrodowski.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jochen Friedrich <jochen@scram.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>, Pavel Machek <pavel@suse.cz>,
+        Pekka Enberg <penberg@kernel.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@suse.cz>, linux-pcmcia@lists.infradead.org,
-        Jochen Friedrich <jochen@scram.de>, stable@vger.kernel.org
-Subject: [PATCH v2 6/8] pcmcia: sharpsl: don't discard sharpsl_pcmcia_ops
-Date: Tue,  9 Oct 2012 22:13:56 +0200
-Message-Id: <1349813638-4617-7-git-send-email-arnd@arndb.de>
+        Wan ZongShun <mcuos.com@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-pcmcia@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-usb@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, stable@vger.kernel.org
+Subject: [PATCH v2 0/8]  ARM: mostly harmless gcc warnings
+Date: Tue,  9 Oct 2012 22:13:50 +0200
+Message-Id: <1349813638-4617-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-References: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:QzzISXOVjBuGfD6krTrEAj8c5WNDPtA0uwxYGchQqfD
- LPfXlsE22tEcA0mz0D6qVTM7Pf5pSRo/YmQk30MAb2DpNVmWdF
- umK3b1fosO9g/g7OEeSec4A4pf1712fvWv+Kes0YwKm7UpPzaM
- 99Z2m1CvJoIUZIwEeYVQv7Wizbr4Uzc8l7mUvG2t3+b8xrMS8x
- 5l0Ae3MT6yDwRDyZl6kaEcXpWbdxYyL8EJSRp5Zjd+OX6XfOVz
- 6ZqBB3swL8KfOjbnWlvyyVkuZD42A4Zf8nc9SYv0EgA2AmkF0v
- M9FiS01e95rK9XExlJJ5rx5uusyuluKw4rHEikWzGNXGSj7syh
- tXYQOkiEbyUj74R7gnx7tpmwJBm8SB4OnkbOox5eu
+X-Provags-ID: V02:K0:P63FroCm+H9NjkTUQbw4xYjrh91GWYwhZ1NFjG0tLd5
+ zbpCGDeMyrUqMz3OdB0O1HII8YeToWYPjZhYstwjXKMxtu1ZnV
+ ZocTLJarNvcUQd6qBvr8Fu4C5XleiHMa3laCnME7oVS86FhqKs
+ lLiKPlrNouI9kFrKMmgBFiHfv5f23rtRvis8cE5keYBJJZDak8
+ TJokOjAXk1yS8i3AK+mufXGEAgVstMNbtkeOU0vXZOCQMoGo7D
+ vfhtCpLU5PEKIIWKU/2Y4kwAWAQpZKU17uZGDD/9L2tkixbkuw
+ g85VJ2OrvBCoTWkIWqjds93MEJrTiaf7+dQx/UWGrX67avaR4r
+ tnTLNfT2mEHXxz/hrtOYSW8dmq9kLt4LpQs6ZxhRg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sharpsl_pcmcia_ops structure gets passed into
-sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
-unlike all other pcmcia drivers that pass their structures
-into platform_device_add_data, which makes a copy.
+Most patches from the first time this was posted have been
+adopted by a subsystem maintainer or were show to be obsolete.
+Here are the remaining ones again.
 
-This means the gcc warning is valid and the structure
-must not be marked as __initdata.
+I'm planning to submit those patches that are still necessary
+by the time we have an -rc1 through the arm-soc tree, but
+my preference is still to have them go through the subsystem
+maintainers.
 
-Without this patch, building collie_defconfig results in:
+Olof: should we add it to for-next?
 
-drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
-compilation terminated.
-make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
-make[2]: *** [drivers/pcmcia] Error 2
-make[1]: *** [drivers] Error 2
-make: *** [sub-make] Error 2
+	Arnd
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Pavel Machek <pavel@suse.cz>
-Cc: linux-pcmcia@lists.infradead.org
-Cc: Jochen Friedrich <jochen@scram.de>
-Cc: stable@vger.kernel.org
----
+Arnd Bergmann (8):
+  SCSI: ARM: ncr5380/oak uses no interrupts
+  SCSI: ARM: make fas216_dumpinfo function conditional
+  mm/slob: use min_t() to compare ARCH_SLAB_MINALIGN
+  USB: EHCI: mark ehci_orion_conf_mbus_windows __devinit
+  clk: don't mark clkdev_add_table as init
+  pcmcia: sharpsl: don't discard sharpsl_pcmcia_ops
+  video: mark nuc900fb_map_video_memory as __devinit
+  spi/s3c64xx: use correct dma_transfer_direction type
+
+ drivers/clk/clkdev.c            |    2 +-
  drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/arm/fas216.c       |    2 +-
+ drivers/scsi/arm/oak.c          |    1 +
+ drivers/spi/spi-s3c64xx.c       |    2 +-
+ drivers/usb/host/ehci-orion.c   |    2 +-
+ drivers/video/nuc900fb.c        |    2 +-
+ mm/slob.c                       |    6 +++---
+ 8 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/pcmcia/pxa2xx_sharpsl.c b/drivers/pcmcia/pxa2xx_sharpsl.c
-index b066273..7dd879c 100644
---- a/drivers/pcmcia/pxa2xx_sharpsl.c
-+++ b/drivers/pcmcia/pxa2xx_sharpsl.c
-@@ -194,7 +194,7 @@ static void sharpsl_pcmcia_socket_suspend(struct soc_pcmcia_socket *skt)
- 	sharpsl_pcmcia_init_reset(skt);
- }
- 
--static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
-+static struct pcmcia_low_level sharpsl_pcmcia_ops = {
- 	.owner                  = THIS_MODULE,
- 	.hw_init                = sharpsl_pcmcia_hw_init,
- 	.socket_state           = sharpsl_pcmcia_socket_state,
 -- 
 1.7.10
 
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jochen Friedrich <jochen@scram.de>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Pavel Machek <pavel@suse.cz>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wan ZongShun <mcuos.com@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-fbdev@vger.kernel.org
+Cc: linux-pcmcia@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: stable@vger.kernel.org
