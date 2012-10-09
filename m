@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab2JIGDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:03:40 -0400
+	id S1753189Ab2JIGDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:03:35 -0400
 Received: from mail-qa0-f53.google.com ([209.85.216.53]:58217 "EHLO
 	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab2JIGDY (ORCPT
+	with ESMTP id S1752521Ab2JIGDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:03:24 -0400
+	Tue, 9 Oct 2012 02:03:21 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
         SangWook Ju <sw.ju@samsung.com>, Durgadoss <durgadoss.r@intel.com>,
         Jean Delvare <khali@linux-fr.org>,
         Kyungmin Park <kmpark@infradead.org>,
@@ -18,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Amit Daniel Kachhap <amit.daniel@samsung.com>,
         Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 20/30] thermal: exynos5: add exynos5250 thermal sensor driver support
-Date: Tue,  9 Oct 2012 01:54:10 -0400
-Message-Id: <f22d9c03ccc9339d02579914d85b2db81a985a8e.1349761836.git.len.brown@intel.com>
+Subject: [PATCH 18/30] thermal: add generic cpufreq cooling implementation
+Date: Tue,  9 Oct 2012 01:54:08 -0400
+Message-Id: <023614183768a7ac62898bded5ec6c0c9fecbdd9.1349761836.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc1
 In-Reply-To: <1349762060-25334-1-git-send-email-lenb@kernel.org>
 References: <1349762060-25334-1-git-send-email-lenb@kernel.org>
@@ -34,13 +35,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
 
-Insert exynos5 TMU sensor changes into the thermal driver.  Some exynos4
-changes are made generic for exynos series.
+This patchset introduces a new generic cooling device based on cpufreq
+that can be used on non-ACPI platforms.  As a proof of concept, we have
+drivers for the following platforms using this mechanism now:
+
+ * Samsung Exynos (Exynos4 and Exynos5) in the current patchset.
+ * Freescale i.MX (git://git.linaro.org/people/amitdanielk/linux.git imx6q_thermal)
+
+There is a small change in cpufreq cooling registration APIs, so a minor
+change is needed for Freescale platforms.
+
+Brief Description:
+
+1) The generic cooling devices code is placed inside driver/thermal/*
+   as placing inside acpi folder will need un-necessary enabling of acpi
+   code.  This code is architecture independent.
+
+2) This patchset adds generic cpu cooling low level implementation
+   through frequency clipping.  In future, other cpu related cooling
+   devices may be added here.  An ACPI version of this already exists
+   (drivers/acpi/processor_thermal.c) .But this will be useful for
+   platforms like ARM using the generic thermal interface along with the
+   generic cpu cooling devices.  The cooling device registration API's
+   return cooling device pointers which can be easily binded with the
+   thermal zone trip points.  The important APIs exposed are,
+
+   a) struct thermal_cooling_device *cpufreq_cooling_register(
+        struct cpumask *clip_cpus)
+   b) void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+
+3) Samsung exynos platform thermal implementation is done using the
+   generic cpu cooling APIs and the new trip type.  The temperature sensor
+   driver present in the hwmon folder(registered as hwmon driver) is moved
+   to thermal folder and registered as a thermal driver.
+
+A simple data/control flow diagrams is shown below,
+
+Core Linux thermal <----->  Exynos thermal interface <----- Temperature Sensor
+          |                             |
+         \|/                            |
+  Cpufreq cooling device <---------------
+
+TODO:
+*Will send the DT enablement patches later after the driver is merged.
+
+This patch:
+
+Add support for generic cpu thermal cooling low level implementations
+using frequency scaling up/down based on the registration parameters.
+Different cpu related cooling devices can be registered by the user and
+the binding of these cooling devices to the corresponding trip points can
+be easily done as the registration APIs return the cooling device pointer.
+The user of these APIs are responsible for passing clipping frequency .
+The drivers can also register to recieve notification about any cooling
+action called.
 
 [akpm@linux-foundation.org: fix comment layout]
-Signed-off-by: SangWook Ju <sw.ju@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: SangWook Ju <sw.ju@samsung.com>
 Cc: Durgadoss <durgadoss.r@intel.com>
 Cc: Len Brown <lenb@kernel.org>
 Cc: Jean Delvare <khali@linux-fr.org>
@@ -50,629 +103,607 @@ Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 ---
- drivers/thermal/Kconfig                      |   2 +-
- drivers/thermal/exynos_thermal.c             | 351 +++++++++++++++++----------
- include/linux/platform_data/exynos_thermal.h |  19 +-
- 3 files changed, 240 insertions(+), 132 deletions(-)
+ Documentation/thermal/cpu-cooling-api.txt |  32 +++
+ drivers/thermal/Kconfig                   |  11 +
+ drivers/thermal/Makefile                  |   1 +
+ drivers/thermal/cpu_cooling.c             | 450 ++++++++++++++++++++++++++++++
+ include/linux/cpu_cooling.h               |  58 ++++
+ 5 files changed, 552 insertions(+)
+ create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+ create mode 100644 drivers/thermal/cpu_cooling.c
+ create mode 100644 include/linux/cpu_cooling.h
 
+diff --git a/Documentation/thermal/cpu-cooling-api.txt b/Documentation/thermal/cpu-cooling-api.txt
+new file mode 100644
+index 0000000..fca24c9
+--- /dev/null
++++ b/Documentation/thermal/cpu-cooling-api.txt
+@@ -0,0 +1,32 @@
++CPU cooling APIs How To
++===================================
++
++Written by Amit Daniel Kachhap <amit.kachhap@linaro.org>
++
++Updated: 12 May 2012
++
++Copyright (c)  2012 Samsung Electronics Co., Ltd(http://www.samsung.com)
++
++0. Introduction
++
++The generic cpu cooling(freq clipping) provides registration/unregistration APIs
++to the caller. The binding of the cooling devices to the trip point is left for
++the user. The registration APIs returns the cooling device pointer.
++
++1. cpu cooling APIs
++
++1.1 cpufreq registration/unregistration APIs
++1.1.1 struct thermal_cooling_device *cpufreq_cooling_register(
++	struct cpumask *clip_cpus)
++
++    This interface function registers the cpufreq cooling device with the name
++    "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
++    cooling devices.
++
++   clip_cpus: cpumask of cpus where the frequency constraints will happen.
++
++1.1.2 void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
++
++    This interface function unregisters the "thermal-cpufreq-%x" cooling device.
++
++    cdev: Cooling device pointer which has to be unregistered.
 diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 8f2b6ea..edfd67d 100644
+index 7dd8c34..996003b 100644
 --- a/drivers/thermal/Kconfig
 +++ b/drivers/thermal/Kconfig
-@@ -49,7 +49,7 @@ config RCAR_THERMAL
+@@ -19,6 +19,17 @@ config THERMAL_HWMON
+ 	depends on HWMON=y || HWMON=THERMAL
+ 	default y
  
- config EXYNOS_THERMAL
- 	tristate "Temperature sensor on Samsung EXYNOS"
--	depends on ARCH_EXYNOS4 && THERMAL
-+	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
- 	help
- 	  If you say yes here you get support for TMU (Thermal Managment
- 	  Unit) on SAMSUNG EXYNOS series of SoC.
-diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
-index 556d15b..c9a33dd 100644
---- a/drivers/thermal/exynos_thermal.c
-+++ b/drivers/thermal/exynos_thermal.c
-@@ -33,44 +33,83 @@
- #include <linux/kobject.h>
- #include <linux/io.h>
- #include <linux/mutex.h>
--
- #include <linux/platform_data/exynos_thermal.h>
--
--#define EXYNOS4_TMU_REG_TRIMINFO	0x0
--#define EXYNOS4_TMU_REG_CONTROL		0x20
--#define EXYNOS4_TMU_REG_STATUS		0x28
--#define EXYNOS4_TMU_REG_CURRENT_TEMP	0x40
--#define EXYNOS4_TMU_REG_THRESHOLD_TEMP	0x44
--#define EXYNOS4_TMU_REG_TRIG_LEVEL0	0x50
--#define EXYNOS4_TMU_REG_TRIG_LEVEL1	0x54
--#define EXYNOS4_TMU_REG_TRIG_LEVEL2	0x58
--#define EXYNOS4_TMU_REG_TRIG_LEVEL3	0x5C
--#define EXYNOS4_TMU_REG_PAST_TEMP0	0x60
--#define EXYNOS4_TMU_REG_PAST_TEMP1	0x64
--#define EXYNOS4_TMU_REG_PAST_TEMP2	0x68
--#define EXYNOS4_TMU_REG_PAST_TEMP3	0x6C
--#define EXYNOS4_TMU_REG_INTEN		0x70
--#define EXYNOS4_TMU_REG_INTSTAT		0x74
--#define EXYNOS4_TMU_REG_INTCLEAR	0x78
--
--#define EXYNOS4_TMU_GAIN_SHIFT		8
--#define EXYNOS4_TMU_REF_VOLTAGE_SHIFT	24
--
--#define EXYNOS4_TMU_TRIM_TEMP_MASK	0xff
--#define EXYNOS4_TMU_CORE_ON	3
--#define EXYNOS4_TMU_CORE_OFF	2
--#define EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET	50
--#define EXYNOS4_TMU_TRIG_LEVEL0_MASK	0x1
--#define EXYNOS4_TMU_TRIG_LEVEL1_MASK	0x10
--#define EXYNOS4_TMU_TRIG_LEVEL2_MASK	0x100
--#define EXYNOS4_TMU_TRIG_LEVEL3_MASK	0x1000
--#define EXYNOS4_TMU_INTCLEAR_VAL	0x1111
--
--struct exynos4_tmu_data {
--	struct exynos4_tmu_platform_data *pdata;
-+#include <linux/of.h>
++config CPU_THERMAL
++	bool "generic cpu cooling support"
++	depends on THERMAL && CPU_FREQ
++	help
++	  This implements the generic cpu cooling mechanism through frequency
++	  reduction, cpu hotplug and any other ways of reducing temperature. An
++	  ACPI version of this already exists(drivers/acpi/processor_thermal.c).
++	  This will be useful for platforms using the generic thermal interface
++	  and not the ACPI interface.
++	  If you want this support, you should say Y here.
 +
-+#include <plat/cpu.h>
+ config SPEAR_THERMAL
+ 	bool "SPEAr thermal sensor driver"
+ 	depends on THERMAL
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index fd9369a..aae59ad 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -3,5 +3,6 @@
+ #
+ 
+ obj-$(CONFIG_THERMAL)		+= thermal_sys.o
++obj-$(CONFIG_CPU_THERMAL)		+= cpu_cooling.o
+ obj-$(CONFIG_SPEAR_THERMAL)		+= spear_thermal.o
+ obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+new file mode 100644
+index 0000000..99a5d75
+--- /dev/null
++++ b/drivers/thermal/cpu_cooling.c
+@@ -0,0 +1,450 @@
++/*
++ *  linux/drivers/thermal/cpu_cooling.c
++ *
++ *  Copyright (C) 2012	Samsung Electronics Co., Ltd(http://www.samsung.com)
++ *  Copyright (C) 2012  Amit Daniel <amit.kachhap@linaro.org>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/thermal.h>
++#include <linux/platform_device.h>
++#include <linux/cpufreq.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/cpu.h>
++#include <linux/cpu_cooling.h>
 +
-+/* Exynos generic registers */
-+#define EXYNOS_TMU_REG_TRIMINFO		0x0
-+#define EXYNOS_TMU_REG_CONTROL		0x20
-+#define EXYNOS_TMU_REG_STATUS		0x28
-+#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
-+#define EXYNOS_TMU_REG_INTEN		0x70
-+#define EXYNOS_TMU_REG_INTSTAT		0x74
-+#define EXYNOS_TMU_REG_INTCLEAR		0x78
-+
-+#define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
-+#define EXYNOS_TMU_GAIN_SHIFT		8
-+#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-+#define EXYNOS_TMU_CORE_ON		3
-+#define EXYNOS_TMU_CORE_OFF		2
-+#define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
-+
-+/* Exynos4210 specific registers */
-+#define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL1	0x54
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL2	0x58
-+#define EXYNOS4210_TMU_REG_TRIG_LEVEL3	0x5C
-+#define EXYNOS4210_TMU_REG_PAST_TEMP0	0x60
-+#define EXYNOS4210_TMU_REG_PAST_TEMP1	0x64
-+#define EXYNOS4210_TMU_REG_PAST_TEMP2	0x68
-+#define EXYNOS4210_TMU_REG_PAST_TEMP3	0x6C
-+
-+#define EXYNOS4210_TMU_TRIG_LEVEL0_MASK	0x1
-+#define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
-+#define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
-+#define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-+#define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
-+
-+/* Exynos5250 and Exynos4412 specific registers */
-+#define EXYNOS_TMU_TRIMINFO_CON	0x14
-+#define EXYNOS_THD_TEMP_RISE		0x50
-+#define EXYNOS_THD_TEMP_FALL		0x54
-+#define EXYNOS_EMUL_CON		0x80
-+
-+#define EXYNOS_TRIMINFO_RELOAD		0x1
-+#define EXYNOS_TMU_CLEAR_RISE_INT	0x111
-+#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 16)
-+#define EXYNOS_MUX_ADDR_VALUE		6
-+#define EXYNOS_MUX_ADDR_SHIFT		20
-+#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-+
-+#define EFUSE_MIN_VALUE 40
-+#define EFUSE_MAX_VALUE 100
-+
-+/* In-kernel thermal framework related macros & definations */
-+#define SENSOR_NAME_LEN	16
-+#define MAX_TRIP_COUNT	8
-+#define MAX_COOLING_DEVICE 4
-+
-+#define ACTIVE_INTERVAL 500
-+#define IDLE_INTERVAL 10000
-+
-+/* CPU Zone information */
-+#define PANIC_ZONE      4
-+#define WARN_ZONE       3
-+#define MONITOR_ZONE    2
-+#define SAFE_ZONE       1
-+
-+#define GET_ZONE(trip) (trip + 2)
-+#define GET_TRIP(zone) (zone - 2)
-+
-+struct exynos_tmu_data {
-+	struct exynos_tmu_platform_data *pdata;
- 	struct resource *mem;
- 	void __iomem *base;
- 	int irq;
-+	enum soc_type soc;
- 	struct work_struct irq_work;
- 	struct mutex lock;
- 	struct clk *clk;
-@@ -81,16 +120,17 @@ struct exynos4_tmu_data {
-  * TMU treats temperature as a mapped temperature code.
-  * The temperature is converted differently depending on the calibration type.
-  */
--static int temp_to_code(struct exynos4_tmu_data *data, u8 temp)
-+static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
- {
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp_code;
- 
--	/* temp should range between 25 and 125 */
--	if (temp < 25 || temp > 125) {
--		temp_code = -EINVAL;
--		goto out;
--	}
-+	if (data->soc == SOC_ARCH_EXYNOS4210)
-+		/* temp should range between 25 and 125 */
-+		if (temp < 25 || temp > 125) {
-+			temp_code = -EINVAL;
-+			goto out;
-+		}
- 
- 	switch (pdata->cal_type) {
- 	case TYPE_TWO_POINT_TRIMMING:
-@@ -102,7 +142,7 @@ static int temp_to_code(struct exynos4_tmu_data *data, u8 temp)
- 		temp_code = temp + data->temp_error1 - 25;
- 		break;
- 	default:
--		temp_code = temp + EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET;
-+		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
- 		break;
- 	}
- out:
-@@ -113,16 +153,17 @@ out:
-  * Calculate a temperature value from a temperature code.
-  * The unit of the temperature is degree Celsius.
-  */
--static int code_to_temp(struct exynos4_tmu_data *data, u8 temp_code)
-+static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
- {
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp;
- 
--	/* temp_code should range between 75 and 175 */
--	if (temp_code < 75 || temp_code > 175) {
--		temp = -ENODATA;
--		goto out;
--	}
-+	if (data->soc == SOC_ARCH_EXYNOS4210)
-+		/* temp_code should range between 75 and 175 */
-+		if (temp_code < 75 || temp_code > 175) {
-+			temp = -ENODATA;
-+			goto out;
-+		}
- 
- 	switch (pdata->cal_type) {
- 	case TYPE_TWO_POINT_TRIMMING:
-@@ -133,54 +174,92 @@ static int code_to_temp(struct exynos4_tmu_data *data, u8 temp_code)
- 		temp = temp_code - data->temp_error1 + 25;
- 		break;
- 	default:
--		temp = temp_code - EXYNOS4_TMU_DEF_CODE_TO_TEMP_OFFSET;
-+		temp = temp_code - EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
- 		break;
- 	}
- out:
- 	return temp;
- }
- 
--static int exynos4_tmu_initialize(struct platform_device *pdev)
-+static int exynos_tmu_initialize(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
--	unsigned int status, trim_info;
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
-+	unsigned int status, trim_info, rising_threshold;
- 	int ret = 0, threshold_code;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	status = readb(data->base + EXYNOS4_TMU_REG_STATUS);
-+	status = readb(data->base + EXYNOS_TMU_REG_STATUS);
- 	if (!status) {
- 		ret = -EBUSY;
- 		goto out;
- 	}
- 
-+	if (data->soc == SOC_ARCH_EXYNOS) {
-+		__raw_writel(EXYNOS_TRIMINFO_RELOAD,
-+				data->base + EXYNOS_TMU_TRIMINFO_CON);
-+	}
- 	/* Save trimming info in order to perform calibration */
--	trim_info = readl(data->base + EXYNOS4_TMU_REG_TRIMINFO);
--	data->temp_error1 = trim_info & EXYNOS4_TMU_TRIM_TEMP_MASK;
--	data->temp_error2 = ((trim_info >> 8) & EXYNOS4_TMU_TRIM_TEMP_MASK);
--
--	/* Write temperature code for threshold */
--	threshold_code = temp_to_code(data, pdata->threshold);
--	if (threshold_code < 0) {
--		ret = threshold_code;
--		goto out;
-+	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
-+	data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
-+	data->temp_error2 = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
-+
-+	if ((EFUSE_MIN_VALUE > data->temp_error1) ||
-+			(data->temp_error1 > EFUSE_MAX_VALUE) ||
-+			(data->temp_error2 != 0))
-+		data->temp_error1 = pdata->efuse_value;
-+
-+	if (data->soc == SOC_ARCH_EXYNOS4210) {
-+		/* Write temperature code for threshold */
-+		threshold_code = temp_to_code(data, pdata->threshold);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		writeb(threshold_code,
-+			data->base + EXYNOS4210_TMU_REG_THRESHOLD_TEMP);
-+
-+		writeb(pdata->trigger_levels[0],
-+			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL0);
-+		writeb(pdata->trigger_levels[1],
-+			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL1);
-+		writeb(pdata->trigger_levels[2],
-+			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL2);
-+		writeb(pdata->trigger_levels[3],
-+			data->base + EXYNOS4210_TMU_REG_TRIG_LEVEL3);
-+
-+		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
-+			data->base + EXYNOS_TMU_REG_INTCLEAR);
-+	} else if (data->soc == SOC_ARCH_EXYNOS) {
-+		/* Write temperature code for threshold */
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[0]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold = threshold_code;
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[1]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold |= (threshold_code << 8);
-+		threshold_code = temp_to_code(data, pdata->trigger_levels[2]);
-+		if (threshold_code < 0) {
-+			ret = threshold_code;
-+			goto out;
-+		}
-+		rising_threshold |= (threshold_code << 16);
-+
-+		writel(rising_threshold,
-+				data->base + EXYNOS_THD_TEMP_RISE);
-+		writel(0, data->base + EXYNOS_THD_TEMP_FALL);
-+
-+		writel(EXYNOS_TMU_CLEAR_RISE_INT|EXYNOS_TMU_CLEAR_FALL_INT,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
- 	}
--	writeb(threshold_code,
--		data->base + EXYNOS4_TMU_REG_THRESHOLD_TEMP);
--
--	writeb(pdata->trigger_levels[0],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL0);
--	writeb(pdata->trigger_levels[1],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL1);
--	writeb(pdata->trigger_levels[2],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL2);
--	writeb(pdata->trigger_levels[3],
--		data->base + EXYNOS4_TMU_REG_TRIG_LEVEL3);
--
--	writel(EXYNOS4_TMU_INTCLEAR_VAL,
--		data->base + EXYNOS4_TMU_REG_INTCLEAR);
- out:
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-@@ -188,35 +267,41 @@ out:
- 	return ret;
- }
- 
--static void exynos4_tmu_control(struct platform_device *pdev, bool on)
-+static void exynos_tmu_control(struct platform_device *pdev, bool on)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
--	struct exynos4_tmu_platform_data *pdata = data->pdata;
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	unsigned int con, interrupt_en;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	con = pdata->reference_voltage << EXYNOS4_TMU_REF_VOLTAGE_SHIFT |
--		pdata->gain << EXYNOS4_TMU_GAIN_SHIFT;
-+	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
-+		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
-+
-+	if (data->soc == SOC_ARCH_EXYNOS) {
-+		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
-+		con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-+	}
-+
- 	if (on) {
--		con |= EXYNOS4_TMU_CORE_ON;
-+		con |= EXYNOS_TMU_CORE_ON;
- 		interrupt_en = pdata->trigger_level3_en << 12 |
- 			pdata->trigger_level2_en << 8 |
- 			pdata->trigger_level1_en << 4 |
- 			pdata->trigger_level0_en;
- 	} else {
--		con |= EXYNOS4_TMU_CORE_OFF;
-+		con |= EXYNOS_TMU_CORE_OFF;
- 		interrupt_en = 0; /* Disable all interrupts */
- 	}
--	writel(interrupt_en, data->base + EXYNOS4_TMU_REG_INTEN);
--	writel(con, data->base + EXYNOS4_TMU_REG_CONTROL);
-+	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
-+	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
- }
- 
--static int exynos4_tmu_read(struct exynos4_tmu_data *data)
-+static int exynos_tmu_read(struct exynos_tmu_data *data)
- {
- 	u8 temp_code;
- 	int temp;
-@@ -224,7 +309,7 @@ static int exynos4_tmu_read(struct exynos4_tmu_data *data)
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	temp_code = readb(data->base + EXYNOS4_TMU_REG_CURRENT_TEMP);
-+	temp_code = readb(data->base + EXYNOS_TMU_REG_CURRENT_TEMP);
- 	temp = code_to_temp(data, temp_code);
- 
- 	clk_disable(data->clk);
-@@ -233,25 +318,30 @@ static int exynos4_tmu_read(struct exynos4_tmu_data *data)
- 	return temp;
- }
- 
--static void exynos4_tmu_work(struct work_struct *work)
-+static void exynos_tmu_work(struct work_struct *work)
- {
--	struct exynos4_tmu_data *data = container_of(work,
--			struct exynos4_tmu_data, irq_work);
-+	struct exynos_tmu_data *data = container_of(work,
-+			struct exynos_tmu_data, irq_work);
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
- 
--	writel(EXYNOS4_TMU_INTCLEAR_VAL, data->base + EXYNOS4_TMU_REG_INTCLEAR);
- 
--	enable_irq(data->irq);
-+	if (data->soc == SOC_ARCH_EXYNOS)
-+		writel(EXYNOS_TMU_CLEAR_RISE_INT,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
-+	else
-+		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
-+				data->base + EXYNOS_TMU_REG_INTCLEAR);
- 
- 	clk_disable(data->clk);
- 	mutex_unlock(&data->lock);
-+	enable_irq(data->irq);
- }
- 
--static irqreturn_t exynos4_tmu_irq(int irq, void *id)
-+static irqreturn_t exynos_tmu_irq(int irq, void *id)
- {
--	struct exynos4_tmu_data *data = id;
-+	struct exynos_tmu_data *data = id;
- 
- 	disable_irq_nosync(irq);
- 	schedule_work(&data->irq_work);
-@@ -259,18 +349,17 @@ static irqreturn_t exynos4_tmu_irq(int irq, void *id)
- 	return IRQ_HANDLED;
- }
- 
--static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
-+static int __devinit exynos_tmu_probe(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data;
--	struct exynos4_tmu_platform_data *pdata = pdev->dev.platform_data;
-+	struct exynos_tmu_data *data;
-+	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
- 	int ret;
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform init data supplied.\n");
- 		return -ENODEV;
- 	}
--
--	data = kzalloc(sizeof(struct exynos4_tmu_data), GFP_KERNEL);
-+	data = kzalloc(sizeof(struct exynos_tmu_data), GFP_KERNEL);
- 	if (!data) {
- 		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
- 		return -ENOMEM;
-@@ -283,7 +372,7 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_free;
- 	}
- 
--	INIT_WORK(&data->irq_work, exynos4_tmu_work);
-+	INIT_WORK(&data->irq_work, exynos_tmu_work);
- 
- 	data->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!data->mem) {
-@@ -307,9 +396,8 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_mem_region;
- 	}
- 
--	ret = request_irq(data->irq, exynos4_tmu_irq,
--		IRQF_TRIGGER_RISING,
--		"exynos4-tmu", data);
-+	ret = request_irq(data->irq, exynos_tmu_irq,
-+		IRQF_TRIGGER_RISING, "exynos-tmu", data);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq);
- 		goto err_io_remap;
-@@ -322,17 +410,26 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
-+	if (pdata->type == SOC_ARCH_EXYNOS ||
-+				pdata->type == SOC_ARCH_EXYNOS4210)
-+		data->soc = pdata->type;
-+	else {
-+		ret = -EINVAL;
-+		dev_err(&pdev->dev, "Platform not supported\n");
-+		goto err_clk;
-+	}
-+
- 	data->pdata = pdata;
- 	platform_set_drvdata(pdev, data);
- 	mutex_init(&data->lock);
- 
--	ret = exynos4_tmu_initialize(pdev);
-+	ret = exynos_tmu_initialize(pdev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize TMU\n");
- 		goto err_clk;
- 	}
- 
--	exynos4_tmu_control(pdev, true);
-+	exynos_tmu_control(pdev, true);
- 
- 	return 0;
- err_clk:
-@@ -350,11 +447,11 @@ err_free:
- 	return ret;
- }
- 
--static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
-+static int __devexit exynos_tmu_remove(struct platform_device *pdev)
- {
--	struct exynos4_tmu_data *data = platform_get_drvdata(pdev);
-+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 
--	exynos4_tmu_control(pdev, false);
-+	exynos_tmu_control(pdev, false);
- 
- 	clk_put(data->clk);
- 
-@@ -371,43 +468,43 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
- }
- 
- #ifdef CONFIG_PM_SLEEP
--static int exynos4_tmu_suspend(struct device *dev)
-+static int exynos_tmu_suspend(struct device *dev)
- {
--	exynos4_tmu_control(to_platform_device(dev), false);
-+	exynos_tmu_control(to_platform_device(dev), false);
- 
- 	return 0;
- }
- 
--static int exynos4_tmu_resume(struct device *dev)
-+static int exynos_tmu_resume(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
- 
--	exynos4_tmu_initialize(pdev);
--	exynos4_tmu_control(pdev, true);
-+	exynos_tmu_initialize(pdev);
-+	exynos_tmu_control(pdev, true);
- 
- 	return 0;
- }
- 
--static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm,
--			 exynos4_tmu_suspend, exynos4_tmu_resume);
--#define EXYNOS4_TMU_PM	(&exynos4_tmu_pm)
-+static SIMPLE_DEV_PM_OPS(exynos_tmu_pm,
-+			 exynos_tmu_suspend, exynos_tmu_resume);
-+#define EXYNOS_TMU_PM	(&exynos_tmu_pm)
- #else
--#define EXYNOS4_TMU_PM	NULL
-+#define EXYNOS_TMU_PM	NULL
- #endif
- 
--static struct platform_driver exynos4_tmu_driver = {
-+static struct platform_driver exynos_tmu_driver = {
- 	.driver = {
--		.name   = "exynos4-tmu",
-+		.name   = "exynos-tmu",
- 		.owner  = THIS_MODULE,
--		.pm     = EXYNOS4_TMU_PM,
-+		.pm     = EXYNOS_TMU_PM,
- 	},
--	.probe = exynos4_tmu_probe,
--	.remove	= __devexit_p(exynos4_tmu_remove),
-+	.probe = exynos_tmu_probe,
-+	.remove	= __devexit_p(exynos_tmu_remove),
- };
- 
--module_platform_driver(exynos4_tmu_driver);
-+module_platform_driver(exynos_tmu_driver);
- 
--MODULE_DESCRIPTION("EXYNOS4 TMU Driver");
-+MODULE_DESCRIPTION("EXYNOS TMU Driver");
- MODULE_AUTHOR("Donggeun Kim <dg77.kim@samsung.com>");
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:exynos4-tmu");
-+MODULE_ALIAS("platform:exynos-tmu");
-diff --git a/include/linux/platform_data/exynos_thermal.h b/include/linux/platform_data/exynos_thermal.h
-index d6c3f93..a9e960a 100644
---- a/include/linux/platform_data/exynos_thermal.h
-+++ b/include/linux/platform_data/exynos_thermal.h
-@@ -1,5 +1,5 @@
- /*
-- * exynos_thermal.h - Samsung EXYNOS4 TMU (Thermal Management Unit)
-+ * exynos_thermal.h - Samsung EXYNOS TMU (Thermal Management Unit)
-  *
-  *  Copyright (C) 2011 Samsung Electronics
-  *  Donggeun Kim <dg77.kim@samsung.com>
-@@ -28,8 +28,12 @@ enum calibration_type {
- 	TYPE_NONE,
- };
- 
-+enum soc_type {
-+	SOC_ARCH_EXYNOS4210 = 1,
-+	SOC_ARCH_EXYNOS,
++/**
++ * struct cpufreq_cooling_device
++ * @id: unique integer value corresponding to each cpufreq_cooling_device
++ *	registered.
++ * @cool_dev: thermal_cooling_device pointer to keep track of the the
++ *	egistered cooling device.
++ * @cpufreq_state: integer value representing the current state of cpufreq
++ *	cooling	devices.
++ * @cpufreq_val: integer value representing the absolute value of the clipped
++ *	frequency.
++ * @allowed_cpus: all the cpus involved for this cpufreq_cooling_device.
++ * @node: list_head to link all cpufreq_cooling_device together.
++ *
++ * This structure is required for keeping information of each
++ * cpufreq_cooling_device registered as a list whose head is represented by
++ * cooling_cpufreq_list. In order to prevent corruption of this list a
++ * mutex lock cooling_cpufreq_lock is used.
++ */
++struct cpufreq_cooling_device {
++	int id;
++	struct thermal_cooling_device *cool_dev;
++	unsigned int cpufreq_state;
++	unsigned int cpufreq_val;
++	struct cpumask allowed_cpus;
++	struct list_head node;
 +};
- /**
-- * struct exynos4_tmu_platform_data
-+ * struct exynos_tmu_platform_data
-  * @threshold: basic temperature for generating interrupt
-  *	       25 <= threshold <= 125 [unit: degree Celsius]
-  * @trigger_levels: array for each interrupt levels
-@@ -63,11 +67,15 @@ enum calibration_type {
-  * @reference_voltage: reference voltage of amplifier
-  *	in the positive-TC generator block
-  *	0 <= reference_voltage <= 31
-+ * @noise_cancel_mode: noise cancellation mode
-+ *	000, 100, 101, 110 and 111 can be different modes
-+ * @type: determines the type of SOC
-+ * @efuse_value: platform defined fuse value
-  * @cal_type: calibration type for temperature
-  *
-- * This structure is required for configuration of exynos4_tmu driver.
-+ * This structure is required for configuration of exynos_tmu driver.
-  */
--struct exynos4_tmu_platform_data {
-+struct exynos_tmu_platform_data {
- 	u8 threshold;
- 	u8 trigger_levels[4];
- 	bool trigger_level0_en;
-@@ -77,7 +85,10 @@ struct exynos4_tmu_platform_data {
- 
- 	u8 gain;
- 	u8 reference_voltage;
-+	u8 noise_cancel_mode;
-+	u32 efuse_value;
- 
- 	enum calibration_type cal_type;
-+	enum soc_type type;
- };
- #endif /* _LINUX_EXYNOS_THERMAL_H */
++static LIST_HEAD(cooling_cpufreq_list);
++static DEFINE_IDR(cpufreq_idr);
++
++static struct mutex cooling_cpufreq_lock;
++
++/* notify_table passes value to the CPUFREQ_ADJUST callback function. */
++#define NOTIFY_INVALID NULL
++struct cpufreq_cooling_device *notify_device;
++
++/**
++ * get_idr - function to get a unique id.
++ * @idr: struct idr * handle used to create a id.
++ * @id: int * value generated by this function.
++ */
++static int get_idr(struct idr *idr, int *id)
++{
++	int err;
++again:
++	if (unlikely(idr_pre_get(idr, GFP_KERNEL) == 0))
++		return -ENOMEM;
++
++	mutex_lock(&cooling_cpufreq_lock);
++	err = idr_get_new(idr, NULL, id);
++	mutex_unlock(&cooling_cpufreq_lock);
++
++	if (unlikely(err == -EAGAIN))
++		goto again;
++	else if (unlikely(err))
++		return err;
++
++	*id = *id & MAX_ID_MASK;
++	return 0;
++}
++
++/**
++ * release_idr - function to free the unique id.
++ * @idr: struct idr * handle used for creating the id.
++ * @id: int value representing the unique id.
++ */
++static void release_idr(struct idr *idr, int id)
++{
++	mutex_lock(&cooling_cpufreq_lock);
++	idr_remove(idr, id);
++	mutex_unlock(&cooling_cpufreq_lock);
++}
++
++/* Below code defines functions to be used for cpufreq as cooling device */
++
++/**
++ * is_cpufreq_valid - function to check if a cpu has frequency transition policy.
++ * @cpu: cpu for which check is needed.
++ */
++static int is_cpufreq_valid(int cpu)
++{
++	struct cpufreq_policy policy;
++	return !cpufreq_get_policy(&policy, cpu);
++}
++
++/**
++ * get_cpu_frequency - get the absolute value of frequency from level.
++ * @cpu: cpu for which frequency is fetched.
++ * @level: level of frequency of the CPU
++ *	e.g level=1 --> 1st MAX FREQ, LEVEL=2 ---> 2nd MAX FREQ, .... etc
++ */
++static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
++{
++	int ret = 0, i = 0;
++	unsigned long level_index;
++	bool descend = false;
++	struct cpufreq_frequency_table *table =
++					cpufreq_frequency_get_table(cpu);
++	if (!table)
++		return ret;
++
++	while (table[i].frequency != CPUFREQ_TABLE_END) {
++		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
++			continue;
++
++		/*check if table in ascending or descending order*/
++		if ((table[i + 1].frequency != CPUFREQ_TABLE_END) &&
++			(table[i + 1].frequency < table[i].frequency)
++			&& !descend) {
++			descend = true;
++		}
++
++		/*return if level matched and table in descending order*/
++		if (descend && i == level)
++			return table[i].frequency;
++		i++;
++	}
++	i--;
++
++	if (level > i || descend)
++		return ret;
++	level_index = i - level;
++
++	/*Scan the table in reverse order and match the level*/
++	while (i >= 0) {
++		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
++			continue;
++		/*return if level matched*/
++		if (i == level_index)
++			return table[i].frequency;
++		i--;
++	}
++	return ret;
++}
++
++/**
++ * cpufreq_apply_cooling - function to apply frequency clipping.
++ * @cpufreq_device: cpufreq_cooling_device pointer containing frequency
++ *	clipping data.
++ * @cooling_state: value of the cooling state.
++ */
++static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
++				unsigned long cooling_state)
++{
++	unsigned int cpuid, clip_freq;
++	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
++	unsigned int cpu = cpumask_any(maskPtr);
++
++
++	/* Check if the old cooling action is same as new cooling action */
++	if (cpufreq_device->cpufreq_state == cooling_state)
++		return 0;
++
++	clip_freq = get_cpu_frequency(cpu, cooling_state);
++	if (!clip_freq)
++		return -EINVAL;
++
++	cpufreq_device->cpufreq_state = cooling_state;
++	cpufreq_device->cpufreq_val = clip_freq;
++	notify_device = cpufreq_device;
++
++	for_each_cpu(cpuid, maskPtr) {
++		if (is_cpufreq_valid(cpuid))
++			cpufreq_update_policy(cpuid);
++	}
++
++	notify_device = NOTIFY_INVALID;
++
++	return 0;
++}
++
++/**
++ * cpufreq_thermal_notifier - notifier callback for cpufreq policy change.
++ * @nb:	struct notifier_block * with callback info.
++ * @event: value showing cpufreq event for which this function invoked.
++ * @data: callback-specific data
++ */
++static int cpufreq_thermal_notifier(struct notifier_block *nb,
++					unsigned long event, void *data)
++{
++	struct cpufreq_policy *policy = data;
++	unsigned long max_freq = 0;
++
++	if (event != CPUFREQ_ADJUST || notify_device == NOTIFY_INVALID)
++		return 0;
++
++	if (cpumask_test_cpu(policy->cpu, &notify_device->allowed_cpus))
++		max_freq = notify_device->cpufreq_val;
++
++	/* Never exceed user_policy.max*/
++	if (max_freq > policy->user_policy.max)
++		max_freq = policy->user_policy.max;
++
++	if (policy->max != max_freq)
++		cpufreq_verify_within_limits(policy, 0, max_freq);
++
++	return 0;
++}
++
++/*
++ * cpufreq cooling device callback functions are defined below
++ */
++
++/**
++ * cpufreq_get_max_state - callback function to get the max cooling state.
++ * @cdev: thermal cooling device pointer.
++ * @state: fill this variable with the max cooling state.
++ */
++static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
++				 unsigned long *state)
++{
++	int ret = -EINVAL, i = 0;
++	struct cpufreq_cooling_device *cpufreq_device;
++	struct cpumask *maskPtr;
++	unsigned int cpu;
++	struct cpufreq_frequency_table *table;
++
++	mutex_lock(&cooling_cpufreq_lock);
++	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
++		if (cpufreq_device && cpufreq_device->cool_dev == cdev)
++			break;
++	}
++	if (cpufreq_device == NULL)
++		goto return_get_max_state;
++
++	maskPtr = &cpufreq_device->allowed_cpus;
++	cpu = cpumask_any(maskPtr);
++	table = cpufreq_frequency_get_table(cpu);
++	if (!table) {
++		*state = 0;
++		ret = 0;
++		goto return_get_max_state;
++	}
++
++	while (table[i].frequency != CPUFREQ_TABLE_END) {
++		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
++			continue;
++		i++;
++	}
++	if (i > 0) {
++		*state = --i;
++		ret = 0;
++	}
++
++return_get_max_state:
++	mutex_unlock(&cooling_cpufreq_lock);
++	return ret;
++}
++
++/**
++ * cpufreq_get_cur_state - callback function to get the current cooling state.
++ * @cdev: thermal cooling device pointer.
++ * @state: fill this variable with the current cooling state.
++ */
++static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
++				 unsigned long *state)
++{
++	int ret = -EINVAL;
++	struct cpufreq_cooling_device *cpufreq_device;
++
++	mutex_lock(&cooling_cpufreq_lock);
++	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
++		if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
++			*state = cpufreq_device->cpufreq_state;
++			ret = 0;
++			break;
++		}
++	}
++	mutex_unlock(&cooling_cpufreq_lock);
++
++	return ret;
++}
++
++/**
++ * cpufreq_set_cur_state - callback function to set the current cooling state.
++ * @cdev: thermal cooling device pointer.
++ * @state: set this variable to the current cooling state.
++ */
++static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
++				 unsigned long state)
++{
++	int ret = -EINVAL;
++	struct cpufreq_cooling_device *cpufreq_device;
++
++	mutex_lock(&cooling_cpufreq_lock);
++	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
++		if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
++			ret = 0;
++			break;
++		}
++	}
++	if (!ret)
++		ret = cpufreq_apply_cooling(cpufreq_device, state);
++
++	mutex_unlock(&cooling_cpufreq_lock);
++
++	return ret;
++}
++
++/* Bind cpufreq callbacks to thermal cooling device ops */
++static struct thermal_cooling_device_ops const cpufreq_cooling_ops = {
++	.get_max_state = cpufreq_get_max_state,
++	.get_cur_state = cpufreq_get_cur_state,
++	.set_cur_state = cpufreq_set_cur_state,
++};
++
++/* Notifier for cpufreq policy change */
++static struct notifier_block thermal_cpufreq_notifier_block = {
++	.notifier_call = cpufreq_thermal_notifier,
++};
++
++/**
++ * cpufreq_cooling_register - function to create cpufreq cooling device.
++ * @clip_cpus: cpumask of cpus where the frequency constraints will happen.
++ */
++struct thermal_cooling_device *cpufreq_cooling_register(
++	struct cpumask *clip_cpus)
++{
++	struct thermal_cooling_device *cool_dev;
++	struct cpufreq_cooling_device *cpufreq_dev = NULL;
++	unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
++	char dev_name[THERMAL_NAME_LENGTH];
++	int ret = 0, id = 0, i;
++	struct cpufreq_policy policy;
++
++	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
++		cpufreq_dev_count++;
++
++	/*Verify that all the clip cpus have same freq_min, freq_max limit*/
++	for_each_cpu(i, clip_cpus) {
++		/*continue if cpufreq policy not found and not return error*/
++		if (!cpufreq_get_policy(&policy, i))
++			continue;
++		if (min == 0 && max == 0) {
++			min = policy.cpuinfo.min_freq;
++			max = policy.cpuinfo.max_freq;
++		} else {
++			if (min != policy.cpuinfo.min_freq ||
++				max != policy.cpuinfo.max_freq)
++				return ERR_PTR(-EINVAL);
++}
++	}
++	cpufreq_dev = kzalloc(sizeof(struct cpufreq_cooling_device),
++			GFP_KERNEL);
++	if (!cpufreq_dev)
++		return ERR_PTR(-ENOMEM);
++
++	cpumask_copy(&cpufreq_dev->allowed_cpus, clip_cpus);
++
++	if (cpufreq_dev_count == 0)
++		mutex_init(&cooling_cpufreq_lock);
++
++	ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);
++	if (ret) {
++		kfree(cpufreq_dev);
++		return ERR_PTR(-EINVAL);
++	}
++
++	sprintf(dev_name, "thermal-cpufreq-%d", cpufreq_dev->id);
++
++	cool_dev = thermal_cooling_device_register(dev_name, cpufreq_dev,
++						&cpufreq_cooling_ops);
++	if (!cool_dev) {
++		release_idr(&cpufreq_idr, cpufreq_dev->id);
++		kfree(cpufreq_dev);
++		return ERR_PTR(-EINVAL);
++	}
++	cpufreq_dev->id = id;
++	cpufreq_dev->cool_dev = cool_dev;
++	cpufreq_dev->cpufreq_state = 0;
++	mutex_lock(&cooling_cpufreq_lock);
++	list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list);
++
++	/* Register the notifier for first cpufreq cooling device */
++	if (cpufreq_dev_count == 0)
++		cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
++						CPUFREQ_POLICY_NOTIFIER);
++
++	mutex_unlock(&cooling_cpufreq_lock);
++	return cool_dev;
++}
++EXPORT_SYMBOL(cpufreq_cooling_register);
++
++/**
++ * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
++ * @cdev: thermal cooling device pointer.
++ */
++void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
++{
++	struct cpufreq_cooling_device *cpufreq_dev = NULL;
++	unsigned int cpufreq_dev_count = 0;
++
++	mutex_lock(&cooling_cpufreq_lock);
++	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
++		if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
++			break;
++		cpufreq_dev_count++;
++	}
++
++	if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
++		mutex_unlock(&cooling_cpufreq_lock);
++		return;
++	}
++
++	list_del(&cpufreq_dev->node);
++
++	/* Unregister the notifier for the last cpufreq cooling device */
++	if (cpufreq_dev_count == 1) {
++		cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
++					CPUFREQ_POLICY_NOTIFIER);
++	}
++	mutex_unlock(&cooling_cpufreq_lock);
++	thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
++	release_idr(&cpufreq_idr, cpufreq_dev->id);
++	if (cpufreq_dev_count == 1)
++		mutex_destroy(&cooling_cpufreq_lock);
++	kfree(cpufreq_dev);
++}
++EXPORT_SYMBOL(cpufreq_cooling_unregister);
+diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
+new file mode 100644
+index 0000000..8515301
+--- /dev/null
++++ b/include/linux/cpu_cooling.h
+@@ -0,0 +1,58 @@
++/*
++ *  linux/include/linux/cpu_cooling.h
++ *
++ *  Copyright (C) 2012	Samsung Electronics Co., Ltd(http://www.samsung.com)
++ *  Copyright (C) 2012  Amit Daniel <amit.kachhap@linaro.org>
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; version 2 of the License.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#ifndef __CPU_COOLING_H__
++#define __CPU_COOLING_H__
++
++#include <linux/thermal.h>
++
++#define CPUFREQ_COOLING_START		0
++#define CPUFREQ_COOLING_STOP		1
++
++#ifdef CONFIG_CPU_THERMAL
++/**
++ * cpufreq_cooling_register - function to create cpufreq cooling device.
++ * @clip_cpus: cpumask of cpus where the frequency constraints will happen
++ */
++struct thermal_cooling_device *cpufreq_cooling_register(
++		struct cpumask *clip_cpus);
++
++/**
++ * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
++ * @cdev: thermal cooling device pointer.
++ */
++void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev);
++#else /* !CONFIG_CPU_THERMAL */
++static inline struct thermal_cooling_device *cpufreq_cooling_register(
++	struct cpumask *clip_cpus)
++{
++	return NULL;
++}
++static inline void cpufreq_cooling_unregister(
++		struct thermal_cooling_device *cdev)
++{
++	return;
++}
++#endif	/* CONFIG_CPU_THERMAL */
++
++#endif /* __CPU_COOLING_H__ */
 -- 
 1.8.0.rc1
 
