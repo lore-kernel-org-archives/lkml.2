@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2JIMCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:02:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43050 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2JIMCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:02:20 -0400
+	id S1755420Ab2JIMCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:02:30 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:48133 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752534Ab2JIMCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 08:02:23 -0400
+Date: Tue, 9 Oct 2012 14:02:08 +0200
+From: David Sterba <dave@jikos.cz>
+To: Chul Lee <chur.lee@samsung.com>
+Cc: dave@jikos.cz, "'?????????'" <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 03/16] f2fs: add superblock and major in-memory structures
+Message-ID: <20121009120208.GN4405@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Chul Lee <chur.lee@samsung.com>, dave@jikos.cz,
+	'?????????' <jaegeuk.kim@samsung.com>, viro@zeniv.linux.org.uk,
+	'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org,
+	linux-kernel@vger.kernel.org, cm224.lee@samsung.com,
+	jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
+References: <000a01cda2f0$a2375b40$e6a611c0$%kim@samsung.com>
+ <20121006232240.GB4405@twin.jikos.cz>
+ <007101cda5dc$d22c01e0$768405a0$%lee@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20121009074138.GB8237@opensource.wolfsonmicro.com>
-References: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com>
-	<20121009041947.GB8237@opensource.wolfsonmicro.com>
-	<CACVXFVOT+_nWxZOV0hckVrJwafgb_qr35eKaYg9j=toEJ2DNMQ@mail.gmail.com>
-	<20121009071343.GW8237@opensource.wolfsonmicro.com>
-	<CACVXFVN1sL1FwUx9t1kQZHW=J-v3_9gDj+jOH2wLgP_a+ywX7g@mail.gmail.com>
-	<20121009074138.GB8237@opensource.wolfsonmicro.com>
-Date: Tue, 9 Oct 2012 20:02:18 +0800
-Message-ID: <CACVXFVONtkA5tUq3zcvrn6+RmC0_VLgeK5aR7g8yV2dJbgCysA@mail.gmail.com>
-Subject: Re: [PATCH] firmware: Don't attempt to allocate zero bytes with vmalloc()
-From: Ming Lei <ming.lei@canonical.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <007101cda5dc$d22c01e0$768405a0$%lee@samsung.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 3:52 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+On Tue, Oct 09, 2012 at 02:13:29PM +0900, Chul Lee wrote:
+> > > +	block_t	data_blkaddr;
+> > > +};
+> > > +
+> > > +struct f2fs_sb_info {
+> > > +	struct super_block *sb;			/* Pointer to VFS super
+> > block */
+> > > +	int s_dirty;
+> > 
+> > Is s_dirty actually used? I can see it only set and reset at checkpoint,
+> > not eg. synced with an on-disk block to signalize a dirty status.
+> 
+> The s_dirty is checked, when sync_fs is called.
 
-> The point is that there's some firmware which the driver wants to load
-> but where it's happy to continue if the user didn't provide one and
-> doesn't want to introduce needless delays.
+I've checked again, you're right, I did not see it before.
 
-OK, I got it, thank you for sharing the use case.
+> > > +	struct mutex gc_mutex;			/* mutex for GC */
+> > > +	struct mutex fs_lock[NR_LOCK_TYPE];	/* mutex for GP */
+> > > +	struct mutex write_inode;		/* mutex for write inode */
+> > > +	struct mutex writepages;		/* mutex for writepages() */
+> > 
+> > wow, thats 1+8+2 = 11 mutexes in a row! The ones hidden under
+> > NR_LOCK_TYPE may hurt, as they seem to protect various and common file
+> > opterations (guesed from the lock_type names).
+> 
+> Yes, they protect global variables shared by various operations and
+> checkpoint.
+> Could you tell me what you recommend? Each fs_lock's under NR_LOCK_TYPE
+> would have had different lock names?
 
-If loading directly, the patch isn't needed because filp_open() can
-return failure on non-existent file.
+I think this was too eager from me to point out the perf problems with
+the mutexes, this sure would be a problem with spinlocks but mutexes can
+sleep and I can see that there are IO operations enclosed in the mutex
+section almost always. There may be a subset of operations that are
+both frequent and lightweight.
 
-If loading via user space, timeout or not depends on userspace,
-at least udev won't timeout on non-existent firmware image.
+Seems to me that DATA_NEW, NODE_NEW and DATA_WRITE are candidates for
+profiling and subject to futher optimizations (ie. split the locks from
+the same cacheline).
+(This is not something that would prevent inclusion of F2FS into kernel)
 
-Also looks request_firmware_nowait() is better for the case, _nowait()
-can avoid unnecessary delay and speedup firmware loading if there
-are more than one firmware to load.
+Also, if you target only embedded devices, the scaling problems are not
+critical, however a NAND device are not limited to embedded world.
 
-Thanks,
---
-Ming Lei
+david
