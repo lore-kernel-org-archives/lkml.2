@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab2JIMCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:02:30 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:48133 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab2JIMCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:02:23 -0400
-Date: Tue, 9 Oct 2012 14:02:08 +0200
-From: David Sterba <dave@jikos.cz>
-To: Chul Lee <chur.lee@samsung.com>
-Cc: dave@jikos.cz, "'?????????'" <jaegeuk.kim@samsung.com>,
-        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/16] f2fs: add superblock and major in-memory structures
-Message-ID: <20121009120208.GN4405@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Chul Lee <chur.lee@samsung.com>, dave@jikos.cz,
-	'?????????' <jaegeuk.kim@samsung.com>, viro@zeniv.linux.org.uk,
-	'Theodore Ts'o' <tytso@mit.edu>, gregkh@linuxfoundation.org,
-	linux-kernel@vger.kernel.org, cm224.lee@samsung.com,
-	jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
-References: <000a01cda2f0$a2375b40$e6a611c0$%kim@samsung.com>
- <20121006232240.GB4405@twin.jikos.cz>
- <007101cda5dc$d22c01e0$768405a0$%lee@samsung.com>
+	id S1755469Ab2JIMCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:02:44 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7504 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab2JIMCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 08:02:41 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 09 Oct 2012 05:00:21 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>,
+        <sameo@linux.intel.com>
+CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 0/5] mfd: tps65910: use regmap irq framework for interrupt
+Date: Tue, 9 Oct 2012 16:58:31 +0530
+Message-ID: <1349782116-9757-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <007101cda5dc$d22c01e0$768405a0$%lee@samsung.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 02:13:29PM +0900, Chul Lee wrote:
-> > > +	block_t	data_blkaddr;
-> > > +};
-> > > +
-> > > +struct f2fs_sb_info {
-> > > +	struct super_block *sb;			/* Pointer to VFS super
-> > block */
-> > > +	int s_dirty;
-> > 
-> > Is s_dirty actually used? I can see it only set and reset at checkpoint,
-> > not eg. synced with an on-disk block to signalize a dirty status.
-> 
-> The s_dirty is checked, when sync_fs is called.
+This patch series has following change:
+- Use regmap irq framework for interrupt registration. Corrected the
+  register bit definition for interrupts.
+- Move the irq table to tps65910.c and get rid of tps65910-irq.c.
+- Raarrange the init sequence of different sub moduled of tps65910 like
+  irq, clock and then mfd devices.
+- Export the irq domain handle from regmap to use in mfd driver.
+- Pass the irq domain in mfd_add_devices to have proper interrupt mapping
+  for sub devices like RTC.
 
-I've checked again, you're right, I did not see it before.
+Laxman Dewangan (5):
+  mfd: tps65910: use regmap irq framework for interrupt support
+  mfd: tps65910: move interrupt implementation code to mfd file
+  mfd: tps65910: Initialize mfd devices after all initialization done
+  regmap: add API to get irq_domain from regmap irq
+  mfd: tps65910: pass irq_domain when adding mfd sub devices
 
-> > > +	struct mutex gc_mutex;			/* mutex for GC */
-> > > +	struct mutex fs_lock[NR_LOCK_TYPE];	/* mutex for GP */
-> > > +	struct mutex write_inode;		/* mutex for write inode */
-> > > +	struct mutex writepages;		/* mutex for writepages() */
-> > 
-> > wow, thats 1+8+2 = 11 mutexes in a row! The ones hidden under
-> > NR_LOCK_TYPE may hurt, as they seem to protect various and common file
-> > opterations (guesed from the lock_type names).
-> 
-> Yes, they protect global variables shared by various operations and
-> checkpoint.
-> Could you tell me what you recommend? Each fs_lock's under NR_LOCK_TYPE
-> would have had different lock names?
+ drivers/base/regmap/regmap-irq.c |   16 +++
+ drivers/mfd/Makefile             |    2 +-
+ drivers/mfd/tps65910-irq.c       |  260 --------------------------------------
+ drivers/mfd/tps65910.c           |  235 +++++++++++++++++++++++++++++++++--
+ include/linux/mfd/tps65910.h     |  143 +++++++++++++++-------
+ include/linux/regmap.h           |    1 +
+ 6 files changed, 343 insertions(+), 314 deletions(-)
+ delete mode 100644 drivers/mfd/tps65910-irq.c
 
-I think this was too eager from me to point out the perf problems with
-the mutexes, this sure would be a problem with spinlocks but mutexes can
-sleep and I can see that there are IO operations enclosed in the mutex
-section almost always. There may be a subset of operations that are
-both frequent and lightweight.
-
-Seems to me that DATA_NEW, NODE_NEW and DATA_WRITE are candidates for
-profiling and subject to futher optimizations (ie. split the locks from
-the same cacheline).
-(This is not something that would prevent inclusion of F2FS into kernel)
-
-Also, if you target only embedded devices, the scaling problems are not
-critical, however a NAND device are not limited to embedded world.
-
-david
