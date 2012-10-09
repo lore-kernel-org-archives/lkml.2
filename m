@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab2JIXpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:45:42 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44625 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab2JIXpl (ORCPT
+	id S1752449Ab2JIXrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:47:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35895 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2JIXrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:45:41 -0400
-X-AuditID: 9c930179-b7bf9ae000000e4c-db-5074b7223fae
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH] zram: correct obsolete comment on max_zpage_size
-Date: Wed, 10 Oct 2012 08:49:52 +0900
-Message-Id: <1349826592-27965-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 9 Oct 2012 19:47:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121009233927.GX2616@ZenIV.linux.org.uk>
+References: <20110917001215.GA961@zombie.hq.fstein.net>
+	<CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
+	<20121009233927.GX2616@ZenIV.linux.org.uk>
+Date: Tue, 9 Oct 2012 16:47:17 -0700
+Message-ID: <CAOH1cHmueHV9AiPkNSHXpEKm94nf2XZM9STv=qd7fJ+-n1VK-Q@mail.gmail.com>
+Subject: Re: linux-audit: reconstruct path names from syscall events?
+From: Mark Moseley <moseleymark@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: john@feurix.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zram doesn't use xv_malloc any more so it doesn't have
-limitation about zobj_header.
+On Tue, Oct 9, 2012 at 4:39 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Tue, Oct 09, 2012 at 04:09:18PM -0700, Mark Moseley wrote:
+>
+>> If you see my recent linux-audit posting, another related thing (at
+>> least as far as missing relevant information in the logs) is that the
+>> audit logs are logging pathnames relative to the chroot, instead of
+>> the pathnames relative to the root of the OS itself. You'd expect a
+>> process chroot'd to /chroot, accessing (from the perspective of the
+>> OS) /chroot/etc/password would get logged as /chroot/etc/password but
+>> is rather logged as /etc/password.
+>>
+>> I don't have a working LXC install handy, but I'd imagine the audit
+>> subsystem would log relative to the container's / instead of the
+>> host's / too.
+>
+> BTW, what makes you think that container's root is even reachable from
+> "the host's /"?  There is no such thing as "root of the OS itself"; different
+> processes can (and in case of containers definitely do) run in different
+> namespaces.  With entirely different filesystems mounted in those, and
+> no promise whatsoever that any specific namespace happens to have all
+> filesystems mounted somewhere in it...
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Nothing beyond guesswork, since it's been a while since I've played
+with LXC. In any case, I was struggling a bit for the correct
+terminology.
 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 572c0b1..df2eec4 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -39,8 +39,8 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
- 
- /*
-  * NOTE: max_zpage_size must be less than or equal to:
-- *   ZS_MAX_ALLOC_SIZE - sizeof(struct zobj_header)
-- * otherwise, xv_malloc() would always return failure.
-+ *   ZS_MAX_ALLOC_SIZE. Otherwise, zs_malloc() would
-+ * always return failure.
-  */
- 
- /*-- End of configurable params */
--- 
-1.7.9.5
-
+Am I similarly off-base with regards to the chroot'd scenario?
