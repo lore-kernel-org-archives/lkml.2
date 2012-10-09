@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2JIJFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:05:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44908 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab2JIJFo (ORCPT
+	id S1754492Ab2JIJI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:08:28 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47857 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2JIJIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:05:44 -0400
+	Tue, 9 Oct 2012 05:08:24 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5073E84A.8080301@jp.fujitsu.com>
+Date: Tue, 09 Oct 2012 18:03:06 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1349496603-20775-4-git-send-email-cheiny@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
-	<1349496603-20775-4-git-send-email-cheiny@synaptics.com>
-Date: Tue, 9 Oct 2012 11:05:42 +0200
-Message-ID: <CACRpkdY+hK=zbZz6K-ONyAckfpZ-n+TS5c25AxRETVk1M9weQw@mail.gmail.com>
-Subject: Re: [RFC PATCH 03/06] input/rmi4: I2C physical interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: ddutile@redhat.com
+CC: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, vgoyal@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH v2 0/2] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <20121002074434.204.47750.sendpatchset@indoh> <506C3C4C.1060808@redhat.com>
+In-Reply-To: <506C3C4C.1060808@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 6, 2012 at 6:10 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
-
-> The I2C physical driver is not extensively changed in terms of functionality
-> since the previous patch.  Management of the attention GPIO has been moved to
-> rmi_driver.c (see previous email), and most of the debug related interfaces
-> have been moved from sysfs to debugfs.  Control of the debug features has been
-> moved from compile-time to runtime switches available via debugfs.
+(2012/10/03 22:23), Don Dutile wrote:
+> On 10/02/2012 03:49 AM, Takao Indoh wrote:
+>> These patches reset PCIe devices at boot time to address DMA problem on
+>> kdump with iommu. When "reset_devices" is specified, a hot reset is
+>> triggered on each PCIe root port and downstream port to reset its
+>> downstream endpoint.
+>>
+>> Background:
+>> A kdump problem about DMA has been discussed for a long time. That is,
+>> when a kernel is switched to the kdump kernel DMA derived from first
+>> kernel affects second kernel. Recently this problem surfaces when iommu
+>> is used for PCI passthrough on KVM guest. In the case of the machine I
+>> use, when intel_iommu=on is specified, DMAR error is detected in kdump
+>> kernel and PCI SERR is also detected. Finally kdump fails because some
+>> devices does not work correctly.
+>>
+>> The root cause is that ongoing DMA from first kernel causes DMAR fault
+>> because page table of DMAR is initialized while kdump kernel is booting
+>> up. Therefore to address this problem DMA needs to be stopped before
+>> DMAR is initialized at kdump kernel boot time. By these patches, PCIe
+>> devices are reset by hot reset and its DMA is stopped when reset_devices
+>> is specified. One problem of this solution is that the monitor blacks
+>> out when VGA controller is reset. So this patch does not reset the port
+>> whose child endpoint is VGA device.
+>>
+>> v2:
+>> Reset devices in setup_arch() because reset need to be done before
+>> interrupt remapping is initialized.
+>>
+>> v1:
+>> https://lkml.org/lkml/2012/8/3/160
+>>
+>> Thanks,
+>> Takao Indoh
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> The core I2C functionality was previously ACKed by Jean Delvare.  I don't
-> believe that portion of the code has changed much since then, but we'd
-> appreciate a second glance at this.
+>
+> Maybe you've tried the following, and I missed a thread on it,
+> but instead of a somewhat-large, reset hammer, did any one try
+> just reading all the endpoint-only device CMD register, flip the MasterEnable
+> bit off, and write it back? .... that would stop all DMA (should stop
+> all MSI writes as well since they are just another DMA), and then
+> restart the system?
+> May also have to do PCI INT Disable as well... and note, that's a PCI 2.3
+> optional feature.... so devices using INT signalling vs MSI
+> is just borked on IOMMU/intr-remapping systems... which I would expect
+> are few. Then again, if this is foolishly done, then reset legacy PCI
+> busses as the fallback.
 
-The above commit blurb looks more like a changelog than a description
-of the actual patch. Nothing wrong with that but begin by describing
-the patch first.
+Just clearing bus master bit and INTx disable bit in setup_arch() did
+not solve this problem. I still got DMAR error on devices(for exmaple,
+igb and megaraid_sas).
 
-(...)
-> +#ifdef CONFIG_RMI4_DEBUG
-> +
-> +#include <linux/debugfs.h>
-> +#include <linux/uaccess.h>
+Clearing bus master in setup_arch() and resetting devices in fixup_final
+like v1 patch is better, DMAR error was not detected. But on certain
+machine kdump kernel hung up when resetting devices. It seems to be a
+problem specific to the platform.
 
-Just move these up to the common includes. It doesn't matter
-that they get included even when debug is not enabled.
+And, resetting devices in setup_arch() like v2 patch solves all problems
+I found so far.
 
-> +static int setup_debugfs(struct rmi_device *rmi_dev, struct rmi_i2c_data *data);
-> +static void teardown_debugfs(struct rmi_i2c_data *data);
+Thanks,
+Takao Indoh
 
-Why do you need to forward-declare these? Can't you just move them
-up above the functions using them?
-
-> +struct i2c_debugfs_data {
-> +       bool done;
-
-Done with what? ... needs some doc.
-
-> +       struct rmi_i2c_data *i2c_data;
-> +};
-
-(...)
-> +static int __devinit rmi_i2c_probe(struct i2c_client *client,
-> +                                 const struct i2c_device_id *id)
-(...)
-> +       rmi_phys = kzalloc(sizeof(struct rmi_phys_device), GFP_KERNEL);
-(...)
-> +       data = kzalloc(sizeof(struct rmi_i2c_data), GFP_KERNEL);
-
-Can you use devm_kzalloc(&client->dev, ...) for these so you don't
-need to free() them explicitly?
-
-(...)
-> +static int __devexit rmi_i2c_remove(struct i2c_client *client)
-> +{
-> +       struct rmi_phys_device *phys = i2c_get_clientdata(client);
-> +       struct rmi_device_platform_data *pd = client->dev.platform_data;
-> +
-> +       /* Can I remove this disable_device */
-> +       /*disable_device(phys); */
-
-So just delete these two lines then?
-
-Yours,
-Linus Walleij
