@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab2JIQWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:22:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37417 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754311Ab2JIQWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:22:19 -0400
-Message-ID: <1349799738.2386.1.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: winbond: wbusb: Fixed coding style issue
-From: Joe Perches <joe@perches.com>
-To: Adil Mujeeb <mujeeb.adil@gmail.com>
-Cc: pavel@ucw.cz, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 09 Oct 2012 09:22:18 -0700
-In-Reply-To: <1349799055-4496-1-git-send-email-mujeeb.adil@gmail.com>
-References: <1349799055-4496-1-git-send-email-mujeeb.adil@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755695Ab2JIQZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:25:01 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:59523 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab2JIQY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 12:24:57 -0400
+Date: Tue, 9 Oct 2012 12:13:09 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH 07/10] x86, xen, mm: Do not need to check if page table
+ is ioremap
+Message-ID: <20121009161307.GI7639@phenom.dumpdata.com>
+References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
+ <1349757558-10856-8-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349757558-10856-8-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 21:40 +0530, Adil Mujeeb wrote:
-> Repalces printk's with pr_debug
-[]
-> diff --git a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> index 0ca857a..48fe622 100644
-> --- a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> +++ b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> @@ -79,18 +79,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
->  static void wbsoft_remove_interface(struct ieee80211_hw *dev,
->  				    struct ieee80211_vif *vif)
->  {
-> -	printk("wbsoft_remove interface called\n");
-> +	pr_debug("wbsoft_remove interface called\n");
+On Mon, Oct 08, 2012 at 09:39:15PM -0700, Yinghai Lu wrote:
+> All page table buf are pre-mapped, and could use _va to access them.
 
-It'd be more consistent to use
-	pr_debug("%s called\n", __func__);
-everywhere.
+"__va", not "_va". And can you also include the name of the patch
+that makes them pre-mapped?
 
-It might be even nicer to remove almost all of these.
+> 
+> Remove the not needed checking.
 
+<sigh>
+"Remove the ioremap check."
 
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> ---
+>  arch/x86/xen/mmu.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 7a769b7..9c0956c 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1412,13 +1412,9 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+>  
+>  	/*
+>  	 * If the new pfn is within the range of the newly allocated
+> -	 * kernel pagetable, and it isn't being mapped into an
+> -	 * early_ioremap fixmap slot as a freshly allocated page, make sure
+> -	 * it is RO.
+> +	 * kernel pagetable, make sure it is RO.
+>  	 */
+> -	if (((!is_early_ioremap_ptep(ptep) &&
+> -			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
+> -			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
+> +	if (pfn >= pgt_buf_start && pfn < pgt_buf_top)
+>  		pte = pte_wrprotect(pte);
+>  
+>  	return pte;
+> -- 
+> 1.7.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
