@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab2JIDof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 23:44:35 -0400
+	id S1754837Ab2JIDoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 23:44:20 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:48134 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab2JIDoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 23:44:21 -0400
+	id S1754598Ab2JIDoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 23:44:18 -0400
 X-IronPort-AV: E=Sophos;i="4.80,558,1344182400"; 
-   d="scan'208";a="5964972"
+   d="scan'208";a="5964969"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Al Viro <viro@zeniv.linux.org.uk>,
         Rusty Russell <rusty@rustcorp.com.au>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 3/3] lglock: add DEFINE_STATIC_LGLOCK()
-Date: Tue, 9 Oct 2012 11:46:40 +0800
-Message-Id: <1349754403-4798-3-git-send-email-laijs@cn.fujitsu.com>
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/3] lglock: remove unused DEFINE_LGLOCK_LOCKDEP()
+Date: Tue, 9 Oct 2012 11:46:38 +0800
+Message-Id: <1349754403-4798-1-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1349754403-4798-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1349754403-4798-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/09 11:44:13,
+ 2012/10/09 11:44:08,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/09 11:44:14,
-	Serialize complete at 2012/10/09 11:44:14
+ 2012/10/09 11:44:09,
+	Serialize complete at 2012/10/09 11:44:09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When if the lglock don't to be exported,
-we can use DEFINE_STATIC_LGLOCK().
+struct lglocks use their own lock_key/lock_dep_map which are defined
+in struct lglock. DEFINE_LGLOCK_LOCKDEP() is unused now, so we remove it
+and save a small piece of memory.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- fs/file_table.c        |    2 +-
- include/linux/lglock.h |    8 +++++++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ include/linux/lglock.h |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 701985e..e26fd31 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -36,7 +36,7 @@ struct files_stat_struct files_stat = {
- 	.max_files = NR_FILE
- };
- 
--DEFINE_LGLOCK(files_lglock);
-+DEFINE_STATIC_LGLOCK(files_lglock);
- 
- /* SLAB cache for file structures */
- static struct kmem_cache *filp_cachep __read_mostly;
 diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-index 8f97451..0d24e93 100644
+index f01e5f6..45eff71 100644
 --- a/include/linux/lglock.h
 +++ b/include/linux/lglock.h
-@@ -32,7 +32,8 @@
- #define br_write_lock(name)	lg_global_lock(name)
- #define br_write_unlock(name)	lg_global_unlock(name)
- 
--#define DEFINE_BRLOCK(name)	DEFINE_LGLOCK(name)
-+#define DEFINE_BRLOCK(name)		DEFINE_LGLOCK(name)
-+#define DEFINE_STATIC_BRLOCK(name)	DEFINE_STATIC_LGLOCK(name)
+@@ -36,16 +36,8 @@
  
  #ifdef CONFIG_DEBUG_LOCK_ALLOC
  #define LOCKDEP_INIT_MAP lockdep_init_map
-@@ -53,6 +54,11 @@ struct lglock {
+-
+-#define DEFINE_LGLOCK_LOCKDEP(name)					\
+- struct lock_class_key name##_lock_key;					\
+- struct lockdep_map name##_lock_dep_map;				\
+- EXPORT_SYMBOL(name##_lock_dep_map)
+-
+ #else
+ #define LOCKDEP_INIT_MAP(a, b, c, d)
+-
+-#define DEFINE_LGLOCK_LOCKDEP(name)
+ #endif
+ 
+ struct lglock {
+@@ -57,7 +49,6 @@ struct lglock {
+ };
+ 
+ #define DEFINE_LGLOCK(name)						\
+-	DEFINE_LGLOCK_LOCKDEP(name);					\
+ 	DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)			\
  	= __ARCH_SPIN_LOCK_UNLOCKED;					\
  	struct lglock name = { .lock = &name ## _lock }
- 
-+#define DEFINE_STATIC_LGLOCK(name)					\
-+	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-+	= __ARCH_SPIN_LOCK_UNLOCKED;					\
-+	static struct lglock name = { .lock = &name ## _lock }
-+
- void lg_lock_init(struct lglock *lg, char *name);
- void lg_local_lock(struct lglock *lg);
- void lg_local_unlock(struct lglock *lg);
 -- 
 1.7.4.4
 
