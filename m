@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab2JIXjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:39:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34791 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab2JIXj3 (ORCPT
+	id S1751730Ab2JIXng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:43:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab2JIXne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:39:29 -0400
-Date: Wed, 10 Oct 2012 00:39:27 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: john@feurix.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: linux-audit: reconstruct path names from syscall events?
-Message-ID: <20121009233927.GX2616@ZenIV.linux.org.uk>
-References: <20110917001215.GA961@zombie.hq.fstein.net>
- <CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 19:43:34 -0400
+Date: Tue, 9 Oct 2012 16:45:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build failure after merge of the origin tree
+Message-Id: <20121009164514.b7a7e227.akpm@linux-foundation.org>
+In-Reply-To: <20121010102150.81c192c6fdf60689dc823b20@canb.auug.org.au>
+References: <20121010102150.81c192c6fdf60689dc823b20@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 04:09:18PM -0700, Mark Moseley wrote:
+On Wed, 10 Oct 2012 10:21:50 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> If you see my recent linux-audit posting, another related thing (at
-> least as far as missing relevant information in the logs) is that the
-> audit logs are logging pathnames relative to the chroot, instead of
-> the pathnames relative to the root of the OS itself. You'd expect a
-> process chroot'd to /chroot, accessing (from the perspective of the
-> OS) /chroot/etc/password would get logged as /chroot/etc/password but
-> is rather logged as /etc/password.
+> Hi Linus,
 > 
-> I don't have a working LXC install handy, but I'd imagine the audit
-> subsystem would log relative to the container's / instead of the
-> host's / too.
+> In Linus' tree, today's linux-next build (powerpc ppc64_defconfig) failed
+> like this:
+> 
+> arch/powerpc/platforms/pseries/hotplug-memory.c: In function 'pseries_remove_memblock':
+> arch/powerpc/platforms/pseries/hotplug-memory.c:103:17: error: unused variable 'pfn' [-Werror=unused-variable]
+> 
+> Caused by commit d760afd4d257 ("memory-hotplug: suppress "Trying to free
+> nonexistent resource <XXXXXXXXXXXXXXXX-YYYYYYYYYYYYYYYY>" warning").
+> 
+> I can't see what the point of the "pfn" variable is
 
-BTW, what makes you think that container's root is even reachable from
-"the host's /"?  There is no such thing as "root of the OS itself"; different
-processes can (and in case of containers definitely do) run in different
-namespaces.  With entirely different filesystems mounted in those, and
-no promise whatsoever that any specific namespace happens to have all
-filesystems mounted somewhere in it...
+This:
+
+--- a/arch/powerpc/platforms/pseries/hotplug-memory.c~a
++++ a/arch/powerpc/platforms/pseries/hotplug-memory.c
+@@ -101,7 +101,7 @@ static int pseries_remove_memblock(unsig
+ 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
+-		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
++		ret = __remove_pages(zone, pfn, PAGES_PER_SECTION);
+ 		if (ret)
+ 			return ret;
+ 	}
+
+> and this patch never
+> appeared in linux-next before being merged.  :-(
+
+It was first sighted October 3.
+
+> I have reverted that commit for today.
+> 
+> If this patch truly was authored yesterday (according the Author Date in
+> git), why was it merged yesterday while still under discussion?  And the
+> latest update to it still has this build problem ... did anyone even try
+> to build this for powerpc (since that architecture was obviously
+> affected)?
+
+Apparently not - the ppc bit was a best-effort fixup for a patch which
+addresses an x86 problem.
+
