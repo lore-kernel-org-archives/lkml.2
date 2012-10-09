@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2JIV0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 17:26:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62244 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756828Ab2JIV0W (ORCPT
+	id S932143Ab2JIV1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 17:27:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53529 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab2JIV12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 17:26:22 -0400
-Date: Tue, 9 Oct 2012 14:26:39 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 0/3] new ARM-soc warning fixes
-Message-ID: <20121009212639.GA25765@quad.lixom.net>
-References: <1349796861-31164-1-git-send-email-arnd@arndb.de>
- <20121009174631.GA19606@quad.lixom.net>
- <201210092001.26947.arnd@arndb.de>
+	Tue, 9 Oct 2012 17:27:28 -0400
+Date: Tue, 9 Oct 2012 14:27:24 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tytso@mit.edu
+Subject: Re: [PATCH 5/5] aio: Refactor aio_read_evt, use cmxchg(), fix bug
+Message-ID: <20121009212724.GD29494@google.com>
+References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+ <1349764760-21093-5-git-send-email-koverstreet@google.com>
+ <20121009183753.GP26187@lenny.home.zabbo.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201210092001.26947.arnd@arndb.de>
+In-Reply-To: <20121009183753.GP26187@lenny.home.zabbo.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 08:01:26PM +0000, Arnd Bergmann wrote:
-> On Tuesday 09 October 2012, Olof Johansson wrote:
-> > On Tue, Oct 09, 2012 at 05:34:18PM +0200, Arnd Bergmann wrote:
-> > > Hi Olof,
-> > > 
-> > > Here are three more fixes that I'd like to merge through the arm-soc
-> > > as time permits. All of them should be completely harmless and they
-> > > only fix harmless gcc warnings.
-> > > 
-> > > I don't know what your plans are for sending the next fixes branch.
-> > > I've uploaded these into a new "fixes2" branch on top of the patches
-> > > that are already in "fixes". We can either send them all together,
-> > > or you send the ones that are already queued first and these ones
-> > > with the next batch. Feel free to rebase if necessary.
-> > 
-> > I've pulled it in and will send up with fixes tonight (Tony has OMAP
-> > fixes coming, others might too).
-> > 
+On Tue, Oct 09, 2012 at 11:37:53AM -0700, Zach Brown wrote:
+> On Mon, Oct 08, 2012 at 11:39:20PM -0700, Kent Overstreet wrote:
+> > Bunch of cleanup
 > 
-> Ok, thanks!
+> Ugh.  That's way too much noisy change for one patch with no
+> description.  Break it up into functional pieces and actually describe
+> them.
+
+Heh, I actually didn't mean to send these patches out to lkml just yet
+(though now I'm glad I did). There definitely is too much in this patch,
+it kinda snowballed.
+
+> > events off the ringbuffer without racing with io_getevents().
 > 
-> I just noticed that I was missing yet another one, which I now added
-> directly. It was part of a longer series I sent last week. I wasn't
-> really sure whether this one would better be included in arm-soc or
-> Russell's arm tree and then I ended up not putting it in either series :(
+> Are you sure this is safe in the presence of wrapping indices?  It's
+> been a very long time since I've looked at this, but I could never
+> convince myself that it was safe.
+> 
+> What I'm worried about is cmpxchg()s caller sampling, say, and index of
+> 0, having another task GO NUTS and wrap that index all the way around
+> back to 0, and then having that initial cmpchg() caller see the wrapped
+> 0 index and think that's nothing's changed in the interim.
+> 
+> Is this a problem?
 
-OK, I applied on top of the rest.
+Ohhhh, yeah it is - ABA. That's easily solved though, we do the head %
+nr when we're using the head pointer, and let the stored value use the
+full 32 bits.
 
+If libaio is the only thing in userspace looking at the ringbuffer, and
+if I'm looking at the latest libaio code this shouldn't break
+anything...
 
--Olof
+> (I wish I could find the comment I wrote in a very old patch to tear out
+> the mapped ring entirely.. It was a great list of its design mistakes.)
+
+Sticking the head and tail pointers on the same cacheline is one of my
+main complaints. If you could find that comment I'd be interested in
+reading it, though.
