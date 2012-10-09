@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2JIJPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:15:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30538 "EHLO mx1.redhat.com"
+	id S1754771Ab2JIJPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:15:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab2JIJPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:15:40 -0400
+	id S1754681Ab2JIJPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 05:15:37 -0400
 From: David Howells <dhowells@redhat.com>
-To: geert@linux-m68k.org
-Cc: dhowells@redhat.com, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Disintegrate UAPI for m68k [ver #2]
-Date: Tue, 09 Oct 2012 10:15:35 +0100
-Message-ID: <21143.1349774135@warthog.procyon.org.uk>
+To: ysato@users.sourceforge.jp
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for h8300 [ver #2]
+Date: Tue, 09 Oct 2012 10:15:25 +0100
+Message-ID: <21131.1349774125@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you merge the following branch into the m68k tree please.
+Can you merge the following branch into the h8300 tree please.
 
 This is to complete part of the UAPI disintegration for which the preparatory
 patches were pulled recently.
@@ -35,71 +34,88 @@ The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
 are available in the git repository at:
 
 
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-m68k-20121009
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-h8300-20121009
 
-for you to fetch changes up to 10b3a979347d4aba7de19e8d33eb8b87fe2a11dd:
+for you to fetch changes up to c0c32782cbbd986aa2b309bca1dc6eb418ef1014:
 
-  UAPI: (Scripted) Disintegrate arch/m68k/include/asm (2012-10-09 09:47:06 +0100)
+  UAPI: (Scripted) Disintegrate arch/h8300/include/asm (2012-10-09 09:46:54 +0100)
 
 ----------------------------------------------------------------
 UAPI Disintegration 2012-10-09
 
 ----------------------------------------------------------------
 David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/m68k/include/asm
+      UAPI: (Scripted) Disintegrate arch/h8300/include/asm
 
- arch/m68k/include/asm/Kbuild                   |   2 -
- arch/m68k/include/asm/ptrace.h                 |  72 +----
- arch/m68k/include/asm/setup.h                  |  82 +-----
- arch/m68k/include/asm/signal.h                 | 118 +-------
- arch/m68k/include/asm/termios.h                |  44 +--
- arch/m68k/include/asm/unistd.h                 | 354 +-----------------------
- arch/m68k/include/uapi/asm/Kbuild              |  23 ++
- arch/m68k/include/{ => uapi}/asm/a.out.h       |   0
- arch/m68k/include/{ => uapi}/asm/auxvec.h      |   0
- arch/m68k/include/{ => uapi}/asm/byteorder.h   |   0
- arch/m68k/include/{ => uapi}/asm/cachectl.h    |   0
- arch/m68k/include/{ => uapi}/asm/fcntl.h       |   0
- arch/m68k/include/{ => uapi}/asm/ioctls.h      |   0
- arch/m68k/include/{ => uapi}/asm/msgbuf.h      |   0
- arch/m68k/include/{ => uapi}/asm/param.h       |   0
- arch/m68k/include/{ => uapi}/asm/poll.h        |   0
- arch/m68k/include/{ => uapi}/asm/posix_types.h |   0
- arch/m68k/include/uapi/asm/ptrace.h            |  79 ++++++
- arch/m68k/include/{ => uapi}/asm/sembuf.h      |   0
- arch/m68k/include/uapi/asm/setup.h             | 103 +++++++
- arch/m68k/include/{ => uapi}/asm/shmbuf.h      |   0
- arch/m68k/include/{ => uapi}/asm/sigcontext.h  |   0
- arch/m68k/include/uapi/asm/signal.h            | 118 ++++++++
- arch/m68k/include/{ => uapi}/asm/socket.h      |   0
- arch/m68k/include/{ => uapi}/asm/sockios.h     |   0
- arch/m68k/include/{ => uapi}/asm/stat.h        |   0
- arch/m68k/include/{ => uapi}/asm/swab.h        |   0
- arch/m68k/include/{ => uapi}/asm/termbits.h    |   0
- arch/m68k/include/uapi/asm/termios.h           |  44 +++
- arch/m68k/include/uapi/asm/unistd.h            | 356 +++++++++++++++++++++++++
- 30 files changed, 728 insertions(+), 667 deletions(-)
- rename arch/m68k/include/{ => uapi}/asm/a.out.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/cachectl.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/param.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/poll.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/m68k/include/uapi/asm/ptrace.h
- rename arch/m68k/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/m68k/include/uapi/asm/setup.h
- rename arch/m68k/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/sigcontext.h (100%)
- create mode 100644 arch/m68k/include/uapi/asm/signal.h
- rename arch/m68k/include/{ => uapi}/asm/socket.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/stat.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/swab.h (100%)
- rename arch/m68k/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/m68k/include/uapi/asm/termios.h
- create mode 100644 arch/m68k/include/uapi/asm/unistd.h
+ arch/h8300/include/asm/Kbuild                   |   1 -
+ arch/h8300/include/asm/param.h                  |  15 +-
+ arch/h8300/include/asm/ptrace.h                 |  40 +--
+ arch/h8300/include/asm/signal.h                 | 121 +--------
+ arch/h8300/include/asm/termios.h                |  44 +---
+ arch/h8300/include/asm/types.h                  |   5 +-
+ arch/h8300/include/asm/unistd.h                 | 328 +----------------------
+ arch/h8300/include/uapi/asm/Kbuild              |  31 +++
+ arch/h8300/include/{ => uapi}/asm/auxvec.h      |   0
+ arch/h8300/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/h8300/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/h8300/include/{ => uapi}/asm/errno.h       |   0
+ arch/h8300/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/h8300/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/h8300/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/h8300/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/h8300/include/{ => uapi}/asm/kvm_para.h    |   0
+ arch/h8300/include/{ => uapi}/asm/mman.h        |   0
+ arch/h8300/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/h8300/include/uapi/asm/param.h             |  16 ++
+ arch/h8300/include/{ => uapi}/asm/poll.h        |   0
+ arch/h8300/include/{ => uapi}/asm/posix_types.h |   0
+ arch/h8300/include/uapi/asm/ptrace.h            |  44 ++++
+ arch/h8300/include/{ => uapi}/asm/resource.h    |   0
+ arch/h8300/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/h8300/include/{ => uapi}/asm/setup.h       |   0
+ arch/h8300/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/h8300/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/h8300/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/h8300/include/uapi/asm/signal.h            | 121 +++++++++
+ arch/h8300/include/{ => uapi}/asm/socket.h      |   0
+ arch/h8300/include/{ => uapi}/asm/sockios.h     |   0
+ arch/h8300/include/{ => uapi}/asm/stat.h        |   0
+ arch/h8300/include/{ => uapi}/asm/statfs.h      |   0
+ arch/h8300/include/{ => uapi}/asm/swab.h        |   0
+ arch/h8300/include/{ => uapi}/asm/termbits.h    |   0
+ arch/h8300/include/uapi/asm/termios.h           |  44 ++++
+ arch/h8300/include/uapi/asm/types.h             |   1 +
+ arch/h8300/include/uapi/asm/unistd.h            | 330 ++++++++++++++++++++++++
+ 39 files changed, 595 insertions(+), 546 deletions(-)
+ rename arch/h8300/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/h8300/include/uapi/asm/param.h
+ rename arch/h8300/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/h8300/include/uapi/asm/ptrace.h
+ rename arch/h8300/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/sembuf.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/setup.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/h8300/include/uapi/asm/signal.h
+ rename arch/h8300/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/h8300/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/h8300/include/uapi/asm/termios.h
+ create mode 100644 arch/h8300/include/uapi/asm/types.h
+ create mode 100644 arch/h8300/include/uapi/asm/unistd.h
 .
