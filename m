@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2JIM34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:29:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49008 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab2JIM3y (ORCPT
+	id S1753755Ab2JIMau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:30:50 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:24610 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab2JIMas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:29:54 -0400
-Date: Tue, 9 Oct 2012 13:27:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Drasko DRASKOVIC <drasko.draskovic@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
-Message-ID: <20121009122733.GD4625@n2100.arm.linux.org.uk>
-References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com> <CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com> <CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com> <CACRpkdb+txD9hfhs7pfnzmDuU59VXEdzJc86z=tdy2yqYBCqOg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb+txD9hfhs7pfnzmDuU59VXEdzJc86z=tdy2yqYBCqOg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 9 Oct 2012 08:30:48 -0400
+Date: Tue, 9 Oct 2012 14:30:35 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Michael Krufky <mkrufky@linuxtv.org>, kernel-janitors@vger.kernel.org,
+        rmallon@gmail.com, shubhrajyoti@ti.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/13] drivers/media/tuners/mxl5007t.c: use macros for
+ i2c_msg initialization
+Message-ID: <20121009143035.557951bb@endymion.delvare>
+In-Reply-To: <1349624323-15584-4-git-send-email-Julia.Lawall@lip6.fr>
+References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1349624323-15584-4-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 02:00:34PM +0200, Linus Walleij wrote:
-> On Fri, Oct 5, 2012 at 3:16 PM, Drasko DRASKOVIC
-> <drasko.draskovic@gmail.com> wrote:
-> > [Me]
-> >> If I understand correctly the below more or less exports
-> >> struct irq_chip to userspace,
-> >> trying to hide it by instead exposing a property of the
-> >> containing struct gpio_chip and it worries me.
-> >
-> > No, it should not.
-> 
-> You are exporting all of the defines from irq.h,
-> IRQ_TYPE_NONE, IRQ_TYPE_EDGE_FALLING, etc
-> to userspace. These are defined in <linux/irq.h> and that file
-> has this comment on top:
-> 
-> /*
->  * Please do not include this file in generic code.  There is currently
->  * no requirement for any architecture to implement anything held
->  * within this file.
->  *
->  * Thanks. --rmk
->  */
-> 
-> And that comment is even only about generic *KERNEL* code,
-> userspace is way, way more than that.
+Hi Julia,
 
-It is always worth remembering this simple fact:
+On Sun,  7 Oct 2012 17:38:33 +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Introduce use of I2c_MSG_READ/WRITE/OP, for readability.
 
-  If you export something from the kernel to userspace, it becomes part
-  of the kernel's userspace API.  Userspace APIs are more stable than
-  the kernel, some suggest that the userspace API should be maintained
-  for 10 years.  Are you willing to set in stone for years part of the
-  kernel internal structures without putting a lot of thought into how
-  you export the data?
+Next time you send this patch set, please Cc me on every post so that I
+don't have to hunt for them on lkml.org.
 
-If you haven't spent a significant amount of time thinking about how you're
-going to export something - and thinking about whether it should even be
-exported, then you haven't done enough to outweigh the pain of having it
-exported.
+> In each case, a length expressed as an explicit constant is also
+> re-expressed as the size of the buffer, when this is possible.
+
+This is conceptually wrong, please don't do that. It is perfectly valid
+to use a buffer which is larger than the message being written or read.
+When exchanging multiple messages, it is actually quite common to
+declare only 2 buffers and reuse them:
+
+	char reg;
+	char val[2];
+
+	struct i2c_msg msg[2] = {
+		{ .addr = addr, .flags = 0, .buf = &reg, .len = 1 },
+		{ .addr = addr, .flags = I2C_M_RD, .buf = val, .len = 1 },
+	};
+
+	reg = 0x04;
+	i2c_transfer(i2c_adap, msg, 2);
+	/* Do stuff with val */
+
+	reg = 0x06;
+	msg[1].len = 2;
+	i2c_transfer(i2c_adap, msg, 2);
+	/* Do stuff with val */
+
+Your conversion would read 2 bytes from register 0x04 instead of 1 in
+the example above.
+
+I am not opposed to the idea of i2c_msg initialization helper macros,
+but please don't mix that with actual code changes which could have bad
+side effects.
+
+Thanks,
+-- 
+Jean Delvare
