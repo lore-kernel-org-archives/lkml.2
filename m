@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2JIUOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:14:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61835 "EHLO
+	id S1756830Ab2JIUOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:14:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55093 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab2JIUON (ORCPT
+	with ESMTP id S1754255Ab2JIUOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:14:13 -0400
+	Tue, 9 Oct 2012 16:14:37 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: arm@kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH v2 2/8] SCSI: ARM: make fas216_dumpinfo function conditional
-Date: Tue,  9 Oct 2012 22:13:52 +0200
-Message-Id: <1349813638-4617-3-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-samsung-soc@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: [PATCH v2 v2 v2 8/8] spi/s3c64xx: use correct dma_transfer_direction type
+Date: Tue,  9 Oct 2012 22:13:58 +0200
+Message-Id: <1349813638-4617-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349813638-4617-1-git-send-email-arnd@arndb.de>
 References: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:kAL3QSaspt1z9qO9j/JVQc8FEjH9Ijp2H4JzF1DjMEj
- FzIv/Jy+RrxnVUfG4fuoZ9uU7CUh1ljed29OasilMezT3fOs8u
- d5BIk8hQ1kdmaztXDCzDh9h1UmZwn6JP2fwGmPBl2DgrO6Ynhg
- 5Ri8qrzDSASrgGecreLhrqaVfqQ8+OV4kC0r3D1eX8A6c0iilo
- QKts1BZ4K2/HvqFHV5YIE2lPrkCv6g8u0cKsvpxV1oMnmg6xZq
- gZPdp6akF5rxmlF9s9t4Vljf9v49Iz04CkukbglR2MQSR3T5ef
- boGqK2DPqKlIwLxB0hdZm8h/ZU96PZdipREj5dOmutnmA3ZeMN
- ry40yyd4N1nElvTHv8OljIDkpEGIbleqw4an2neAy
+X-Provags-ID: V02:K0:K1ol/Cd3KrrQPauNR/ShSFuQ4k5gbg5VAGtb6igR2Ms
+ WOtKj95SoW/n2Loke5UpKjgvmSZf9vnFLdAmhbZDPPiJEgWZvt
+ 25A65YEP/NkBha1zEnvSApRyMrTQZ6enqDmpf0nO/tGKD6VDkE
+ OKTjCZLM753d4g9fkIUuGwGIORtB9cqMfOR4lM3wfG+/ne4UMV
+ VWn66dF25pRj+1TtXJkGH78+TFeEumm1nC7Y4SXHdF31nBmjdU
+ +TTTqnT56G77zaA5fCQjh6uCbPryKmE0pqOzvcK2i6BQa6UhYe
+ Vrpfqr51XLalQ3BfekXqrTE1IRooetATO9ZPz5g/D2mEgNeMlX
+ +8LGXXAcL2btFnb8kTVWhduRczMNoT7VEF/A0rR69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fas216_dumpinfo function is only used by __fas216_checkmagic,
-which is conditionally compiled, so we should put both functions
-inside of the same #ifdef.
+There is a subtle difference between dma_transfer_direction and
+dma_data_direction: the former is used by the dmaengine framework,
+while the latter is used by the dma-mapping API. Although the
+purpose is comparable, the actual values are different and must
+not be mixed. In this case, the driver just wants to use
+dma_transfer_direction.
 
-Without this patch, building rpc_defconfig results in:
+Without this patch, building s3c6400_defconfig results in:
 
-drivers/scsi/arm/fas216.c:182:13: warning: 'fas216_dumpinfo' defined but not used [-Wunused-function]
+drivers/spi/spi-s3c64xx.c: In function 's3c64xx_spi_dmacb':
+drivers/spi/spi-s3c64xx.c:239:21: warning: comparison between
+	'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-scsi@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org
+Cc: spi-devel-general@lists.sourceforge.net
 ---
- drivers/scsi/arm/fas216.c |    2 +-
+ drivers/spi/spi-s3c64xx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/arm/fas216.c b/drivers/scsi/arm/fas216.c
-index 6206a66..737554c 100644
---- a/drivers/scsi/arm/fas216.c
-+++ b/drivers/scsi/arm/fas216.c
-@@ -179,6 +179,7 @@ static void print_SCp(struct scsi_pointer *SCp, const char *prefix, const char *
- 		SCp->buffers_residual, suffix);
- }
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index d1c8441f..2e44dd6 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -132,7 +132,7 @@
  
-+#ifdef CHECK_STRUCTURE
- static void fas216_dumpinfo(FAS216_Info *info)
- {
- 	static int used = 0;
-@@ -223,7 +224,6 @@ static void fas216_dumpinfo(FAS216_Info *info)
- 		info->internal_done, info->magic_end);
- }
- 
--#ifdef CHECK_STRUCTURE
- static void __fas216_checkmagic(FAS216_Info *info, const char *func)
- {
- 	int corruption = 0;
+ struct s3c64xx_spi_dma_data {
+ 	unsigned		ch;
+-	enum dma_data_direction direction;
++	enum dma_transfer_direction direction;
+ 	enum dma_ch	dmach;
+ 	struct property		*dma_prop;
+ };
 -- 
 1.7.10
 
