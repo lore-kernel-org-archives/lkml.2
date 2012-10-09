@@ -1,462 +1,562 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab2JIDwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 23:52:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62545 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab2JIDwL convert rfc822-to-8bit (ORCPT
+	id S1755052Ab2JIDws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 23:52:48 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43061 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab2JIDwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 23:52:11 -0400
+	Mon, 8 Oct 2012 23:52:41 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6859"; a="245203879"
+Message-ID: <bdda84067f732d4b7bba9dec06f2a02c.squirrel@www.codeaurora.org>
+In-Reply-To: <1349389748-815-1-git-send-email-merez@codeaurora.org>
+References: <n> <1349389748-815-1-git-send-email-merez@codeaurora.org>
+Date: Mon, 8 Oct 2012 20:52:08 -0700 (PDT)
+Subject: Re: [PATCH v2] mmc: core: Add support for idle time BKOPS
+From: merez@codeaurora.org
+To: "Maya Erez" <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Maya Erez" <merez@codeaurora.org>,
+        "Jaehoon Chung" <jh80.chung@samsung.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <004c01cda54e$15cd4a60$4167df20$%kim@samsung.com>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-	<9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
-	<1349553966.12699.132.camel@kjgkr>
-	<50712AAA.5030807@gmail.com>
-	<002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
-	<F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
-	<004101cda52e$72210e20$56632a60$%kim@samsung.com>
-	<CAKYAXd_Y0Y0kLyqEm1FVO5TpvrN-WwnF40H3hMe5B7_cTe0nMw@mail.gmail.com>
-	<004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
-	<CAKYAXd-YdpiM9GcAtoVbV=Wc_kzRkiXTWkNBvWaaYqU4Xks-jA@mail.gmail.com>
-	<004c01cda54e$15cd4a60$4167df20$%kim@samsung.com>
-Date: Tue, 9 Oct 2012 12:52:09 +0900
-Message-ID: <CAKYAXd_08jWGrR=tDJyPo9HW6=5KwrqdOn-Z4yUDP5mnriMtYQ@mail.gmail.com>
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Jaegeuk Kim <jaegeuk.kim@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        tytso@mit.edu, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> -----Original Message-----
->> From: Namjae Jeon [mailto:linkinjeon@gmail.com]
->> Sent: Monday, October 08, 2012 8:22 PM
->> To: Jaegeuk Kim
->> Cc: Vyacheslav Dubeyko; Marco Stornelli; Jaegeuk Kim; Al Viro;
->> tytso@mit.edu;
->> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
->> chur.lee@samsung.com; cm224.lee@samsung.com;
->> jooyoung.hwang@samsung.com; linux-fsdevel@vger.kernel.org
->> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
->>
->> 2012/10/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> >> -----Original Message-----
->> >> From: Namjae Jeon [mailto:linkinjeon@gmail.com]
->> >> Sent: Monday, October 08, 2012 7:00 PM
->> >> To: Jaegeuk Kim
->> >> Cc: Vyacheslav Dubeyko; Marco Stornelli; Jaegeuk Kim; Al Viro;
->> >> tytso@mit.edu;
->> >> gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
->> >> chur.lee@samsung.com; cm224.lee@samsung.com;
->> >> jooyoung.hwang@samsung.com; linux-fsdevel@vger.kernel.org
->> >> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
->> >>
->> >> 2012/10/8, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> >> >> -----Original Message-----
->> >> >> From: Vyacheslav Dubeyko [mailto:slava@dubeyko.com]
->> >> >> Sent: Sunday, October 07, 2012 9:09 PM
->> >> >> To: Jaegeuk Kim
->> >> >> Cc: 'Marco Stornelli'; 'Jaegeuk Kim'; 'Al Viro'; tytso@mit.edu;
->> >> >> gregkh@linuxfoundation.org; linux-
->> >> >> kernel@vger.kernel.org; chur.lee@samsung.com;
->> >> >> cm224.lee@samsung.com;
->> >> >> jooyoung.hwang@samsung.com;
->> >> >> linux-fsdevel@vger.kernel.org
->> >> >> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file
->> >> >> system
->> >> >>
->> >> >> Hi,
->> >> >>
->> >> >> On Oct 7, 2012, at 1:31 PM, Jaegeuk Kim wrote:
->> >> >>
->> >> >> >> -----Original Message-----
->> >> >> >> From: Marco Stornelli [mailto:marco.stornelli@gmail.com]
->> >> >> >> Sent: Sunday, October 07, 2012 4:10 PM
->> >> >> >> To: Jaegeuk Kim
->> >> >> >> Cc: Vyacheslav Dubeyko; jaegeuk.kim@samsung.com; Al Viro;
->> >> >> >> tytso@mit.edu; gregkh@linuxfoundation.org;
->> >> >> >> linux-kernel@vger.kernel.org; chur.lee@samsung.com;
->> >> >> >> cm224.lee@samsung.com;
->> >> >> jooyoung.hwang@samsung.com;
->> >> >> >> linux-fsdevel@vger.kernel.org
->> >> >> >> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file
->> >> >> >> system
->> >> >> >>
->> >> >> >> Il 06/10/2012 22:06, Jaegeuk Kim ha scritto:
->> >> >> >>> 2012-10-06 (토), 17:54 +0400, Vyacheslav Dubeyko:
->> >> >> >>>> Hi Jaegeuk,
->> >> >> >>>
->> >> >> >>> Hi.
->> >> >> >>> We know each other, right? :)
->> >> >> >>>
->> >> >> >>>>
->> >> >> >>>>> From:	 	김재극 <jaegeuk.kim@samsung.com>
->> >> >> >>>>> To:	 	viro@zeniv.linux.org.uk, 'Theodore Ts'o'
->> >> >> >>>>> <tytso@mit.edu>,
->> >> >> >> gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
->> >> >> >> chur.lee@samsung.com,
->> >> >> cm224.lee@samsung.com,
->> >> >> >> jaegeuk.kim@samsung.com, jooyoung.hwang@samsung.com
->> >> >> >>>>> Subject:	 	[PATCH 00/16] f2fs: introduce flash-friendly file
->> >> >> >>>>> system
->> >> >> >>>>> Date:	 	Fri, 05 Oct 2012 20:55:07 +0900
->> >> >> >>>>>
->> >> >> >>>>> This is a new patch set for the f2fs file system.
->> >> >> >>>>>
->> >> >> >>>>> What is F2FS?
->> >> >> >>>>> =============
->> >> >> >>>>>
->> >> >> >>>>> NAND flash memory-based storage devices, such as SSD, eMMC,
->> >> >> >>>>> and
->> >> >> >>>>> SD
->> >> >> >>>>> cards, have
->> >> >> >>>>> been widely being used for ranging from mobile to server
->> >> >> >>>>> systems.
->> >> >> >>>>> Since they are
->> >> >> >>>>> known to have different characteristics from the conventional
->> >> >> >>>>> rotational disks,
->> >> >> >>>>> a file system, an upper layer to the storage device, should
->> >> >> >>>>> adapt
->> >> >> >>>>> to
->> >> >> >>>>> the changes
->> >> >> >>>>> from the sketch.
->> >> >> >>>>>
->> >> >> >>>>> F2FS is a new file system carefully designed for the NAND
->> >> >> >>>>> flash
->> >> >> >>>>> memory-based storage
->> >> >> >>>>> devices. We chose a log structure file system approach, but
->> >> >> >>>>> we
->> >> >> >>>>> tried
->> >> >> >>>>> to adapt it
->> >> >> >>>>> to the new form of storage. Also we remedy some known issues
->> >> >> >>>>> of
->> >> >> >>>>> the
->> >> >> >>>>> very old log
->> >> >> >>>>> structured file system, such as snowball effect of wandering
->> >> >> >>>>> tree
->> >> >> >>>>> and high cleaning
->> >> >> >>>>> overhead.
->> >> >> >>>>>
->> >> >> >>>>> Because a NAND-based storage device shows different
->> >> >> >>>>> characteristics
->> >> >> >>>>> according to
->> >> >> >>>>> its internal geometry or flash memory management scheme aka
->> >> >> >>>>> FTL,
->> >> >> >>>>> we
->> >> >> >>>>> add various
->> >> >> >>>>> parameters not only for configuring on-disk layout, but also
->> >> >> >>>>> for
->> >> >> >>>>> selecting allocation
->> >> >> >>>>> and cleaning algorithms.
->> >> >> >>>>>
->> >> >> >>>>
->> >> >> >>>> What about F2FS performance? Could you share benchmarking
->> >> >> >>>> results
->> >> >> >>>> of
->> >> >> >>>> the new file system?
->> >> >> >>>>
->> >> >> >>>> It is very interesting the case of aged file system. How is
->> >> >> >>>> GC's
->> >> >> >>>> implementation efficient? Could
->> >> >> >> you share benchmarking results for the very aged file system
->> >> >> >> state?
->> >> >> >>>>
->> >> >> >>>
->> >> >> >>> Although I have benchmark results, currently I'd like to see
->> >> >> >>> the
->> >> >> >>> results
->> >> >> >>> measured by community as a black-box. As you know, the results
->> >> >> >>> are
->> >> >> >>> very
->> >> >> >>> dependent on the workloads and parameters, so I think it would
->> >> >> >>> be
->> >> >> >>> better
->> >> >> >>> to see other results for a while.
->> >> >> >>> Thanks,
->> >> >> >>>
->> >> >> >>
->> >> >> >> 1) Actually it's a strange approach. If you have got any results
->> >> >> >> you
->> >> >> >> should share them with the community explaining how (the
->> >> >> >> workload,
->> >> >> >> hw
->> >> >> >> and so on) your benchmark works and the specific condition. I
->> >> >> >> really
->> >> >> >> don't like the approach "I've got the results but I don't say
->> >> >> >> anything,
->> >> >> >> if you want a number, do it yourself".
->> >> >> >
->> >> >> > It's definitely right, and I meant *for a while*.
->> >> >> > I just wanted to avoid arguing with how to age file system in
->> >> >> > this
->> >> >> > time.
->> >> >> > Before then, I share the primitive results as follows.
->> >> >> >
->> >> >> > 1. iozone in Panda board
->> >> >> > - ARM A9
->> >> >> > - DRAM : 1GB
->> >> >> > - Kernel: Linux 3.3
->> >> >> > - Partition: 12GB (64GB Samsung eMMC)
->> >> >> > - Tested on 2GB file
->> >> >> >
->> >> >> >           seq. read, seq. write, rand. read, rand. write
->> >> >> > - ext4:    30.753         17.066       5.06         4.15
->> >> >> > - f2fs:    30.71          16.906       5.073       15.204
->> >> >> >
->> >> >> > 2. iozone in Galaxy Nexus
->> >> >> > - DRAM : 1GB
->> >> >> > - Android 4.0.4_r1.2
->> >> >> > - Kernel omap 3.0.8
->> >> >> > - Partition: /data, 12GB
->> >> >> > - Tested on 2GB file
->> >> >> >
->> >> >> >           seq. read, seq. write, rand. read,  rand. write
->> >> >> > - ext4:    29.88        12.83         11.43          0.56
->> >> >> > - f2fs:    29.70        13.34         10.79         12.82
->> >> >> >
->> >> >>
->> >> >>
->> >> >> This is results for non-aged filesystem state. Am I correct?
->> >> >>
->> >> >
->> >> > Yes, right.
->> >> >
->> >> >>
->> >> >> > Due to the company secret, I expect to show other results after
->> >> >> > presenting f2fs at korea linux forum.
->> >> >> >
->> >> >> >> 2) For a new filesystem you should send the patches to
->> >> >> >> linux-fsdevel.
->> >> >> >
->> >> >> > Yes, that was totally my mistake.
->> >> >> >
->> >> >> >> 3) It's not clear the pros/cons of your filesystem, can you
->> >> >> >> share
->> >> >> >> with
->> >> >> >> us the main differences with the current fs already in mainline?
->> >> >> >> Or
->> >> >> >> is
->> >> >> >> it a company secret?
->> >> >> >
->> >> >> > After forum, I can share the slides, and I hope they will be
->> >> >> > useful
->> >> >> > to
->> >> >> > you.
->> >> >> >
->> >> >> > Instead, let me summarize at a glance compared with other file
->> >> >> > systems.
->> >> >> > Here are several log-structured file systems.
->> >> >> > Note that, F2FS operates on top of block device with
->> >> >> > consideration
->> >> >> > on
->> >> >> > the FTL behavior.
->> >> >> > So, JFFS2, YAFFS2, and UBIFS are out-of scope, since they are
->> >> >> > designed
->> >> >> > for raw NAND flash.
->> >> >> > LogFS is initially designed for raw NAND flash, but expanded to
->> >> >> > block
->> >> >> > device.
->> >> >> > But, I don't know whether it is stable or not.
->> >> >> > NILFS2 is one of major log-structured file systems, which
->> >> >> > supports
->> >> >> > multiple snap-shots.
->> >> >> > IMO, that feature is quite promising and important to users, but
->> >> >> > it
->> >> >> > may
->> >> >> > degrade the performance.
->> >> >> > There is a trade-off between functionalities and performance.
->> >> >> > F2FS chose high performance without any further fancy
->> >> >> > functionalities.
->> >> >> >
->> >> >>
->> >> >> Performance is a good goal. But fault-tolerance is also very
->> >> >> important
->> >> >> point. Filesystems are used by
->> >> >> users, so, it is very important to guarantee reliability of data
->> >> >> keeping.
->> >> >> Degradation of performance
->> >> >> by means of snapshots is arguable point. Snapshots can solve the
->> >> >> problem
->> >> >> not only some unpredictable
->> >> >> environmental issues but also user's erroneous behavior.
->> >> >>
->> >> >
->> >> > Yes, I agree. I concerned the multiple snapshot feature.
->> >> > Of course, fault-tolerance is very important, and file system should
->> >> > support
->> >> > it as you know as power-off-recovery.
->> >> > f2fs supports the recovery mechanism by adopting checkpoint similar
->> >> > to
->> >> > snapshot.
->> >> > But, f2fs does not support multiple snapshots for user convenience.
->> >> > I just focused on the performance, and absolutely, the multiple
->> >> > snapshot
->> >> > feature is also a good alternative approach.
->> >> > That may be a trade-off.
->> >> >
->> >> >> As I understand, it is not possible to have a perfect performance
->> >> >> in
->> >> >> all
->> >> >> possible workloads. Could you
->> >> >> point out what workloads are the best way of F2FS using?
->> >> >
->> >> > Basically I think the following workloads will be good for F2FS.
->> >> > - Many random writes : it's LFS nature
->> >> > - Small writes with frequent fsync : f2fs is optimized to reduce the
->> >> > fsync
->> >> > overhead.
->> >> >
->> >> >>
->> >> >> > Maybe or obviously it is possible to optimize ext4 or btrfs to
->> >> >> > flash
->> >> >> > storages.
->> >> >> > IMHO, however, they are originally designed for HDDs, so that it
->> >> >> > may
->> >> >> > or
->> >> >> > may not suffer from
->> >> >> fundamental designs.
->> >> >> > I don't know, but why not designing a new file system for flash
->> >> >> > storages
->> >> >> > as a counterpart?
->> >> >> >
->> >> >>
->> >> >> Yes, it is possible. But F2FS is not flash oriented filesystem as
->> >> >> JFFS2,
->> >> >> YAFFS2, UBIFS but block-
->> >> >> oriented filesystem. So, F2FS design is restricted by block-layer's
->> >> >> opportunities in the using of
->> >> >> flash storages' peculiarities. Could you point out key points of
->> >> >> F2FS
->> >> >> design that makes this design
->> >> >> fundamentally unique?
->> >> >
->> >> > As you can see the f2fs kernel document patch, I think one of the
->> >> > most
->> >> > important features is to align operating units between f2fs and ftl.
->> >> > Specifically, f2fs has section and zone, which are cleaning unit and
->> >> > basic
->> >> > allocation unit respectively.
->> >> > Through these configurable units in f2fs, I think f2fs is able to
->> >> > reduce
->> >> > the
->> >> > unnecessary operations done by FTL.
->> >> > And, in order to avoid changing IO patterns by the block-layer, f2fs
->> >> > merges
->> >> > itself some bios likewise ext4.
->> >> Hello.
->> >> The internal of eMMC and SSD is the blackbox from user side.
->> >> How does the normal user easily set operating units alignment(page
->> >> size and physical block size ?) between f2fs and ftl in storage device
->> >> ?
->> >
->> > I've known that some works have been tried to figure out the units by
->> > profiling the storage, AKA reverse engineering.
->> > In most cases, the simplest way is to measure the latencies of
->> > consecutive
->> > writes and analyze their patterns.
->> > As you mentioned, in practical, users will not want to do this, so maybe
->> > we
->> > need a tool to profile them to optimize f2fs.
->> > In the current state, I think profiling is an another issue, and
->> > mkfs.f2fs
->> > had better include this work in the future.
->> Well, Format tool evaluates optimal block size whenever formatting? As
->> you know, The size of Flash Based storage device is increasing every
->> year. It means format time can be too long on larger devices(e.g. one
->> device, one parition).
->
-> Every file systems will suffer from the long format time in such a huge
-> device.
-> And, I don't think the profiling time would not be scaled up, since it's
-> unnecessary to scan whole device.
-> After getting the size, we just can stop it.
-The key point is that you should estimate correct optimal block size
-of ftl with much less I/O at format time.
-I am not sure it is possible.
-And you should prove optimal block size is really correct on several
-device per vendor device.
+Hi Chris and all,
 
->
->> > But, IMO, from the viewpoint of performance, default configuration is
->> > quite
->> > enough now.
->> At default(after cleanly format), Would you share performance
->> difference between other log structured filesystems in comparison to
->> f2fs instead of ext4 ?
->>
->
-> Actually, we've focused on ext4, so I have no results of other file systems
-> measured on embedded systems.
-> I'll test sooner or later, and report them.
-Okay, Thanks Jaegeuk.
+According to the eMMC4.5 standard, a host that enables the BKOPS_EN bit
+must also check the BKOPS status periodically:
+"Host shall check the status periodically and start background operations
+as needed, so that the device has enough time for its maintenance
+operations, to help reduce the latencies during foreground operations. If
+the status is at level 3 ("critical"), some operations may extend beyond
+their original timeouts due to maintenance operations which cannot be
+delayed anymore. The host should give the device enough time for
+background operations to avoid getting to this level in the first place."
 
-> Thank you for valuable comments.
+As mentioned in the standard quotation above, it is not recommended to
+handle only BKOPS of level 3 since it can lead to foreground operations
+timeout.
+
+I would appreciate if you could review this change to add the periodic
+BKOPS on top of handling BKOPS level 3 that was already mainlined.
+
+Thnaks,
+Maya
+On Thu, October 4, 2012 3:28 pm, Maya Erez wrote:
+> Devices have various maintenance operations need to perform internally.
+> In order to reduce latencies during time critical operations like read
+> and write, it is better to execute maintenance operations in other
+> times - when the host is not being serviced. Such operations are called
+> Background operations (BKOPS).
+> The device notifies the status of the BKOPS need by updating BKOPS_STATUS
+> (EXT_CSD byte [246]).
 >
->> Thanks.
->> >
->> > ps) f2fs doesn't care about the flash page size, but considers garbage
->> > collection unit.
->> >
->> >>
->> >> Thanks.
->> >>
->> >> >
->> >> >>
->> >> >> With the best regards,
->> >> >> Vyacheslav Dubeyko.
->> >> >>
->> >> >>
->> >> >> >>
->> >> >> >> Marco
->> >> >> >
->> >> >> > ---
->> >> >> > Jaegeuk Kim
->> >> >> > Samsung
->> >> >> >
->> >> >> > --
->> >> >> > To unsubscribe from this list: send the line "unsubscribe
->> >> >> > linux-kernel"
->> >> >> > in
->> >> >> > the body of a message to majordomo@vger.kernel.org
->> >> >> > More majordomo info at
->> >> >> > http://vger.kernel.org/majordomo-info.html
->> >> >> > Please read the FAQ at  http://www.tux.org/lkml/
->> >> >
->> >> >
->> >> > ---
->> >> > Jaegeuk Kim
->> >> > Samsung
->> >> >
->> >> > --
->> >> > To unsubscribe from this list: send the line "unsubscribe
->> >> > linux-fsdevel"
->> >> > in
->> >> > the body of a message to majordomo@vger.kernel.org
->> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> >
->> >
->> >
->> > ---
->> > Jaegeuk Kim
->> > Samsung
->> >
->> >
->> >
+> According to the standard a host that supports BKOPS shall check the
+> status periodically and start background operations as needed, so that
+> the device has enough time for its maintenance operations.
 >
+> This patch adds support for this periodic check of the BKOPS status.
+> Since foreground operations are of higher priority than background
+> operations the host will check the need for BKOPS when it is idle,
+> and in case of an incoming request the BKOPS operation will be
+> interrupted.
 >
+> When the mmcqd thread is idle, a delayed work is created to check the
+> need for BKOPS. The time to start the delayed work is calculated based
+> on the host controller suspend timeout, in case it was set. If not, a
+> default time is used.
+> If BKOPS are required in level 1, which is non-blocking, there will be
+> polling of the card status to wait for the BKOPS completion and prevent
+> suspend that will interrupt the BKOPS.
+> If the card raised an exception, the need for urgent BKOPS (level 2/3)
+> will be checked immediately and if needed, the BKOPS will be performed
+> without waiting for the next idle time.
+>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
 > ---
-> Jaegeuk Kim
-> Samsung
+> This patch is based on the periodic BKOPS implementation in version 8 of
+> "support BKOPS feature for eMMC" patch.
+> The patch was modified to answer the following issues:
+> - In order to prevent a race condition between going into suspend and
+> starting BKOPS,
+>   the suspend timeout of the host controller is taking into accound in
+> determination of the start time
+>   of the delayed work
+> - Since mmc_start_bkops is called from two contexts now, mmc_claim_host
+> was moved to the beginning of the function
+> - Also, the check of doing_bkops should be protected when determing if an
+> HPI is needed due to the same reason.
+> - Starting and canceling the delayed work in each idle caused degradation
+> of iozone performance. Therefore,
+>   the delayed work is not started on each idle. The amount of sectors
+> changed (written or discard) from the last
+>   delayed work is the trigger for starting the delayed BKOPS work.
+> ---
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 172a768..ed040d5 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -827,6 +827,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue
+> *mq, struct request *req)
+>  	from = blk_rq_pos(req);
+>  	nr = blk_rq_sectors(req);
 >
+> +	if (card->ext_csd.bkops_en)
+> +		card->bkops_info.sectors_changed += blk_rq_sectors(req);
+> +
+>  	if (mmc_can_discard(card))
+>  		arg = MMC_DISCARD_ARG;
+>  	else if (mmc_can_trim(card))
+> @@ -1268,6 +1271,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq,
+> struct request *rqc)
+>  	if (!rqc && !mq->mqrq_prev->req)
+>  		return 0;
 >
+> +	if (rqc && (card->ext_csd.bkops_en) && (rq_data_dir(rqc) == WRITE))
+> +			card->bkops_info.sectors_changed += blk_rq_sectors(rqc);
+> +
+>  	do {
+>  		if (rqc) {
+>  			/*
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index e360a97..e96f5cf 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>  {
+>  	struct mmc_queue *mq = d;
+>  	struct request_queue *q = mq->queue;
+> +	struct mmc_card *card = mq->card;
+>
+>  	current->flags |= PF_MEMALLOC;
+>
+> @@ -66,6 +67,17 @@ static int mmc_queue_thread(void *d)
+>  		spin_unlock_irq(q->queue_lock);
+>
+>  		if (req || mq->mqrq_prev->req) {
+> +			/*
+> +			 * If this is the first request, BKOPs might be in
+> +			 * progress and needs to be stopped before issuing the
+> +			 * request
+> +			 */
+> +			if (card->ext_csd.bkops_en &&
+> +			    card->bkops_info.started_delayed_bkops) {
+> +				card->bkops_info.started_delayed_bkops = false;
+> +				mmc_stop_bkops(card);
+> +			}
+> +
+>  			set_current_state(TASK_RUNNING);
+>  			mq->issue_fn(mq, req);
+>  		} else {
+> @@ -73,6 +85,7 @@ static int mmc_queue_thread(void *d)
+>  				set_current_state(TASK_RUNNING);
+>  				break;
+>  			}
+> +			mmc_start_delayed_bkops(card);
+>  			up(&mq->thread_sem);
+>  			schedule();
+>  			down(&mq->thread_sem);
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 6612163..fd8783d 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -253,9 +253,42 @@ mmc_start_request(struct mmc_host *host, struct
+> mmc_request *mrq)
+>  }
+>
+>  /**
+> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+> + *      the need of non urgent BKOPS
+> + *
+> + * @card: MMC card to start BKOPS on
+> + */
+> +void mmc_start_delayed_bkops(struct mmc_card *card)
+> +{
+> +	if (!card || !card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +		return;
+> +
+> +	if (card->bkops_info.sectors_changed <
+> +	    BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK)
+> +		return;
+> +
+> +	pr_debug("%s: %s: queueing delayed_bkops_work\n",
+> +		 mmc_hostname(card->host), __func__);
+> +
+> +	card->bkops_info.sectors_changed = 0;
+> +
+> +	/*
+> +	 * cancel_delayed_bkops_work will prevent a race condition between
+> +	 * fetching a request by the mmcqd and the delayed work, in case
+> +	 * it was removed from the queue work but not started yet
+> +	 */
+> +	card->bkops_info.cancel_delayed_work = false;
+> +	card->bkops_info.started_delayed_bkops = true;
+> +	queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+> +			   msecs_to_jiffies(
+> +				   card->bkops_info.delay_ms));
+> +}
+> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+> +
+> +/**
+>   *	mmc_start_bkops - start BKOPS for supported cards
+>   *	@card: MMC card to start BKOPS
+> - *	@form_exception: A flag to indicate if this function was
+> + *	@from_exception: A flag to indicate if this function was
+>   *			 called due to an exception raised by the card
+>   *
+>   *	Start background operations whenever requested.
+> @@ -269,25 +302,47 @@ void mmc_start_bkops(struct mmc_card *card, bool
+> from_exception)
+>  	bool use_busy_signal;
+>
+>  	BUG_ON(!card);
+> -
+> -	if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +	if (!card->ext_csd.bkops_en)
+>  		return;
+>
+> +	mmc_claim_host(card->host);
+> +
+> +	if ((card->bkops_info.cancel_delayed_work) && !from_exception) {
+> +		pr_debug("%s: %s: cancel_delayed_work was set, exit\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		card->bkops_info.cancel_delayed_work = false;
+> +		goto out;
+> +	}
+> +
+> +	if (mmc_card_doing_bkops(card)) {
+> +		pr_debug("%s: %s: already doing bkops, exit\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		goto out;
+> +	}
+> +
+>  	err = mmc_read_bkops_status(card);
+>  	if (err) {
+>  		pr_err("%s: Failed to read bkops status: %d\n",
+>  		       mmc_hostname(card->host), err);
+> -		return;
+> +		goto out;
+>  	}
+>
+>  	if (!card->ext_csd.raw_bkops_status)
+> -		return;
+> +		goto out;
+> +
+> +	pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+> +		mmc_hostname(card->host), __func__,
+> +		card->ext_csd.raw_bkops_status);
+>
+> +	/*
+> +	 * If the function was called due to exception but there is no need
+> +	 * for urgent BKOPS, BKOPs will be performed by the delayed BKOPs
+> +	 * work, before going to suspend
+> +	 */
+>  	if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>  	    from_exception)
+> -		return;
+> +		goto out;
+>
+> -	mmc_claim_host(card->host);
+>  	if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>  		timeout = MMC_BKOPS_MAX_TIMEOUT;
+>  		use_busy_signal = true;
+> @@ -309,13 +364,108 @@ void mmc_start_bkops(struct mmc_card *card, bool
+> from_exception)
+>  	 * bkops executed synchronously, otherwise
+>  	 * the operation is in progress
+>  	 */
+> -	if (!use_busy_signal)
+> +	if (!use_busy_signal) {
+>  		mmc_card_set_doing_bkops(card);
+> +		pr_debug("%s: %s: starting the polling thread\n",
+> +			 mmc_hostname(card->host), __func__);
+> +		queue_work(system_nrt_wq,
+> +			   &card->bkops_info.poll_for_completion);
+> +	}
+> +
+>  out:
+>  	mmc_release_host(card->host);
+>  }
+>  EXPORT_SYMBOL(mmc_start_bkops);
+>
+> +/**
+> + * mmc_bkops_completion_polling() - Poll on the card status to
+> + * wait for the non-blocking BKOPS completion
+> + * @work:	The completion polling work
+> + *
+> + * The on-going reading of the card status will prevent the card
+> + * from getting into suspend while it is in the middle of
+> + * performing BKOPS.
+> + * Since the non blocking BKOPS can be interrupted by a fetched
+> + * request we also check IF mmc_card_doing_bkops in each
+> + * iteration.
+> + */
+> +void mmc_bkops_completion_polling(struct work_struct *work)
+> +{
+> +	struct mmc_card *card = container_of(work, struct mmc_card,
+> +			bkops_info.poll_for_completion);
+> +	unsigned long timeout_jiffies = jiffies +
+> +		msecs_to_jiffies(BKOPS_COMPLETION_POLLING_TIMEOUT_MS);
+> +	u32 status;
+> +	int err;
+> +
+> +	/*
+> +	 * Wait for the BKOPs to complete. Keep reading the status to prevent
+> +	 * the host from getting into suspend
+> +	 */
+> +	do {
+> +		mmc_claim_host(card->host);
+> +
+> +		if (!mmc_card_doing_bkops(card))
+> +			goto out;
+> +
+> +		err = mmc_send_status(card, &status);
+> +		if (err) {
+> +			pr_err("%s: error %d requesting status\n",
+> +			       mmc_hostname(card->host), err);
+> +			goto out;
+> +		}
+> +
+> +		/*
+> +		 * Some cards mishandle the status bits, so make sure to check
+> +		 * both the busy indication and the card state.
+> +		 */
+> +		if ((status & R1_READY_FOR_DATA) &&
+> +		    (R1_CURRENT_STATE(status) != R1_STATE_PRG)) {
+> +			pr_debug("%s: %s: completed BKOPs, exit polling\n",
+> +				 mmc_hostname(card->host), __func__);
+> +			mmc_card_clr_doing_bkops(card);
+> +			card->bkops_info.started_delayed_bkops = false;
+> +			goto out;
+> +		}
+> +
+> +		mmc_release_host(card->host);
+> +
+> +		/*
+> +		 * Sleep before checking the card status again to allow the
+> +		 * card to complete the BKOPs operation
+> +		 */
+> +		msleep(BKOPS_COMPLETION_POLLING_INTERVAL_MS);
+> +	} while (time_before(jiffies, timeout_jiffies));
+> +
+> +	pr_err("%s: %s: exit polling due to timeout\n",
+> +	       mmc_hostname(card->host), __func__);
+> +
+> +	return;
+> +out:
+> +	mmc_release_host(card->host);
+> +}
+> +
+> +/**
+> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+> + * needed
+> + * @work:	The idle time BKOPS work
+> + */
+> +void mmc_start_idle_time_bkops(struct work_struct *work)
+> +{
+> +	struct mmc_card *card = container_of(work, struct mmc_card,
+> +			bkops_info.dw.work);
+> +
+> +	/*
+> +	 * Prevent a race condition between mmc_stop_bkops and the delayed
+> +	 * BKOPS work in case the delayed work is executed on another CPU
+> +	 */
+> +	if (card->bkops_info.cancel_delayed_work)
+> +		return;
+> +
+> +	mmc_start_bkops(card, false);
+> +}
+> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+> +
+>  static void mmc_wait_done(struct mmc_request *mrq)
+>  {
+>  	complete(&mrq->completion);
+> @@ -582,6 +732,19 @@ int mmc_stop_bkops(struct mmc_card *card)
+>  	int err = 0;
+>
+>  	BUG_ON(!card);
+> +
+> +	mmc_claim_host(card->host);
+> +
+> +	/*
+> +	 * Notify the delayed work to be cancelled, in case it was already
+> +	 * removed from the queue, but was not started yet
+> +	 */
+> +	card->bkops_info.cancel_delayed_work = true;
+> +	if (delayed_work_pending(&card->bkops_info.dw))
+> +		cancel_delayed_work_sync(&card->bkops_info.dw);
+> +	if (!mmc_card_doing_bkops(card))
+> +		goto out;
+> +
+>  	err = mmc_interrupt_hpi(card);
+>
+>  	/*
+> @@ -593,6 +756,8 @@ int mmc_stop_bkops(struct mmc_card *card)
+>  		err = 0;
+>  	}
+>
+> +out:
+> +	mmc_release_host(card->host);
+>  	return err;
+>  }
+>  EXPORT_SYMBOL(mmc_stop_bkops);
+> @@ -2566,15 +2731,13 @@ int mmc_pm_notify(struct notifier_block
+> *notify_block,
+>  	switch (mode) {
+>  	case PM_HIBERNATION_PREPARE:
+>  	case PM_SUSPEND_PREPARE:
+> -		if (host->card && mmc_card_mmc(host->card) &&
+> -		    mmc_card_doing_bkops(host->card)) {
+> +		if (host->card && mmc_card_mmc(host->card)) {
+>  			err = mmc_stop_bkops(host->card);
+>  			if (err) {
+>  				pr_err("%s: didn't stop bkops\n",
+>  					mmc_hostname(host));
+>  				return err;
+>  			}
+> -			mmc_card_clr_doing_bkops(host->card);
+>  		}
+>
+>  		spin_lock_irqsave(&host->lock, flags);
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 7509de1..f8ff640 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1258,6 +1258,30 @@ static int mmc_init_card(struct mmc_host *host, u32
+> ocr,
+>  		}
+>  	}
+>
+> +	if (!oldcard) {
+> +		if (card->ext_csd.bkops_en) {
+> +			INIT_DELAYED_WORK(&card->bkops_info.dw,
+> +					  mmc_start_idle_time_bkops);
+> +			INIT_WORK(&card->bkops_info.poll_for_completion,
+> +				  mmc_bkops_completion_polling);
+> +
+> +			/*
+> +			 * Calculate the time to start the BKOPs checking.
+> +			 * The idle time of the host controller should be taken
+> +			 * into account in order to prevent a race condition
+> +			 * before starting BKOPs and going into suspend.
+> +			 * If the host controller didn't set its idle time,
+> +			 * a default value is used.
+> +			 */
+> +			card->bkops_info.delay_ms = MMC_IDLE_BKOPS_TIME_MS;
+> +			if (card->bkops_info.host_suspend_tout_ms)
+> +				card->bkops_info.delay_ms = min(
+> +					card->bkops_info.delay_ms,
+> +				      card->bkops_info.host_suspend_tout_ms/2);
+> +
+> +		}
+> +	}
+> +
+>  	if (!oldcard)
+>  		host->card = card;
+>
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 78cc3be..0e4d55a 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -207,6 +207,48 @@ struct mmc_part {
+>  #define MMC_BLK_DATA_AREA_GP	(1<<2)
+>  };
+>
+> +/**
+> + * struct mmc_bkops_info - BKOPS data
+> + * @dw:	Idle time bkops delayed work
+> + * @host_suspend_tout_ms:	The host controller idle time,
+> + * before getting into suspend
+> + * @delay_ms:	The time to start the BKOPS
+> + *        delayed work once MMC thread is idle
+> + * @poll_for_completion:	Poll on BKOPS completion
+> + * @cancel_delayed_work: A flag to indicate if the delayed work
+> + *        should be cancelled
+> + * @started_delayed_bkops:  A flag to indicate if the delayed
+> + *        work was scheduled
+> + * @sectors_changed:  number of  sectors written or
+> + *       discard since the last idle BKOPS were scheduled
+> + */
+> +struct mmc_bkops_info {
+> +	struct delayed_work	dw;
+> +	unsigned int		host_suspend_tout_ms;
+> +	unsigned int		delay_ms;
+> +/*
+> + * A default time for checking the need for non urgent BKOPS once mmcqd
+> + * is idle.
+> + */
+> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+> +	struct work_struct	poll_for_completion;
+> +/* Polling timeout and interval for waiting on non-blocking BKOPs
+> completion */
+> +#define BKOPS_COMPLETION_POLLING_TIMEOUT_MS 10000 /* in ms */
+> +#define BKOPS_COMPLETION_POLLING_INTERVAL_MS 1000 /* in ms */
+> +	bool			cancel_delayed_work;
+> +	bool			started_delayed_bkops;
+> +	unsigned int		sectors_changed;
+> +/*
+> + * Since canceling the delayed work might have significant effect on the
+> + * performance of small requests we won't queue the delayed work every
+> time
+> + * mmcqd thread is idle.
+> + * The delayed work for idle BKOPS will be scheduled only after a
+> significant
+> + * amount of write or discard data.
+> + * 100MB is chosen based on benchmark tests.
+> + */
+> +#define BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK 204800 /* 100MB */
+> +};
+> +
+>  /*
+>   * MMC device
+>   */
+> @@ -281,6 +323,8 @@ struct mmc_card {
+>  	struct dentry		*debugfs_root;
+>  	struct mmc_part	part[MMC_NUM_PHY_PARTITION]; /* physical partitions */
+>  	unsigned int    nr_parts;
+> +
+> +	struct mmc_bkops_info	bkops_info;
+>  };
+>
+>  /*
+> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+> index 9b9cdaf..665d345 100644
+> --- a/include/linux/mmc/core.h
+> +++ b/include/linux/mmc/core.h
+> @@ -145,6 +145,9 @@ extern int mmc_app_cmd(struct mmc_host *, struct
+> mmc_card *);
+>  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+>  	struct mmc_command *, int);
+>  extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
+> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+> +extern void mmc_bkops_completion_polling(struct work_struct *work);
+>  extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int,
+> bool);
+>  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>
+> --
+> 1.7.6
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
