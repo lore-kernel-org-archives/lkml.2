@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2JIJPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:15:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35343 "EHLO mx1.redhat.com"
+	id S1754916Ab2JIJP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:15:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19917 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab2JIJPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:15:45 -0400
+	id S1753880Ab2JIJPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 05:15:48 -0400
 From: David Howells <dhowells@redhat.com>
-To: monstr@monstr.eu
-Cc: dhowells@redhat.com, microblaze-uclinux@itee.uq.edu.au,
+To: takata@linux-m32r.org
+Cc: dhowells@redhat.com, linux-m32r@ml.linux-m32r.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Disintegrate UAPI for microblaze [ver #2]
-Date: Tue, 09 Oct 2012 10:15:37 +0100
-Message-ID: <21146.1349774137@warthog.procyon.org.uk>
+Subject: [GIT PULL] Disintegrate UAPI for m32r [ver #2]
+Date: Tue, 09 Oct 2012 10:15:32 +0100
+Message-ID: <21140.1349774132@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you merge the following branch into the microblaze tree please.
+Can you merge the following branch into the m32r tree please.
 
 This is to complete part of the UAPI disintegration for which the preparatory
 patches were pulled recently.
@@ -35,88 +35,86 @@ The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
 are available in the git repository at:
 
 
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-microblaze-20121009
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-m32r-20121009
 
-for you to fetch changes up to 1883baaa2ea07d83228d5a83a3133cd02bab7fc6:
+for you to fetch changes up to 90fc366ea41f3595286f18e15b49d3cef8b85ceb:
 
-  UAPI: (Scripted) Disintegrate arch/microblaze/include/asm (2012-10-09 09:47:10 +0100)
+  UAPI: (Scripted) Disintegrate arch/m32r/include/asm (2012-10-09 09:47:03 +0100)
 
 ----------------------------------------------------------------
 UAPI Disintegration 2012-10-09
 
 ----------------------------------------------------------------
 David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/microblaze/include/asm
+      UAPI: (Scripted) Disintegrate arch/m32r/include/asm
 
- arch/microblaze/include/asm/Kbuild                 |   2 -
- arch/microblaze/include/asm/elf.h                  |  97 +----
- arch/microblaze/include/asm/ptrace.h               |  62 +---
- arch/microblaze/include/asm/setup.h                |   6 +-
- arch/microblaze/include/asm/unistd.h               | 390 +-------------------
- arch/microblaze/include/uapi/asm/Kbuild            |  32 ++
- arch/microblaze/include/{ => uapi}/asm/auxvec.h    |   0
- .../include/{ => uapi}/asm/bitsperlong.h           |   0
- arch/microblaze/include/{ => uapi}/asm/byteorder.h |   0
- arch/microblaze/include/uapi/asm/elf.h             | 121 +++++++
- arch/microblaze/include/{ => uapi}/asm/errno.h     |   0
- arch/microblaze/include/{ => uapi}/asm/fcntl.h     |   0
- arch/microblaze/include/{ => uapi}/asm/ioctl.h     |   0
- arch/microblaze/include/{ => uapi}/asm/ioctls.h    |   0
- arch/microblaze/include/{ => uapi}/asm/ipcbuf.h    |   0
- arch/microblaze/include/{ => uapi}/asm/kvm_para.h  |   0
- arch/microblaze/include/{ => uapi}/asm/mman.h      |   0
- arch/microblaze/include/{ => uapi}/asm/msgbuf.h    |   0
- arch/microblaze/include/{ => uapi}/asm/param.h     |   0
- arch/microblaze/include/{ => uapi}/asm/poll.h      |   0
- .../include/{ => uapi}/asm/posix_types.h           |   0
- arch/microblaze/include/uapi/asm/ptrace.h          |  72 ++++
- arch/microblaze/include/{ => uapi}/asm/resource.h  |   0
- arch/microblaze/include/{ => uapi}/asm/sembuf.h    |   0
- arch/microblaze/include/uapi/asm/setup.h           |  19 +
- arch/microblaze/include/{ => uapi}/asm/shmbuf.h    |   0
- .../microblaze/include/{ => uapi}/asm/sigcontext.h |   0
- arch/microblaze/include/{ => uapi}/asm/siginfo.h   |   0
- arch/microblaze/include/{ => uapi}/asm/signal.h    |   0
- arch/microblaze/include/{ => uapi}/asm/socket.h    |   0
- arch/microblaze/include/{ => uapi}/asm/sockios.h   |   0
- arch/microblaze/include/{ => uapi}/asm/stat.h      |   0
- arch/microblaze/include/{ => uapi}/asm/statfs.h    |   0
- arch/microblaze/include/{ => uapi}/asm/swab.h      |   0
- arch/microblaze/include/{ => uapi}/asm/termbits.h  |   0
- arch/microblaze/include/{ => uapi}/asm/termios.h   |   0
- arch/microblaze/include/{ => uapi}/asm/types.h     |   0
- arch/microblaze/include/uapi/asm/unistd.h          | 400 +++++++++++++++++++++
- 38 files changed, 649 insertions(+), 552 deletions(-)
- rename arch/microblaze/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/byteorder.h (100%)
- create mode 100644 arch/microblaze/include/uapi/asm/elf.h
- rename arch/microblaze/include/{ => uapi}/asm/errno.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/mman.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/param.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/poll.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/microblaze/include/uapi/asm/ptrace.h
- rename arch/microblaze/include/{ => uapi}/asm/resource.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/microblaze/include/uapi/asm/setup.h
- rename arch/microblaze/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/siginfo.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/signal.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/socket.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/stat.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/swab.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/termbits.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/termios.h (100%)
- rename arch/microblaze/include/{ => uapi}/asm/types.h (100%)
- create mode 100644 arch/microblaze/include/uapi/asm/unistd.h
+ arch/m32r/include/asm/Kbuild                   |   1 -
+ arch/m32r/include/asm/ptrace.h                 | 110 +-------
+ arch/m32r/include/asm/setup.h                  |   9 +-
+ arch/m32r/include/asm/signal.h                 | 123 +--------
+ arch/m32r/include/asm/termios.h                |  42 +---
+ arch/m32r/include/asm/types.h                  |   5 +-
+ arch/m32r/include/asm/unistd.h                 | 333 +-----------------------
+ arch/m32r/include/uapi/asm/Kbuild              |  30 +++
+ arch/m32r/include/{ => uapi}/asm/auxvec.h      |   0
+ arch/m32r/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/m32r/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/m32r/include/{ => uapi}/asm/errno.h       |   0
+ arch/m32r/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/m32r/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/m32r/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/m32r/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/m32r/include/{ => uapi}/asm/mman.h        |   0
+ arch/m32r/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/m32r/include/{ => uapi}/asm/param.h       |   0
+ arch/m32r/include/{ => uapi}/asm/poll.h        |   0
+ arch/m32r/include/{ => uapi}/asm/posix_types.h |   0
+ arch/m32r/include/uapi/asm/ptrace.h            | 117 +++++++++
+ arch/m32r/include/{ => uapi}/asm/resource.h    |   0
+ arch/m32r/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/m32r/include/uapi/asm/setup.h             |  11 +
+ arch/m32r/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/m32r/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/m32r/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/m32r/include/uapi/asm/signal.h            | 123 +++++++++
+ arch/m32r/include/{ => uapi}/asm/socket.h      |   0
+ arch/m32r/include/{ => uapi}/asm/sockios.h     |   0
+ arch/m32r/include/{ => uapi}/asm/stat.h        |   0
+ arch/m32r/include/{ => uapi}/asm/statfs.h      |   0
+ arch/m32r/include/{ => uapi}/asm/swab.h        |   0
+ arch/m32r/include/{ => uapi}/asm/termbits.h    |   0
+ arch/m32r/include/uapi/asm/termios.h           |  43 ++++
+ arch/m32r/include/uapi/asm/types.h             |   1 +
+ arch/m32r/include/uapi/asm/unistd.h            | 335 +++++++++++++++++++++++++
+ 38 files changed, 668 insertions(+), 615 deletions(-)
+ rename arch/m32r/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/msgbuf.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/param.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/m32r/include/uapi/asm/ptrace.h
+ rename arch/m32r/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/m32r/include/uapi/asm/setup.h
+ rename arch/m32r/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/m32r/include/uapi/asm/signal.h
+ rename arch/m32r/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/m32r/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/m32r/include/uapi/asm/termios.h
+ create mode 100644 arch/m32r/include/uapi/asm/types.h
+ create mode 100644 arch/m32r/include/uapi/asm/unistd.h
 .
