@@ -1,46 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab2JIWV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:21:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38236 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab2JIWV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:21:57 -0400
-Date: Tue, 9 Oct 2012 15:21:53 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tytso@mit.edu
-Subject: Re: [PATCH 3/5] aio: Rewrite refcounting
-Message-ID: <20121009222153.GG29494@google.com>
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
- <1349764760-21093-3-git-send-email-koverstreet@google.com>
- <20121009182755.GN26187@lenny.home.zabbo.net>
-MIME-Version: 1.0
+	id S1755751Ab2JIWZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:25:06 -0400
+Received: from plane.gmane.org ([80.91.229.3]:51325 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754356Ab2JIWZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 18:25:02 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: katabami <katabami@lavabit.com>
+Subject: Re: PROBLEM: Performance drop
+Date: Tue, 9 Oct 2012 22:19:55 +0000 (UTC)
+Message-ID: <loom.20121010T001922-860@post.gmane.org>
+References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com> <20120524123116.GA4048@alberich.amd.com> <CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com> <20120529140940.GA10421@alberich.amd.com> <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com> <20120530124333.GA3008@alberich.amd.com> <CALyZvKxcdNWMHEGwgdO=sGTTs9sZYerYXcQEyqFwixKzzz3giA@mail.gmail.com> <20120711220643.GD10930@kroah.com> <CALyZvKwDoOPESJPHy5zBviVBuxT92eNGGCJrfd+XBdmya=uQEA@mail.gmail.com> <20120927173456.GA21025@kroah.com> <20120927174824.GD8759@x1.osrc.amd.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009182755.GN26187@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 123.222.34.33 (mozilla/4.0 (compatible; msie 6.0; windows 98; ypc 3.0.2; yplus 4.4.01d))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:27:55AM -0700, Zach Brown wrote:
-> On Mon, Oct 08, 2012 at 11:39:18PM -0700, Kent Overstreet wrote:
-> > The refcounting before wasn't very clear; there are two refcounts in
-> > struct kioctx, with an unclear relationship between them (or between
-> > them and ctx->dead).
-> > 
-> > Now, reqs_active holds a refcount on users (when reqs_active is
-> > nonzero), and the initial refcount is taken on reqs_active - when
-> > ctx->dead goes to 1, we drop that initial refcount.
-> 
-> I agree that it's a mess, but let's rethink this work on top of the
-> series I'm sending out that gets rid of the retry and cancel code.  It
-> makes the code a lot easier to follow.  (And Jens also has some patches
-> to take fewer locks in the submission path, we'll want to take them into
-> account too.)
+Hi, just for recording. Bug 43284[1] is the duplicate of this bug report. It
+stops by reporting the "bad" commit, 9bcb8118965ab4631a65ee0726e6518f75cda6c5.
 
-Alright... send it out then. Also, do you know which branch Jens has his
-patches in?
+[1]https://bugzilla.kernel.org/show_bug.cgi?id=43284
+
+
