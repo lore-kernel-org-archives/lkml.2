@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab2JINvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:51:01 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:27714 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab2JINu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:50:58 -0400
-Message-ID: <1349790229.23493.2.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] ACPI: Add ACPI CPU hot-remove support
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, prarit@redhat.com, imammedo@redhat.com,
-        vijaymohan.pandarathil@hp.com
-Date: Tue, 09 Oct 2012 07:43:49 -0600
-In-Reply-To: <1345841699-20067-1-git-send-email-toshi.kani@hp.com>
-References: <1345841699-20067-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755945Ab2JINwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:52:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755659Ab2JINwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 09:52:24 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: JBottomley@parallels.com
+cc: dhowells@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH/GIT PULL] UAPI: (Scripted) Disintegrate include/scsi/fc
+Date: Tue, 09 Oct 2012 14:51:19 +0100
+Message-ID: <31155.1349790679@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
 
-Can you please review this patch?  Please let me know if there is
-anything I need to do for 3.7.
+This completes part of the Userspace API (UAPI) disintegration for which the
+preparatory patches were pulled recently.  After these patches, userspace
+headers will be segregated into:
 
-Thanks,
--Toshi
+	include/uapi/linux/.../foo.h
 
+for the userspace interface stuff, and:
 
-On Fri, 2012-08-24 at 14:54 -0600, Toshi Kani wrote:
-> Added CPU hot-remove support through an ACPI eject notification.
-> It calls acpi_bus_hot_remove_device(), which shares the same code
-> path with the sysfs eject operation.  acpi_os_hotplug_execute()
-> serializes hot-remove operations between ACPI hot-remove and sysfs
-> eject requests.
-> 
-> v2:
->  - Rebased to 3.6-rc3.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Tested-by: IgorMammedov <imammedo@redhat.com>
-> Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> Tested-by: Prarit Bhargava <prarit@redhat.com>
-> ---
->  drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
->  1 files changed, 17 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> index bfc31cb..d12e9c3 100644
-> --- a/drivers/acpi/processor_driver.c
-> +++ b/drivers/acpi/processor_driver.c
-> @@ -694,8 +694,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
->  static void acpi_processor_hotplug_notify(acpi_handle handle,
->  					  u32 event, void *data)
->  {
-> -	struct acpi_processor *pr;
->  	struct acpi_device *device = NULL;
-> +	struct acpi_eject_event *ej_event = NULL;
->  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->  	int result;
->  
-> @@ -727,20 +727,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
->  				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
->  
->  		if (acpi_bus_get_device(handle, &device)) {
-> -			printk(KERN_ERR PREFIX
-> -				    "Device don't exist, dropping EJECT\n");
-> +			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
->  			break;
->  		}
-> -		pr = acpi_driver_data(device);
-> -		if (!pr) {
-> -			printk(KERN_ERR PREFIX
-> -				    "Driver data is NULL, dropping EJECT\n");
-> +		if (!acpi_driver_data(device)) {
-> +			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
->  			break;
->  		}
->  
-> -		/* REVISIT: update when eject is supported */
-> -		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> -		break;
-> +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-> +		if (!ej_event) {
-> +			pr_err(PREFIX "No memory, dropping EJECT\n");
-> +			break;
-> +		}
-> +
-> +		ej_event->handle = handle;
-> +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-> +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-> +					(void *)ej_event);
-> +
-> +		/* eject is performed asynchronously */
-> +		return;
->  
->  	default:
->  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+	include/linux/.../foo.h
 
+for the strictly kernel internal stuff.
 
+This patch can be pulled from:
+
+	git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-fc-20121009
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Dave Jones <davej@redhat.com>
+---
+diff --git a/include/scsi/fc/Kbuild b/include/scsi/fc/Kbuild
+index 5660381..e69de29 100644
+--- a/include/scsi/fc/Kbuild
++++ b/include/scsi/fc/Kbuild
+@@ -1,4 +0,0 @@
+-header-y += fc_els.h
+-header-y += fc_fs.h
+-header-y += fc_gs.h
+-header-y += fc_ns.h
+diff --git a/include/uapi/scsi/fc/Kbuild b/include/uapi/scsi/fc/Kbuild
+index aafaa5a..5ead9fa 100644
+--- a/include/uapi/scsi/fc/Kbuild
++++ b/include/uapi/scsi/fc/Kbuild
+@@ -1 +1,5 @@
+ # UAPI Header export list
++header-y += fc_els.h
++header-y += fc_fs.h
++header-y += fc_gs.h
++header-y += fc_ns.h
+diff --git a/include/scsi/fc/fc_els.h b/include/uapi/scsi/fc/fc_els.h
+similarity index 100%
+rename from include/scsi/fc/fc_els.h
+rename to include/uapi/scsi/fc/fc_els.h
+diff --git a/include/scsi/fc/fc_fs.h b/include/uapi/scsi/fc/fc_fs.h
+similarity index 100%
+rename from include/scsi/fc/fc_fs.h
+rename to include/uapi/scsi/fc/fc_fs.h
+diff --git a/include/scsi/fc/fc_gs.h b/include/uapi/scsi/fc/fc_gs.h
+similarity index 100%
+rename from include/scsi/fc/fc_gs.h
+rename to include/uapi/scsi/fc/fc_gs.h
+diff --git a/include/scsi/fc/fc_ns.h b/include/uapi/scsi/fc/fc_ns.h
+similarity index 100%
+rename from include/scsi/fc/fc_ns.h
+rename to include/uapi/scsi/fc/fc_ns.h
