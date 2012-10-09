@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab2JIVY0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 17:24:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34776 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756823Ab2JIVYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 17:24:22 -0400
-Date: Tue, 9 Oct 2012 23:24:20 +0200
-From: Jan Kara <jack@suse.cz>
-To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: Zhao Hongjiang <zhaohongjiang37@gmail.com>, jack@suse.cz,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        serge.hallyn@canonical.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] ext3: fix return values on parse_options() failure
-Message-ID: <20121009212420.GB27882@quack.suse.cz>
-References: <5073BABF.8090206@gmail.com>
- <alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
+	id S932122Ab2JIV0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 17:26:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62244 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756828Ab2JIV0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 17:26:22 -0400
+Date: Tue, 9 Oct 2012 14:26:39 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>
+Subject: Re: [PATCH 0/3] new ARM-soc warning fixes
+Message-ID: <20121009212639.GA25765@quad.lixom.net>
+References: <1349796861-31164-1-git-send-email-arnd@arndb.de>
+ <20121009174631.GA19606@quad.lixom.net>
+ <201210092001.26947.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201210092001.26947.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-10-12 08:19:42, Lukáš Czerner wrote:
-> On Tue, 9 Oct 2012, Zhao Hongjiang wrote:
-> 
-> > Date: Tue, 09 Oct 2012 13:48:47 +0800
-> > From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
-> > To: jack@suse.cz
-> > Cc: akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-> >     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-> >     Eric W. Biederman <ebiederm@xmission.com>, serge.hallyn@canonical.com,
-> >     containers@lists.linux-foundation.org
-> > Subject: [PATCH] ext3: fix return values on parse_options() failure
+On Tue, Oct 09, 2012 at 08:01:26PM +0000, Arnd Bergmann wrote:
+> On Tuesday 09 October 2012, Olof Johansson wrote:
+> > On Tue, Oct 09, 2012 at 05:34:18PM +0200, Arnd Bergmann wrote:
+> > > Hi Olof,
+> > > 
+> > > Here are three more fixes that I'd like to merge through the arm-soc
+> > > as time permits. All of them should be completely harmless and they
+> > > only fix harmless gcc warnings.
+> > > 
+> > > I don't know what your plans are for sending the next fixes branch.
+> > > I've uploaded these into a new "fixes2" branch on top of the patches
+> > > that are already in "fixes". We can either send them all together,
+> > > or you send the ones that are already queued first and these ones
+> > > with the next batch. Feel free to rebase if necessary.
 > > 
-> > From: Zhao Hongjiang <zhaohongjiang@huawei.com>
-> > 
-> > parse_options() in ext3 should return 0 when parse the mount options fails.
+> > I've pulled it in and will send up with fixes tonight (Tony has OMAP
+> > fixes coming, others might too).
 > > 
 > 
-> Ah, it really is a joy to read the parse_options() :). But this fix
-> makes sense, thanks for catching it.
+> Ok, thanks!
 > 
-> Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-  Thanks, added to my tree.
+> I just noticed that I was missing yet another one, which I now added
+> directly. It was part of a longer series I sent last week. I wasn't
+> really sure whether this one would better be included in arm-soc or
+> Russell's arm tree and then I ended up not putting it in either series :(
 
-									Honza
-> 
-> -Lukas
-> 
-> > Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-> > ---
-> >  fs/ext3/super.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > index 17ae5c8..ebf8312 100644
-> > --- a/fs/ext3/super.c
-> > +++ b/fs/ext3/super.c
-> > @@ -1001,7 +1001,7 @@ static int parse_options (char *options, struct super_block *sb,
-> >  			uid = make_kuid(current_user_ns(), option);
-> >  			if (!uid_valid(uid)) {
-> >  				ext3_msg(sb, KERN_ERR, "Invalid uid value %d", option);
-> > -				return -1;
-> > +				return 0;
-> > 
-> >  			}
-> >  			sbi->s_resuid = uid;
-> > @@ -1012,7 +1012,7 @@ static int parse_options (char *options, struct super_block *sb,
-> >  			gid = make_kgid(current_user_ns(), option);
-> >  			if (!gid_valid(gid)) {
-> >  				ext3_msg(sb, KERN_ERR, "Invalid gid value %d", option);
-> > -				return -1;
-> > +				return 0;
-> >  			}
-> >  			sbi->s_resgid = gid;
-> >  			break;
-> > -- 1.7.1
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
+OK, I applied on top of the rest.
+
+
+-Olof
