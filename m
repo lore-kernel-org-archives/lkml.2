@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2JIOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:02:27 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:23143 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab2JIOCZ (ORCPT
+	id S1756009Ab2JIODr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:03:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59906 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755845Ab2JIODo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:02:25 -0400
-Message-ID: <1349790916.23493.5.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 0/4] ACPI: Refactor system notify handling
-From: Toshi Kani <toshi.kani@hp.com>
-To: linux-acpi@vger.kernel.org
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com
-Date: Tue, 09 Oct 2012 07:55:16 -0600
-In-Reply-To: <1346974828-12500-1-git-send-email-toshi.kani@hp.com>
-References: <1346974828-12500-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 10:03:44 -0400
+Date: Tue, 9 Oct 2012 07:03:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for usb
+Message-ID: <20121009140340.GA13529@kroah.com>
+References: <20121009134537.GA23204@kroah.com>
+ <30767.1349789448@warthog.procyon.org.uk>
+ <31213.1349790859@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <31213.1349790859@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+On Tue, Oct 09, 2012 at 02:54:19PM +0100, David Howells wrote:
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > > Can you merge the following branch into the usb tree please.
+> > 
+> > Is this (and the other pull requests for other subsystems) for 3.7 or
+> > for 3.8?
+> 
+> I don't really mind.  There are no dependencies on it.  Getting it in 3.7
+> means there's more chance it'll just apply when Linus does pull it.
 
-Can you please review this patchset?  Please let me know if you have any
-concern/question.
+Ok, thanks, I'll queue these up after 3.7-rc1 is out.
 
-Thanks,
--Toshi
-
-
-On Thu, 2012-09-06 at 17:40 -0600, Toshi Kani wrote:
-> This patchset updates the ACPI system-level (ex. hotplug)
-> notify handling with a new .sys_notify interface.  It provides
-> the following changes:
-> 
-> - Allow ACPI drivers to register their system-level (hotplug)
->   notify handlers to a new .sys_notify interface through their
->   acpi_driver table.  This removes redundant ACPI namespace
->   walks from ACPI drivers for faster booting.  The global notify
->   handler acpi_bus_notify() is called for all system-level ACPI
->   device notifications, which then calls an appropriate driver's
->   handler if any.  ACPI drivers no longer need to register or
->   unregister driver's handlers to each device object in ACPI
->   namespace.
->  
-> - Support dynamic ACPI namespace with LoadTable & Unload opcode
->   without any changes in ACPI drivers.  There is no need to 
->   register / unregister handlers to ACPI device objects that are
->   being loaded to / unloaded from ACPI namespace.
-> 
-> - Allow ACPI drivers to use a common hotplug handler when it is
->   implemented.  It removes functional conflict between driver's
->   notify handler and the global notify handler acpi_bus_notify().
->   acpi_bus_notify() only calls an appropriate notify handler if
->   any.
-> 
-> Note that the changes maintain backward compatibility for ACPI
-> drivers.  Any drivers registered their hotplug handlers through
-> the existing interfaces, such as acpi_install_notify_handler()
-> and register_acpi_bus_notifier(), will continue to work as before.
-> 
-> v2:
->  - Protected unbound driver from unloading when calling .sys_notify.
->  - Changed acpi_bus_notify() to call acpi_bus_notify_list first for
->    maintaining the original order.
-> 
-> ---
-> Toshi Kani (4):
->  ACPI: Support system notify handler via .sys_notify
->  ACPI: Update processor_driver to use .sys_notify
->  ACPI: Update acpi_memhotplug to use .sys_notify
->  ACPI: Update container to use .sys_notify
-> 
-> ---
->  drivers/acpi/acpi_memhotplug.c  |   93 +-------------------------------------
->  drivers/acpi/bus.c              |   64 ++++++++++++++++++++-------
->  drivers/acpi/container.c        |   66 +--------------------------
->  drivers/acpi/processor_driver.c |   82 +++-------------------------------
->  drivers/acpi/scan.c             |   83 ++++++++++++++++++++++++++++++++++
->  include/acpi/acpi_bus.h         |    6 +++
->  6 files changed, 150 insertions(+), 244 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
-
+greg k-h
