@@ -1,180 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab2JILiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 07:38:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64138 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab2JILiM (ORCPT
+	id S1753565Ab2JILi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 07:38:29 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58387 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753204Ab2JILiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 07:38:12 -0400
-Date: Tue, 9 Oct 2012 13:38:02 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: CMA broken in next-20120926
-Message-ID: <20121009113802.GA19276@avionic-0098.mockup.avionic-design.de>
-References: <20120928105113.GA18883@avionic-0098.mockup.avionic-design.de>
- <201210091040.10811.b.zolnierkie@samsung.com>
- <20121009101143.GQ29125@suse.de>
- <201210091308.30306.b.zolnierkie@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <201210091308.30306.b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:Tyc+S7oorYpOQuIfK+O2AzbENkLdY4uFeu3PRsM4o5h
- QY0PFhK6V4qLN+gLZP3wVZUB88+cbsvOflMiC2QO8QYksj4JPo
- jnLntXqoJ4oeTvJgHKbECeZr1AXY0REeT3q8+fgs5ZhIGCoSdj
- P/wI/eDs3Ab5nvIpPf/L5/MV2iI17in1qWPEdIjc7ZVA2zlzz4
- p4zJ3OIfxX36JjXznYvXfAVxyf5CB2IgVML41hyth6JTmBDobW
- jroQTllNRNl+SAaQ1MaoiF0WfdXZg68e37zkXG2cq2FNgDiWlF
- 5Rm3GvnvQoqrEArA8hFAJjCIAvgNDpt3iUvYpDvJNLqxTLIb0i
- Ki8mZA0f6ViJUrNZ01vJG4lsh81od47A9A8rmMoqTrqhRVsSz/
- ff5UPl1ow8scJyMRyQpEDkOoKdN+hZvARA=
+	Tue, 9 Oct 2012 07:38:25 -0400
+Message-ID: <1349782700.2615.65.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit
+ packets in the RESET path
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date: Tue, 09 Oct 2012 12:38:20 +0100
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930A1FCB6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1349201011-14572-1-git-send-email-kys@microsoft.com>
+	 <426367E2313C2449837CD2DE46E7EAF930A1FCB6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-10-08 at 15:51 +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> > Sent: Tuesday, October 02, 2012 2:04 PM
+> > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
+> > hch@infradead.org; linux-scsi@vger.kernel.org
+> > Cc: KY Srinivasan; stable@vger.kernel.org
+> > Subject: [PATCH 1/1] Drivers: scsi: storvsc: Account for in-transit packets in the
+> > RESET path
+> > 
+> > Properly account for I/O in transit before returning from the RESET call.
+> > In the absense of this patch, we could have a situation where the host may
+> > respond to a command that was issued prior to the issuance of the RESET
+> > command at some arbitrary time after responding to the RESET command.
+> > Currently, the host does not do anything with the RESET command.
+> > 
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Cc: stable@vger.kernel.org
+> > ---
+> >  drivers/scsi/storvsc_drv.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> > index 528d52b..0144078 100644
+> > --- a/drivers/scsi/storvsc_drv.c
+> > +++ b/drivers/scsi/storvsc_drv.c
+> > @@ -1221,7 +1221,12 @@ static int storvsc_host_reset_handler(struct scsi_cmnd
+> > *scmnd)
+> >  	/*
+> >  	 * At this point, all outstanding requests in the adapter
+> >  	 * should have been flushed out and return to us
+> > +	 * There is a potential race here where the host may be in
+> > +	 * the process of responding when we return from here.
+> > +	 * Just wait for all in-transit packets to be accounted for
+> > +	 * before we return from here.
+> >  	 */
+> > +	storvsc_wait_to_drain(stor_device);
+> > 
+> >  	return SUCCESS;
+> >  }
+> > --
+> > 1.7.4.1
+> 
+> James,
+> 
+> This patch is critical for running Linux based workloads on our Cloud infrastructure - Azure.
+> Please let me know if there are any issues.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So just for next time: it's a bit hard to work out this is a critical
+issue from the change log.  If I had to guess, I'd say the response to a
+command killed by reset causes some type of use after free and a
+potential oops (all of which would have been very nice in the change
+log)?
 
-On Tue, Oct 09, 2012 at 01:08:30PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> On Tuesday 09 October 2012 12:11:43 Mel Gorman wrote:
-> > On Tue, Oct 09, 2012 at 10:40:10AM +0200, Bartlomiej Zolnierkiewicz wro=
-te:
-> > > I also need following patch to make CONFIG_CMA=3Dy && CONFIG_COMPACTI=
-ON=3Dy case
-> > > work:
-> > >=20
-> > > From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > Subject: [PATCH] mm: compaction: cache if a pageblock was scanned and=
- no pages were isolated - cma fix
-> > >=20
-> > > Patch "mm: compaction: cache if a pageblock was scanned and no pages
-> > > were isolated" needs a following fix to successfully boot next-201210=
-02
-> > > kernel (same with next-20121008) with CONFIG_CMA=3Dy and CONFIG_COMPA=
-CTION=3Dy
-> > > (with applied -fix1, -fix2, -fix3 patches from Mel Gorman and also wi=
-th
-> > > cmatest module from Thierry Reding compiled in).
-> > >=20
-> >=20
-> > Why is it needed to make it boot? CMA should not care about the
->=20
-> It boots without Thierry's cmatest module but then fails on CMA
-> allocation attempt (I used out-of-tree /dev/cma_test interface to
-> generate CMA allocation request from user-space).
->=20
-> > PG_migrate_skip hint being set because it should always ignore it in
-> > alloc_contig_range() due to cc->ignore_skip_hint. It's not obvious to
-> > me why this fixes a boot failure and I wonder if it's papering over some
-> > underlying problem. Can you provide more details please?
->=20
-> I just compared CONFIG_COMPACTION=3Dn and =3Dy cases initially, figured
-> out the difference and did the change.  However on a closer look it
-> seems that {get,clear,set}_pageblock_skip() use incorrect bit ranges
-> (please compare to bit ranges used by {get,set}_pageblock_flags()
-> used for migration types) and can overwrite pageblock migratetype of
-> the next pageblock in the bitmap (I wonder how could this code ever
-> worked before?).
->=20
-> > > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > > ---
-> > >  mm/compaction.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > >=20
-> > > Index: b/mm/compaction.c
-> > > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > > --- a/mm/compaction.c	2012-10-08 18:10:53.491679716 +0200
-> > > +++ b/mm/compaction.c	2012-10-08 18:11:33.615679713 +0200
-> > > @@ -117,7 +117,8 @@ static void update_pageblock_skip(struct
-> > >  			bool migrate_scanner)
-> > >  {
-> > >  	struct zone *zone =3D cc->zone;
-> > > -	if (!page)
-> > > +
-> > > +	if (!page || cc->ignore_skip_hint)
-> > >  		return;
-> > > =20
-> > >  	if (!nr_isolated) {
->=20
-> The patch below also fixes the issue for me:
->=20
-> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Subject: [PATCH] mm: compaction: fix bit ranges in {get,clear,set}_pagebl=
-ock_skip()=20
->=20
-> {get,clear,set}_pageblock_skip() use incorrect bit ranges (please compare
-> to bit ranges used by {get,set}_pageblock_flags() used for migration type=
-s)
-> and can overwrite pageblock migratetype of the next pageblock in the bitm=
-ap.
->=20
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  include/linux/pageblock-flags.h |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> Index: b/include/linux/pageblock-flags.h
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- a/include/linux/pageblock-flags.h	2012-10-09 12:50:20.366340001 +0200
-> +++ b/include/linux/pageblock-flags.h	2012-10-09 12:50:31.794339996 +0200
-> @@ -71,13 +71,13 @@ void set_pageblock_flags_group(struct pa
->  #ifdef CONFIG_COMPACTION
->  #define get_pageblock_skip(page) \
->  			get_pageblock_flags_group(page, PB_migrate_skip,     \
-> -							PB_migrate_skip + 1)
-> +							PB_migrate_skip)
->  #define clear_pageblock_skip(page) \
->  			set_pageblock_flags_group(page, 0, PB_migrate_skip,  \
-> -							PB_migrate_skip + 1)
-> +							PB_migrate_skip)
->  #define set_pageblock_skip(page) \
->  			set_pageblock_flags_group(page, 1, PB_migrate_skip,  \
-> -							PB_migrate_skip + 1)
-> +							PB_migrate_skip)
->  #endif /* CONFIG_COMPACTION */
-> =20
->  #define get_pageblock_flags(page) \
+James
+        
 
-Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
-
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQdAyaAAoJEN0jrNd/PrOhEJkQAKVrFdPL5XHZMLnmOjpnw6jm
-mxWr2Y14UholY2xjRsGjK5Ghh59u2861arfC/isFD4ut1L1eWFTae2H265Fr/Rlo
-xtFUdjUoddqPMVvgiavqfCb81nADehCDnt0vmh0u8eF7N8wASVoGbA8X6GhlLhj5
-zYJk1tKwXkcY5qaOxcrGE/b8jWKUrcMlSN+j8+s2N47ivD6zBfyTs+6dwjmhdBMU
-ofWTVW7rtP7c5F8h/2Wl6PlFyTN7C2rTP3WzCcZNEwHpNMxCRoEOvkWvMOoGaBOj
-JbMA44HVo4gC/NNoHCAftmjlZSBuMfvcsolTGqCC3F+bKPcexU+ZBPULl71AIZT/
-NphDL8ARgIFy+IRFY/ZvLdCOu2lz5LU6V15iEiMix+85HdSn8UcvT7/BfCyyncty
-3Jxv61S0NhhwDv00qs03eCw5lkNiC2ssEeVgCZs2aexcGiAsbmlt5xgI4AqBapEQ
-T4whmz2YtwPv7uhEs89xklGtlqnKXvOcompkJ5FKiGbsMy2o41MGl4WXg14BTLxP
-3bjjSzjzHCHkx1U87b401/2BhEcvVbBRhz9Pg1f7JdsFkWcJRX4trTvD+FBYqz30
-znal0AnL6aSHYaFRhLNoy8VoeNepJzeZ0cNHZ+PQpLwKigk2a/P+EirF+pBIpmMO
-3zQ65AbHIhOti5Tti/zf
-=iVgo
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
