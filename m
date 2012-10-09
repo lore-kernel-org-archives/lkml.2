@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab2JIPQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:16:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756091Ab2JIPQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:16:03 -0400
-Date: Tue, 9 Oct 2012 17:17:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Ivo Sieben <meltedpianoman@gmail.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [REPOST] RFC: sched: Prevent wakeup to enter critical section
-	needlessly
-Message-ID: <20121009151729.GA3521@redhat.com>
-References: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com> <1349782235-8896-1-git-send-email-meltedpianoman@gmail.com> <m2r4p7u5pk.fsf@firstfloor.org> <1349792104.7880.41.camel@twins>
+	id S1755255Ab2JIPSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:18:54 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47567 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab2JIPSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 11:18:51 -0400
+Message-ID: <5074403F.9020707@parallels.com>
+Date: Tue, 9 Oct 2012 19:18:23 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349792104.7880.41.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>
+Subject: [RFC] Posix timers improvements, requied for CRIU project
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09, Peter Zijlstra wrote:
->
-> One thing you might need to consider is the memory ordering, will the
-> list_empty -- either careful or not -- observe the right list pointer,
-> or could it -- when racing with wait_event()/prepare_to_wait() --
-> observe a stale value. Or.. is that all already covered in on the use
-> site.
+Hi.
+We would like to make CRIU able to migrate posix timers.
+Currently we require additional info, which have to be provided by kernel.
+In particular, it's:
+1) Timers id's.
+2) Timer clock (gained by id).
+3) Timer sigevent structure.
+4) Timer current overrun status (not the last one).
 
-I agree.
+We are not sure, how to implement such support properly.
 
-Without spin_lock(q->lock) (or some other barriers) wait_event-like
-code can miss an event.
+Right now we are considering two approaches of posix timers interface update 
+(for dump):
 
-wait_event:
+1) First one it to use /proc filesystem to provide posix timers data by task 
+(something like /proc/<pid>/posix_timers)
 
-	prepare_to_wait(wq)	// takes wq->lock
+2) Second one is to add new system calls like:
 
-	if (!CONDITION)
-		schedule();
+int timer_getnext(int start_id);	// return next timer id after start-id
+int timer_getclock(timer_t id, cclock_t *clock); // return clock
+int timer_getsigevent(timer_t id, struct sigevent *evp); // return sigevent
+int timer_getoverrun_cur(timer_t id, int *overrun); // current overrun
 
-Now,
+Of course, both approaches can be combined.
 
-	CONDITION = 1;
-	wake_up(wq);
+Also, we require a syscall to set desired overrun (on restore):
 
-at least need the full mb() before lits_empty().
+int timer_setoverrun(timer_t id, int *overrun);
 
-Oleg.
+Moreover, we need to make posix timer id to be allocated per task (not globally) 
+to make sure, that we can restore timer with desired id (desired id can be 
+passed to timer_create() in timerid variable).
+Our current idea is to replace idr by hash table, where 
+"per_process_struct_signal + per_process_id" will be the key.
 
+We would greatly appreciate any comments or suggestions.
+Thanks.
+
+-- 
+Best regards,
+Stanislav Kinsbursky
