@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2JIEtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:49:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30538 "EHLO mx1.redhat.com"
+	id S1752376Ab2JIEtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:49:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12126 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab2JIEtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:49:43 -0400
+	id S1752262Ab2JIEtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 00:49:47 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [RFC PATCH 1/5] amd_iommu: Split IOMMU group initialization
+Subject: [RFC PATCH 2/5] amd_iommu: Split IOMMU Group topology walk
 To: Joerg.Roedel@amd.com, florian@dazinger.net
 Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 08 Oct 2012 22:49:35 -0600
-Message-ID: <20121009044935.16302.93049.stgit@bling.home>
+Date: Mon, 08 Oct 2012 22:49:41 -0600
+Message-ID: <20121009044941.16302.16171.stgit@bling.home>
 In-Reply-To: <20121009044057.16302.44577.stgit@bling.home>
 References: <20121009044057.16302.44577.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -22,107 +22,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This needs to be broken apart, start with pulling all the IOMMU
-group init code into a new function.
-
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- drivers/iommu/amd_iommu.c |   61 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 43 insertions(+), 18 deletions(-)
+ drivers/iommu/amd_iommu.c |   58 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 33 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 55074cb..b65b377 100644
+index b65b377..6edbd0e 100644
 --- a/drivers/iommu/amd_iommu.c
 +++ b/drivers/iommu/amd_iommu.c
-@@ -276,39 +276,32 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
+@@ -276,32 +276,9 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
  
  #define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
  
--static int iommu_init_device(struct device *dev)
-+static int init_iommu_group(struct device *dev)
+-static int init_iommu_group(struct device *dev)
++static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
  {
--	struct pci_dev *dma_pdev = NULL, *pdev = to_pci_dev(dev);
- 	struct iommu_dev_data *dev_data;
- 	struct iommu_group *group;
--	u16 alias;
-+	struct pci_dev *dma_pdev = NULL;
- 	int ret;
- 
--	if (dev->archdata.iommu)
-+	group = iommu_group_get(dev);
-+	if (group) {
-+		iommu_group_put(group);
- 		return 0;
-+	}
- 
- 	dev_data = find_dev_data(get_device_id(dev));
- 	if (!dev_data)
- 		return -ENOMEM;
- 
--	alias = amd_iommu_alias_table[dev_data->devid];
--	if (alias != dev_data->devid) {
--		struct iommu_dev_data *alias_data;
+-	struct iommu_dev_data *dev_data;
+-	struct iommu_group *group;
+-	struct pci_dev *dma_pdev = NULL;
+-	int ret;
 -
--		alias_data = find_dev_data(alias);
--		if (alias_data == NULL) {
--			pr_err("AMD-Vi: Warning: Unhandled device %s\n",
--					dev_name(dev));
--			free_dev_data(dev_data);
--			return -ENOTSUPP;
--		}
--		dev_data->alias_data = alias_data;
-+	if (dev_data->alias_data) {
-+		u16 alias;
- 
-+		alias = amd_iommu_alias_table[dev_data->devid];
- 		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
- 	}
- 
--	if (dma_pdev == NULL)
--		dma_pdev = pci_dev_get(pdev);
-+	if (!dma_pdev)
-+		dma_pdev = pci_dev_get(to_pci_dev(dev));
+-	group = iommu_group_get(dev);
+-	if (group) {
+-		iommu_group_put(group);
+-		return 0;
+-	}
+-
+-	dev_data = find_dev_data(get_device_id(dev));
+-	if (!dev_data)
+-		return -ENOMEM;
+-
+-	if (dev_data->alias_data) {
+-		u16 alias;
+-
+-		alias = amd_iommu_alias_table[dev_data->devid];
+-		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
+-	}
+-
+-	if (!dma_pdev)
+-		dma_pdev = pci_dev_get(to_pci_dev(dev));
++	struct pci_dev *dma_pdev = pdev;
  
  	/* Account for quirked devices */
  	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
-@@ -358,6 +351,38 @@ root_bus:
+@@ -339,6 +316,37 @@ static int init_iommu_group(struct device *dev)
+ 	}
  
- 	iommu_group_put(group);
- 
-+	return ret;
+ root_bus:
++	return dma_pdev;
 +}
 +
-+static int iommu_init_device(struct device *dev)
++static int init_iommu_group(struct device *dev)
 +{
-+	struct pci_dev *pdev = to_pci_dev(dev);
 +	struct iommu_dev_data *dev_data;
-+	u16 alias;
++	struct iommu_group *group;
++	struct pci_dev *dma_pdev = NULL;
 +	int ret;
 +
-+	if (dev->archdata.iommu)
++	group = iommu_group_get(dev);
++	if (group) {
++		iommu_group_put(group);
 +		return 0;
++	}
 +
 +	dev_data = find_dev_data(get_device_id(dev));
 +	if (!dev_data)
 +		return -ENOMEM;
 +
-+	alias = amd_iommu_alias_table[dev_data->devid];
-+	if (alias != dev_data->devid) {
-+		struct iommu_dev_data *alias_data;
++	if (dev_data->alias_data) {
++		u16 alias;
 +
-+		alias_data = find_dev_data(alias);
-+		if (alias_data == NULL) {
-+			pr_err("AMD-Vi: Warning: Unhandled device %s\n",
-+					dev_name(dev));
-+			free_dev_data(dev_data);
-+			return -ENOTSUPP;
-+		}
-+		dev_data->alias_data = alias_data;
++		alias = amd_iommu_alias_table[dev_data->devid];
++		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
 +	}
 +
-+	ret = init_iommu_group(dev);
- 	if (ret)
- 		return ret;
- 
++	if (!dma_pdev)
++		dma_pdev = pci_dev_get(to_pci_dev(dev));
++
++	dma_pdev = get_isolation_root(dma_pdev);
+ 	group = iommu_group_get(&dma_pdev->dev);
+ 	pci_dev_put(dma_pdev);
+ 	if (!group) {
 
