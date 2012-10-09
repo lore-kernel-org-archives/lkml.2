@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab2JIFP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 01:15:57 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:46196 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037Ab2JIFPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 01:15:55 -0400
-Message-id: <5073B325.6060905@samsung.com>
-Date: Tue, 09 Oct 2012 07:16:21 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907
- Thunderbird/15.0.1
-MIME-version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-Cc: Rabin Vincent <rabin@rab.in>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CMA and zone watermarks
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
- <20121009031023.GF13817@bbox> <50739615.9080205@samsung.com>
- <20121009044317.GG13817@bbox> <5073ADC9.7030201@samsung.com>
- <20121009050748.GH13817@bbox>
-In-reply-to: <20121009050748.GH13817@bbox>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	id S1752326Ab2JIFQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 01:16:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:46020 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391Ab2JIFQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 01:16:21 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>, avi@redhat.com
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+In-Reply-To: <507029EB.2050405@redhat.com>
+References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com> <87391t1nkq.fsf__40391.6521034718$1349505001$gmane$org@rustcorp.com.au> <507029EB.2050405@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 09 Oct 2012 15:29:09 +1030
+Message-ID: <878vbg8cma.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/9/2012 7:07 AM, Minchan Kim wrote:
-> On Tue, Oct 09, 2012 at 06:53:29AM +0200, Marek Szyprowski wrote:
->> Hello,
->>
->> On 10/9/2012 6:43 AM, Minchan Kim wrote:
->>> On Tue, Oct 09, 2012 at 05:12:21AM +0200, Marek Szyprowski wrote:
->>>> On 10/9/2012 5:10 AM, Minchan Kim wrote:
->>>>> On Mon, Oct 08, 2012 at 05:41:14PM +0200, Rabin Vincent wrote:
->>
->>>>> Fortunately, recently, Bart sent a patch about that.
->>>>> http://marc.info/?l=linux-mm&m=134763299016693&w=2
->>>>>
->>>>> Could you test above patches in your kernel?
->>>>> You have to apply [2/4], [3/4], [4/4] and don't need [1/4].
->>>>
->>>> AFAIR without patch [1/4], free cma page counter will go below zero
->>>> and weird thing will happen, so better apply the complete patchset.
->>>
->>> I can't understand your point. [1/4] is just fix for correcting trace
->>> No?
->>
->> I just remember we ran into such strange negative number of free cma
->> pages issue without that patch, but maybe the final patchset will
->> simply fail to apply without the first patch.
+Paolo Bonzini <pbonzini@redhat.com> writes:
+> Il 05/10/2012 07:43, Rusty Russell ha scritto:
+>> That's good.  But virtio_blk's scsi command is insoluble AFAICT.  As I
+>> said to Anthony, the best rules are "always" and "never", so I'd really
+>> rather not have to grandfather that in.
 >
-> I have no objection to apply them all, of course.
-> But note that if you suffer from such strange bug without [1/4],
-> it should be dug in without buring into just "fixing of the trace"
-> comment. As I saw the code without [1/4], I can't find any fault.
-> Could you elaborate it more if you have any guessing in mind?
+> It is, but we can add a rule that if the (transport) flag
+> VIRTIO_RING_F_ANY_HEADER_SG is set, the cdb field is always 32 bytes in
+> virtio-blk.
 
-I remember that in one version of the Bartek's patches, 
-page_private(page) has been used directly for getting the migratetype 
-after a call to __free_one_page() (the same way as 
-trace_mm_page_pcpu_drain() used it), what resulted in incorrect counting 
-of free pages. The issue has been fixed then by the patch [1/4].
+Could we do that?  It's the cmd length I'm concerned about; is it always
+32 in practice for some reason?
 
-Now I've check that the next patches use mt variable instead of 
-page_private(page), so they will simply not apply without [1/4]. No 
-other issues should be expected. I'm sorry for confusion.
+Currently qemu does:
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+    struct sg_io_hdr hdr;
+    memset(&hdr, 0, sizeof(struct sg_io_hdr));
+    hdr.interface_id = 'S';
+    hdr.cmd_len = req->elem.out_sg[1].iov_len;
+    hdr.cmdp = req->elem.out_sg[1].iov_base;
+    hdr.dxfer_len = 0;
+
+If it's a command which expects more output data, there's no way to
+guess where the boundary is between that command and the data.
+
+Cheers,
+Rusty.
