@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab2JIRqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:46:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60625 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2JIRqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:46:14 -0400
-Date: Tue, 9 Oct 2012 10:46:31 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 0/3] new ARM-soc warning fixes
-Message-ID: <20121009174631.GA19606@quad.lixom.net>
-References: <1349796861-31164-1-git-send-email-arnd@arndb.de>
+	id S1756559Ab2JIRtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:49:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752195Ab2JIRtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 13:49:05 -0400
+Date: Tue, 9 Oct 2012 19:50:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] [RFC] pidns: don't zap processes several times
+Message-ID: <20121009175011.GA10492@redhat.com>
+References: <1349603358-1085282-1-git-send-email-avagin@openvz.org> <20121007190118.GA16068@redhat.com> <CANaxB-w+KkhzTQVie=9PE8LJtazqvh+JducTcDmXvH+ZA4oO0A@mail.gmail.com> <20121009162925.GA6517@redhat.com> <CANaxB-xymHL8q8-yjCXQrL0fH7AKk0d4xV_AL77NFKYD=cAdMA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349796861-31164-1-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANaxB-xymHL8q8-yjCXQrL0fH7AKk0d4xV_AL77NFKYD=cAdMA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 05:34:18PM +0200, Arnd Bergmann wrote:
-> Hi Olof,
-> 
-> Here are three more fixes that I'd like to merge through the arm-soc
-> as time permits. All of them should be completely harmless and they
-> only fix harmless gcc warnings.
-> 
-> I don't know what your plans are for sending the next fixes branch.
-> I've uploaded these into a new "fixes2" branch on top of the patches
-> that are already in "fixes". We can either send them all together,
-> or you send the ones that are already queued first and these ones
-> with the next batch. Feel free to rebase if necessary.
+On 10/09, Andrey Wagin wrote:
+>
+> 2012/10/9 Oleg Nesterov <oleg@redhat.com>:
+> > Hmm. This is off-topic, but...
+> >
+> >         create_pid_namespace:
+> >
+> >                 unsigned int level = parent_pid_ns->level + 1;
+> >                 ns->pid_cachep = create_pid_cachep(level + 1);
+>
+> Yes, it's correct, because pid->numbers[ns->level] should be valid, so
+>  a size of an array pid->numbers should be (level + 1).
 
-I've pulled it in and will send up with fixes tonight (Tony has OMAP
-fixes coming, others might too).
+Ah, yes. I missed that ns->level is "last index", not "array size".
+Indeed, init_pid_ns.level = 0.
 
+Thanks Andrey.
 
--Olof
+Oleg.
+
