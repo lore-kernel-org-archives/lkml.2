@@ -1,187 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2JIQnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:43:20 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:19435 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab2JIQnQ (ORCPT
+	id S932094Ab2JIQt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:49:26 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53396 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab2JIQtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:43:16 -0400
-Message-ID: <1349800566.23493.9.camel@misato.fc.hp.com>
-Subject: Re: acpi : acpi_bus_trim() stops removing devices when failing to
- remove the device
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        wency@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Date: Tue, 09 Oct 2012 10:36:06 -0600
-In-Reply-To: <5073E4CC.3090600@jp.fujitsu.com>
-References: <5073E4CC.3090600@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 12:49:22 -0400
+Date: Tue, 9 Oct 2012 09:46:14 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Adil Mujeeb <mujeeb.adil@gmail.com>, pavel@ucw.cz,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: winbond: wbusb: Fixed coding style issue
+Message-ID: <20121009164614.GA17274@kroah.com>
+References: <1349799055-4496-1-git-send-email-mujeeb.adil@gmail.com>
+ <1349799738.2386.1.camel@joe-AO722>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349799738.2386.1.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 17:48 +0900, Yasuaki Ishimatsu wrote:
-> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-> number. But acpi_bus_remove() cannot return error number correctly.
-> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-> even if the device is running on the system. In this case, the system cannot
-> work well.
+On Tue, Oct 09, 2012 at 09:22:18AM -0700, Joe Perches wrote:
+> On Tue, 2012-10-09 at 21:40 +0530, Adil Mujeeb wrote:
+> > Repalces printk's with pr_debug
+> []
+> > diff --git a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
+> > index 0ca857a..48fe622 100644
+> > --- a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
+> > +++ b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
+> > @@ -79,18 +79,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
+> >  static void wbsoft_remove_interface(struct ieee80211_hw *dev,
+> >  				    struct ieee80211_vif *vif)
+> >  {
+> > -	printk("wbsoft_remove interface called\n");
+> > +	pr_debug("wbsoft_remove interface called\n");
 > 
-> Vasilis hit the bug at memory hotplug and reported it as follow:
-> https://lkml.org/lkml/2012/9/26/318
+> It'd be more consistent to use
+> 	pr_debug("%s called\n", __func__);
+> everywhere.
 > 
-> So acpi_bus_trim() should check whether device was removed or not correctly.
-> The patch adds error check into some functions to remove the device.
-> 
-> Applying the patch, acpi_bus_trim() stops removing devices when failing
-> to remove the device. But I think there is no impact with the
-> exceptionof CPU and Memory hotplug path. Because other device also fails
-> but the fail is an irregular case like device is NULL.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/acpi/scan.c    |   15 ++++++++++++---
->  drivers/base/dd.c      |   22 +++++++++++++++++-----
->  include/linux/device.h |    2 +-
->  3 files changed, 30 insertions(+), 9 deletions(-)
-> 
-> Index: linux-3.6/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/acpi/scan.c	2012-10-09 17:25:40.956496325 +0900
-> +++ linux-3.6/drivers/acpi/scan.c	2012-10-09 17:25:55.405497800 +0900
-> @@ -445,12 +445,17 @@ static int acpi_device_remove(struct dev
->  {
->  	struct acpi_device *acpi_dev = to_acpi_device(dev);
->  	struct acpi_driver *acpi_drv = acpi_dev->driver;
-> +	int ret;
->  
->  	if (acpi_drv) {
->  		if (acpi_drv->ops.notify)
->  			acpi_device_remove_notify_handler(acpi_dev);
-> -		if (acpi_drv->ops.remove)
-> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
-> +		if (acpi_drv->ops.remove) {
-> +			ret = acpi_drv->ops.remove(acpi_dev,
-> +						   acpi_dev->removal_type);
-> +			if (ret)
-
-Hi Yasuaki,
-
-Shouldn't the notify handler be reinstalled here if it was removed by
-the acpi_device_remove_notify_handler() above?
-
-Thanks,
--Toshi
-
-> +				return ret;
-> +		}
->  	}
->  	acpi_dev->driver = NULL;
->  	acpi_dev->driver_data = NULL;
-> @@ -1226,11 +1231,15 @@ static int acpi_device_set_context(struc
->  
->  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->  {
-> +	int ret;
-> +
->  	if (!dev)
->  		return -EINVAL;
->  
->  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
-> -	device_release_driver(&dev->dev);
-> +	ret = device_release_driver(&dev->dev);
-> +	if (ret)
-> +		return ret;
->  
->  	if (!rmdevice)
->  		return 0;
-> Index: linux-3.6/drivers/base/dd.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/base/dd.c	2012-10-01 08:47:46.000000000 +0900
-> +++ linux-3.6/drivers/base/dd.c	2012-10-09 17:25:55.442497825 +0900
-> @@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
->   * __device_release_driver() must be called with @dev lock held.
->   * When called for a USB interface, @dev->parent lock must be held as well.
->   */
-> -static void __device_release_driver(struct device *dev)
-> +static int __device_release_driver(struct device *dev)
->  {
->  	struct device_driver *drv;
-> +	int ret = 0;
->  
->  	drv = dev->driver;
->  	if (drv) {
-> @@ -493,9 +494,11 @@ static void __device_release_driver(stru
->  		pm_runtime_put_sync(dev);
->  
->  		if (dev->bus && dev->bus->remove)
-> -			dev->bus->remove(dev);
-> +			ret = dev->bus->remove(dev);
->  		else if (drv->remove)
-> -			drv->remove(dev);
-> +			ret = drv->remove(dev);
-> +		if (ret)
-> +			goto rollback;
->  		devres_release_all(dev);
->  		dev->driver = NULL;
->  		dev_set_drvdata(dev, NULL);
-> @@ -506,6 +509,12 @@ static void __device_release_driver(stru
->  						     dev);
->  
->  	}
-> +
-> +	return ret;
-> +
-> +rollback:
-> +	driver_sysfs_add(dev);
-> +	return ret;
->  }
->  
->  /**
-> @@ -515,16 +524,19 @@ static void __device_release_driver(stru
->   * Manually detach device from driver.
->   * When called for a USB interface, @dev->parent lock must be held.
->   */
-> -void device_release_driver(struct device *dev)
-> +int device_release_driver(struct device *dev)
->  {
-> +	int ret;
->  	/*
->  	 * If anyone calls device_release_driver() recursively from
->  	 * within their ->remove callback for the same device, they
->  	 * will deadlock right here.
->  	 */
->  	device_lock(dev);
-> -	__device_release_driver(dev);
-> +	ret = __device_release_driver(dev);
->  	device_unlock(dev);
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(device_release_driver);
->  
-> Index: linux-3.6/include/linux/device.h
-> ===================================================================
-> --- linux-3.6.orig/include/linux/device.h	2012-10-01 08:47:46.000000000 +0900
-> +++ linux-3.6/include/linux/device.h	2012-10-09 17:25:55.479497852 +0900
-> @@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
->   * for information on use.
->   */
->  extern int __must_check device_bind_driver(struct device *dev);
-> -extern void device_release_driver(struct device *dev);
-> +extern int device_release_driver(struct device *dev);
->  extern int  __must_check device_attach(struct device *dev);
->  extern int __must_check driver_attach(struct device_driver *drv);
->  extern int __must_check device_reprobe(struct device *dev);
+> It might be even nicer to remove almost all of these.
 > 
 
+Yes, "tracing" type debug calls like this should all be removed, now
+that we have built-in function call tracing in the core kernel itself.
 
+greg k-h
