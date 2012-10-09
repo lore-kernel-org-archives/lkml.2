@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab2JIUgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:36:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48620 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab2JIUgL (ORCPT
+	id S1756649Ab2JIUgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:36:38 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:53525 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962Ab2JIUgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:36:11 -0400
-Date: Tue, 9 Oct 2012 13:36:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tang Chen <tangchen@cn.fujitsu.com>, mingo@redhat.com,
-        miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <1349780256.7880.12.camel@twins>
-Message-ID: <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 9 Oct 2012 16:36:36 -0400
+X-Originating-IP: 217.70.178.129
+X-Originating-IP: 173.246.103.110
+Date: Tue, 9 Oct 2012 13:36:28 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        Ed Cashin <ecashin@coraid.com>, Christopher Li <sparse@chrisli.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] linux/compiler.h: Add __must_hold macro for functions
+ called with a lock held
+Message-ID: <20121009203628.GB3616@jtriplet-mobl1>
+References: <20121008020610.GA9197@leaf>
+ <20121009130637.5e61078f.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121009130637.5e61078f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Peter Zijlstra wrote:
-
-> On Mon, 2012-10-08 at 10:59 +0800, Tang Chen wrote:
-> > If a cpu is offline, its nid will be set to -1, and cpu_to_node(cpu) will
-> > return -1. As a result, cpumask_of_node(nid) will return NULL. In this case,
-> > find_next_bit() in for_each_cpu will get a NULL pointer and cause panic.
+On Tue, Oct 09, 2012 at 01:06:37PM -0700, Andrew Morton wrote:
+> On Sun, 7 Oct 2012 19:06:10 -0700
+> Josh Triplett <josh@joshtriplett.org> wrote:
 > 
-> Hurm,. this is new, right? Who is changing all these semantics without
-> auditing the tree and informing all affected people?
+> > linux/compiler.h has macros to denote functions that acquire or release
+> > locks, but not to denote functions called with a lock held that return
+> > with the lock still held.  Add a __must_hold macro to cover that case.
 > 
+> hum.  How does this work?  Any code examples and sample sparse output? 
+> Does it apply to all lock types, etc?
 
-I've nacked the patch that did it because I think it should be done from 
-the generic cpu hotplug code only at the CPU_DEAD level with a per-arch 
-callback to fixup whatever cpu-to-node mappings they maintain since 
-processes can reenter the scheduler at CPU_DYING.
+It applies to all the same lock types that __acquires and __releases
+apply to: currently everything since Sparse doesn't actually do anything
+with the parameter, just the context value.
 
-The whole issue seems to be because alloc_{fair,rt}_sched_group() does an 
-iteration over all possible cpus (not all online cpus) and does 
-kzalloc_node() which references a now-offlined node.  Changing it to -1 
-makes the slab code fallback to any online node.
+Various code examples already exist in the kernel tree for __acquires
+and __releases, and the mailing list contains many reports of the Sparse
+context warnings.
 
-What I think we need to do instead of hacking only the acpi code and not 
-standardizing this across the kernel is:
+Just as __acquires and __release annotate functions that return with a
+lock acquired and get called with a lock that they drop (respectively),
+__must_hold annotates a function called with a lock acquired that return
+with that lock still acquired.
 
- - reset cpu-to-node with a per-arch callback in generic cpu hotplug code 
-   at CPU_DEAD, and
+> IOW, where is all this stuff documented?
 
- - do an iteration over all possible cpus for node hot-remove ensuring 
-   there are no stale references.
+The Sparse manpage documents the context bits reasonably well.  Other
+than that, nowhere that I know of other than the Sparse testsuite and
+the source trees of projects like Linux that use Sparse.
+
+- Josh Triplett
