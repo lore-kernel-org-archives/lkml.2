@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab2JIOPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:15:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5204 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752391Ab2JIOPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:15:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,560,1344236400"; 
-   d="scan'208";a="154163642"
-Message-ID: <50743166.2050900@zytor.com>
-Date: Tue, 09 Oct 2012 22:15:02 +0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH 08/10] x86, xen, mm: fix mapping_pagetable_reserve logic
-References: <1349757558-10856-1-git-send-email-yinghai@kernel.org> <1349757558-10856-9-git-send-email-yinghai@kernel.org> <5073C05E.5020402@zytor.com> <CAE9FiQXa9fqLOyqzap6o_0HA=oBRKqkcWm9bdpK9M6R5cQMU-A@mail.gmail.com> <5073D0C1.4020606@zytor.com> <alpine.DEB.2.02.1210091240300.29539@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1210091240300.29539@kaball.uk.xensource.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756045Ab2JIOPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:15:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52921 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab2JIOPQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 10:15:16 -0400
+Message-ID: <1349792104.7880.41.camel@twins>
+Subject: Re: [REPOST] RFC: sched: Prevent wakeup to enter critical section
+ needlessly
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ivo Sieben <meltedpianoman@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, linux-serial@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Tue, 09 Oct 2012 16:15:04 +0200
+In-Reply-To: <m2r4p7u5pk.fsf@firstfloor.org>
+References: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com>
+	 <1349782235-8896-1-git-send-email-meltedpianoman@gmail.com>
+	 <m2r4p7u5pk.fsf@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 08:22 PM, Stefano Stabellini wrote:
+On Tue, 2012-10-09 at 06:37 -0700, Andi Kleen wrote:
+> Ivo Sieben <meltedpianoman@gmail.com> writes:
 > 
-> I can give some hints: find_early_table_space allocates more memory than
-> needed for pagetable pages, the allocated range is
-> pgt_buf_start-pgt_buf_top.
+> > Check the waitqueue task list to be non empty before entering the critical
+> > section. This prevents locking the spin lock needlessly in case the queue
+> > was empty, and therefor also prevent scheduling overhead on a PREEMPT_RT
+> > system.
+> >
+> > Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+> > ---
+> >
+> >  REPOST:
+> >  Request for comments:
+> >  - Does this make any sense?
 > 
+> Looks good to me. Avoiding any spinlock is good.  I don't even think you
+> need "careful", if you miss an update it was just as it happened a
+> little later.
 
-This is why I keep telling you that we should *get rid of*
-find_early_table_space and instead build the page tables incrementally.
- There simply is no sane way to make find_early_table_space or anything
-else that requires pre-calculating the page table sizes to work and be
-robust.
+Yeah, so I've started looking at this several times, but never had the
+time to actually think it through. I think I'll agree with you that
+using the careful list empty check isn't needed.
 
-	-hpa
+In general there's already the race of doing a wakeup before the wait
+and if the code using the waitqueue doesn't deal with that its already
+broken, so in that respect you should be good, since you're simply
+shifting the timing a little.
 
+One thing you might need to consider is the memory ordering, will the
+list_empty -- either careful or not -- observe the right list pointer,
+or could it -- when racing with wait_event()/prepare_to_wait() --
+observe a stale value. Or.. is that all already covered in on the use
+site.
+
+I started auditing a few users to see what they all assume, if they're
+already broken and or if they would now be broken.. but like said, I
+didn't get anywhere.
+
+
+I'd like to see this patch/Changelog amended to at least cover these
+points so that I feel all warm and fuzzy when I read it and not have to
+think too hard ;-)
