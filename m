@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab2JIXcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:32:31 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45641 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab2JIXc3 (ORCPT
+	id S1751826Ab2JIXdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:33:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33622 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab2JIXdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:32:29 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-1c-5074b40a0090
-Date: Wed, 10 Oct 2012 08:36:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [staging][zram] Fix handling of incompressible pages
-Message-ID: <20121009233642.GI13817@bbox>
-References: <1349746364-8051-1-git-send-email-ngupta@vflare.org>
- <20121009133128.GA3244@barrios>
- <5074605C.3000301@vflare.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5074605C.3000301@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 9 Oct 2012 19:33:00 -0400
+Date: Tue, 9 Oct 2012 20:32:38 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Ryan Mallon <rmallon@gmail.com>, Joe Perches <joe@perches.com>,
+        walter harms <wharms@bfs.de>, Antti Palosaari <crope@iki.fi>,
+        kernel-janitors@vger.kernel.org, shubhrajyoti@ti.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for
+ i2c_msg initialization
+Message-ID: <20121009203238.63d2275f@infradead.org>
+In-Reply-To: <alpine.DEB.2.02.1210081028340.1989@hadrien>
+References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr>
+	<5071AEF3.6080108@bfs.de>
+	<alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6>
+	<5071B834.1010200@bfs.de>
+	<alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6>
+	<1349633780.15802.8.camel@joe-AO722>
+	<alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6>
+	<1349645970.15802.12.camel@joe-AO722>
+	<alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6>
+	<1349646718.15802.16.camel@joe-AO722>
+	<20121007225639.364a41b4@infradead.org>
+	<50723661.6040107@gmail.com>
+	<alpine.DEB.2.02.1210081028340.1989@hadrien>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 10:35:24AM -0700, Nitin Gupta wrote:
-> Hi Minchan,
+Em Mon, 8 Oct 2012 10:31:33 +0200 (CEST)
+Julia Lawall <julia.lawall@lip6.fr> escreveu:
+
+> I found only 15 uses of I2C_MSG_OP, out of 653 uses of one of the three
+> macros.  Since I2C_MSG_OP has the complete set of flags, I think it should
+> be OK?
 > 
-> On 10/09/2012 06:31 AM, Minchan Kim wrote:
-> >
-> >On Mon, Oct 08, 2012 at 06:32:44PM -0700, Nitin Gupta wrote:
-> >>Change 130f315a introduced a bug in the handling of incompressible
-> >>pages which resulted in memory allocation failure for such pages.
-> >>The fix is to store the page as-is i.e. without compression if the
-> >>compressed size exceeds a threshold (max_zpage_size) and request
-> >>exactly PAGE_SIZE sized buffer from zsmalloc.
-> >
-> >It seems you found a bug and already fixed it with below helpers.
-> >But unfortunately, description isn't enough to understand the problem for me.
-> >Could you explain in detail?
-> >You said it results in memory allocation failure. What is failure?
-> >You mean this code by needing a few pages for zspage to meet class size?
-> >
-> >         handle = zs_malloc(zram->mem_pool, clen);
-> >         if (!handle) {
-> >                 pr_info("Error allocating memory for compressed "
-> >                         "page: %u, size=%zu\n", index, clen);
-> >                 ret = -ENOMEM;
-> >                 goto out;
-> >         }
-> >
-> >So instead of allocating more pages for incompressible page to make zspage,
-> >just allocate a page for PAGE_SIZE class without compression?
-> >
+> One of the uses, in drivers/media/i2c/adv7604.c, is as follows:
 > 
-> When a page expands on compression, say from 4K to 4K+30, we were
-> trying to do zsmalloc(pool, 4K+30). However, the maximum size which
-> zsmalloc can allocate is PAGE_SIZE (for obvious reasons), so such
-> allocation requests always return failure (0).
-
-Right.
-I think it would be better to add this explanation in description.
-
+>        struct i2c_msg msg[2] = { { client->addr, 0, 1, msgbuf0 },
+>                                  { client->addr, 0 | I2C_M_RD, len, msgbuf1 }
 > 
-> For a page that has compressed size larger than the original size
-> (this may happen with already compressed or random data), there is
-> no point storing the compressed version as that would take more
-> space and would also require time for decompression when needed
-> again. So, the fix is to store any page, whose compressed size
-> exceeds a threshold (max_zpage_size), as-it-is i.e. without
-> compression.  Memory required for storing this uncompressed page can
+> I'm not sure what was intended, but I guess the second structure is
+> supposed to only do a read?
 
-Yes. It's already definition of max_zpage_size.
+Yes, this is just typical I2C register read I2C messsage. The first line
+specifies what register should be read (the content of msgbuf0), with is
+a one char value, and the second line stores the registers contents at
+msgbuf1.
 
-> then be requested from zsmalloc which supports PAGE_SIZE sized
-> allocations.
+This is exactly what I said before: this is a typical situation:
+
+Just one macro could be used for that, with 4 parameters:
+
+	I2C_MSG_READ_SUBADDR(addr, sub_addr, len, buf);
+
+Almost all of those I2C messages will fall on 3 cases only:
+	- a read msg (3 parameters, 1 msg);
+	- a write message (3 parameters, 1 msg);
+	- a write subaddr followed by a read (4 parameters, 2 msgs).
+
+You'll find very few exceptions to it, where additional I2C flags are
+needed, or several different transactions were grouped together, due
+to the I2C locking or in order to use I2C repeat-start mode[1].
+
+In a matter of fact, as the maintainer, I prefer to fully see the entire
+I2C message for those exceptions, as those other usages require more care
+while reviewing/merging.
+
+
+[1] very, very few media i2c bus drivers implement any other flags except
+for I2C_M_RD. That's why it is so rare to see them there.
 
 > 
-> Lastly, the fix checks that we do not attempt to "decompress" the
-> page which we stored in the uncompressed form -- we just memcpy()
-> out such pages.
-> 
-> Thanks,
-> Nitin
-> 
-> 
-> >>
-> >>Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> >>Reported-by: viechweg@gmail.com
-> >>Reported-by: paerley@gmail.com
-> >>Reported-by: wu.tommy@gmail.com
-> >>Tested-by: wu.tommy@gmail.com
-> >>Tested-by: michael@zugelder.org
-Anyway, 
-Acked-by: Minchan Kim <minchan@kernel.org>
+> julia
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks, Nitin!
--- 
-Kind regards,
-Minchan Kim
+
+
+
+Cheers,
+Mauro
