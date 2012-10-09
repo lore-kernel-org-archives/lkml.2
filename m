@@ -1,198 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab2JIWO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:14:59 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:43374 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab2JIWO5 (ORCPT
+	id S1754847Ab2JIWTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:19:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56583 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab2JIWTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:14:57 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <linux-kernel@vger.kernel.org>, <e1000-devel@lists.sf.net>
-Cc: <support@Supermicro.com>, <ap@solarrain.com>
-Subject: X9SCM-F/82574L/e1000e lag / high latency (e1000e/Intel bug)
-Date: Tue, 9 Oct 2012 18:14:54 -0400
-Message-ID: <003901cda66b$836a5db0$8a3f1910$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Tue, 9 Oct 2012 18:19:09 -0400
+Date: Tue, 9 Oct 2012 15:19:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
+ v3
+Message-Id: <20121009151907.3f61ebca.akpm@linux-foundation.org>
+In-Reply-To: <1349303063-12766-2-git-send-email-andi@firstfloor.org>
+References: <1349303063-12766-1-git-send-email-andi@firstfloor.org>
+	<1349303063-12766-2-git-send-email-andi@firstfloor.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac2ma3S7jmQjWoseT+2f/eUO1Z4hFA==
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed,  3 Oct 2012 15:24:23 -0700
+Andi Kleen <andi@firstfloor.org> wrote:
 
-Good news: Supermicro 2.0b fixes an unrelated problem where only 16GB is
-addressed in the BIOS when you have 32GB on the system, with 2.0b that is
-resolved.
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> There was some desire in large applications using MAP_HUGETLB/SHM_HUGETLB
+> to use 1GB huge pages on some mappings, and stay with 2MB on others. This
+> is useful together with NUMA policy: use 2MB interleaving on some mappings,
+> but 1GB on local mappings.
+> 
+> This patch extends the IPC/SHM syscall interfaces slightly to allow specifying
+> the page size.
+> 
+> It borrows some upper bits in the existing flag arguments and allows encoding
+> the log of the desired page size in addition to the *_HUGETLB flag.
+> When 0 is specified the default size is used, this makes the change fully
+> compatible.
+> 
+> Extending the internal hugetlb code to handle this is straight forward. Instead
+> of a single mount it just keeps an array of them and selects the right
+> mount based on the specified page size.
+> 
+> I also exported the new flags to the user headers
+> (they were previously under __KERNEL__). Right now only symbols
+> for x86 and some other architecture for 1GB and 2MB are defined.
+> The interface should already work for all other architectures
+> though.
 
-Bad news: This bug still remains (E1000): When you transfer a file/files
-over Samba, the latency shoots up really high (this also affects other
-applications!)
+So some manpages need updating.  I'm not sure which - mmap(2) surely,
+but which for the IPC change?
 
-This bug has been bothering me for months (random lag) during high network
-I/O on my X9SCM-F motherboard.
-There is a lot of discussion about this problem here:
-http://sourceforge.net/p/e1000/bugs/27/?page=4
+> v2: Port to new tree. Fix unmount.
+> v3: Ported to latest tree.
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/mman.h |    3 ++
+>  fs/hugetlbfs/inode.c        |   63 ++++++++++++++++++++++++++++++++++---------
+>  include/asm-generic/mman.h  |   13 +++++++++
+>  include/linux/hugetlb.h     |   12 +++++++-
+>  include/linux/shm.h         |   19 +++++++++++++
+>  ipc/shm.c                   |    3 +-
+>  mm/mmap.c                   |    5 ++-
 
-I tried the EEPROM fix but it did not work:
-http://sourceforge.net/projects/e1000/files/e1000e%20stable/eeprom_fix_82574
-_or_82583/
+Alas, include/asm-generic/mman.h doesn't exist now.
 
-"The value at offset 0x001e (58) has bit 1 unset. This enables the
-problematic
-power saving feature. In this case, the EEPROM needs to read "5a" at offset
-0x001e."
+Does this change touch all the hugetlb-capable architectures?
 
-# ethtool -e eth4 |grep 0x0010
-0x0010:         ff ff ff ff 6b 02 00 00 d9 15 d3 10 ff ff 5a a5
+z:/usr/src/linux-3.6> grep -rl MAP_HUGETLB arch
+arch/alpha/include/asm/mman.h
+arch/xtensa/include/asm/mman.h
+arch/parisc/include/asm/mman.h
+arch/tile/include/asm/mman.h
+arch/sparc/include/asm/mman.h
+arch/powerpc/include/asm/mman.h
+arch/mips/include/asm/mman.h
 
-Yes I did reboot.
+>
+> ...
+>
+> @@ -933,9 +933,22 @@ static int can_do_hugetlb_shm(void)
+>  	return capable(CAP_IPC_LOCK) || in_group_p(shm_group);
+>  }
+>  
+> +static int get_hstate_idx(int page_size_log)
 
-Here is what the problem looks like, during a SAMBA copy from A->B where
-B=X9SCM running Linux:
+nitlet: "page_size_order" would be more kernely.  Or just "page_order".
 
-(ONBOARD Intel eth0 / 82574L )
+> +{
+> +	struct hstate *h;
+> +
+> +	if (!page_size_log)
+> +		return default_hstate_idx;
+> +	h = size_to_hstate(1 << page_size_log);
+> +	if (!h)
+> +		return -1;
+> +	return h - hstates;
+> +}
+>
+> ...
+>
+>  static int __init init_hugetlbfs_fs(void)
+>  {
+> +	struct hstate *h;
+>  	int error;
+> -	struct vfsmount *vfsmount;
+> +	int i;
+>  
+>  	error = bdi_init(&hugetlbfs_backing_dev_info);
+>  	if (error)
+> @@ -1030,14 +1049,26 @@ static int __init init_hugetlbfs_fs(void)
+>  	if (error)
+>  		goto out;
+>  
+> -	vfsmount = kern_mount(&hugetlbfs_fs_type);
+> +	i = 0;
+> +	for_each_hstate (h) {
+> +		char buf[50];
+> +		unsigned ps_kb = 1U << (h->order + PAGE_SHIFT - 10);
+>  
+> -	if (!IS_ERR(vfsmount)) {
+> -		hugetlbfs_vfsmount = vfsmount;
+> -		return 0;
+> -	}
+> +		snprintf(buf, sizeof buf, "pagesize=%uK", ps_kb);
+> +		hugetlbfs_vfsmount[i] = kern_mount_data(&hugetlbfs_fs_type,
+> +							buf);
+>  
+> -	error = PTR_ERR(vfsmount);
+> +		if (IS_ERR(hugetlbfs_vfsmount[i])) {
+> +				pr_err(
+> +			"hugetlb: Cannot mount internal hugetlbfs for page size %uK",
+> +			       ps_kb);
+> +			error = PTR_ERR(hugetlbfs_vfsmount[i]);
+> +		}
+> +		i++;
+> +	}
+> +	/* Non default hstates are optional */
+> +	if (hugetlbfs_vfsmount[default_hstate_idx])
+> +		return 0;
 
-$ ping windowspc
-PING windowspc (192.168.0.1) 56(84) bytes of data.
-64 bytes from windowspc (192.168.0.1): icmp_req=1 ttl=128 time=0.544 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=2 ttl=128 time=0.193 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=3 ttl=128 time=0.619 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=4 ttl=128 time=0.642 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=5 ttl=128 time=0.426 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=6 ttl=128 time=0.464 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=7 ttl=128 time=0.696 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=8 ttl=128 time=1353 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=9 ttl=128 time=353 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=10 ttl=128 time=0.492 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=11 ttl=128 time=0.618 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=12 ttl=128 time=0.474 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=13 ttl=128 time=0.542 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=14 ttl=128 time=0.471 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=15 ttl=128 time=0.645 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=16 ttl=128 time=0.394 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=17 ttl=128 time=0.537 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=18 ttl=128 time=0.706 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=19 ttl=128 time=0.465 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=20 ttl=128 time=0.707 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=21 ttl=128 time=348 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=22 ttl=128 time=0.703 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=23 ttl=128 time=0.560 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=24 ttl=128 time=0.554 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=25 ttl=128 time=0.585 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=26 ttl=128 time=0.508 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=27 ttl=128 time=345 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=28 ttl=128 time=0.374 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=29 ttl=128 time=0.728 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=30 ttl=128 time=0.537 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=31 ttl=128 time=0.190 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=32 ttl=128 time=0.204 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=33 ttl=128 time=0.239 ms
+hm, so if I'm understanding this, the patch mounts hugetlbfs N times,
+once for each page size.  And presumably the shm code somehow selects
+one of these mounts, based on incoming flags.  And presumably if those
+flags are all-zero, the behaviour is unaltered.
 
-Same test (copy test) with samba as above but now with an Intel 4-port NIC:
-$ ping windowspc
-64 bytes from windowspc (192.168.0.1): icmp_req=1 ttl=128 time=0.175 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=2 ttl=128 time=0.332 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=3 ttl=128 time=0.276 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=4 ttl=128 time=0.221 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=5 ttl=128 time=0.518 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=6 ttl=128 time=0.157 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=7 ttl=128 time=0.222 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=8 ttl=128 time=0.605 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=9 ttl=128 time=0.335 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=10 ttl=128 time=0.679 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=11 ttl=128 time=0.223 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=12 ttl=128 time=0.189 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=13 ttl=128 time=0.432 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=14 ttl=128 time=0.235 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=15 ttl=128 time=0.386 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=16 ttl=128 time=0.658 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=17 ttl=128 time=0.430 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=18 ttl=128 time=0.494 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=19 ttl=128 time=0.411 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=20 ttl=128 time=0.737 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=21 ttl=128 time=0.543 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=22 ttl=128 time=0.564 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=23 ttl=128 time=0.571 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=24 ttl=128 time=0.407 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=25 ttl=128 time=0.518 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=26 ttl=128 time=0.482 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=27 ttl=128 time=0.904 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=28 ttl=128 time=0.478 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=29 ttl=128 time=1.16 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=30 ttl=128 time=0.656 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=31 ttl=128 time=0.613 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=32 ttl=128 time=0.475 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=33 ttl=128 time=0.562 ms
+Please update the changelog to describe all this - the overview of how
+the patch actually operates.
 
-So it appears, at the moment, if you have problems with eth0, try using eth1
-or buy another network card.
+Also, all this affects the /proc/mounts contents, yes?  Let's changelog
+that very-slightly-non-back-compatible user-visible change as well.
 
---
+There's some overhead to doing all those additional mounts.  Can we
+quantify it?
 
-There is also a few other issues with this board:
-
-1) If you plug-in too many PCI-e devices, it will drop some of the boards,
-e.g.
-   they will not show up if they use too much power.  (USB-3 boards, etc)
-
-  SLOT Bottom => Video
-   Slot next one up => empty
-   Slot next one up => NIC
-   Slot Next one up => empty
-
-   The NIC doesn't show up in Linux, I put it in the first slot (near the
-CPU) and it worked.
-
---
-
-I am happy SM addressed the 16GB/32GB problem (before only 16GB of memory
-would show up out of 32GB)!
-
-For this NIC issue I am perplexed, for now I will just use a four-port NIC
-but would be curious if there was a proper fix so I could use the on-board
-NICs without the high latency as shown above.
-
-With 2.0b, still an issue:
-
-(ONBOARD Intel eth0 / 82574L )
-
-64 bytes from windowspc (192.168.0.1): icmp_req=11 ttl=128 time=0.396 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=12 ttl=128 time=0.537 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=13 ttl=128 time=0.617 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=14 ttl=128 time=2292 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=15 ttl=128 time=1292 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=16 ttl=128 time=292 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=17 ttl=128 time=0.300 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=18 ttl=128 time=0.651 ms
-
-(FOUR PORT NIC, EXACT SAME TEST)
-
-64 bytes from windowspc (192.168.0.1): icmp_req=13 ttl=128 time=0.799 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=14 ttl=128 time=0.483 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=15 ttl=128 time=0.420 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=16 ttl=128 time=0.481 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=17 ttl=128 time=1.30 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=18 ttl=128 time=0.446 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=19 ttl=128 time=1.16 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=20 ttl=128 time=0.596 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=21 ttl=128 time=0.413 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=22 ttl=128 time=0.537 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=23 ttl=128 time=0.304 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=24 ttl=128 time=0.455 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=25 ttl=128 time=0.462 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=26 ttl=128 time=0.450 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=27 ttl=128 time=0.445 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=28 ttl=128 time=0.907 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=29 ttl=128 time=0.925 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=30 ttl=128 time=0.559 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=31 ttl=128 time=0.245 ms
-64 bytes from windowspc (192.168.0.1): icmp_req=32 ttl=128 time=0.277 ms
-
-Justin.
+>
+> ...
+>
 
