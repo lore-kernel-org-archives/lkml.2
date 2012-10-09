@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2JITqG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:46:06 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46179 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2JITqC (ORCPT
+	id S1753975Ab2JITr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:47:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54849 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2JITr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:46:02 -0400
-X-Originating-IP: 217.70.178.144
-X-Originating-IP: 173.246.103.110
-Date: Tue, 9 Oct 2012 12:45:51 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Santos <daniel.santos@pobox.com>,
-        Daniel Santos <danielfsantos@att.net>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>,
-        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Message-ID: <20121009194551.GA3616@jtriplet-mobl1>
-References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
- <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
- <20121006231041.GB3278@liondog.tnic>
- <5071C9AE.2010106@att.net>
- <20121009114158.9cdf1378.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009114158.9cdf1378.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 15:47:56 -0400
+Date: Tue, 9 Oct 2012 12:47:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+Message-Id: <20121009124755.ce1087b4.akpm@linux-foundation.org>
+In-Reply-To: <20121008133539.GA15490@kroah.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+	<1349654386-18378-1-git-send-email-kys@microsoft.com>
+	<20121008004358.GA12342@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20121008133539.GA15490@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:41:58AM -0700, Andrew Morton wrote:
-> On Sun, 07 Oct 2012 13:27:58 -0500
-> Daniel Santos <danielfsantos@att.net> wrote:
-> 
-> > We'll have to ask Andrew.  Maybe so he can test on those versions of gcc?
-> > 
-> > commit d3ffe64a1dbcfe18b57f90f7c01c40c93d0a8b92
-> > Author: Andrew Morton <akpm@linux-foundation.org>
-> > Date:   Fri Sep 28 00:02:42 2012 +0000
-> > 
-> >     a
-> >    
-> >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> > index 934bc34..997fd8a 100644
-> > --- a/include/linux/compiler-gcc4.h
-> > +++ b/include/linux/compiler-gcc4.h
-> > @@ -5,7 +5,7 @@
-> >  /* GCC 4.1.[01] miscompiles __weak */
-> >  #ifdef __KERNEL__
-> >  # if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
-> > -#  error Your version of gcc miscompiles the __weak directive
-> > +//#  error Your version of gcc miscompiles the __weak directive
-> 
-> hm, yeah, sorry, I use various old crufty cross-compilers.
+On Mon, 8 Oct 2012 06:35:39 -0700
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Ah, for build testing where you don't actually care if the resulting
-kernel runs?
+> On Mon, Oct 08, 2012 at 03:35:50AM +0000, KY Srinivasan wrote:
+> > 
+> > 
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Sunday, October 07, 2012 8:44 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> > > apw@canonical.com; akpm@linux-foundation.org; andi@firstfloor.org
+> > > Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+> > > 
+> > > On Sun, Oct 07, 2012 at 04:59:45PM -0700, K. Y. Srinivasan wrote:
+> > > > The policy engine on the host expects the guest to report the
+> > > > committed_as. Since this variable is not exported,
+> > > > export this symbol.
+> > > 
+> > > Why are these symbols not needed by either Xen or KVM or vmware, which
+> > > I think all support the same thing, right?
+> > 
+> > The basic balloon driver does not need this symbol since the basic balloon driver
+> > is not automatically driven by the host. On the Windows host we have a policy engine that
+> > drives the balloon driver based on both guest level memory pressure that the guest
+> > reports as well as other system level metrics the host maintains. We need this symbol to
+> > drive the policy engine on the host.
+> 
+> Ok, but you're going to have to get the -mm developers to agree that
+> this is ok before I can accept it.
 
-- Josh Triplett
+Well I guess it won't kill us.
+
+I do wonder what relevance vm_committed_as has to processes which are
+running within a memcg container?
+
