@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2JITXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:23:19 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:59550 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab2JITXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:23:16 -0400
-Date: Tue, 9 Oct 2012 12:23:08 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, Brad Spengler <spender@grsecurity.net>
-Subject: [PATCH] fix stack memory content leak via UNAME26
-Message-ID: <20121009192308.GA5969@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1756741Ab2JIT0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:26:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54769 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2JIT0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 15:26:16 -0400
+Date: Tue, 9 Oct 2012 12:26:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Johannes Stezenbach <js@sig21.net>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 0/3] Update LZO compression
+Message-Id: <20121009122614.569b9535.akpm@linux-foundation.org>
+In-Reply-To: <cover.1349621096.git.markus@oberhumer.com>
+References: <cover.1349621096.git.markus@oberhumer.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents. This fixes it by initializing the stack buffer to zero,
-defensively calculating the length of copy_to_user() call, and making
-the len argument unsigned.
+On Sun, 7 Oct 2012 17:07:55 +0200
+"Markus F.X.J. Oberhumer" <markus@oberhumer.com> wrote:
 
-CVE-2012-0957
+> As requested by akpm I am sending my "lzo-update" branch at
+> 
+>   git://github.com/markus-oberhumer/linux.git lzo-update
+> 
+> to lkml as a patch series created by "git format-patch -M v3.5..lzo-update".
+> 
+> You can also browse the branch at
+> 
+>   https://github.com/markus-oberhumer/linux/compare/lzo-update
+> 
+> and review the three patches at
+> 
+>   https://github.com/markus-oberhumer/linux/commit/7c979cebc0f93dc692b734c12665a6824d219c20
+>   https://github.com/markus-oberhumer/linux/commit/10f6781c8591fe5fe4c8c733131915e5ae057826
+>   https://github.com/markus-oberhumer/linux/commit/5f702781f158cb59075cfa97e5c21f52275057f1
 
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- kernel/sys.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c5cb5b9..6329092 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1265,13 +1265,13 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
- {
- 	int ret = 0;
--	char buf[65];
-+	char buf[65] = { 0 };
-+	const char *rest = UTS_RELEASE;
- 
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
- 		int ndots = 0;
- 		unsigned v;
- 
-@@ -1283,7 +1283,9 @@ static int override_release(char __user *release, int len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
-+		snprintf(buf, sizeof(buf), "2.6.%u%s", v, rest);
-+		if (sizeof(buf) < len)
-+			len = sizeof(buf);
- 		ret = copy_to_user(release, buf, len);
- 	}
- 	return ret;
--- 
-1.7.9.5
+The changes look OK to me.  Please ask Stephen to include the tree in
+linux-next, for a 3.7 merge.
 
 
--- 
-Kees Cook
-Chrome OS Security
+
+The changelog for patch 2/3 says:
+
+: This commit updates the kernel LZO code to the current upsteam version
+: which features a significant speed improvement - benchmarking the Calgary
+: and Silesia test corpora typically shows a doubled performance in
+: both compression and decompression on modern i386/x86_64/powerpc machines.
+
+
+There are significant clients of the LZO library - crypto, btrfs,
+jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
+and ask that they test the LZO changes once they land in linux-next. 
+For correctness and performance, please.
+
+
