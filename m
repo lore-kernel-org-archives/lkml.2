@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab2JIVmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 17:42:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35359 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756985Ab2JIVma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 17:42:30 -0400
-Date: Tue, 9 Oct 2012 23:42:27 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>
-Subject: Re: PRJQUOTA case not handled in need_print_warning()
-Message-ID: <20121009214227.GC27882@quack.suse.cz>
-References: <alpine.LNX.2.00.1210050032220.3873@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="IJpNTDwzlM2Ie8A6"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1210050032220.3873@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757039Ab2JIVqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 17:46:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56136 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab2JIVqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 17:46:18 -0400
+Date: Tue, 9 Oct 2012 14:46:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Rusty Russell <rusty@rustcorp.com.au>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] lglock: make the per_cpu locks static
+Message-Id: <20121009144617.7d7862b1.akpm@linux-foundation.org>
+In-Reply-To: <1349754403-4798-2-git-send-email-laijs@cn.fujitsu.com>
+References: <1349754403-4798-1-git-send-email-laijs@cn.fujitsu.com>
+	<1349754403-4798-2-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 9 Oct 2012 11:46:39 +0800
+Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
 
---IJpNTDwzlM2Ie8A6
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+> The per_cpu locks are not used outside nor exported.
+> Add a "static" linkage keyword to it.
 
-On Fri 05-10-12 00:34:29, Jiri Kosina wrote:
-> Hi,
-> 
-> commit e8a3e4719b7ec19288c56f22623f537cb78885c1
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sun Sep 16 01:11:45 2012 -0700
-> 
->     userns: Implement struct kqid
-> 
-> causes this warning:
-> 
-> fs/quota/dquot.c: In function ‘need_print_warning’:
-> fs/quota/dquot.c:1158: warning: enumeration value ‘PRJQUOTA’ not handled in switch
-> 
-> and it seems to be a valid one -- the switch in need_print_warning() 
-> contains neither 'default' nor PRJQUOTA case handler.
-  Hum, since Eric didn't seem to care, I've fixed this up myself with the
-attached patch. Actually, PRJQUOTA should never get to that function so it
-shouldn't cause any problems in practice. Thanks for the report.
+I think a better description is:
 
-								Honza
+: The per_cpu locks are not used outside the file which contains the
+: DEFINE_LGLOCK(), so we can make these symbols static.
 
---IJpNTDwzlM2Ie8A6
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-quota-Silence-warning-about-PRJQUOTA-not-being-handl.patch"
-
->From 6c29c50fda25c2ac2ce45a9b042ff7e424aa8eac Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 9 Oct 2012 23:30:17 +0200
-Subject: [PATCH] quota: Silence warning about PRJQUOTA not being handled in need_print_warning()
-
-PRJQUOTA value of quota type should never reach need_print_warning() since XFS
-(which is the only fs which uses that type) doesn't use generic functions
-calling this function. Anyway, add PRJQUOTA case to the switch to make gcc
-happy.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/quota/dquot.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 557a9c2..05ae3c9 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -1160,6 +1160,8 @@ static int need_print_warning(struct dquot_warn *warn)
- 			return uid_eq(current_fsuid(), warn->w_dq_id.uid);
- 		case GRPQUOTA:
- 			return in_group_p(warn->w_dq_id.gid);
-+		case PRJQUOTA:	/* Never taken... Just make gcc happy */
-+			return 0;
- 	}
- 	return 0;
- }
--- 
-1.7.1
-
-
---IJpNTDwzlM2Ie8A6--
+> --- a/include/linux/lglock.h
+> +++ b/include/linux/lglock.h
+> @@ -49,7 +49,7 @@ struct lglock {
+>  };
+>  
+>  #define DEFINE_LGLOCK(name)						\
+> -	DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)			\
+> +	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
+>  	= __ARCH_SPIN_LOCK_UNLOCKED;					\
+>  	struct lglock name = { .lock = &name ## _lock }
+>  
+> -- 
+> 1.7.4.4
