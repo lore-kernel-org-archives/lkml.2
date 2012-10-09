@@ -1,72 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab2JIXVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:21:25 -0400
-Received: from rs130.luxsci.com ([72.32.115.17]:44045 "EHLO rs130.luxsci.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386Ab2JIXVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:21:22 -0400
-Message-ID: <5074B155.4090703@firmworks.com>
-Date: Tue, 09 Oct 2012 13:20:53 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1757191Ab2JIXVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:21:32 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:49842 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159Ab2JIXV1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 19:21:27 -0400
+Date: Tue, 9 Oct 2012 16:21:24 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+In-Reply-To: <20121009101822.79bdcb65@mschwide>
+Message-ID: <alpine.LSU.2.00.1210091600450.30446@eggly.anvils>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009101822.79bdcb65@mschwide>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Jon Loeliger <jdl@jdl.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: dtc: import latest upstream dtc
-References: <1348867559-2495-1-git-send-email-swarren@wwwdotorg.org> <5069C042.40209@gmail.com> <5069C11C.6040505@wwwdotorg.org> <5069D946.1060502@gmail.com> <5069E1F0.5070902@wwwdotorg.org> <E1TIktZ-0000U4-Qh@jdl.com> <50749441.8030307@wwwdotorg.org>
-In-Reply-To: <50749441.8030307@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Lux-Comment: Message q99NKsuh014857 sent by user #11875
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/9/2012 11:16 AM, Stephen Warren wrote:
-> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->>>
->>> What more do you think needs discussion re: dtc+cpp?
->>
->> How not to abuse the ever-loving shit out of it? :-)
+On Tue, 9 Oct 2012, Martin Schwidefsky wrote:
+> On Mon, 8 Oct 2012 21:24:40 -0700 (PDT)
+> Hugh Dickins <hughd@google.com> wrote:
+> > On Mon, 1 Oct 2012, Jan Kara wrote:
+> > 
+> > > On s390 any write to a page (even from kernel itself) sets architecture
+> > > specific page dirty bit. Thus when a page is written to via standard write, HW
+> > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
+> > > finds the dirty bit and calls set_page_dirty().
+> > > 
+> > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
+> > > filesystems. The bug we observed in practice is that buffers from the page get
+> > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
+> > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
+> > > from xfs_count_page_state().
+> > 
+> > What changed recently?  Was XFS hardly used on s390 until now?
 > 
-> Perhaps we can just handle this through the regular patch review
-> process; I think it may be difficult to define and agree upon exactly
-> what "abuse" means ahead of time, but it's probably going to be easy
-> enough to recognize it when one sees it?
+> One thing that changed is that the zero_user_segment for the remaining bytes between
+> i_size and the end of the page has been moved to block_write_full_page_endio, see
+> git commit eebd2aa355692afa. That changed the timing of the race window in regard
+> to map/unmap of the page by user space. And yes XFS is in use on s390.
 
+February 2008: I think we have different ideas of "recently" ;)
 
-One of the ways it could get out of hand would be via "include
-dependency hell".  People will be tempted to reuse existing .h files
-containing pin definitions, which, if history is a guide, will end up
-depending on all sorts of other .h files.
+>  
+> > > 
+> > > Similar problem can also happen when zero_user_segment() call from
+> > > xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+> > > hardware dirty bit during writeback, later buffers get freed, and then page
+> > > unmapped.
+> > > 
+> > > Fix the issue by ignoring s390 HW dirty bit for page cache pages in
+> > > page_mkclean() and page_remove_rmap(). This is safe because when a page gets
+> > > marked as writeable in PTE it is also marked dirty in do_wp_page() or
+> > > do_page_fault(). When the dirty bit is cleared by clear_page_dirty_for_io(),
+> > > the page gets writeprotected in page_mkclean(). So pagecache page is writeable
+> > > if and only if it is dirty.
+> > 
+> > Very interesting patch...
+> 
+> Yes, it is an interesting idea. I really like the part that we'll use less storage
+> key operations, as these are freaking expensive.
 
-Another problem I often face with symbolic names is the difficulty of
-figuring out what the numerical values really are (for debugging),
-especially when .h files are in different subtrees from the files that
-use the definitions, and when they use multiple macro levels and fancy
-features like concatenation.  Sometimes I think it's clearer just to
-write the number and use a comment to say what it is.
-
+As I said to Mel and will repeat to Jan, though an optimization would
+be nice, I don't think we should necessarily mix it with the bugfix.
 
 > 
-> I imagine the most common usage will simply be a bunch of:
+> > > 
+> > > CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > 
+> > which I'd very much like Martin's opinion on...
 > 
-> #define TEGRA_GPIO_PB0 32
-> #define TEGRA_GPIO_INT_LEVEL_LOW 8
+> Until you pointed out the short-comings of the patch I really liked it ..
 > 
-> / {
->     xxx {
->         interrupts = <TEGRA_GPIO_PB0 TEGRA_GPIO_INT_LEVEL_LOW>;
+> > > ---
+> > >  mm/rmap.c |   16 ++++++++++++++--
+> > >  1 files changed, 14 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/mm/rmap.c b/mm/rmap.c
+> > > index 0f3b7cd..6ce8ddb 100644
+> > > --- a/mm/rmap.c
+> > > +++ b/mm/rmap.c
+> > > @@ -973,7 +973,15 @@ int page_mkclean(struct page *page)
+> > >  		struct address_space *mapping = page_mapping(page);
+> > >  		if (mapping) {
+> > >  			ret = page_mkclean_file(mapping, page);
+> > > -			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+> > > +			/*
+> > > +			 * We ignore dirty bit for pagecache pages. It is safe
+> > > +			 * as page is marked dirty iff it is writeable (page is
+> > > +			 * marked as dirty when it is made writeable and
+> > > +			 * clear_page_dirty_for_io() writeprotects the page
+> > > +			 * again).
+> > > +			 */
+> > > +			if (PageSwapCache(page) &&
+> > > +			    page_test_and_clear_dirty(page_to_pfn(page), 1))
+> > >  				ret = 1;
+> > 
+> > This part you could cut out: page_mkclean() is not used on SwapCache pages.
+> > I believe you are safe to remove the page_test_and_clear_dirty() from here.
 > 
-> and similarly, simple math:
+> Hmm, who guarantees that page_mkclean won't be used for SwapCache in the
+> future? At least we should add a comment there.
+
+I set out to do so, to add a comment there; but honestly, it's a strange
+place for such a comment when there's no longer even the code to comment
+upon.  And page_mkclean_file(), called in the line above, already says
+BUG_ON(PageAnon(page)), so it would soon fire if we ever make a change
+that sends PageSwapCache pages this way.  It is possible that one day we
+shall want to send tmpfs and swapcache down this route, I'm not ruling
+that out; but then we shall have to extend page_mkclean(), yes.
+
 > 
->     something = <((FOO << XXX_SHIFT) | (BAR << YYY_SHIFT))>;
+> The patch relies on the software dirty bit tracking for file backed pages,
+> if dirty bit tracking is not done for tmpfs and ramfs we are borked.
+>  
+> > You mention above that even the kernel writing to the page would mark
+> > the s390 storage key dirty.  I think that means that these shm and
+> > tmpfs and ramfs pages would all have dirty storage keys just from the
+> > clear_highpage() used to prepare them originally, and so would have
+> > been found dirty anyway by the existing code here in page_remove_rmap(),
+> > even though other architectures would regard them as clean and removable.
 > 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> No, the clear_highpage() will set the dirty bit in the storage key but
+> the SetPageUptodate will clear the complete storage key including the
+> dirty bit.
+
+Ah, thank you Martin, that clears that up...
+
+>  
+> > If that's the case, then maybe we'd do better just to mark them dirty
+> > when faulted in the s390 case.  Then your patch above should (I think)
+> > be safe.  Though I'd then be VERY tempted to adjust the SwapCache case
+> > too (I've not thought through exactly what that patch would be, just
+> > one or two suitably placed SetPageDirtys, I think), and eliminate
+> > page_test_and_clear_dirty() altogether - no tears shed by any of us!
+
+... so I should not hurt your performance with a change of that kind.
+
 > 
+> I am seriously tempted to switch to pure software dirty bits by using
+> page protection for writable but clean pages. The worry is the number of
+> additional protection faults we would get. But as we do software dirty
+> bit tracking for the most part anyway this might not be as bad as it
+> used to be.
+
+That's exactly the same reason why tmpfs opts out of dirty tracking, fear
+of unnecessary extra faults.  Anomalous as s390 is here, tmpfs is being
+anomalous too, and I'd be a hypocrite to push for you to make that change.
+
+> 
+> > A separate worry came to mind as I thought about your patch: where
+> > in page migration is s390's dirty storage key migrated from old page
+> > to new?  And if there is a problem there, that too should be fixed
+> > by what I propose in the previous paragraph.
+> 
+> That is covered by the SetPageUptodate() in migrate_page_copy().,> 
+
+I don't think so: that makes sure that the newpage is not marked
+dirty in storage key just because of the copy_highpage to it; but
+I see nothing to mark the newpage dirty in storage key when the
+old page was dirty there.
+
+Hugh
