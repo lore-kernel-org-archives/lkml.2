@@ -1,101 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab2JITiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:38:54 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:43678
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752760Ab2JITiv (ORCPT
+	id S1752466Ab2JIToy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:44:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54838 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2JITov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:38:51 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h93fhd25hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-X-WSS-ID: 0MBN58L-01-0FZ-02
-X-M-MSG: 
-Date: Tue, 9 Oct 2012 21:38:44 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, <stable@vger.kernel.org>
-Subject: [PATCH] cpufreq, powernow-k8: Fix usage of smp_processor_id() in
- preemptible code
-Message-ID: <20121009193844.GC7724@alberich>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 9 Oct 2012 15:44:51 -0400
+Date: Tue, 9 Oct 2012 12:44:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+Message-Id: <20121009124449.f54bf8cb.akpm@linux-foundation.org>
+In-Reply-To: <1349654386-18378-2-git-send-email-kys@microsoft.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+	<1349654386-18378-1-git-send-email-kys@microsoft.com>
+	<1349654386-18378-2-git-send-email-kys@microsoft.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun,  7 Oct 2012 16:59:46 -0700
+"K. Y. Srinivasan" <kys@microsoft.com> wrote:
 
-Commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9
-(cpufreq/powernow-k8: workqueue user shouldn't migrate the kworker to another CPU)
-causes powernow-k8 to trigger a preempt warning, e.g.:
+> Add the basic balloon driver.
 
-  BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq/3776
-  caller is powernowk8_target+0x20/0x49
-  Pid: 3776, comm: cpufreq Not tainted 3.6.0 #9
-  Call Trace:
-   [<ffffffff8125b447>] debug_smp_processor_id+0xc7/0xe0
-   [<ffffffff814877e7>] powernowk8_target+0x20/0x49
-   [<ffffffff81482b02>] __cpufreq_driver_target+0x82/0x8a
-   [<ffffffff81484fc6>] cpufreq_governor_performance+0x4e/0x54
-   [<ffffffff81482c50>] __cpufreq_governor+0x8c/0xc9
-   [<ffffffff81482e6f>] __cpufreq_set_policy+0x1a9/0x21e
-   [<ffffffff814839af>] store_scaling_governor+0x16f/0x19b
-   [<ffffffff81484f16>] ? cpufreq_update_policy+0x124/0x124
-   [<ffffffff8162b4a5>] ? _raw_spin_unlock_irqrestore+0x2c/0x49
-   [<ffffffff81483640>] store+0x60/0x88
-   [<ffffffff811708c0>] sysfs_write_file+0xf4/0x130
-   [<ffffffff8111243b>] vfs_write+0xb5/0x151
-   [<ffffffff811126e0>] sys_write+0x4a/0x71
-   [<ffffffff816319a9>] system_call_fastpath+0x16/0x1b
+hm, how many balloon drivers does one kernel need?
 
-Fix this by using get_cpu/put_cpu in powernowk8_target().
+Although I see that the great majority of this code is hypervisor-specific.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- drivers/cpufreq/powernow-k8.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+> Windows hosts dynamically manage the guest
+> memory allocation via a combination memory hot add and ballooning. Memory
+> hot add is used to grow the guest memory upto the maximum memory that can be
+> allocatted to the guest. Ballooning is used to both shrink as well as expand
+> up to the max memory. Supporting hot add needs additional support from the
+> host. We will support hot add when this support is available. For now,
+> by setting the VM startup memory to the VM  max memory, we can use
+> ballooning alone to dynamically manage memory allocation amongst
+> competing guests on a given host.
+> 
+>
+> ...
+>
+> +static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
+> +			 struct dm_balloon_response *bl_resp, int alloc_unit,
+> +			 bool *alloc_error)
+> +{
+> +	int i = 0;
+> +	struct page *pg;
+> +
+> +	if (num_pages < alloc_unit)
+> +		return 0;
+> +
+> +	for (i = 0; (i * alloc_unit) < num_pages; i++) {
+> +		if (bl_resp->hdr.size + sizeof(union dm_mem_page_range) >
+> +			PAGE_SIZE)
+> +			return i * alloc_unit;
+> +
+> +		pg = alloc_pages(GFP_HIGHUSER | __GFP_NORETRY | GFP_ATOMIC |
+> +				__GFP_NOMEMALLOC | __GFP_NOWARN,
+> +				get_order(alloc_unit << PAGE_SHIFT));
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 1a40935..3d1df2a 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1220,17 +1220,20 @@ static long powernowk8_target_fn(void *arg)
- static int powernowk8_target(struct cpufreq_policy *pol,
- 		unsigned targfreq, unsigned relation)
- {
-+	int this_cpu, ret;
- 	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
- 					     .relation = relation };
- 
--	/*
--	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
--	 * that we're bound to the current CPU and pol->cpu stays online.
--	 */
--	if (smp_processor_id() == pol->cpu)
--		return powernowk8_target_fn(&pta);
--	else
--		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
-+	this_cpu = get_cpu();
-+	if (this_cpu == pol->cpu) {
-+		ret = powernowk8_target_fn(&pta);
-+		put_cpu();
-+	} else {
-+		put_cpu();
-+		ret = work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
-+	}
-+
-+	return ret;
- }
- 
- /* Driver entry point to verify the policy and range of frequencies */
--- 
-1.7.12
+This choice of GFP flags is basically impossible to understand, so I
+suggest that a comment be added explaining it all.
 
+I'm a bit surprised at the inclusion of GFP_ATOMIC as it will a) dip
+into page reserves, whcih might be undesirable and b) won't even
+reclaim clean pages, which seems desirable.  I suggest this also be
+covered in the forthcoming code comment.
+
+drivers/misc/vmw_balloon.c seems to me to have used better choices here.
+
+> +		if (!pg) {
+> +			*alloc_error = true;
+> +			return i * alloc_unit;
+> +		}
+> +
+> +		totalram_pages -= alloc_unit;
+
+Well, I'd consider totalram_pages to be an mm-private thing which drivers
+shouldn't muck with.  Why is this done?
+
+drivers/xen/balloon.c and drivers/virtio/virtio_balloon.c also alter
+totalram_pages, also without explaining why. 
+drivers/misc/vmw_balloon.c does not.
+
+> +		dm->num_pages_ballooned += alloc_unit;
+> +
+> +		bl_resp->range_count++;
+> +		bl_resp->range_array[i].finfo.start_page =
+> +			page_to_pfn(pg);
+> +		bl_resp->range_array[i].finfo.page_cnt = alloc_unit;
+> +		bl_resp->hdr.size += sizeof(union dm_mem_page_range);
+> +
+> +	}
+> +
+> +	return num_pages;
+> +}
+>
+> ...
+>
 
