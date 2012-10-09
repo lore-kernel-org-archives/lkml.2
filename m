@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2JITzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:55:18 -0400
-Received: from mail.servus.at ([193.170.194.20]:36604 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2JITzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:55:16 -0400
-Message-ID: <50748113.80408@oberhumer.com>
-Date: Tue, 09 Oct 2012 21:54:59 +0200
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.7) Gecko/20120824 Thunderbird/10.0.7
+	id S1752691Ab2JIT4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:56:50 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:58537
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751275Ab2JIT4s convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 15:56:48 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1202h1d1ah1d2ahzzz2fh2a8h668h839h944hf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+Date: Tue, 9 Oct 2012 12:56:06 -0700
+From: Arun Easi <arun.easi@qlogic.com>
+X-X-Sender: aeasi@mvluser04.mv.qlogic.com
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>
+Subject: Re: [PATCH] [RESEND] qla2xxx: fix potential deadlock on
+ ha->hardware_lock
+In-Reply-To: <1349808467.3776.48.camel@haakon2.linux-iscsi.org>
+Message-ID: <alpine.LRH.2.00.1210091252480.20631@mvluser04.mv.qlogic.com>
+References: <506D80C2.5040405@linux.vnet.ibm.com>  <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>  <alpine.LNX.2.00.1210080922250.28357@pobox.suse.cz> <1349808467.3776.48.camel@haakon2.linux-iscsi.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Johannes Stezenbach <js@sig21.net>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH 0/3] Update LZO compression
-References: <cover.1349621096.git.markus@oberhumer.com> <20121009122614.569b9535.akpm@linux-foundation.org>
-In-Reply-To: <20121009122614.569b9535.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Nick,
 
-On 2012-10-09 21:26, Andrew Morton wrote:
-> On Sun, 7 Oct 2012 17:07:55 +0200
-> "Markus F.X.J. Oberhumer" <markus@oberhumer.com> wrote:
-> 
->> As requested by akpm I am sending my "lzo-update" branch at
+On Tue, 9 Oct 2012, 11:47am -0700, Nicholas A. Bellinger wrote:
+
+> Hi Jiri, Andrew, Arun & Co,
+>
+--8<-- snipped --
+>
+> Also please have a look below for a few more related items I noticed
+> while reviewing this patch..
+>
+>>  drivers/scsi/qla2xxx/qla_init.c |    5 +++--
+>>  1 files changed, 3 insertions(+), 2 deletions(-)
 >>
->>   git://github.com/markus-oberhumer/linux.git lzo-update
+>> diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+>> index 799a58b..48fca47 100644
+>> --- a/drivers/scsi/qla2xxx/qla_init.c
+>> +++ b/drivers/scsi/qla2xxx/qla_init.c
+>> @@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>>      uint8_t       domain;
+>>      char            connect_type[22];
+>>      struct qla_hw_data *ha = vha->hw;
+>> +    unsigned long flags;
 >>
->> to lkml as a patch series created by "git format-patch -M v3.5..lzo-update".
+>>      /* Get host addresses. */
+>>      rval = qla2x00_get_adapter_id(vha,
+>> @@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
+>>      vha->d_id.b.area = area;
+>>      vha->d_id.b.al_pa = al_pa;
 >>
->> You can also browse the branch at
+>> -    spin_lock(&ha->vport_slock);
+>> +    spin_lock_irqsave(&ha->vport_slock, flags);
+>>      qlt_update_vp_map(vha, SET_AL_PA);
+>> -    spin_unlock(&ha->vport_slock);
+>> +    spin_unlock_irqrestore(&ha->vport_slock, flags);
 >>
->>   https://github.com/markus-oberhumer/linux/compare/lzo-update
+>>      if (!vha->flags.init_done)
+>>              ql_log(ql_log_info, vha, 0x2010,
 >>
->> and review the three patches at
->>
->>   https://github.com/markus-oberhumer/linux/commit/7c979cebc0f93dc692b734c12665a6824d219c20
->>   https://github.com/markus-oberhumer/linux/commit/10f6781c8591fe5fe4c8c733131915e5ae057826
->>   https://github.com/markus-oberhumer/linux/commit/5f702781f158cb59075cfa97e5c21f52275057f1
-> 
-> The changes look OK to me.  Please ask Stephen to include the tree in
-> linux-next, for a 3.7 merge.
+>
+> So while looking at other ->vport_slock + qlt_update_vp_map() usage, two
+> more items caught my eye:
+>
+> In qla_mid.c:qla24xx_disable_vp() code:
+>
+>        ret = qla24xx_control_vp(vha, VCE_COMMAND_DISABLE_VPS_LOGO_ALL);
+>        atomic_set(&vha->loop_state, LOOP_DOWN);
+>        atomic_set(&vha->loop_down_timer, LOOP_DOWN_TIME);
+>
+>        /* Remove port id from vp target map */
+>        qlt_update_vp_map(vha, RESET_AL_PA);
+>
+>        qla2x00_mark_vp_devices_dead(vha);
+>        atomic_set(&vha->vp_state, VP_FAILED);
+>
+> AFAICT all callers of qlt_update_vp_map() into qla_target.c code should
+> be holding ->vport_slock.  I'll send out a separate patch for this
+> shortly.
 
-I'd ask you to include my "lzo-update" branch in linux-next:
+Makes sense.
 
-  git://github.com/markus-oberhumer/linux.git lzo-update
+>
+> And in qla_init.c:qla2x00_init_rings() code:
+>
+>        for (que = 0; que < ha->max_rsp_queues; que++) {
+>                rsp = ha->rsp_q_map[que];
+>                if (!rsp)
+>                        continue;
+>                /* Initialize response queue entries */
+>                qla2x00_init_response_q_entries(rsp);
+>        }
+>
+>        spin_lock(&ha->vport_slock);
+>
+>        spin_unlock(&ha->vport_slock);
+>
+>        ha->tgt.atio_ring_ptr = ha->tgt.atio_ring;
+>        ha->tgt.atio_ring_index = 0;
+>        /* Initialize ATIO queue entries */
+>        qlt_init_atio_q_entries(vha);
+>
+> The usage of ->vport_slock seems to be now either unnecessary, or a
+> result of some bad merge outside of qla2xxx target mode.
+>
+> Qlogic folks, can this (leftover..?) usage of ->vport_slock now be
+> safety removed..?
+>
 
-> The changelog for patch 2/3 says:
-> 
-> : This commit updates the kernel LZO code to the current upsteam version
-> : which features a significant speed improvement - benchmarking the Calgary
-> : and Silesia test corpora typically shows a doubled performance in
-> : both compression and decompression on modern i386/x86_64/powerpc machines.
-> 
-> There are significant clients of the LZO library - crypto, btrfs,
-> jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
-> and ask that they test the LZO changes once they land in linux-next. 
-> For correctness and performance, please.
+Yes, this is a left over of code removal and can be safely removed. We
+already have a patch queued internally for this.
 
-The core compression and decompression code has been thoroughly tested, so I
-do not expect major problems.
+--Arun
 
-Good testing after the merge and feedback about build or performance issues
-(and improvements!) is highly appreciated.
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
-Many thanks,
-Markus
-
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
