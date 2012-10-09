@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2JIGSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:18:33 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:35634 "EHLO mail.x86-64.org"
+	id S1753030Ab2JIGT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:19:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42003 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293Ab2JIGSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:18:32 -0400
-Date: Tue, 9 Oct 2012 08:18:18 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] AMD MCE injection improvs
-Message-ID: <20121009061818.GB23165@aftab.osrc.amd.com>
-References: <1349716293-16723-1-git-send-email-bp@amd64.org>
- <CA+8MBbJw8dQEJK-fXFKkDS0_+Ax6ZxppkmxBK+AGafk1YLcvyQ@mail.gmail.com>
+	id S1751615Ab2JIGT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 02:19:58 -0400
+Date: Tue, 9 Oct 2012 08:19:42 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
+To: Zhao Hongjiang <zhaohongjiang37@gmail.com>
+cc: jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        serge.hallyn@canonical.com, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] ext3: fix return values on parse_options() failure
+In-Reply-To: <5073BABF.8090206@gmail.com>
+Message-ID: <alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
+References: <5073BABF.8090206@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbJw8dQEJK-fXFKkDS0_+Ax6ZxppkmxBK+AGafk1YLcvyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 04:58:34PM -0700, Tony Luck wrote:
-> On Mon, Oct 8, 2012 at 10:11 AM, Borislav Petkov <bp@amd64.org> wrote:
-> >  create mode 100644 arch/x86/ras/ras.c
+On Tue, 9 Oct 2012, Zhao Hongjiang wrote:
+
+> Date: Tue, 09 Oct 2012 13:48:47 +0800
+> From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
+> To: jack@suse.cz
+> Cc: akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+>     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+>     Eric W. Biederman <ebiederm@xmission.com>, serge.hallyn@canonical.com,
+>     containers@lists.linux-foundation.org
+> Subject: [PATCH] ext3: fix return values on parse_options() failure
 > 
-> Overall it looks good - but I'm a bit puzzled by this ras.c file that gets
-> created as an empty file in part1, and is still empty at the end of the
-> series.
+> From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 > 
-> What is going to go into it?
+> parse_options() in ext3 should return 0 when parse the mount options fails.
+> 
 
-Yeah, maybe it should be called core.c and all the shared functionality
-would go there. I put it there initially for the first patch but I
-realize now, we won't need it just yet - I'll drop it.
+Ah, it really is a joy to read the parse_options() :). But this fix
+makes sense, thanks for catching it.
 
-Thanks.
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 
--- 
-Regards/Gruss,
-Boris.
+-Lukas
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+> ---
+>  fs/ext3/super.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> index 17ae5c8..ebf8312 100644
+> --- a/fs/ext3/super.c
+> +++ b/fs/ext3/super.c
+> @@ -1001,7 +1001,7 @@ static int parse_options (char *options, struct super_block *sb,
+>  			uid = make_kuid(current_user_ns(), option);
+>  			if (!uid_valid(uid)) {
+>  				ext3_msg(sb, KERN_ERR, "Invalid uid value %d", option);
+> -				return -1;
+> +				return 0;
+> 
+>  			}
+>  			sbi->s_resuid = uid;
+> @@ -1012,7 +1012,7 @@ static int parse_options (char *options, struct super_block *sb,
+>  			gid = make_kgid(current_user_ns(), option);
+>  			if (!gid_valid(gid)) {
+>  				ext3_msg(sb, KERN_ERR, "Invalid gid value %d", option);
+> -				return -1;
+> +				return 0;
+>  			}
+>  			sbi->s_resgid = gid;
+>  			break;
+> -- 1.7.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
