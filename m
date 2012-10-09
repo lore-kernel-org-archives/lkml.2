@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab2JIQt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:49:26 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53396 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab2JIQtW (ORCPT
+	id S1751724Ab2JIQut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:50:49 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:53067 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab2JIQuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:49:22 -0400
-Date: Tue, 9 Oct 2012 09:46:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Adil Mujeeb <mujeeb.adil@gmail.com>, pavel@ucw.cz,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: winbond: wbusb: Fixed coding style issue
-Message-ID: <20121009164614.GA17274@kroah.com>
-References: <1349799055-4496-1-git-send-email-mujeeb.adil@gmail.com>
- <1349799738.2386.1.camel@joe-AO722>
+	Tue, 9 Oct 2012 12:50:46 -0400
+Date: Tue, 9 Oct 2012 12:38:59 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/4] ACPI: add drivers_autoprobe in struct acpi_device
+Message-ID: <20121009163858.GA25276@phenom.dumpdata.com>
+References: <CAE9FiQWgvVqnTTeYFvxf1GxLcEEeRyN-uSKPdg3o69oCpm43sQ@mail.gmail.com>
+ <1349305214-3241-1-git-send-email-yinghai@kernel.org>
+ <1349305214-3241-2-git-send-email-yinghai@kernel.org>
+ <CACJDEmoeD+XwjGnA2WwkeJ5TrsaXfgw+mZHPDcX0+7QZ9_80SA@mail.gmail.com>
+ <CAE9FiQVFY1M65smht2vkAAR3nvH+SMUe2NteBvUyZzqabARV2Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349799738.2386.1.camel@joe-AO722>
+In-Reply-To: <CAE9FiQVFY1M65smht2vkAAR3nvH+SMUe2NteBvUyZzqabARV2Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 09:22:18AM -0700, Joe Perches wrote:
-> On Tue, 2012-10-09 at 21:40 +0530, Adil Mujeeb wrote:
-> > Repalces printk's with pr_debug
-> []
-> > diff --git a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> > index 0ca857a..48fe622 100644
-> > --- a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> > +++ b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
-> > @@ -79,18 +79,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
-> >  static void wbsoft_remove_interface(struct ieee80211_hw *dev,
-> >  				    struct ieee80211_vif *vif)
-> >  {
-> > -	printk("wbsoft_remove interface called\n");
-> > +	pr_debug("wbsoft_remove interface called\n");
+On Thu, Oct 04, 2012 at 08:15:44AM -0700, Yinghai Lu wrote:
+> On Thu, Oct 4, 2012 at 6:03 AM, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
+> > On Wed, Oct 3, 2012 at 7:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> To use to control the delay attach driver for acpi_device.
+> >
+> > <blinks>
+> > I am not sure what this says. Can you please explain how it controls
+> > the delaying of
+> > attaching drivers?
+> >>
+> >> Will use bus notifier to toggle this bits when needed.
+> >
+> > Will use ..? In a subsequent patch? Which patch? And when is this
+> > needed? Is there a patch that needs this?
 > 
-> It'd be more consistent to use
-> 	pr_debug("%s called\n", __func__);
-> everywhere.
-> 
-> It might be even nicer to remove almost all of these.
-> 
+> please check patch 0-4 as a whole.
 
-Yes, "tracing" type debug calls like this should all be removed, now
-that we have built-in function call tracing in the core kernel itself.
+But that is not how one is going to read the source code in a year or
+so. In a year I will look at at file, run 'git gui annotate <file>' and
+from the lines can find the corresponding patch. Then from there on
+continue on to get the other patches.
 
-greg k-h
+The point is that in a year or so, the writeup you did will be
+forgotten. If it is part of the _patch_ then it will not be.
+
+If that means the git commit description has a couple of paragraphs
+- that is OK.
+> 
+> Yinghai
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
