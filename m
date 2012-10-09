@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2JIRa3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:30:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32907 "EHLO
+	id S932134Ab2JIRaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:30:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32918 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab2JIRaX (ORCPT
+	with ESMTP id S932106Ab2JIRah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:30:23 -0400
-Date: Tue, 9 Oct 2012 10:29:44 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-mwfqji9f17k5j81l1404dk3q@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+	Tue, 9 Oct 2012 13:30:37 -0400
+Date: Tue, 9 Oct 2012 10:24:05 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-96c47f19846742bdfa3c153c8d26ccca5945586b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu
+In-Reply-To: <1349448287-18919-4-git-send-email-jolsa@redhat.com>
+References: <1349448287-18919-4-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Have the page size value available for all tools
-Git-Commit-ID: 0c1fe6b2f30fa275d939071293b6e28771283f6d
+Subject: [tip:perf/core] perf diff:
+  Add option to sort entries based on diff computation
+Git-Commit-ID: 96c47f19846742bdfa3c153c8d26ccca5945586b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,152 +34,347 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:29:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:24:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0c1fe6b2f30fa275d939071293b6e28771283f6d
-Gitweb:     http://git.kernel.org/tip/0c1fe6b2f30fa275d939071293b6e28771283f6d
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 6 Oct 2012 14:57:10 -0300
+Commit-ID:  96c47f19846742bdfa3c153c8d26ccca5945586b
+Gitweb:     http://git.kernel.org/tip/96c47f19846742bdfa3c153c8d26ccca5945586b
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 5 Oct 2012 16:44:42 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 6 Oct 2012 16:33:14 -0300
+CommitDate: Fri, 5 Oct 2012 14:08:54 -0300
 
-perf tools: Have the page size value available for all tools
+perf diff: Add option to sort entries based on diff computation
 
-Its such a common need that we might as well have a global with that
-value.
+Adding support to sort hist entries based on the outcome of selected
+computation. It's now possible to specify '+' as a first character of
+'-c' option value to make such sort.
 
-Cc: David Ahern <dsahern@gmail.com>
+Example:
+
+  $ perf diff -c ratio -b
+  # Event 'cache-misses'
+  #
+  #   Baseline           Ratio      Shared Object                            Symbol
+  #   ........  ..............  .................  ................................
+  #
+        19.64%            0.69  [kernel.kallsyms]  [k] clear_page
+         0.30%            0.17  [kernel.kallsyms]  [k] mm_alloc
+         0.04%            0.20  [kernel.kallsyms]  [k] kmem_cache_alloc
+
+  $ perf diff -c +ratio -b
+  # Event 'cache-misses'
+  #
+  #   Baseline           Ratio      Shared Object                            Symbol
+  #   ........  ..............  .................  ................................
+  #
+        19.64%            0.69  [kernel.kallsyms]  [k] clear_page
+         0.04%            0.20  [kernel.kallsyms]  [k] kmem_cache_alloc
+         0.30%            0.17  [kernel.kallsyms]  [k] mm_alloc
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mwfqji9f17k5j81l1404dk3q@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349448287-18919-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c          |    2 --
- tools/perf/perf.c                  |    2 ++
- tools/perf/util/evlist.c           |    3 ---
- tools/perf/util/session.c          |    4 +---
- tools/perf/util/trace-event-read.c |    2 --
- tools/perf/util/util.c             |    2 ++
- tools/perf/util/util.h             |    2 ++
- 7 files changed, 7 insertions(+), 10 deletions(-)
+ tools/perf/Documentation/perf-diff.txt |    2 +
+ tools/perf/builtin-diff.c              |  137 ++++++++++++++++++++++++++++++++
+ tools/perf/ui/hist.c                   |   29 +++----
+ tools/perf/util/hist.h                 |    2 +
+ tools/perf/util/sort.h                 |   15 ++++
+ 5 files changed, 167 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 484f26c..e2d9872d 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -35,7 +35,6 @@ static int test__vmlinux_matches_kallsyms(void)
- 	struct map *kallsyms_map, *vmlinux_map;
- 	struct machine kallsyms, vmlinux;
- 	enum map_type type = MAP__FUNCTION;
--	long page_size = sysconf(_SC_PAGE_SIZE);
- 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index 8fff061..cff3d9b 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -79,6 +79,8 @@ OPTIONS
+ -c::
+ --compute::
+         Differential computation selection - delta,ratio (default is delta).
++        If '+' is specified as a first character, the output is sorted based
++        on the computation results.
+         See COMPARISON METHODS section for more info.
  
- 	/*
-@@ -1007,7 +1006,6 @@ static void segfault_handler(int sig __maybe_unused,
+ COMPARISON METHODS
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index e90c06a..e13cfac 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -25,6 +25,7 @@ static char	  diff__default_sort_order[] = "dso,symbol";
+ static bool  force;
+ static bool show_displacement;
+ static bool show_baseline_only;
++static bool sort_compute;
  
- static int __test__rdpmc(void)
- {
--	long page_size = sysconf(_SC_PAGE_SIZE);
- 	volatile int tmp = 0;
- 	u64 i, loops = 1000;
- 	int n;
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 6d50eb0..d480d8a 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -440,6 +440,8 @@ int main(int argc, const char **argv)
- {
- 	const char *cmd;
+ enum {
+ 	COMPUTE_DELTA,
+@@ -50,6 +51,13 @@ static int setup_compute(const struct option *opt, const char *str,
+ 		return 0;
+ 	}
  
-+	page_size = sysconf(_SC_PAGE_SIZE);
++	if (*str == '+') {
++		sort_compute = true;
++		str++;
++		if (!*str)
++			return 0;
++	}
 +
- 	cmd = perf_extract_argv0_path(argv[0]);
- 	if (!cmd)
- 		cmd = "perf-help";
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 186b877..a41dc4a 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -325,8 +325,6 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
+ 	for (i = 0; i < COMPUTE_MAX; i++)
+ 		if (!strcmp(str, compute_names[i])) {
+ 			*cp = i;
+@@ -61,6 +69,34 @@ static int setup_compute(const struct option *opt, const char *str,
+ 	return -EINVAL;
+ }
  
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
++static double get_period_percent(struct hist_entry *he, u64 period)
++{
++	u64 total = he->hists->stats.total_period;
++	return (period * 100.0) / total;
++}
++
++double perf_diff__compute_delta(struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	double new_percent = get_period_percent(he, he->stat.period);
++	double old_percent = pair ? get_period_percent(pair, pair->stat.period) : 0.0;
++
++	he->diff.period_ratio_delta = new_percent - old_percent;
++	he->diff.computed = true;
++	return he->diff.period_ratio_delta;
++}
++
++double perf_diff__compute_ratio(struct hist_entry *he)
++{
++	struct hist_entry *pair = he->pair;
++	double new_period = he->stat.period;
++	double old_period = pair ? pair->stat.period : 0;
++
++	he->diff.computed = true;
++	he->diff.period_ratio = pair ? (new_period / old_period) : 0;
++	return he->diff.period_ratio;
++}
++
+ static int hists__add_entry(struct hists *self,
+ 			    struct addr_location *al, u64 period)
  {
--	/* XXX Move this to perf.c, making it generally available */
--	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
- 	struct perf_mmap *md = &evlist->mmap[idx];
- 	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
-@@ -528,7 +526,6 @@ out_unmap:
- int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 		      bool overwrite)
- {
--	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
- 	struct perf_evsel *evsel;
- 	const struct cpu_map *cpus = evlist->cpus;
- 	const struct thread_map *threads = evlist->threads;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8cdd232..15abe40 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1375,15 +1375,13 @@ int __perf_session__process_events(struct perf_session *session,
- {
- 	u64 head, page_offset, file_offset, file_pos, progress_next;
- 	int err, mmap_prot, mmap_flags, map_idx = 0;
--	size_t	page_size, mmap_size;
-+	size_t	mmap_size;
- 	char *buf, *mmaps[8];
- 	union perf_event *event;
- 	uint32_t size;
+@@ -223,6 +259,102 @@ static void hists__baseline_only(struct hists *hists)
+ 	}
+ }
  
- 	perf_tool__fill_defaults(tool);
++static void hists__precompute(struct hists *hists)
++{
++	struct rb_node *next = rb_first(&hists->entries);
++
++	while (next != NULL) {
++		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
++
++		next = rb_next(&he->rb_node);
++
++		switch (compute) {
++		case COMPUTE_DELTA:
++			perf_diff__compute_delta(he);
++			break;
++		case COMPUTE_RATIO:
++			perf_diff__compute_ratio(he);
++			break;
++		default:
++			BUG_ON(1);
++		}
++	}
++}
++
++static int64_t cmp_doubles(double l, double r)
++{
++	if (l > r)
++		return -1;
++	else if (l < r)
++		return 1;
++	else
++		return 0;
++}
++
++static int64_t
++hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
++			int c)
++{
++	switch (c) {
++	case COMPUTE_DELTA:
++	{
++		double l = left->diff.period_ratio_delta;
++		double r = right->diff.period_ratio_delta;
++
++		return cmp_doubles(l, r);
++	}
++	case COMPUTE_RATIO:
++	{
++		double l = left->diff.period_ratio;
++		double r = right->diff.period_ratio;
++
++		return cmp_doubles(l, r);
++	}
++	default:
++		BUG_ON(1);
++	}
++
++	return 0;
++}
++
++static void insert_hist_entry_by_compute(struct rb_root *root,
++					 struct hist_entry *he,
++					 int c)
++{
++	struct rb_node **p = &root->rb_node;
++	struct rb_node *parent = NULL;
++	struct hist_entry *iter;
++
++	while (*p != NULL) {
++		parent = *p;
++		iter = rb_entry(parent, struct hist_entry, rb_node);
++		if (hist_entry__cmp_compute(he, iter, c) < 0)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++
++	rb_link_node(&he->rb_node, parent, p);
++	rb_insert_color(&he->rb_node, root);
++}
++
++static void hists__compute_resort(struct hists *hists)
++{
++	struct rb_root tmp = RB_ROOT;
++	struct rb_node *next = rb_first(&hists->entries);
++
++	while (next != NULL) {
++		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
++
++		next = rb_next(&he->rb_node);
++
++		rb_erase(&he->rb_node, &hists->entries);
++		insert_hist_entry_by_compute(&tmp, he, compute);
++	}
++
++	hists->entries = tmp;
++}
++
+ static void hists__process(struct hists *old, struct hists *new)
+ {
+ 	hists__match(old, new);
+@@ -230,6 +362,11 @@ static void hists__process(struct hists *old, struct hists *new)
+ 	if (show_baseline_only)
+ 		hists__baseline_only(new);
  
--	page_size = sysconf(_SC_PAGESIZE);
++	if (sort_compute) {
++		hists__precompute(new);
++		hists__compute_resort(new);
++	}
++
+ 	hists__fprintf(new, true, 0, 0, stdout);
+ }
+ 
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 1b633a4..659f2a2 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -242,24 +242,15 @@ static int hpp__width_delta(struct perf_hpp *hpp __maybe_unused)
+ 
+ static int hpp__entry_delta(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	struct hist_entry *pair = he->pair;
+-	struct hists *pair_hists = pair ? pair->hists : NULL;
+-	struct hists *hists = he->hists;
+-	u64 old_total, new_total;
+-	double old_percent = 0, new_percent = 0;
+-	double diff;
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%7.7s";
+ 	char buf[32] = " ";
++	double diff;
+ 
+-	old_total = pair_hists ? pair_hists->stats.total_period : 0;
+-	if (old_total > 0 && pair)
+-		old_percent = 100.0 * pair->stat.period / old_total;
 -
- 	page_offset = page_size * (data_offset / page_size);
- 	file_offset = page_offset;
- 	head = data_offset - page_offset;
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index 719ed74..3741572 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -47,8 +47,6 @@ int file_bigendian;
- int host_bigendian;
- static int long_size;
+-	new_total = hists->stats.total_period;
+-	if (new_total > 0)
+-		new_percent = 100.0 * he->stat.period / new_total;
++	if (he->diff.computed)
++		diff = he->diff.period_ratio_delta;
++	else
++		diff = perf_diff__compute_delta(he);
  
--static unsigned long	page_size;
--
- static ssize_t calc_data_size;
- static bool repipe;
+-	diff = new_percent - old_percent;
+ 	if (fabs(diff) >= 0.01)
+ 		scnprintf(buf, sizeof(buf), "%+4.2F%%", diff);
  
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 9966459..637b5cc 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -10,6 +10,8 @@
- /*
-  * XXX We need to find a better place for these things...
-  */
-+unsigned int page_size;
+@@ -280,12 +271,14 @@ static int hpp__width_ratio(struct perf_hpp *hpp __maybe_unused)
+ 
+ static int hpp__entry_ratio(struct perf_hpp *hpp, struct hist_entry *he)
+ {
+-	struct hist_entry *pair = he->pair;
+-	double new_period = he->stat.period;
+-	double old_period = pair ? pair->stat.period : 0;
+-	double ratio = pair ? new_period / old_period : 0;
+ 	const char *fmt = symbol_conf.field_sep ? "%s" : "%14s";
+ 	char buf[32] = " ";
++	double ratio;
 +
- bool perf_host  = true;
- bool perf_guest = false;
++	if (he->diff.computed)
++		ratio = he->diff.period_ratio;
++	else
++		ratio = perf_diff__compute_ratio(he);
  
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 70fa70b..a6b83f8 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -263,4 +263,6 @@ char *rtrim(char *s);
+ 	if (ratio > 0.0)
+ 		scnprintf(buf, sizeof(buf), "%+14.6F", ratio);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 7e4d4c2..a7ea28a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -205,4 +205,6 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
  
- void dump_stack(void);
+ unsigned int hists__sort_list_width(struct hists *self);
  
-+extern unsigned int page_size;
++double perf_diff__compute_delta(struct hist_entry *he);
++double perf_diff__compute_ratio(struct hist_entry *he);
+ #endif	/* __PERF_HIST_H */
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5786f32..337aeef 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -52,6 +52,19 @@ struct he_stat {
+ 	u32			nr_events;
+ };
+ 
++struct hist_entry_diff {
++	bool	computed;
 +
- #endif
++	/* PERF_HPP__DISPL */
++	int	displacement;
++
++	/* PERF_HPP__DELTA */
++	double	period_ratio_delta;
++
++	/* PERF_HPP__RATIO */
++	double	period_ratio;
++};
++
+ /**
+  * struct hist_entry - histogram entry
+  *
+@@ -67,6 +80,8 @@ struct hist_entry {
+ 	u64			ip;
+ 	s32			cpu;
+ 
++	struct hist_entry_diff	diff;
++
+ 	/* XXX These two should move to some tree widget lib */
+ 	u16			row_offset;
+ 	u16			nr_rows;
