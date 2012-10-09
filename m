@@ -1,50 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2JIW6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:58:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755993Ab2JIW6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:58:44 -0400
-Date: Tue, 9 Oct 2012 15:58:36 -0700
-From: Zach Brown <zab@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tytso@mit.edu
-Subject: Re: [PATCH 4/5] aio: vmap ringbuffer
-Message-ID: <20121009225836.GU26187@lenny.home.zabbo.net>
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
- <1349764760-21093-4-git-send-email-koverstreet@google.com>
- <20121009182949.GO26187@lenny.home.zabbo.net>
- <20121009213111.GE29494@google.com>
- <20121009223210.GR26187@lenny.home.zabbo.net>
- <20121009224428.GH29494@google.com>
+	id S1757135Ab2JIXAl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:00:41 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54711 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757081Ab2JIXAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 19:00:39 -0400
+Date: Tue, 9 Oct 2012 16:00:30 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+In-Reply-To: <20121009093250.GP29125@suse.de>
+Message-ID: <alpine.LSU.2.00.1210091530020.30446@eggly.anvils>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009093250.GP29125@suse.de>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009224428.GH29494@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not if we decouple the ringbuffer size from max_requests.
+On Tue, 9 Oct 2012, Mel Gorman wrote:
+> On Mon, Oct 08, 2012 at 09:24:40PM -0700, Hugh Dickins wrote:
+> > 
+> > So, if I'm understanding right, with this change s390 would be in danger
+> > of discarding shm, and mmap'ed tmpfs and ramfs pages - whereas pages
+> > written with the write system call would already be PageDirty and secure.
+> > 
+> 
+> In the case of ramfs, what marks the page clean so it could be discarded? It
+> does not participate in dirty accounting so it's not going to clear the
+> dirty flag in clear_page_dirty_for_io(). It doesn't have a writepage
+> handler that would use an end_io handler to clear the page after "IO"
+> completes. I am not seeing how a ramfs page can get discarded at the moment.
 
-Hmm, interesting.
+But we don't have a page clean bit: we have a page dirty bit, and where
+is that set in the ramfs read-fault case?  I've not experimented to check,
+maybe you're right and ramfs is exempt from the issue.  I thought it was
+__do_fault() which does the set_page_dirty, but only if FAULT_FLAG_WRITE.
+Ah, you quote almost the very place further down.
 
-> This would be useful to do anyways because right now, allocating a kiocb
-> has to take a global refcount and check head and tail in the ringbuffer
-> just so it can avoid overflowing the ringbuffer.
+> 
+> shm and tmpfs are indeed different and I did not take them into account
+> (ba dum tisch) when reviewing. For those pages would it be sufficient to
+> check the following?
+> 
+> PageSwapCache(page) || (page->mapping && !bdi_cap_account_dirty(page->mapping)
 
-I'm not sure what you mean by a 'global refcount'.. do you mean the
-per-mm ctx_lock?
+Something like that, yes: I've a possible patch I'll put in reply to Jan.
 
-> If we change aio_complete() so that if the ringbuffer is full then the
-> kiocb just goes on a linked list - we can size the ringbuffer so this
-> doesn't happen normally and avoid the global synchronization in the fast
-> path.
+> 
+> The problem the patch dealt with involved buffers associated with the page
+> and that shouldn't be a problem for tmpfs, right?
 
-How would completion events make their way from the list to the ring if
-an app is only checking the ring for completions from userspace?
+Right, though I'm now beginning to wonder what the underlying bug is.
+It seems to me that we have a bug and an optimization on our hands,
+and have rushed into the optimization which would avoid the bug,
+without considering what the actual bug is.  More in reply to Jan.
 
-- z
+> I recognise that this
+> might work just because of co-incidence and set off your "Yuck" detector
+> and you'll prefer the proposed solution below.
+
+No, I was mistaken to think that s390 would have dirty pages where
+others had clean, Martin has now explained that SetPageUptodate cleans.
+I didn't mind continuing an (imagined) inefficiency in s390, but I don't
+want to make it more inefficient.
+
+> 
+> > You mention above that even the kernel writing to the page would mark
+> > the s390 storage key dirty.  I think that means that these shm and
+> > tmpfs and ramfs pages would all have dirty storage keys just from the
+> > clear_highpage() used to prepare them originally, and so would have
+> > been found dirty anyway by the existing code here in page_remove_rmap(),
+> > even though other architectures would regard them as clean and removable.
+> > 
+> > If that's the case, then maybe we'd do better just to mark them dirty
+> > when faulted in the s390 case.  Then your patch above should (I think)
+> > be safe.  Though I'd then be VERY tempted to adjust the SwapCache case
+> > too (I've not thought through exactly what that patch would be, just
+> > one or two suitably placed SetPageDirtys, I think), and eliminate
+> > page_test_and_clear_dirty() altogether - no tears shed by any of us!
+
+So that fantasy was all wrong: appealing, but wrong.
+
+> >  
+> 
+> Do you mean something like this?
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 5736170..c66166f 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3316,7 +3316,20 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		} else {
+>  			inc_mm_counter_fast(mm, MM_FILEPAGES);
+>  			page_add_file_rmap(page);
+> -			if (flags & FAULT_FLAG_WRITE) {
+> +
+> +			/*
+> +			 * s390 depends on the dirty flag from the storage key
+> +			 * being propagated when the page is unmapped from the
+> +			 * page tables. For dirty-accounted mapping, we instead
+> +			 * depend on the page being marked dirty on writes and
+> +			 * being write-protected on clear_page_dirty_for_io.
+> +			 * The same protection does not apply for tmpfs pages
+> +			 * that do not participate in dirty accounting so mark
+> +			 * them dirty at fault time to avoid the data being
+> +			 * lost
+> +			 */
+> +			if (flags & FAULT_FLAG_WRITE ||
+> +			    !bdi_cap_account_dirty(page->mapping)) {
+>  				dirty_page = page;
+>  				get_page(dirty_page);
+>  			}
+> 
+> Could something like this result in more writes to swap? Lets say there
+> is an unmapped tmpfs file with data on it -- a process maps it, reads the
+> entire mapping and exits. The page is now dirty and potentially will have
+> to be rewritten to swap. That seems bad. Did I miss your point?
+
+My point was that I mistakenly thought s390 must already be behaving
+like that, so wanted it to continue that way, but with cleaner source.
+
+But the CONFIG_S390 in SetPageUptodate makes sure that the zeroed page
+starts out storage-key-clean: so you're exactly right, my suggestion
+would result in more writes to swap for it, which is not acceptable.
+
+(Plus, having insisted that ramfs is also affected, I went on
+to forget that, and was imagining a simple change in mm/shmem.c.)
+
+Hugh
+
+> 
+> > A separate worry came to mind as I thought about your patch: where
+> > in page migration is s390's dirty storage key migrated from old page
+> > to new?  And if there is a problem there, that too should be fixed
+> > by what I propose in the previous paragraph.
+> > 
+> 
+> hmm, very good question. It should have been checked in
+> migrate_page_copy() where it could be done under the page lock before
+> the PageDirty check. Martin?
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
