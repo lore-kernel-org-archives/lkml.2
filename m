@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab2JIWb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:31:58 -0400
-Received: from fieldses.org ([174.143.236.118]:52128 "EHLO fieldses.org"
+	id S1755891Ab2JIWcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:32:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386Ab2JIWbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:31:55 -0400
-Date: Tue, 9 Oct 2012 18:31:39 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121009223139.GA25826@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
- <87txu3bdnj.fsf@xmission.com>
+	id S1754600Ab2JIWcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 18:32:19 -0400
+Date: Tue, 9 Oct 2012 15:32:10 -0700
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tytso@mit.edu
+Subject: Re: [PATCH 4/5] aio: vmap ringbuffer
+Message-ID: <20121009223210.GR26187@lenny.home.zabbo.net>
+References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+ <1349764760-21093-4-git-send-email-koverstreet@google.com>
+ <20121009182949.GO26187@lenny.home.zabbo.net>
+ <20121009213111.GE29494@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87txu3bdnj.fsf@xmission.com>
+In-Reply-To: <20121009213111.GE29494@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
-> 
-> > On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
-> >> Cc'ing Eric since I seem to recall he suggested doing it this way?
-> 
-> Yes.  On second look setting fs->root won't work. We need to change fs.
-> The problem is that by default all kernel threads share fs so changing
-> fs->root will have non-local consequences.
+> If it is measurable I'll take another stab at using memory from
+> __get_free_pages() for the ringbuffer. That really would be the ideal
+> solution.
 
-Oh, huh.  And we can't "unshare" it somehow?
+No, then you'll run into high order allocation failures with rings that
+don't fit in a single page.
 
-Or, previously you suggested:
+> The other reason I wanted to do this was for the aio attributes stuff -
+> for return values, I think the only sane way is for the return values to
+> go in the ringbuffer, which means records are no longer fixed size so
+> dealing with pages is even more of a pain.
 
-	- introduce sockaddr_fd that can be applied to AF_UNIX sockets,
-	  and teach unix_bind and unix_connect how to deal with a second
-	  type of sockaddr, AT_FD:
-	  struct sockaddr_fd { short fd_family; short pad; int fd; }
+Then let's see that, please.
 
-	- introduce sockaddr_unix_at that takes a directory file
-	  descriptor as well as a unix path, and teach unix_bind and
-	  unix_connect to deal with a second sockaddr type, AF_UNIX_AT:
-	  struct sockaddr_unix_at { short family; short pad; int dfd; char path[102]; }
+And can we please stop calling them attributes?  They're inputs and
+outputs that change behaviour -- they're interfaces.
 
-Any other options?
+And no, just for the record, I don't think generic packed variable size
+structs are worth the trouble.
 
-> I very much believe we want if at all possible to perform a local
-> modification.
-> 
-> Changing fs isn't all that different from what devtmpfs is doing.
+If we're going to do a generic interface extension mechanism then we
+should put it in its own well thought out system calls, not staple it on
+to the side of aio because it's there.  It's a really crummy base to
+work from.
 
-Sorry, I don't know much about devtmpfs, are you suggesting it as a
-model?  What exactly should we look at?
-
---b.
+- z
