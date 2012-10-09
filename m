@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2JIBcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 21:32:54 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47295 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab2JIBcw (ORCPT
+	id S1752629Ab2JIBm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 21:42:59 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:60412 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab2JIBm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 21:32:52 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] [staging][zram] Fix handling of incompressible pages
-Date: Mon,  8 Oct 2012 18:32:44 -0700
-Message-Id: <1349746364-8051-1-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 8 Oct 2012 21:42:57 -0400
+Message-ID: <507380F8.4000401@linaro.org>
+Date: Mon, 08 Oct 2012 18:42:16 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Colin Cross <ccross@android.com>, Arve Hj?nnev?g <arve@android.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com
+Subject: Re: [RFC] vmevent: Implement pressure attribute
+References: <20121004110524.GA1821@lizard> <20121005092912.GA29125@suse.de> <20121007081414.GA18047@lizard> <20121008094646.GI29125@suse.de>
+In-Reply-To: <20121008094646.GI29125@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100901-7282-0000-0000-00000DB9F70E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change 130f315a introduced a bug in the handling of incompressible
-pages which resulted in memory allocation failure for such pages.
-The fix is to store the page as-is i.e. without compression if the
-compressed size exceeds a threshold (max_zpage_size) and request
-exactly PAGE_SIZE sized buffer from zsmalloc.
+On 10/08/2012 02:46 AM, Mel Gorman wrote:
+> On Sun, Oct 07, 2012 at 01:14:17AM -0700, Anton Vorontsov wrote:
+>> And here we just try to let userland to assist, userland can tell "oh,
+>> don't bother with swapping or draining caches, I can just free some
+>> memory".
+>>
+>> Quite interesting, this also very much resembles volatile mmap ranges
+>> (i.e. the work that John Stultz is leading in parallel).
+>>
+> Agreed. I haven't been paying close attention to those patches but it
+> seems to me that one possiblity is that a listener for a vmevent would
+> set volatile ranges in response.
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Reported-by: viechweg@gmail.com
-Reported-by: paerley@gmail.com
-Reported-by: wu.tommy@gmail.com
-Tested-by: wu.tommy@gmail.com
-Tested-by: michael@zugelder.org
----
- drivers/staging/zram/zram_drv.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+I don't have too much to comment on the rest of this mail, but just 
+wanted to pipe in here, as the volatile ranges have caused some confusion.
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 653b074..6edefde 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -223,8 +223,13 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
- 				ZS_MM_RO);
- 
--	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
-+	if (zram->table[index].size == PAGE_SIZE) {
-+		memcpy(uncmem, cmem, PAGE_SIZE);
-+		ret = LZO_E_OK;
-+	} else {
-+		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
- 				    uncmem, &clen);
-+	}
- 
- 	if (is_partial_io(bvec)) {
- 		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-@@ -342,8 +347,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	if (unlikely(clen > max_zpage_size))
-+	if (unlikely(clen > max_zpage_size)) {
- 		zram_stat_inc(&zram->stats.bad_compress);
-+		src = uncmem;
-+		clen = PAGE_SIZE;
-+	}
- 
- 	handle = zs_malloc(zram->mem_pool, clen);
- 	if (!handle) {
--- 
-1.7.9.5
+While your suggestion would be possible, with volatile ranges, I've been 
+promoting a more hands off-approach from the application perspective, 
+where the application always would mark data that could be regenerated 
+as volatile, unmarking it when accessing it.
+
+This way the application doesn't need to be responsive to memory 
+pressure, the kernel just takes what it needs from what the application 
+made available.
+
+Only when the application needs the data again, would it mark it 
+non-volatile (or alternatively with the new SIGBUS semantics, access the 
+purged volatile data and catch a SIGBUS), find the data was purged and 
+regenerate it.
+
+That said, hybrid approaches like you suggested would be possible, but 
+at a certain point, if we're waiting for a notification to take action, 
+it might be better just to directly free that memory, rather then just 
+setting it as volatile, and leaving it to the kernel then reclaim it for 
+you.
+
+thanks
+-john
 
