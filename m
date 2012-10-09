@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab2JILYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 07:24:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33471 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab2JILX5 (ORCPT
+	id S1753005Ab2JILcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 07:32:22 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53501 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752553Ab2JILcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 07:23:57 -0400
+	Tue, 9 Oct 2012 07:32:18 -0400
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03a.oce.net;RD:smtp02.oce.com;EFVD:NLI
+X-SpamScore: 23
+X-BigFish: VS23(zzzz1ce5h1202h1d1ah1cabh1d2ahzz8275bhz2ei87h668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441hff4s129fs1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: <linux-serial@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [REPOST] RFC: sched: Prevent wakeup to enter critical section needlessly
+Date: Tue, 9 Oct 2012 13:30:35 +0200
+Message-ID: <1349782235-8896-1-git-send-email-meltedpianoman@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com>
+References: <1348491997-30898-1-git-send-email-meltedpianoman@gmail.com>
+X-OriginalArrivalTime: 09 Oct 2012 11:30:37.0706 (UTC) FILETIME=[814526A0:01CDA611]
 MIME-Version: 1.0
-X-Originating-IP: [116.14.92.167]
-In-Reply-To: <s5hr4p8ez6u.wl%tiwai@suse.de>
-References: <CAMVG2st1-3kz-KRrm-zXZOGw8=QnyYbB3n5e8Z36xAbmD4b5RQ@mail.gmail.com>
-	<s5hvceli0ht.wl%tiwai@suse.de>
-	<CAMVG2ss7hmJAEt-vEsNBmTVDWMYCPyPo0UC34DKDBnr7t5gn8g@mail.gmail.com>
-	<s5htxu4ezc7.wl%tiwai@suse.de>
-	<s5hr4p8ez6u.wl%tiwai@suse.de>
-Date: Tue, 9 Oct 2012 19:23:56 +0800
-Message-ID: <CAMVG2svG+SNY7B=SiCL9taRGhdZtGKZ6javtpRBPUdvB825BEg@mail.gmail.com>
-Subject: Re: [3.6-rc7] switcheroo race with Intel HDA...
-From: Daniel J Blueman <daniel@quora.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2012 18:07, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 09 Oct 2012 12:04:08 +0200,
-> Takashi Iwai wrote:
->>
->> At Tue, 9 Oct 2012 00:34:09 +0800,
->> Daniel J Blueman wrote:
->> >
->> > On 8 October 2012 20:58, Takashi Iwai <tiwai@suse.de> wrote:
->> > > At Tue, 25 Sep 2012 13:20:05 +0800,
->> > > Daniel J Blueman wrote:
->> > >> On my Macbook with a discrete Nvidia GPU, there is a race between
->> > >> selecting the integrated GPU and putting the discrete GPU into D3 [1],
->> > >> reliably causing a kernel oops [2].
->> > >>
->> > >> Introducing a delay of ~1s between the calls prevents this. When the
->> > >> second 'OFF' write path executes, it looks like struct azx at
->> > >> card->private_data hasn't yet been allocated yet [3], so there is
->> > >> likely some locking missing.
->> > >
->> > > It's rather pci_get_drvdata() returning NULL (i.e. card is NULL, thus
->> > > card->private_data causes Oops).  Could you check the patch like below
->> > > and see whether you get a kernel warning (but no Oops) or the problem
->> > > gets fixed by shifting the assignment of pci drvdata?
->> > [...]
->> >
->> > Good patching. Calling pci_set_drvdata later prevents the oops in HDA,
->> > though we see unexpected 0x0 responses in the response ring buffer
->> > [1], which we don't see when there's a >~1.5s delay between IGD and
->> > OFF.
->>
->> If the previous patch fixed, it means that the switching occurred
->> during the device was being probed.  Maybe a better approach to
->> register the VGA switcheroo after the proper initialization.
->>
->> The patch below is a revised one.  Please give it a try.
->
-> Also, it's not clear which card spews the spurious response.
-> Apply the patch below in addition.
-[...]
+Check the waitqueue task list to be non empty before entering the critical
+section. This prevents locking the spin lock needlessly in case the queue
+was empty, and therefor also prevent scheduling overhead on a PREEMPT_RT
+system.
 
-hda-intel: 0000:01:00.1: spurious response 0x0:0x0, last cmd=0x1f0004
-$ lspci -s :1:0.1
-01:00.1 Audio device: NVIDIA Corporation Device 0e1b (rev ff)
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+---
 
-It's the NVIDIA device which presumably hasn't completed it's
-transition to D3 at the time the OFF is executed.
+ REPOST:
+ Request for comments:
+ - Does this make any sense?
+ - I assume that I can safely use the list_empty_careful() function here, but is
+   that correct?
 
-Thanks,
-  Daniel
+ Background to this patch:
+ Testing on a PREEMPT_RT system with TTY serial communication. Each time the TTY
+ line discipline is dereferenced the Idle handling wait queue is woken up (see
+ function put_ldisc in /drivers/tty/tty_ldisc.c)
+ However line discipline idle handling is not used very often so the wait queue
+ is empty most of the time. But still the wake_up() function enters the critical
+ section guarded by spin locks. This causes additional scheduling overhead when
+ a lower priority thread has control of that same lock.
+
+ kernel/sched/core.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c177472..c1667c4 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3090,9 +3090,19 @@ void __wake_up(wait_queue_head_t *q, unsigned int mode,
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&q->lock, flags);
+-	__wake_up_common(q, mode, nr_exclusive, 0, key);
+-	spin_unlock_irqrestore(&q->lock, flags);
++	/*
++	 * We can check for list emptiness outside the lock by using the
++	 * "careful" check that verifies both the next and prev pointers, so
++	 * that there cannot be any half-pending updates in progress.
++	 *
++	 * This prevents the wake up to enter the critical section needlessly
++	 * when the task list is empty.
++	 */
++	if (!list_empty_careful(&q->task_list)) {
++		spin_lock_irqsave(&q->lock, flags);
++		__wake_up_common(q, mode, nr_exclusive, 0, key);
++		spin_unlock_irqrestore(&q->lock, flags);
++	}
+ }
+ EXPORT_SYMBOL(__wake_up);
+ 
 -- 
-Daniel J Blueman
+1.7.9.5
+
+
