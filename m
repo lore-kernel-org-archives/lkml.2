@@ -1,234 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2JIIkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:40:39 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:32828 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab2JIIkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:40:37 -0400
+	id S1754138Ab2JIIkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 04:40:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18711 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753273Ab2JIIkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 04:40:41 -0400
+X-IronPort-AV: E=Sophos;i="4.80,560,1344182400"; 
+   d="scan'208";a="5968200"
+Message-ID: <5073E2BF.9050306@cn.fujitsu.com>
+Date: Tue, 09 Oct 2012 16:39:27 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1349496603-20775-3-git-send-email-cheiny@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
-	<1349496603-20775-3-git-send-email-cheiny@synaptics.com>
-Date: Tue, 9 Oct 2012 10:40:35 +0200
-Message-ID: <CACRpkdZ0cQPQHDCYiyQb+Qb_8nGh=4rw2CixKgAFvb-3c1LpSg@mail.gmail.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christopher Heiny <cheiny@synaptics.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wen Congyang <wency@cn.fujitsu.com>, David Rientjes <rientjes@google.com>
+CC: mingo@redhat.com, peterz@infradead.org, miaox@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com> <5073E18A.2090203@cn.fujitsu.com>
+In-Reply-To: <5073E18A.2090203@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 16:40:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 16:40:29,
+	Serialize complete at 2012/10/09 16:40:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+Hi David,
 
-> rmi_bus.c implements the basic functionality of the RMI bus.  This file is
-> greatly simplified compared to the previous patch - we've switched from
-> "do it yourself" device/driver binding to using device_type to distinguish
-> between the two kinds of devices on the bus (sensor devices and function
-> specific devices) and using the standard bus implementation to manage devices
-> and drivers.
+Thanks for reviewing this patch. :)
 
-So I think you really want Greg KH to look at this bus implementation
-now. Please include Greg on future mailings...
+On 10/09/2012 04:34 PM, Wen Congyang wrote:
+> At 10/09/2012 02:21 PM, David Rientjes Wrote:
+>> On Mon, 8 Oct 2012, Tang Chen wrote:
+>>> +	/* If the cpu has been offlined, its nid was set to -1. */
+>>> +	if (nid != -1) {
+>>
+>> NUMA_NO_NODE.
 
-It looks much improved from previous versions, and sorry if I am now
-adding even more comments, but it's because you cleared out some
-noise that was disturbing my perception so I can cleanly review
-the architecture of this thing now. (I'm impressed by your work and
-new high-speed turnaround time!)
+Yes, NUMA_NO_NODE is better. I'll improve it, thanks. :)
 
-> +#ifdef CONFIG_RMI4_DEBUG
-> +#include <linux/debugfs.h>
-> +#endif
+>>
+>> Eek, the nid shouldn't be -1 yet, though, for cpu hotplug since this
+>> should be called at CPU_DYING level and migrate_tasks() still sees a valid
+>> cpu.
 
-As noted previously, drop the #ifdef:s
+As Wen said below, nid is now set to -1 when cpu is hotremoved.
+I reproduce this problem in this situation:
 
-> +#ifdef CONFIG_RMI4_DEBUG
-> +static struct dentry *rmi_debugfs_root;
-> +#endif
+all cpus are online, and hot remove a system board directorily, without
+offlining any cpu.
 
-I'd use #ifdef CONFIG_DEBUG_FS and try to
-move this declaration closer to the actual debugfs
-code block.
+As a result, the removed cpu's nid is set to -1, and this causes
+problems.
 
-Apart from this the core bus looks good to me, but it's not my
-area of expertise...
+>
+> the cpu's node is set when the cpu is hotpluged(not online), and it will
+> be cleared when the cpu is hotremoved(This patch is in akpm tree):
+> https://lkml.org/lkml/2012/9/3/39
+>
+> I guess the task is in sleep state when the cpu is offlined, and it doesn't
+> be migrated to another cpu.
+>
+> Thanks
+> Wen Congyang
+>
+>>
+>> On x86, cpumask_of_node() is always guaranteed to return a valid cpumask
+>> after boot so presumably this is a problem in some non-x86 arch code and
+>> isn't actually a sched problem.
 
-(...)
-> diff --git a/drivers/input/rmi4/rmi_driver.c b/drivers/input/rmi4/rmi_driver.c
+BTW, my box is x86. I think for the reason I said above,
+cpumask_of_node() will no longer guaranteed anything even if on x86.
 
-> +#ifdef CONFIG_RMI4_DEBUG
+Thanks. :)
 
-I'd just use CONFIG_DEBUG_FS
+>>
+>>> +		nodemask = cpumask_of_node(nid);
+>>> +
+>>> +		/* Look for allowed, online CPU in same node. */
+>>> +		for_each_cpu(dest_cpu, nodemask) {
+>>> +			if (!cpu_online(dest_cpu))
+>>> +				continue;
+>>> +			if (!cpu_active(dest_cpu))
+>>> +				continue;
+>>> +			if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+>>> +				return dest_cpu;
+>>> +		}
+>>>   	}
+>>>
+>>>   	for (;;) {
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> +struct driver_debugfs_data {
-> +       bool done;
-> +       struct rmi_device *rmi_dev;
-> +};
-
-(...)
-> +#define DELAY_NAME "delay"
-
-This is only used in one place, why not just use the string
-"delay" there?
-
-(...)
-> +       if (IS_ENABLED(CONFIG_RMI4_SPI) && !strncmp("spi", info->proto, 3)) {
-> +               data->debugfs_delay = debugfs_create_file(DELAY_NAME,
-> +                               RMI_RW_ATTR, rmi_dev->debugfs_root, rmi_dev,
-> +                               &delay_fops);
-
-i.e. there.
-
-(...)
-> +/* Useful helper functions for u8* */
-> +
-> +static bool u8_is_any_set(u8 *target, int size)
-> +{
-> +       int i;
-> +       /* We'd like to use find_first_bit, but it ALWAYS returns 1,
-> +       *  no matter what we pass it.  So we have to do this the hard way.
-> +       *  return find_first_bit((long unsigned int *)  target, size) != 0;
-> +       */
-> +       for (i = 0; i < size; i++) {
-> +               if (target[i])
-> +                       return true;
-> +       }
-> +       return false;
-> +}
-
-Instead of:
-
-if (u8_is_any_set(foo, 128) {}
-
-Why can't you use:
-
-if (!bitmap_empty(foo, 128*8) {}
-
-?
-
-If you look at the implementation in the <linux/bitmap.h> header
-and __bitmap_empty() in lib/bitmap.c you will realize that this
-function is already optimized like this (and I actually don't think
-the RMI4 code is performance-critical for these functions anyway,
-but prove me wrong!)
-
-> +
-> +/** This is here because all those casts made for some ugly code.
-> + */
-> +static void u8_and(u8 *dest, u8 *target1, u8 *target2, int nbits)
-> +{
-> +       bitmap_and((long unsigned int *) dest,
-> +                  (long unsigned int *) target1,
-> +                  (long unsigned int *) target2,
-> +                  nbits);
-> +}
-
-Hm, getting rid of unreadable casts is a valid case.
-
-I'll be OK with this but maybe the real solution is to introduce such
-helpers into <linux/bitmap.h>?
-
-(...)
-> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
-> +{
-> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-> +       struct device *dev = &rmi_dev->dev;
-> +       struct rmi_function_container *entry;
-> +       u8 irq_status[data->num_of_irq_regs];
-
-Looking at this...
-
-What does the data->num_of_irq_regs actually contain?
-
-I just fear that it is something constant like always 2 or always 4,
-so there is actually, in reality, a 16 or 32 bit register hiding in there.
-
-In that case what you should do is to represent it as a u16 or u32 here,
-just or the bits into a status word, and then walk over that status
-word with something like ffs(bitword); ...
-
-(...)
-> +static int standard_resume(struct rmi_device *rmi_dev)
-
-Standard eh? :-)
-
-Atleast prefix with rmi4_*...
-
-> +static int rmi_driver_suspend(struct device *dev)
-> +{
-> +       struct rmi_device *rmi_dev = to_rmi_device(dev);
-> +       return standard_suspend(rmi_dev);
-> +}
-> +
-> +static int rmi_driver_resume(struct device *dev)
-> +{
-> +       struct rmi_device *rmi_dev = to_rmi_device(dev);
-> +       return standard_resume(rmi_dev);
-> +}
-
-If all these two are doing are to call another function with almost
-the same name, what is the point? Just sink the code from
-"standard_suspend()" and "standard_resume()" into these
-functions and remove a pointless layer of abstraction.
-
-Apart from this the core driver looks good to me.
-
-(...)
-> diff --git a/drivers/input/rmi4/rmi_driver.h b/drivers/input/rmi4/rmi_driver.h
-
-(...)
-> +#define simple_show_union_struct(regtype, propname, fmt)\
-> +static ssize_t tricat(rmi_fn_, FNUM, _##propname##_show)(struct device *dev,\
-> +                               struct device_attribute *attr, char *buf) {\
-> +       struct rmi_function_container *fc;\
-> +       struct FUNCTION_DATA *data;\
-> +\
-> +       fc = to_rmi_function_container(dev);\
-> +       data = fc->data;\
-> +\
-> +       return snprintf(buf, PAGE_SIZE, fmt,\
-> +                       data->regtype.propname);\
-> +}
-
-OK I see the point, but is there really no other way to do this than
-to #define huge static inlines like these? Is it really not possible to
-create just generic functions instead of going this far?
-
-(same comment for all)
-
-> +union pdt_properties {
-> +       struct {
-> +               u8 reserved_1:6;
-> +               u8 has_bsr:1;
-> +               u8 reserved_2:1;
-> +       } __attribute__((__packed__));
-> +       u8 regs[1];
-
-I don't understand what this union is trying to achieve.
-
-regs[1] does not look right considering what you're trying to
-achieve. Since the above fields require a regs[2] (9 bits!)
-to be stored. Maybe write out what you're trying to do here
-so I can understand it? (If everyone else in the world gets
-it immediately, it's maybe me that need fixing instead...)
-
-Apart from these remarks it's looking real nice now!
-
-Yours,
-Linus Walleij
