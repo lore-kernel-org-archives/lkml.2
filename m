@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab2JISVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:21:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2JISVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:21:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 5/9] ARM: Xen: fix initial build problems:
-Date: Tue, 9 Oct 2012 18:21:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <1349796183-30648-6-git-send-email-arnd@arndb.de> <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>
+	id S1752400Ab2JISZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:25:23 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:58405 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954Ab2JISZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 14:25:17 -0400
+Date: Tue, 9 Oct 2012 12:25:14 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
+ program headers
+Message-ID: <20121009182514.GF4124@obsidianresearch.com>
+References: <20121001160639.GA31620@obsidianresearch.com>
+ <20121001175647.GD2100@linaro.org>
+ <20121001183543.GC22342@obsidianresearch.com>
+ <20121002102346.GB2108@linaro.org>
+ <20121002174759.GC23733@obsidianresearch.com>
+ <20121003104335.GA2254@linaro.org>
+ <20121003184437.GB12231@obsidianresearch.com>
+ <20121004113637.GA2117@linaro.org>
+ <20121004175907.GB2994@obsidianresearch.com>
+ <20121008104649.GD2302@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210091821.27818.arnd@arndb.de>
-X-Provags-ID: V02:K0:pCU5eG1EXLHqk6USjSHpl/m9oAwRb8hRm5yQB99/6NF
- 14PqehjUA9zfcpNKKQZH+zBDwp097p0bhbKCk9SETw1wadY3C+
- 3MHtkqDzGLRJLoZTuOP2eHNUtZkswuqj78FFb8Io3LEvZaYw3z
- uKno/HJlLxqqfb0iuH58nfpjkQO4Zm8h8rPzwKuGaM+FMCt18+
- xKiaC1gOCu1Kzp+kjaQUiD/JvP8N7YoeV011nu/0DhBHanfv27
- HESRbHGFyXe3ZkeGzMQKkMSiYqJTgPmsSiezpMlgS8i50sNOCs
- s4unFVIx875znTPAbMCJAnGALPkwRyw7lhs3T/dKaaTfCRbxXZ
- sqRy/NGT3Wvq8WC6T4ZY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121008104649.GD2302@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Stefano Stabellini wrote:
-> >  config XEN
-> >       bool "Xen guest support on ARM (EXPERIMENTAL)"
-> >       depends on EXPERIMENTAL && ARM && OF
-> > +     depends on !CPU_V6
-> >       help
-> >         Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-> 
-> Considering that we rely on the virtualization extensions, this one can
-> be:
-> 
->     depends on CPU_V7
-> 
-> The rest looks fine. I can submit a second patch to change !CPU_V6 into
-> CPU_V7 later, if you prefer.
+On Mon, Oct 08, 2012 at 11:46:49AM +0100, Dave Martin wrote:
 
-CPU_V6 and CPU_V7 are not exclusive, I saw the problem when building a
-combined kernel for both V6 and V7. The code also needs to depend on ARMv7
-with virtualization extensions, but that is a different issue. We don't
-actually have a configuration symbol for that yet, as far as I can tell.
+> > Yes, but we still need rely on complex code like I2C/MTD to create a
+> > correct DTB, which again puts us back to patching the kernel for that
+> > functionality.
+> 
+> I'm still confused as to where this complexity is coming from.
+> 
+> If you need to run some complex I2C and MTD code to generate the DT, what
+> is that code doing?  If it is probing to get the information, then can you
+> avoid putting the info in the DT at all?  Primarily the DT is to describe
+> those aspects of the hardware which can't be probed.
 
-	Arnd
+At manufacturing the unit is programmed with a small datastructure that
+contains all the unique ID's (MAC addresses, etc), manufacturing
+variations (ie vendor A or B was used for a socket) and other
+ancillary data.
+
+So a fair amount of I2C and MTD stack is required just to fetch this
+structure - a full CFI probe, for instance, is needed in the NOR flash
+case just to locate the structure.
+
+Once read, things like MAC addresses are copied into the DTB, and
+certain sections of the DTB are NOP'd out - we have stanzas for chip
+vendor A and vendor B, the one that was not put on the board is
+replaced with NOP.
+
+Similar to the A/B fix, a further fixup is done based on a runtime
+probe of the programmable devices to learn their current
+configuration/memory map.
+
+It seems desirable to present a complete/correct DTB to the kernel,
+it doesn't seem there are great places to hook in custom discovery
+procedures.
+
+>From a maintenance perspective we already have to test/etc the kernel
+code for all of this, we don't want to do that twice by duplicating
+this stuff outside the kernel.
+
+> Otherwise, you that have a few static configurations: you could have one
+> pre-baked DT per hardware platform, and choose the correct one once you
+> have detected the platform.
+
+We do that too, for instance the PPC kernel we build supports 4
+different circuit boards, each served by a separate DTB, that needs a
+fixup pass.
+
+I think the biggest DTB describes about 49 devices..
+  
+> > Where the 'dev tree provider' would use the stored bootloader
+> > registers and any other information to return the proper DTB. 
+> 
+> It would need developing a bit, but something like that might be
+> possible -- it should probably be discussed via devicetree-discuss.
+> 
+> If it is doing anything less trivial than picking a pre-baked DT, the
+> rationale would need to be carefully argued.
+
+I'm not sure there is a great interest in this? What are other folks
+working on production embedded stuff doing? I suppose that will be
+more clear as device tree is rolled out.
+
+Jason
