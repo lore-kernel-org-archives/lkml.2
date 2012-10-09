@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2JIS10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:27:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56738 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab2JIS1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:27:23 -0400
+	id S1754010Ab2JIS2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:28:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab2JIS2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 14:28:04 -0400
+Date: Tue, 9 Oct 2012 11:27:55 -0700
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tytso@mit.edu
+Subject: Re: [PATCH 3/5] aio: Rewrite refcounting
+Message-ID: <20121009182755.GN26187@lenny.home.zabbo.net>
+References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+ <1349764760-21093-3-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1210091316570.29539@kaball.uk.xensource.com>
-References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210091316570.29539@kaball.uk.xensource.com>
-Date: Tue, 9 Oct 2012 11:27:22 -0700
-X-Google-Sender-Auth: IdOhbEZaOgCO-1qjtg2-NdMNeho
-Message-ID: <CAE9FiQUL=0+TfUHKdcV-OGhGbtoarHU-3ch3kqz7NmqhBPWvwQ@mail.gmail.com>
-Subject: Re: [PATCH -v2 00/10] x86: Use BRK to pre mapping page table to make
- xen happy
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349764760-21093-3-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 5:19 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
->
-> I agree with Peter that this series is going in the right direction.
-> However if I give more than 4G of RAM to the VM I get a panic at boot:
->
-> [    0.000000] Linux version 3.6.0-rc7+ (sstabellini@st22) (gcc version 4.4.5 (Debian 4.4.5-8) ) #532 SMP Tue Oct 9 12:15:32 UTC 2012
-> [    0.000000] Command line: root=/dev/xvda1 textmode=1 xencons=xvc0 debug loglevel=9 earlyprintk=xen
-> [    0.000000] ACPI in unprivileged domain disabled
-> [    0.000000] e820: BIOS-provided physical RAM map:
-> [    0.000000] Xen: [mem 0x0000000000000000-0x000000000009ffff] usable
-> [    0.000000] Xen: [mem 0x00000000000a0000-0x00000000000fffff] reserved
-> [    0.000000] Xen: [mem 0x0000000000100000-0x00000001387fffff] usable
-> [    0.000000] bootconsole [xenboot0] enabled
-> [    0.000000] NX (Execute Disable) protection: active
-> [    0.000000] DMI not present or invalid.
-> [    0.000000] e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
-> [    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
-> [    0.000000] No AGP bridge found
-> [    0.000000] e820: last_pfn = 0x138800 max_arch_pfn = 0x400000000
-> [    0.000000] e820: last_pfn = 0x100000 max_arch_pfn = 0x400000000
-> [    0.000000] initial memory mapped: [mem 0x00000000-0x02781fff]
-> [    0.000000] Base memory trampoline at [ffff88000009a000] 9a000 size 24576
-> [    0.000000] calculate_table_space_size: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] calculate_table_space_size: [mem 0x00100000-0x1387fffff]
-> [    0.000000]  [mem 0x00100000-0x1387fffff] page 4k
-> [    0.000000] init_memory_mapping: [mem 0x137e33000-0x1387fffff]
-> [    0.000000]  [mem 0x137e33000-0x1387fffff] page 4k
+On Mon, Oct 08, 2012 at 11:39:18PM -0700, Kent Overstreet wrote:
+> The refcounting before wasn't very clear; there are two refcounts in
+> struct kioctx, with an unclear relationship between them (or between
+> them and ctx->dead).
+> 
+> Now, reqs_active holds a refcount on users (when reqs_active is
+> nonzero), and the initial refcount is taken on reqs_active - when
+> ctx->dead goes to 1, we drop that initial refcount.
 
-great, thank for testing it.
+I agree that it's a mess, but let's rethink this work on top of the
+series I'm sending out that gets rid of the retry and cancel code.  It
+makes the code a lot easier to follow.  (And Jens also has some patches
+to take fewer locks in the submission path, we'll want to take them into
+account too.)
 
-will come out new version that  willget rid of find_table size and
-cal_table ...stuff.
-
-Thanks
-
-Yinghai
+- z
