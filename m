@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2JINb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:31:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64159 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab2JINbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:31:39 -0400
-Date: Tue, 9 Oct 2012 22:31:28 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [staging][zram] Fix handling of incompressible pages
-Message-ID: <20121009133128.GA3244@barrios>
-References: <1349746364-8051-1-git-send-email-ngupta@vflare.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349746364-8051-1-git-send-email-ngupta@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755765Ab2JINcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:32:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755705Ab2JINa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 09:30:59 -0400
+From: David Howells <dhowells@redhat.com>
+To: grant.likely@secretlab.ca
+Cc: dhowells@redhat.com, spi-devel-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for spi
+Date: Tue, 09 Oct 2012 14:30:45 +0100
+Message-ID: <30758.1349789445@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nitin,
+Can you merge the following branch into the spi tree please.
 
-On Mon, Oct 08, 2012 at 06:32:44PM -0700, Nitin Gupta wrote:
-> Change 130f315a introduced a bug in the handling of incompressible
-> pages which resulted in memory allocation failure for such pages.
-> The fix is to store the page as-is i.e. without compression if the
-> compressed size exceeds a threshold (max_zpage_size) and request
-> exactly PAGE_SIZE sized buffer from zsmalloc.
+This is to complete part of the Userspace API (UAPI) disintegration for which
+the preparatory patches were pulled recently.  After these patches, userspace
+headers will be segregated into:
 
-It seems you found a bug and already fixed it with below helpers.
-But unfortunately, description isn't enough to understand the problem for me.
-Could you explain in detail?
-You said it results in memory allocation failure. What is failure?
-You mean this code by needing a few pages for zspage to meet class size?
+	include/uapi/linux/.../foo.h
 
-        handle = zs_malloc(zram->mem_pool, clen);
-        if (!handle) {
-                pr_info("Error allocating memory for compressed "
-                        "page: %u, size=%zu\n", index, clen);
-                ret = -ENOMEM;
-                goto out;
-        }
+for the userspace interface stuff, and:
 
-So instead of allocating more pages for incompressible page to make zspage,
-just allocate a page for PAGE_SIZE class without compression?
+	include/linux/.../foo.h
 
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> Reported-by: viechweg@gmail.com
-> Reported-by: paerley@gmail.com
-> Reported-by: wu.tommy@gmail.com
-> Tested-by: wu.tommy@gmail.com
-> Tested-by: michael@zugelder.org
-> ---
->  drivers/staging/zram/zram_drv.c |   12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 653b074..6edefde 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -223,8 +223,13 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->  	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
->  				ZS_MM_RO);
->  
-> -	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
-> +	if (zram->table[index].size == PAGE_SIZE) {
-> +		memcpy(uncmem, cmem, PAGE_SIZE);
-> +		ret = LZO_E_OK;
-> +	} else {
-> +		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
->  				    uncmem, &clen);
-> +	}
->  
->  	if (is_partial_io(bvec)) {
->  		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-> @@ -342,8 +347,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		goto out;
->  	}
->  
-> -	if (unlikely(clen > max_zpage_size))
-> +	if (unlikely(clen > max_zpage_size)) {
->  		zram_stat_inc(&zram->stats.bad_compress);
-> +		src = uncmem;
-> +		clen = PAGE_SIZE;
-> +	}
->  
->  	handle = zs_malloc(zram->mem_pool, clen);
->  	if (!handle) {
-> -- 
-> 1.7.9.5
-> 
+for the strictly kernel internal stuff.
 
--- 
-Kind Regards,
-Minchan Kim
+---
+The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+
+  Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-spi-20121009
+
+for you to fetch changes up to 7939d3c2a677b06cf111a1304710dd97892f3695:
+
+  UAPI: (Scripted) Disintegrate include/linux/spi (2012-10-09 09:49:03 +0100)
+
+----------------------------------------------------------------
+UAPI Disintegration 2012-10-09
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/linux/spi
+
+ include/linux/spi/Kbuild              | 1 -
+ include/uapi/linux/spi/Kbuild         | 1 +
+ include/{ => uapi}/linux/spi/spidev.h | 0
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ rename include/{ => uapi}/linux/spi/spidev.h (100%)
+.
