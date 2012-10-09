@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab2JIFQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 01:16:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:46020 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391Ab2JIFQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 01:16:21 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>, avi@redhat.com
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-In-Reply-To: <507029EB.2050405@redhat.com>
-References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com> <87391t1nkq.fsf__40391.6521034718$1349505001$gmane$org@rustcorp.com.au> <507029EB.2050405@redhat.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 09 Oct 2012 15:29:09 +1030
-Message-ID: <878vbg8cma.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751727Ab2JIF2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 01:28:01 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:17642 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab2JIF16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 01:27:58 -0400
+X-AuditID: cbfee61b-b7f2b6d000000f14-68-5073b5dcf310
+From: Chul Lee <chur.lee@samsung.com>
+To: dave@jikos.cz, "'?????????'" <jaegeuk.kim@samsung.com>
+Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
+        linux-fsdevel@vger.kernel.org
+References: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
+ <20121006222104.GA4405@twin.jikos.cz>
+In-reply-to: <20121006222104.GA4405@twin.jikos.cz>
+Subject: RE: [PATCH 02/16] f2fs: add on-disk layout
+Date: Tue, 09 Oct 2012 14:27:56 +0900
+Message-id: <007301cda5de$d68251c0$8386f540$%lee@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2kEOkNghVjcTmnS9W/KF263Pkj7wBzIT8Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAd07W4sDDE51Gljs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWsuC5f0MNT0TXvCVsD4x7OLkZODgkBE4n/x58wQdhi
+	EhfurWfrYuTiEBJYxChxYsJZdpCEkMAfRonz53JAbDYBVYlzuxYCxTk4RAQsJF40eoPUMwuc
+	Y5RYfeIEG0R9qsSVvRA1nAJGEpd2FYOEhQWMJfY2HGUEsVmAxhx6MRfM5hWwlTg/7RELhC0o
+	8WPyPTCbWUBLYv3O40wQtrzE5jVvmUFGSgioSzz6qwsSFgGafmPlS3aIEhGJfS/eMU5gFJqF
+	ZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBwfxMegfjqgaLQ4wC
+	HIxKPLwfoooDhFgTy4orcw8xSnAwK4nwXk8ECvGmJFZWpRblxxeV5qQWH2KU5mBREudt9kgJ
+	EBJITyxJzU5NLUgtgskycXBKNTDO1LwyRWmJUx1H4NqTG7YqXzpi9u638L0DSju0/3q/LODT
+	8n0qObHrnXZEF9sCjRtpRibTfSMse3+cvh7Sq2Tva6/vUdKRf0je6YAhm/hLsVVyd/K0brZ3
+	pTD//n5v7X6F/YEG+Z73FE7+ebh/3ctLvSfqXiiu9jBfuvlnxMMDXjofa5bMuPpRiaU4I9FQ
+	i7moOBEA+uaLIGICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
-> Il 05/10/2012 07:43, Rusty Russell ha scritto:
->> That's good.  But virtio_blk's scsi command is insoluble AFAICT.  As I
->> said to Anthony, the best rules are "always" and "never", so I'd really
->> rather not have to grandfather that in.
->
-> It is, but we can add a rule that if the (transport) flag
-> VIRTIO_RING_F_ANY_HEADER_SG is set, the cdb field is always 32 bytes in
-> virtio-blk.
+Dear David Sterba,
 
-Could we do that?  It's the cmd length I'm concerned about; is it always
-32 in practice for some reason?
+David Sterba wrote:
+> On Fri, Oct 05, 2012 at 08:56:44PM +0900, ????????? wrote:
+> > +struct node_footer {
+> > +	__le32 nid;		/* node id */
+> > +	__le32 ino;		/* inode nunmber */
+> > +	__le32 cold:1;		/* cold mark */
+> > +	__le32 fsync:1;		/* fsync mark */
+> > +	__le32 dentry:1;	/* dentry mark */
+> > +	__le32 offset:29;	/* offset in inode's node space */
+> 
+> A bitfield for a on-disk structure? This will have endianity issues,
+> (but I don't know if you intend to support big-endian). It's not enough
+> to use cpu_to_le* as in
+> 
+> fill_node_footer(...) {
+> 
+> 	rn->footer.offset = cpu_to_le32(ofs);
+> 
+> }
+> 
+> because the bitfield inside the structure will be already defined
+> reversed. The cpu_to_le macro will only convert value of 'ofs' but will
+> place it to different bits than it would on a little-endian arch.
+> 
+> There are macros to define bitfields in an endian-neutral way (or do it
+> by #ifdefs though it also involves duplicating the item names), or you
+> can alternatively use two structs fr disk-only and memory-only access,
+> the disk one stores __le32 with value combined of all and the in-memory
+> gets set up properly and will look like your current version of the
+> structure.
+> 
+> (More about not using bitfields
+> http://yarchive.net/comp/linux/bitfields.html)
 
-Currently qemu does:
+I appreciate your kind feedback, but we should've avoided using bitfields
+for on-disk structure. As you suggested, we'll revise them. The latter
+approach would be good.
 
-    struct sg_io_hdr hdr;
-    memset(&hdr, 0, sizeof(struct sg_io_hdr));
-    hdr.interface_id = 'S';
-    hdr.cmd_len = req->elem.out_sg[1].iov_len;
-    hdr.cmdp = req->elem.out_sg[1].iov_base;
-    hdr.dxfer_len = 0;
+> 
+> 
+> david
 
-If it's a command which expects more output data, there's no way to
-guess where the boundary is between that command and the data.
+Chul
 
-Cheers,
-Rusty.
