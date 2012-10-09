@@ -1,49 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2JIXyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:54:52 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34878 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2JIXyt (ORCPT
+	id S1754213Ab2JIX67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:58:59 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49907 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab2JIX6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:54:49 -0400
-Date: Wed, 10 Oct 2012 00:54:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: john@feurix.com, linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: linux-audit: reconstruct path names from syscall events?
-Message-ID: <20121009235446.GZ2616@ZenIV.linux.org.uk>
-References: <20110917001215.GA961@zombie.hq.fstein.net>
- <CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
- <20121009233927.GX2616@ZenIV.linux.org.uk>
- <CAOH1cHmueHV9AiPkNSHXpEKm94nf2XZM9STv=qd7fJ+-n1VK-Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOH1cHmueHV9AiPkNSHXpEKm94nf2XZM9STv=qd7fJ+-n1VK-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 19:58:54 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 3/7] x86, mm: Don't clear page table if next range is ram
+Date: Tue,  9 Oct 2012 16:58:31 -0700
+Message-Id: <1349827115-16600-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 04:47:17PM -0700, Mark Moseley wrote:
-> > BTW, what makes you think that container's root is even reachable from
-> > "the host's /"?  There is no such thing as "root of the OS itself"; different
-> > processes can (and in case of containers definitely do) run in different
-> > namespaces.  With entirely different filesystems mounted in those, and
-> > no promise whatsoever that any specific namespace happens to have all
-> > filesystems mounted somewhere in it...
-> 
-> Nothing beyond guesswork, since it's been a while since I've played
-> with LXC. In any case, I was struggling a bit for the correct
-> terminology.
-> 
-> Am I similarly off-base with regards to the chroot'd scenario?
+After we add code use BRK to map buffer for final page table,
 
-chroot case is going to be reachable from namespace root, but I seriously
-doubt that pathname relative to that will be more useful...
+It should be safe to remove early_memmap for page table accessing.
 
-Again, relying on pathnames for forensics (or security in general) is
-a serious mistake (cue unprintable comments about apparmor and similar
-varieties of snake oil).  And using audit as poor man's ktrace analog
-is... misguided, to put it very mildly.
+But we get panic with that.
+
+It turns out we clear the initial page table wrongly for next range that is
+separated by holes.
+And it only happens when we are trying to map range one by one range separately.
+
+After we add checking before clearing the related page table, that panic will
+not happen anymore.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/init_64.c |   37 ++++++++++++++++---------------------
+ 1 files changed, 16 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index f40f383..61b3c44 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -363,20 +363,19 @@ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
+ {
+-	unsigned pages = 0;
++	unsigned long pages = 0, next;
+ 	unsigned long last_map_addr = end;
+ 	int i;
+ 
+ 	pte_t *pte = pte_page + pte_index(addr);
+ 
+-	for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
+-
++	for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
++		next = (addr & PAGE_MASK) + PAGE_SIZE;
+ 		if (addr >= end) {
+-			if (!after_bootmem) {
+-				for(; i < PTRS_PER_PTE; i++, pte++)
+-					set_pte(pte, __pte(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PAGE_MASK, next, 0))
++				set_pte(pte, __pte(0));
++			continue;
+ 		}
+ 
+ 		/*
+@@ -418,16 +417,14 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
+ 
++		next = (address & PMD_MASK) + PMD_SIZE;
+ 		if (address >= end) {
+-			if (!after_bootmem) {
+-				for (; i < PTRS_PER_PMD; i++, pmd++)
+-					set_pmd(pmd, __pmd(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(address & PMD_MASK, next, 0))
++				set_pmd(pmd, __pmd(0));
++			continue;
+ 		}
+ 
+-		next = (address & PMD_MASK) + PMD_SIZE;
+-
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+@@ -494,13 +491,11 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
+ 
+-		if (addr >= end)
+-			break;
+-
+ 		next = (addr & PUD_MASK) + PUD_SIZE;
+-
+-		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
+-			set_pud(pud, __pud(0));
++		if (addr >= end) {
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PUD_MASK, next, 0))
++				set_pud(pud, __pud(0));
+ 			continue;
+ 		}
+ 
+-- 
+1.7.7
+
