@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2JIMxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:53:22 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:37641 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab2JIMxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:53:20 -0400
-Date: Tue, 9 Oct 2012 14:53:05 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for s390 [ver #2]
-Message-ID: <20121009145305.32435495@mschwide>
-In-Reply-To: <21182.1349774152@warthog.procyon.org.uk>
-References: <21182.1349774152@warthog.procyon.org.uk>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753554Ab2JINEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:04:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42103 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752532Ab2JINEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 09:04:04 -0400
+Message-ID: <507420A4.8090905@ti.com>
+Date: Tue, 9 Oct 2012 18:33:32 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>, <hs@denx.de>,
+        <mikedunn@newsguy.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] mtd:nand:clk: preparation for switch to common clock
+ framework
+References: <1347899860-24358-1-git-send-email-m-karicheri2@ti.com> <1347899860-24358-2-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1347899860-24358-2-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100912-5024-0000-0000-00000400F22B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Oct 2012 10:15:52 +0100
-David Howells <dhowells@redhat.com> wrote:
+On 9/17/2012 10:07 PM, Murali Karicheri wrote:
+> As a first step towards migrating davinci platforms to use common clock
+> framework, replace all instances of clk_enable() with clk_prepare_enable()
+> and clk_disable() with clk_disable_unprepare(). Until the platform is
+> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
+> adds a might_sleep() call and would work without any issues.
+> 
+> This will make it easy later to switch to common clk based implementation
+> of clk driver from DaVinci specific driver.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Reviewed-by: Mike Turquette <mturquette@linaro.org>
 
-> Can you merge the following branch into the s390 tree please.
-> 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Now that the fixups and the asm-generic chunk have been merged, I've
-> regenerated the patches to get rid of those dependencies and to take account of
-> any changes made so far in the merge window.  If you have already pulled the
-> older version of the branch aimed at you, then please feel free to ignore this
-> request.
-> 
-> The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
-> 
->   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-s390-20121009
-> 
-> for you to fetch changes up to 9807f75955ea7f1877981056755284481873115c:
-> 
->   UAPI: (Scripted) Disintegrate arch/s390/include/asm (2012-10-09 09:47:31 +0100)
+Tested this using NAND flash on DA850 EVM.
 
-Ok, rebased the s390 tree to get akpm's patch-bomb out of the way and merged the UAPI
-patchset. Result can be gawked at here:
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
-https://git.kernel.org/?p=linux/kernel/git/s390/linux.git;a=shortlog;h=refs/heads/features
+Any chance this can make into the v3.7 kernel?
 
-I will send Linus a please pull soon.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Thanks,
+Sekhar
