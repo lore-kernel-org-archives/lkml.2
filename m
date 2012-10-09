@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab2JIRkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:40:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33481 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab2JIRkp (ORCPT
+	id S1756576Ab2JIRlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:41:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63927 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756415Ab2JIRlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:40:45 -0400
-Date: Tue, 9 Oct 2012 10:40:14 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-355afe816312faf20d81fdcade29e0361d72a7b4@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
-        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1349716656-48165-9-git-send-email-dsahern@gmail.com>
-References: <1349716656-48165-9-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Add braces around multi-line statements
-Git-Commit-ID: 355afe816312faf20d81fdcade29e0361d72a7b4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 9 Oct 2012 13:41:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:40:20 -0700 (PDT)
+In-Reply-To: <20121009162925.GA6517@redhat.com>
+References: <1349603358-1085282-1-git-send-email-avagin@openvz.org>
+	<20121007190118.GA16068@redhat.com>
+	<CANaxB-w+KkhzTQVie=9PE8LJtazqvh+JducTcDmXvH+ZA4oO0A@mail.gmail.com>
+	<20121009162925.GA6517@redhat.com>
+Date: Tue, 9 Oct 2012 21:41:10 +0400
+Message-ID: <CANaxB-xymHL8q8-yjCXQrL0fH7AKk0d4xV_AL77NFKYD=cAdMA@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] pidns: don't zap processes several times
+From: Andrey Wagin <avagin@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  355afe816312faf20d81fdcade29e0361d72a7b4
-Gitweb:     http://git.kernel.org/tip/355afe816312faf20d81fdcade29e0361d72a7b4
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 8 Oct 2012 11:17:32 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 8 Oct 2012 17:15:54 -0300
+2012/10/9 Oleg Nesterov <oleg@redhat.com>:
+> On 10/08, Andrey Wagin wrote:
+>>
+>> 2012/10/7 Oleg Nesterov <oleg@redhat.com>:
+>> >
+>> > Perhaps we should MAX_PID_NS_LEVEL instead?
+>>
+>> Yes, we can.
+>>
+>> Could I just define MAX_PID_NS_LEVEL in a code:
+>> #define MAX_PID_NS_LEVEL ((PAGE_SIZE - offsetof(struct pid, numbers))
+>> / sizeof(struct upid))
+>
+> Or even less. But looks reasonable.
+>
+>> Or should it be added in a config?
+>
+> Personally I think that "define" is fine, we can add config/sysctl
+> later if needed.
 
-perf kvm: Add braces around multi-line statements
+Ok, I'm going to send a patch.
 
-Multi-line statements should have braces. Improves readability.
+>
+>
+> Hmm. This is off-topic, but...
+>
+>         create_pid_namespace:
+>
+>                 unsigned int level = parent_pid_ns->level + 1;
+>                 ns->pid_cachep = create_pid_cachep(level + 1);
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Dong Hao <haodong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1349716656-48165-9-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Yes, it's correct, because pid->numbers[ns->level] should be valid, so
+ a size of an array pid->numbers should be (level + 1).
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 72a302e..836c82f 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -369,9 +369,10 @@ static struct kvm_event *find_create_kvm_event(struct perf_kvm *kvm,
- 	BUG_ON(key->key == INVALID_KEY);
- 
- 	head = &kvm->kvm_events_cache[kvm_events_hash_fn(key->key)];
--	list_for_each_entry(event, head, hash_entry)
-+	list_for_each_entry(event, head, hash_entry) {
- 		if (event->key.key == key->key && event->key.info == key->info)
- 			return event;
-+	}
- 
- 	event = kvm_alloc_init_event(key);
- 	if (!event)
-@@ -610,13 +611,15 @@ static void sort_result(struct perf_kvm *kvm)
- 	int vcpu = kvm->trace_vcpu;
- 	struct kvm_event *event;
- 
--	for (i = 0; i < EVENTS_CACHE_SIZE; i++)
--		list_for_each_entry(event, &kvm->kvm_events_cache[i], hash_entry)
-+	for (i = 0; i < EVENTS_CACHE_SIZE; i++) {
-+		list_for_each_entry(event, &kvm->kvm_events_cache[i], hash_entry) {
- 			if (event_is_valid(event, vcpu)) {
- 				update_total_count(kvm, event);
- 				insert_to_result(&kvm->result, event,
- 						 kvm->compare, vcpu);
- 			}
-+		}
-+	}
- }
- 
- /* returns left most element of result, and erase it */
+/*
+....
+ * @nr_ids: the number of numerical ids this pid will have to carry
+ */
+static struct kmem_cache *create_pid_cachep(int nr_ids)
+
+>
+> is it correct? is seems that only one "+ 1" is needed?
+>
+> Oleg.
+>
