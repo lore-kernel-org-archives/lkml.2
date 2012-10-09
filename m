@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab2JIKZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 06:25:26 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:46838 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753257Ab2JIKZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 06:25:24 -0400
-Date: Tue, 9 Oct 2012 12:25:04 +0200
-From: David Sterba <dave@jikos.cz>
-To: Miao Xie <miaox@cn.fujitsu.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Ext4 <linux-ext4@vger.kernel.org>,
-        viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: Re: [PATCH 1/2 RESEND] vfs: re-implement
- writeback_inodes_sb(_nr)_if_idle() and rename them
-Message-ID: <20121009102504.GM4405@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Miao Xie <miaox@cn.fujitsu.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linux Btrfs <linux-btrfs@vger.kernel.org>,
-	Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-	Linux Ext4 <linux-ext4@vger.kernel.org>,
-	viro <viro@zeniv.linux.org.uk>,
-	Christoph Hellwig <hch@infradead.org>,
-	Kamal Mostafa <kamal@canonical.com>
-References: <503DB3E8.1000308@cn.fujitsu.com>
- <20120905155403.GL17430@twin.jikos.cz>
+	id S1755430Ab2JIKaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 06:30:20 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:57126 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755368Ab2JIKaP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 06:30:15 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>
+Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 9 Oct 2012 12:30:01 +0200
+Subject: RE: [remoteproc:for-next 6/9] remoteproc_virtio.c:(.text+0x238e7e):
+ undefined reference to `vring_transport_features'
+Thread-Topic: [remoteproc:for-next 6/9]
+ remoteproc_virtio.c:(.text+0x238e7e): undefined reference to
+ `vring_transport_features'
+Thread-Index: Ac2mBHCSXgvWeecIQNKGyVzzwytoggAAAUUg
+Message-ID: <81C3A93C17462B4BBD7E272753C1057923BD9B59E3@EXDCVYMBSTM005.EQ1STM.local>
+References: <20121001024544.GA12711@localhost>
+ <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
+ <CAK=WgbYK2rFw7iFV1fGUb1saXrsH+yh=2Etmuj5+6ob6cCKntw@mail.gmail.com>
+In-Reply-To: <CAK=WgbYK2rFw7iFV1fGUb1saXrsH+yh=2Etmuj5+6ob6cCKntw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120905155403.GL17430@twin.jikos.cz>
-User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 05, 2012 at 05:54:04PM +0200, David Sterba wrote:
-> > Many users who use btrfs met the deadlock problem caused by writeback_inodes_sb(_nr)_if_idle(),
-> > so I send this patch again and hope it will be received as soon as possible if nobody objects.
+Hi Ohad,
+
+> On Tue, Oct 2, 2012 at 10:24 AM, Ohad Ben-Cohen <ohad@wizery.com>
+> wrote:
+> > On Mon, Oct 1, 2012 at 4:45 AM, Fengguang Wu
+> <fengguang.wu@intel.com> wrote:
+> >> Hi Ohad,
+> >>
+> >> FYI, kernel build failed on
+> >>
+> >> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
+> for-next
+> >> head:   bec109a430e8c67bae1743f7e71898283234a77f
+> >> commit: ec4d02d9180f407c41f8310a13b34e473c671fbb [6/9] remoteproc:
+> Add STE modem driver
+> >> config: i386-randconfig-b102 (attached as .config)
+> >>
+> >> It should be an old bug. The commit happen to be the one to trigger
+> >> the errors because it selects CONFIG_EMOTEPROC.
+> >
+> > Thanks Fengguang.
+> >
+> > This should be fixed by a patch I pushed today to remoteproc's for-next
+> branch.
+> >
+> > Though I wonder, Sjur, do we want to limit the architectures/platforms
+> > where the STE modem driver can be selected on ? Is it ARM only perhaps ?
 > 
-> Yes please, this makes testing of the 'autodefrag' mount option hard as
-> the deadlock occurs frequently upon umount (when there's a background
-> snapshot cleanup in progress).
+> Can you please address the above question ?
 
-We have another report of the deadlock and it's without 'autodefrag'
-mount, triggered by snapshot cleaning under low space conditions.
+Sorry for not responding sooner, but I thought this issue was solved with
+your patch  "remoteproc: fix (again) the virtio-related build breakage"
+(https://lkml.org/lkml/2012/10/6/85).
 
-I have added the patch to SLES kernel some time ago and haven't observed
-the deadlock since.
+I'm not sure I understand why you would want to add a dependency to ARM.
+But if you're uncomfortable by having STE_MODEM_RPROC directly selectable,
+perhaps we could let it be selected by arch specific Kconfig files,  e.g. mach-ux500?
 
-Please queue the patch for 3.7, we cannot fix it locally within btrfs.
+Regards,
+Sjur
 
-Thanks,
-david
