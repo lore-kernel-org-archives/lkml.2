@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2JIUP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:15:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55889 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab2JIUOM (ORCPT
+	id S1754242Ab2JIUVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:21:00 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:42682 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab2JIUU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:14:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: arm@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v2 4/8] USB: EHCI: mark ehci_orion_conf_mbus_windows __devinit
-Date: Tue,  9 Oct 2012 22:13:54 +0200
-Message-Id: <1349813638-4617-5-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-References: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:xX7UFas9oO8MuMTFYEO0qxxKVwYCwI/k728wnc8oubN
- /LlzUgg23MNpNEXu7uG0jRBj1T1/tBfJZwnq3NzTv4WBny0vjl
- trbYyrjOr+/izgRvtkLrHO5tLZ1EXwPIMBArX9G5X9eYVmFuwB
- HgqGB9IMEuHamMF53DPViLdaMs4qKikytdloPa0015NOrcZrUq
- vzsPEb9pSiBBWFqKjwRXVB553uvV98aPsloohuc3Db0y9Gnpn+
- wWG5IvSurDR2V96ZQLUkwbh1YsGju4TjRZMCfK6FV7WSXRvWrD
- K6kEi8EiRjs3+amNZrgb98qdmzFH00k2BcscgubnONTpKguhvX
- 8HYjoM1SleVx00TYsO2+AYbR8ahiaD4odGMiQFO/o
+	Tue, 9 Oct 2012 16:20:57 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel\@openvz.org" <devel@openvz.org>
+References: <20121008105437.18668.99905.stgit@localhost.localdomain>
+	<20121009193506.GA19680@fieldses.org>
+	<4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
+Date: Tue, 09 Oct 2012 13:20:48 -0700
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
+	(Trond Myklebust's message of "Tue, 9 Oct 2012 19:49:46 +0000")
+Message-ID: <87txu3bdnj.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19PQDmZ5AEoiN/JUI1krriBIV21RIzC/hY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.2 XMSubMetaSSx_00 1+ SortaSexy Words + 1 Sexy Word
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Myklebust\, Trond" <Trond.Myklebust@netapp.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting local transports
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __devinit section is going away soon, but while it's
-still there, we get a correct warning about
-ehci_orion_conf_mbus_windows being discarded before
-its caller, so it should be marked __devinit rather than
-__init.
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
 
-Without this patch, building dove_defconfig results in:
+> On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
+>> Cc'ing Eric since I seem to recall he suggested doing it this way?
 
-WARNING: drivers/usb/host/built-in.o(.devinit.text+0x8a4): Section mismatch in reference from the function ehci_orion_drv_probe() to the function .init.text:ehci_orion_conf_mbus_windows()
-The function __devinit ehci_orion_drv_probe() references
-a function __init ehci_orion_conf_mbus_windows().
-If ehci_orion_conf_mbus_windows is only used by ehci_orion_drv_probe then
-annotate ehci_orion_conf_mbus_windows with a matching annotation.
+Yes.  On second look setting fs->root won't work. We need to change fs.
+The problem is that by default all kernel threads share fs so changing
+fs->root will have non-local consequences.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
----
- drivers/usb/host/ehci-orion.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I very much believe we want if at all possible to perform a local
+modification.
 
-diff --git a/drivers/usb/host/ehci-orion.c b/drivers/usb/host/ehci-orion.c
-index 8892d36..1f5dd5e 100644
---- a/drivers/usb/host/ehci-orion.c
-+++ b/drivers/usb/host/ehci-orion.c
-@@ -160,7 +160,7 @@ static const struct hc_driver ehci_orion_hc_driver = {
- 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
- };
- 
--static void __init
-+static void __devinit
- ehci_orion_conf_mbus_windows(struct usb_hcd *hcd,
- 			     const struct mbus_dram_target_info *dram)
- {
--- 
-1.7.10
+Changing fs isn't all that different from what devtmpfs is doing.
+
+>> Seems OK to me, but maybe that swap_root should be in common code?  (Or
+>> maybe we could use set_fs_root()?)
+>> 
+>> I'm assuming it's up to Trond to take this.--b.
+>
+> I'm reluctant to do that at this time since the original proposal was
+> precisely that of export set_fs_root() and using it around the AF_LOCAL
+> socket bind. That proposal was NACKed by Al Viro.
+
+> If Al is OK with the idea of us creating a private version of
+> set_fs_root, then I'd like to see an official Acked-by: that we can
+> append to this commit.
+
+Eric
 
