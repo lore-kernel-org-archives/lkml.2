@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab2JII6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:58:07 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37950 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754169Ab2JII6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:58:02 -0400
-From: Vaibhav Hiremath <hvaibhav@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Vaibhav Hiremath <hvaibhav@ti.com>, Afzal Mohammed <afzal@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
-Date: Tue, 9 Oct 2012 14:27:20 +0530
-Message-ID: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754424Ab2JIJBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 05:01:48 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:55010 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754301Ab2JIJBp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 05:01:45 -0400
+Message-ID: <5073E84E.4090408@ti.com>
+Date: Tue, 09 Oct 2012 11:03:10 +0200
+From: =?UTF-8?B?UMOpdGVyIFVqZmFsdXNp?= <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Deepak Saxena <dsaxena@plexity.net>,
+        Chris Ball <cjb@laptop.org>, Matt Mackall <mpm@selenic.com>,
+        Venkatraman S <svenkatr@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove include
+ plat/cpu.h
+References: <20121008173452.10603.53886.stgit@muffinssi> <20121008173557.10603.18539.stgit@muffinssi>
+In-Reply-To: <20121008173557.10603.18539.stgit@muffinssi>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent changes in omap gpmc driver code, in case of DT
-boot mode, where bootloader does not configure gpmc cs space
-will result into kernel BUG() inside gpmc_mem_init() function,
-as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
-gpmc_config7[0].baseaddress is set to '0' on reset.
+On 10/08/2012 07:35 PM, Tony Lindgren wrote:
 
-This use-case is applicable for any board/EVM which doesn't have
-any peripheral connected to gpmc cs0, for example BeagleXM and
-BeagleBone, so DT boot mode fails.
+> - omap-dma.c and omap-pcm.c can test the arch locally as
+>   omap1 and omap2 cannot be compiled together because of
+>   conflicting compiler flags
 
-This patch adds of_have_populated_dt() check before creating
-device, so that for DT boot mode, gpmc probe will not be called
-which is expected behavior, as gpmc is not supported yet from DT.
+>  sound/soc/omap/omap-pcm.c         |    9 +++++++--
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Cc: Afzal Mohammed <afzal@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc Paul Walmsley <paul@pwsan.com>
----
-This should go in for rc1, as this breaks AM33xx boot.
+Tony: is this going to be included in 3.7?
 
- arch/arm/mach-omap2/gpmc.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 8ab1e1b..c68f9e1 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -981,6 +981,10 @@ static int __init omap_gpmc_init(void)
- 	struct platform_device *pdev;
- 	char *oh_name = "gpmc";
-
-+	/* If dtb is there, the devices will be created dynamically */
-+	if (of_have_populated_dt())
-+		return -ENODEV;
-+
- 	oh = omap_hwmod_lookup(oh_name);
- 	if (!oh) {
- 		pr_err("Could not look up %s\n", oh_name);
---
-1.7.0.4
-
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
