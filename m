@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2JIQkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:40:52 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39497 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab2JIQkt convert rfc822-to-8bit (ORCPT
+	id S1754577Ab2JIQmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:42:19 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49505 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab2JIQmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:40:49 -0400
-Date: Tue, 9 Oct 2012 17:40:45 +0100
-From: Morten Rasmussen <Morten.Rasmussen@arm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "linaro-sched-sig@lists.linaro.org" 
-	<linaro-sched-sig@lists.linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Robin Randhawa <Robin.Randhawa@arm.com>
-Subject: Re: [RFC PATCH 04/10] sched: Introduce priority-based task migration
- filter
-Message-ID: <20121009164045.GB3729@e103034-lin>
-References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
- <1348252345-5642-5-git-send-email-morten.rasmussen@arm.com>
- <CAKohpo=gvA4o=d3rw18O8sMOfXCh1M=39OcdOre4c4Azs42REg@mail.gmail.com>
+	Tue, 9 Oct 2012 12:42:17 -0400
+Date: Tue, 9 Oct 2012 12:30:23 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Jan Beulich <JBeulich@suse.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] xen-blkfront: handle backend CLOSED without CLOSING
+Message-ID: <20121009163023.GG31499@phenom.dumpdata.com>
+References: <1348243464-15903-1-git-send-email-david.vrabel@citrix.com>
+ <1348243464-15903-3-git-send-email-david.vrabel@citrix.com>
+ <5061EFB2.1080407@citrix.com>
+ <5069D097.60606@citrix.com>
+ <20121002200255.GA668@phenom.dumpdata.com>
+ <506EC79D.5080206@citrix.com>
+ <506EE6CD020000780009FF4E@nat28.tlf.novell.com>
+ <506F0370.6050905@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=gvA4o=d3rw18O8sMOfXCh1M=39OcdOre4c4Azs42REg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 09 Oct 2012 16:40:45.0556 (UTC) FILETIME=[D469BB40:01CDA63C]
-X-MC-Unique: 112100917404800301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <506F0370.6050905@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 07:27:00AM +0100, Viresh Kumar wrote:
-> On 22 September 2012 00:02,  <morten.rasmussen@arm.com> wrote:
+On Fri, Oct 05, 2012 at 04:57:36PM +0100, David Vrabel wrote:
+> On 05/10/12 12:55, Jan Beulich wrote:
+> >>>> On 05.10.12 at 13:42, David Vrabel <david.vrabel@citrix.com> wrote:
+> >> On 02/10/12 21:02, Konrad Rzeszutek Wilk wrote:
+> >>> On Mon, Oct 01, 2012 at 06:19:19PM +0100, David Vrabel wrote:
+> >>>> On 25/09/12 18:53, David Vrabel wrote:
+> >>>>> On 21/09/12 17:04, David Vrabel wrote:
+> >>>>>> From: David Vrabel <david.vrabel@citrix.com>
+> >>>>>>
+> >>>>>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
+> >>>>>> CLOSED.  If a backend does transition to CLOSED too soon then the
+> >>>>>> frontend may not see the CLOSING state and will not properly shutdown.
+> >>>>>>
+> >>>>>> So, treat an unexpected backend CLOSED state the same as CLOSING.
+> >>>>>
+> >>>>> Didn't handle the frontend block device being mounted. Updated patch here.
+> >>>>
+> >>>> Konrad, can you ack this updated patch if you're happy with it.
+> >>>
+> >>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>>
+> >>> Or should I just carry it in my for-jens-3.7 bug-fixes queue and ask
+> >>> Jen to pull it once rc0 is out?
+> >>
+> >> This seems easiest, if Jan is happy with the patch.
+> > 
+> > I see the point of your explanation yesterday, but am still not
+> > convinced that the early cleanup in spite of active users of the
+> > disk can't cause any problems (like dangling pointers or NULL
+> > dereferences).
 > 
-> > +config SCHED_HMP_PRIO_FILTER
-> > +       bool "(EXPERIMENTAL) Filter HMP migrations by task priority"
-> > +       depends on SCHED_HMP
-> 
-> Should it depend on EXPERIMENTAL?
-> 
-> > +       help
-> > +         Enables task priority based HMP migration filter. Any task with
-> > +         a NICE value above the threshold will always be on low-power cpus
-> > +         with less compute capacity.
-> > +
-> > +config SCHED_HMP_PRIO_FILTER_VAL
-> > +       int "NICE priority threshold"
-> > +       default 5
-> > +       depends on SCHED_HMP_PRIO_FILTER
-> > +
-> >  config HAVE_ARM_SCU
-> >         bool
-> >         help
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 490f1f0..8f0f3b9 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -3129,9 +3129,12 @@ static int __init hmp_cpu_mask_setup(void)
-> >   * hmp_down_threshold: max. load allowed for tasks migrating to a slower cpu
-> >   * The default values (512, 256) offer good responsiveness, but may need
-> >   * tweaking suit particular needs.
-> > + *
-> > + * hmp_up_prio: Only up migrate task with high priority (<hmp_up_prio)
-> >   */
-> >  unsigned int hmp_up_threshold = 512;
-> >  unsigned int hmp_down_threshold = 256;
-> > +unsigned int hmp_up_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
-> >
-> >  static unsigned int hmp_up_migration(int cpu, struct sched_entity *se);
-> >  static unsigned int hmp_down_migration(int cpu, struct sched_entity *se);
-> > @@ -5491,6 +5494,12 @@ static unsigned int hmp_up_migration(int cpu, struct sched_entity *se)
-> >         if (hmp_cpu_is_fastest(cpu))
-> >                 return 0;
-> >
-> > +#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-> > +       /* Filter by task priority */
-> > +       if (p->prio >= hmp_up_prio)
-> > +               return 0;
-> > +#endif
-> > +
-> >         if (cpumask_intersects(&hmp_faster_domain(cpu)->cpus,
-> >                                         tsk_cpus_allowed(p))
-> >                 && se->avg.load_avg_ratio > hmp_up_threshold) {
-> > @@ -5507,6 +5516,12 @@ static unsigned int hmp_down_migration(int cpu, struct sched_entity *se)
-> >         if (hmp_cpu_is_slowest(cpu))
-> >                 return 0;
-> >
-> > +#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-> > +       /* Filter by task priority */
-> > +       if (p->prio >= hmp_up_prio)
-> > +               return 1;
-> > +#endif
-> 
-> Even if below cpumask_intersects() fails?
-> 
+> I tested it some more and it is broken.  Please apply the first version
+> instead.
 
-No. Good catch :)
+OK, can we do this once more - can you repost the patches, but CC the
+invidiual maintainers? The FB and KBD need to go through Florian I think?
 
-> >         if (cpumask_intersects(&hmp_slower_domain(cpu)->cpus,
-> >                                         tsk_cpus_allowed(p))
-> >                 && se->avg.load_avg_ratio < hmp_down_threshold) {
 > 
-> --
-> viresh
+> blkfront needs to cancel and complete with an error requests that are
+> are still on the ring after the backend has disconnected and it needs to
+> complete with an error all requests submitted while disconnected.
+> Otherwise, if there is outstanding requests or new requests then
+> del_gendisk() blocks waiting for the I/O to complete.
 > 
-
-Thanks,
-Morten
-
+> David
