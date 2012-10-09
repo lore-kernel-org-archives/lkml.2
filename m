@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2JIToy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:44:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54838 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2JITov (ORCPT
+	id S1753472Ab2JITqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:46:06 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46179 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2JITqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:44:51 -0400
-Date: Tue, 9 Oct 2012 12:44:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org
-Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
-Message-Id: <20121009124449.f54bf8cb.akpm@linux-foundation.org>
-In-Reply-To: <1349654386-18378-2-git-send-email-kys@microsoft.com>
-References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
-	<1349654386-18378-1-git-send-email-kys@microsoft.com>
-	<1349654386-18378-2-git-send-email-kys@microsoft.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 15:46:02 -0400
+X-Originating-IP: 217.70.178.144
+X-Originating-IP: 173.246.103.110
+Date: Tue, 9 Oct 2012 12:45:51 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Santos <daniel.santos@pobox.com>,
+        Daniel Santos <danielfsantos@att.net>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
+Message-ID: <20121009194551.GA3616@jtriplet-mobl1>
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com>
+ <1349466169-20637-3-git-send-email-daniel.santos@pobox.com>
+ <20121006231041.GB3278@liondog.tnic>
+ <5071C9AE.2010106@att.net>
+ <20121009114158.9cdf1378.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121009114158.9cdf1378.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  7 Oct 2012 16:59:46 -0700
-"K. Y. Srinivasan" <kys@microsoft.com> wrote:
-
-> Add the basic balloon driver.
-
-hm, how many balloon drivers does one kernel need?
-
-Although I see that the great majority of this code is hypervisor-specific.
-
-> Windows hosts dynamically manage the guest
-> memory allocation via a combination memory hot add and ballooning. Memory
-> hot add is used to grow the guest memory upto the maximum memory that can be
-> allocatted to the guest. Ballooning is used to both shrink as well as expand
-> up to the max memory. Supporting hot add needs additional support from the
-> host. We will support hot add when this support is available. For now,
-> by setting the VM startup memory to the VM  max memory, we can use
-> ballooning alone to dynamically manage memory allocation amongst
-> competing guests on a given host.
+On Tue, Oct 09, 2012 at 11:41:58AM -0700, Andrew Morton wrote:
+> On Sun, 07 Oct 2012 13:27:58 -0500
+> Daniel Santos <danielfsantos@att.net> wrote:
 > 
->
-> ...
->
-> +static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
-> +			 struct dm_balloon_response *bl_resp, int alloc_unit,
-> +			 bool *alloc_error)
-> +{
-> +	int i = 0;
-> +	struct page *pg;
-> +
-> +	if (num_pages < alloc_unit)
-> +		return 0;
-> +
-> +	for (i = 0; (i * alloc_unit) < num_pages; i++) {
-> +		if (bl_resp->hdr.size + sizeof(union dm_mem_page_range) >
-> +			PAGE_SIZE)
-> +			return i * alloc_unit;
-> +
-> +		pg = alloc_pages(GFP_HIGHUSER | __GFP_NORETRY | GFP_ATOMIC |
-> +				__GFP_NOMEMALLOC | __GFP_NOWARN,
-> +				get_order(alloc_unit << PAGE_SHIFT));
+> > We'll have to ask Andrew.  Maybe so he can test on those versions of gcc?
+> > 
+> > commit d3ffe64a1dbcfe18b57f90f7c01c40c93d0a8b92
+> > Author: Andrew Morton <akpm@linux-foundation.org>
+> > Date:   Fri Sep 28 00:02:42 2012 +0000
+> > 
+> >     a
+> >    
+> >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > 
+> > diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+> > index 934bc34..997fd8a 100644
+> > --- a/include/linux/compiler-gcc4.h
+> > +++ b/include/linux/compiler-gcc4.h
+> > @@ -5,7 +5,7 @@
+> >  /* GCC 4.1.[01] miscompiles __weak */
+> >  #ifdef __KERNEL__
+> >  # if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
+> > -#  error Your version of gcc miscompiles the __weak directive
+> > +//#  error Your version of gcc miscompiles the __weak directive
+> 
+> hm, yeah, sorry, I use various old crufty cross-compilers.
 
-This choice of GFP flags is basically impossible to understand, so I
-suggest that a comment be added explaining it all.
+Ah, for build testing where you don't actually care if the resulting
+kernel runs?
 
-I'm a bit surprised at the inclusion of GFP_ATOMIC as it will a) dip
-into page reserves, whcih might be undesirable and b) won't even
-reclaim clean pages, which seems desirable.  I suggest this also be
-covered in the forthcoming code comment.
-
-drivers/misc/vmw_balloon.c seems to me to have used better choices here.
-
-> +		if (!pg) {
-> +			*alloc_error = true;
-> +			return i * alloc_unit;
-> +		}
-> +
-> +		totalram_pages -= alloc_unit;
-
-Well, I'd consider totalram_pages to be an mm-private thing which drivers
-shouldn't muck with.  Why is this done?
-
-drivers/xen/balloon.c and drivers/virtio/virtio_balloon.c also alter
-totalram_pages, also without explaining why. 
-drivers/misc/vmw_balloon.c does not.
-
-> +		dm->num_pages_ballooned += alloc_unit;
-> +
-> +		bl_resp->range_count++;
-> +		bl_resp->range_array[i].finfo.start_page =
-> +			page_to_pfn(pg);
-> +		bl_resp->range_array[i].finfo.page_cnt = alloc_unit;
-> +		bl_resp->hdr.size += sizeof(union dm_mem_page_range);
-> +
-> +	}
-> +
-> +	return num_pages;
-> +}
->
-> ...
->
-
+- Josh Triplett
