@@ -1,104 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904Ab2JISsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:48:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab2JISsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:48:22 -0400
-Date: Tue, 9 Oct 2012 11:48:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
-Message-Id: <20121009114821.dc4c2aff.akpm@linux-foundation.org>
-In-Reply-To: <1349553393-902065-1-git-send-email-avagin@openvz.org>
-References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756878Ab2JISuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:50:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10458 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab2JISul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 14:50:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,561,1344236400"; 
+   d="scan'208";a="202467002"
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: [PATCH] x86: Improve 64 bit __phys_addr call performance
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Date: Tue, 09 Oct 2012 11:50:58 -0700
+Message-ID: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com>
+User-Agent: StGIT/0.14.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  6 Oct 2012 23:56:33 +0400
-Andrew Vagin <avagin@openvz.org> wrote:
+This patch is meant to improve overall system performance when making use of
+the __phys_addr call on 64 bit x86 systems.  To do this I have implemented
+several changes.
 
-> Here is a stack trace of recursion:
-> free_pid_ns(parent)
->   put_pid_ns(parent)
->     kref_put(&ns->kref, free_pid_ns);
->       free_pid_ns
-> 
-> This patch turns recursion into loops.
-> 
-> pidns can be nested many times, so in case of recursion
-> a simple user space program can provoke a kernel panic
-> due to exceed of a kernel stack.
+First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
+similar to how this is currently handled in 32 bit.  However in order to do
+this it is required to export phys_base so that it is available if __phys_addr
+is used in kernel modules.
 
-So we should backport this into earlier kernels.
+The second change was to streamline the code by making use of the carry flag
+on an add operation instead of performing a compare on a 64 bit value.  The
+advantage to this is that it allows us to reduce the overall size of the call.
+On my Xeon E5 system the entire __phys_addr inline call consumes 30 bytes and
+5 instructions.  I also applied similar logic to the debug version of the
+function.  My testing shows that the debug version of the function with this
+patch applied is slightly faster than the non-debug version without the patch.
 
-> --- a/include/linux/kref.h
-> +++ b/include/linux/kref.h
-> @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
->  	return kref_sub(kref, 1, release);
->  }
->  
-> +/**
-> + * kref_put - decrement refcount for object.
-> + * @kref: object.
-> + *
-> + * Decrement the refcount.
-> + * Return 1 if refcount is zero.
-> + */
-> +static inline int __kref_put(struct kref *kref)
-> +{
-> +	return atomic_dec_and_test(&kref->refcount);
-> +}
+Finally, when building the kernel with the first two changes applied I saw
+build warnings about __START_KERNEL_map and PAGE_OFFSET constants not fitting
+in their type.  In order to resolve the build warning I changed their type
+from UL to ULL.
 
-Greg might be interested in this.
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+---
 
-It's a pretty specialised thing and perhaps it needs some stern words
-in the description explaining when and why it should and shouldn't be
-used.
+ arch/x86/include/asm/page_64_types.h |   16 ++++++++++++++--
+ arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
+ arch/x86/mm/physaddr.c               |   20 ++++++++++++++------
+ 3 files changed, 31 insertions(+), 8 deletions(-)
 
-I wonder if people might (ab)use this to avoid the "doesn't
-have a release function" warning.
-
->  static inline int kref_put_mutex(struct kref *kref,
->  				 void (*release)(struct kref *kref),
->  				 struct mutex *lock)
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index 6144bab..b051fa6 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -138,11 +138,19 @@ void free_pid_ns(struct kref *kref)
->  
->  	ns = container_of(kref, struct pid_namespace, kref);
->  
-> -	parent = ns->parent;
-> -	destroy_pid_namespace(ns);
-> +	while (1) {
-> +		parent = ns->parent;
-> +		destroy_pid_namespace(ns);
->  
-> -	if (parent != NULL)
-> -		put_pid_ns(parent);
-> +		if (parent == &init_pid_ns)
-> +			break;
-> +
-> +		/* kref_put cannot be used for avoiding recursion */
-> +		if (__kref_put(&parent->kref) == 0)
-> +			break;
-> +
-> +		ns = parent;
-> +	}
->  }
->  
->  void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 320f7bb..a951e4d 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -30,14 +30,14 @@
+  * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
+  * what Xen requires.
+  */
+-#define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
++#define __PAGE_OFFSET           _AC(0xffff880000000000, ULL)
+ 
+ #define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
+ 				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
+ 				 ~(CONFIG_PHYSICAL_ALIGN - 1))
+ 
+ #define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
+-#define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
++#define __START_KERNEL_map	_AC(0xffffffff80000000, ULL)
+ 
+ /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
+ #define __PHYSICAL_MASK_SHIFT	46
+@@ -58,7 +58,19 @@ void copy_page(void *to, void *from);
+ extern unsigned long max_pfn;
+ extern unsigned long phys_base;
+ 
++#ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
++#else
++static inline unsigned long __phys_addr(unsigned long x)
++{
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
++
++	return x;
++}
++#endif
+ #define __phys_reloc_hide(x)	(x)
+ 
+ #define vmemmap ((struct page *)VMEMMAP_START)
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 1330dd1..b014d94 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ EXPORT_SYMBOL(memmove);
+ 
++#ifndef CONFIG_DEBUG_VIRTUAL
++EXPORT_SYMBOL(phys_base);
++#endif
+ EXPORT_SYMBOL(empty_zero_page);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
+index d2e2735..f63bec5 100644
+--- a/arch/x86/mm/physaddr.c
++++ b/arch/x86/mm/physaddr.c
+@@ -8,20 +8,28 @@
+ 
+ #ifdef CONFIG_X86_64
+ 
++#ifdef CONFIG_DEBUG_VIRTUAL
+ unsigned long __phys_addr(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
+-		x += phys_base;
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
+ 	} else {
+-		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
+-		x -= PAGE_OFFSET;
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		VIRTUAL_BUG_ON(x > y);
+ 		VIRTUAL_BUG_ON(!phys_addr_valid(x));
+ 	}
++
+ 	return x;
+ }
+ EXPORT_SYMBOL(__phys_addr);
++#endif
+ 
+ bool __virt_addr_valid(unsigned long x)
+ {
 
