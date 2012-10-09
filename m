@@ -1,132 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab2JIEbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:31:47 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36185 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2JIEbp (ORCPT
+	id S1751538Ab2JIEjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:39:11 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45308 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2JIEjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:31:45 -0400
-Message-ID: <5073A8AE.5080501@zankel.net>
-Date: Mon, 08 Oct 2012 21:31:42 -0700
-From: Chris Zankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Tue, 9 Oct 2012 00:39:08 -0400
+X-AuditID: 9c930197-b7b6dae000000e70-df-5073aa69e60e
+Date: Tue, 9 Oct 2012 13:43:17 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Rabin Vincent <rabin@rab.in>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: CMA and zone watermarks
+Message-ID: <20121009044317.GG13817@bbox>
+References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
+ <20121009031023.GF13817@bbox>
+ <50739615.9080205@samsung.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] xtensa patchset for 3.7
-References: <506CBAFC.8010908@zankel.net> <CA+55aFyva3aWXBOBwERPJMyX+2LqydYs4Bq4ZBUPXZFMtPqZOg@mail.gmail.com>
-In-Reply-To: <CA+55aFyva3aWXBOBwERPJMyX+2LqydYs4Bq4ZBUPXZFMtPqZOg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50739615.9080205@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Oct 09, 2012 at 05:12:21AM +0200, Marek Szyprowski wrote:
+> Hello,
+> 
+> On 10/9/2012 5:10 AM, Minchan Kim wrote:
+> 
+> >On Mon, Oct 08, 2012 at 05:41:14PM +0200, Rabin Vincent wrote:
+> >>It appears that when CMA is enabled, the zone watermarks are not properly
+> >>respected, leading to for example GFP_NOWAIT allocations getting access to the
+> >>high pools.
+> >>
+> >>I ran the following test code which simply allocates pages with GFP_NOWAIT
+> >>until it fails, and then tries GFP_ATOMIC.  Without CMA, the GFP_ATOMIC
+> >>allocation succeeds, with CMA, it fails too.
+> >
+> >Good spot. By wrong zone_watermark_check, it can consume reserved memory pool.
+> 
+> That was the main reason for the Bartek's research.
 
-Trying again with the correct url and a signed key; hoping we can light 
-the cigars now...
+Okay. It shoud have written down for more good description at that time. :)
 
-Please pull the changes for the Xtensa architecture for v3.7. The Xtensa 
-tree has been broken for some time now, and this patchset brings it back 
-to life. It has been part of the linux-next tree for some time.
+> 
+> >>Logs attached (includes my patch which prints the migration type in the failure
+> >>message http://marc.info/?l=linux-mm&m=134971041701306&w=2), taken on 3.6
+> >>kernel.
+> >>
+> >
+> >Fortunately, recently, Bart sent a patch about that.
+> >http://marc.info/?l=linux-mm&m=134763299016693&w=2
+> >
+> >Could you test above patches in your kernel?
+> >You have to apply [2/4], [3/4], [4/4] and don't need [1/4].
+> 
+> AFAIR without patch [1/4], free cma page counter will go below zero
+> and weird thing will happen, so better apply the complete patchset.
 
-Most changes are inside the xtensa subdirectory; the other changes 
-mostly add another rule to already existing #ifdefs to exclude Xtensa, 
-where required. The only 'common' change is to add two more sections 
-('.xt.prop' and '.xt.lit') to the white list in modpost.
+I can't understand your point. [1/4] is just fix for correcting trace
+No?
 
-Thanks,
--Chris
+http://marc.info/?l=linux-mm&m=134763301216713&w=2
 
----------->
 
-The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
+> 
+> Best regards
+> -- 
+> Marek Szyprowski
+> Samsung Poland R&D Center
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-   Linux 3.6 (2012-09-30 16:47:46 -0700)
-
-are available in the git repository at:
-
-   https://github.com/czankel/xtensa-linux.git tags/xtensa-next-20121008
-
-for you to fetch changes up to 70cefe765433529fc894fd1995a1d5883cb33e05:
-
-   xtensa: Setup CROSS_COMPILE at the top (2012-10-04 12:16:20 -0700)
-
-----------------------------------------------------------------
-Xtensa patchset for 3.7
-
-----------------------------------------------------------------
-Chris Zankel (1):
-       MAINTAINERS: add Max Filippov as an xtensa port maintainer
-
-Geert Uytterhoeven (1):
-       xtensa: Setup CROSS_COMPILE at the top
-
-Max Filippov (25):
-       xtensa: fix linker script transformation for .text.unlikely
-       xtensa: ISS: only build networking if configured
-       xtensa/PCI: fix WT caching attribute
-       xtensa: fix xtensa_irq_unmask calls
-       xtensa: ISS: fix __simc implementation
-       modpost: fix modpost warnings for xtensa
-       xtensa: fix ioremap
-       xtensa: adopt generic io routines
-       xtensa: set NO_IOPORT to 'n' by default
-       xtensa: add ARCH_WANT_OPTIONAL_GPIOLIB to xtensa config
-       xtensa: change default platform clock frequency to 10MHz
-       xtensa: ISS: add dummy serial.h for ISS platform
-       xtensa: ISS: add platform_pcibios_init
-       xtensa: ISS: change keyboard polling rate
-       xtensa: ISS: exit simulator in case of halt or poweroff
-       xtensa: ISS: drop unused io.c
-       xtensa: fix parallel make
-       xtensa: fix CODA build
-       hisax: disable build for big-endian xtensa
-       xtensa: rename MISC SR definition to avoid name clashes
-       parport: disable for xtensa arch
-       xtensa: add missing symbol exports
-       xtensa: provide dummy gcc intrinsics
-       xtensa: fix TIOCGSERIAL and TIOCSSERIAL definitions
-       xtensa: drop CONFIG_EMBEDDED_RAMDISK
-
-  MAINTAINERS                                        |    2 +
-  arch/xtensa/Kconfig                                |   23 +--
-  arch/xtensa/Makefile                               |   34 ++--
-  arch/xtensa/boot/Makefile                          |    2 +-
-  arch/xtensa/boot/boot-elf/Makefile                 |   24 +--
-  arch/xtensa/boot/boot-elf/boot.lds.S               |    7 -
-  arch/xtensa/boot/boot-redboot/Makefile             |   12 +-
-  arch/xtensa/boot/boot-redboot/boot.ld              |    7 -
-  arch/xtensa/boot/boot-redboot/bootstrap.S          |   10 --
-  arch/xtensa/boot/ramdisk/Makefile                  |   23 ---
-  arch/xtensa/configs/s6105_defconfig                |    5 -
-  arch/xtensa/include/asm/io.h                       |  172 
-+++-----------------
-  arch/xtensa/include/asm/ioctls.h                   |    4 +-
-  arch/xtensa/include/asm/regs.h                     |    2 +-
-  arch/xtensa/kernel/Makefile                        |    3 +-
-  arch/xtensa/kernel/io.c                            |   75 ---------
-  arch/xtensa/kernel/irq.c                           |    4 +-
-  arch/xtensa/kernel/pci-dma.c                       |    4 +
-  arch/xtensa/kernel/pci.c                           |    2 +-
-  arch/xtensa/kernel/platform.c                      |    4 +-
-  arch/xtensa/kernel/setup.c                         |   12 --
-  arch/xtensa/kernel/vmlinux.lds.S                   |    5 -
-  arch/xtensa/kernel/xtensa_ksyms.c                  |   25 +++
-  arch/xtensa/platforms/iss/Makefile                 |    4 +-
-  arch/xtensa/platforms/iss/console.c                |   15 +-
-  .../platforms/iss/include/platform/simcall.h       |   53 ++++++
-  arch/xtensa/platforms/iss/io.c                     |   32 ----
-  arch/xtensa/platforms/iss/network.c                |   49 ------
-  arch/xtensa/platforms/iss/setup.c                  |   14 +-
-  drivers/isdn/hisax/Kconfig                         |   10 +-
-  drivers/parport/Kconfig                            |    2 +-
-  drivers/usb/musb/musb_io.h                         |    3 +-
-  scripts/mod/modpost.c                              |    2 +
-  33 files changed, 169 insertions(+), 476 deletions(-)
-  delete mode 100644 arch/xtensa/boot/ramdisk/Makefile
-  delete mode 100644 arch/xtensa/kernel/io.c
-  create mode 100644 arch/xtensa/platforms/iss/include/platform/serial.h
-  delete mode 100644 arch/xtensa/platforms/iss/io.c
+-- 
+Kind regards,
+Minchan Kim
