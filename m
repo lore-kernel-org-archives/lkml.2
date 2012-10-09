@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab2JIGG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:06:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59856 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222Ab2JIGGx (ORCPT
+	id S1753645Ab2JIGH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:07:26 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:49201 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab2JIGDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:06:53 -0400
-Date: Tue, 9 Oct 2012 15:06:43 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        swarren@nvidia.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: Convert tps6586x to irq_domain
-Message-ID: <20121009060641.GE8237@opensource.wolfsonmicro.com>
-References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com>
- <1349712805-10014-2-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349712805-10014-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 02:03:13 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH 17/30] Fix a build error.
+Date: Tue,  9 Oct 2012 01:54:07 -0400
+Message-Id: <a7a3b8c86f9fb8e8d13fb51a4a8b68166893b9b5.1349761836.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.8.0.rc1
+In-Reply-To: <1349762060-25334-1-git-send-email-lenb@kernel.org>
+References: <1349762060-25334-1-git-send-email-lenb@kernel.org>
+In-Reply-To: <e3f25e6e5836c4790fbe395ff42e241f372d859d.1349761836.git.len.brown@intel.com>
+References: <e3f25e6e5836c4790fbe395ff42e241f372d859d.1349761836.git.len.brown@intel.com>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 09:43:23PM +0530, Laxman Dewangan wrote:
-> Allocate the irq base if it base is not porvided i.e.
-> in case of device tree invocation of this driver.
-> Convert the tps6586x driver to irq domain, using a
-> legacy IRQ mapping if an irq_base is specified in
-> platform data or dynamically allocated and otherwise
-> using a linear mapping.
+From: Eduardo Valentin <eduardo.valentin@ti.com>
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+---
+ drivers/staging/omap-thermal/omap-thermal-common.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-but can you convert to regmap_irq?
+diff --git a/drivers/staging/omap-thermal/omap-thermal-common.c b/drivers/staging/omap-thermal/omap-thermal-common.c
+index d543d5c..b4cd6cc 100644
+--- a/drivers/staging/omap-thermal/omap-thermal-common.c
++++ b/drivers/staging/omap-thermal/omap-thermal-common.c
+@@ -120,7 +120,9 @@ static int omap_thermal_bind(struct thermal_zone_device *thermal,
+ 
+ 	/* TODO: bind with min and max states */
+ 	/* Simple thing, two trips, one passive another critical */
+-	return thermal_zone_bind_cooling_device(thermal, 0, cdev);
++	return thermal_zone_bind_cooling_device(thermal, 0, cdev,
++						THERMAL_NO_LIMIT,
++						THERMAL_NO_LIMIT);
+ }
+ 
+ /* Unbind callback functions for thermal zone */
+-- 
+1.8.0.rc1
+
