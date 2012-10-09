@@ -1,70 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab2JIESG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:18:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44166 "EHLO
+	id S1751172Ab2JIEUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:20:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44182 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751172Ab2JIESC (ORCPT
+	by vger.kernel.org with ESMTP id S1750820Ab2JIET6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:18:02 -0400
+	Tue, 9 Oct 2012 00:19:58 -0400
+Date: Tue, 9 Oct 2012 13:19:50 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: =?UTF-8?q?=5BPATCH=5D=20mfd=3A=20da9055=3A=20Remove=20unprintable=20characters=20from=20headers?=
-Date: Mon,  8 Oct 2012 10:59:52 +0900
-Message-Id: <1349661592-25234-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firmware: Don't attempt to allocate zero bytes with
+ vmalloc()
+Message-ID: <20121009041947.GB8237@opensource.wolfsonmicro.com>
+References: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seem to be a number of unprintable characters at the head of some
-of the DA9055 include files which cause issues with some tools; remove
-them.
+On Tue, Oct 09, 2012 at 06:56:02AM +0800, Ming Lei wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- include/linux/mfd/da9055/core.h  |    2 +-
- include/linux/mfd/da9055/pdata.h |    2 +-
- include/linux/mfd/da9055/reg.h   |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+> Considered that zero-length firmware image doesn't make sense for drivers
+> (callers), maybe it is a insane firmware image, so how about treating it as a
+> failure?
 
-diff --git a/include/linux/mfd/da9055/core.h b/include/linux/mfd/da9055/core.h
-index c96ad68..956afa4 100644
---- a/include/linux/mfd/da9055/core.h
-+++ b/include/linux/mfd/da9055/core.h
-@@ -1,4 +1,4 @@
--﻿/*
-+/*
-  * da9055 declarations for DA9055 PMICs.
-  *
-  * Copyright(c) 2012 Dialog Semiconductor Ltd.
-diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
-index 147293b..b9b204e 100644
---- a/include/linux/mfd/da9055/pdata.h
-+++ b/include/linux/mfd/da9055/pdata.h
-@@ -1,4 +1,4 @@
--﻿/* Copyright (C) 2012 Dialog Semiconductor Ltd.
-+/* Copyright (C) 2012 Dialog Semiconductor Ltd.
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-diff --git a/include/linux/mfd/da9055/reg.h b/include/linux/mfd/da9055/reg.h
-index df237ee..2b592e0 100644
---- a/include/linux/mfd/da9055/reg.h
-+++ b/include/linux/mfd/da9055/reg.h
-@@ -1,4 +1,4 @@
--﻿/*
-+/*
-  * DA9055 declarations for DA9055 PMICs.
-  *
-  * Copyright(c) 2012 Dialog Semiconductor Ltd.
--- 
-1.7.10.4
-
+It seems better to punt that decision to callers - for example, the case
+I ran into this with was a driver that was using a zero length firmware
+to say that it didn't want to load an optional image but also didn't
+want to have to time out if that was the case.  That doesn't seem
+unreasonable to me, and drivers already have to validate that what
+they're getting makes sense.
