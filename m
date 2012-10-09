@@ -1,677 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2JIRSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:18:07 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57663 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab2JIRSC (ORCPT
+	id S1756349Ab2JIRUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:20:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60763 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2JIRUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:18:02 -0400
-Date: Tue, 9 Oct 2012 13:06:14 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v5 2/2] ACPI: Add Intel MID SPI early console support.
-Message-ID: <20121009170613.GF25276@phenom.dumpdata.com>
-References: <cover.1347453194.git.zetalog@gmail.com>
- <534b1bf9fba2b51bdff554e100931713dd7da2a9.1349749925.git.lv.zheng@intel.com>
+	Tue, 9 Oct 2012 13:20:15 -0400
+Date: Tue, 9 Oct 2012 10:19:21 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-32caf0d1fe14eb69191e7828701e381b1edb340d@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1349413336-26936-2-git-send-email-namhyung@kernel.org>
+References: <1349413336-26936-2-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace: Validate target task/user/cpu argument
+Git-Commit-ID: 32caf0d1fe14eb69191e7828701e381b1edb340d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <534b1bf9fba2b51bdff554e100931713dd7da2a9.1349749925.git.lv.zheng@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:19:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 10:37:32AM +0800, Lv Zheng wrote:
-> DesignWare SPI UART is used as one of the debug ports on Low Power Intel
-> Architecture (LPIA) platforms.  This patch is introduced to support this
-> debugging console reported by ACPI DBGP/DBG2.  The original MID SPI
-> early console stuff is also refined to co-exist with the new ACPI usage
-> model.
-> 
-> To use this facility on LPIA platforms, you need to enable the following
-> kernel configurations:
->   CONFIG_EARLY_PRINTK_ACPI=y
->   CONFIG_EARLY_PRINTK_INTEL_MID_SPI=y
-> Then you need to append the following kernel parameter to the kernel
-> command line in the boot loader configuration file:
->   earlyprintk=acpi
+Commit-ID:  32caf0d1fe14eb69191e7828701e381b1edb340d
+Gitweb:     http://git.kernel.org/tip/32caf0d1fe14eb69191e7828701e381b1edb340d
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Fri, 5 Oct 2012 14:02:13 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 5 Oct 2012 12:47:54 -0300
 
+perf trace: Validate target task/user/cpu argument
 
-.. or earlyprintk=mrst
-?
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Reviewed-by: Feng Tang <feng.tang@intel.com>
-> ---
->  Documentation/kernel-parameters.txt        |    1 +
->  arch/x86/Kconfig.debug                     |   23 +++
->  arch/x86/include/asm/mrst.h                |    2 +-
->  arch/x86/kernel/early_printk.c             |   12 +-
->  arch/x86/platform/mrst/early_printk_mrst.c |  186 +----------------------
->  drivers/platform/x86/Makefile              |    2 +
->  drivers/platform/x86/early/Makefile        |    5 +
->  drivers/platform/x86/early/intel_mid_spi.c |  220 ++++++++++++++++++++++++++++
->  include/acpi/actbl2.h                      |    1 +
->  include/linux/intel_mid_early.h            |   12 ++
->  10 files changed, 283 insertions(+), 181 deletions(-)
->  create mode 100644 drivers/platform/x86/early/Makefile
->  create mode 100644 drivers/platform/x86/early/intel_mid_spi.c
->  create mode 100644 include/linux/intel_mid_early.h
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index f656765..003ffd9 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -762,6 +762,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			earlyprintk=vga
->  			earlyprintk=serial[,ttySn[,baudrate]]
->  			earlyprintk=ttySn[,baudrate]
-> +			earlyprintk=mrst
->  			earlyprintk=dbgp[debugController#]
->  			earlyprintk=acpi[debugController#]
->  
-> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-> index 5778082..4a26e2d 100644
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -43,9 +43,32 @@ config EARLY_PRINTK
->  	  with klogd/syslogd or the X server. You should normally N here,
->  	  unless you want to debug such a crash.
->  
-> +config EARLY_PRINTK_INTEL_MID_SPI
-> +	bool "Early printk for Intel MID SPI UART port"
-> +	depends on EARLY_PRINTK
-> +	---help---
-> +	  Write kernel log output directly into the MID SPI UART debug port.
-> +
-> +	  Intel MID platforms are using DesignWare SPI UART as its debug
-> +	  console.  This option does not introduce actual early console into
-> +	  the kernel binary, but is required by a real early console
-> +	  implementation (EARLY_PRINTK_INTEL_MID or EARLY_PRINTK_ACPI).
-> +	  You should normally N here unless you need to do kernel booting
-> +	  development.
-> +
->  config EARLY_PRINTK_INTEL_MID
->  	bool "Early printk for Intel MID platform support"
->  	depends on EARLY_PRINTK && X86_INTEL_MID
-> +	select EARLY_PRINTK_INTEL_MID_SPI
-> +	---help---
-> +	  Write kernel log output directly into the MID SPI UART debug port.
-> +
-> +	  Intel MID platforms are always equipped with SPI debug ports and
-> +	  USB OTG debug ports. To enable these debugging facilities, you
-> +	  need to pass "earlyprintk=mrst" parameter to the kernel through
-> +	  boot loaders.  Please see "Documentation/kernel-parameter.txt" for
-> +	  details.  You should normally N here unless you need to do kernel
-> +	  booting development.
->  
->  config EARLY_PRINTK_DBGP
->  	bool "Early printk via EHCI debug port"
-> diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
-> index fc18bf3..8ab0655 100644
-> --- a/arch/x86/include/asm/mrst.h
-> +++ b/arch/x86/include/asm/mrst.h
-> @@ -12,6 +12,7 @@
->  #define _ASM_X86_MRST_H
->  
->  #include <linux/sfi.h>
-> +#include <linux/intel_mid_early.h>
->  
->  extern int pci_mrst_init(void);
->  extern int __init sfi_parse_mrtc(struct sfi_table_header *table);
-> @@ -63,7 +64,6 @@ extern enum mrst_timer_options mrst_timer_options;
->  #define SFI_MTMR_MAX_NUM 8
->  #define SFI_MRTC_MAX	8
->  
-> -extern struct console early_mrst_console;
->  extern void mrst_early_console_init(void);
->  
->  extern struct console early_hsu_console;
-> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-> index bf5b596..9b5ee96 100644
-> --- a/arch/x86/kernel/early_printk.c
-> +++ b/arch/x86/kernel/early_printk.c
-> @@ -205,6 +205,16 @@ static inline void early_console_register(struct console *con, int keep_early)
->  
->  int __init __acpi_early_console_start(struct acpi_debug_port *info)
->  {
-> +#ifdef CONFIG_EARLY_PRINTK_INTEL_MID_SPI
-> +	if (info->port_type == ACPI_DBG2_SERIAL_PORT
-> +	    && info->port_subtype == ACPI_DBG2_INTEL_MID_SPI
-> +	    && info->register_count > 0) {
+Those target options are mutually exclusive so check it before setting
+up target thread/cpu maps.
 
-Is it ever going to be zero?
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349413336-26936-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-> +		mid_spi_early_console_init((u32)(info->registers[0].address));
-> +		early_console_register(&mid_spi_early_console,
-> +				       acpi_early_console_keep(info));
-> +	}
-> +#endif
-> +
->  	return 0;
->  }
->  #endif
-> @@ -256,7 +266,7 @@ static int __init setup_early_printk(char *buf)
->  #ifdef CONFIG_EARLY_PRINTK_INTEL_MID
->  		if (!strncmp(buf, "mrst", 4)) {
->  			mrst_early_console_init();
-> -			early_console_register(&early_mrst_console, keep);
-> +			early_console_register(&mid_spi_early_console, keep);
->  		}
->  
->  		if (!strncmp(buf, "hsu", 3)) {
-> diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
-> index 028454f..7afbf18 100644
-> --- a/arch/x86/platform/mrst/early_printk_mrst.c
-> +++ b/arch/x86/platform/mrst/early_printk_mrst.c
-> @@ -29,82 +29,8 @@
->  #include <asm/pgtable.h>
->  #include <asm/mrst.h>
->  
-> -#define MRST_SPI_TIMEOUT		0x200000
->  #define MRST_REGBASE_SPI0		0xff128000
->  #define MRST_REGBASE_SPI1		0xff128400
-> -#define MRST_CLK_SPI0_REG		0xff11d86c
-> -
-> -/* Bit fields in CTRLR0 */
-> -#define SPI_DFS_OFFSET			0
-> -
-> -#define SPI_FRF_OFFSET			4
-> -#define SPI_FRF_SPI			0x0
-> -#define SPI_FRF_SSP			0x1
-> -#define SPI_FRF_MICROWIRE		0x2
-> -#define SPI_FRF_RESV			0x3
-> -
-> -#define SPI_MODE_OFFSET			6
-> -#define SPI_SCPH_OFFSET			6
-> -#define SPI_SCOL_OFFSET			7
-> -#define SPI_TMOD_OFFSET			8
-> -#define	SPI_TMOD_TR			0x0		/* xmit & recv */
-> -#define SPI_TMOD_TO			0x1		/* xmit only */
-> -#define SPI_TMOD_RO			0x2		/* recv only */
-> -#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
-> -
-> -#define SPI_SLVOE_OFFSET		10
-> -#define SPI_SRL_OFFSET			11
-> -#define SPI_CFS_OFFSET			12
-> -
-> -/* Bit fields in SR, 7 bits */
-> -#define SR_MASK				0x7f		/* cover 7 bits */
-> -#define SR_BUSY				(1 << 0)
-> -#define SR_TF_NOT_FULL			(1 << 1)
-> -#define SR_TF_EMPT			(1 << 2)
-> -#define SR_RF_NOT_EMPT			(1 << 3)
-> -#define SR_RF_FULL			(1 << 4)
-> -#define SR_TX_ERR			(1 << 5)
-> -#define SR_DCOL				(1 << 6)
-> -
-> -struct dw_spi_reg {
-> -	u32	ctrl0;
-> -	u32	ctrl1;
-> -	u32	ssienr;
-> -	u32	mwcr;
-> -	u32	ser;
-> -	u32	baudr;
-> -	u32	txfltr;
-> -	u32	rxfltr;
-> -	u32	txflr;
-> -	u32	rxflr;
-> -	u32	sr;
-> -	u32	imr;
-> -	u32	isr;
-> -	u32	risr;
-> -	u32	txoicr;
-> -	u32	rxoicr;
-> -	u32	rxuicr;
-> -	u32	msticr;
-> -	u32	icr;
-> -	u32	dmacr;
-> -	u32	dmatdlr;
-> -	u32	dmardlr;
-> -	u32	idr;
-> -	u32	version;
-> -
-> -	/* Currently operates as 32 bits, though only the low 16 bits matter */
-> -	u32	dr;
-> -} __packed;
-> -
-> -#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
-> -#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
-> -
-> -/* Default use SPI0 register for mrst, we will detect Penwell and use SPI1 */
-> -static unsigned long mrst_spi_paddr = MRST_REGBASE_SPI0;
-> -
-> -static u32 *pclk_spi0;
-> -/* Always contains an accessible address, start with 0 */
-> -static struct dw_spi_reg *pspi;
->  
->  static struct kmsg_dumper dw_dumper;
->  static int dumper_registered;
-> @@ -116,77 +42,21 @@ static void dw_kmsg_dump(struct kmsg_dumper *dumper,
->  	size_t len;
->  
->  	/* When run to this, we'd better re-init the HW */
-> -	mrst_early_console_init();
-> +	mid_spi_early_console_reset();
->  
->  	while (kmsg_dump_get_line(dumper, true, line, sizeof(line), &len))
-> -		early_mrst_console.write(&early_mrst_console, line, len);
-> -}
-> -
-> -/* Set the ratio rate to 115200, 8n1, IRQ disabled */
-> -static void max3110_write_config(void)
-> -{
-> -	u16 config;
-> -
-> -	config = 0xc001;
-> -	dw_writel(pspi, dr, config);
-> -}
-> -
-> -/* Translate char to a eligible word and send to max3110 */
-> -static void max3110_write_data(char c)
-> -{
-> -	u16 data;
-> -
-> -	data = 0x8000 | c;
-> -	dw_writel(pspi, dr, data);
-> +		mid_spi_early_console.write(&mid_spi_early_console, line, len);
->  }
->  
->  void mrst_early_console_init(void)
->  {
-> -	u32 ctrlr0 = 0;
-> -	u32 spi0_cdiv;
-> -	u32 freq; /* Freqency info only need be searched once */
-> -
-> -	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
-> -	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
-> -							MRST_CLK_SPI0_REG);
-> -	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
-> -	freq = 100000000 / (spi0_cdiv + 1);
-> +	/* Default use SPI0 register for mrst */
-> +	unsigned long spi_paddr = MRST_REGBASE_SPI0;
->  
-> +	/* Detect Penwell and use SPI1 */
->  	if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL)
-> -		mrst_spi_paddr = MRST_REGBASE_SPI1;
-> -
-> -	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
-> -						mrst_spi_paddr);
-> -
-> -	/* Disable SPI controller */
-> -	dw_writel(pspi, ssienr, 0);
-> -
-> -	/* Set control param, 8 bits, transmit only mode */
-> -	ctrlr0 = dw_readl(pspi, ctrl0);
-> -
-> -	ctrlr0 &= 0xfcc0;
-> -	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
-> -		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
-> -	dw_writel(pspi, ctrl0, ctrlr0);
-> -
-> -	/*
-> -	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
-> -	 * calculate the clk dividor to make the clock a little slower
-> -	 * than real baud rate.
-> -	 */
-> -	dw_writel(pspi, baudr, freq/100000);
-> -
-> -	/* Disable all INT for early phase */
-> -	dw_writel(pspi, imr, 0x0);
-> -
-> -	/* Set the cs to spi-uart */
-> -	dw_writel(pspi, ser, 0x2);
-> -
-> -	/* Enable the HW, the last step for HW init */
-> -	dw_writel(pspi, ssienr, 0x1);
-> -
-> -	/* Set the default configuration */
-> -	max3110_write_config();
-> +		spi_paddr = MRST_REGBASE_SPI1;
-> +	mid_spi_early_console_init(spi_paddr);
->  
->  	/* Register the kmsg dumper */
->  	if (!dumper_registered) {
-> @@ -196,48 +66,6 @@ void mrst_early_console_init(void)
->  	}
->  }
->  
-> -/* Slave select should be called in the read/write function */
-> -static void early_mrst_spi_putc(char c)
-> -{
-> -	unsigned int timeout;
-> -	u32 sr;
-> -
-> -	timeout = MRST_SPI_TIMEOUT;
-> -	/* Early putc needs to make sure the TX FIFO is not full */
-> -	while (--timeout) {
-> -		sr = dw_readl(pspi, sr);
-> -		if (!(sr & SR_TF_NOT_FULL))
-> -			cpu_relax();
-> -		else
-> -			break;
-> -	}
-> -
-> -	if (!timeout)
-> -		pr_warning("MRST earlycon: timed out\n");
-> -	else
-> -		max3110_write_data(c);
-> -}
-> -
-> -/* Early SPI only uses polling mode */
-> -static void early_mrst_spi_write(struct console *con, const char *str, unsigned n)
-> -{
-> -	int i;
-> -
-> -	for (i = 0; i < n && *str; i++) {
-> -		if (*str == '\n')
-> -			early_mrst_spi_putc('\r');
-> -		early_mrst_spi_putc(*str);
-> -		str++;
-> -	}
-> -}
-> -
-> -struct console early_mrst_console = {
-> -	.name =		"earlymrst",
-> -	.write =	early_mrst_spi_write,
-> -	.flags =	CON_PRINTBUFFER,
-> -	.index =	-1,
-> -};
-> -
->  /*
->   * Following is the early console based on Medfield HSU (High
->   * Speed UART) device.
-> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-> index bf7e4f9..6e4ff46 100644
-> --- a/drivers/platform/x86/Makefile
-> +++ b/drivers/platform/x86/Makefile
-> @@ -50,3 +50,5 @@ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)	+= intel_mid_powerbtn.o
->  obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
->  obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
->  obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
-> +
-> +obj-$(CONFIG_EARLY_PRINTK)	+= early/
-> diff --git a/drivers/platform/x86/early/Makefile b/drivers/platform/x86/early/Makefile
-> new file mode 100644
-> index 0000000..5d9408c
-> --- /dev/null
-> +++ b/drivers/platform/x86/early/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for linux/drivers/platform/x86/early
-> +# x86 Platform-Specific Early Printk Support
-> +#
-> +obj-$(CONFIG_EARLY_PRINTK_INTEL_MID_SPI)	+= intel_mid_spi.o
-> diff --git a/drivers/platform/x86/early/intel_mid_spi.c b/drivers/platform/x86/early/intel_mid_spi.c
-> new file mode 100644
-> index 0000000..fa5a1a2
-> --- /dev/null
-> +++ b/drivers/platform/x86/early/intel_mid_spi.c
-> @@ -0,0 +1,220 @@
-> +/*
-> + * intel_mid_spi.c - SPI UART early consoles for Intel MID platforms
-> + *
-> + * Copyright (c) 2008-2012, Intel Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +
-> +/*
-> + * This file is originally implemented by Feng Tang <feng.tang@intel.com>.
-> + * It is moved here to co-exist with CONFIG_EARLY_PRINTK_ACPI.
-> + * Any questions you should contact the original author.
-> + */
-> +
-> +#include <linux/serial_reg.h>
-> +#include <linux/serial_mfd.h>
-> +#include <linux/kernel.h>
-> +#include <linux/delay.h>
-> +#include <linux/init.h>
-> +#include <linux/export.h>
-> +#include <linux/io.h>
-> +#include <linux/intel_mid_early.h>
-> +#include <asm/fixmap.h>
-> +
-> +#define DW_SPI_TIMEOUT			0x200000
-> +#define DW_SPI0_CLK_REG			0xff11d86c
-> +
-> +/* Bit fields in CTRLR0 */
-> +#define SPI_DFS_OFFSET			0
-> +
-> +#define SPI_FRF_OFFSET			4
-> +#define SPI_FRF_SPI			0x0
-> +#define SPI_FRF_SSP			0x1
-> +#define SPI_FRF_MICROWIRE		0x2
-> +#define SPI_FRF_RESV			0x3
-> +
-> +#define SPI_MODE_OFFSET			6
-> +#define SPI_SCPH_OFFSET			6
-> +#define SPI_SCOL_OFFSET			7
-> +#define SPI_TMOD_OFFSET			8
-> +#define	SPI_TMOD_TR			0x0		/* xmit & recv */
-> +#define SPI_TMOD_TO			0x1		/* xmit only */
-> +#define SPI_TMOD_RO			0x2		/* recv only */
-> +#define SPI_TMOD_EPROMREAD		0x3		/* eeprom read mode */
-> +
-> +#define SPI_SLVOE_OFFSET		10
-> +#define SPI_SRL_OFFSET			11
-> +#define SPI_CFS_OFFSET			12
-> +
-> +/* Bit fields in SR, 7 bits */
-> +#define SR_MASK				0x7f		/* cover 7 bits */
-> +#define SR_BUSY				(1 << 0)
-> +#define SR_TF_NOT_FULL			(1 << 1)
-> +#define SR_TF_EMPT			(1 << 2)
-> +#define SR_RF_NOT_EMPT			(1 << 3)
-> +#define SR_RF_FULL			(1 << 4)
-> +#define SR_TX_ERR			(1 << 5)
-> +#define SR_DCOL				(1 << 6)
-> +
-> +struct dw_spi_reg {
-> +	u32	ctrl0;
-> +	u32	ctrl1;
-> +	u32	ssienr;
-> +	u32	mwcr;
-> +	u32	ser;
-> +	u32	baudr;
-> +	u32	txfltr;
-> +	u32	rxfltr;
-> +	u32	txflr;
-> +	u32	rxflr;
-> +	u32	sr;
-> +	u32	imr;
-> +	u32	isr;
-> +	u32	risr;
-> +	u32	txoicr;
-> +	u32	rxoicr;
-> +	u32	rxuicr;
-> +	u32	msticr;
-> +	u32	icr;
-> +	u32	dmacr;
-> +	u32	dmatdlr;
-> +	u32	dmardlr;
-> +	u32	idr;
-> +	u32	version;
-> +
-> +	/* Currently operates as 32 bits, though only the low 16 bits matter */
-> +	u32	dr;
-> +} __packed;
-> +
-> +#define dw_readl(dw, name)		__raw_readl(&(dw)->name)
-> +#define dw_writel(dw, name, val)	__raw_writel((val), &(dw)->name)
-> +
-> +static u32 *pclk_spi0;
-> +/* Always contains an accessible address, start with 0 */
-> +static struct dw_spi_reg *pspi;
-> +static int dw_spi_initialized;
-> +static u32 dw_spi_regbase;
-> +
-> +/* Translate char to a eligible word and send to max3110 */
-> +static void max3110_write_data(char c)
-> +{
-> +	u16 data;
-> +
-> +	data = 0x8000 | c;
-> +	dw_writel(pspi, dr, data);
-> +}
-> +
-> +/* Set the ratio rate to 115200, 8n1, IRQ disabled */
-> +static void max3110_write_config(void)
-> +{
-> +	u16 config;
-> +
-> +	config = 0xc001;
-> +	dw_writel(pspi, dr, config);
-> +}
-> +
-> +int mid_spi_early_console_reset(void)
-> +{
-> +	u32 ctrlr0 = 0;
-> +	u32 spi0_cdiv;
-> +	u32 freq; /* Freqency info only need be searched once */
-> +
-> +	/* Base clk is 100 MHz, the actual clk = 100M / (clk_divider + 1) */
-> +	pclk_spi0 = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
-> +						      DW_SPI0_CLK_REG);
-> +	spi0_cdiv = ((*pclk_spi0) & 0xe00) >> 9;
-> +	freq = 100000000 / (spi0_cdiv + 1);
-> +
-> +	pspi = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
-> +						 dw_spi_regbase);
-> +
-> +	/* Disable SPI controller */
-> +	dw_writel(pspi, ssienr, 0);
-> +
-> +	/* Set control param, 8 bits, transmit only mode */
-> +	ctrlr0 = dw_readl(pspi, ctrl0);
-> +
-> +	ctrlr0 &= 0xfcc0;
-> +	ctrlr0 |= 0xf | (SPI_FRF_SPI << SPI_FRF_OFFSET)
-> +		      | (SPI_TMOD_TO << SPI_TMOD_OFFSET);
-> +	dw_writel(pspi, ctrl0, ctrlr0);
-> +
-> +	/*
-> +	 * Change the spi0 clk to comply with 115200 bps, use 100000 to
-> +	 * calculate the clk dividor to make the clock a little slower
-> +	 * than real baud rate.
-> +	 */
-> +	dw_writel(pspi, baudr, freq/100000);
-> +
-> +	/* Disable all INT for early phase */
-> +	dw_writel(pspi, imr, 0x0);
-> +
-> +	/* Set the cs to spi-uart */
-> +	dw_writel(pspi, ser, 0x2);
-> +
-> +	/* Enable the HW, the last step for HW init */
-> +	dw_writel(pspi, ssienr, 0x1);
-> +
-> +	/* Set the default configuration */
-> +	max3110_write_config();
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(mid_spi_early_console_reset);
-> +
-> +/* Slave select should be called in the read/write function */
-> +static void dw_early_spi_putc(char c)
-> +{
-> +	unsigned int timeout;
-> +	u32 sr;
-> +
-> +	timeout = DW_SPI_TIMEOUT;
-> +	/* Early putc needs to make sure the TX FIFO is not full */
-> +	while (--timeout) {
-> +		sr = dw_readl(pspi, sr);
-> +		if (!(sr & SR_TF_NOT_FULL))
-> +			cpu_relax();
-> +		else
-> +			break;
-> +	}
-> +
-> +	if (!timeout)
-> +		pr_warn("mid-spi-early: timed out\n");
-> +	else
-> +		max3110_write_data(c);
-> +}
-> +
-> +/* Early SPI only uses polling mode */
-> +static void dw_early_spi_write(struct console *con,
-> +			       const char *str, unsigned n)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < n && *str; i++) {
-> +		if (*str == '\n')
-> +			dw_early_spi_putc('\r');
-> +		dw_early_spi_putc(*str);
-> +		str++;
-> +	}
-> +}
-> +
-> +struct console mid_spi_early_console = {
-> +	.name =		"earlymidspi",
-> +	.write =	dw_early_spi_write,
-> +	.flags =	CON_PRINTBUFFER,
-> +	.index =	-1,
-> +};
-> +
-> +void __init mid_spi_early_console_init(u32 spi_paddr)
-> +{
-> +	if (dw_spi_initialized)
-> +		return;
-> +	dw_spi_regbase = spi_paddr;
-> +	mid_spi_early_console_reset();
-> +	dw_spi_initialized = 1;
-> +}
-> +
-> diff --git a/include/acpi/actbl2.h b/include/acpi/actbl2.h
-> index 1b2b356..ffa9d62 100644
-> --- a/include/acpi/actbl2.h
-> +++ b/include/acpi/actbl2.h
-> @@ -341,6 +341,7 @@ struct acpi_dbg2_device {
->  
->  #define ACPI_DBG2_16550_COMPATIBLE  0x0000
->  #define ACPI_DBG2_16550_SUBSET      0x0001
-> +#define ACPI_DBG2_INTEL_MID_SPI     0x0002
->  
->  #define ACPI_DBG2_1394_STANDARD     0x0000
->  
-> diff --git a/include/linux/intel_mid_early.h b/include/linux/intel_mid_early.h
-> new file mode 100644
-> index 0000000..edba232
-> --- /dev/null
-> +++ b/include/linux/intel_mid_early.h
-> @@ -0,0 +1,12 @@
-> +#ifndef LINUX_INTEL_MID_EARLY_H
-> +#define LINUX_INTEL_MID_EARLY_H
-> +
-> +#include <linux/console.h>
-> +
-> +extern struct console mid_spi_early_console;
-> +
-> +extern void mid_spi_early_console_init(u32 spi_paddr);
-> +extern int mid_spi_early_console_reset(void);
-> +
-> +#endif /* LINUX_INTEL_MID_EARLY_H */
-> +
-> -- 
-> 1.7.10
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index dec8ced..f01fa6f 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -323,14 +323,21 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_END()
+ 	};
+ 	int err;
++	char bf[BUFSIZ];
+ 
+ 	argc = parse_options(argc, argv, trace_options, trace_usage, 0);
+ 	if (argc)
+ 		usage_with_options(trace_usage, trace_options);
+ 
++	err = perf_target__validate(&trace.opts.target);
++	if (err) {
++		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
++		printf("%s", bf);
++		return err;
++	}
++
+ 	err = perf_target__parse_uid(&trace.opts.target);
+ 	if (err) {
+-		char bf[BUFSIZ];
+ 		perf_target__strerror(&trace.opts.target, err, bf, sizeof(bf));
+ 		printf("%s", bf);
+ 		return err;
