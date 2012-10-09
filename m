@@ -1,101 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab2JINxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:53:36 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:37115 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab2JINxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:53:34 -0400
-Message-ID: <1349790385.23493.3.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: dock: Remove redundant ACPI NS walk
-From: Toshi Kani <toshi.kani@hp.com>
-To: linux-acpi@vger.kernel.org
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, shli@fusionio.com
-Date: Tue, 09 Oct 2012 07:46:25 -0600
-In-Reply-To: <1347481849-17973-1-git-send-email-toshi.kani@hp.com>
-References: <1347481849-17973-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755959Ab2JINyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:54:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755843Ab2JINyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 09:54:22 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20121009134537.GA23204@kroah.com>
+References: <20121009134537.GA23204@kroah.com> <30767.1349789448@warthog.procyon.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: dhowells@redhat.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for usb
+Date: Tue, 09 Oct 2012 14:54:19 +0100
+Message-ID: <31213.1349790859@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-Can you please review this patch?  Please let me know if there is
-anything I need to do for 3.7.
-
-Thanks,
--Toshi
-
-
-On Wed, 2012-09-12 at 14:30 -0600, Toshi Kani wrote:
-> Combined two ACPI namespace walks, which look for dock stations
-> and then bays separately, into a single walk.
+> > Can you merge the following branch into the usb tree please.
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->  drivers/acpi/dock.c |   26 +++++++-------------------
->  1 files changed, 7 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-> index 88eb143..ae4ebf2 100644
-> --- a/drivers/acpi/dock.c
-> +++ b/drivers/acpi/dock.c
-> @@ -1016,44 +1016,32 @@ static int dock_remove(struct dock_station *ds)
->  }
->  
->  /**
-> - * find_dock - look for a dock station
-> + * find_dock_and_bay - look for dock stations and bays
->   * @handle: acpi handle of a device
->   * @lvl: unused
-> - * @context: counter of dock stations found
-> + * @context: unused
->   * @rv: unused
->   *
-> - * This is called by acpi_walk_namespace to look for dock stations.
-> + * This is called by acpi_walk_namespace to look for dock stations and bays.
->   */
->  static __init acpi_status
-> -find_dock(acpi_handle handle, u32 lvl, void *context, void **rv)
-> +find_dock_and_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
->  {
-> -	if (is_dock(handle))
-> +	if (is_dock(handle) || is_ejectable_bay(handle))
->  		dock_add(handle);
->  
->  	return AE_OK;
->  }
->  
-> -static __init acpi_status
-> -find_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
-> -{
-> -	/* If bay is a dock, it's already handled */
-> -	if (is_ejectable_bay(handle) && !is_dock(handle))
-> -		dock_add(handle);
-> -	return AE_OK;
-> -}
-> -
->  static int __init dock_init(void)
->  {
->  	if (acpi_disabled)
->  		return 0;
->  
-> -	/* look for a dock station */
-> +	/* look for dock stations and bays */
->  	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> -			    ACPI_UINT32_MAX, find_dock, NULL, NULL, NULL);
-> +		ACPI_UINT32_MAX, find_dock_and_bay, NULL, NULL, NULL);
->  
-> -	/* look for bay */
-> -	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> -			ACPI_UINT32_MAX, find_bay, NULL, NULL, NULL);
->  	if (!dock_station_count) {
->  		printk(KERN_INFO PREFIX "No dock devices found.\n");
->  		return 0;
+> Is this (and the other pull requests for other subsystems) for 3.7 or
+> for 3.8?
 
+I don't really mind.  There are no dependencies on it.  Getting it in 3.7
+means there's more chance it'll just apply when Linus does pull it.
 
+David
