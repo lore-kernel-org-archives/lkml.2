@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab2JIOCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:02:12 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:36877 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2JIOCK (ORCPT
+	id S1756012Ab2JIOC1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:02:27 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:23143 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab2JIOCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:02:10 -0400
-Date: Tue, 9 Oct 2012 16:02:01 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Anthony Liguori <aliguori@us.ibm.com>, Adam Litke <agl@us.ibm.com>,
-        Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Avishay Traeger <AVISHAY@il.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
-        <virtualization@lists.linux-foundation.org>,
-        "LKML" <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        "qemu-devel" <qemu-devel@nongnu.org>
-Subject: Re: Proposal for virtio standardization.
-Message-ID: <20121009160201.5303a7ca@BR9GNB5Z>
-In-Reply-To: <87zk4c2tqq.fsf@rustcorp.com.au>
-References: <87zk4c2tqq.fsf@rustcorp.com.au>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+	Tue, 9 Oct 2012 10:02:25 -0400
+Message-ID: <1349790916.23493.5.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 0/4] ACPI: Refactor system notify handling
+From: Toshi Kani <toshi.kani@hp.com>
+To: linux-acpi@vger.kernel.org
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com
+Date: Tue, 09 Oct 2012 07:55:16 -0600
+In-Reply-To: <1346974828-12500-1-git-send-email-toshi.kani@hp.com>
+References: <1346974828-12500-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100914-4966-0000-0000-000003B7BC78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Sep 2012 09:59:33 +0930
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+Hi Len,
 
-> Hi all,
-> 
-> 	I've had several requests for a more formal approach to the
-> virtio draft spec, and (after some soul-searching) I'd like to try that.
-> 
-> 	The proposal is to use OASIS as the standards body, as it's
-> fairly light-weight as these things go.  For me this means paperwork and
-> setting up a Working Group and getting the right people involved as
-> Voting members starting with the current contributors; for most of you
-> it just means a new mailing list, though I'll be cross-posting any
-> drafts and major changes here anyway.
-> 
-> 	I believe that a documented standard (aka virtio 1.0) will
-> increase visibility and adoption in areas outside our normal linux/kvm
-> universe.  There's been some of that already, but this is the clearest
-> path to accelerate it.  Not the easiest path, but I believe that a solid
-> I/O standard is a Good Thing for everyone.
-> 
-> 	Yet I also want to decouple new and experimental development
-> from the standards effort; running code comes first.  New feature bits
-> and new device numbers should be reservable without requiring a full
-> spec change.
-> 
-> So the essence of my proposal is:
-> 1) I start a Working Group within OASIS where we can aim for virtio spec
->    1.0.
-> 
-> 2) The current spec is textually reordered so the core is clearly
->    bus-independent, with PCI, mmio, etc appendices.
-> 
-> 3) Various clarifications, formalizations and cleanups to the spec text,
->    and possibly elimination of old deprecated features.
-> 
-> 4) The only significant change to the spec is that we use PCI
->    capabilities, so we can have infinite feature bits.
->    (see
-> http://lists.linuxfoundation.org/pipermail/virtualization/2011-December/019198.html)
+Can you please review this patchset?  Please let me know if you have any
+concern/question.
 
-"Infinite" only applies to virtio-pci, no?
+Thanks,
+-Toshi
 
+
+On Thu, 2012-09-06 at 17:40 -0600, Toshi Kani wrote:
+> This patchset updates the ACPI system-level (ex. hotplug)
+> notify handling with a new .sys_notify interface.  It provides
+> the following changes:
 > 
-> 5) Changes to the ring layout and other such things are deferred to a
->    future virtio version; whether this is done within OASIS or
->    externally depends on how well this works for the 1.0 release.
+> - Allow ACPI drivers to register their system-level (hotplug)
+>   notify handlers to a new .sys_notify interface through their
+>   acpi_driver table.  This removes redundant ACPI namespace
+>   walks from ACPI drivers for faster booting.  The global notify
+>   handler acpi_bus_notify() is called for all system-level ACPI
+>   device notifications, which then calls an appropriate driver's
+>   handler if any.  ACPI drivers no longer need to register or
+>   unregister driver's handlers to each device object in ACPI
+>   namespace.
+>  
+> - Support dynamic ACPI namespace with LoadTable & Unload opcode
+>   without any changes in ACPI drivers.  There is no need to 
+>   register / unregister handlers to ACPI device objects that are
+>   being loaded to / unloaded from ACPI namespace.
 > 
-> Thoughts?
-> Rusty.
+> - Allow ACPI drivers to use a common hotplug handler when it is
+>   implemented.  It removes functional conflict between driver's
+>   notify handler and the global notify handler acpi_bus_notify().
+>   acpi_bus_notify() only calls an appropriate notify handler if
+>   any.
+> 
+> Note that the changes maintain backward compatibility for ACPI
+> drivers.  Any drivers registered their hotplug handlers through
+> the existing interfaces, such as acpi_install_notify_handler()
+> and register_acpi_bus_notifier(), will continue to work as before.
+> 
+> v2:
+>  - Protected unbound driver from unloading when calling .sys_notify.
+>  - Changed acpi_bus_notify() to call acpi_bus_notify_list first for
+>    maintaining the original order.
+> 
+> ---
+> Toshi Kani (4):
+>  ACPI: Support system notify handler via .sys_notify
+>  ACPI: Update processor_driver to use .sys_notify
+>  ACPI: Update acpi_memhotplug to use .sys_notify
+>  ACPI: Update container to use .sys_notify
+> 
+> ---
+>  drivers/acpi/acpi_memhotplug.c  |   93 +-------------------------------------
+>  drivers/acpi/bus.c              |   64 ++++++++++++++++++++-------
+>  drivers/acpi/container.c        |   66 +--------------------------
+>  drivers/acpi/processor_driver.c |   82 +++-------------------------------
+>  drivers/acpi/scan.c             |   83 ++++++++++++++++++++++++++++++++++
+>  include/acpi/acpi_bus.h         |    6 +++
+>  6 files changed, 150 insertions(+), 244 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 > 
 
-Sounds like a good idea. I'll be happy to review the spec with an eye
-to virtio-ccw.
-
-Cornelia
 
