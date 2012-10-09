@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab2JIGT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:19:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42003 "EHLO mx1.redhat.com"
+	id S1753601Ab2JIGU2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:20:28 -0400
+Received: from bitmer.com ([213.157.87.50]:47459 "EHLO bitmer.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab2JIGT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:19:58 -0400
-Date: Tue, 9 Oct 2012 08:19:42 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
-To: Zhao Hongjiang <zhaohongjiang37@gmail.com>
-cc: jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        serge.hallyn@canonical.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] ext3: fix return values on parse_options() failure
-In-Reply-To: <5073BABF.8090206@gmail.com>
-Message-ID: <alpine.LFD.2.00.1210090814420.11244@dhcp-1-104.brq.redhat.com>
-References: <5073BABF.8090206@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752542Ab2JIGU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 02:20:26 -0400
+Date: Tue, 9 Oct 2012 09:20:03 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Deepak Saxena <dsaxena@plexity.net>, Chris Ball <cjb@laptop.org>,
+        Matt Mackall <mpm@selenic.com>, Venkatraman S <svenkatr@ti.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove include
+ plat/cpu.h
+Message-Id: <20121009092003.3f3d271a035595ef8fbb1e76@bitmer.com>
+In-Reply-To: <20121008173557.10603.18539.stgit@muffinssi>
+References: <20121008173452.10603.53886.stgit@muffinssi>
+	<20121008173557.10603.18539.stgit@muffinssi>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Zhao Hongjiang wrote:
+On Mon, 08 Oct 2012 10:35:57 -0700
+Tony Lindgren <tony@atomide.com> wrote:
 
-> Date: Tue, 09 Oct 2012 13:48:47 +0800
-> From: Zhao Hongjiang <zhaohongjiang37@gmail.com>
-> To: jack@suse.cz
-> Cc: akpm@linux-foundation.org, adilger.kernel@dilger.ca,
->     linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
->     Eric W. Biederman <ebiederm@xmission.com>, serge.hallyn@canonical.com,
->     containers@lists.linux-foundation.org
-> Subject: [PATCH] ext3: fix return values on parse_options() failure
-> 
-> From: Zhao Hongjiang <zhaohongjiang@huawei.com>
-> 
-> parse_options() in ext3 should return 0 when parse the mount options fails.
-> 
+> - omap-dma.c and omap-pcm.c can test the arch locally as
+>   omap1 and omap2 cannot be compiled together because of
+>   conflicting compiler flags
+...
+>  sound/soc/omap/omap-pcm.c         |    9 +++++++--
 
-Ah, it really is a joy to read the parse_options() :). But this fix
-makes sense, thanks for catching it.
+Build tested above for omap1 and omap2+.
 
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-
--Lukas
-
-> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-> ---
->  fs/ext3/super.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> index 17ae5c8..ebf8312 100644
-> --- a/fs/ext3/super.c
-> +++ b/fs/ext3/super.c
-> @@ -1001,7 +1001,7 @@ static int parse_options (char *options, struct super_block *sb,
->  			uid = make_kuid(current_user_ns(), option);
->  			if (!uid_valid(uid)) {
->  				ext3_msg(sb, KERN_ERR, "Invalid uid value %d", option);
-> -				return -1;
-> +				return 0;
-> 
->  			}
->  			sbi->s_resuid = uid;
-> @@ -1012,7 +1012,7 @@ static int parse_options (char *options, struct super_block *sb,
->  			gid = make_kgid(current_user_ns(), option);
->  			if (!gid_valid(gid)) {
->  				ext3_msg(sb, KERN_ERR, "Invalid gid value %d", option);
-> -				return -1;
-> +				return 0;
->  			}
->  			sbi->s_resgid = gid;
->  			break;
-> -- 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
