@@ -1,154 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2JISsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:48:00 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56029 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab2JISr5 (ORCPT
+	id S1756904Ab2JISsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:48:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54595 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675Ab2JISsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:47:57 -0400
-Subject: Re: [PATCH] [RESEND] qla2xxx: fix potential deadlock on
- ha->hardware_lock
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>, linux-driver@qlogic.com,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>, Arun Easi <arun.easi@qlogic.com>
-In-Reply-To: <alpine.LNX.2.00.1210080922250.28357@pobox.suse.cz>
-References: <506D80C2.5040405@linux.vnet.ibm.com>
-	 <alpine.LNX.2.00.1210041500010.9942@pobox.suse.cz>
-	 <alpine.LNX.2.00.1210080922250.28357@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Oct 2012 11:47:47 -0700
-Message-ID: <1349808467.3776.48.camel@haakon2.linux-iscsi.org>
+	Tue, 9 Oct 2012 14:48:22 -0400
+Date: Tue, 9 Oct 2012 11:48:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
+Message-Id: <20121009114821.dc4c2aff.akpm@linux-foundation.org>
+In-Reply-To: <1349553393-902065-1-git-send-email-avagin@openvz.org>
+References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri, Andrew, Arun & Co,
+On Sat,  6 Oct 2012 23:56:33 +0400
+Andrew Vagin <avagin@openvz.org> wrote:
 
-On Mon, 2012-10-08 at 09:23 +0200, Jiri Kosina wrote:
-> Lockdep reports:
+> Here is a stack trace of recursion:
+> free_pid_ns(parent)
+>   put_pid_ns(parent)
+>     kref_put(&ns->kref, free_pid_ns);
+>       free_pid_ns
 > 
-> === [ cut here ] ===
->  =========================================================
->  [ INFO: possible irq lock inversion dependency detected ]
->  3.6.0-0.0.0.28.36b5ec9-default #1 Not tainted
->  ---------------------------------------------------------
->  qla2xxx_1_dpc/368 just changed the state of lock:
->   (&(&ha->vport_slock)->rlock){+.....}, at: [<ffffffffa009b377>] qla2x00_configure_hba+0x197/0x3c0 [qla2xxx]
->  but this lock was taken by another, HARDIRQ-safe lock in the past:
->   (&(&ha->hardware_lock)->rlock){-.....}
+> This patch turns recursion into loops.
 > 
-> and interrupts could create inverse lock ordering between them.
-> 
-> other info that might help us debug this:
->  Possible interrupt unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&(&ha->vport_slock)->rlock);
->                                local_irq_disable();
->                                lock(&(&ha->hardware_lock)->rlock);
->                                lock(&(&ha->vport_slock)->rlock);
->   <Interrupt>
->     lock(&(&ha->hardware_lock)->rlock);
-> === [ cut here ] ===
-> 
-> Fix the potential deadlock by disabling IRQs while holding ha->vport_slock.
-> 
-> Reported-and-tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
+> pidns can be nested many times, so in case of recursion
+> a simple user space program can provoke a kernel panic
+> due to exceed of a kernel stack.
 
-I'm fine with this patch and have applied to target-pending/queue for
-the moment.
+So we should backport this into earlier kernels.
 
-It will be moved into /master + included in the next PULL request once
-Linus merges the outstanding /for-next series into -rc0 code.
-
-Also please have a look below for a few more related items I noticed
-while reviewing this patch..
-
->  drivers/scsi/qla2xxx/qla_init.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-> index 799a58b..48fca47 100644
-> --- a/drivers/scsi/qla2xxx/qla_init.c
-> +++ b/drivers/scsi/qla2xxx/qla_init.c
-> @@ -2080,6 +2080,7 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
->  	uint8_t       domain;
->  	char		connect_type[22];
->  	struct qla_hw_data *ha = vha->hw;
-> +	unsigned long flags;
+> --- a/include/linux/kref.h
+> +++ b/include/linux/kref.h
+> @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+>  	return kref_sub(kref, 1, release);
+>  }
 >  
->  	/* Get host addresses. */
->  	rval = qla2x00_get_adapter_id(vha,
-> @@ -2154,9 +2155,9 @@ qla2x00_configure_hba(scsi_qla_host_t *vha)
->  	vha->d_id.b.area = area;
->  	vha->d_id.b.al_pa = al_pa;
+> +/**
+> + * kref_put - decrement refcount for object.
+> + * @kref: object.
+> + *
+> + * Decrement the refcount.
+> + * Return 1 if refcount is zero.
+> + */
+> +static inline int __kref_put(struct kref *kref)
+> +{
+> +	return atomic_dec_and_test(&kref->refcount);
+> +}
+
+Greg might be interested in this.
+
+It's a pretty specialised thing and perhaps it needs some stern words
+in the description explaining when and why it should and shouldn't be
+used.
+
+I wonder if people might (ab)use this to avoid the "doesn't
+have a release function" warning.
+
+>  static inline int kref_put_mutex(struct kref *kref,
+>  				 void (*release)(struct kref *kref),
+>  				 struct mutex *lock)
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index 6144bab..b051fa6 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -138,11 +138,19 @@ void free_pid_ns(struct kref *kref)
 >  
-> -	spin_lock(&ha->vport_slock);
-> +	spin_lock_irqsave(&ha->vport_slock, flags);
->  	qlt_update_vp_map(vha, SET_AL_PA);
-> -	spin_unlock(&ha->vport_slock);
-> +	spin_unlock_irqrestore(&ha->vport_slock, flags);
+>  	ns = container_of(kref, struct pid_namespace, kref);
 >  
->  	if (!vha->flags.init_done)
->  		ql_log(ql_log_info, vha, 0x2010,
-> 
-
-So while looking at other ->vport_slock + qlt_update_vp_map() usage, two
-more items caught my eye:
-
-In qla_mid.c:qla24xx_disable_vp() code:
-
-        ret = qla24xx_control_vp(vha, VCE_COMMAND_DISABLE_VPS_LOGO_ALL);
-        atomic_set(&vha->loop_state, LOOP_DOWN);
-        atomic_set(&vha->loop_down_timer, LOOP_DOWN_TIME);
- 
-        /* Remove port id from vp target map */
-        qlt_update_vp_map(vha, RESET_AL_PA);
- 
-        qla2x00_mark_vp_devices_dead(vha);
-        atomic_set(&vha->vp_state, VP_FAILED);
-
-AFAICT all callers of qlt_update_vp_map() into qla_target.c code should
-be holding ->vport_slock.  I'll send out a separate patch for this
-shortly.
-
-And in qla_init.c:qla2x00_init_rings() code:
-
-        for (que = 0; que < ha->max_rsp_queues; que++) {
-                rsp = ha->rsp_q_map[que];
-                if (!rsp)
-                        continue;
-                /* Initialize response queue entries */
-                qla2x00_init_response_q_entries(rsp);
-        }
-
-        spin_lock(&ha->vport_slock);
-
-        spin_unlock(&ha->vport_slock);
-
-        ha->tgt.atio_ring_ptr = ha->tgt.atio_ring;
-        ha->tgt.atio_ring_index = 0;
-        /* Initialize ATIO queue entries */
-        qlt_init_atio_q_entries(vha);
-
-The usage of ->vport_slock seems to be now either unnecessary, or a
-result of some bad merge outside of qla2xxx target mode. 
-
-Qlogic folks, can this (leftover..?) usage of ->vport_slock now be
-safety removed..?
-
---nab
+> -	parent = ns->parent;
+> -	destroy_pid_namespace(ns);
+> +	while (1) {
+> +		parent = ns->parent;
+> +		destroy_pid_namespace(ns);
+>  
+> -	if (parent != NULL)
+> -		put_pid_ns(parent);
+> +		if (parent == &init_pid_ns)
+> +			break;
+> +
+> +		/* kref_put cannot be used for avoiding recursion */
+> +		if (__kref_put(&parent->kref) == 0)
+> +			break;
+> +
+> +		ns = parent;
+> +	}
+>  }
+>  
+>  void zap_pid_ns_processes(struct pid_namespace *pid_ns)
 
