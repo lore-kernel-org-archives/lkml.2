@@ -1,54 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab2JINJn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:09:43 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36733 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab2JINJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:09:40 -0400
-Message-ID: <507421FF.2090309@ti.com>
-Date: Tue, 9 Oct 2012 18:39:19 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <mikedunn@newsguy.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <hs@denx.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] mtd:nand:clk: preparation for switch to common clock
- framework
-References: <1347899860-24358-1-git-send-email-m-karicheri2@ti.com> <1347899860-24358-2-git-send-email-m-karicheri2@ti.com> <507420A4.8090905@ti.com>
-In-Reply-To: <507420A4.8090905@ti.com>
+	id S1755598Ab2JINKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:10:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53056 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab2JINKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 09:10:19 -0400
+Message-ID: <1349788210.1787.7.camel@kjgkr>
+Subject: RE: [PATCH 00/16] f2fs: introduce flash-friendly file system
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: Luk Czerner <lczerner@redhat.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "'Namjae Jeon'" <linkinjeon@gmail.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
+        "'Marco Stornelli'" <marco.stornelli@gmail.com>,
+        "'Al Viro'" <viro@zeniv.linux.org.uk>, tytso@mit.edu,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
+Date: Tue, 09 Oct 2012 22:10:10 +0900
+In-Reply-To: <alpine.LFD.2.00.1210091437460.17156@dhcp-1-104.brq.redhat.com>
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+	 <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+	 <1349553966.12699.132.camel@kjgkr> <50712AAA.5030807@gmail.com>
+	 <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+	 <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+	 <004101cda52e$72210e20$56632a60$%kim@samsung.com>
+	 <CAKYAXd_Y0Y0kLyqEm1FVO5TpvrN-WwnF40H3hMe5B7_cTe0nMw@mail.gmail.com>
+	 <004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
+	 <alpine.LFD.2.00.1210091020390.11244@dhcp-1-104.brq.redhat.com>
+	 <007c01cda60b$43e7fae0$cbb7f0a0$%kim@samsung.com>
+	 <alpine.LFD.2.00.1210091250590.11244@dhcp-1-104.brq.redhat.com>
+	 <008301cda615$ca3b9980$5eb2cc80$%kim@samsung.com>
+	 <alpine.LFD.2.00.1210091437460.17156@dhcp-1-104.brq.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/9/2012 6:33 PM, Sekhar Nori wrote:
-> On 9/17/2012 10:07 PM, Murali Karicheri wrote:
->> As a first step towards migrating davinci platforms to use common clock
->> framework, replace all instances of clk_enable() with clk_prepare_enable()
->> and clk_disable() with clk_disable_unprepare(). Until the platform is
->> switched to use the CONFIG_HAVE_CLK_PREPARE Kconfig variable, this just
->> adds a might_sleep() call and would work without any issues.
->>
->> This will make it easy later to switch to common clk based implementation
->> of clk driver from DaVinci specific driver.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> Reviewed-by: Mike Turquette <mturquette@linaro.org>
+2012-10-09 (화), 14:39 +0200, Lukáš Czerner:
+> On Tue, 9 Oct 2012, Jaegeuk Kim wrote:
 > 
-> Tested this using NAND flash on DA850 EVM.
+> > > > > > > >
+> > > > > > > > As you can see the f2fs kernel document patch, I think one of the most
+> > > > > > > > important features is to align operating units between f2fs and ftl.
+> > > > > > > > Specifically, f2fs has section and zone, which are cleaning unit and basic
+> > > > > > > > allocation unit respectively.
+> > > > > > > > Through these configurable units in f2fs, I think f2fs is able to reduce the
+> > > > > > > > unnecessary operations done by FTL.
+> > > > > > > > And, in order to avoid changing IO patterns by the block-layer, f2fs merges
+> > > > > > > > itself some bios likewise ext4.
+> > > > > > > Hello.
+> > > > > > > The internal of eMMC and SSD is the blackbox from user side.
+> > > > > > > How does the normal user easily set operating units alignment(page
+> > > > > > > size and physical block size ?) between f2fs and ftl in storage device
+> > > > > > > ?
+> > > > > >
+> > > > > > I've known that some works have been tried to figure out the units by profiling the storage, AKA
+> > > > > reverse engineering.
+> > > > > > In most cases, the simplest way is to measure the latencies of consecutive writes and analyze
+> > > their
+> > > > > patterns.
+> > > > > > As you mentioned, in practical, users will not want to do this, so maybe we need a tool to
+> > > profile
+> > > > > them to optimize f2fs.
+> > > > > > In the current state, I think profiling is an another issue, and mkfs.f2fs had better include
+> > > this
+> > > > > work in the future.
+> > > > > > But, IMO, from the viewpoint of performance, default configuration is quite enough now.
+> > > > > >
+> > > > > > ps) f2fs doesn't care about the flash page size, but considers garbage collection unit.
+> > > > >
+> > > > > I am sorry but this reply makes me smile. How can you design a fs
+> > > > > relying on time attack heuristics to figure out what the proper
+> > > > > layout should be ? Or even endorse such heuristics to be used in
+> > > > > mkfs ? What we should be focusing on is to push vendors to actually
+> > > > > give us such information so we can properly propagate that
+> > > > > throughout the kernel - that's something everyone will benefit from.
+> > > > > After that the optimization can be done in every file system.
+> > > > >
+> > > >
+> > > > Frankly speaking, I agree that it would be the right direction eventually.
+> > > > But, as you know, it's very difficult for all flash vendors to promote and standardize that.
+> > > > Because each vendors have different strategies to open their internal information and also try
+> > > > to protect their secrets whatever they are.
+> > > >
+> > > > IMO, we don't need to wait them now.
+> > > > Instead, from the start, I suggest f2fs that uses those information to the file system design.
+> > > > In addition, I suggest using heuristics right now as best efforts.
+> > > > Maybe in future, if vendors give something, f2fs would be more feasible.
+> > > > In the mean time, I strongly hope to validate and stabilize f2fs with community.
+> > > 
+> > > Do not get me wrong, I do not think it is worth to wait for vendors
+> > > to come to their senses, but it is worth constantly reminding that
+> > > we *need* this kind of information and those heuristics are not
+> > > feasible in the long run anyway.
+> > > 
+> > > I believe that this conversation happened several times already, but
+> > > what about having independent public database of all the internal
+> > > information about hw from different vendors where users can add
+> > > information gathered by the time attack heuristic so other does not
+> > > have to run this again and again. I am not sure if Linaro or someone
+> > > else have something like that, someone can maybe post a link to that.
+> > > 
+> > 
+> > As I mentioned, I agree to push vendors to open those information all the time.
+> > And, I absolutely didn't mean that it is worth to wait vendors.
+> > I meant, until opening those information by vendors, something like
+> > proposing f2fs or gathering heuristics are also needed simultaneously.
+> > 
+> > Anyway, it's very interesting to build a database gathering products' information.
+> > May I access the database?
 > 
-> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> That's what I found:
 > 
-> Any chance this can make into the v3.7 kernel?
+> https://wiki.linaro.org/WorkingGroups/Kernel/Projects/FlashCardSurvey
+> 
 
-Just noticed another thread where Artem replied saying this patch is
-pushed. Sorry about the noise.
+It is very good information when users configure f2fs according to their
+storages.
+Thank you.
 
-Thanks,
-Sekhar
+-Jaegeuk Kim
+
+> -Lukas
+> 
+> > 
+> > Thanks,
+> > 
+> > > Eventually we can show this to the vendors to see that their
+> > > "secrets" are already public anyway and that everyones lives would be
+> > > easier if they just agree to provide it from the beginning.
+> > > 
+> > > >
+> > > > > Promoting time attack heuristics instead of pushing vendors to tell
+> > > > > us how their hardware should be used is a journey to hell and we've
+> > > > > been talking about this for a looong time now. And I imagine that
+> > > > > you especially have quite some persuasion power.
+> > > >
+> > > > I know. :)
+> > > > If there comes a chance, I want to try.
+> > > > Thanks,
+> > > 
+> > > That's very good to hear, thank you.
+> > > 
+> > > -Lukas
+
+-- 
+Jaegeuk Kim
+Samsung
+
