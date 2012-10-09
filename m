@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2JIPYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:24:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59015 "EHLO
+	id S1756178Ab2JIPYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:24:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60964 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755546Ab2JIPX2 (ORCPT
+	with ESMTP id S1755968Ab2JIPX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:23:28 -0400
+	Tue, 9 Oct 2012 11:23:29 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Boyd <sboyd@codeaurora.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 4/9] ARM: export default read_current_timer
-Date: Tue,  9 Oct 2012 17:22:58 +0200
-Message-Id: <1349796183-30648-5-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3/9] ARM: Fix another build warning in arch/arm/mm/alignment.c
+Date: Tue,  9 Oct 2012 17:22:57 +0200
+Message-Id: <1349796183-30648-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349796183-30648-1-git-send-email-arnd@arndb.de>
 References: <1349796183-30648-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:tQwDLTbDKdlxamDX8PrzfRSjNrYedr3CNwVYu4j8u9v
- d00uiBeOHEZ8PJKgOCAR+Q2VhSAfsmxXAPOo9CleWzmQGQyVSq
- x9AqzTCj6R0l1/4VqdDcy8mkuw70Fkx9yzah8lJN7m0gBUHUgu
- +tp2MsUSY0Zd16OPX9nOYnVvE0iUelqostHGCnSclQCfGT1i9/
- /2pVUSd+9K5lMyaZlSCusrby8HArnNH63/nxwxfH9bn7OYzKZv
- Ulc9KV8rVJDE57EFRAPbsvlIKfAffS3cHGTrKXaJhKq1DwGpFA
- 3VCB6w+/6szd+kuGg1OGHDVKyzI+c60hbyIHHpDl8DY839p5Pi
- uw3QNbcJsHtmCg1WiybxNR6ACgb1zF6hMdtehMd+BNrbMlqgWc
- pZob+kF4OxShJEnk/V7/kbxOlTJBSlgMeY=
+X-Provags-ID: V02:K0:6rA3BURTRlyriapdK4eKUWwdn8mcvoqR8ZK9pWIIz4o
+ 0h2wKJrC5Lm6AlBGtWx6fmqBLVEtHsl0WNZUWPzCMGQAX9tNRj
+ qZZGr9bUUwdDwQ7VP5kVX48JuDMhopBtO0CCq1SfDZ7X/F0yvQ
+ 3NXVYMLTLhQNJKM1bPJpjYXxF+Pc2itCCex+4Jxn/x+NIEFbHT
+ ozHne36CAp3tA4FmwQyTHTQ2Rn6QgfygmlomAFshM3pGUcAGoQ
+ kQu+o5p4bBRl3sERPsdG4sw0b44INWXZ6cZG46BbTUwLli4clI
+ rVN/TT4O1iVQhN/ocA2k/8mBcpHBEqei7Lh0F5m5zIP49zFzyz
+ ybg+JG4u3iA9/9rUuby6htMNjR/PP7dGMCqWs+/D66vIfFUHb4
+ zeKr43bQlvAxkPiil33XQTlbiZlmXKpQoE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read_current_timer is used by get_cycles since "ARM: 7538/1: delay:
-add registration mechanism for delay timer sources", and get_cycles
-can be used by device drivers in loadable modules, so it has to
-be exported.
+One such warning was recently fixed in a761cebf "ARM: Fix build warning
+in arch/arm/mm/alignment.c" but only for the thumb2 case, this fixes
+the other half.
 
-Without this patch, building imote2_defconfig fails with
-
-ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+arch/arm/mm/alignment.c: In function 'do_alignment':
+arch/arm/mm/alignment.c:327:15: error: 'offset.un' may be used uninitialized in this function
+arch/arm/mm/alignment.c:748:21: note: 'offset.un' was declared here
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Jonathan Austin <jonathan.austin@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/lib/delay.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mm/alignment.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
-index 9d0a300..0dc5385 100644
---- a/arch/arm/lib/delay.c
-+++ b/arch/arm/lib/delay.c
-@@ -45,6 +45,7 @@ int read_current_timer(unsigned long *timer_val)
- 	*timer_val = delay_timer->read_current_timer();
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(read_current_timer);
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index b9f60eb..023f4437 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -856,8 +856,10 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 		if (thumb2_32b) {
+ 			offset.un = 0;
+ 			handler = do_alignment_t32_to_handler(&instr, regs, &offset);
+-		} else
++		} else {
++			offset.un = 0;
+ 			handler = do_alignment_ldmstm;
++		}
+ 		break;
  
- static void __timer_delay(unsigned long cycles)
- {
+ 	default:
 -- 
 1.7.10
 
