@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab2JILrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 07:47:00 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4461 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab2JILq7 (ORCPT
+	id S1753532Ab2JILti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 07:49:38 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47073 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab2JILte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 07:46:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 09 Oct 2012 04:36:07 -0700
-Message-ID: <507406BE.4030408@nvidia.com>
-Date: Tue, 9 Oct 2012 16:43:02 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 9 Oct 2012 07:49:34 -0400
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 4/4] regulator: tps65090: add external control support
- for DCDC
-References: <1349776142-6409-1-git-send-email-ldewangan@nvidia.com> <1349776142-6409-5-git-send-email-ldewangan@nvidia.com> <D958900912E20642BCBC71664EFECE3E6DDF8AF6F1@BGMAIL02.nvidia.com> <5073F63B.9020606@nvidia.com> <5074065B.3040103@nvidia.com>
-In-Reply-To: <5074065B.3040103@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <8827278.7YnWKaee5F@vostro.rjw.lan>
+References: <CAHFgRy_ju3ybBGyApRXhke6=DW9B=LOZUVrjV0KfZbFFcG4PZA@mail.gmail.com>
+	<8827278.7YnWKaee5F@vostro.rjw.lan>
+Date: Tue, 9 Oct 2012 13:49:33 +0200
+Message-ID: <CACRpkdbuQzpuvZvZALY=_QWx4uy-d6D9OzgTZ8Z7fk4ctT9Hpg@mail.gmail.com>
+Subject: Re: 3.6.0+ (GIT) -- BUG: sleeping function called from invalid
+ context at kernel/mutex.c:269 in_atomic(): 0, irqs_disabled(): 1, pid: 3561,
+ name: pm-suspend
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Bryan Wu <bryan.wu@canonical.com>
+Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Jamie Iles <jamie@jamieiles.com>,
+        Jochen Friedrich <jochen@scram.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012 04:41 PM, Venu Byravarasu wrote:
-> On Tuesday 09 October 2012 03:32 PM, Laxman Dewangan wrote:
->> On Tuesday 09 October 2012 04:03 PM, Venu Byravarasu wrote:
->>>> +static struct regulator_ops tps65090_ext_control_ops = {
->>>> +};
->>> What is the purpose of adding empty structure?
->>>
->> We will not able to register regulator if there is no ops.
->> In regulator register:
->>            if (regulator_desc->name == NULL || regulator_desc->ops == NULL)
->>                    return ERR_PTR(-EINVAL);
->>
-> If tps65090_ops would be left as is, without renaming it, hope this empty
-> structure can be removed.
+On Mon, Oct 8, 2012 at 12:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday 03 of October 2012 21:26:17 Miles Lane wrote:
+>> ACPI: Preparing to enter system sleep state S3
+>> PM: Saving platform NVS memory
+>> Disabling non-boot CPUs ...
+>> numa_remove_cpu cpu 1 node 0: mask now 0
+>> Broke affinity for irq 46
+>> smpboot: CPU 1 is now offline
+>> BUG: sleeping function called from invalid context at kernel/mutex.c:269
+>> in_atomic(): 0, irqs_disabled(): 1, pid: 3561, name: pm-suspend
+>> 4 locks held by pm-suspend/3561:
+>>  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff8113cab6>]
+>> sysfs_write_file+0x37/0x121
+>>  #1:  (s_active#98){.+.+.+}, at: [<ffffffff8113cb50>]
+>> sysfs_write_file+0xd1/0x121
+>>  #2:  (autosleep_lock){+.+.+.}, at: [<ffffffff810616c2>]
+>> pm_autosleep_lock+0x12/0x14
+>>  #3:  (pm_mutex){+.+.+.}, at: [<ffffffff8105c06c>] pm_suspend+0x38/0x1b8
+>> irq event stamp: 103458
+>> hardirqs last  enabled at (103457): [<ffffffff81460461>]
+>> __mutex_unlock_slowpath+0x101/0x125
+>> hardirqs last disabled at (103458): [<ffffffff8105be25>]
+>> arch_suspend_disable_irqs+0xa/0xc
+>> softirqs last  enabled at (103196): [<ffffffff8103445d>]
+>> __do_softirq+0x12a/0x155
+>> softirqs last disabled at (103171): [<ffffffff8146836c>] call_softirq+0x1c/0x30
+>> Pid: 3561, comm: pm-suspend Not tainted 3.6.0+ #26
+>> Call Trace:
+>>  [<ffffffff8106b64e>] ? print_irqtrace_events+0x9d/0xa1
+>>  [<ffffffff8104efcd>] __might_sleep+0x19f/0x1a8
+>>  [<ffffffff81460345>] mutex_lock_nested+0x20/0x3b
+>>  [<ffffffff81391cbb>] ledtrig_cpu+0x3b/0x7b
+>>  [<ffffffff81391d29>] ledtrig_cpu_syscore_suspend+0xe/0x15
+>>  [<ffffffff813329e9>] syscore_suspend+0x78/0xfd
+>>  [<ffffffff8105bf42>] suspend_devices_and_enter+0x10f/0x201
+>>  [<ffffffff8105c133>] pm_suspend+0xff/0x1b8
+>>  [<ffffffff8105b4fa>] state_store+0x43/0x6c
+>>  [<ffffffff811c5ba6>] kobj_attr_store+0xf/0x1b
+>>  [<ffffffff8113cb68>] sysfs_write_file+0xe9/0x121
+>>  [<ffffffff810e48a3>] vfs_write+0x9b/0xfd
+>>  [<ffffffff8106bc63>] ? trace_hardirqs_on+0xd/0xf
+>>  [<ffffffff810e4ac6>] sys_write+0x4d/0x7a
+>>  [<ffffffff814672f4>] tracesys+0xdd/0xe2
 >
+> Well, this most likely has been introduced by commit:
+>
+> commit 8f88731d052d2b14f332249a9332690ac1b365ac
+> Author: Bryan Wu <bryan.wu@canonical.com>
+> Date:   Sat Jun 25 18:33:50 2011 +0800
+>
+>     led-triggers: create a trigger for CPU activity
+>
+> because ledtrig_cpu_syscore_suspend() is run in atomic context, which kind of
+> doesn't play well with mutexes.
+>
+> Linus, Bryan, care to fix this?
 
-When we enabled the external control, the control signal can driver 
-either  from gpio or some other mechanism like in our tegra3, the 
-control signal come from PMC controller which does not go via GPIO.
-The core regulator first check for the gpio and if it is there then it 
-will go via the gpiolib to enable/disable. If not then it ask for the 
-ops->enable and if I provide these apis then it will endup in the 
-regulator driver. I do not want to provide the enable() when external 
-control is enabled and no gpios. So in this case:
-- External control should be enabled on device registers.
-- No enable() and disable() should success.
-- is_regualtor_enabled() return true always.
+I haven't worked on this patch for ages, the only reason my SoB
+is in there is that I think an early patch of mine was used as starting
+point...
 
+Bryan can you look at this?
+
+Yours,
+Linus Walleij
