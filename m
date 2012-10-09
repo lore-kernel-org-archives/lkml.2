@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab2JITFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:05:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53255 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab2JITFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:05:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,561,1344236400"; 
-   d="scan'208";a="232629480"
-Message-ID: <5074756C.8070502@intel.com>
-Date: Tue, 09 Oct 2012 12:05:16 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        x86@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [RFC PATCH 0/7] Improve swiotlb performance by using physical
- addresses
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com> <m28vbkx3hw.fsf@firstfloor.org> <506F3670.4020202@intel.com> <20121005200245.GQ16230@one.firstfloor.org> <506F6BF2.8030500@intel.com> <20121006175751.GS16230@one.firstfloor.org> <5072F497.2000703@intel.com>
-In-Reply-To: <5072F497.2000703@intel.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756692Ab2JITIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:08:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54672 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2JITId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 15:08:33 -0400
+Date: Tue, 9 Oct 2012 12:08:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
+Message-Id: <20121009120831.8a6d81d8.akpm@linux-foundation.org>
+In-Reply-To: <20121009190300.GB22108@kroah.com>
+References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
+	<20121009114821.dc4c2aff.akpm@linux-foundation.org>
+	<20121009190300.GB22108@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2012 08:43 AM, Alexander Duyck wrote:
-> On 10/06/2012 10:57 AM, Andi Kleen wrote:
->> BTW __pa used to be a simple subtraction, the if () was just added to
->> handle the few call sites for x86-64 that do __pa(&text_symbol).
->> Maybe we should just go back to the old __pa_symbol() for those cases,
->> then __pa could be the simple subtraction it used to was again
->> and it could be inlined and everyone would be happy.
->>
->> -Andi
-> What I am probably looking at doing is splitting the function in two as
-> you suggest where we have a separate function for the text symbol case. 
-> I will probably also take the 32 bit approach and add a debug version
-> that is still a separate function for uses such as determining if we
-> have any callers who should be using __pa_symbol instead of __pa.
->
-> Thanks,
->
-> Alex
+On Tue, 9 Oct 2012 12:03:00 -0700
+Greg KH <greg@kroah.com> wrote:
 
-I gave up on trying to split __pa and __pa_symbol.   Yesterday I
-realized there is way too much code that depends on the two resolving to
-the same function, and many cases are pretty well hidden.  Instead I
-just mailed out a patch that inlines an optimized version of
-__phys_addr.  I figure it is probably as good as it is going to get
-without having to rip the entire x86 portion of the kernel apart to
-separate uses of __pa and __pa_symbol.
+> On Tue, Oct 09, 2012 at 11:48:21AM -0700, Andrew Morton wrote:
+> > On Sat,  6 Oct 2012 23:56:33 +0400
+> > Andrew Vagin <avagin@openvz.org> wrote:
+> > 
+> > > Here is a stack trace of recursion:
+> > > free_pid_ns(parent)
+> > >   put_pid_ns(parent)
+> > >     kref_put(&ns->kref, free_pid_ns);
+> > >       free_pid_ns
+> > > 
+> > > This patch turns recursion into loops.
+> > > 
+> > > pidns can be nested many times, so in case of recursion
+> > > a simple user space program can provoke a kernel panic
+> > > due to exceed of a kernel stack.
+> > 
+> > So we should backport this into earlier kernels.
+> > 
+> > > --- a/include/linux/kref.h
+> > > +++ b/include/linux/kref.h
+> > > @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+> > >  	return kref_sub(kref, 1, release);
+> > >  }
+> > >  
+> > > +/**
+> > > + * kref_put - decrement refcount for object.
+> > > + * @kref: object.
+> > > + *
+> > > + * Decrement the refcount.
+> > > + * Return 1 if refcount is zero.
+> > > + */
+> > > +static inline int __kref_put(struct kref *kref)
+> > > +{
+> > > +	return atomic_dec_and_test(&kref->refcount);
+> > > +}
+> > 
+> > Greg might be interested in this.
+> > 
+> > It's a pretty specialised thing and perhaps it needs some stern words
+> > in the description explaining when and why it should and shouldn't be
+> > used.
+> > 
+> > I wonder if people might (ab)use this to avoid the "doesn't
+> > have a release function" warning.
+> 
+> Yes they would, please don't do this at all.
+> 
+> In fact, why is it needed?  It doesn't solve anything (if it does,
+> something in the way the kref is being used is wrong.)
+> 
 
-Thanks,
-
-Alex
+It's right there in the changelog.  The patch fixes deep
+kref_put->release->kref_put recursion by turning the operation for
+pidns into a loop.
