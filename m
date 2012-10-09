@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab2JIVbV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 17:31:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43621 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab2JIVbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 17:31:15 -0400
-Date: Tue, 9 Oct 2012 14:31:11 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tytso@mit.edu
-Subject: Re: [PATCH 4/5] aio: vmap ringbuffer
-Message-ID: <20121009213111.GE29494@google.com>
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
- <1349764760-21093-4-git-send-email-koverstreet@google.com>
- <20121009182949.GO26187@lenny.home.zabbo.net>
+	id S1756967Ab2JIVbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 17:31:37 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48613 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756952Ab2JIVbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 17:31:33 -0400
+Message-ID: <5074975B.20809@linaro.org>
+Date: Tue, 09 Oct 2012 14:30:03 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009182949.GO26187@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Hommey <mh@glandium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
+References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org> <20121009080735.GA24375@glandium.org>
+In-Reply-To: <20121009080735.GA24375@glandium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100921-1976-0000-0000-00001233B823
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:29:49AM -0700, Zach Brown wrote:
-> On Mon, Oct 08, 2012 at 11:39:19PM -0700, Kent Overstreet wrote:
-> > It simplifies a lot of stuff if the ringbuffer is contiguously mapped
-> > into kernel space, and we can delete a lot of code - in particular, this
-> > is useful for converting read_events() to cmpxchg.
-> 
-> 1) I'm concerned that Our Favourite Database Benchmarkers will see an
-> effect of having more TLB pressure from that mapping.  kmap_atomic()
-> should be cheaper.  We'll need to measure the difference.
+On 10/09/2012 01:07 AM, Mike Hommey wrote:
+> Note it doesn't have to be a vs. situation. madvise could be an
+> additional way to interface with volatile ranges on a given fd.
+>
+> That is, madvise doesn't have to mean anonymous memory. As a matter of
+> fact, MADV_WILLNEED/MADV_DONTNEED are usually used on mmaped files.
+> Similarly, there could be a way to use madvise to mark volatile ranges,
+> without the application having to track what memory ranges are
+> associated to what part of what file, which the kernel already tracks.
 
-If it is measurable I'll take another stab at using memory from
-__get_free_pages() for the ringbuffer. That really would be the ideal
-solution.
+Good point. We could add madvise() interface, but limit it only to 
+mmapped tmpfs files, in parallel with the fallocate() interface.
 
-The other reason I wanted to do this was for the aio attributes stuff -
-for return values, I think the only sane way is for the return values to
-go in the ringbuffer, which means records are no longer fixed size so
-dealing with pages is even more of a pain.
+However, I would like to think through how MADV_MARK_VOLATILE with 
+purely anonymous memory could work, before starting that approach. That 
+and Neil's point that having an identical kernel interface restricted to 
+tmpfs, only as a convenience to userland in switching from virtual 
+address to/from mmapped file offset may be better left to a userland 
+library.
+
+thanks
+-john
+
