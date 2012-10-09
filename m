@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab2JIPSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:18:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47567 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab2JIPSv (ORCPT
+	id S1755640Ab2JIPX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:23:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64313 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab2JIPXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:18:51 -0400
-Message-ID: <5074403F.9020707@parallels.com>
-Date: Tue, 9 Oct 2012 19:18:23 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>
-Subject: [RFC] Posix timers improvements, requied for CRIU project
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 11:23:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Magnus Damm <damm@opensource.se>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 2/9] ARM: export set_irq_flags
+Date: Tue,  9 Oct 2012 17:22:56 +0200
+Message-Id: <1349796183-30648-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:UKrqZGtRVZdk5/T2Jj8mdbZvqutraIuxHn5LfXd/PF7
+ lTZLfT2gN1+VJIijix/uSfsFAOg4jhJbAd+K7Xvh2tAVjHmQlw
+ cu4v2eu+wFc14+Dcu5dYHF+yZoTYOa8uDbnPgSzStH6xod7XvJ
+ CMhA1ggpALihm2RjpbdPNJzj1xtP96LHDtrXPihBCGSrJicEhJ
+ UG7qhgGASpKHrVkZ2dVe9juS8KcabMwv5ZPgpb4taWZ8i+J4xT
+ XyZaQ/qUWjaJKaJBm9bsBKLftvzLYrnsc3rdJjxB3ad4U6k1oO
+ Sb3GRsmqFvAA85nvL4+QJbOzSmW8huodYEApyut0+CxulFVLSJ
+ K2g5aOVpLaS9e7LygwQ1SFPPdbCEcwMYThNOmTttQWLl/GuTLQ
+ nwo0AQbu/SD9A0pjTzDqcPOkot95cmWS+g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-We would like to make CRIU able to migrate posix timers.
-Currently we require additional info, which have to be provided by kernel.
-In particular, it's:
-1) Timers id's.
-2) Timer clock (gained by id).
-3) Timer sigevent structure.
-4) Timer current overrun status (not the last one).
+The recently added Emma Mobile GPIO driver calls set_irq_flags
+and irq_set_chip_and_handler for the interrupts it exports and
+it can be built as a module, which currently fails with
 
-We are not sure, how to implement such support properly.
+ERROR: "set_irq_flags" [drivers/gpio/gpio-em.ko] undefined!
 
-Right now we are considering two approaches of posix timers interface update 
-(for dump):
+We either need to replace the call to set_irq_flags with something
+else or export that function. This patch does the latter.
 
-1) First one it to use /proc filesystem to provide posix timers data by task 
-(something like /proc/<pid>/posix_timers)
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Magnus Damm <damm@opensource.se>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ arch/arm/kernel/irq.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-2) Second one is to add new system calls like:
-
-int timer_getnext(int start_id);	// return next timer id after start-id
-int timer_getclock(timer_t id, cclock_t *clock); // return clock
-int timer_getsigevent(timer_t id, struct sigevent *evp); // return sigevent
-int timer_getoverrun_cur(timer_t id, int *overrun); // current overrun
-
-Of course, both approaches can be combined.
-
-Also, we require a syscall to set desired overrun (on restore):
-
-int timer_setoverrun(timer_t id, int *overrun);
-
-Moreover, we need to make posix timer id to be allocated per task (not globally) 
-to make sure, that we can restore timer with desired id (desired id can be 
-passed to timer_create() in timerid variable).
-Our current idea is to replace idr by hash table, where 
-"per_process_struct_signal + per_process_id" will be the key.
-
-We would greatly appreciate any comments or suggestions.
-Thanks.
-
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 16cedb4..8961650 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -34,6 +34,7 @@
+ #include <linux/list.h>
+ #include <linux/kallsyms.h>
+ #include <linux/proc_fs.h>
++#include <linux/export.h>
+ 
+ #include <asm/exception.h>
+ #include <asm/mach/arch.h>
+@@ -109,6 +110,7 @@ void set_irq_flags(unsigned int irq, unsigned int iflags)
+ 	/* Order is clear bits in "clr" then set bits in "set" */
+ 	irq_modify_status(irq, clr, set & ~clr);
+ }
++EXPORT_SYMBOL_GPL(set_irq_flags);
+ 
+ void __init init_IRQ(void)
+ {
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.10
+
