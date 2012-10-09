@@ -1,147 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2JIGku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:40:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40974 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2JIGje (ORCPT
+	id S1753362Ab2JIGlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:41:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4112 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab2JIGlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:39:34 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, tytso@mit.edu
-Cc: Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 2/5] aio: kiocb_cancel()
-Date: Mon,  8 Oct 2012 23:39:17 -0700
-Message-Id: <1349764760-21093-2-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1349764760-21093-1-git-send-email-koverstreet@google.com>
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+	Tue, 9 Oct 2012 02:41:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 08 Oct 2012 23:39:32 -0700
+Message-ID: <5073BF39.5020008@nvidia.com>
+Date: Tue, 9 Oct 2012 11:37:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>, "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: TPS51632: Add tps51632 regulator driver
+References: <1349536671-31714-1-git-send-email-ldewangan@nvidia.com> <1349536671-31714-2-git-send-email-ldewangan@nvidia.com> <20121009061436.GH8237@opensource.wolfsonmicro.com>
+In-Reply-To: <20121009061436.GH8237@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor refactoring, to get rid of some duplicated code
+On Tuesday 09 October 2012 11:44 AM, Mark Brown wrote:
+> On Sat, Oct 06, 2012 at 08:47:46PM +0530, Laxman Dewangan wrote:
+>
+> Actually...
+>
+>> +	if (pdata->dvfs_step_20mV)
+>> +		control |= TPS51632_DVFS_STEP_20;
+>> +	tps->desc.uV_step = TPS51632_VOLATGE_STEP_10mV;
+> Shouldn't the dvfs_step_20mV setting affect the uV_step size?
+The dvfs_step_20mV will only effect for the control through DVFS (PWM).
+The voltage control an voltage base register will till use the 10mV steps.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- fs/aio.c |   72 ++++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 39 insertions(+), 33 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 1ad2d97..95419c4 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -229,6 +229,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
- 		__put_ioctx(kioctx);
- }
- 
-+static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
-+			struct io_event *res)
-+{
-+	int (*cancel)(struct kiocb *, struct io_event *);
-+	int ret = -EINVAL;
-+
-+	cancel = kiocb->ki_cancel;
-+	kiocbSetCancelled(kiocb);
-+	if (cancel) {
-+		kiocb->ki_users++;
-+		spin_unlock_irq(&ctx->ctx_lock);
-+
-+		memset(res, 0, sizeof(*res));
-+		res->obj = (u64) kiocb->ki_obj.user;
-+		res->data = kiocb->ki_user_data;
-+		ret = cancel(kiocb, res);
-+
-+		spin_lock_irq(&ctx->ctx_lock);
-+	}
-+
-+	return ret;
-+}
-+
- /* ioctx_alloc
-  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
-  */
-@@ -304,7 +327,6 @@ out_freectx:
-  */
- static void kill_ctx(struct kioctx *ctx)
- {
--	int (*cancel)(struct kiocb *, struct io_event *);
- 	struct task_struct *tsk = current;
- 	DECLARE_WAITQUEUE(wait, tsk);
- 	struct io_event res;
-@@ -315,14 +337,8 @@ static void kill_ctx(struct kioctx *ctx)
- 		struct list_head *pos = ctx->active_reqs.next;
- 		struct kiocb *iocb = list_kiocb(pos);
- 		list_del_init(&iocb->ki_list);
--		cancel = iocb->ki_cancel;
--		kiocbSetCancelled(iocb);
--		if (cancel) {
--			iocb->ki_users++;
--			spin_unlock_irq(&ctx->ctx_lock);
--			cancel(iocb, &res);
--			spin_lock_irq(&ctx->ctx_lock);
--		}
-+
-+		kiocb_cancel(ctx, iocb, &res);
- 	}
- 
- 	if (!ctx->reqs_active)
-@@ -1709,7 +1725,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
- SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
- 		struct io_event __user *, result)
- {
--	int (*cancel)(struct kiocb *iocb, struct io_event *res);
-+	struct io_event res;
- 	struct kioctx *ctx;
- 	struct kiocb *kiocb;
- 	u32 key;
-@@ -1724,32 +1740,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
- 		return -EINVAL;
- 
- 	spin_lock_irq(&ctx->ctx_lock);
--	ret = -EAGAIN;
-+
- 	kiocb = lookup_kiocb(ctx, iocb, key);
--	if (kiocb && kiocb->ki_cancel) {
--		cancel = kiocb->ki_cancel;
--		kiocb->ki_users ++;
--		kiocbSetCancelled(kiocb);
--	} else
--		cancel = NULL;
-+	if (kiocb)
-+		ret = kiocb_cancel(ctx, kiocb, &res);
-+	else
-+		ret = -EAGAIN;
-+
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
--	if (NULL != cancel) {
--		struct io_event tmp;
--		pr_debug("calling cancel\n");
--		memset(&tmp, 0, sizeof(tmp));
--		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
--		tmp.data = kiocb->ki_user_data;
--		ret = cancel(kiocb, &tmp);
--		if (!ret) {
--			/* Cancellation succeeded -- copy the result
--			 * into the user's buffer.
--			 */
--			if (copy_to_user(result, &tmp, sizeof(tmp)))
--				ret = -EFAULT;
--		}
--	} else
--		ret = -EINVAL;
-+	if (!ret) {
-+		/* Cancellation succeeded -- copy the result
-+		 * into the user's buffer.
-+		 */
-+		if (copy_to_user(result, &res, sizeof(res)))
-+			ret = -EFAULT;
-+	}
- 
- 	put_ioctx(ctx);
- 
--- 
-1.7.10.4
 
