@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab2JIGU2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:20:28 -0400
-Received: from bitmer.com ([213.157.87.50]:47459 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542Ab2JIGU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:20:26 -0400
-Date: Tue, 9 Oct 2012 09:20:03 +0300
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Deepak Saxena <dsaxena@plexity.net>, Chris Ball <cjb@laptop.org>,
-        Matt Mackall <mpm@selenic.com>, Venkatraman S <svenkatr@ti.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove include
- plat/cpu.h
-Message-Id: <20121009092003.3f3d271a035595ef8fbb1e76@bitmer.com>
-In-Reply-To: <20121008173557.10603.18539.stgit@muffinssi>
-References: <20121008173452.10603.53886.stgit@muffinssi>
-	<20121008173557.10603.18539.stgit@muffinssi>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753453Ab2JIGVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:21:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35019 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab2JIGVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 02:21:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <5073BF32.7040003@zytor.com>
+References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
+	<5073BF32.7040003@zytor.com>
+Date: Mon, 8 Oct 2012 23:21:15 -0700
+X-Google-Sender-Auth: fUEld2Dfy5XS_OaMGHGR1vyZ5xo
+Message-ID: <CAE9FiQWUg0wmMLANmshxob3ftxa2xY9mUSivzsWCGkJ2_==_Qg@mail.gmail.com>
+Subject: Re: [PATCH -v2 00/10] x86: Use BRK to pre mapping page table to make
+ xen happy
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Oct 2012 10:35:57 -0700
-Tony Lindgren <tony@atomide.com> wrote:
+On Mon, Oct 8, 2012 at 11:07 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 10/09/2012 12:39 PM, Yinghai Lu wrote:
+>> on top of tip/x86/mm2
+>
+> Hi Yinghai,
+>
+> This patchset doesn't apply on top of tip:x86/mm2, starting at patch 08/10.
 
-> - omap-dma.c and omap-pcm.c can test the arch locally as
->   omap1 and omap2 cannot be compiled together because of
->   conflicting compiler flags
-...
->  sound/soc/omap/omap-pcm.c         |    9 +++++++--
+sorry for that. I refresh my base to current linus/master and tip/master.
 
-Build tested above for omap1 and omap2+.
+could be some change there.
 
-Acked-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
+could solve it:
+1. update x86/mm2 to linus/master
+2. or i resend the patch again with x86/mm2 as base.
+
+please let me know which one you like.
+
+>
+> Furthermore, a lot of the descriptions are both incomplete and
+> incomprehensible, which makes the patchset very very hard to review.
+>
+> You should think of the descriptions as writing a (short) paper on your
+> patchset, where you describe not just what you are doing, but how you
+> accomplish the objective and why that objective is the right thing do
+> accomplish.
+
+Actually I spent a while on the changelog of this patchset.
+
+will spend more time for next reversion.
+
+>
+> Overall, this patchset seems to be going in the right direction, but I
+> have several concerns with details.
+
+good, will update the patches accordingly.
+
+Thanks
+
+Yinghai
