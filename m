@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2JISUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:20:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:65294 "EHLO
+	id S1751669Ab2JISVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:21:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57973 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab2JISUA (ORCPT
+	with ESMTP id S1750818Ab2JISVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:20:00 -0400
+	Tue, 9 Oct 2012 14:21:41 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
-Date: Tue, 9 Oct 2012 18:19:34 +0000
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 5/9] ARM: Xen: fix initial build problems:
+Date: Tue, 9 Oct 2012 18:21:27 +0000
 User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <201210091539.46274.arnd@arndb.de> <1349799035.21847.222.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1349799035.21847.222.camel@zakaz.uk.xensource.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <1349796183-30648-6-git-send-email-arnd@arndb.de> <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210091819.34310.arnd@arndb.de>
-X-Provags-ID: V02:K0:npXf8fVpImnJ1kySbqNOiwZiZgnNQDHa+u/cVdVwT7H
- Gs6djRiK1bvnKytiWm8Lm+x8AcUYF6H3Qd9OFcSKqacjIJVBR4
- /XbpoyX2s8231kNHi5M+QFDtYL24IEpaw627Q9zJ4TZwk1UpJP
- 1b1FJBgLEiwU1GooIEduJIg9r0kV+lEKAbs76ENoFdHGME89R7
- +j0xZ2AOkRy4m3FZosy1p075ND3AQ+ApTLSUX7cOUnpeE2JuDv
- ZjIOt11DKdwPYthzSFr/oSg52pgVZHa1M3DUp26BbeR6PE8Th2
- C5wC8Fzarlldibrq1/mntAq6JVHmNBd0TQnC+fFW8Z1RljyI3l
- SOFGZCEHMHymEjXagWvU=
+Message-Id: <201210091821.27818.arnd@arndb.de>
+X-Provags-ID: V02:K0:pCU5eG1EXLHqk6USjSHpl/m9oAwRb8hRm5yQB99/6NF
+ 14PqehjUA9zfcpNKKQZH+zBDwp097p0bhbKCk9SETw1wadY3C+
+ 3MHtkqDzGLRJLoZTuOP2eHNUtZkswuqj78FFb8Io3LEvZaYw3z
+ uKno/HJlLxqqfb0iuH58nfpjkQO4Zm8h8rPzwKuGaM+FMCt18+
+ xKiaC1gOCu1Kzp+kjaQUiD/JvP8N7YoeV011nu/0DhBHanfv27
+ HESRbHGFyXe3ZkeGzMQKkMSiYqJTgPmsSiezpMlgS8i50sNOCs
+ s4unFVIx875znTPAbMCJAnGALPkwRyw7lhs3T/dKaaTfCRbxXZ
+ sqRy/NGT3Wvq8WC6T4ZY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Ian Campbell wrote:
-> On Tue, 2012-10-09 at 16:39 +0100, Arnd Bergmann wrote:
-> > On Tuesday 09 October 2012, Ian Campbell wrote:
-> > > > * The tmem hypercall is not available on ARM
-> > > > 
-> > > > * ARMv6 does not support cmpxchg on 16-bit words that are used in the
-> > > 
-> > > missing the end of this sentence?
-> > 
-> > Right, I meant to say 
-> > 
-> > * ARMv6 does not support cmpxchg on 16-bit words that are used in the
-> >   Xen grant table code, so we must ensure that Xen support is only built
-> >   on ARMv7-only kernels not combined ARMv6/v7 kernels.
-> > 
-> > This should be fixed differently in the future.
+On Tuesday 09 October 2012, Stefano Stabellini wrote:
+> >  config XEN
+> >       bool "Xen guest support on ARM (EXPERIMENTAL)"
+> >       depends on EXPERIMENTAL && ARM && OF
+> > +     depends on !CPU_V6
+> >       help
+> >         Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
 > 
-> Is this is a build time failure because gcc/gas/etc refuses to generate
-> these instructions if it is configured for v6?
+> Considering that we rely on the virtualization extensions, this one can
+> be:
 > 
-> I ask because if it is only a runtime issue then we can reason that if
-> we are running Xen specific grant table code, then we must be running on
-> Xen and therefore must necessarily be running on a v7 (because Xen only
-> support v7+virt extensions) even if the kernel happens to be capable of
-> running on v6 too.
+>     depends on CPU_V7
+> 
+> The rest looks fine. I can submit a second patch to change !CPU_V6 into
+> CPU_V7 later, if you prefer.
 
-The underlying reason of course is that ARMv6 doesn't have those
-instructions. The symptom you see is a link error because gcc emits
-a reference to the (intentionally missing) __bad_cmpxchg() function
-from
-
-static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
-                                      unsigned long new, int size)
-{
-        unsigned long oldval, res;
-
-        switch (size) {
-#ifndef CONFIG_CPU_V6   /* min ARCH >= ARMv6K */
-        case 1:
-		...
-                break;
-        case 2:
-		...
-                break;
-#endif
-        case 4:
-		...
-                break;
-        default:
-                __bad_cmpxchg(ptr, size);
-                oldval = 0;
-        }
-        return oldval;
-}
-
-The possible solutions I can see for this are:
-
-* change the grant table format to use 32 bits for the flags on ARM
-* change the code to always cmpxchg the entire 32 bit word including the flags.
-* implement your own cmpxchg wrapper that may be implemented using a spinlock
-  rather than cmpxchg if ARMv6 is enabled.
+CPU_V6 and CPU_V7 are not exclusive, I saw the problem when building a
+combined kernel for both V6 and V7. The code also needs to depend on ARMv7
+with virtualization extensions, but that is a different issue. We don't
+actually have a configuration symbol for that yet, as far as I can tell.
 
 	Arnd
