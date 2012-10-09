@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab2JITuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:50:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35785 "EHLO
+	id S1756785Ab2JITvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:51:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35801 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab2JITuL (ORCPT
+	with ESMTP id S1751927Ab2JITvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:50:11 -0400
-Date: Tue, 9 Oct 2012 12:49:50 -0700
-From: "tip-bot for Hildner, Christian" <christian.hildner@siemens.com>
-Message-ID: <tip-26cff4e2aa4d666dc6a120ea34336b5057e3e187@git.kernel.org>
+	Tue, 9 Oct 2012 15:51:01 -0400
+Date: Tue, 9 Oct 2012 12:50:46 -0700
+From: tip-bot for Dan Carpenter <dan.carpenter@oracle.com>
+Message-ID: <tip-5b3900cd409466c0070b234d941650685ad0c791@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        christian.hildner@siemens.com, jan.kiszka@siemens.com,
-        tglx@linutronix.de
+        johnstul@us.ibm.com, tglx@linutronix.de, dan.carpenter@oracle.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        christian.hildner@siemens.com, tglx@linutronix.de,
-        jan.kiszka@siemens.com
-In-Reply-To: <98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net>
-References: <98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net>
+        johnstul@us.ibm.com, tglx@linutronix.de, dan.carpenter@oracle.com
+In-Reply-To: <20121009071823.GA19159@elgon.mountain>
+References: <20121009071823.GA19159@elgon.mountain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timers: Fix endless looping between cascade()
-  and internal_add_timer()
-Git-Commit-ID: 26cff4e2aa4d666dc6a120ea34336b5057e3e187
+Subject: [tip:timers/core] timekeeping:
+  Cast raw_interval to u64 to avoid shift overflow
+Git-Commit-ID: 5b3900cd409466c0070b234d941650685ad0c791
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,66 +28,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 12:49:57 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 12:50:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26cff4e2aa4d666dc6a120ea34336b5057e3e187
-Gitweb:     http://git.kernel.org/tip/26cff4e2aa4d666dc6a120ea34336b5057e3e187
-Author:     Hildner, Christian <christian.hildner@siemens.com>
-AuthorDate: Mon, 8 Oct 2012 15:49:03 +0200
+Commit-ID:  5b3900cd409466c0070b234d941650685ad0c791
+Gitweb:     http://git.kernel.org/tip/5b3900cd409466c0070b234d941650685ad0c791
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Tue, 9 Oct 2012 10:18:23 +0300
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 9 Oct 2012 21:27:14 +0200
 
-timers: Fix endless looping between cascade() and internal_add_timer()
+timekeeping: Cast raw_interval to u64 to avoid shift overflow
 
-Adding two (or more) timers with large values for "expires" (they have
-to reside within tv5 in the same list) leads to endless looping
-between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
-is one and jiffies are crossing the value 1 << 18. The bug was
-introduced between 2.6.11 and 2.6.12 (and survived for quite some
-time).
+We fixed a bunch of integer overflows in timekeeping code during the 3.6
+cycle.  I did an audit based on that and found this potential overflow.
 
-This patch ensures that when cascade() is called timers within tv5 are
-not added endlessly to their own list again, instead they are added to
-the next lower tv level tv4 (as expected).
-
-Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Link: http://lkml.kernel.org/r/20121009071823.GA19159@elgon.mountain
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable@vger.kernel.org
 ---
- kernel/timer.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ kernel/time/timekeeping.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d5de1b2..367d008 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
- #define TVR_SIZE (1 << TVR_BITS)
- #define TVN_MASK (TVN_SIZE - 1)
- #define TVR_MASK (TVR_SIZE - 1)
-+#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 16280ff..3eb3fc7c 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1045,7 +1045,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 	accumulate_nsecs_to_secs(tk);
  
- struct tvec {
- 	struct list_head vec[TVN_SIZE];
-@@ -359,11 +360,12 @@ __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
- 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
- 	} else {
- 		int i;
--		/* If the timeout is larger than 0xffffffff on 64-bit
--		 * architectures then we use the maximum timeout:
-+		/* If the timeout is larger than MAX_TVAL (on 64-bit
-+		 * architectures or with CONFIG_BASE_SMALL=1) then we
-+		 * use the maximum timeout.
- 		 */
--		if (idx > 0xffffffffUL) {
--			idx = 0xffffffffUL;
-+		if (idx > MAX_TVAL) {
-+			idx = MAX_TVAL;
- 			expires = idx + base->timer_jiffies;
- 		}
- 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
+ 	/* Accumulate raw time */
+-	raw_nsecs = tk->raw_interval << shift;
++	raw_nsecs = (u64)tk->raw_interval << shift;
+ 	raw_nsecs += tk->raw_time.tv_nsec;
+ 	if (raw_nsecs >= NSEC_PER_SEC) {
+ 		u64 raw_secs = raw_nsecs;
