@@ -1,35 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab2JIEBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:01:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49523 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2JIEBU (ORCPT
+	id S1751595Ab2JIEBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:01:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43838 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2JIEB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:01:20 -0400
+	Tue, 9 Oct 2012 00:01:29 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] firmware loader: misc changes
-Date: Tue,  9 Oct 2012 12:01:00 +0800
-Message-Id: <1349755264-23876-1-git-send-email-ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 1/4] firmware loader: cancel uncache work before caching firmware
+Date: Tue,  9 Oct 2012 12:01:01 +0800
+Message-Id: <1349755264-23876-2-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349755264-23876-1-git-send-email-ming.lei@canonical.com>
+References: <1349755264-23876-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Under 'Opportunistic sleep' situation, system sleep might be
+triggered very frequently, so the uncahce work may not be completed
+before caching firmware during next suspend.
 
-The first two are fixes' patch, the 3rd one is to enable
-caching firmware for direct loading, and the last one is
-a cleanup patch.
+This patch cancels the uncache work before caching firmware to
+fix the problem above.
 
- drivers/base/firmware_class.c |  266 +++++++++++++++++++++++------------------
- 1 file changed, 151 insertions(+), 115 deletions(-)
+Also this patch optimizes the cacheing firmware mechanism a bit by
+only storing one firmware cache entry for one firmware image.
 
+So if the firmware is still cached during suspend, it doesn't need
+to be loaded from user space any more.
 
-Thanks,
---
-Ming Lei
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/firmware_class.c |   35 ++++++++++++++++++++++++++++-------
+ 1 file changed, 28 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8154145..d06a8d0 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -1142,17 +1142,27 @@ exit:
+ 	return fce;
+ }
+ 
+-static int fw_cache_piggyback_on_request(const char *name)
++static int __fw_entry_found(const char *name)
+ {
+ 	struct firmware_cache *fwc = &fw_cache;
+ 	struct fw_cache_entry *fce;
+-	int ret = 0;
+ 
+-	spin_lock(&fwc->name_lock);
+ 	list_for_each_entry(fce, &fwc->fw_names, list) {
+ 		if (!strcmp(fce->name, name))
+-			goto found;
++			return 1;
+ 	}
++	return 0;
++}
++
++static int fw_cache_piggyback_on_request(const char *name)
++{
++	struct firmware_cache *fwc = &fw_cache;
++	struct fw_cache_entry *fce;
++	int ret = 0;
++
++	spin_lock(&fwc->name_lock);
++	if (__fw_entry_found(name))
++		goto found;
+ 
+ 	fce = alloc_fw_cache_entry(name);
+ 	if (fce) {
+@@ -1229,11 +1239,19 @@ static void dev_cache_fw_image(struct device *dev, void *data)
+ 		list_del(&fce->list);
+ 
+ 		spin_lock(&fwc->name_lock);
+-		fwc->cnt++;
+-		list_add(&fce->list, &fwc->fw_names);
++		/* only one cache entry for one firmware */
++		if (!__fw_entry_found(fce->name)) {
++			fwc->cnt++;
++			list_add(&fce->list, &fwc->fw_names);
++		} else {
++			free_fw_cache_entry(fce);
++			fce = NULL;
++		}
+ 		spin_unlock(&fwc->name_lock);
+ 
+-		async_schedule(__async_dev_cache_fw_image, (void *)fce);
++		if (fce)
++			async_schedule(__async_dev_cache_fw_image,
++				       (void *)fce);
+ 	}
+ }
+ 
+@@ -1275,6 +1293,9 @@ static void device_cache_fw_images(void)
+ 
+ 	pr_debug("%s\n", __func__);
+ 
++	/* cancel uncache work */
++	cancel_delayed_work_sync(&fwc->work);
++
+ 	/*
+ 	 * use small loading timeout for caching devices' firmware
+ 	 * because all these firmware images have been loaded
+-- 
+1.7.9.5
 
