@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2JIN7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:59:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39199 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab2JIN7W (ORCPT
+	id S1755979Ab2JIOCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:02:12 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:36877 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab2JIOCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:59:22 -0400
-Date: Tue, 9 Oct 2012 06:59:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCHv4 1/4] modem_shm: Add Modem Access Framework
-Message-ID: <20121009135918.GC5583@kroah.com>
-References: <1348819504-1303-1-git-send-email-arun.murthy@stericsson.com>
- <1348819504-1303-2-git-send-email-arun.murthy@stericsson.com>
- <20120928160045.GD2625@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962C153@EXDCVYMBSTM006.EQ1STM.local>
- <20121001155940.GA1957@kroah.com>
- <F45880696056844FA6A73F415B568C695B6962CC8C@EXDCVYMBSTM006.EQ1STM.local>
- <20121003151748.GA5745@kroah.com>
- <F45880696056844FA6A73F415B568C695B697CB0C9@EXDCVYMBSTM006.EQ1STM.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F45880696056844FA6A73F415B568C695B697CB0C9@EXDCVYMBSTM006.EQ1STM.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 10:02:10 -0400
+Date: Tue, 9 Oct 2012 16:02:01 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anthony Liguori <aliguori@us.ibm.com>, Adam Litke <agl@us.ibm.com>,
+        Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Avishay Traeger <AVISHAY@il.ibm.com>, Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
+        <virtualization@lists.linux-foundation.org>,
+        "LKML" <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        "qemu-devel" <qemu-devel@nongnu.org>
+Subject: Re: Proposal for virtio standardization.
+Message-ID: <20121009160201.5303a7ca@BR9GNB5Z>
+In-Reply-To: <87zk4c2tqq.fsf@rustcorp.com.au>
+References: <87zk4c2tqq.fsf@rustcorp.com.au>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100914-4966-0000-0000-000003B7BC78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 07:37:02AM +0200, Arun MURTHY wrote:
-> Any further comments?
+On Thu, 27 Sep 2012 09:59:33 +0930
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-I was waiting for you to address all of the previous ones with a new set
-of patches before burdening you with anything new :)
+> Hi all,
+> 
+> 	I've had several requests for a more formal approach to the
+> virtio draft spec, and (after some soul-searching) I'd like to try that.
+> 
+> 	The proposal is to use OASIS as the standards body, as it's
+> fairly light-weight as these things go.  For me this means paperwork and
+> setting up a Working Group and getting the right people involved as
+> Voting members starting with the current contributors; for most of you
+> it just means a new mailing list, though I'll be cross-posting any
+> drafts and major changes here anyway.
+> 
+> 	I believe that a documented standard (aka virtio 1.0) will
+> increase visibility and adoption in areas outside our normal linux/kvm
+> universe.  There's been some of that already, but this is the clearest
+> path to accelerate it.  Not the easiest path, but I believe that a solid
+> I/O standard is a Good Thing for everyone.
+> 
+> 	Yet I also want to decouple new and experimental development
+> from the standards effort; running code comes first.  New feature bits
+> and new device numbers should be reservable without requiring a full
+> spec change.
+> 
+> So the essence of my proposal is:
+> 1) I start a Working Group within OASIS where we can aim for virtio spec
+>    1.0.
+> 
+> 2) The current spec is textually reordered so the core is clearly
+>    bus-independent, with PCI, mmio, etc appendices.
+> 
+> 3) Various clarifications, formalizations and cleanups to the spec text,
+>    and possibly elimination of old deprecated features.
+> 
+> 4) The only significant change to the spec is that we use PCI
+>    capabilities, so we can have infinite feature bits.
+>    (see
+> http://lists.linuxfoundation.org/pipermail/virtualization/2011-December/019198.html)
 
-greg k-h
+"Infinite" only applies to virtio-pci, no?
+
+> 
+> 5) Changes to the ring layout and other such things are deferred to a
+>    future virtio version; whether this is done within OASIS or
+>    externally depends on how well this works for the 1.0 release.
+> 
+> Thoughts?
+> Rusty.
+> 
+
+Sounds like a good idea. I'll be happy to review the spec with an eye
+to virtio-ccw.
+
+Cornelia
+
