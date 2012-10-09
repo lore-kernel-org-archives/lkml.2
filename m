@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab2JIPkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:40:15 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64188 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab2JIPkK (ORCPT
+	id S1756231Ab2JIPlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:41:07 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53066 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab2JIPlD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:40:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
-Date: Tue, 9 Oct 2012 15:39:46 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <1349796183-30648-6-git-send-email-arnd@arndb.de> <1349796958.21847.219.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1349796958.21847.219.camel@zakaz.uk.xensource.com>
+	Tue, 9 Oct 2012 11:41:03 -0400
+Message-ID: <50744586.6010806@arm.com>
+Date: Tue, 09 Oct 2012 16:40:54 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Lightning/1.0b2 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210091539.46274.arnd@arndb.de>
-X-Provags-ID: V02:K0:ylQy+x6C8LRb8TrpfZWsuR/2ncIEiXNIYup01oRekDA
- 0hiMb9q2+PlL3QEfRgTycAeNB0cLZKk0nV2eK1r/NE+UOysiA5
- i1wf7jBOltB6j2RHNx01dUKGuFnk5OJUjjEL8/WmwJ4jj2PvrW
- 0LbwsqTCi9egWG7U1Xkx9IzfUIzo0KNiOJXBG7GXF0EcnDUrIR
- bSAxzJGAnOBEArPFdeUREDK1CYvhvaZ6r0xm4ax85Q/exReJfY
- XfmWWnsEuTQ27iuvazUmEoPen1LXf+XSfiJ+TDPxQ/9Kd1FV1k
- eiRu+Vf6w5oaI5AZ8Oy8RUqDQzwxIs0EkQmESJUqOkakQRupl0
- qxyUD262gMytNUOp6j2s=
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Russell King <rmk+kernel@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH 4/9] ARM: export default read_current_timer
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <1349796183-30648-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1349796183-30648-5-git-send-email-arnd@arndb.de>
+X-OriginalArrivalTime: 09 Oct 2012 15:41:00.0493 (UTC) FILETIME=[7B8C87D0:01CDA634]
+X-MC-Unique: 112100916410010601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Ian Campbell wrote:
-> > * The tmem hypercall is not available on ARM
-> > 
-> > * ARMv6 does not support cmpxchg on 16-bit words that are used in the
+Hi Arnd,
+
+On 09/10/12 16:22, Arnd Bergmann wrote:
+
+> read_current_timer is used by get_cycles since "ARM: 7538/1: delay:
+> add registration mechanism for delay timer sources", and get_cycles
+> can be used by device drivers in loadable modules, so it has to
+> be exported.
 > 
-> missing the end of this sentence?
+> Without this patch, building imote2_defconfig fails with
+> 
+> ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+[...]
 
-Right, I meant to say 
+>  arch/arm/lib/delay.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/lib/delay.c b/arch/arm/lib/delay.c
+> index 9d0a300..0dc5385 100644
+> --- a/arch/arm/lib/delay.c
+> +++ b/arch/arm/lib/delay.c
+> @@ -45,6 +45,7 @@ int read_current_timer(unsigned long *timer_val)
+>  	*timer_val = delay_timer->read_current_timer();
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(read_current_timer);
 
-* ARMv6 does not support cmpxchg on 16-bit words that are used in the
-  Xen grant table code, so we must ensure that Xen support is only built
-  on ARMv7-only kernels not combined ARMv6/v7 kernels.
 
-This should be fixed differently in the future.
+Perhaps this fits better in armksyms.c? That way it lives with
+arm_delay_ops and friends.
 
-	Arnd
+I've got a patch doing it like that, which I can put in Russell's
+patch-system, unless you prefer doing it in delay.c for any reason?
+
+Jonny
+
+(Here's the original patch sent to the kernel-janitors list and Will Deacon)
+-------8<---------
+On ARM, get_cycles() is implemented in terms of read_current_timer(), but
+the latter is not exported to modules, resulting in failure to link:
+
+  ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+
+This patch exports the symbol as required.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+---
+ arch/arm/kernel/armksyms.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
+index 60d3b73..6a37f8d 100644
+--- a/arch/arm/kernel/armksyms.c
++++ b/arch/arm/kernel/armksyms.c
+@@ -50,6 +50,7 @@ extern void fpundefinstr(void);
+ 
+        /* platform dependent support */
+ EXPORT_SYMBOL(arm_delay_ops);
++EXPORT_SYMBOL(read_current_timer);
+ 
+        /* networking */
+ EXPORT_SYMBOL(csum_partial);
+-- 
+1.7.1
+
+
+
+
+
+
+
+
