@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab2JIFDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 01:03:40 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45282 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab2JIFDi (ORCPT
+	id S1752469Ab2JIFFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 01:05:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37230 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab2JIFFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 01:03:38 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-4f-5073b0284d9d
-Date: Tue, 9 Oct 2012 14:07:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CMA and zone watermarks
-Message-ID: <20121009050748.GH13817@bbox>
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
- <20121009031023.GF13817@bbox>
- <50739615.9080205@samsung.com>
- <20121009044317.GG13817@bbox>
- <5073ADC9.7030201@samsung.com>
+	Tue, 9 Oct 2012 01:05:50 -0400
+Message-ID: <5073B0AC.3090601@kernel.org>
+Date: Tue, 09 Oct 2012 01:05:48 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5073ADC9.7030201@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: toshi.kani@hp.com, liuj97@gmail.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] create sun sysfs file
+References: <502062FB.7030502@jp.fujitsu.com> <503EC30B.2070900@jp.fujitsu.com> <505FC5F1.4090306@jp.fujitsu.com> <506C0B52.4010800@jp.fujitsu.com> <50736885.9010909@jp.fujitsu.com>
+In-Reply-To: <50736885.9010909@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 06:53:29AM +0200, Marek Szyprowski wrote:
-> Hello,
+On 10/08/2012 07:57 PM, Yasuaki Ishimatsu wrote:
+> Hi Len,
 > 
-> On 10/9/2012 6:43 AM, Minchan Kim wrote:
-> >On Tue, Oct 09, 2012 at 05:12:21AM +0200, Marek Szyprowski wrote:
-> >>On 10/9/2012 5:10 AM, Minchan Kim wrote:
-> >>>On Mon, Oct 08, 2012 at 05:41:14PM +0200, Rabin Vincent wrote:
-> 
-> >>>Fortunately, recently, Bart sent a patch about that.
-> >>>http://marc.info/?l=linux-mm&m=134763299016693&w=2
-> >>>
-> >>>Could you test above patches in your kernel?
-> >>>You have to apply [2/4], [3/4], [4/4] and don't need [1/4].
-> >>
-> >>AFAIR without patch [1/4], free cma page counter will go below zero
-> >>and weird thing will happen, so better apply the complete patchset.
-> >
-> >I can't understand your point. [1/4] is just fix for correcting trace
-> >No?
-> 
-> I just remember we ran into such strange negative number of free cma
-> pages issue without that patch, but maybe the final patchset will
-> simply fail to apply without the first patch.
+> What should I do to put this patch in your tree?
 
-I have no objection to apply them all, of course.
-But note that if you suffer from such strange bug without [1/4],
-it should be dug in without buring into just "fixing of the trace"
-comment. As I saw the code without [1/4], I can't find any fault.
-Could you elaborat it more if you have any guessing in mind?
+Please add a description of the attribute in
+Documentation/ABI/testing/
 
-> 
-> Best regards
-> -- 
-> Marek Szyprowski
-> Samsung Poland R&D Center
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+A human needs to understand exactly what is in that file
+because you are proposing it as an ABI.
 
--- 
-Kind regards,
-Minchan Kim
+thanks,
+Len Brown, Intel Open Source Technology Center
+
+
