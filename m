@@ -1,44 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab2JIGk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:40:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58791 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792Ab2JIGkW (ORCPT
+	id S1753807Ab2JIGku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:40:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40974 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2JIGje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:40:22 -0400
-Date: Tue, 9 Oct 2012 15:40:15 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: Convert tps6586x to irq_domain
-Message-ID: <20121009064011.GQ8237@opensource.wolfsonmicro.com>
-References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com>
- <1349712805-10014-2-git-send-email-ldewangan@nvidia.com>
- <20121009060641.GE8237@opensource.wolfsonmicro.com>
- <5073BAA8.4060404@nvidia.com>
- <20121009062355.GJ8237@opensource.wolfsonmicro.com>
- <5073BE7F.5060107@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5073BE7F.5060107@nvidia.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Oct 2012 02:39:34 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tytso@mit.edu
+Cc: Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 2/5] aio: kiocb_cancel()
+Date: Mon,  8 Oct 2012 23:39:17 -0700
+Message-Id: <1349764760-21093-2-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:34:47AM +0530, Laxman Dewangan wrote:
+Minor refactoring, to get rid of some duplicated code
 
-> The bit definitions are also different in status and mask register
-> and yes, this will be again problem as we do in isr thread
->  data->status_buf[i] &= ~data->mask_buf[i];
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ fs/aio.c |   72 ++++++++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 39 insertions(+), 33 deletions(-)
 
-> So given the constraint, generic will not work here.
+diff --git a/fs/aio.c b/fs/aio.c
+index 1ad2d97..95419c4 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -229,6 +229,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
+ }
+ 
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
++{
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
++
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
++
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64) kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
++
++		spin_lock_irq(&ctx->ctx_lock);
++	}
++
++	return ret;
++}
++
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
+  */
+@@ -304,7 +327,6 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
+ {
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
+@@ -315,14 +337,8 @@ static void kill_ctx(struct kioctx *ctx)
+ 		struct list_head *pos = ctx->active_reqs.next;
+ 		struct kiocb *iocb = list_kiocb(pos);
+ 		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++
++		kiocb_cancel(ctx, iocb, &res);
+ 	}
+ 
+ 	if (!ctx->reqs_active)
+@@ -1709,7 +1725,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1724,32 +1740,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		return -EINVAL;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EAGAIN;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
+ 
+ 	put_ioctx(ctx);
+ 
+-- 
+1.7.10.4
 
-OK, that's a good reason not to use the generic code.
