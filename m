@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2JIPee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:34:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55698 "EHLO
+	id S1756238Ab2JIPem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:34:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58873 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab2JIPec (ORCPT
+	with ESMTP id S1752536Ab2JIPeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:34:32 -0400
+	Tue, 9 Oct 2012 11:34:36 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: arm@kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 2/3] ARM: assabet: fix bogus warning in get_assabet_scr (again)
-Date: Tue,  9 Oct 2012 17:34:20 +0200
-Message-Id: <1349796861-31164-3-git-send-email-arnd@arndb.de>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 0/3] new ARM-soc warning fixes
+Date: Tue,  9 Oct 2012 17:34:18 +0200
+Message-Id: <1349796861-31164-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1349796861-31164-1-git-send-email-arnd@arndb.de>
-References: <1349796861-31164-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Q8A2fTn+v1QVqF503evPEDgk2PK5aLIl5DZMso2hcVb
- QQolQAkRxrqGyGJtOBmkIzM6TjS/T7AbVE/ZUsQo+X98qDYg2A
- o31OLRFLhQPV9rETMvwG3X2wV7aQR5nXl2gR4+5fdbgYYpe5Mg
- SfFpRqXyrIHitj/pFzcIPXLuCMn2aqYxGAn2+ijbcpD1M31s90
- i9NYoCct2BFXaYst2Za+kKbzKLLZUSZnEMIrJ8ULRCpt3FkwlF
- gJvZCowYvSj9X4w9k1pAIwWPnS4REUfpTzJFSKW/XE4aLVdpAg
- 6BuJHMCdUPNcvPYUcNsLZPOWYeU8aY+9kTEsNxBgWQri5yabop
- JEuQ79g+8CkEI21jeir6z8I8aCoS3QjH3lbAMqKFCk4x4Ub5CR
- mVGlpgLPJztDeCLeFfMTwaeNvptKr05CzE=
+X-Provags-ID: V02:K0:sH82+jroFmNIDLaO0VJBtG/fJhV7s7LaOGpCcp0DxZe
+ O8Zd9eiZPCX6iSAPSP0bfJLY1oJTnpEtholkQQSzqEa+KZaG6l
+ KtolqcDUNZ3dkhZ0PElAf/h0Xed8hAYF0ymdRtvsKuUMPzwimf
+ Tq36E4lBGVLBRCR4pv1ic2CEOWSQimWsHj5UWKm4EwTNnYrQ7C
+ NjHjxWXHKK7tYIYl+vgG4xfnDA/Xgk987QLfbXNYwIBVSIii5X
+ aVGqEtr3BcDmwFns2u/PSKjp1Kt3SgTGFSJyXWRFsCB15IycBu
+ 4AkUB1XANeLcq4Vlzd9pab/XHcC+G886aGG3TVl1V8jmweJ9E/
+ 4fvkjGn8qpLrxmxlkgf5ZsC9EaSL0B9YzbFykKwnpTioDhmH1J
+ LIQCui+Gldi50OC6HwiVOZ3mqrKKCAVaK8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell fixed this bogus warning before in 2f3eca8b4f "Shut up gcc
-warning in assabet.c", but apparently gcc has become smarter (or dumber)
-since 2005, and the same warning came up again.
+Hi Olof,
 
-This uses the uninitialized_var() macro to convince gcc that the
-variable is actually being initialized. 100 times in fact.
+Here are three more fixes that I'd like to merge through the arm-soc
+as time permits. All of them should be completely harmless and they
+only fix harmless gcc warnings.
 
-Without this patch, building assabet_defconfig results in:
+I don't know what your plans are for sending the next fixes branch.
+I've uploaded these into a new "fixes2" branch on top of the patches
+that are already in "fixes". We can either send them all together,
+or you send the ones that are already queued first and these ones
+with the next batch. Feel free to rebase if necessary.
 
-arch/arm/mach-sa1100/assabet.c: In function 'fixup_assabet':
-arch/arm/mach-sa1100/assabet.c:397:6: warning: 'scr' may be used uninitialized in this function [-Wuninitialized]
-arch/arm/mach-sa1100/assabet.c:389:16: note: 'scr' was declared here
+	Arnd
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
----
- arch/arm/mach-sa1100/assabet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Arnd Bergmann (3):
+  ARM: shmobile: mark shmobile_init_late as __init
+  ARM: assabet: fix bogus warning in get_assabet_scr (again)
+  ARM: integrator: use __iomem pointers for MMIO, part 2
 
-diff --git a/arch/arm/mach-sa1100/assabet.c b/arch/arm/mach-sa1100/assabet.c
-index e1ccda6..6a7ad3c 100644
---- a/arch/arm/mach-sa1100/assabet.c
-+++ b/arch/arm/mach-sa1100/assabet.c
-@@ -388,7 +388,7 @@ static void __init map_sa1100_gpio_regs( void )
-  */
- static void __init get_assabet_scr(void)
- {
--	unsigned long scr, i;
-+	unsigned long uninitialized_var(scr), i;
- 
- 	GPDR |= 0x3fc;			/* Configure GPIO 9:2 as outputs */
- 	GPSR = 0x3fc;			/* Write 0xFF to GPIO 9:2 */
+ arch/arm/mach-integrator/include/mach/cm.h       |    2 +-
+ arch/arm/mach-integrator/include/mach/platform.h |    6 +++---
+ arch/arm/mach-integrator/integrator_ap.c         |    2 +-
+ arch/arm/mach-integrator/integrator_cp.c         |    4 ++--
+ arch/arm/mach-sa1100/assabet.c                   |    2 +-
+ arch/arm/mach-shmobile/include/mach/common.h     |    2 +-
+ 6 files changed, 9 insertions(+), 9 deletions(-)
+
 -- 
 1.7.10
 
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Magnus Damm <damm@opensource.se>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Simon Horman <horms@verge.net.au>
