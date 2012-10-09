@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab2JIRfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:35:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33184 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab2JIRe7 (ORCPT
+	id S1756537Ab2JIRfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:35:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57847 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab2JIRf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:34:59 -0400
-Date: Tue, 9 Oct 2012 10:34:36 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-035rzjtnv9ri8sssi7ojjjq0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf sched: Handle PERF_RECORD_EXIT events
-Git-Commit-ID: 0439539f72ea222fbfe511b47318b9c1815a7108
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 9 Oct 2012 13:35:28 -0400
+Message-ID: <5074605C.3000301@vflare.org>
+Date: Tue, 09 Oct 2012 10:35:24 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:34:41 -0700 (PDT)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [staging][zram] Fix handling of incompressible pages
+References: <1349746364-8051-1-git-send-email-ngupta@vflare.org> <20121009133128.GA3244@barrios>
+In-Reply-To: <20121009133128.GA3244@barrios>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0439539f72ea222fbfe511b47318b9c1815a7108
-Gitweb:     http://git.kernel.org/tip/0439539f72ea222fbfe511b47318b9c1815a7108
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 6 Oct 2012 15:53:41 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 6 Oct 2012 16:34:03 -0300
+Hi Minchan,
 
-perf sched: Handle PERF_RECORD_EXIT events
+On 10/09/2012 06:31 AM, Minchan Kim wrote:
+>
+> On Mon, Oct 08, 2012 at 06:32:44PM -0700, Nitin Gupta wrote:
+>> Change 130f315a introduced a bug in the handling of incompressible
+>> pages which resulted in memory allocation failure for such pages.
+>> The fix is to store the page as-is i.e. without compression if the
+>> compressed size exceeds a threshold (max_zpage_size) and request
+>> exactly PAGE_SIZE sized buffer from zsmalloc.
+>
+> It seems you found a bug and already fixed it with below helpers.
+> But unfortunately, description isn't enough to understand the problem for me.
+> Could you explain in detail?
+> You said it results in memory allocation failure. What is failure?
+> You mean this code by needing a few pages for zspage to meet class size?
+>
+>          handle = zs_malloc(zram->mem_pool, clen);
+>          if (!handle) {
+>                  pr_info("Error allocating memory for compressed "
+>                          "page: %u, size=%zu\n", index, clen);
+>                  ret = -ENOMEM;
+>                  goto out;
+>          }
+>
+> So instead of allocating more pages for incompressible page to make zspage,
+> just allocate a page for PAGE_SIZE class without compression?
+>
 
-Noticed sched wasn't handling those events while introducing
-perf_event__process_{fork,exit}.
+When a page expands on compression, say from 4K to 4K+30, we were trying 
+to do zsmalloc(pool, 4K+30). However, the maximum size which zsmalloc 
+can allocate is PAGE_SIZE (for obvious reasons), so such allocation 
+requests always return failure (0).
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-035rzjtnv9ri8sssi7ojjjq0@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-sched.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+For a page that has compressed size larger than the original size (this 
+may happen with already compressed or random data), there is no point 
+storing the compressed version as that would take more space and would 
+also require time for decompression when needed again. So, the fix is to 
+store any page, whose compressed size exceeds a threshold 
+(max_zpage_size), as-it-is i.e. without compression.  Memory required 
+for storing this uncompressed page can then be requested from zsmalloc 
+which supports PAGE_SIZE sized allocations.
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 3a25cd8..30e5336 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1672,6 +1672,7 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.sample		 = perf_sched__process_tracepoint_sample,
- 			.comm		 = perf_event__process_comm,
- 			.lost		 = perf_event__process_lost,
-+			.exit		 = perf_event__process_exit,
- 			.fork		 = perf_event__process_fork,
- 			.ordered_samples = true,
- 		},
+Lastly, the fix checks that we do not attempt to "decompress" the page 
+which we stored in the uncompressed form -- we just memcpy() out such pages.
+
+Thanks,
+Nitin
+
+
+>>
+>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> Reported-by: viechweg@gmail.com
+>> Reported-by: paerley@gmail.com
+>> Reported-by: wu.tommy@gmail.com
+>> Tested-by: wu.tommy@gmail.com
+>> Tested-by: michael@zugelder.org
+>> ---
+>>   drivers/staging/zram/zram_drv.c |   12 ++++++++++--
+>>   1 file changed, 10 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+>> index 653b074..6edefde 100644
+>> --- a/drivers/staging/zram/zram_drv.c
+>> +++ b/drivers/staging/zram/zram_drv.c
+>> @@ -223,8 +223,13 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>>   	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
+>>   				ZS_MM_RO);
+>>
+>> -	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+>> +	if (zram->table[index].size == PAGE_SIZE) {
+>> +		memcpy(uncmem, cmem, PAGE_SIZE);
+>> +		ret = LZO_E_OK;
+>> +	} else {
+>> +		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+>>   				    uncmem, &clen);
+>> +	}
+>>
+>>   	if (is_partial_io(bvec)) {
+>>   		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
+>> @@ -342,8 +347,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>   		goto out;
+>>   	}
+>>
+>> -	if (unlikely(clen > max_zpage_size))
+>> +	if (unlikely(clen > max_zpage_size)) {
+>>   		zram_stat_inc(&zram->stats.bad_compress);
+>> +		src = uncmem;
+>> +		clen = PAGE_SIZE;
+>> +	}
+>>
+>>   	handle = zs_malloc(zram->mem_pool, clen);
+>>   	if (!handle) {
+>> --
+>> 1.7.9.5
+>>
+>
+
