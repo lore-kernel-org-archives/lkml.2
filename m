@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab2JIX7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:59:05 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:49910 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2JIX6y (ORCPT
+	id S932177Ab2JIX7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:59:11 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32734 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab2JIX6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Oct 2012 19:58:54 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,126 +13,70 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Tejun Heo <tj@kernel.org>
 Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 7/7] x86, mm: Remove early_memremap workaround for page table accessing
-Date: Tue,  9 Oct 2012 16:58:35 -0700
-Message-Id: <1349827115-16600-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 1/7] x86, mm: align start address to correct big page size
+Date: Tue,  9 Oct 2012 16:58:29 -0700
+Message-Id: <1349827115-16600-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
 References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not needed that anymore after patches include premaping page table buf
-and not clear initial page table wrongly.
+We are going to use buffer in BRK to pre-map final page table buffer.
+
+Final page table buffer could be only page aligened, but around it are
+still ram, we could use bigger page to map it to avoid small page.
+
+We will probe to adjust page_size_mask in next patch to make big
+page size could be used with small ram range.
+
+Before that, this patch will make start address to be aligned down
+according to bigger page size. otherwise entry in page page will
+not have correct value.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_64.c |   38 ++++----------------------------------
- 1 files changed, 4 insertions(+), 34 deletions(-)
+ arch/x86/mm/init_32.c |    1 +
+ arch/x86/mm/init_64.c |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 11a5800..27f7fc6 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -310,6 +310,7 @@ repeat:
+ 					__pgprot(PTE_IDENT_ATTR |
+ 						 _PAGE_PSE);
+ 
++				pfn &= PMD_MASK >> PAGE_SHIFT;
+ 				addr2 = (pfn + PTRS_PER_PTE-1) * PAGE_SIZE +
+ 					PAGE_OFFSET + PAGE_SIZE-1;
+ 
 diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 7dfa69b..4e6873f 100644
+index ab558eb..f40f383 100644
 --- a/arch/x86/mm/init_64.c
 +++ b/arch/x86/mm/init_64.c
-@@ -340,36 +340,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 	} else
- 		pfn = pgt_buf_end++;
- 
--	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
-+	adr = __va(pfn * PAGE_SIZE);
- 	clear_page(adr);
- 	*phys  = pfn * PAGE_SIZE;
- 	return adr;
- }
- 
--static __ref void *map_low_page(void *virt)
--{
--	void *adr;
--	unsigned long phys, left;
--
--	if (after_bootmem)
--		return virt;
--
--	phys = __pa(virt);
--	left = phys & (PAGE_SIZE - 1);
--	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
--	adr = (void *)(((unsigned long)adr) | left);
--
--	return adr;
--}
--
--static __ref void unmap_low_page(void *adr)
--{
--	if (after_bootmem)
--		return;
--
--	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
--}
--
- static unsigned long __meminit
- phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 	      pgprot_t prot)
-@@ -441,10 +417,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		if (pmd_val(*pmd)) {
- 			if (!pmd_large(*pmd)) {
- 				spin_lock(&init_mm.page_table_lock);
--				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
-+				pte = (pte_t *)pmd_page_vaddr(*pmd);
- 				last_map_addr = phys_pte_init(pte, address,
- 								end, prot);
--				unmap_low_page(pte);
- 				spin_unlock(&init_mm.page_table_lock);
- 				continue;
- 			}
-@@ -480,7 +455,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 
- 		pte = alloc_low_page(&pte_phys);
- 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
--		unmap_low_page(pte);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-@@ -515,10 +489,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 
- 		if (pud_val(*pud)) {
- 			if (!pud_large(*pud)) {
--				pmd = map_low_page(pmd_offset(pud, 0));
-+				pmd = pmd_offset(pud, 0);
- 				last_map_addr = phys_pmd_init(pmd, addr, end,
- 							 page_size_mask, prot);
--				unmap_low_page(pmd);
- 				__flush_tlb_all();
- 				continue;
- 			}
-@@ -555,7 +528,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		pmd = alloc_low_page(&pmd_phys);
- 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
- 					      prot);
--		unmap_low_page(pmd);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pud_populate(&init_mm, pud, __va(pmd_phys));
-@@ -591,17 +563,15 @@ kernel_physical_mapping_init(unsigned long start,
- 			next = end;
- 
- 		if (pgd_val(*pgd)) {
--			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
-+			pud = (pud_t *)pgd_page_vaddr(*pgd);
- 			last_map_addr = phys_pud_init(pud, __pa(start),
- 						 __pa(end), page_size_mask);
--			unmap_low_page(pud);
+@@ -461,7 +461,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 			pages++;
+ 			spin_lock(&init_mm.page_table_lock);
+ 			set_pte((pte_t *)pmd,
+-				pfn_pte(address >> PAGE_SHIFT,
++				pfn_pte((address & PMD_MASK) >> PAGE_SHIFT,
+ 					__pgprot(pgprot_val(prot) | _PAGE_PSE)));
+ 			spin_unlock(&init_mm.page_table_lock);
+ 			last_map_addr = next;
+@@ -536,7 +536,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			pages++;
+ 			spin_lock(&init_mm.page_table_lock);
+ 			set_pte((pte_t *)pud,
+-				pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL_LARGE));
++				pfn_pte((addr & PUD_MASK) >> PAGE_SHIFT,
++					PAGE_KERNEL_LARGE));
+ 			spin_unlock(&init_mm.page_table_lock);
+ 			last_map_addr = next;
  			continue;
- 		}
- 
- 		pud = alloc_low_page(&pud_phys);
- 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
- 						 page_size_mask);
--		unmap_low_page(pud);
- 
- 		spin_lock(&init_mm.page_table_lock);
- 		pgd_populate(&init_mm, pgd, __va(pud_phys));
 -- 
 1.7.7
 
