@@ -1,127 +1,607 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab2JIRfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:35:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57847 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab2JIRf2 (ORCPT
+	id S1756542Ab2JIRf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:35:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33255 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444Ab2JIRf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:35:28 -0400
-Message-ID: <5074605C.3000301@vflare.org>
-Date: Tue, 09 Oct 2012 10:35:24 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 9 Oct 2012 13:35:56 -0400
+Date: Tue, 9 Oct 2012 10:35:32 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-ot9cc6mt025o8kbngzckcrx9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf machine:
+  Carve up event processing specific from perf_tool
+Git-Commit-ID: b0a7d1a0cd2e228dc06d099db2e1bb02f1b7d591
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [staging][zram] Fix handling of incompressible pages
-References: <1349746364-8051-1-git-send-email-ngupta@vflare.org> <20121009133128.GA3244@barrios>
-In-Reply-To: <20121009133128.GA3244@barrios>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:35:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+Commit-ID:  b0a7d1a0cd2e228dc06d099db2e1bb02f1b7d591
+Gitweb:     http://git.kernel.org/tip/b0a7d1a0cd2e228dc06d099db2e1bb02f1b7d591
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 6 Oct 2012 16:26:02 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 6 Oct 2012 16:34:13 -0300
 
-On 10/09/2012 06:31 AM, Minchan Kim wrote:
->
-> On Mon, Oct 08, 2012 at 06:32:44PM -0700, Nitin Gupta wrote:
->> Change 130f315a introduced a bug in the handling of incompressible
->> pages which resulted in memory allocation failure for such pages.
->> The fix is to store the page as-is i.e. without compression if the
->> compressed size exceeds a threshold (max_zpage_size) and request
->> exactly PAGE_SIZE sized buffer from zsmalloc.
->
-> It seems you found a bug and already fixed it with below helpers.
-> But unfortunately, description isn't enough to understand the problem for me.
-> Could you explain in detail?
-> You said it results in memory allocation failure. What is failure?
-> You mean this code by needing a few pages for zspage to meet class size?
->
->          handle = zs_malloc(zram->mem_pool, clen);
->          if (!handle) {
->                  pr_info("Error allocating memory for compressed "
->                          "page: %u, size=%zu\n", index, clen);
->                  ret = -ENOMEM;
->                  goto out;
->          }
->
-> So instead of allocating more pages for incompressible page to make zspage,
-> just allocate a page for PAGE_SIZE class without compression?
->
+perf machine: Carve up event processing specific from perf_tool
 
-When a page expands on compression, say from 4K to 4K+30, we were trying 
-to do zsmalloc(pool, 4K+30). However, the maximum size which zsmalloc 
-can allocate is PAGE_SIZE (for obvious reasons), so such allocation 
-requests always return failure (0).
+The perf_tool vtable expects methods that receive perf_tool and
+perf_sample entries, but for tools not interested in doing any special
+processing on non PERF_RECORD_SAMPLE events, like 'perf top', and for
+those not using perf_session, like 'perf trace', they were using
+perf_event__process passing tool and sample paramenters that were just
+not used.
 
-For a page that has compressed size larger than the original size (this 
-may happen with already compressed or random data), there is no point 
-storing the compressed version as that would take more space and would 
-also require time for decompression when needed again. So, the fix is to 
-store any page, whose compressed size exceeds a threshold 
-(max_zpage_size), as-it-is i.e. without compression.  Memory required 
-for storing this uncompressed page can then be requested from zsmalloc 
-which supports PAGE_SIZE sized allocations.
+Provide 'machine' methods for this purpose and make the perf_event
+ones use them.
 
-Lastly, the fix checks that we do not attempt to "decompress" the page 
-which we stored in the uncompressed form -- we just memcpy() out such pages.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-ot9cc6mt025o8kbngzckcrx9@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c  |    3 +-
+ tools/perf/util/event.c   |  211 +++----------------------------------------
+ tools/perf/util/machine.c |  220 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/machine.h |    8 ++
+ 4 files changed, 242 insertions(+), 200 deletions(-)
 
-Thanks,
-Nitin
-
-
->>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> Reported-by: viechweg@gmail.com
->> Reported-by: paerley@gmail.com
->> Reported-by: wu.tommy@gmail.com
->> Tested-by: wu.tommy@gmail.com
->> Tested-by: michael@zugelder.org
->> ---
->>   drivers/staging/zram/zram_drv.c |   12 ++++++++++--
->>   1 file changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
->> index 653b074..6edefde 100644
->> --- a/drivers/staging/zram/zram_drv.c
->> +++ b/drivers/staging/zram/zram_drv.c
->> @@ -223,8 +223,13 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->>   	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
->>   				ZS_MM_RO);
->>
->> -	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
->> +	if (zram->table[index].size == PAGE_SIZE) {
->> +		memcpy(uncmem, cmem, PAGE_SIZE);
->> +		ret = LZO_E_OK;
->> +	} else {
->> +		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
->>   				    uncmem, &clen);
->> +	}
->>
->>   	if (is_partial_io(bvec)) {
->>   		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
->> @@ -342,8 +347,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->>   		goto out;
->>   	}
->>
->> -	if (unlikely(clen > max_zpage_size))
->> +	if (unlikely(clen > max_zpage_size)) {
->>   		zram_stat_inc(&zram->stats.bad_compress);
->> +		src = uncmem;
->> +		clen = PAGE_SIZE;
->> +	}
->>
->>   	handle = zs_malloc(zram->mem_pool, clen);
->>   	if (!handle) {
->> --
->> 1.7.9.5
->>
->
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ff6db80..fb9da71 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -26,6 +26,7 @@
+ #include "util/color.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
++#include "util/machine.h"
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/thread.h"
+@@ -871,7 +872,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 						   &sample, machine);
+ 		} else if (event->header.type < PERF_RECORD_MAX) {
+ 			hists__inc_nr_events(&evsel->hists, event->header.type);
+-			perf_event__process(&top->tool, event, &sample, machine);
++			machine__process_event(machine, event);
+ 		} else
+ 			++session->hists.stats.nr_unknown_events;
+ 	}
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index eaaee22..0ae444e 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -520,134 +520,15 @@ int perf_event__process_comm(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_comm(event, stdout);
+-
+-	if (thread == NULL || thread__set_comm(thread, event->comm.comm)) {
+-		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
+-		return -1;
+-	}
+-
+-	return 0;
++	return machine__process_comm_event(machine, event);
+ }
+ 
+ int perf_event__process_lost(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+ 			     struct perf_sample *sample __maybe_unused,
+-			     struct machine *machine __maybe_unused)
+-{
+-	dump_printf(": id:%" PRIu64 ": lost:%" PRIu64 "\n",
+-		    event->lost.id, event->lost.lost);
+-	return 0;
+-}
+-
+-static void perf_event__set_kernel_mmap_len(union perf_event *event,
+-					    struct map **maps)
+-{
+-	maps[MAP__FUNCTION]->start = event->mmap.start;
+-	maps[MAP__FUNCTION]->end   = event->mmap.start + event->mmap.len;
+-	/*
+-	 * Be a bit paranoid here, some perf.data file came with
+-	 * a zero sized synthesized MMAP event for the kernel.
+-	 */
+-	if (maps[MAP__FUNCTION]->end == 0)
+-		maps[MAP__FUNCTION]->end = ~0ULL;
+-}
+-
+-static int perf_event__process_kernel_mmap(struct perf_tool *tool
+-					   __maybe_unused,
+-					   union perf_event *event,
+-					   struct machine *machine)
++			     struct machine *machine)
+ {
+-	struct map *map;
+-	char kmmap_prefix[PATH_MAX];
+-	enum dso_kernel_type kernel_type;
+-	bool is_kernel_mmap;
+-
+-	machine__mmap_name(machine, kmmap_prefix, sizeof(kmmap_prefix));
+-	if (machine__is_host(machine))
+-		kernel_type = DSO_TYPE_KERNEL;
+-	else
+-		kernel_type = DSO_TYPE_GUEST_KERNEL;
+-
+-	is_kernel_mmap = memcmp(event->mmap.filename,
+-				kmmap_prefix,
+-				strlen(kmmap_prefix) - 1) == 0;
+-	if (event->mmap.filename[0] == '/' ||
+-	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
+-
+-		char short_module_name[1024];
+-		char *name, *dot;
+-
+-		if (event->mmap.filename[0] == '/') {
+-			name = strrchr(event->mmap.filename, '/');
+-			if (name == NULL)
+-				goto out_problem;
+-
+-			++name; /* skip / */
+-			dot = strrchr(name, '.');
+-			if (dot == NULL)
+-				goto out_problem;
+-			snprintf(short_module_name, sizeof(short_module_name),
+-					"[%.*s]", (int)(dot - name), name);
+-			strxfrchar(short_module_name, '-', '_');
+-		} else
+-			strcpy(short_module_name, event->mmap.filename);
+-
+-		map = machine__new_module(machine, event->mmap.start,
+-					  event->mmap.filename);
+-		if (map == NULL)
+-			goto out_problem;
+-
+-		name = strdup(short_module_name);
+-		if (name == NULL)
+-			goto out_problem;
+-
+-		map->dso->short_name = name;
+-		map->dso->sname_alloc = 1;
+-		map->end = map->start + event->mmap.len;
+-	} else if (is_kernel_mmap) {
+-		const char *symbol_name = (event->mmap.filename +
+-				strlen(kmmap_prefix));
+-		/*
+-		 * Should be there already, from the build-id table in
+-		 * the header.
+-		 */
+-		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
+-						     kmmap_prefix);
+-		if (kernel == NULL)
+-			goto out_problem;
+-
+-		kernel->kernel = kernel_type;
+-		if (__machine__create_kernel_maps(machine, kernel) < 0)
+-			goto out_problem;
+-
+-		perf_event__set_kernel_mmap_len(event, machine->vmlinux_maps);
+-
+-		/*
+-		 * Avoid using a zero address (kptr_restrict) for the ref reloc
+-		 * symbol. Effectively having zero here means that at record
+-		 * time /proc/sys/kernel/kptr_restrict was non zero.
+-		 */
+-		if (event->mmap.pgoff != 0) {
+-			maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps,
+-							 symbol_name,
+-							 event->mmap.pgoff);
+-		}
+-
+-		if (machine__is_default_guest(machine)) {
+-			/*
+-			 * preload dso of guest kernel and modules
+-			 */
+-			dso__load(kernel, machine->vmlinux_maps[MAP__FUNCTION],
+-				  NULL);
+-		}
+-	}
+-	return 0;
+-out_problem:
+-	return -1;
++	return machine__process_lost_event(machine, event);
+ }
+ 
+ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+@@ -657,43 +538,12 @@ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
+ 		       event->mmap.len, event->mmap.pgoff, event->mmap.filename);
+ }
+ 
+-int perf_event__process_mmap(struct perf_tool *tool,
++int perf_event__process_mmap(struct perf_tool *tool __maybe_unused,
+ 			     union perf_event *event,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread;
+-	struct map *map;
+-	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	int ret = 0;
+-
+-	if (dump_trace)
+-		perf_event__fprintf_mmap(event, stdout);
+-
+-	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL ||
+-	    cpumode == PERF_RECORD_MISC_KERNEL) {
+-		ret = perf_event__process_kernel_mmap(tool, event, machine);
+-		if (ret < 0)
+-			goto out_problem;
+-		return 0;
+-	}
+-
+-	thread = machine__findnew_thread(machine, event->mmap.pid);
+-	if (thread == NULL)
+-		goto out_problem;
+-	map = map__new(&machine->user_dsos, event->mmap.start,
+-			event->mmap.len, event->mmap.pgoff,
+-			event->mmap.pid, event->mmap.filename,
+-			MAP__FUNCTION);
+-	if (map == NULL)
+-		goto out_problem;
+-
+-	thread__insert_map(thread, map);
+-	return 0;
+-
+-out_problem:
+-	dump_printf("problem processing PERF_RECORD_MMAP, skipping event.\n");
+-	return 0;
++	return machine__process_mmap_event(machine, event);
+ }
+ 
+ size_t perf_event__fprintf_task(union perf_event *event, FILE *fp)
+@@ -708,19 +558,7 @@ int perf_event__process_fork(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
+-	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_task(event, stdout);
+-
+-	if (thread == NULL || parent == NULL ||
+-	    thread__fork(thread, parent) < 0) {
+-		dump_printf("problem processing PERF_RECORD_FORK, skipping event.\n");
+-		return -1;
+-	}
+-
+-	return 0;
++	return machine__process_fork_event(machine, event);
+ }
+ 
+ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
+@@ -728,15 +566,7 @@ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
+ 			     struct perf_sample *sample __maybe_unused,
+ 			     struct machine *machine)
+ {
+-	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+-
+-	if (dump_trace)
+-		perf_event__fprintf_task(event, stdout);
+-
+-	if (thread != NULL)
+-		machine__remove_thread(machine, thread);
+-
+-	return 0;
++	return machine__process_exit_event(machine, event);
+ }
+ 
+ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+@@ -762,29 +592,12 @@ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
+ 	return ret;
+ }
+ 
+-int perf_event__process(struct perf_tool *tool, union perf_event *event,
+-			struct perf_sample *sample, struct machine *machine)
++int perf_event__process(struct perf_tool *tool __maybe_unused,
++			union perf_event *event,
++			struct perf_sample *sample __maybe_unused,
++			struct machine *machine)
+ {
+-	switch (event->header.type) {
+-	case PERF_RECORD_COMM:
+-		perf_event__process_comm(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_MMAP:
+-		perf_event__process_mmap(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_FORK:
+-		perf_event__process_fork(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_EXIT:
+-		perf_event__process_exit(tool, event, sample, machine);
+-		break;
+-	case PERF_RECORD_LOST:
+-		perf_event__process_lost(tool, event, sample, machine);
+-	default:
+-		break;
+-	}
+-
+-	return 0;
++	return machine__process_event(machine, event);
+ }
+ 
+ void thread__find_addr_map(struct thread *self,
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 9d36d7e..502eec0 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1,3 +1,5 @@
++#include "debug.h"
++#include "event.h"
+ #include "machine.h"
+ #include "map.h"
+ #include "thread.h"
+@@ -55,3 +57,221 @@ struct thread *machine__find_thread(struct machine *machine, pid_t pid)
+ {
+ 	return __machine__findnew_thread(machine, pid, false);
+ }
++
++int machine__process_comm_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
++
++	if (dump_trace)
++		perf_event__fprintf_comm(event, stdout);
++
++	if (thread == NULL || thread__set_comm(thread, event->comm.comm)) {
++		dump_printf("problem processing PERF_RECORD_COMM, skipping event.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++int machine__process_lost_event(struct machine *machine __maybe_unused,
++				union perf_event *event)
++{
++	dump_printf(": id:%" PRIu64 ": lost:%" PRIu64 "\n",
++		    event->lost.id, event->lost.lost);
++	return 0;
++}
++
++static void machine__set_kernel_mmap_len(struct machine *machine,
++					 union perf_event *event)
++{
++	machine->vmlinux_maps[MAP__FUNCTION]->start = event->mmap.start;
++	machine->vmlinux_maps[MAP__FUNCTION]->end   = (event->mmap.start +
++						       event->mmap.len);
++	/*
++	 * Be a bit paranoid here, some perf.data file came with
++	 * a zero sized synthesized MMAP event for the kernel.
++	 */
++	if (machine->vmlinux_maps[MAP__FUNCTION]->end == 0)
++		machine->vmlinux_maps[MAP__FUNCTION]->end = ~0ULL;
++}
++
++static int machine__process_kernel_mmap_event(struct machine *machine,
++					      union perf_event *event)
++{
++	struct map *map;
++	char kmmap_prefix[PATH_MAX];
++	enum dso_kernel_type kernel_type;
++	bool is_kernel_mmap;
++
++	machine__mmap_name(machine, kmmap_prefix, sizeof(kmmap_prefix));
++	if (machine__is_host(machine))
++		kernel_type = DSO_TYPE_KERNEL;
++	else
++		kernel_type = DSO_TYPE_GUEST_KERNEL;
++
++	is_kernel_mmap = memcmp(event->mmap.filename,
++				kmmap_prefix,
++				strlen(kmmap_prefix) - 1) == 0;
++	if (event->mmap.filename[0] == '/' ||
++	    (!is_kernel_mmap && event->mmap.filename[0] == '[')) {
++
++		char short_module_name[1024];
++		char *name, *dot;
++
++		if (event->mmap.filename[0] == '/') {
++			name = strrchr(event->mmap.filename, '/');
++			if (name == NULL)
++				goto out_problem;
++
++			++name; /* skip / */
++			dot = strrchr(name, '.');
++			if (dot == NULL)
++				goto out_problem;
++			snprintf(short_module_name, sizeof(short_module_name),
++					"[%.*s]", (int)(dot - name), name);
++			strxfrchar(short_module_name, '-', '_');
++		} else
++			strcpy(short_module_name, event->mmap.filename);
++
++		map = machine__new_module(machine, event->mmap.start,
++					  event->mmap.filename);
++		if (map == NULL)
++			goto out_problem;
++
++		name = strdup(short_module_name);
++		if (name == NULL)
++			goto out_problem;
++
++		map->dso->short_name = name;
++		map->dso->sname_alloc = 1;
++		map->end = map->start + event->mmap.len;
++	} else if (is_kernel_mmap) {
++		const char *symbol_name = (event->mmap.filename +
++				strlen(kmmap_prefix));
++		/*
++		 * Should be there already, from the build-id table in
++		 * the header.
++		 */
++		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
++						     kmmap_prefix);
++		if (kernel == NULL)
++			goto out_problem;
++
++		kernel->kernel = kernel_type;
++		if (__machine__create_kernel_maps(machine, kernel) < 0)
++			goto out_problem;
++
++		machine__set_kernel_mmap_len(machine, event);
++
++		/*
++		 * Avoid using a zero address (kptr_restrict) for the ref reloc
++		 * symbol. Effectively having zero here means that at record
++		 * time /proc/sys/kernel/kptr_restrict was non zero.
++		 */
++		if (event->mmap.pgoff != 0) {
++			maps__set_kallsyms_ref_reloc_sym(machine->vmlinux_maps,
++							 symbol_name,
++							 event->mmap.pgoff);
++		}
++
++		if (machine__is_default_guest(machine)) {
++			/*
++			 * preload dso of guest kernel and modules
++			 */
++			dso__load(kernel, machine->vmlinux_maps[MAP__FUNCTION],
++				  NULL);
++		}
++	}
++	return 0;
++out_problem:
++	return -1;
++}
++
++int machine__process_mmap_event(struct machine *machine, union perf_event *event)
++{
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct thread *thread;
++	struct map *map;
++	int ret = 0;
++
++	if (dump_trace)
++		perf_event__fprintf_mmap(event, stdout);
++
++	if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL ||
++	    cpumode == PERF_RECORD_MISC_KERNEL) {
++		ret = machine__process_kernel_mmap_event(machine, event);
++		if (ret < 0)
++			goto out_problem;
++		return 0;
++	}
++
++	thread = machine__findnew_thread(machine, event->mmap.pid);
++	if (thread == NULL)
++		goto out_problem;
++	map = map__new(&machine->user_dsos, event->mmap.start,
++			event->mmap.len, event->mmap.pgoff,
++			event->mmap.pid, event->mmap.filename,
++			MAP__FUNCTION);
++	if (map == NULL)
++		goto out_problem;
++
++	thread__insert_map(thread, map);
++	return 0;
++
++out_problem:
++	dump_printf("problem processing PERF_RECORD_MMAP, skipping event.\n");
++	return 0;
++}
++
++int machine__process_fork_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
++
++	if (dump_trace)
++		perf_event__fprintf_task(event, stdout);
++
++	if (thread == NULL || parent == NULL ||
++	    thread__fork(thread, parent) < 0) {
++		dump_printf("problem processing PERF_RECORD_FORK, skipping event.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++int machine__process_exit_event(struct machine *machine, union perf_event *event)
++{
++	struct thread *thread = machine__find_thread(machine, event->fork.tid);
++
++	if (dump_trace)
++		perf_event__fprintf_task(event, stdout);
++
++	if (thread != NULL)
++		machine__remove_thread(machine, thread);
++
++	return 0;
++}
++
++int machine__process_event(struct machine *machine, union perf_event *event)
++{
++	int ret;
++
++	switch (event->header.type) {
++	case PERF_RECORD_COMM:
++		ret = machine__process_comm_event(machine, event); break;
++	case PERF_RECORD_MMAP:
++		ret = machine__process_mmap_event(machine, event); break;
++	case PERF_RECORD_FORK:
++		ret = machine__process_fork_event(machine, event); break;
++	case PERF_RECORD_EXIT:
++		ret = machine__process_exit_event(machine, event); break;
++	case PERF_RECORD_LOST:
++		ret = machine__process_lost_event(machine, event); break;
++	default:
++		ret = -1;
++		break;
++	}
++
++	return ret;
++}
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 54df0cd..df152f1 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -5,7 +5,15 @@
+ 
+ struct thread;
+ struct machine;
++union perf_event;
+ 
+ struct thread *machine__find_thread(struct machine *machine, pid_t pid);
+ 
++int machine__process_comm_event(struct machine *machine, union perf_event *event);
++int machine__process_exit_event(struct machine *machine, union perf_event *event);
++int machine__process_fork_event(struct machine *machine, union perf_event *event);
++int machine__process_lost_event(struct machine *machine, union perf_event *event);
++int machine__process_mmap_event(struct machine *machine, union perf_event *event);
++int machine__process_event(struct machine *machine, union perf_event *event);
++
+ #endif /* __PERF_MACHINE_H */
