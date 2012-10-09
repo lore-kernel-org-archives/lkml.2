@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab2JISIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:08:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32215 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab2JISIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:08:51 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=VwQbUJbxAAAA:8 a=-y6FIgDPh9yuBBxGhvgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349806129.24256.28.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.6.1-rt1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Tue, 09 Oct 2012 14:08:49 -0400
-In-Reply-To: <alpine.LFD.2.02.1210091535140.10988@ionos>
-References: <alpine.LFD.2.02.1210091535140.10988@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756807Ab2JISMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:12:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60832 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756748Ab2JISMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 14:12:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,561,1344236400"; 
+   d="scan'208";a="232609052"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jenny TC <jenny.tc@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH 0/2] power_supply: Add power supply throttling support
+Date: Tue,  9 Oct 2012 22:24:40 +0530
+Message-Id: <1349801680-19566-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 15:46 +0200, Thomas Gleixner wrote:
+During charging battery temperature and charger chip temperature will
+go up. This can also result in increased skin temperature.
 
-> The RT patch against 3.6.1 can be found here:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.1-rt1.patch.xz
-> 
-> The split quilt queue is available at:
-> 
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.6.1-rt1.tar.xz
-> 
+This patchset adds the power supply throttling support
+and also registers the power supply as cooling device.
 
-I think you meant:
+PATCH 1/2: Add support for CHARGE_CONTROL_* attributes
+This adds the power supply attributes for CHARGE_CONTROL_*
+These new attributes will the enable user space to implement
+custom charging algorithms based on platform state.
 
-    http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.1-rt1.tar.xz
+PATCH 2/2: Register power supply for thermal cooling device
+This patch registers the power supply as cooling device with
+thermal framework.
 
--- Steve
+ Documentation/power/power_supply_class.txt |    3 +++
+ drivers/power/power_supply_sysfs.c         |    2 ++
+ include/linux/power_supply.h               |    2 ++
+ drivers/power/power_supply_core.c |  100 +++++++++++++++++++++++++++++++++++++
+ include/linux/power_supply.h      |    1 +
+ 4 files changed, 108 insertions(+), 0 deletions(-)
 
-
+Thanks,
+Ramakrishna Pallala
