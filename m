@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab2JIUAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:00:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59901 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab2JIUAu (ORCPT
+	id S1753906Ab2JIUBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:01:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59739 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab2JIUBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:00:50 -0400
-Date: Tue, 9 Oct 2012 13:00:46 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wen Congyang <wency@cn.fujitsu.com>
-cc: Tang Chen <tangchen@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
-        peterz@infradead.org, miaox@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <5073FAD1.1000403@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1210091254220.30555@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com> <5073E18A.2090203@cn.fujitsu.com> <5073E2BF.9050306@cn.fujitsu.com> <alpine.DEB.2.00.1210090259250.24261@chino.kir.corp.google.com>
- <5073FAD1.1000403@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 9 Oct 2012 16:01:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 0/3] new ARM-soc warning fixes
+Date: Tue, 9 Oct 2012 20:01:26 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>
+References: <1349796861-31164-1-git-send-email-arnd@arndb.de> <20121009174631.GA19606@quad.lixom.net>
+In-Reply-To: <20121009174631.GA19606@quad.lixom.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201210092001.26947.arnd@arndb.de>
+X-Provags-ID: V02:K0:rgt5fgv8/N1lEgAfooEWcBAgC2nedIvNwlG9RE+lHwe
+ hWHy+GykL7ZAzIUKI/PKtz/n9s3Kee9KHplu0UlQVOVctAVhyj
+ YMkfxb74eLwtnp+TAJ2ZcX5asXAUWgPwEddQ694aYS1UcOZvul
+ wXPBi8vzV3IVThu0rnwvFIdOQfcj7CvgEeC7bBoSod3HhzaiuF
+ xA2RzpaSGQi7/3w3NJ5nsvC/rIfbUSo85BFR/z1GEjwCrjmTPm
+ M8WE41h6AB5V6/ya5M0ykfgDlyLq+Q9q55OnoQjH2kgp0F4G1f
+ +5BQ4AE8bBnal7/3c4zPzU6VLvBFIfloF4BENnBquL65HcyeNu
+ R26Yos3/rUiW4sjx3I20=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Wen Congyang wrote:
-
-> I clear cpu-to-node mapping when the cpu is hotremoved. If the cpu is onlined,
-> it will be offlined before clearing cpu-to-node mapping.
+On Tuesday 09 October 2012, Olof Johansson wrote:
+> On Tue, Oct 09, 2012 at 05:34:18PM +0200, Arnd Bergmann wrote:
+> > Hi Olof,
+> > 
+> > Here are three more fixes that I'd like to merge through the arm-soc
+> > as time permits. All of them should be completely harmless and they
+> > only fix harmless gcc warnings.
+> > 
+> > I don't know what your plans are for sending the next fixes branch.
+> > I've uploaded these into a new "fixes2" branch on top of the patches
+> > that are already in "fixes". We can either send them all together,
+> > or you send the ones that are already queued first and these ones
+> > with the next batch. Feel free to rebase if necessary.
 > 
-> Here is the code in driver/acpi/processor_driver.c:
-> =============
-> static int acpi_processor_handle_eject(struct acpi_processor *pr)
-> {
-> 	if (cpu_online(pr->id))
-> 		cpu_down(pr->id);      <========== cpu is offlined here.
-> 
-> 	arch_unregister_cpu(pr->id);
-> 	acpi_unmap_lsapic(pr->id);     <========== I clear the mapping here.
-> 	return (0);
-> }
-> =============
-> 
-> The real problem is that: we don't migrate this task to another cpu when
-> the cpu is offlined. I guess this task is not in running state, and it
-> is not in the cpu's runqueue.
+> I've pulled it in and will send up with fixes tonight (Tony has OMAP
+> fixes coming, others might too).
 > 
 
-ACPI is not the only way to offline a cpu, this all needs to be 
-standardized throughout the kernel for each arch so that generic code like 
-sched can use cpu_to_node() in a CPU_DYING callback.  The only way to do 
-that is by having arch callbacks to set cpu-to-node to NUMA_NO_NODE only 
-at CPU_DEAD.
+Ok, thanks!
 
-> This patch is try to fix a bug: the kernel will be panicked after removing a
-> node.
-> 
+I just noticed that I was missing yet another one, which I now added
+directly. It was part of a longer series I sent last week. I wasn't
+really sure whether this one would better be included in arm-soc or
+Russell's arm tree and then I ended up not putting it in either series :(
 
-That's much more subtle than having a NULL pointer dereference like Tang 
-reports during migration.
+	Arnd
+
+8<----------
+>From bfbad32a63fa6287723961f07bcd043dc9c5965c Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 30 Apr 2012 13:34:13 +0000
+Subject: [PATCH] ARM: pxa: armcore: fix PCI PIO warnings
+
+The it8152 PCI host used on the pxa/cm_x2xx machines
+uses the old-style I/O window registration. This should
+eventually get converted to pci_ioremap_io() but for
+now, let's cast the IT8152_IO_BASE constant to an integer
+type to get rid of the warnings.
+
+Without this patch, building cm_x2xx_defconfig results in:
+
+arch/arm/common/it8152.c: In function 'it8152_pci_setup':
+arch/arm/common/it8152.c:287:18: warning: assignment makes integer from pointer without a cast [enabled by default]
+arch/arm/common/it8152.c:288:16: warning: assignment makes integer from pointer without a cast [enabled by default]
+arch/arm/common/it8152.c:291:17: warning: assignment makes integer from pointer without a cast [enabled by default]
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Mike Rapoport <mike@compulab.co.il>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+
+diff --git a/arch/arm/common/it8152.c b/arch/arm/common/it8152.c
+index c4110d1..001f491 100644
+--- a/arch/arm/common/it8152.c
++++ b/arch/arm/common/it8152.c
+@@ -284,11 +284,17 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
+ 
+ int __init it8152_pci_setup(int nr, struct pci_sys_data *sys)
+ {
+-	it8152_io.start = IT8152_IO_BASE + 0x12000;
+-	it8152_io.end	= IT8152_IO_BASE + 0x12000 + 0x100000;
++	/*
++	 * FIXME: use pci_ioremap_io to remap the IO space here and
++	 * move over to the generic io.h implementation.
++	 * This requires solving the same problem for PXA PCMCIA
++	 * support.
++	 */
++	it8152_io.start = (unsigned long)IT8152_IO_BASE + 0x12000;
++	it8152_io.end	= (unsigned long)IT8152_IO_BASE + 0x12000 + 0x100000;
+ 
+ 	sys->mem_offset = 0x10000000;
+-	sys->io_offset  = IT8152_IO_BASE;
++	sys->io_offset  = (unsigned long)IT8152_IO_BASE;
+ 
+ 	if (request_resource(&ioport_resource, &it8152_io)) {
+ 		printk(KERN_ERR "PCI: unable to allocate IO region\n");
