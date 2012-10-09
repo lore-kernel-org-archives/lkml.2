@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab2JIGjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:39:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40974 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab2JIGjg (ORCPT
+	id S1753728Ab2JIGjz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:39:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39639 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab2JIGji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:39:36 -0400
+	Tue, 9 Oct 2012 02:39:38 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com, tytso@mit.edu
 Cc: Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 4/5] aio: vmap ringbuffer
-Date: Mon,  8 Oct 2012 23:39:19 -0700
-Message-Id: <1349764760-21093-4-git-send-email-koverstreet@google.com>
+Subject: [PATCH 5/5] aio: Refactor aio_read_evt, use cmxchg(), fix bug
+Date: Mon,  8 Oct 2012 23:39:20 -0700
+Message-Id: <1349764760-21093-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1349764760-21093-1-git-send-email-koverstreet@google.com>
 References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
@@ -21,250 +21,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It simplifies a lot of stuff if the ringbuffer is contiguously mapped
-into kernel space, and we can delete a lot of code - in particular, this
-is useful for converting read_events() to cmpxchg.
-
-It'd make more sense if the ringbuffer was allocated with
-__get_free_pages() and then mapped into userspace, but I couldn't figure
-out how to sanely do that... so vmap works for now.
+Bunch of cleanup, and make it lockless so that userspace can safely pull
+events off the ringbuffer without racing with io_getevents().
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- fs/aio.c            |   85 +++++++++++++++++----------------------------------
- include/linux/aio.h |    7 +++--
- 2 files changed, 32 insertions(+), 60 deletions(-)
+ fs/aio.c |  220 +++++++++++++++++++++-----------------------------------------
+ 1 file changed, 73 insertions(+), 147 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 3ab12f6..c3d97d1 100644
+index c3d97d1..1efc8a3 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -82,6 +82,9 @@ static void aio_free_ring(struct kioctx *ctx)
- 	struct aio_ring_info *info = &ctx->ring_info;
- 	long i;
+@@ -259,7 +259,6 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	atomic_set(&ctx->reqs_active, 1);
  
-+	if (info->ring)
-+		vunmap(info->ring);
-+
- 	for (i=0; i<info->nr_pages; i++)
- 		put_page(info->ring_pages[i]);
+ 	spin_lock_init(&ctx->ctx_lock);
+-	spin_lock_init(&ctx->ring_info.ring_lock);
+ 	init_waitqueue_head(&ctx->wait);
  
-@@ -99,7 +102,6 @@ static void aio_free_ring(struct kioctx *ctx)
+ 	INIT_LIST_HEAD(&ctx->active_reqs);
+@@ -941,194 +940,121 @@ put_rq:
+ }
+ EXPORT_SYMBOL(aio_complete);
  
- static int aio_setup_ring(struct kioctx *ctx)
+-/* aio_read_evt
+- *	Pull an event off of the ioctx's event ring.  Returns the number of 
+- *	events fetched (0 or 1 ;-)
+- *	FIXME: make this use cmpxchg.
+- *	TODO: make the ringbuffer user mmap()able (requires FIXME).
++/* aio_read_events
++ *	Pull an event off of the ioctx's event ring.  Returns the number of
++ *	events fetched
+  */
+-static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
++static int aio_read_events(struct kioctx *ctx, struct io_event __user *event,
++			   long nr)
  {
--	struct aio_ring *ring;
- 	struct aio_ring_info *info = &ctx->ring_info;
- 	unsigned nr_events = ctx->max_reqs;
- 	unsigned long size;
-@@ -149,46 +151,27 @@ static int aio_setup_ring(struct kioctx *ctx)
- 		return -EAGAIN;
- 	}
+-	struct aio_ring_info *info = &ioctx->ring_info;
++	struct aio_ring_info *info = &ctx->ring_info;
+ 	struct aio_ring *ring = info->ring;
+-	unsigned long head;
+-	int ret = 0;
+-
+-	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
+-		 (unsigned long)ring->head, (unsigned long)ring->tail,
+-		 (unsigned long)ring->nr);
+-
+-	if (ring->head == ring->tail)
+-		goto out;
+-
+-	spin_lock(&info->ring_lock);
++	unsigned old, new;
++	int ret;
  
-+	info->ring = vmap(info->ring_pages, nr_pages, VM_MAP, PAGE_KERNEL);
-+	if (!info->ring) {
-+		aio_free_ring(ctx);
-+		return -ENOMEM;
+-	head = ring->head % info->nr;
+-	if (head != ring->tail) {
+-		*ent = ring->io_events[head];
+-		head = (head + 1) % info->nr;
+-		smp_mb(); /* finish reading the event before updatng the head */
+-		ring->head = head;
+-		ret = 1;
+-	}
+-	spin_unlock(&info->ring_lock);
++	pr_debug("h%lu t%lu m%lu\n",
++		 (unsigned long) ring->head,
++		 (unsigned long) ring->tail,
++		 (unsigned long) ring->nr);
++retry:
++	ret = 0;
++	old = new = ring->head;
+ 
+-out:
+-	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+-		 (unsigned long)ring->head, (unsigned long)ring->tail);
+-	return ret;
+-}
++	while (ret < nr && new != ring->tail) {
++		struct io_event *ev = &ring->io_events[new];
++		unsigned i = (new < ring->tail ? ring->tail : info->nr) - new;
+ 
+-struct aio_timeout {
+-	struct timer_list	timer;
+-	int			timed_out;
+-	struct task_struct	*p;
+-};
++		i = min_t(int, i, nr - ret);
+ 
+-static void timeout_func(unsigned long data)
+-{
+-	struct aio_timeout *to = (struct aio_timeout *)data;
++		if (unlikely(copy_to_user(event + ret, ev, sizeof(*ev) * i)))
++			return -EFAULT;
+ 
+-	to->timed_out = 1;
+-	wake_up_process(to->p);
+-}
++		ret += i;
++		new += i;
++		new %= info->nr;
 +	}
+ 
+-static inline void init_timeout(struct aio_timeout *to)
+-{
+-	setup_timer_on_stack(&to->timer, timeout_func, (unsigned long) to);
+-	to->timed_out = 0;
+-	to->p = current;
+-}
++	if (new != old) {
++		smp_mb(); /* finish reading the event before updatng the head */
+ 
+-static inline void set_timeout(long start_jiffies, struct aio_timeout *to,
+-			       const struct timespec *ts)
+-{
+-	to->timer.expires = start_jiffies + timespec_to_jiffies(ts);
+-	if (time_after(to->timer.expires, jiffies))
+-		add_timer(&to->timer);
+-	else
+-		to->timed_out = 1;
+-}
++		if (cmpxchg(&ring->head, old, new) != old)
++			goto retry;
++	}
+ 
+-static inline void clear_timeout(struct aio_timeout *to)
+-{
+-	del_singleshot_timer_sync(&to->timer);
++	pr_debug("ret %d  h%lu t%lu\n", ret,
++		 (unsigned long)ring->head,
++		 (unsigned long)ring->tail);
++	return ret;
+ }
+ 
+-static int read_events(struct kioctx *ctx,
+-			long min_nr, long nr,
+-			struct io_event __user *event,
+-			struct timespec __user *timeout)
++static int read_events(struct kioctx *ctx, long min_nr, long nr,
++		       struct io_event __user *event,
++		       struct timespec __user *timeout)
+ {
+-	long			start_jiffies = jiffies;
+-	struct task_struct	*tsk = current;
+-	DECLARE_WAITQUEUE(wait, tsk);
+-	int			ret;
+-	int			i = 0;
+-	struct io_event		ent;
+-	struct aio_timeout	to;
+-	int			retry = 0;
+-
+-	/* needed to zero any padding within an entry (there shouldn't be 
+-	 * any, but C is fun!
+-	 */
+-	memset(&ent, 0, sizeof(ent));
++	DEFINE_WAIT(wait);
++	long until = MAX_SCHEDULE_TIMEOUT;
++	size_t i = 0;
++	int ret, retry = 0;
+ retry:
+-	ret = 0;
+-	while (likely(i < nr)) {
+-		ret = aio_read_evt(ctx, &ent);
+-		if (unlikely(ret <= 0))
+-			break;
+-
+-		dprintk("read event: %Lx %Lx %Lx %Lx\n",
+-			ent.data, ent.obj, ent.res, ent.res2);
+-
+-		/* Could we split the check in two? */
+-		ret = -EFAULT;
+-		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			dprintk("aio: lost an event due to EFAULT.\n");
+-			break;
+-		}
+-		ret = 0;
+-
+-		/* Good, event copied to userland, update counts. */
+-		event ++;
+-		i ++;
+-	}
++	ret = aio_read_events(ctx, event + i, nr - i);
++	if (ret < 0)
++		return ret;
+ 
+-	if (min_nr <= i)
++	i += ret;
++	if (i >= min_nr)
+ 		return i;
+-	if (ret)
+-		return ret;
+ 
+ 	/* End fast path */
+ 
+ 	/* racey check, but it gets redone */
++	/* XXX: wtf is this for? */
+ 	if (!retry && unlikely(!list_empty(&ctx->run_list))) {
+ 		retry = 1;
+ 		aio_run_all_iocbs(ctx);
+ 		goto retry;
+ 	}
+ 
+-	init_timeout(&to);
+ 	if (timeout) {
+ 		struct timespec	ts;
+-		ret = -EFAULT;
+ 		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts))))
+-			goto out;
++			return -EFAULT;
+ 
+-		set_timeout(start_jiffies, &to, &ts);
++		until = timespec_to_jiffies(&ts);
+ 	}
+ 
+-	while (likely(i < nr)) {
+-		add_wait_queue_exclusive(&ctx->wait, &wait);
+-		do {
+-			set_task_state(tsk, TASK_INTERRUPTIBLE);
+-			ret = aio_read_evt(ctx, &ent);
+-			if (ret)
+-				break;
+-			if (min_nr <= i)
+-				break;
+-			if (unlikely(ctx->dead)) {
+-				ret = -EINVAL;
+-				break;
+-			}
+-			if (to.timed_out)	/* Only check after read evt */
+-				break;
+-			/* Try to only show up in io wait if there are ops
+-			 *  in flight */
+-			if (atomic_read(&ctx->reqs_active) > 1)
+-				io_schedule();
+-			else
+-				schedule();
+-			if (signal_pending(tsk)) {
+-				ret = -EINTR;
+-				break;
+-			}
+-			/*ret = aio_read_evt(ctx, &ent);*/
+-		} while (1) ;
++	while (i < nr) {
++		prepare_to_wait_exclusive(&ctx->wait, &wait,
++					  TASK_INTERRUPTIBLE);
+ 
+-		set_task_state(tsk, TASK_RUNNING);
+-		remove_wait_queue(&ctx->wait, &wait);
++		ret = aio_read_events(ctx, event + i, nr - i);
++		if (ret < 0)
++			break;
+ 
+-		if (unlikely(ret <= 0))
++		i += ret;
++		if (i >= min_nr)
+ 			break;
+ 
+-		ret = -EFAULT;
+-		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			dprintk("aio: lost an event due to EFAULT.\n");
++		if (unlikely(ctx->dead)) {
++			ret = -EINVAL;
+ 			break;
+ 		}
+ 
+-		/* Good, event copied to userland, update counts. */
+-		event ++;
+-		i ++;
++		if (!until)	/* Only check after read evt */
++			break;
 +
- 	ctx->user_id = info->mmap_base;
- 
- 	info->nr = nr_events;		/* trusted copy */
- 
--	ring = kmap_atomic(info->ring_pages[0]);
--	ring->nr = nr_events;	/* user copy */
--	ring->id = ctx->user_id;
--	ring->head = ring->tail = 0;
--	ring->magic = AIO_RING_MAGIC;
--	ring->compat_features = AIO_RING_COMPAT_FEATURES;
--	ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
--	ring->header_length = sizeof(struct aio_ring);
--	kunmap_atomic(ring);
-+	info->ring->nr = nr_events;	/* user copy */
-+	info->ring->id = ctx->user_id;
-+	info->ring->head = info->ring->tail = 0;
-+	info->ring->magic = AIO_RING_MAGIC;
-+	info->ring->compat_features = AIO_RING_COMPAT_FEATURES;
-+	info->ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
-+	info->ring->header_length = sizeof(struct aio_ring);
- 
- 	return 0;
- }
- 
--
--/* aio_ring_event: returns a pointer to the event at the given index from
-- * kmap_atomic().  Release the pointer with put_aio_ring_event();
-- */
--#define AIO_EVENTS_PER_PAGE	(PAGE_SIZE / sizeof(struct io_event))
--#define AIO_EVENTS_FIRST_PAGE	((PAGE_SIZE - sizeof(struct aio_ring)) / sizeof(struct io_event))
--#define AIO_EVENTS_OFFSET	(AIO_EVENTS_PER_PAGE - AIO_EVENTS_FIRST_PAGE)
--
--#define aio_ring_event(info, nr) ({					\
--	unsigned pos = (nr) + AIO_EVENTS_OFFSET;			\
--	struct io_event *__event;					\
--	__event = kmap_atomic(						\
--			(info)->ring_pages[pos / AIO_EVENTS_PER_PAGE]); \
--	__event += pos % AIO_EVENTS_PER_PAGE;				\
--	__event;							\
--})
--
--#define put_aio_ring_event(event) do {		\
--	struct io_event *__event = (event);	\
--	(void)__event;				\
--	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK)); \
--} while(0)
--
- static void free_ioctx(struct work_struct *work)
- {
- 	struct kioctx *ctx = container_of(work, struct kioctx, free_work);
-@@ -465,7 +448,6 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
- 	unsigned short allocated, to_alloc;
- 	long avail;
- 	struct kiocb *req, *n;
--	struct aio_ring *ring;
- 
- 	to_alloc = min(batch->count, KIOCB_BATCH_SIZE);
- 	for (allocated = 0; allocated < to_alloc; allocated++) {
-@@ -480,9 +462,8 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
- 		goto out;
- 
- 	spin_lock_irq(&ctx->ctx_lock);
--	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
- 
--	avail = aio_ring_avail(&ctx->ring_info, ring) - atomic_read(&ctx->reqs_active);
-+	avail = aio_ring_avail(&ctx->ring_info) - atomic_read(&ctx->reqs_active);
- 	BUG_ON(avail < 0);
- 	if (avail < allocated) {
- 		/* Trim back the number of requests. */
-@@ -500,7 +481,6 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
- 		atomic_inc(&ctx->reqs_active);
++		/* Try to only show up in io wait if there are ops in flight */
++		if (atomic_read(&ctx->reqs_active) > 1)
++			until = io_schedule_timeout(until);
++		else
++			until = schedule_timeout(until);
++
++		if (signal_pending(current)) {
++			ret = -EINTR;
++			break;
++		}
  	}
  
--	kunmap_atomic(ring);
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
- out:
-@@ -870,10 +850,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- {
- 	struct kioctx	*ctx = iocb->ki_ctx;
- 	struct aio_ring_info	*info;
--	struct aio_ring	*ring;
- 	struct io_event	*event;
- 	unsigned long	flags;
--	unsigned long	tail;
-+	unsigned tail;
- 
- 	/*
- 	 * Special case handling for sync iocbs:
-@@ -892,7 +871,8 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- 	info = &ctx->ring_info;
- 
--	/* add a completion event to the ring buffer.
-+	/*
-+	 * add a completion event to the ring buffer.
- 	 * must be done holding ctx->ctx_lock to prevent
- 	 * other code from messing with the tail
- 	 * pointer since we might be called from irq
-@@ -910,10 +890,8 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	if (kiocbIsCancelled(iocb))
- 		goto put_rq;
- 
--	ring = kmap_atomic(info->ring_pages[0]);
--
- 	tail = info->tail;
--	event = aio_ring_event(info, tail);
-+	event = &info->ring->io_events[tail];
- 	if (++tail >= info->nr)
- 		tail = 0;
- 
-@@ -922,9 +900,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	event->res = res;
- 	event->res2 = res2;
- 
--	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
--		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
--		res, res2);
-+	pr_debug("%p[%u]: %p: %p %Lx %lx %lx\n",
-+		 ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-+		 res, res2);
- 
- 	/* after flagging the request as done, we
- 	 * must never even look at it again
-@@ -932,12 +910,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	smp_wmb();	/* make event visible before updating tail */
- 
- 	info->tail = tail;
--	ring->tail = tail;
--
--	put_aio_ring_event(event);
--	kunmap_atomic(ring);
-+	info->ring->tail = tail;
- 
--	pr_debug("added to ring %p at [%lu]\n", iocb, tail);
-+	pr_debug("added to ring %p at [%u]\n", iocb, tail);
- 
- 	/*
- 	 * Check if the user asked us to deliver the result through an
-@@ -975,11 +950,10 @@ EXPORT_SYMBOL(aio_complete);
- static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- {
- 	struct aio_ring_info *info = &ioctx->ring_info;
--	struct aio_ring *ring;
-+	struct aio_ring *ring = info->ring;
- 	unsigned long head;
- 	int ret = 0;
- 
--	ring = kmap_atomic(info->ring_pages[0]);
- 	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
- 		 (unsigned long)ring->head, (unsigned long)ring->tail,
- 		 (unsigned long)ring->nr);
-@@ -991,18 +965,15 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 
- 	head = ring->head % info->nr;
- 	if (head != ring->tail) {
--		struct io_event *evp = aio_ring_event(info, head);
--		*ent = *evp;
-+		*ent = ring->io_events[head];
- 		head = (head + 1) % info->nr;
- 		smp_mb(); /* finish reading the event before updatng the head */
- 		ring->head = head;
- 		ret = 1;
--		put_aio_ring_event(evp);
- 	}
- 	spin_unlock(&info->ring_lock);
- 
- out:
--	kunmap_atomic(ring);
- 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
- 		 (unsigned long)ring->head, (unsigned long)ring->tail);
- 	return ret;
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index eb6e5e4..150a4b7 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -161,6 +161,7 @@ struct aio_ring {
- 
- #define AIO_RING_PAGES	8
- struct aio_ring_info {
-+	struct aio_ring		*ring;
- 	unsigned long		mmap_base;
- 	unsigned long		mmap_size;
- 
-@@ -173,10 +174,10 @@ struct aio_ring_info {
- 	struct page		*internal_pages[AIO_RING_PAGES];
- };
- 
--static inline unsigned aio_ring_avail(struct aio_ring_info *info,
--					struct aio_ring *ring)
-+static inline unsigned aio_ring_avail(struct aio_ring_info *info)
- {
--	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
-+	return (info->ring->head + info->nr - 1 - info->ring->tail) %
-+		info->nr;
+-	if (timeout)
+-		clear_timeout(&to);
+-out:
+-	destroy_timer_on_stack(&to.timer);
++	finish_wait(&ctx->wait, &wait);
+ 	return i ? i : ret;
  }
  
- struct kioctx {
 -- 
 1.7.10.4
 
