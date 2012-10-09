@@ -1,143 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2JIBsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 21:48:36 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:55177 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab2JIBse (ORCPT
+	id S1752727Ab2JIBwU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 21:52:20 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58473 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab2JIBwQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 21:48:34 -0400
-Date: Tue, 9 Oct 2012 10:48:31 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Julian Anastasov <ja@ssi.bg>, Krzysztof Halasa <khc@pm.waw.pl>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: [PATCH 08/16] ipvs: fix ip_vs_set_timeout debug messages
-Message-ID: <20121009014831.GI3403@verge.net.au>
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de>
- <201210060645.05225.arnd@arndb.de>
- <alpine.LFD.2.00.1210061052170.1971@ja.ssi.bg>
- <201210060954.15831.arnd@arndb.de>
+	Mon, 8 Oct 2012 21:52:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201210060954.15831.arnd@arndb.de>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5071F4C5.6000104@gmail.com>
+References: <CAKhuMP=DB2WGzNN2dXoFuJtSRCneBrToUb43KjU_OsQCrJP_UA@mail.gmail.com>
+ <5071F4C5.6000104@gmail.com>
+From: WANG Siyuan <wangsiyuanbuaa@gmail.com>
+Date: Tue, 9 Oct 2012 09:51:55 +0800
+Message-ID: <CAKhuMP=wkE910qXgmDX-_hqJtV_FMgBA6TRP3hSLy42sWru7Bg@mail.gmail.com>
+Subject: Re: usb 3.0 hard drive doesn't work
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 06, 2012 at 09:54:15AM +0000, Arnd Bergmann wrote:
-> On Saturday 06 October 2012, Julian Anastasov wrote:
-> > On Sat, 6 Oct 2012, Arnd Bergmann wrote:
-> > > > 	Are there any CONFIG_IP_VS_PROTO_xxx options in this
-> > > > default config? It is a waste of memory if IPVS is compiled
-> > > > without any protocols.
-> > > 
-> > > They all appear to be turned off:
-> > > 
-> > > $ grep CONFIG_IP_VS obj-tmp/.config
-> > > CONFIG_IP_VS=m
-> > > CONFIG_IP_VS_DEBUG=y
-> > > CONFIG_IP_VS_TAB_BITS=12
-> > > # CONFIG_IP_VS_PROTO_TCP is not set
-> > > # CONFIG_IP_VS_PROTO_UDP is not set
-> > > # CONFIG_IP_VS_PROTO_AH_ESP is not set
-> > > # CONFIG_IP_VS_PROTO_ESP is not set
-> > > # CONFIG_IP_VS_PROTO_AH is not set
-> > > # CONFIG_IP_VS_PROTO_SCTP is not set
-> > 
-> > 	Something should be changed here, may be at least
-> > TCP/UDP, who knows.
-> 
-> I don't try to read too much into our defconfigs. We have 140 of them
-> on ARM, and they are mainly useful to give a reasonable build coverage,
-> but I wouldn't expect them to be actually used on that hardware.
-> 
-> I'll leave it up to Krzysztof to send a patch for this if he wants.
-> 
-> > > --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> > > +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> > > @@ -2590,6 +2588,7 @@ __ip_vs_get_timeouts(struct net *net, struct ip_vs_timeout_user *u)
-> > >  #if defined(CONFIG_IP_VS_PROTO_TCP) || defined(CONFIG_IP_VS_PROTO_UDP)
-> > >  	struct ip_vs_proto_data *pd;
-> > >  #endif
-> > 
-> > 	That is what we want. If you plan another submission
-> > you can add empty line before this memset and to replace
-> > the __ip_vs_get_timeouts call in ip_vs_genl_set_config with
-> > memset but they are cosmetic changes. Or may be Simon will
-> > take care about the coding style when applying the change.
-> > 
-> > Acked-by: Julian Anastasov <ja@ssi.bg>
-> 
-> I'd prefer Simon to pick up the patch. He should also decide whether he wants
-> to add it to stable. In theory, this is a small leak of kernel stack data
-> to user space, but as you say in practice it should not happen because it
-> only exists for silly configurations that nobody should be using.
-> 
-> AFAICT, removing the call to __ip_vs_get_timeouts in do_ip_vs_get_ctl would
-> be a semantic change for the case where a user sends a IPVS_CMD_SET_CONFIG
-> message without without the complete set of attributes inside it. The current
-> behavior is to leave the timeouts alone, replacing the __ip_vs_get_timeouts
-> with a memset would zero them. I left this part alone then.
-> 
-> 	Arnd
+hi, Daniel
+my usb 3.0 hard drive doesn't have external power. this is a "western
+digital" usb hard drive: WDBACY5000AWT
+here is a Product Specifications:
+http://www.wdc.com/wdproducts/library/AAG/ENG/4178-705131.pdf
 
-Hi,
+i start my laptop with ubuntu, the usb3.0 port could use the usb3.0
+hard drive. but the write speed is only 50MB/s (test with dd)
+but archlinux cannot recognize the hard drive.
 
-sorry for being a bit slow, it was a long weekend here.
-This patch looks reasonable and I think it is appropriate for stable.
-I'll see about getting it merged accordingly.
+thank you for replaying.
 
-> 
-> 8<-----
-> ipvs: initialize returned data in do_ip_vs_get_ctl
-> 
-> As reported by a gcc warning, the do_ip_vs_get_ctl does not initalize
-> all the members of the ip_vs_timeout_user structure it returns if
-> at least one of the TCP or UDP protocols is disabled for ipvs. 
-> 
-> This makes sure that the data is always initialized, before it is
-> returned as a response to IPVS_CMD_GET_CONFIG or printed as a
-> debug message in IPVS_CMD_SET_CONFIG.
-> 
-> Without this patch, building ARM ixp4xx_defconfig results in:
-> 
-> net/netfilter/ipvs/ip_vs_ctl.c: In function 'ip_vs_genl_set_cmd':
-> net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.udp_timeout' may be used uninitialized in this function [-Wuninitialized]
-> net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.udp_timeout' was declared here
-> net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_fin_timeout' may be used uninitialized in this function [-Wuninitialized]
-> net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_fin_timeout' was declared here
-> net/netfilter/ipvs/ip_vs_ctl.c:2238:47: warning: 't.tcp_timeout' may be used uninitialized in this function [-Wuninitialized]
-> net/netfilter/ipvs/ip_vs_ctl.c:3322:28: note: 't.tcp_timeout' was declared here
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Julian Anastasov <ja@ssi.bg>
-> ---
-> diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
-> index 2770f85..c4ee437 100644
-> --- a/net/netfilter/ipvs/ip_vs_ctl.c
-> +++ b/net/netfilter/ipvs/ip_vs_ctl.c
-> @@ -2591,6 +2589,8 @@ __ip_vs_get_timeouts(struct net *net, struct ip_vs_timeout_user *u)
->  	struct ip_vs_proto_data *pd;
->  #endif
->  
-> +	memset(u, 0, sizeof (*u));
-> +
->  #ifdef CONFIG_IP_VS_PROTO_TCP
->  	pd = ip_vs_proto_data_get(net, IPPROTO_TCP);
->  	u->tcp_timeout = pd->timeout_table[IP_VS_TCP_S_ESTABLISHED] / HZ;
-> @@ -2768,7 +2768,6 @@ do_ip_vs_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
->  	{
->  		struct ip_vs_timeout_user t;
->  
-> -		memset(&t, 0, sizeof(t));
->  		__ip_vs_get_timeouts(net, &t);
->  		if (copy_to_user(user, &t, sizeof(t)) != 0)
->  			ret = -EFAULT;
-> 
+On Mon, Oct 8, 2012 at 5:31 AM, Daniel Mack <zonque@gmail.com> wrote:
+> (cc linux-usb)
+>
+> On 07.10.2012 10:48, ¤ý«ä·½ wrote:
+>> hi,
+>> i have a usb 3.0 hard drive and a laptop with usb 3.0 port.
+>> when the hard drive is connected to the usb 3.0 port, the drive could
+>> not be found.
+>> the dmesg output is listed below.
+>> additinal info:
+>> 1) the usb 3.0 hard drive can be found when connected to usb 2.0 port.
+>> 2) the usb 2.0 hard drive can be found when connected to usb 3.0 port.
+>> 3) mouse works when connected to the usb 3.0 port.
+>> 4) it is archlinux and kernel version is 3.5.5-1-ARCH
+>> it seems that it is not the linux driver's problem, because the mouse
+>> could work and the hard drive is found due to the dmesg.
+>> is this a bug?
+>> would someone help me?
+>> thank you!
+>>
+>> dmesg out put when usb 3.0 hard drive is conneted to usb 3.0 port:
+>> [  646.077385] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+>> [  646.171319] usbcore: registered new interface driver uas
+>> [  646.175313] Initializing USB Mass Storage driver...
+>> [  646.175501] scsi4 : usb-storage 2-2:1.0
+>> [  646.175665] usbcore: registered new interface driver usb-storage
+>> [  646.175667] USB Mass Storage support registered.
+>> [  657.149403] scsi 4:0:0:0: Direct-Access     WD       My Passport
+>> 0730 1016 PQ: 0 ANSI: 6
+>> [  657.149974] sd 4:0:0:0: [sdb] 976707584 512-byte logical blocks:
+>> (500 GB/465 GiB)
+>> [  657.150223] sd 4:0:0:0: [sdb] Write Protect is off
+>> [  657.150232] sd 4:0:0:0: [sdb] Mode Sense: 47 00 10 08
+>> [  657.150456] sd 4:0:0:0: [sdb] No Caching mode page present
+>> [  657.150462] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+>> [  657.151436] sd 4:0:0:0: [sdb] No Caching mode page present
+>> [  657.151440] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+>> [  657.159907]  sdb: sdb1
+>> [  657.160852] sd 4:0:0:0: [sdb] No Caching mode page present
+>> [  657.160858] sd 4:0:0:0: [sdb] Assuming drive cache: write through
+>> [  657.160861] sd 4:0:0:0: [sdb] Attached SCSI disk
+>> [  657.268875] usb 2-2: Device not responding to set address.
+>> [  657.471456] usb 2-2: Device not responding to set address.
+>> [  657.674211] usb 2-2: device not accepting address 2, error -71
+>> [  657.780745] usb 2-2: Device not responding to set address.
+>> [  657.983519] usb 2-2: Device not responding to set address.
+>> [  658.186214] usb 2-2: device not accepting address 2, error -71
+>> [  658.292717] usb 2-2: Device not responding to set address.
+>> [  658.495537] usb 2-2: Device not responding to set address.
+>
+> From the logs, this smells like a power supply problem. Can you connect
+> an external supply or do you have a powered USB3 hub? It's possible that
+> it draws less power in USB2.0 mode, so that would explain what you describe.
+>
+> But I could be wrong alltogether :)
+>
+>
+> Daniel
+>
+
+
+
+-- 
+¤ý«ä·½
