@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab2JIOYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:24:55 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:46140 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab2JIOYx convert rfc822-to-8bit (ORCPT
+	id S1756063Ab2JIO0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:26:43 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49688 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab2JIO0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:24:53 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: David Daney <ddaney.cavm@gmail.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Jiri Kosina <trivial@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Chad Reese <kreese@caviumnetworks.com>
-Subject: RE: [PATCH] RapidIO: Fix trivial comment error.
-Thread-Topic: [PATCH] RapidIO: Fix trivial comment error.
-Thread-Index: AQHNpbaB/iyteJRrikGXa0mgAg7zgZexBxsw
-Date: Tue, 9 Oct 2012 14:22:03 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BBFDED7@corpmail1.na.ads.idt.com>
-References: <1349743112-27667-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1349743112-27667-1-git-send-email-ddaney.cavm@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Oct 2012 10:26:42 -0400
 MIME-Version: 1.0
+X-Originating-IP: [116.14.92.167]
+In-Reply-To: <s5hfw5ng5jw.wl%tiwai@suse.de>
+References: <CAMVG2st1-3kz-KRrm-zXZOGw8=QnyYbB3n5e8Z36xAbmD4b5RQ@mail.gmail.com>
+	<s5hvceli0ht.wl%tiwai@suse.de>
+	<CAMVG2ss7hmJAEt-vEsNBmTVDWMYCPyPo0UC34DKDBnr7t5gn8g@mail.gmail.com>
+	<s5htxu4ezc7.wl%tiwai@suse.de>
+	<s5hr4p8ez6u.wl%tiwai@suse.de>
+	<CAMVG2svG+SNY7B=SiCL9taRGhdZtGKZ6javtpRBPUdvB825BEg@mail.gmail.com>
+	<s5hfw5ng5jw.wl%tiwai@suse.de>
+Date: Tue, 9 Oct 2012 22:26:40 +0800
+Message-ID: <CAMVG2subEHt6LYCBhj=Qwb=d1rsrZ3hMcYntRPDXWbtXGfp=jw@mail.gmail.com>
+Subject: Re: [3.6-rc7] switcheroo race with Intel HDA...
+From: Daniel J Blueman <daniel@quora.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Dave Airlie <airlied@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Daney [mailto:ddaney.cavm@gmail.com]
-> Sent: Monday, October 08, 2012 8:39 PM
-> To: Matt Porter; Bounine, Alexandre; Jiri Kosina
-> Cc: linux-kernel@vger.kernel.org; David Daney; Chad Reese
-> Subject: [PATCH] RapidIO: Fix trivial comment error.
-> 
-> From: Chad Reese <kreese@caviumnetworks.com>
-> 
-> The resource index for the mailboxes was incorrect.
-> 
-> Signed-off-by: Chad Reese <kreese@caviumnetworks.com>
-> ---
->  include/linux/rio.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/rio.h b/include/linux/rio.h
-> index dc0c755..dd418d1 100644
-> --- a/include/linux/rio.h
-> +++ b/include/linux/rio.h
-> @@ -58,7 +58,7 @@
->   *
->   *	0	RapidIO inbound doorbells
->   *	1	RapidIO inbound mailboxes
-> - *	1	RapidIO outbound mailboxes
-> + *	2	RapidIO outbound mailboxes
->   */
->  #define RIO_DOORBELL_RESOURCE	0
->  #define RIO_INB_MBOX_RESOURCE	1
-> --
-> 1.7.11.4
+On 9 October 2012 21:04, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 9 Oct 2012 19:23:56 +0800,
+> Daniel J Blueman wrote:
+>> On 9 October 2012 18:07, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Tue, 09 Oct 2012 12:04:08 +0200,
+>> > Takashi Iwai wrote:
+>> >> At Tue, 9 Oct 2012 00:34:09 +0800,
+>> >> Daniel J Blueman wrote:
+>> >> > On 8 October 2012 20:58, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > > At Tue, 25 Sep 2012 13:20:05 +0800,
+>> >> > > Daniel J Blueman wrote:
+>> >> > >> On my Macbook with a discrete Nvidia GPU, there is a race between
+>> >> > >> selecting the integrated GPU and putting the discrete GPU into D3 [1],
+>> >> > >> reliably causing a kernel oops [2].
+>> >> > >>
+>> >> > >> Introducing a delay of ~1s between the calls prevents this. When the
+>> >> > >> second 'OFF' write path executes, it looks like struct azx at
+>> >> > >> card->private_data hasn't yet been allocated yet [3], so there is
+>> >> > >> likely some locking missing.
+>> >> > >
+>> >> > > It's rather pci_get_drvdata() returning NULL (i.e. card is NULL, thus
+>> >> > > card->private_data causes Oops).  Could you check the patch like below
+>> >> > > and see whether you get a kernel warning (but no Oops) or the problem
+>> >> > > gets fixed by shifting the assignment of pci drvdata?
+>> >> > [...]
+>> >> >
+>> >> > Good patching. Calling pci_set_drvdata later prevents the oops in HDA,
+>> >> > though we see unexpected 0x0 responses in the response ring buffer
+>> >> > [1], which we don't see when there's a >~1.5s delay between IGD and
+>> >> > OFF.
+>> >>
+>> >> If the previous patch fixed, it means that the switching occurred
+>> >> during the device was being probed.  Maybe a better approach to
+>> >> register the VGA switcheroo after the proper initialization.
+>> >>
+>> >> The patch below is a revised one.  Please give it a try.
+>> >
+>> > Also, it's not clear which card spews the spurious response.
+>> > Apply the patch below in addition.
+>> [...]
+>>
+>> hda-intel: 0000:01:00.1: spurious response 0x0:0x0, last cmd=0x1f0004
+>> $ lspci -s :1:0.1
+>> 01:00.1 Audio device: NVIDIA Corporation Device 0e1b (rev ff)
+>>
+>> It's the NVIDIA device which presumably hasn't completed it's
+>> transition to D3 at the time the OFF is executed.
+>
+> OK, then could you try the patch below on the top of previous two
+> patches?
 
-Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+The first IGD switcheroo command fails to switch to the integrated GPU:
 
+# cat /sys/kernel/debug/vgaswitcheroo/switch
+0:DIS:+:Pwr:0000:01:00.0
+1:IGD: :Pwr:0000:00:02.0
+2:DIS-Audio: :Pwr:0000:01:00.1
+# echo IGD >/sys/kernel/debug/vgaswitcheroo/switch
+vga_switcheroo: client 1 refused switch
+
+I also instrumented snd_hda_lock_devices, but none of the failure
+paths are being taken, which would leave inconsistent state, as the
+return value isn't checked.
+
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
