@@ -1,106 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2JIQ4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:56:46 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:30924 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751932Ab2JIQ4o (ORCPT
+	id S1752474Ab2JIQ6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:58:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46798 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab2JIQ6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:56:44 -0400
-Message-ID: <1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: <monstr@monstr.eu>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>, John Linn <linnj@xilinx.com>
-Date: Tue, 9 Oct 2012 17:56:40 +0100
-In-Reply-To: <5073E988.60701@monstr.eu>
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
-	   <1349374497-9540-11-git-send-email-monstr@monstr.eu>
-	  <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
-	  <506EA9C4.2000609@monstr.eu>
-	 <1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
-	 <5073E988.60701@monstr.eu>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 12:58:22 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+In-Reply-To: <20121009155613.GA3729@e103034-lin>
+References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+	<1348252345-5642-3-git-send-email-morten.rasmussen@arm.com>
+	<CAKohponOWLNSUOtqC_TMfat-yQH=tGC_kg3yNTTQwOoRGH+U5g@mail.gmail.com>
+	<20121009155613.GA3729@e103034-lin>
+Date: Tue, 9 Oct 2012 22:28:21 +0530
+Message-ID: <CAKohpo=TuEUAzbTsN6LSq1ffa_vdVEddS1qg7RvasqWkUegzJA@mail.gmail.com>
+Subject: Re: [RFC PATCH 02/10] sched: Task placement for heterogeneous systems
+ based on task load-tracking
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "linaro-sched-sig@lists.linaro.org" 
+	<linaro-sched-sig@lists.linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Robin Randhawa <Robin.Randhawa@arm.com>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 11:08 +0200, Michal Simek wrote:
-> On 10/05/2012 03:51 PM, Ben Hutchings wrote:
-> > On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
-> >> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
-> >>> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
-> >>>> Just show current setting in bootlog.
-> >>> [...]
-> >>>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-> >>>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> >>>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
-> >>>>    	/* Setup checksum offload, but default to off if not specified */
-> >>>>    	lp->temac_features = 0;
-> >>>>    	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
-> >>>> +	dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
-> >>>>    	if (p && be32_to_cpu(*p)) {
-> >>>>    		lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
-> >>>>    		/* Can checksum TCP/UDP over IPv4. */
-> >>>>    		ndev->features |= NETIF_F_IP_CSUM;
-> >>>>    	}
-> >>>>    	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
-> >>>> +	dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
-> >>> [...]
-> >>>
-> >>> Is there any particular reason you think this needs to be logged by
-> >>> default, rather than letting users run ethtool -k?  I suggest using
-> >>> dev_dbg() instead.
-> >>
-> >> Ok. I have looked at it and there are missing some bits in ndev->features.
-> >>
-> >> Can you please check that my setting is correct?
-> >>
-> >> It is SG DMA ip/driver.
-> >> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
-> >
-> > NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
-> > through the frag_list pointer.
-> 
-> The driver is able to handle skb fragments too. temac_start_xmit
+On 9 October 2012 21:26, Morten Rasmussen <Morten.Rasmussen@arm.com> wrote:
+> On Thu, Oct 04, 2012 at 07:02:03AM +0100, Viresh Kumar wrote:
+>> On 22 September 2012 00:02,  <morten.rasmussen@arm.com> wrote:
 
-"git grep -w -E 'frag_list|skb_walk_frags|skb_to_sgvec' drivers/net/ethernet/xilinx"
-returns nothing in net-next.
+>> > SCHED_HMP requires that the platform implements arch_get_hmp_domains()
+>> > which should set up the platform specific list of hmp_domains. It is
+>> > also assumed that the platform disables SD_LOAD_BALANCE for the
+>> > appropriate sched_domains.
+>>
+>> An explanation of this requirement would be helpful here.
+>
+> Yes. This is to prevent the load-balancer from moving tasks between
+> hmp_domains. This will be done exclusively by SCHED_HMP instead to
+> implement a strict task migration policy and avoid changing the
+> load-balancer behaviour. The load-balancer will take care of
+> load-balacing within each hmp_domain.
 
-[...]
-> >> rx Full csum -> NETIF_F_RXCSUM
-> >>
-> >> Is there any option to support partial csum?
-> >
-> > There is no need to differentiate these in the device features.  For TX
-> > the stack needs to know whether to use a software fallback before
-> > passing the skb to you, but on RX it looks at the ip_summed field of
-> > each skb you pass up.
-> 
-> Hardware can be setup asymmetrically. It means enable CSUM only on RX or TX.
-> All combination are valid.
-> The point here is if Linux is not able to handle this then we have to
-> create logic in the driver to support these options too.
+Honestly speaking i understood this point now and earlier it wasn't clear
+to me :)
 
-Linux handles this just fine.  The point is you don't have to tell the
-stack in advance whether or what kind of RX checksum validation your
-devices will do.  (In fact the only reason that feature flag exists at
-all is so that it can be generically exposed through the ethtool API.)
+What would be ideal is to put this information in the comment just before
+we re-define other SCHED_*** domains where we disable balancing.
+And keep it in the commit log too.
 
-Ben.
+>> > +struct hmp_domain {
+>> > +       struct cpumask cpus;
+>> > +       struct list_head hmp_domains;
+>>
+>> Probably need a better name here. domain_list?
+>
+> Yes. hmp_domain_list would be better and stick with the hmp_* naming
+> convention.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+IMHO hmp_ would be better for global names, but names of variables
+enclosed within another hmp_*** data type don't actually need hmp_**,
+as this is implicity.
 
+i.e.
+struct hmp_domain {
+       struct cpumask cpus;
+       struct list_head domain_list;
+}
+
+would be better than
+       struct list_head hmp domain_list;
+
+as the parent structure already have hmp_***. So whatever is inside the
+struct is obviously hmp specific.
+
+>> > +/* Setup hmp_domains */
+>> > +static int __init hmp_cpu_mask_setup(void)
+>>
+>> How should we interpret its return value? Can you mention what does 0 & 1 mean
+>> here?
+>>
+>
+> Returns 0 if domain setup failed, i.e. the domain list is empty, and 1
+> otherwise.
+
+Helpful. Please mention this in function comment in your next revision.
+
+>> > +{
+>> > +       char buf[64];
+>> > +       struct hmp_domain *domain;
+>> > +       struct list_head *pos;
+>> > +       int dc, cpu;
+
+>> > +       /* Print hmp_domains */
+>> > +       dc = 0;
+>>
+>> Should be done during definition of dc.
+
+You missed this ??
+
+>> > +               for_each_cpu_mask(cpu, domain->cpus) {
+>> > +                       per_cpu(hmp_cpu_domain, cpu) = domain;
+>> > +               }
+>>
+>> Should use hmp_cpu_domain(cpu) here. Also no need of {} for single
+>> line loop.
+
+??
+
+>> > +               dc++;
+>>
+>> You aren't using it... Only for testing? Should we remove it from mainline
+>> patchset and keep it locally?
+>>
+>
+> I'm using it in the pr_debug line a little earlier. It is used for
+> enumerating the hmp_domains.
+
+My mistake :(
+
+>> > +/* Check if cpu is in fastest hmp_domain */
+>> > +static inline unsigned int hmp_cpu_is_fastest(int cpu)
+>> > +{
+>> > +       struct list_head *pos;
+>> > +
+>> > +       pos = &hmp_cpu_domain(cpu)->hmp_domains;
+>> > +       return pos == hmp_domains.next;
+>>
+>> better create list_is_first() for this.
+>
+> I had the same thought, but I see that as a separate patch that should
+> be submitted separately.
+
+Correct. So better send it now, so that it is included before you send your
+next version. :)
+
+--
+viresh
