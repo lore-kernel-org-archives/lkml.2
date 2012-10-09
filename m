@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab2JIHSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 03:18:48 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35125 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab2JIHSp (ORCPT
+	id S1753331Ab2JIHWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 03:22:09 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:37229 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752176Ab2JIHWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 03:18:45 -0400
-Date: Tue, 9 Oct 2012 10:18:23 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] time: cast ->raw_interval to u64 to avoid shift overflow
-Message-ID: <20121009071823.GA19159@elgon.mountain>
+	Tue, 9 Oct 2012 03:22:06 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Michael Leun <lkml20120218@newton.leun.net>
+Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly toggeling between disabled and forwarding
+Date: Tue, 9 Oct 2012 09:21:31 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120723091504.2d035d28@xenia.leun.net> <20120927173905.GC21025@kroah.com> <20121009071515.607f85a4@xenia.leun.net>
+In-Reply-To: <20121009071515.607f85a4@xenia.leun.net>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Message-Id: <201210090921.31415.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We fixed a bunch of integer overflows in timekeeping code during the 3.6
-cycle.  I did an audit based on that and found this potential overflow.
+On Tuesday 09 October 2012, Michael Leun wrote:
+> On Thu, 27 Sep 2012 10:39:05 -0700
+>
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Jul 24, 2012 at 01:36:34AM +0200, Michael Leun wrote:
+> > > On Mon, 23 Jul 2012 09:15:04 +0200
+> > > Michael Leun <lkml20120218@newton.leun.net> wrote:
+> > >
+> > > [see issue description below]
+> > >
+> > > Bisecting yielded
+> > >
+> > > b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad commit
+> > > commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+> > > Author: Ondrej Zary <linux@rainbow-software.org>
+> > > Date:   Fri Jun 1 10:29:08 2012 +0000
+> > >
+> > >     mcs7830: Implement link state detection
+> > >
+> > >     Add .status callback that detects link state changes.
+> > >     Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C
+> > > by the driver). Fixes
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=28532
+> > >
+> > >     Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > >     Signed-off-by: David S. Miller <davem@davemloft.net>
+> > >
+> > > :040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27
+> > >
+> > > d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
+> > >
+> > >
+> > > Reverting that from 3.5 makes the issue go away.
+> >
+> > Did this ever get resolved in 3.6-rc7 or any older kernel?  I can't
+> > revert the patch from 3.5.y unless it's also fixed in Linus's tree.
+>
+> Please excuse me for answering a bit late.
+>
+> No, that never got resolved, I still have the problem with 3.6 but I'm
+> not shure about the correct solution.
+>
+> Maybe link state detection just does not work with some of that devices
+> and we should have an possibility to enable/disable it per device,
+> maybe it can be handeled with an blacklist of not working devices,
+> maybe it could be fixed - I do not know and also do not know how to
+> find out.
+>
+> But I'm willing to test.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-I'm not super familiar with this code so please review my work
-carefully.
+Can you please apply this debug patch and provide the output?
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5ce06a3..1d1ee67 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1113,7 +1113,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
- 	accumulate_nsecs_to_secs(tk);
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -638,6 +638,7 @@ static void mcs7830_status(struct usbnet *dev, struct urb *urb)
+ 		return;
  
- 	/* Accumulate raw time */
--	raw_nsecs = tk->raw_interval << shift;
-+	raw_nsecs = (u64)tk->raw_interval << shift;
- 	raw_nsecs += tk->raw_time.tv_nsec;
- 	if (raw_nsecs >= NSEC_PER_SEC) {
- 		u64 raw_secs = raw_nsecs;
+ 	link = !(buf[1] & 0x20);
++	printk("netif_carrier_ok=%d, link=%d, buf[0]=0x%02x, buf[1]=0x%02x\n", netif_carrier_ok(dev->net), link, buf[0], buf[1]);
+ 	if (netif_carrier_ok(dev->net) != link) {
+ 		if (link) {
+ 			netif_carrier_on(dev->net);
+
+
+-- 
+Ondrej Zary
