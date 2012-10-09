@@ -1,117 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab2JIQzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:55:35 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54785 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2JIQzd (ORCPT
+	id S1752428Ab2JIQ4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 12:56:46 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:30924 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751932Ab2JIQ4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:55:33 -0400
-Date: Tue, 9 Oct 2012 12:43:45 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, rob@landley.net,
-        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
-        shuahkhan@gmail.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, x86@kernel.org
-Subject: Re: [RFC PATCH 2/7] swiotlb: Make io_tlb_start a physical address
- instead of a virtual address
-Message-ID: <20121009164344.GC25276@phenom.dumpdata.com>
-References: <20121004002113.5016.66913.stgit@gitlad.jf.intel.com>
- <20121004003853.5016.86765.stgit@gitlad.jf.intel.com>
- <20121004131829.GC9158@phenom.dumpdata.com>
- <506DC332.5000409@intel.com>
- <20121004171904.GA4466@phenom.dumpdata.com>
- <506DF022.4030400@intel.com>
+	Tue, 9 Oct 2012 12:56:44 -0400
+Message-ID: <1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: <monstr@monstr.eu>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, John Linn <linnj@xilinx.com>
+Date: Tue, 9 Oct 2012 17:56:40 +0100
+In-Reply-To: <5073E988.60701@monstr.eu>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+	   <1349374497-9540-11-git-send-email-monstr@monstr.eu>
+	  <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+	  <506EA9C4.2000609@monstr.eu>
+	 <1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
+	 <5073E988.60701@monstr.eu>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506DF022.4030400@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 01:22:58PM -0700, Alexander Duyck wrote:
-> On 10/04/2012 10:19 AM, Konrad Rzeszutek Wilk wrote:
-> >>>> @@ -450,7 +451,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
-> >>>>  				io_tlb_list[i] = 0;
-> >>>>  			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
-> >>>>  				io_tlb_list[i] = ++count;
-> >>>> -			dma_addr = io_tlb_start + (index << IO_TLB_SHIFT);
-> >>>> +			dma_addr = (char *)phys_to_virt(io_tlb_start) + (index << IO_TLB_SHIFT);
-> >>> I think this is going to fall flat with the other user of
-> >>> swiotlb_tbl_map_single - Xen SWIOTLB. When it allocates the io_tlb_start
-> >>> and does it magic to make sure its under 4GB - the io_tlb_start swath
-> >>> of memory, ends up consisting of 2MB chunks of contingous spaces. But each
-> >>> chunk is not linearly in the DMA space (thought it is in the CPU space).
+On Tue, 2012-10-09 at 11:08 +0200, Michal Simek wrote:
+> On 10/05/2012 03:51 PM, Ben Hutchings wrote:
+> > On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
+> >> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
+> >>> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
+> >>>> Just show current setting in bootlog.
+> >>> [...]
+> >>>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >>>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >>>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
+> >>>>    	/* Setup checksum offload, but default to off if not specified */
+> >>>>    	lp->temac_features = 0;
+> >>>>    	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
+> >>>> +	dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
+> >>>>    	if (p && be32_to_cpu(*p)) {
+> >>>>    		lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
+> >>>>    		/* Can checksum TCP/UDP over IPv4. */
+> >>>>    		ndev->features |= NETIF_F_IP_CSUM;
+> >>>>    	}
+> >>>>    	p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
+> >>>> +	dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
+> >>> [...]
 > >>>
-> >>> Meaning the io_tlb_start region 0-2MB can fall within the DMA address space
-> >>> of 2048MB->2032MB, and io_tlb_start offset 2MB->4MB, can fall within 1024MB->1026MB,
-> >>> and so on (depending on the availability of memory under 4GB).
-> >>>
-> >>> There is a clear virt_to_phys(x) != virt_to_dma(x).
-> >> Just to be sure I understand you are talking about DMA address space,
-> >> not physical address space correct?  I am fully aware that DMA address
-> >> space can be all over the place.  When I was writing the patch set the
-> >> big reason why I decided to stop at physical address space was because
-> >> DMA address spaces are device specific.
+> >>> Is there any particular reason you think this needs to be logged by
+> >>> default, rather than letting users run ethtool -k?  I suggest using
+> >>> dev_dbg() instead.
 > >>
-> >> I understand that virt_to_phys(x) != virt_to_dma(x) for many platforms,
-> >> however that is not my assertion.  My assertion is (virt_to_phys(x) + y)
-> >> == virt_to_phys(x + y).  This should be true for any large block of
-> >> contiguous memory that is DMA accessible since the CPU and the device
-> >> should be able to view the memory in the same layout.  If that wasn't
-> > That is true mostly for x86 but not all platforms do this.
+> >> Ok. I have looked at it and there are missing some bits in ndev->features.
+> >>
+> >> Can you please check that my setting is correct?
+> >>
+> >> It is SG DMA ip/driver.
+> >> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
 > >
-> >> true I don't think is_swiotlb_buffer would be working correctly since it
-> >> is essentially operating on the same assumption prior to my patches.
-> > There are two pieces here - the is_swiotlb_buffer and the swiotlb_tbl_[map|unmap]
-> > functions.
+> > NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
+> > through the frag_list pointer.
+> 
+> The driver is able to handle skb fragments too. temac_start_xmit
+
+"git grep -w -E 'frag_list|skb_walk_frags|skb_to_sgvec' drivers/net/ethernet/xilinx"
+returns nothing in net-next.
+
+[...]
+> >> rx Full csum -> NETIF_F_RXCSUM
+> >>
+> >> Is there any option to support partial csum?
 > >
-> > The is_swiotlb_buffer is operating on that principle (and your change
-> > to reflect that is OK). The swiotlb_tbl_[*] is not.
-> >> If you take a look at patches 4 and 5 I do address changes that end up
-> >> needing to be made to Xen SWIOTLB since it makes use of
-> >> swiotlb_tbl_map_single.  All that I effectively end up changing is that
-> >> instead of messing with a void pointer we instead are dealing with a
-> >> physical address, and instead of calling xen_virt_to_bus we end up
-> >> calling xen_phys_to_bus and thereby drop one extra virt_to_phys call in
-> >> the process.
-> > Sure that is OK. All of those changes when we bypass the bounce
-> > buffer look OK (thought I should double-check again the patch to make
-> > sure and also just take it for a little test spin).
+> > There is no need to differentiate these in the device features.  For TX
+> > the stack needs to know whether to use a software fallback before
+> > passing the skb to you, but on RX it looks at the ip_summed field of
+> > each skb you pass up.
 > 
-> I'm interesting in finding out what the results of your test spin are. 
+> Hardware can be setup asymmetrically. It means enable CSUM only on RX or TX.
+> All combination are valid.
+> The point here is if Linux is not able to handle this then we have to
+> create logic in the driver to support these options too.
 
-Haven't gotten to that yet :-(
-> 
-> > The issue is when we do _use_ the bounce buffer. At that point we
-> > run into the allocation from the bounce buffer where the patches
-> > assume that the 64MB swath of bounce buffer memory is bus (or DMA)
-> > memory contingous. And that is not the case sadly.
-> 
-> I think I understand what you are saying now.  However, I don't think
-> the issue applies to my patches.
+Linux handles this just fine.  The point is you don't have to tell the
+stack in advance whether or what kind of RX checksum validation your
+devices will do.  (In fact the only reason that feature flag exists at
+all is so that it can be generically exposed through the ethtool API.)
 
-Great.
-> 
-> If I am not mistaken what you are talking about is the pseudo-physical
-> memory versus machine memory.  I understand the 64MB block is not
-> machine-memory contiguous, but it should be pseudo-physical contiguous
-> memory.  As such using the pseudo-physical addresses instead of virtual
-> addresses should function the same way as using true physical addresses
-> to replace virtual addresses.  All of the physical memory translation to
-> machine memory translation is happening in xen_phys_to_bus and all of
-> the changes I have made take place before that so the bounce buffers
-> should still be working correctly.  In addition none of the changes I
+Ben.
 
-OK.
-> have made change the bounce buffer boundary assumptions so we should
-> have no bounce buffers mapped across the 2MB boundaries.
-> 
-> Thanks,
-> 
-> Alex
-> 
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
