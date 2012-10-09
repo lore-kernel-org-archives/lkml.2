@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab2JIJ5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 05:57:04 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:48483 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab2JIJ5D (ORCPT
+	id S1755180Ab2JIKCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 06:02:10 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52622 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab2JIKCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 05:57:03 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.255.235]
-In-Reply-To: <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
-References: <20121001024544.GA12711@localhost> <CAK=WgbakTOS71tvpQDLoANm25Ms_sbz1OcEqBuvO2+ZKwMBsmA@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 9 Oct 2012 11:56:42 +0200
-Message-ID: <CAK=WgbYK2rFw7iFV1fGUb1saXrsH+yh=2Etmuj5+6ob6cCKntw@mail.gmail.com>
-Subject: Re: [remoteproc:for-next 6/9] remoteproc_virtio.c:(.text+0x238e7e):
- undefined reference to `vring_transport_features'
-To: Fengguang Wu <fengguang.wu@intel.com>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Oct 2012 06:02:06 -0400
+Subject: Re: [PATCH v3 10/10] mm: kill vma flag VM_RESERVED and
+ mm->reserved_vm counter
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <20120731104239.20515.702.stgit@zurg>
+References: <20120731103724.20515.60334.stgit@zurg>
+	 <20120731104239.20515.702.stgit@zurg>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Oct 2012 12:02:01 +0200
+Message-ID: <1349776921.21172.4091.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+On Tue, 2012-07-31 at 14:42 +0400, Konstantin Khlebnikov wrote:
+> A long time ago, in v2.4, VM_RESERVED kept swapout process off VMA,
+> currently it lost original meaning but still has some effects:
+> 
+>  | effect                 | alternative flags
+> -+------------------------+---------------------------------------------
+> 1| account as reserved_vm | VM_IO
+> 2| skip in core dump      | VM_IO, VM_DONTDUMP
+> 3| do not merge or expand | VM_IO, VM_DONTEXPAND, VM_HUGETLB, VM_PFNMAP
+> 4| do not mlock           | VM_IO, VM_DONTEXPAND, VM_HUGETLB, VM_PFNMAP
+> 
+> This patch removes reserved_vm counter from mm_struct.
+> Seems like nobody cares about it, it does not exported into userspace directly,
+> it only reduces total_vm showed in proc.
+> 
+> Thus VM_RESERVED can be replaced with VM_IO or pair VM_DONTEXPAND | VM_DONTDUMP.
+> 
+> remap_pfn_range() and io_remap_pfn_range() set VM_IO|VM_DONTEXPAND|VM_DONTDUMP.
+> remap_vmalloc_range() set VM_DONTEXPAND | VM_DONTDUMP.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Hugh Dickins <hughd@google.com>
+> ---
+>  Documentation/vm/unevictable-lru.txt             |    4 ++--
+>  arch/alpha/kernel/pci-sysfs.c                    |    2 +-
+>  arch/ia64/kernel/perfmon.c                       |    2 +-
+>  arch/ia64/mm/init.c                              |    3 ++-
+>  arch/powerpc/kvm/book3s_hv.c                     |    2 +-
+>  arch/sparc/kernel/pci.c                          |    2 +-
+>  arch/unicore32/kernel/process.c                  |    2 +-
+>  arch/x86/xen/mmu.c                               |    3 +--
+>  drivers/char/mbcs.c                              |    2 +-
+>  drivers/char/mem.c                               |    2 +-
+>  drivers/char/mspec.c                             |    2 +-
+>  drivers/gpu/drm/drm_gem.c                        |    2 +-
+>  drivers/gpu/drm/drm_vm.c                         |   10 ++--------
+>  drivers/gpu/drm/exynos/exynos_drm_gem.c          |    2 +-
+>  drivers/gpu/drm/gma500/framebuffer.c             |    3 +--
+>  drivers/gpu/drm/ttm/ttm_bo_vm.c                  |    4 ++--
+>  drivers/gpu/drm/udl/udl_fb.c                     |    2 +-
+>  drivers/infiniband/hw/ehca/ehca_uverbs.c         |    4 ++--
+>  drivers/infiniband/hw/ipath/ipath_file_ops.c     |    2 +-
+>  drivers/infiniband/hw/qib/qib_file_ops.c         |    2 +-
+>  drivers/media/video/meye.c                       |    2 +-
+>  drivers/media/video/omap/omap_vout.c             |    2 +-
+>  drivers/media/video/sn9c102/sn9c102_core.c       |    3 +--
+>  drivers/media/video/usbvision/usbvision-video.c  |    3 +--
+>  drivers/media/video/videobuf-dma-sg.c            |    2 +-
+>  drivers/media/video/videobuf-vmalloc.c           |    2 +-
+>  drivers/media/video/videobuf2-memops.c           |    2 +-
+>  drivers/media/video/vino.c                       |    2 +-
+>  drivers/misc/carma/carma-fpga.c                  |    2 --
+>  drivers/misc/sgi-gru/grufile.c                   |    5 ++---
+>  drivers/mtd/mtdchar.c                            |    2 +-
+>  drivers/scsi/sg.c                                |    2 +-
+>  drivers/staging/media/easycap/easycap_main.c     |    2 +-
+>  drivers/staging/omapdrm/omap_gem_dmabuf.c        |    2 +-
+>  drivers/staging/tidspbridge/rmgr/drv_interface.c |    2 +-
+>  drivers/uio/uio.c                                |    4 +---
+>  drivers/usb/mon/mon_bin.c                        |    2 +-
+>  drivers/video/68328fb.c                          |    2 +-
+>  drivers/video/aty/atyfb_base.c                   |    3 +--
+>  drivers/video/fb-puv3.c                          |    3 +--
+>  drivers/video/fb_defio.c                         |    2 +-
+>  drivers/video/fbmem.c                            |    3 +--
+>  drivers/video/gbefb.c                            |    2 +-
+>  drivers/video/omap2/omapfb/omapfb-main.c         |    2 +-
+>  drivers/video/sbuslib.c                          |    5 ++---
+>  drivers/video/smscufx.c                          |    1 -
+>  drivers/video/udlfb.c                            |    1 -
+>  drivers/video/vermilion/vermilion.c              |    1 -
+>  drivers/video/vfb.c                              |    1 -
+>  drivers/xen/gntalloc.c                           |    2 +-
+>  drivers/xen/gntdev.c                             |    2 +-
+>  drivers/xen/privcmd.c                            |    3 ++-
+>  fs/binfmt_elf.c                                  |    2 +-
+>  fs/binfmt_elf_fdpic.c                            |    2 +-
+>  fs/hugetlbfs/inode.c                             |    2 +-
+>  fs/proc/task_mmu.c                               |    2 +-
+>  include/linux/mempolicy.h                        |    2 +-
+>  include/linux/mm.h                               |    3 +--
+>  include/linux/mm_types.h                         |    1 -
+>  kernel/events/core.c                             |    2 +-
+>  mm/ksm.c                                         |    3 +--
+>  mm/memory.c                                      |   11 +++++------
+>  mm/mlock.c                                       |    2 +-
+>  mm/mmap.c                                        |    2 --
+>  mm/nommu.c                                       |    2 +-
+>  mm/vmalloc.c                                     |    3 +--
+>  security/selinux/selinuxfs.c                     |    2 +-
+>  sound/core/pcm_native.c                          |    6 +++---
+>  sound/usb/usx2y/us122l.c                         |    2 +-
+>  sound/usb/usx2y/usX2Yhwdep.c                     |    2 +-
+>  sound/usb/usx2y/usx2yhwdeppcm.c                  |    2 +-
+>  71 files changed, 78 insertions(+), 106 deletions(-)
 
-On Tue, Oct 2, 2012 at 10:24 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Mon, Oct 1, 2012 at 4:45 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->> Hi Ohad,
->>
->> FYI, kernel build failed on
->>
->> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git for-next
->> head:   bec109a430e8c67bae1743f7e71898283234a77f
->> commit: ec4d02d9180f407c41f8310a13b34e473c671fbb [6/9] remoteproc: Add STE modem driver
->> config: i386-randconfig-b102 (attached as .config)
->>
->> It should be an old bug. The commit happen to be the one to trigger
->> the errors because it selects CONFIG_EMOTEPROC.
->
-> Thanks Fengguang.
->
-> This should be fixed by a patch I pushed today to remoteproc's for-next branch.
->
-> Though I wonder, Sjur, do we want to limit the architectures/platforms
-> where the STE modem driver can be selected on ? Is it ARM only perhaps ?
 
-Can you please address the above question ?
+It seems drivers/vfio/pci/vfio_pci.c uses VM_RESERVED
 
-Thanks,
-Ohad.
+  CC [M]  drivers/watchdog/advantechwdt.o
+drivers/vfio/pci/vfio_pci.c: In function ‘vfio_pci_mmap’:
+drivers/vfio/pci/vfio_pci.c:464:28: erreur: ‘VM_RESERVED’ undeclared (first use in this function)
+drivers/vfio/pci/vfio_pci.c:464:28: note: each undeclared identifier is reported only once for each function it appears in
+
+
+
