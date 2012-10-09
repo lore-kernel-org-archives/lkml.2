@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab2JIAmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 20:42:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48901 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab2JIAmN (ORCPT
+	id S1755392Ab2JIAma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 20:42:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61399 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab2JIAmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 20:42:13 -0400
-Date: Mon, 8 Oct 2012 17:42:09 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: xiong@qca.qualcomm.com, mcgrof@kernel.org, backports@vger.kernel.org,
-        nic-devel@qualcomm.com, Ren Cloud <cjren@qca.qualcomm.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        qca_vkondrat@qca.qualcomm.com
-Subject: Re: [PATCH] compat-drivers: update ethernet driver alx in crap dir
-Message-ID: <20121009004209.GC9068@kroah.com>
-References: <1349400892-25315-1-git-send-email-xiong@qca.qualcomm.com>
- <CAB=NE6VotAu-cugsn4==3TPX0OGPEFtdn1J+5+Rd_YfLcg9YDQ@mail.gmail.com>
+	Mon, 8 Oct 2012 20:42:25 -0400
+Message-ID: <507372E8.9090207@gmail.com>
+Date: Tue, 09 Oct 2012 08:42:16 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6VotAu-cugsn4==3TPX0OGPEFtdn1J+5+Rd_YfLcg9YDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Mike Yoknis <mike.yoknis@hp.com>, mingo@redhat.com,
+        akpm@linux-foundation.org, linux-arch@vger.kernel.org, mmarek@suse.cz,
+        tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de, sam@ravnborg.org,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
+References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com> <20121008151656.GM29125@suse.de>
+In-Reply-To: <20121008151656.GM29125@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 03:25:08PM -0700, Luis R. Rodriguez wrote:
-> On Thu, Oct 4, 2012 at 6:34 PM,  <xiong@qca.qualcomm.com> wrote:
-> > From: xiong <xiong@qca.qualcomm.com>
-> >
-> > 1. support new device id (0x10A0/0x10A1).
-> > 2. add DEBUG_FS interface for diag/swoi functions.
-> >
-> > Signed-off-by: Ren Cloud <cjren@qca.qualcomm.com>
-> > Signed-off-by: xiong <xiong@qca.qualcomm.com>
-> 
-> Xiong,
-> 
->  -- Vladimir, just a heads up -- this applies to you as well for the
-> 802.11ad wil6210 driver
->  -- Greg, some review on your preference on this would be appreciated
+On 10/08/2012 11:16 PM, Mel Gorman wrote:
+> On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
+>> memmap_init_zone() loops through every Page Frame Number (pfn),
+>> including pfn values that are within the gaps between existing
+>> memory sections.  The unneeded looping will become a boot
+>> performance issue when machines configure larger memory ranges
+>> that will contain larger and more numerous gaps.
+>>
+>> The code will skip across invalid sections to reduce the
+>> number of loops executed.
+>>
+>> Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+> This only helps SPARSEMEM and changes more headers than should be
+> necessary. It would have been easier to do something simple like
+>
+> if (!early_pfn_valid(pfn)) {
+> 	pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
+> 	continue;
+> }
 
-Preference on what?  I've never seen this driver before, why wasn't it
-submitted to be in the staging tree in the first place?
+So if present memoy section in sparsemem can have 
+MAX_ORDER_NR_PAGES-aligned range are all invalid?
+If the answer is yes, when this will happen?
 
-> The original alx crap patch was added into compat-wireless on the
-> linux-3.5.y branch.
+>
+> because that would obey the expectation that pages within a
+> MAX_ORDER_NR_PAGES-aligned range are all valid or all invalid (ARM is the
+> exception that breaks this rule). It would be less efficient on
+> SPARSEMEM than what you're trying to merge but I do not see the need for
+> the additional complexity unless you can show it makes a big difference
+> to boot times.
+>
 
-What is "crap patch"?  And is this the old driver with the dubios
-history keeping it from ever being merged anywhere, or is this something
-new?
-
-> Its been two kernel releases and alx is not yet
-> upstream and users can only get alx via compat-drivers (technically
-> compat-wireless as that was pre v3.7). v3.7 would be the *third*
-> release in which this would happen... This is unfair to users and
-> consumers of the Linux kernel and derails expectations and our
-> arrangements for Linux kernel development. I realize that the goal was
-> to get alx upstream ASAP but regardless of what the reason is, its not
-> yet upstream. If you cannot work on alx on a timely manner to get
-> upstream then please submit the driver to the staging area of the
-> Linux kernel that Greg maintains so that other developers who may be
-> able to help can submit patches to help you. Under staging your driver
-> should be accepted so long as it compiles.
-> 
-> I will update the documentation for crap/ patches for compat-drivers
-> to make it clear now that crap/ patches can be used for adding
-> components / pieces of code not yet ready for upstream but as far as
-> full new drivers are concerned you only get one kernel release cycle
-> for it to linger on crap/ under compat-drivers, if you haven't
-> addressed upstreaming yet then it should go to drivers/staging/. That
-> is crap/ should only be used as a shortcut because users exist that
-> can use the driver but you *do* have a team properly resourced to
-> address upstreaming properly in a timely manner.
-
-Why do you even need crap/ at all?  What is keeping drivers like this
-(if it isn't the legally dubious driver) from being merged into staging
-today?  And if it is the legally dubious driver, well, you had better
-not be taking it in your tree either...
-
-confused,
-
-greg k-h
