@@ -1,67 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab2JIXGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:06:15 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:50807
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756910Ab2JIXGL (ORCPT
+	id S1757132Ab2JIXJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:09:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47729 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab2JIXJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:06:11 -0400
-X-Forefront-Antispam-Report: CIP:157.56.244.229;KIP:(null);UIP:(null);IPV:NLI;H:CH1PRD0610HT001.namprd06.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzzz2fh2a8h668h839hd25he5bhf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <5074ADE4.1000302@convergeddevices.net>
-Date: Tue, 9 Oct 2012 16:06:12 -0700
-From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 9 Oct 2012 19:09:20 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <hverkuil@xs4all.nl>, <mchehab@redhat.com>, <sameo@linux.intel.com>,
-        <perex@perex.cz>, <tiwai@suse.de>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/6] Add the main bulk of core driver for SI476x code
-References: <1349488502-11293-1-git-send-email-andrey.smirnov@convergeddevices.net> <1349488502-11293-3-git-send-email-andrey.smirnov@convergeddevices.net> <20121009063349.GN8237@opensource.wolfsonmicro.com>
-In-Reply-To: <20121009063349.GN8237@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.160.178.141]
-X-OriginatorOrg: convergeddevices.net
+In-Reply-To: <20110917001215.GA961@zombie.hq.fstein.net>
+References: <20110917001215.GA961@zombie.hq.fstein.net>
+Date: Tue, 9 Oct 2012 16:09:18 -0700
+Message-ID: <CAOH1cHkn_Yndw55y8QU-ipygRMfDyCG+An-qqBERtu4P-tt3MA@mail.gmail.com>
+Subject: Re: linux-audit: reconstruct path names from syscall events?
+From: Mark Moseley <moseleymark@gmail.com>
+To: john@feurix.com
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2012 11:33 PM, Mark Brown wrote:
-> On Fri, Oct 05, 2012 at 06:54:58PM -0700, Andrey Smirnov wrote:
+On Fri, Sep 16, 2011 at 5:12 PM, John Feuerstein <john@feurix.com> wrote:
+> Hi,
 >
->> +			err = regulator_enable(core->supplies.va);
->> +			if (err < 0)
->> +				break;
->> +			
->> +			err = regulator_enable(core->supplies.vio2);
->> +			if (err < 0)
->> +				goto disable_va;
->> +
->> +			err = regulator_enable(core->supplies.vd);
->> +			if (err < 0)
->> +				goto disable_vio2;
->> +			
->> +			err = regulator_enable(core->supplies.vio1);
->> +			if (err < 0)
->> +				goto disable_vd;
-> If the sequencing is critical here you should have comments explaining
-> what the requirement is, otherwise this looks like a prime candidate
-> for conversion to regulator_bulk_enable() (and similarly for all the
-> other regulator usage, it appears that all the regulators are worked
-> with in a bulk fashion).
+> I would like to audit all changes to a directory tree using the linux
+> auditing system[1].
 >
+> # auditctl -a exit,always -F dir=/etc/ -F perm=wa
+>
+> It seems like the GNU coreutils are enough to break the audit trail.
+>
+> The resulting SYSCALL events provide CWD and multiple PATH records,
+> depending on the syscall. If one of the PATH records is relative, I can
+> reconstruct the absolute path using the CWD record.
+>
+> However, that does not work for the whole *at syscall family
+> (unlinkat(2), renameat(2), linkat(2), ...); accepting paths relative to
+> a given directory file descriptor. GNU coreutils are prominent users,
+> for example "rm -r" making use of unlinkat(2) to prevent races.
+>
+> Things like dup(2) and fd passing via unix domain sockets come to mind.
+> It's the same old story again: mapping fds to path names is ambiguous at
+> best, if not impossible.
+>
+> I wonder why such incomplete file system auditing rules are considered
+> sufficient in the CAPP/LSPP/NISPOM/STIG rulesets?
+>
+> Here's a simplified example:
+>
+> $ cd /tmp
+> $ mkdir dir
+> $ touch dir/file
+> $ ls -ldi /tmp /tmp/dir /tmp/dir/file
+>  2057 drwxrwxrwt 9 root root 380 Sep 17 00:02 /tmp
+> 58781 drwxr-xr-x 2 john john  40 Sep 17 00:02 /tmp/dir
+> 56228 -rw-r--r-- 1 john john   0 Sep 17 00:02 /tmp/dir/file
+> $ cat > unlinkat.c
+> #include <unistd.h>
+> #include <fcntl.h>
+>
+> int main(int argc, char **argv)
+> {
+>     int dirfd = open("dir", O_RDONLY);
+>     unlinkat(dirfd, "file", 0);
+>     return 0;
+> }
+> ^D
+> $ make unlinkat
+> cc     unlinkat.c   -o unlinkat
+> $ sudo autrace ./unlinkat
+> Waiting to execute: ./unlinkat
+> Cleaning up...
+> Trace complete. You can locate the records with 'ausearch -i -p 32121'
+> $ ls -li dir
+> total 0
+>
+> Now, looking at the resulting raw SYSCALL event for unlinkat(2):
+>
+> type=SYSCALL msg=audit(1316210542.899:779): arch=c000003e syscall=263 success=yes exit=0 a0=3 a1=400690 a2=0 a3=0 items=2 ppid=32106 pid=32121 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts12 ses=36 comm="unlinkat" exe="/tmp/unlinkat" key=(null)
+> type=CWD msg=audit(1316210542.899:779):  cwd="/tmp"
+> type=PATH msg=audit(1316210542.899:779): item=0 name="/tmp" inode=58781 dev=00:0e mode=040755 ouid=1000 ogid=1000 rdev=00:00
+> type=PATH msg=audit(1316210542.899:779): item=1 name="file" inode=56228 dev=00:0e mode=0100644 ouid=1000 ogid=1000 rdev=00:00
+> type=EOE msg=audit(1316210542.899:779):
+>
+> - From this event alone, there's no way to answer "Who unlinked
+>   /tmp/dir/file?". For what it's worth, the provided path names would be
+>   exactly the same if we had unlinked "/tmp/dir/dir/dir/dir/dir/file".
+>
+> - PATH item 0 reports the inode of "/tmp/dir" (58781, see ls output
+>   above), however, the reported path name is "/tmp" (bug?).
+>
+> In this example I've used autrace, which traces everything, so I could
+> possibly search for a previous open(2) of inode 58781. And indeed, there
+> it is:
+>
+> type=SYSCALL msg=audit(1316210542.899:778): arch=c000003e syscall=2 success=yes exit=3 a0=40068c a1=0 a2=7fff22724fc8 a3=0 items=1 ppid=32106 pid=32121 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts12 ses=36 comm="unlinkat" exe="/tmp/unlinkat" key=(null)
+> type=CWD msg=audit(1316210542.899:778):  cwd="/tmp"
+> type=PATH msg=audit(1316210542.899:778): item=0 name="dir" inode=58781 dev=00:0e mode=040755 ouid=1000 ogid=1000 rdev=00:00
+> type=EOE msg=audit(1316210542.899:778):
+>
+> Great, so inode 58781 was opened using "/tmp/dir", and therefore, the relative
+> path "file" given to unlinkat(2) above could possibly translate to
+> "/tmp/dir/path"... not really feeling confident here.
+>
+> - All file system auditing rules in various rulesets and the examples in
+>   the documentation add the "-F perm=wa" (or similar) filter, so the
+>   open(2) wouldn't even make it into the audit trail.
+>
+> - If you can handle the volume and log all open(2), what happens if the
+>   open(2) was done hours, days, weeks, ... ago?
+>
+> - What if the open(2) was done by another process which passed the fd
+>   on a unix domain socket?
+>
+> It looks like the kernel auditing code should provide
+>
+>     ... item=0 name="/tmp/dir" inode=58781 ...
+>
+> in the unlinkat(2) syscall event above. Looking up the unlinkat(2)
+> documentation:
+>
+>     int unlinkat(int dirfd, const char *pathname, int flags);
+>
+>     If the pathname given in pathname is relative, then it is
+>     interpreted relative to the directory referred to by the file
+>     descriptor dirfd (rather than relative to the current working
+>     directory of the calling process, as is done by unlink(2) and
+>     rmdir(2) for a relative pathname).
+>
+>     If the pathname given in pathname is relative and dirfd is the
+>     special value AT_FDCWD,  then  pathname  is  interpreted relative
+>     to the current working directory of the calling process (like
+>     unlink(2) and rmdir(2)).
+>
+> As you might see, there's not only the fd->pathname problem, but
+> also the special case for AT_FDCWD. In this case the kernel side should
+> probably just duplicate CWD's path name into item 0's path name. But
+> that's just unlinkat(2), there are a lot more.
+>
+> What am I missing here? Is there no way to audit a directory tree?
+> I've looked at alternatives: Inotify watches won't scale to big trees
+> and events lack so much detail that they can't be used for auditing.
+> Fanotify, while providing the pid, still lacks a lot of events and
+> passes fds; the example code relies on readlink("/proc/self/fd/...").
 
-Unfortunately the datasheet is not very clear on the subject. My
-suspicion at the time of writing was that since there are multiple power
-domains that it was possible to power up only the ones required for
-specific subsystem in use. Unfortunately I didn't and still don't have
-the hardware to test it on(on the board I use there are no dedicated
-regulators and the chips are always powered on). I'll convert it to the
-code that uses regulators in bulk fashion.
 
-Andrey Smirnov
+After posting something similar to linux-audit the other day, I
+rechecked the archives and found this. I'm hitting the same issue.
+I've seen the same thing happen also with chmodat and chownat (and
+those are even uglier since you don't have the chain of inodes in the
+audit logs like you do with unlinkat). I'd mistakenly thought it was
+due to recursion, but that's clearly not the case (the binaries in
+question must just be using the *at() versions of the syscalls for
+recursive calls). Did you find any sort of workaround for this? I
+didn't see a relevant-looking patch in the more recent LKML archives,
+though it could've been titled something I didn't interpret as
+relevant.
 
+If you see my recent linux-audit posting, another related thing (at
+least as far as missing relevant information in the logs) is that the
+audit logs are logging pathnames relative to the chroot, instead of
+the pathnames relative to the root of the OS itself. You'd expect a
+process chroot'd to /chroot, accessing (from the perspective of the
+OS) /chroot/etc/password would get logged as /chroot/etc/password but
+is rather logged as /etc/password.
+
+I don't have a working LXC install handy, but I'd imagine the audit
+subsystem would log relative to the container's / instead of the
+host's / too.
