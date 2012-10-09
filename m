@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2JIDL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 23:11:57 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41092 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2JIDLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 23:11:54 -0400
-Message-id: <50739615.9080205@samsung.com>
-Date: Tue, 09 Oct 2012 05:12:21 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907
- Thunderbird/15.0.1
-MIME-version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-Cc: Rabin Vincent <rabin@rab.in>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CMA and zone watermarks
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
- <20121009031023.GF13817@bbox>
-In-reply-to: <20121009031023.GF13817@bbox>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	id S1753841Ab2JIDgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 23:36:33 -0400
+Received: from void.printf.net ([89.145.121.20]:50780 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab2JIDgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Oct 2012 23:36:31 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: Re: [GIT PULL] MMC updates for 3.7-rc1
+References: <87a9vxdsia.fsf@octavius.laptop.org>
+Date: Mon, 08 Oct 2012 23:36:25 -0400
+In-Reply-To: <87a9vxdsia.fsf@octavius.laptop.org> (Chris Ball's message of
+	"Mon, 08 Oct 2012 09:04:45 -0400")
+Message-ID: <87pq4sco5i.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Linus,
 
-On 10/9/2012 5:10 AM, Minchan Kim wrote:
-
-> On Mon, Oct 08, 2012 at 05:41:14PM +0200, Rabin Vincent wrote:
->> It appears that when CMA is enabled, the zone watermarks are not properly
->> respected, leading to for example GFP_NOWAIT allocations getting access to the
->> high pools.
->>
->> I ran the following test code which simply allocates pages with GFP_NOWAIT
->> until it fails, and then tries GFP_ATOMIC.  Without CMA, the GFP_ATOMIC
->> allocation succeeds, with CMA, it fails too.
+On Mon, Oct 08 2012, Chris Ball wrote:
+> Please pull from:
 >
-> Good spot. By wrong zone_watermark_check, it can consume reserved memory pool.
-
-That was the main reason for the Bartek's research.
-
->> Logs attached (includes my patch which prints the migration type in the failure
->> message http://marc.info/?l=linux-mm&m=134971041701306&w=2), taken on 3.6
->> kernel.
->>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.7-rc1
 >
-> Fortunately, recently, Bart sent a patch about that.
-> http://marc.info/?l=linux-mm&m=134763299016693&w=2
->
-> Could you test above patches in your kernel?
-> You have to apply [2/4], [3/4], [4/4] and don't need [1/4].
+> to receive the MMC merge for 3.7.  There are currently two conflicts
+> due to header renames for the ARM single zImage work; they should be
+> resolved by taking the changes already in your tree.  Thanks.
 
-AFAIR without patch [1/4], free cma page counter will go below zero and 
-weird thing will happen, so better apply the complete patchset.
+Sorry, the merge isn't so one-sided -- here's my resolution for you to
+compare with:
 
-Best regards
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.7-rc1-merged
+
+davinci_mmc.c now uses <linux/edma.h> which is provided by a commit
+in the slave-dmaengine tree, which hasn't sent in a pull request yet.
+Vinod, please can you do that soon?
+
+Let me know if I should do anything else.  Thanks,
+
+- Chris.
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
