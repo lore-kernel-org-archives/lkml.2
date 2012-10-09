@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2JIPfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:35:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50356 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756102Ab2JIPfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:35:10 -0400
-Date: Tue, 9 Oct 2012 17:35:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 08/14] res_counter: return amount of charges after
- res_counter_uncharge
-Message-ID: <20121009153506.GD7655@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-9-git-send-email-glommer@parallels.com>
- <20121009150845.GC7655@dhcp22.suse.cz>
- <50743F71.7090409@parallels.com>
+	id S1756282Ab2JIPfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:35:23 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:5463
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755347Ab2JIPfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 11:35:13 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1155h)
+X-WSS-ID: 0MBMTYJ-02-KFU-02
+X-M-MSG: 
+From: Andre Przywara <andre.przywara@amd.com>
+To: <mingo@elte.hu>, <peterz@infradead.org>
+CC: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@amd.com>
+Subject: [PATCH] x86/perf: Fix virtualization sanity check
+Date: Tue, 9 Oct 2012 17:38:34 +0200
+Message-ID: <1349797115-28346-1-git-send-email-andre.przywara@amd.com>
+X-Mailer: git-send-email 1.7.12.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50743F71.7090409@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-10-12 19:14:57, Glauber Costa wrote:
-> On 10/09/2012 07:08 PM, Michal Hocko wrote:
-> > As I have already mentioned in my previous feedback this is cetainly not
-> > atomic as you the lock protects only one group in the hierarchy. How is
-> > the return value from this function supposed to be used?
-> 
-> So, I tried to make that clearer in the updated changelog.
-> 
-> Only the value of the base memcg (the one passed to the function) is
-> returned, and it is atomic, in the sense that it has the same semantics
-> as the atomic variables: If 2 threads uncharge 4k each from a 8 k
-> counter, a subsequent read can return 0 for both. The return value here
-> will guarantee that only one sees the drop to 0.
-> 
-> This is used in the patch "kmem_accounting lifecycle management" to be
-> sure that only one process will call mem_cgroup_put() in the memcg
-> structure.
+In check_hw_exists() we try to detect non-emulated MSR accesses
+by writing an arbitrary value into one of the PMU registers
+and check if it's value after a readout is still the same.
+This algorithm silently assumes that the register does not contain
+the magic value already, which is wrong in at least one situation.
 
-Yes, you are using res_counter_uncharge and its semantic makes sense.
-I was refering to res_counter_uncharge_until (you removed that context
-from my reply) because that one can race resulting that nobody sees 0
-even though that parents get down to 0 as a result:
-	 A
-	 |
-	 B
-	/ \
-      C(x)  D(y)
+Fix the algorithm to really do a read-modify-write cycle. This fixes
+a warning under Xen under some circumstances on AMD family 10h CPUs.
 
-D and C uncharge everything.
+The reasons in more details actually sound like a story from
+Believe It or Not!:
+First you need an AMD family 10h/12h CPU. These do not reset the
+PERF_CTR registers on a reboot.
+Now you boot bare metal Linux, which goes successfully through this
+check, but leaves the magic value of 0xabcd in the register. You
+don't use the performance counters, but do a reboot (warm reset).
+Then you choose to boot Xen. The check will be triggered with a
+recent Linux kernel as Dom0 again, trying to write 0xabcd into the
+MSR. Xen silently drops the write (expected), but the subsequent read
+will return the value in the register, which just happens to be the
+expected magic value. Thus the test misleadingly succeeds, leaving
+the kernel in the belief that the PMU is available. This will trigger
+the following message:
 
-CPU0				CPU1
-ret += uncharge(D) [0]		ret += uncharge(C) [0]
-ret += uncharge(B) [x-from C]
-				ret += uncharge(B) [0]
-				ret += uncharge(A) [y-from D]
-ret += uncharge(A) [0]
+[    0.020294] ------------[ cut here ]------------
+[    0.020311] WARNING: at arch/x86/xen/enlighten.c:730 xen_apic_write+0x15/0x17()
+[    0.020318] Hardware name: empty
+[    0.020323] Modules linked in:
+[    0.020334] Pid: 1, comm: swapper/0 Not tainted 3.3.8 #7
+[    0.020340] Call Trace:
+[    0.020354]  [<ffffffff81050379>] warn_slowpath_common+0x80/0x98
+[    0.020369]  [<ffffffff810503a6>] warn_slowpath_null+0x15/0x17
+[    0.020378]  [<ffffffff810034df>] xen_apic_write+0x15/0x17
+[    0.020392]  [<ffffffff8101cb2b>] perf_events_lapic_init+0x2e/0x30
+[    0.020410]  [<ffffffff81ee4dd0>] init_hw_perf_events+0x250/0x407
+[    0.020419]  [<ffffffff81ee4b80>] ? check_bugs+0x2d/0x2d
+[    0.020430]  [<ffffffff81002181>] do_one_initcall+0x7a/0x131
+[    0.020444]  [<ffffffff81edbbf9>] kernel_init+0x91/0x15d
+[    0.020456]  [<ffffffff817caaa4>] kernel_thread_helper+0x4/0x10
+[    0.020471]  [<ffffffff817c347c>] ? retint_restore_args+0x5/0x6
+[    0.020481]  [<ffffffff817caaa0>] ? gs_change+0x13/0x13
+[    0.020500] ---[ end trace a7919e7f17c0a725 ]---
 
-ret == x			ret == y
+The new code will change every of the 16 low bits read from the
+register and tries to write and read-back that modified number
+from the MSR.
+
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 915b876..d18b2b8 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -208,12 +208,14 @@ static bool check_hw_exists(void)
+ 	}
+ 
+ 	/*
+-	 * Now write a value and read it back to see if it matches,
+-	 * this is needed to detect certain hardware emulators (qemu/kvm)
+-	 * that don't trap on the MSR access and always return 0s.
++	 * Read the current value, change it and read it back to see if it
++	 * matches, this is needed to detect certain hardware emulators
++	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
+ 	 */
+-	val = 0xabcdUL;
+ 	reg = x86_pmu_event_addr(0);
++	if (rdmsrl_safe(reg, &val))
++		goto msr_fail;
++	val ^= 0xffffUL;
+ 	ret = wrmsrl_safe(reg, val);
+ 	ret |= rdmsrl_safe(reg, &val_new);
+ 	if (ret || val != val_new)
 -- 
-Michal Hocko
-SUSE Labs
+1.7.12.1
+
+
