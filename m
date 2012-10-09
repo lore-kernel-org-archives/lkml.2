@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2JIMvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:51:36 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:16616 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752363Ab2JIMvf (ORCPT
+	id S1755557Ab2JIMxW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:53:22 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:37641 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab2JIMxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:51:35 -0400
-X-IronPort-AV: E=Sophos;i="4.80,560,1344204000"; 
-   d="scan'208";a="176460022"
-Date: Tue, 9 Oct 2012 14:51:33 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Jean Delvare <khali@linux-fr.org>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Ryan Mallon <rmallon@gmail.com>,
-        Antti Palosaari <crope@iki.fi>, kernel-janitors@vger.kernel.org,
-        shubhrajyoti@ti.com, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/13] drivers/media/tuners/qt1010.c: use macros for
- i2c_msg initialization
-In-Reply-To: <20121009141220.412c15c8@endymion.delvare>
-Message-ID: <alpine.DEB.2.02.1210091450270.1971@hadrien>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr> <5071FA5D.30003@gmail.com> <alpine.DEB.2.02.1210080704440.1972@localhost6.localdomain6> <50726110.5020901@gmail.com>
- <alpine.DEB.2.02.1210080722470.1972@localhost6.localdomain6> <20121009141220.412c15c8@endymion.delvare>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 9 Oct 2012 08:53:20 -0400
+Date: Tue, 9 Oct 2012 14:53:05 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for s390 [ver #2]
+Message-ID: <20121009145305.32435495@mschwide>
+In-Reply-To: <21182.1349774152@warthog.procyon.org.uk>
+References: <21182.1349774152@warthog.procyon.org.uk>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12100912-5024-0000-0000-00000400F22B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Jean Delvare wrote:
+On Tue, 09 Oct 2012 10:15:52 +0100
+David Howells <dhowells@redhat.com> wrote:
 
-> Hi Julia,
->
-> On Mon, 8 Oct 2012 07:24:11 +0200 (CEST), Julia Lawall wrote:
-> > > Sorry, I mean either:
-> > >
-> > > 	I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
-> > > 	I2C_MSG_READ(priv->cfg->i2c_address, val, sizeof(*val)),
-> >
-> > Of course.  Sorry for not having seen that.  I can do that.
->
-> Eek, no, you can't, not in the general case at least. sizeof(*val) will
-> return the size of the _first_ element of the destination buffer, which
-> has nothing to do with the length of that buffer (which in turn might
-> be rightfully longer than the read length for this specific message.)
+> Can you merge the following branch into the s390 tree please.
+> 
+> This is to complete part of the UAPI disintegration for which the preparatory
+> patches were pulled recently.
+> 
+> Now that the fixups and the asm-generic chunk have been merged, I've
+> regenerated the patches to get rid of those dependencies and to take account of
+> any changes made so far in the merge window.  If you have already pulled the
+> older version of the branch aimed at you, then please feel free to ignore this
+> request.
+> 
+> The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+> 
+>   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-s390-20121009
+> 
+> for you to fetch changes up to 9807f75955ea7f1877981056755284481873115c:
+> 
+>   UAPI: (Scripted) Disintegrate arch/s390/include/asm (2012-10-09 09:47:31 +0100)
 
-I was actually only going to do it when the size was 1 and the type was
-u8 *.  But your other email suggests that converting to sizeof is just not
-a good idea at all.  So I will drop that part of the rule.
+Ok, rebased the s390 tree to get akpm's patch-bomb out of the way and merged the UAPI
+patchset. Result can be gawked at here:
 
-julia
+https://git.kernel.org/?p=linux/kernel/git/s390/linux.git;a=shortlog;h=refs/heads/features
+
+I will send Linus a please pull soon.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
