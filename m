@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab2JISCy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:02:54 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54118 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab2JISCt (ORCPT
+	id S1756727Ab2JISIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:08:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32215 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab2JISIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:02:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121009164614.GA17274@kroah.com>
-References: <1349799055-4496-1-git-send-email-mujeeb.adil@gmail.com>
-	<1349799738.2386.1.camel@joe-AO722>
-	<20121009164614.GA17274@kroah.com>
-Date: Tue, 9 Oct 2012 23:32:48 +0530
-Message-ID: <CANBXnMk_cmDXgMfTbfo0bt6-m5V7GL09-PPUbZAW+5WOAZuXCA@mail.gmail.com>
-Subject: Re: [PATCH] Staging: winbond: wbusb: Fixed coding style issue
-From: Adil Mujeeb <mujeeb.adil@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Joe Perches <joe@perches.com>, pavel@ucw.cz, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Oct 2012 14:08:51 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=VwQbUJbxAAAA:8 a=-y6FIgDPh9yuBBxGhvgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349806129.24256.28.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.6.1-rt1
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 09 Oct 2012 14:08:49 -0400
+In-Reply-To: <alpine.LFD.2.02.1210091535140.10988@ionos>
+References: <alpine.LFD.2.02.1210091535140.10988@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 10:16 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Oct 09, 2012 at 09:22:18AM -0700, Joe Perches wrote:
->> On Tue, 2012-10-09 at 21:40 +0530, Adil Mujeeb wrote:
->> > Repalces printk's with pr_debug
->> []
->> > diff --git a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
->> > index 0ca857a..48fe622 100644
->> > --- a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
->> > +++ b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
->> > @@ -79,18 +79,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
->> >  static void wbsoft_remove_interface(struct ieee80211_hw *dev,
->> >                                 struct ieee80211_vif *vif)
->> >  {
->> > -   printk("wbsoft_remove interface called\n");
->> > +   pr_debug("wbsoft_remove interface called\n");
->>
->> It'd be more consistent to use
->>       pr_debug("%s called\n", __func__);
->> everywhere.
->>
->> It might be even nicer to remove almost all of these.
->>
->
-> Yes, "tracing" type debug calls like this should all be removed, now
-> that we have built-in function call tracing in the core kernel itself.
+On Tue, 2012-10-09 at 15:46 +0200, Thomas Gleixner wrote:
 
-Thanks Joe and Greg for your quick comments. I will remove such
-tracing calls and resubmit the patch.
+> The RT patch against 3.6.1 can be found here:
+> 
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.1-rt1.patch.xz
+> 
+> The split quilt queue is available at:
+> 
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.6.1-rt1.tar.xz
+> 
 
-Regards,
-Adil
+I think you meant:
 
->
-> greg k-h
+    http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.1-rt1.tar.xz
+
+-- Steve
+
+
