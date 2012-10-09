@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2JIAhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 20:37:24 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:43794 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab2JIAhV (ORCPT
+	id S1755303Ab2JIAjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 20:39:00 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54183 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2JIAi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 20:37:21 -0400
-Message-id: <507371DA.9080309@samsung.com>
-Date: Tue, 09 Oct 2012 02:37:46 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907
- Thunderbird/15.0.1
-MIME-version: 1.0
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CMA and zone watermarks
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
-In-reply-to: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Mon, 8 Oct 2012 20:38:58 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>,
+        Chad Reese <kreese@caviumnetworks.com>
+Subject: [PATCH] RapidIO: Fix trivial comment error.
+Date: Mon,  8 Oct 2012 17:38:32 -0700
+Message-Id: <1349743112-27667-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Chad Reese <kreese@caviumnetworks.com>
 
-On 10/8/2012 5:41 PM, Rabin Vincent wrote:
+The resource index for the mailboxes was incorrect.
 
-> It appears that when CMA is enabled, the zone watermarks are not properly
-> respected, leading to for example GFP_NOWAIT allocations getting access to the
-> high pools.
->
-> I ran the following test code which simply allocates pages with GFP_NOWAIT
-> until it fails, and then tries GFP_ATOMIC.  Without CMA, the GFP_ATOMIC
-> allocation succeeds, with CMA, it fails too.
+Signed-off-by: Chad Reese <kreese@caviumnetworks.com>
+---
+ include/linux/rio.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Could You run your test with latest linux-next kernel? There have been 
-some patches merged to akpm tree which should fix accounting for free 
-and free cma pages. I hope it should fix this issue.
-
-Best regards
+diff --git a/include/linux/rio.h b/include/linux/rio.h
+index dc0c755..dd418d1 100644
+--- a/include/linux/rio.h
++++ b/include/linux/rio.h
+@@ -58,7 +58,7 @@
+  *
+  *	0	RapidIO inbound doorbells
+  *	1	RapidIO inbound mailboxes
+- *	1	RapidIO outbound mailboxes
++ *	2	RapidIO outbound mailboxes
+  */
+ #define RIO_DOORBELL_RESOURCE	0
+ #define RIO_INB_MBOX_RESOURCE	1
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
+1.7.11.4
+
