@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab2JIPI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:08:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49222 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab2JIPIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:08:53 -0400
-Date: Tue, 9 Oct 2012 17:08:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 08/14] res_counter: return amount of charges after
- res_counter_uncharge
-Message-ID: <20121009150845.GC7655@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-9-git-send-email-glommer@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349690780-15988-9-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756086Ab2JIPJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:09:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36739 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab2JIPJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 11:09:06 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jack@suse.cz
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: [PATCH 1/6] udf: fix memory leak while allocating blocks during write
+Date: Wed, 10 Oct 2012 00:08:56 +0900
+Message-Id: <1349795336-6353-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-10-12 14:06:14, Glauber Costa wrote:
-[...]
-> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> index ad581aa..7b3d6dc 100644
-> --- a/kernel/res_counter.c
-> +++ b/kernel/res_counter.c
-> @@ -86,33 +86,39 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
->  	return __res_counter_charge(counter, val, limit_fail_at, true);
->  }
->  
-> -void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
-> +u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
->  {
->  	if (WARN_ON(counter->usage < val))
->  		val = counter->usage;
->  
->  	counter->usage -= val;
-> +	return counter->usage;
->  }
->  
-> -void res_counter_uncharge_until(struct res_counter *counter,
-> -				struct res_counter *top,
-> -				unsigned long val)
-> +u64 res_counter_uncharge_until(struct res_counter *counter,
-> +			       struct res_counter *top,
-> +			       unsigned long val)
->  {
->  	unsigned long flags;
->  	struct res_counter *c;
-> +	u64 ret = 0;
->  
->  	local_irq_save(flags);
->  	for (c = counter; c != top; c = c->parent) {
-> +		u64 r;
->  		spin_lock(&c->lock);
-> -		res_counter_uncharge_locked(c, val);
-> +		r = res_counter_uncharge_locked(c, val);
-> +		if (c == counter)
-> +			ret = r;
->  		spin_unlock(&c->lock);
->  	}
->  	local_irq_restore(flags);
-> +	return ret;
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-As I have already mentioned in my previous feedback this is cetainly not
-atomic as you the lock protects only one group in the hierarchy. How is
-the return value from this function supposed to be used?
+Need to brelse the buffer_head stored in cur_epos and next_epos.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+---
+ fs/udf/inode.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index df88b95..2b77593 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -765,6 +765,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
+ 				goal, err);
+ 		if (!newblocknum) {
+ 			brelse(prev_epos.bh);
++			brelse(cur_epos.bh);
++			brelse(next_epos.bh);
+ 			*err = -ENOSPC;
+ 			return 0;
+ 		}
+@@ -795,6 +797,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
+ 	udf_update_extents(inode, laarr, startnum, endnum, &prev_epos);
+ 
+ 	brelse(prev_epos.bh);
++	brelse(cur_epos.bh);
++	brelse(next_epos.bh);
+ 
+ 	newblock = udf_get_pblock(inode->i_sb, newblocknum,
+ 				iinfo->i_location.partitionReferenceNum, 0);
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
