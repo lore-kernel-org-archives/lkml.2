@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab2JIMDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:03:04 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7522 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab2JIMCs (ORCPT
+	id S1755497Ab2JIMEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:04:39 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52195 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab2JIMEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:02:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 09 Oct 2012 05:02:48 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>,
-        <sameo@linux.intel.com>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 3/5] mfd: tps65910: Initialize mfd devices after all initialization done
-Date: Tue, 9 Oct 2012 16:58:34 +0530
-Message-ID: <1349782116-9757-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1349782116-9757-1-git-send-email-ldewangan@nvidia.com>
-References: <1349782116-9757-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 9 Oct 2012 08:04:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAOMZO5BSGFuSg6rMK5cREi3xb47yBm-mW8PDy36nCub9bsFScg@mail.gmail.com>
+References: <1349320509-26930-1-git-send-email-festevam@gmail.com>
+	<1349320509-26930-6-git-send-email-festevam@gmail.com>
+	<CACRpkdYTqT=eCOWq7hnymMVg0kab-pkXfv4kxnzSrNCNstpwJw@mail.gmail.com>
+	<CAOMZO5BSGFuSg6rMK5cREi3xb47yBm-mW8PDy36nCub9bsFScg@mail.gmail.com>
+Date: Tue, 9 Oct 2012 14:04:33 +0200
+Message-ID: <CACRpkdZKjOxe3U76+HRrsMU3MBw8TqELWyTug2ciyuS9=FBi5w@mail.gmail.com>
+Subject: Re: [PATCH 6/6] gpio: gpio-da9052: Convert to the new da9052
+ interrupt functions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        ashish.jangam@kpitcummins.com, dchen@diasemi.com, arnd@arndb.de,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sub devices of tps65910 after all initialization like interrupt,
-clock etc. is done. This will make sure that require data gets
-initialized properly before sub devices probe's get called.
+On Mon, Oct 8, 2012 at 12:40 PM, Fabio Estevam <festevam@gmail.com> wrote:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/mfd/tps65910.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+> Hi Linus,
+> On Mon, Oct 8, 2012 at 3:20 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Thu, Oct 4, 2012 at 5:15 AM, Fabio Estevam <festevam@gmail.com> wrote:
+>>
+>>> From: Fabio Estevam <fabio.estevam@freescale.com>
+>>>
+>>> Convert to the new da9052 interrupt functions, so that we can get rid of
+>>> irq_base references.
+>>>
+>>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>>
+>> Applied to my GPIO tree with Mark's ACK.
+>
+> Patches 1/6 and 2/6 are also needed, otherwise it breaks the build if
+> only this one gets applied.
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 11adedb..f7f9d3a 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -495,18 +495,10 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
- 		return ret;
- 	}
- 
--	ret = mfd_add_devices(tps65910->dev, -1,
--			      tps65910s, ARRAY_SIZE(tps65910s),
--			      NULL, 0, NULL);
--	if (ret < 0) {
--		dev_err(&i2c->dev, "mfd_add_devices failed: %d\n", ret);
--		return ret;
--	}
--
- 	init_data->irq = pmic_plat_data->irq;
- 	init_data->irq_base = pmic_plat_data->irq_base;
--
- 	tps65910_irq_init(tps65910, init_data->irq, init_data);
-+
- 	tps65910_ck32k_init(tps65910, pmic_plat_data);
- 	tps65910_sleepinit(tps65910, pmic_plat_data);
- 
-@@ -515,6 +507,14 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
- 		pm_power_off = tps65910_power_off;
- 	}
- 
-+	ret = mfd_add_devices(tps65910->dev, -1,
-+			      tps65910s, ARRAY_SIZE(tps65910s),
-+			      NULL, 0, NULL);
-+	if (ret < 0) {
-+		dev_err(&i2c->dev, "mfd_add_devices failed: %d\n", ret);
-+		return ret;
-+	}
-+
- 	return ret;
- }
- 
--- 
-1.7.1.1
+Ah OK I'll take it out again. Push this through whatever tree you
+want (maybe the i.MX or MFD tree then?)
 
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Linus Walleij
