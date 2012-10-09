@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab2JIUfl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:35:41 -0400
-Received: from server505d.appriver.com ([98.129.35.42]:59054 "EHLO
-	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752609Ab2JIUfj convert rfc822-to-8bit (ORCPT
+	id S1756628Ab2JIUgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:36:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48620 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2JIUgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:35:39 -0400
-X-Note-AR-ScanTimeLocal: 10/9/2012 3:35:38 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: Too many policies to list
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-ALLOW: @coraid.com ALLOWED
-X-Virus-Scan: V-
-X-Note: Spam Tests Failed: 
-X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
-X-Note-Sending-IP: 98.129.35.1
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G321 G322 G323 G324 G328 G329 G340 G436 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: ALLOWEDSENDER
-X-Note: Headers Injected
-From: Ed Cashin <ecashin@coraid.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Josh Triplett <josh@joshtriplett.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        Christopher Li <sparse@chrisli.org>, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 9 Oct 2012 15:35:32 -0500
-Subject: Re: [PATCH] linux/compiler.h: Add __must_hold macro for functions
- called with a lock held
-Thread-Topic: [PATCH] linux/compiler.h: Add __must_hold macro for functions
- called with a lock held
-Thread-Index: Ac2mXaI4IUOufdcQRC6jtezgAZ8F9g==
-Message-ID: <C5833F40-2EA6-43DA-B69C-AFF59E76E0C9@coraid.com>
-References: <20121008020610.GA9197@leaf>
- <20121009130637.5e61078f.akpm@linux-foundation.org>
-In-Reply-To: <20121009130637.5e61078f.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Oct 2012 16:36:11 -0400
+Date: Tue, 9 Oct 2012 13:36:08 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Tang Chen <tangchen@cn.fujitsu.com>, mingo@redhat.com,
+        miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
+ node.
+In-Reply-To: <1349780256.7880.12.camel@twins>
+Message-ID: <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com>
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 9, 2012, at 4:06 PM, Andrew Morton wrote:
+On Tue, 9 Oct 2012, Peter Zijlstra wrote:
 
-> On Sun, 7 Oct 2012 19:06:10 -0700
-> Josh Triplett <josh@joshtriplett.org> wrote:
+> On Mon, 2012-10-08 at 10:59 +0800, Tang Chen wrote:
+> > If a cpu is offline, its nid will be set to -1, and cpu_to_node(cpu) will
+> > return -1. As a result, cpumask_of_node(nid) will return NULL. In this case,
+> > find_next_bit() in for_each_cpu will get a NULL pointer and cause panic.
 > 
->> linux/compiler.h has macros to denote functions that acquire or release
->> locks, but not to denote functions called with a lock held that return
->> with the lock still held.  Add a __must_hold macro to cover that case.
+> Hurm,. this is new, right? Who is changing all these semantics without
+> auditing the tree and informing all affected people?
 > 
-> hum.  How does this work?  Any code examples and sample sparse output? 
-> Does it apply to all lock types, etc?
 
-I accidentally found a bug in sparse where sparse should have
-been complaining about the locking in the aoe driver's
-aoenet.c:tx function, which enters with the txlock spinlock held
-and releases and reacquires it inside a loop.
+I've nacked the patch that did it because I think it should be done from 
+the generic cpu hotplug code only at the CPU_DEAD level with a per-arch 
+callback to fixup whatever cpu-to-node mappings they maintain since 
+processes can reenter the scheduler at CPU_DYING.
 
-When I modified the loop contents between lock release and
-acquisition in a patch that I'm preparing now, sparse began
-complaining about context imbalance.  (Before the modifications
-to the tx function, sparse was exhibiting a bug by *not*
-complaining.)  Here's the complaint:
+The whole issue seems to be because alloc_{fair,rt}_sched_group() does an 
+iteration over all possible cpus (not all online cpus) and does 
+kzalloc_node() which references a now-offlined node.  Changing it to -1 
+makes the slab code fallback to any online node.
 
-  CHECK   drivers/block/aoe/aoenet.c
-/build/ecashin/git/linux/arch/x86/include/asm/spinlock.h:81:9: warning: context imbalance in 'tx' - unexpected unlock
-  CC [M]  drivers/block/aoe/aoenet.o
+What I think we need to do instead of hacking only the acpi code and not 
+standardizing this across the kernel is:
 
-... although I used a smaller file to hone in on the issue when
-discussing it on the linux-sparse mailing list:
+ - reset cpu-to-node with a per-arch callback in generic cpu hotplug code 
+   at CPU_DEAD, and
 
-  http://thread.gmane.org/gmane.comp.parsers.sparse/3091
-
-Josh Triplett suggested I add an annotation telling sparse that
-the function enters and exits with the lock held, but after
-reading the sparse man page, where the context feature is
-described, it looked like that meant specifying a 1 for both
-parameters: __attribute__((context(x,1,1))), but there was no
-macro for that.
-
-The new patch from Josh Triplett adds the macro that I can use to
-keep sparse informed about the locking requirements for the tx
-function.
-
-> IOW, where is all this stuff documented?
-
-It wasn't real easy to find it, but it's basically something you
-can infer from reading include/linux/compiler.h and the sparse.1
-man page that's included with sparse.  I think a brief mention in
-Documentation/sparse.txt of the relationship between the
-sparse "context" feature and the locking annotations like
-__acquires and __must_hold would be a nice addition.
-
-I can take a stab at it if folks agree.
-
--- 
-  Ed Cashin
-  ecashin@coraid.com
-
-
+ - do an iteration over all possible cpus for node hot-remove ensuring 
+   there are no stale references.
