@@ -1,125 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2JIST5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:19:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17829 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab2JISTz (ORCPT
+	id S1756870Ab2JISUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:20:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65294 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab2JISUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:19:55 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=VwQbUJbxAAAA:8 a=gHW2ynD7t_GgzrDDy2EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349806792.24256.34.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.6.1-rt1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Tue, 09 Oct 2012 14:19:52 -0400
-In-Reply-To: <alpine.LFD.2.02.1210091535140.10988@ionos>
-References: <alpine.LFD.2.02.1210091535140.10988@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Tue, 9 Oct 2012 14:20:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
+Date: Tue, 9 Oct 2012 18:19:34 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <201210091539.46274.arnd@arndb.de> <1349799035.21847.222.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1349799035.21847.222.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210091819.34310.arnd@arndb.de>
+X-Provags-ID: V02:K0:npXf8fVpImnJ1kySbqNOiwZiZgnNQDHa+u/cVdVwT7H
+ Gs6djRiK1bvnKytiWm8Lm+x8AcUYF6H3Qd9OFcSKqacjIJVBR4
+ /XbpoyX2s8231kNHi5M+QFDtYL24IEpaw627Q9zJ4TZwk1UpJP
+ 1b1FJBgLEiwU1GooIEduJIg9r0kV+lEKAbs76ENoFdHGME89R7
+ +j0xZ2AOkRy4m3FZosy1p075ND3AQ+ApTLSUX7cOUnpeE2JuDv
+ ZjIOt11DKdwPYthzSFr/oSg52pgVZHa1M3DUp26BbeR6PE8Th2
+ C5wC8Fzarlldibrq1/mntAq6JVHmNBd0TQnC+fFW8Z1RljyI3l
+ SOFGZCEHMHymEjXagWvU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 15:46 +0200, Thomas Gleixner wrote:
-> Dear RT Folks,
+On Tuesday 09 October 2012, Ian Campbell wrote:
+> On Tue, 2012-10-09 at 16:39 +0100, Arnd Bergmann wrote:
+> > On Tuesday 09 October 2012, Ian Campbell wrote:
+> > > > * The tmem hypercall is not available on ARM
+> > > > 
+> > > > * ARMv6 does not support cmpxchg on 16-bit words that are used in the
+> > > 
+> > > missing the end of this sentence?
+> > 
+> > Right, I meant to say 
+> > 
+> > * ARMv6 does not support cmpxchg on 16-bit words that are used in the
+> >   Xen grant table code, so we must ensure that Xen support is only built
+> >   on ARMv7-only kernels not combined ARMv6/v7 kernels.
+> > 
+> > This should be fixed differently in the future.
 > 
-> I'm pleased to announce the 3.6.1-rt1 release.
+> Is this is a build time failure because gcc/gas/etc refuses to generate
+> these instructions if it is configured for v6?
 > 
-> This is a pretty straight forward move from the 3.4-rt series which
-> includes a few significant updates which need to be backported to the
-> 3.x-rt stable series:
+> I ask because if it is only a runtime issue then we can reason that if
+> we are running Xen specific grant table code, then we must be running on
+> Xen and therefore must necessarily be running on a v7 (because Xen only
+> support v7+virt extensions) even if the kernel happens to be capable of
+> running on v6 too.
 
-My scripts detected these patches to be pulled into stable. It detects
-any patch that has a Cc: to stable-rt@vger.kernel.org that does not
-already exist in stable. It also adds the '000x-' prefix to keep the
-order.
+The underlying reason of course is that ARMv6 doesn't have those
+instructions. The symptom you see is a link error because gcc emits
+a reference to the (intentionally missing) __bad_cmpxchg() function
+from
 
-0000-scsi-qla2xxx-fix-bug-sleeping-function-called-from-invalid-context.patch
-0001-upstream-net-rt-remove-preemption-disabling-in-netif_rx.patch
-0002-random-make-it-work-on-rt.patch
-0003-softirq-init-softirq-local-lock-after-per-cpu-section-is-set-up.patch
-0004-mm-slab-fix-potential-deadlock.patch
-0005-mm-page-alloc-use-local-lock-on-target-cpu.patch
-0006-rt-rw-lockdep-annotations.patch
-0007-stomp-machine-deal-clever-with-stopper-lock.patch
+static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+                                      unsigned long new, int size)
+{
+        unsigned long oldval, res;
 
-> 
->    * Make interrupt randomness work again on RT. Based on the 3.x.y
->      stable updates in that area. Should be applicable to all 3.x-rt
->      series with almost no modifications.
+        switch (size) {
+#ifndef CONFIG_CPU_V6   /* min ARCH >= ARMv6K */
+        case 1:
+		...
+                break;
+        case 2:
+		...
+                break;
+#endif
+        case 4:
+		...
+                break;
+        default:
+                __bad_cmpxchg(ptr, size);
+                oldval = 0;
+        }
+        return oldval;
+}
 
-Looks to be: random-make-it-work-on-rt.patch
+The possible solutions I can see for this are:
 
-> 
->    * RT softirq initialization sequence fix (Steven Rostedt)
+* change the grant table format to use 32 bits for the flags on ARM
+* change the code to always cmpxchg the entire 32 bit word including the flags.
+* implement your own cmpxchg wrapper that may be implemented using a spinlock
+  rather than cmpxchg if ARMv6 is enabled.
 
-As I remembered that I forgot to Cc stable-rt, I manually added it to my
-patch before running the script.
-
-> 
->    * Fix for a potential deadlock in mm/slab.c. This had been reported
->      as lockdep splats several times and stupidly ignored as a false
->      positive, but in fact it's a real (though almost impossible to
->      trigger) deadlock lurking.
-
-Looks to be: mm-slab-fix-potential-deadlock.patch
-
-> 
->    * Use the proper local_lock primitives in mm/page_alloc.c. That's
->      not a real bug, but this fixes an inconsistency which helps
->      debugability and therefore is worthwhile to be backported.
-
-Looks to be: mm-page-alloc-use-local-lock-on-target-cpu.patch
-
-> 
->    * RT-rwlock/rwsem annotations:
-
-Looks to be: rt-rw-lockdep-annotations.patch
-
-> 
->      RT does not allow multiple readers on rwlocks and rwsems. The
->      lockdep annotations did not yet consider that fact. One might
->      think that this is a complete RT specific issue, but it's
->      not. The FIFO fair rwsem/lock modifications in mainline made
->      reader/writer primitives prone to very subtle deadlock problems
->      which cannot be detected by the current lockdep annotations in
->      mainline. The reason is that if a writer interleaves with two
->      readers it will block the second reader from proceeding in order
->      not to allow writer starvation. The restricted RWlocks semantics
->      of RT allow an easy detection of that problem. We already
->      triggered a real deadlock in RT (see:
->      peterz-srcu-crypto-chain.patch) which could result in a hard to
->      trigger, but mainline relevant deadlock. Wait for more
->      interesting problems in that area.
-> 
->    * The output of might_sleep debugging is silent about the possible
->      causes vs. the preempt count. Contrary to interrupt disabling
->      there is zero information about what disabled preemption
->      last. Again, not strictly a bugfix, but debuggability is key.
-
-Is this: sched-better-debug-output-for-might-sleep.patch ? It's not
-marked to Cc stable-rt.
-
-> 
->    * Fix a potentially deadly sto(m)p_machine deadlock. A CPU which
->      calls that code from its inactive state (don't ask me for the
->      ghastly deatils why this is necessary) can run into a contended
->      state of the stomp machine mutex which would cause a rather
->      awkward issue of idle scheduling itself away to idle as the only
->      possible task on that upcoming cpu. Not pretty ....
-
-Looks to be: stomp-machine-deal-clever-with-stopper-lock.patch
-
-
-If I'm wrong with the above, let me know. Thanks,
-
--- Steve
-
-
+	Arnd
