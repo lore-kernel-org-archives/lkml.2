@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab2JIGRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:17:47 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:56555 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752410Ab2JIGRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:17:44 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [bisected] PS/2 keyboard and mouse dead on resume on Intel D845BG
-Date: Tue, 9 Oct 2012 08:17:00 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Matthew Garrett <mjg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-References: <201210071513.27959.linux@rainbow-software.org> <20121008144243.GC5068@srcf.ucam.org> <5073B21B.4090600@kernel.org>
-In-Reply-To: <5073B21B.4090600@kernel.org>
-X-KMail-QuotePrefix: > 
+	id S1752956Ab2JIGSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:18:33 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:35634 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752293Ab2JIGSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 02:18:32 -0400
+Date: Tue, 9 Oct 2012 08:18:18 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: EDAC devel <linux-edac@vger.kernel.org>, X86-ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] AMD MCE injection improvs
+Message-ID: <20121009061818.GB23165@aftab.osrc.amd.com>
+References: <1349716293-16723-1-git-send-email-bp@amd64.org>
+ <CA+8MBbJw8dQEJK-fXFKkDS0_+Ax6ZxppkmxBK+AGafk1YLcvyQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201210090817.00538.linux@rainbow-software.org>
+In-Reply-To: <CA+8MBbJw8dQEJK-fXFKkDS0_+Ax6ZxppkmxBK+AGafk1YLcvyQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Len Brown wrote:
-> On 10/08/2012 10:42 AM, Matthew Garrett wrote:
-> > On Sun, Oct 07, 2012 at 09:00:09PM +0200, Ondrej Zary wrote:
-> >> Added acpi_read_bit_register there and it seems that SCI_EN is already
-> >> set!
-> >>
-> >> This patch fixes the problem here. I wonder how this affects systems
-> >> that require SCI_EN to be set.
-> >
-> > I /think/ that this will be safe, but it doesn't match my recollection
-> > of how Windows behaves so it may break something. Any chance you can
-> > find someone with one of the machines mentioned in
-> > https://bugzilla.kernel.org/show_bug.cgi?id=13745 and make sure that
-> > they still work with your patch?
->
-> yikes.
-> we started with a white-list,
-> then we made setting SCI_EN the default,
-> and here is at least one box that wants to be on a black list
-> so that we don't set SCI_EN:-(
+On Mon, Oct 08, 2012 at 04:58:34PM -0700, Tony Luck wrote:
+> On Mon, Oct 8, 2012 at 10:11 AM, Borislav Petkov <bp@amd64.org> wrote:
+> >  create mode 100644 arch/x86/ras/ras.c
+> 
+> Overall it looks good - but I'm a bit puzzled by this ras.c file that gets
+> created as an empty file in part1, and is still empty at the end of the
+> series.
+> 
+> What is going to go into it?
 
-I wonder what Windows does here. Haven't tested it on this machine but I 
-assume that it works.
+Yeah, maybe it should be called core.c and all the shared functionality
+would go there. I put it there initially for the first patch but I
+realize now, we won't need it just yet - I'll drop it.
+
+Thanks.
 
 -- 
-Ondrej Zary
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
