@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab2JIVbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 17:31:37 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:48613 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756952Ab2JIVbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 17:31:33 -0400
-Message-ID: <5074975B.20809@linaro.org>
-Date: Tue, 09 Oct 2012 14:30:03 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1756960Ab2JIVeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 17:34:21 -0400
+Received: from lnx141.hrz.tu-darmstadt.de ([130.83.156.236]:50431 "EHLO
+	lnx141.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754600Ab2JIVeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 17:34:19 -0400
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Oct 2012 17:34:19 EDT
+From: Tim Sander <tim01@vlsi.informatik.tu-darmstadt.de>
+Organization: Sander & Lighting
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.6.1-rt1
+Date: Tue, 9 Oct 2012 23:28:22 +0200
+User-Agent: KMail/1.13.7 (Linux/3.6.0; KDE/4.8.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <alpine.LFD.2.02.1210091535140.10988@ionos>
+In-Reply-To: <alpine.LFD.2.02.1210091535140.10988@ionos>
 MIME-Version: 1.0
-To: Mike Hommey <mh@glandium.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
-References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org> <20121009080735.GA24375@glandium.org>
-In-Reply-To: <20121009080735.GA24375@glandium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12100921-1976-0000-0000-00001233B823
+Message-Id: <201210092328.22862.tim01@vlsi.informatik.tu-darmstadt.de>
+X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.10.9.212114
+X-PMX-RELAY: outgoing
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 01:07 AM, Mike Hommey wrote:
-> Note it doesn't have to be a vs. situation. madvise could be an
-> additional way to interface with volatile ranges on a given fd.
->
-> That is, madvise doesn't have to mean anonymous memory. As a matter of
-> fact, MADV_WILLNEED/MADV_DONTNEED are usually used on mmaped files.
-> Similarly, there could be a way to use madvise to mark volatile ranges,
-> without the application having to track what memory ranges are
-> associated to what part of what file, which the kernel already tracks.
+Hi Thomas
+> I'm pleased to announce the 3.6.1-rt1 release.
+I also have to second the big thanks of Steven!
 
-Good point. We could add madvise() interface, but limit it only to 
-mmapped tmpfs files, in parallel with the fallocate() interface.
+>    * Fix for a potential deadlock in mm/slab.c. This had been reported
+>      as lockdep splats several times and stupidly ignored as a false
+>      positive, but in fact it's a real (though almost impossible to
+>      trigger) deadlock lurking.
+Mh, just an unverified (i.e. i haven't had the time to dig into it) 
+information from my side: I think i have been seeing a total lockup on an OOM 
+condition. Is it possible that this possible deadlock
+might have been triggered in such a condition more "reliably"?
 
-However, I would like to think through how MADV_MARK_VOLATILE with 
-purely anonymous memory could work, before starting that approach. That 
-and Neil's point that having an identical kernel interface restricted to 
-tmpfs, only as a convenience to userland in switching from virtual 
-address to/from mmapped file offset may be better left to a userland 
-library.
-
-thanks
--john
-
+Best regards
+Tim
