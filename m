@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab2JIEjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:39:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45308 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2JIEjI (ORCPT
+	id S1751652Ab2JIEjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:39:39 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36504 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab2JIEjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:39:08 -0400
-X-AuditID: 9c930197-b7b6dae000000e70-df-5073aa69e60e
-Date: Tue, 9 Oct 2012 13:43:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CMA and zone watermarks
-Message-ID: <20121009044317.GG13817@bbox>
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
- <20121009031023.GF13817@bbox>
- <50739615.9080205@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50739615.9080205@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 9 Oct 2012 00:39:36 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH -v2 00/10] x86: Use BRK to pre mapping page table to make xen happy
+Date: Mon,  8 Oct 2012 21:39:08 -0700
+Message-Id: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 05:12:21AM +0200, Marek Szyprowski wrote:
-> Hello,
-> 
-> On 10/9/2012 5:10 AM, Minchan Kim wrote:
-> 
-> >On Mon, Oct 08, 2012 at 05:41:14PM +0200, Rabin Vincent wrote:
-> >>It appears that when CMA is enabled, the zone watermarks are not properly
-> >>respected, leading to for example GFP_NOWAIT allocations getting access to the
-> >>high pools.
-> >>
-> >>I ran the following test code which simply allocates pages with GFP_NOWAIT
-> >>until it fails, and then tries GFP_ATOMIC.  Without CMA, the GFP_ATOMIC
-> >>allocation succeeds, with CMA, it fails too.
-> >
-> >Good spot. By wrong zone_watermark_check, it can consume reserved memory pool.
-> 
-> That was the main reason for the Bartek's research.
+on top of tip/x86/mm2
 
-Okay. It shoud have written down for more good description at that time. :)
+1. use brk to mapping final page table
+2. remove early_ioremap in page table accessing.
 
-> 
-> >>Logs attached (includes my patch which prints the migration type in the failure
-> >>message http://marc.info/?l=linux-mm&m=134971041701306&w=2), taken on 3.6
-> >>kernel.
-> >>
-> >
-> >Fortunately, recently, Bart sent a patch about that.
-> >http://marc.info/?l=linux-mm&m=134763299016693&w=2
-> >
-> >Could you test above patches in your kernel?
-> >You have to apply [2/4], [3/4], [4/4] and don't need [1/4].
-> 
-> AFAIR without patch [1/4], free cma page counter will go below zero
-> and weird thing will happen, so better apply the complete patchset.
+v1-v2: changes, update xen interface about pagetable_reserve, so not
+   use pgt_buf_* in xen code directly.
 
-I can't understand your point. [1/4] is just fix for correcting trace
-No?
+could be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
 
-http://marc.info/?l=linux-mm&m=134763301216713&w=2
+Yinghai Lu (10):
+  x86, mm: align start address to correct big page size
+  x86, mm: Use big page size for small memory range
+  x86, mm: get early page table from BRK
+  x86, mm: Don't clear page table if next range is ram
+  x86, mm: Remove early_memremap workaround for page table accessing
+  x86, mm: only keep initial mapping for ram
+  x86, xen, mm: Do not need to check if page table is ioremap
+  x86, xen, mm: fix mapping_pagetable_reserve logic
+  x86, mm: Hide pgt_buf_* into internal to xen
+  x86, mm: Add early_pgt_buf_*
 
-
-> 
-> Best regards
-> -- 
-> Marek Szyprowski
-> Samsung Poland R&D Center
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ arch/x86/include/asm/init.h          |    5 ++
+ arch/x86/include/asm/pgtable.h       |    1 +
+ arch/x86/include/asm/pgtable_types.h |    1 -
+ arch/x86/include/asm/x86_init.h      |    2 +-
+ arch/x86/kernel/setup.c              |    2 +
+ arch/x86/kernel/x86_init.c           |    3 +-
+ arch/x86/mm/init.c                   |   73 ++++++++++++++++++++++++---
+ arch/x86/mm/init_32.c                |    9 +++-
+ arch/x86/mm/init_64.c                |   91 ++++++++++++----------------------
+ arch/x86/xen/mmu.c                   |   26 +++------
+ 10 files changed, 125 insertions(+), 88 deletions(-)
 
 -- 
-Kind regards,
-Minchan Kim
+1.7.7
+
