@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab2JII1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:27:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43556 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751448Ab2JII1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:27:42 -0400
-Date: Tue, 9 Oct 2012 17:27:27 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Christopher Heiny <cheiny@synaptics.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-Message-ID: <20121009082719.GC8237@opensource.wolfsonmicro.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
- <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
- <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>
+	id S1753049Ab2JII2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 04:28:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57690 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab2JII2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 04:28:43 -0400
+X-IronPort-AV: E=Sophos;i="4.80,560,1344182400"; 
+   d="scan'208";a="5968057"
+Message-ID: <5073E18A.2090203@cn.fujitsu.com>
+Date: Tue, 09 Oct 2012 16:34:18 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, mingo@redhat.com,
+        peterz@infradead.org, miaox@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 16:28:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/09 16:28:34,
+	Serialize complete at 2012/10/09 16:28:34
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 09:43:13AM +0200, Linus Walleij wrote:
-> On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+At 10/09/2012 02:21 PM, David Rientjes Wrote:
+> On Mon, 8 Oct 2012, Tang Chen wrote:
+> 
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 66b36ab..e76dce9 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -1263,18 +1263,24 @@ EXPORT_SYMBOL_GPL(kick_process);
+>>   */
+>>  static int select_fallback_rq(int cpu, struct task_struct *p)
+>>  {
+>> -	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
+>> +	int nid = cpu_to_node(cpu);
+>> +	const struct cpumask *nodemask = NULL;
+>>  	enum { cpuset, possible, fail } state = cpuset;
+>>  	int dest_cpu;
+>>  
+>> -	/* Look for allowed, online CPU in same node. */
+>> -	for_each_cpu(dest_cpu, nodemask) {
+>> -		if (!cpu_online(dest_cpu))
+>> -			continue;
+>> -		if (!cpu_active(dest_cpu))
+>> -			continue;
+>> -		if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+>> -			return dest_cpu;
+>> +	/* If the cpu has been offlined, its nid was set to -1. */
+>> +	if (nid != -1) {
+> 
+> NUMA_NO_NODE.
+> 
+> Eek, the nid shouldn't be -1 yet, though, for cpu hotplug since this 
+> should be called at CPU_DYING level and migrate_tasks() still sees a valid 
+> cpu.
 
-> > + * @cs_assert - For systems where the SPI subsystem does not control the CS/SSB
-> > + * line, or where such control is broken, you can provide a custom routine to
-> > + * handle a GPIO as CS/SSB.  This routine will be called at the beginning and
-> > + * end of each SPI transaction.  The RMI SPI implementation will wait
-> > + * pre_delay_us after this routine returns before starting the SPI transfer;
-> > + * and post_delay_us after completion of the SPI transfer(s) before calling it
-> > + * with assert==FALSE.
+the cpu's node is set when the cpu is hotpluged(not online), and it will
+be cleared when the cpu is hotremoved(This patch is in akpm tree):
+https://lkml.org/lkml/2012/9/3/39
 
-> Hm hm, can you describe the case where this happens?
+I guess the task is in sleep state when the cpu is offlined, and it doesn't
+be migrated to another cpu.
 
-> Usually we don't avoid fixes for broken drivers by duct-taping
-> solutions into other drivers, instead we fix the SPI driver.
+Thanks
+Wen Congyang
 
-> I can think of systems where CS is asserted not by using
-> GPIO but by poking some special register for example, which
-> is a valid reason for including this, but working around broken
-> SPI drivers is not a valid reason to include this.
+> 
+> On x86, cpumask_of_node() is always guaranteed to return a valid cpumask 
+> after boot so presumably this is a problem in some non-x86 arch code and 
+> isn't actually a sched problem.
+> 
+>> +		nodemask = cpumask_of_node(nid);
+>> +
+>> +		/* Look for allowed, online CPU in same node. */
+>> +		for_each_cpu(dest_cpu, nodemask) {
+>> +			if (!cpu_online(dest_cpu))
+>> +				continue;
+>> +			if (!cpu_active(dest_cpu))
+>> +				continue;
+>> +			if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
+>> +				return dest_cpu;
+>> +		}
+>>  	}
+>>  
+>>  	for (;;) {
+> 
 
-> (Paging Mark about it.)
-
-Yeah, this seems silly - by this logic we'd have to go round implementing
-manual /CS control in every single SPI client driver which isn't
-terribly sensible.  The driver should just assume that the SPI
-controller does what it's told.  As you say if there's an issue the
-relevant controller driver should take care of things.
-
-We should also have generic support in the SPI framework for GPIO based
-/CS, there's enough drivers open coding this already either due to
-hardware limitations or to support extra chip selects.
-
-The ability of SPI hardware and driver authors to get /CS right is
-pretty depressing :/
