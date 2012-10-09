@@ -1,267 +1,466 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab2JISzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 14:55:32 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:51928 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab2JISz3 (ORCPT
+	id S1756666Ab2JIS5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 14:57:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57785 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab2JIS5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 14:55:29 -0400
-Date: Wed, 10 Oct 2012 00:21:09 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-Message-ID: <20121009185108.GA2549@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <20120921120000.27611.71321.sendpatchset@codeblue>
- <505C654B.2050106@redhat.com>
- <505CA2EB.7050403@linux.vnet.ibm.com>
- <50607F1F.2040704@redhat.com>
- <20121003122209.GA9076@linux.vnet.ibm.com>
- <506C7057.6000102@redhat.com>
- <506D69AB.7020400@linux.vnet.ibm.com>
- <506D83EE.2020303@redhat.com>
- <1349356038.14388.3.camel@twins>
- <506DA48C.8050200@redhat.com>
+	Tue, 9 Oct 2012 14:57:36 -0400
+Date: Tue, 9 Oct 2012 14:58:22 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 03/13] ARM: edma: add DT and runtime PM support for
+ AM335x
+Message-ID: <20121009185822.GA13724@beef>
+References: <1348152226-13588-1-git-send-email-mporter@ti.com>
+ <1348152226-13588-4-git-send-email-mporter@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EA8A860@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <506DA48C.8050200@redhat.com>
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EA8A860@DBDE01.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12100918-7282-0000-0000-00000DC0B5A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2012-10-04 17:00:28]:
-
-> On 10/04/2012 03:07 PM, Peter Zijlstra wrote:
-> > On Thu, 2012-10-04 at 14:41 +0200, Avi Kivity wrote:
-> >> 
-> >> Again the numbers are ridiculously high for arch_local_irq_restore.
-> >> Maybe there's a bad perf/kvm interaction when we're injecting an
-> >> interrupt, I can't believe we're spending 84% of the time running the
-> >> popf instruction. 
+On Fri, Sep 21, 2012 at 08:53:06AM +0000, Hebbar, Gururaja wrote:
+> On Thu, Sep 20, 2012 at 20:13:36, Porter, Matt wrote:
+> > Adds support for parsing the TI EDMA DT data into the required
+> > EDMA private API platform data.
 > > 
-> > Smells like a software fallback that doesn't do NMI, hrtimer based
-> > sampling typically hits popf where we re-enable interrupts.
+> > Calls runtime PM API only in the DT case in order to unidle the
+> > associated hwmods on AM335x.
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> > ---
+> >  arch/arm/common/edma.c           |  252 ++++++++++++++++++++++++++++++++++++--
+> >  arch/arm/include/asm/mach/edma.h |    8 +-
+> >  2 files changed, 244 insertions(+), 16 deletions(-)
 > 
-> Good nose, that's probably it.  Raghavendra, can you ensure that the PMU
-> is properly exposed?  'dmesg' in the guest will tell.  If it isn't, -cpu
-> host will expose it (and a good idea anyway to get best performance).
+> The binding documentation should be updated along with the driver
+> change that does introduce the binding. You could just merged patch #4
+> and #5.
+
+Hi Gururaja,
+
+Sorry I missed these comments for this long...
+
+I've been asked by maintainers to keep the binding separate in other
+drivers. It is documentation that is independent of the driver in
+any case...I'll move the binding before this implementation though.
+
+> > diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> > index 001d268..f337f81 100644
+> > --- a/arch/arm/common/edma.c
+> > +++ b/arch/arm/common/edma.c
+> > @@ -24,6 +24,13 @@
+> >  #include <linux/platform_device.h>
+> >  #include <linux/io.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/edma.h>
+> > +#include <linux/err.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/of_device.h>
+> > +#include <linux/of_dma.h>
+> > +#include <linux/of_irq.h>
+> > +#include <linux/pm_runtime.h>
+> >  
+> >  #include <asm/mach/edma.h>
+> >  
+> > @@ -1366,30 +1373,236 @@ void edma_clear_event(unsigned channel)
+> >  EXPORT_SYMBOL(edma_clear_event);
+> >  
+> >  /*-----------------------------------------------------------------------*/
+> > +static int edma_of_read_u32_to_s8_array(const struct device_node *np,
+> > +					 const char *propname, s8 *out_values,
+> > +					 size_t sz)
+> > +{
+> > +	struct property *prop = of_find_property(np, propname, NULL);
+> > +	const __be32 *val;
+> > +
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +	if (!prop->value)
+> > +		return -ENODATA;
+> > +	if ((sz * sizeof(u32)) > prop->length)
+> > +		return -EOVERFLOW;
+> > +
+> > +	val = prop->value;
+> > +
+> > +	while (sz--)
+> > +		*out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
+> > +
+> > +	/* Terminate it */
+> > +	*out_values++ = -1;
+> > +	*out_values++ = -1;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+> > +					 const char *propname, s16 *out_values,
+> > +					 size_t sz)
+> > +{
+> > +	struct property *prop = of_find_property(np, propname, NULL);
+> > +	const __be32 *val;
+> > +
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +	if (!prop->value)
+> > +		return -ENODATA;
+> > +	if ((sz * sizeof(u32)) > prop->length)
+> > +		return -EOVERFLOW;
+> > +
+> > +	val = prop->value;
+> > +
+> > +	while (sz--)
+> > +		*out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
+> > +
+> > +	/* Terminate it */
+> > +	*out_values++ = -1;
+> > +	*out_values++ = -1;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int edma_of_parse_dt(struct device *dev,
+> > +			    struct device_node *node,
+> > +			    struct edma_soc_info *pdata)
+> > +{
+> > +	int ret = 0;
+> > +	u32 value;
+> > +	struct property *prop;
+> > +	size_t sz;
+> > +	struct edma_rsv_info *rsv_info;
+> > +	s16 (*rsv_chans)[2], (*rsv_slots)[2];
+> > +	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
+> > +
+> > +	ret = of_property_read_u32(node, "dma-channels", &value);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +	pdata->n_channel = value;
+> > +
+> > +	ret = of_property_read_u32(node, "ti,edma-regions", &value);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +	pdata->n_region = value;
+> > +
+> > +	ret = of_property_read_u32(node, "ti,edma-slots", &value);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +	pdata->n_slot = value;
+> > +
+> > +	pdata->n_cc = 1;
+> > +	/* This is unused */
+> > +	pdata->n_tc = 3;
+> > +
+> > +	rsv_info =
+> > +		devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
+> > +	if (!rsv_info)
+> > +		return -ENOMEM;
+> > +	pdata->rsv = rsv_info;
+> > +
+> > +	/* Build the reserved channel/slots arrays */
+> > +	prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +
+> > +	rsv_chans =
+> > +		devm_kzalloc(dev, sz/sizeof(s16) + 2*sizeof(s16), GFP_KERNEL);
+> > +	if (!rsv_chans)
+> > +		return -ENOMEM;
+> > +	pdata->rsv->rsv_chans = rsv_chans;
+> > +
+> > +	ret = edma_of_read_u32_to_s16_array(node, "ti,edma-reserved-channels",
+> > +					    (s16 *)rsv_chans, sz/sizeof(u32));
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +
 > 
+> Binding Documentation mentions edma-reserved-[channels/slots] as optional. 
+> But here the code returns as error if they are not found. Kindly reconfirm
+> 
+> >From patch-set 5/13
+> 
+> +Optional properties:
+> +- ti,edma-reserved-channels: List of reserved channel regions
+> +- ti,edma-reserved-slots: List of reserved slot regions
 
-Hi Avi, you are right. SandyBridge machine result was not proper.
-I cleaned up the services, enabled PMU, re-ran all the test again.
+Good catch, the binding documentation is correct and I will fix my
+implementation to match.
 
-Here is the summary:
-We do get good benefit by increasing ple window. Though we don't
-see good benefit for kernbench and sysbench, for ebizzy, we get huge
-improvement for 1x scenario. (almost 2/3rd of ple disabled case).
+> > +	rsv_slots = devm_kzalloc(dev,
+> > +				 sz/sizeof(s16) + 2*sizeof(s16),
+> > +				 GFP_KERNEL);
+> > +	if (!rsv_slots)
+> > +		return -ENOMEM;
+> > +	pdata->rsv->rsv_slots = rsv_slots;
+> > +
+> > +	ret = edma_of_read_u32_to_s16_array(node,
+> > +					    "ti,edma-reserved-slots",
+> > +					    (s16 *)rsv_slots,
+> > +					    sz/sizeof(u32));
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +
+> > +	queue_tc_map = devm_kzalloc(dev,
+> > +				    sz/sizeof(s8) + 2*sizeof(s8),
+> > +				    GFP_KERNEL);
+> > +	if (!rsv_slots)
+> > +		return -ENOMEM;
+> > +	pdata->queue_tc_mapping = queue_tc_map;
+> > +
+> > +	ret = edma_of_read_u32_to_s8_array(node,
+> > +					   "ti,edma-queue-tc-map",
+> > +					   (s8 *)queue_tc_map,
+> > +					   sz/sizeof(u32));
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
+> > +	if (!prop)
+> > +		return -EINVAL;
+> > +
+> > +	queue_priority_map = devm_kzalloc(dev,
+> > +					  sz/sizeof(s8) + 2*sizeof(s8),
+> > +					  GFP_KERNEL);
+> > +	if (!rsv_slots)
+> > +		return -ENOMEM;
+> > +	pdata->queue_priority_mapping = queue_priority_map;
+> > +
+> > +	ret = edma_of_read_u32_to_s8_array(node,
+> > +					   "ti,edma-queue-tc-map",
+> > +					   (s8 *)queue_priority_map,
+> > +					   sz/sizeof(u32));
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +	pdata->default_queue = value;
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static struct of_dma_filter_info edma_filter_info = {
+> > +	.filter_fn = edma_filter_fn,
+> > +};
+> >  
+> >  static int __init edma_probe(struct platform_device *pdev)
+> >  {
+> >  	struct edma_soc_info	**info = pdev->dev.platform_data;
+> > -	const s8		(*queue_priority_mapping)[2];
+> > -	const s8		(*queue_tc_mapping)[2];
+> > +	s8			(*queue_priority_mapping)[2];
+> > +	s8			(*queue_tc_mapping)[2];
+> >  	int			i, j, off, ln, found = 0;
+> >  	int			status = -1;
+> > -	const s16		(*rsv_chans)[2];
+> > -	const s16		(*rsv_slots)[2];
+> > +	s16			(*rsv_chans)[2];
+> > +	s16			(*rsv_slots)[2];
+> 
+> What is the significance of the number "2" in all above members?
 
-Let me know if you think we can increase the default ple_window
-itself to 16k.
+Those should all be EDMA_MAX_CC, as that is the significance. I 
+will address that. Incidentally, this is expected to be short-lived
+after Davinci ASoC is fully converted to dmaengine. One of the
+big problems in the private EDMA API driver from an implementation
+POV is that the driver attempt to encompass all channel controller
+instances in a single device match. This results in this legacy
+pdata structure that we adopt for compatibility. As part of folding
+this into drivers/dma/edma.c, we'll have a device instance per
+channel controller that will nicely clean this up. Not to mention
+all the unused code we'll remove.
 
-I am experimenting with V2 version of undercommit improvement(this) patch
-series, But I think if you wish  to go for increase of
-default ple_window, then we would have to measure the benefit of patches
-when ple_window = 16k.
+> >  	int			irq[EDMA_MAX_CC] = {0, 0};
+> >  	int			err_irq[EDMA_MAX_CC] = {0, 0};
+> >  	struct resource		*r[EDMA_MAX_CC] = {NULL};
+> > +	struct resource		res[EDMA_MAX_CC];
+> >  	resource_size_t		len[EDMA_MAX_CC];
+> >  	char			res_name[10];
+> >  	char			irq_name[10];
+> > +	struct device_node	*node = pdev->dev.of_node;
+> > +	struct device		*dev = &pdev->dev;
+> > +	struct edma_soc_info	*pdata;
+> > +
+> > +	if (node) {
+> > +		int ret;
+> > +		pdata = devm_kzalloc(dev,
+> > +				     sizeof(struct edma_soc_info),
+> > +				     GFP_KERNEL);
+> > +		edma_of_parse_dt(dev, node, pdata);
+> > +		info = &pdata;
+> > +		dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
+> > +		of_dma_controller_register(dev->of_node,
+> > +					   of_dma_simple_xlate,
+> > +					   &edma_filter_info);
+> > +		pm_runtime_enable(dev);
+> > +		ret = pm_runtime_get_sync(dev);
+> > +		if (IS_ERR_VALUE(ret)) {
+> > +			dev_err(dev, "pm_runtime_get_sync() failed\n");
+> > +			return ret;
+> > +		}
+> > +	}
+> >  
+> >  	if (!info)
+> >  		return -ENODEV;
+> >  
+> >  	for (j = 0; j < EDMA_MAX_CC; j++) {
+> > -		sprintf(res_name, "edma_cc%d", j);
+> > -		r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> > +		if (node) {
+> > +			int err;
+> > +			err = of_address_to_resource(node, 0, &res[j]);
+> > +			if (err) {
+> > +				dev_err(dev,
+> > +					"unable to find 'reg' property\n");
+> > +				return -EIO;
+> > +			}
+> > +			r[j] = &res[j];
+> > +
+> > +		} else {
+> > +			sprintf(res_name, "edma_cc%d", j);
+> > +			r[j] = platform_get_resource_byname(pdev,
+> > +						IORESOURCE_MEM,
+> >  						res_name);
+> > +		}
+> >  		if (!r[j] || !info[j]) {
+> >  			if (found)
+> >  				break;
+> > @@ -1465,8 +1678,12 @@ static int __init edma_probe(struct platform_device *pdev)
+> >  			}
+> >  		}
+> >  
+> > -		sprintf(irq_name, "edma%d", j);
+> > -		irq[j] = platform_get_irq_byname(pdev, irq_name);
+> > +		if (node)
+> > +			irq[j] = irq_of_parse_and_map(node, 0);
+> > +		else {
+> > +			sprintf(irq_name, "edma%d", j);
+> > +			irq[j] = platform_get_irq_byname(pdev, irq_name);
+> > +		}
+> >  		edma_cc[j]->irq_res_start = irq[j];
+> >  		status = request_irq(irq[j], dma_irq_handler, 0, "edma",
+> >  					&pdev->dev);
+> > @@ -1476,8 +1693,12 @@ static int __init edma_probe(struct platform_device *pdev)
+> >  			goto fail;
+> >  		}
+> >  
+> > -		sprintf(irq_name, "edma%d_err", j);
+> > -		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
+> > +		if (node)
+> > +			err_irq[j] = irq_of_parse_and_map(node, 2);
+> > +		else {
+> > +			sprintf(irq_name, "edma%d_err", j);
+> > +			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
+> > +		}
+> >  		edma_cc[j]->irq_res_end = err_irq[j];
+> >  		status = request_irq(err_irq[j], dma_ccerr_handler, 0,
+> >  					"edma_error", &pdev->dev);
+> > @@ -1538,9 +1759,17 @@ fail1:
+> >  	return status;
+> >  }
+> >  
+> > +static const struct of_device_id edma_of_ids[] = {
+> > +	{ .compatible = "ti,edma3", },
+> > +	{}
+> > +};
+> >  
+> >  static struct platform_driver edma_driver = {
+> > -	.driver.name	= "edma",
+> > +	.driver = {
+> > +		.name	= "edma",
+> > +		.of_match_table = edma_of_ids,
+> 
+> Won't this fail/warn when CONFIG_OF not selected/enabled?
 
-I can respin the whole series including this default ple_window change.
+No. of_match_table is no longer dependent on CONFIG_OF
 
-I also have the perf kvm top result for both ebizzy and kernbench.
-I think they are in expected lines now.
+> > +	},
+> > +	.probe = edma_probe,
+> >  };
+> >  
+> >  static int __init edma_init(void)
+> > @@ -1548,4 +1777,3 @@ static int __init edma_init(void)
+> >  	return platform_driver_probe(&edma_driver, edma_probe);
+> >  }
+> >  arch_initcall(edma_init);
+> > -
+> 
+> Stray change I believe.
 
-Improvements
-================
+checkpatch found that bad whitespace.
 
-16 core PLE machine with 16 vcpu guest
-
-base = 3.6.0-rc5 + ple handler optimization patches
-base_pleopt_16k = base + ple_window = 16k
-base_pleopt_32k = base + ple_window = 32k
-base_pleopt_nople = base + ple_gap = 0
-kernbench, hackbench, sysbench (time in sec lower is better)
-ebizzy (rec/sec higher is better)
-
-% improvements w.r.t base (ple_window = 4k)
----------------+---------------+-----------------+-------------------+
-               |base_pleopt_16k| base_pleopt_32k | base_pleopt_nople |
----------------+---------------+-----------------+-------------------+
-kernbench_1x   |  0.42371      |  1.15164        |   0.09320         |
-kernbench_2x   | -1.40981      | -17.48282       |  -570.77053       |
----------------+---------------+-----------------+-------------------+
-sysbench_1x    | -0.92367      | 0.24241         | -0.27027          |
-sysbench_2x    | -2.22706      |-0.30896         | -1.27573          |
-sysbench_3x    | -0.75509      | 0.09444         | -2.97756          |
----------------+---------------+-----------------+-------------------+
-ebizzy_1x      | 54.99976      | 67.29460        |  74.14076         |
-ebizzy_2x      | -8.83386      |-27.38403        | -96.22066         |
----------------+---------------+-----------------+-------------------+
-
-perf kvm top observation for kernbench and ebizzy (nople, 4k, 32k window) 
-========================================================================
-pleopt   ple_gap=0
---------------------
-ebizzy : 18131 records/s
-63.78%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-    5.65%  [guest.kernel]  [g] smp_call_function_many
-    3.12%  [guest.kernel]  [g] clear_page
-    3.02%  [guest.kernel]  [g] down_read_trylock
-    1.85%  [guest.kernel]  [g] async_page_fault
-    1.81%  [guest.kernel]  [g] up_read
-    1.76%  [guest.kernel]  [g] native_apic_mem_write
-    1.70%  [guest.kernel]  [g] find_vma
-
-kernbench :Elapsed Time 29.4933 (27.6007)
-   5.72%  [guest.kernel]  [g] async_page_fault
-    3.48%  [guest.kernel]  [g] pvclock_clocksource_read
-    2.68%  [guest.kernel]  [g] copy_user_generic_unrolled
-    2.58%  [guest.kernel]  [g] clear_page
-    2.09%  [guest.kernel]  [g] page_cache_get_speculative
-    2.00%  [guest.kernel]  [g] do_raw_spin_lock
-    1.78%  [guest.kernel]  [g] unmap_single_vma
-    1.74%  [guest.kernel]  [g] kmem_cache_alloc
-
-pleopt ple_window = 4k
----------------------------
-ebizzy: 10176 records/s
-   69.17%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-    3.34%  [guest.kernel]  [g] clear_page
-    2.16%  [guest.kernel]  [g] down_read_trylock
-    1.94%  [guest.kernel]  [g] async_page_fault
-    1.89%  [guest.kernel]  [g] native_apic_mem_write
-    1.63%  [guest.kernel]  [g] smp_call_function_many
-    1.58%  [guest.kernel]  [g] SetPageLRU
-    1.37%  [guest.kernel]  [g] up_read
-    1.01%  [guest.kernel]  [g] find_vma
-
-
-kernbench: 29.9533
-nts: 240K cycles
-    6.04%  [guest.kernel]  [g] async_page_fault
-    4.17%  [guest.kernel]  [g] pvclock_clocksource_read
-    3.28%  [guest.kernel]  [g] clear_page
-    2.57%  [guest.kernel]  [g] copy_user_generic_unrolled
-    2.30%  [guest.kernel]  [g] do_raw_spin_lock
-    2.13%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-    1.93%  [guest.kernel]  [g] page_cache_get_speculative
-    1.92%  [guest.kernel]  [g] unmap_single_vma
-    1.77%  [guest.kernel]  [g] kmem_cache_alloc
-    1.61%  [guest.kernel]  [g] __d_lookup_rcu
-    1.19%  [guest.kernel]  [g] find_vma
-    1.19%  [guest.kernel]  [g] __list_del_entry
-
-
-pleopt: ple_window=16k
--------------------------
-ebizzy: 16990
- 62.35%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-    5.22%  [guest.kernel]  [g] smp_call_function_many
-    3.57%  [guest.kernel]  [g] down_read_trylock
-    3.20%  [guest.kernel]  [g] clear_page
-    2.16%  [guest.kernel]  [g] up_read
-    1.89%  [guest.kernel]  [g] find_vma
-    1.86%  [guest.kernel]  [g] async_page_fault
-    1.81%  [guest.kernel]  [g] native_apic_mem_write
-
-kernbench: 28.5
- 6.24%  [guest.kernel]  [g] async_page_fault
-    4.16%  [guest.kernel]  [g] pvclock_clocksource_read
-    3.33%  [guest.kernel]  [g] clear_page
-    2.50%  [guest.kernel]  [g] copy_user_generic_unrolled
-    2.08%  [guest.kernel]  [g] do_raw_spin_lock
-    1.98%  [guest.kernel]  [g] unmap_single_vma
-    1.89%  [guest.kernel]  [g] kmem_cache_alloc
-    1.82%  [guest.kernel]  [g] page_cache_get_speculative
-    1.46%  [guest.kernel]  [g] __d_lookup_rcu
-    1.42%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-    1.15%  [guest.kernel]  [g] __list_del_entry
-    1.10%  [guest.kernel]  [g] find_vma
-
-
-
-Detailed result for the run
-=============================
-patched = base_pleopt_16k 
-+-----------+-----------+-----------+------------+-----------+
-                              kernbench 
-+-----------+-----------+-----------+------------+-----------+
-   base        stddev       patched    stdev        %improve     
-+-----------+-----------+-----------+------------+-----------+
-1x    30.0440     1.1896    29.9167     1.6755	   0.42371
-2x    62.0083     3.4884    62.8825     2.5509	  -1.40981
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              sysbench 
-+-----------+-----------+-----------+------------+-----------+
-1x     7.1779     0.0577     7.2442     0.0479	  -0.92367
-2x    15.5362     0.3370    15.8822     0.3591	  -2.22706
-3x    23.8249     0.1513    24.0048     0.1844	  -0.75509
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              ebizzy 
-+-----------+-----------+-----------+------------+-----------+
-1x 10358.0000   442.6598   16054.8750  252.5088    54.99976
-2x  2705.5000   130.0286   2466.5000   120.0024	  -8.83386
-+-----------+-----------+-----------+------------+-----------+
-
-patched = base_pleopt_32k
-+-----------+-----------+-----------+------------+-----------+
-                              kernbench 
-+-----------+-----------+-----------+------------+-----------+
-   base        stddev       patched    stdev        %improve     
-+-----------+-----------+-----------+------------+-----------+
-1x    30.0440     1.1896    29.6980     0.6760	   1.15164
-2x    62.0083     3.4884    72.8491     4.4616	 -17.48282
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              sysbench 
-+-----------+-----------+-----------+------------+-----------+
-1x     7.1779     0.0577     7.1605     0.0447	   0.24241
-2x    15.5362     0.3370    15.5842     0.1731	  -0.30896
-3x    23.8249     0.1513    23.8024     0.2342	   0.09444
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              ebizzy 
-+-----------+-----------+-----------+------------+-----------+
-1x  10358.0000   442.6598   17328.3750   281.4569   67.29460
-2x  2705.5000   130.0286    1964.6250   143.0793   -27.38403
-+-----------+-----------+-----------+------------+-----------+
-
-patched = base_pleopt_nople
-+-----------+-----------+-----------+------------+-----------+
-                              kernbench 
-+-----------+-----------+-----------+------------+-----------+
-   base        stddev       patched    stdev        %improve     
-+-----------+-----------+-----------+------------+-----------+
-1x    30.0440     1.1896    30.0160     0.7523	   0.09320
-2x    62.0083     3.4884   415.9334   189.9901	  -570.77053
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              sysbench 
-+-----------+-----------+-----------+------------+-----------+
-1x     7.1779     0.0577     7.1973     0.0354	  -0.27027
-2x    15.5362     0.3370    15.7344     0.2315	  -1.27573
-3x    23.8249     0.1513    24.5343     0.3437	  -2.97756
-+-----------+-----------+-----------+------------+-----------+
-+-----------+-----------+-----------+------------+-----------+
-                              ebizzy 
-+-----------+-----------+-----------+------------+-----------+
-1x 10358.0000   442.6598 18037.5000   315.2074	   74.14076
-2x  2705.5000   130.0286   102.2500   104.3521	  -96.22066
-+-----------+-----------+-----------+------------+-----------+
-
+> > diff --git a/arch/arm/include/asm/mach/edma.h b/arch/arm/include/asm/mach/edma.h
+> > index 7e84c90..ce5f6f8 100644
+> > --- a/arch/arm/include/asm/mach/edma.h
+> > +++ b/arch/arm/include/asm/mach/edma.h
+> > @@ -237,8 +237,8 @@ void edma_resume(unsigned channel);
+> >  
+> >  struct edma_rsv_info {
+> >  
+> > -	const s16	(*rsv_chans)[2];
+> > -	const s16	(*rsv_slots)[2];
+> > +	s16		(*rsv_chans)[2];
+> > +	s16		(*rsv_slots)[2];
+> >  };
+> >  
+> >  /* platform_data for EDMA driver */
+> > @@ -260,8 +260,8 @@ struct edma_soc_info {
+> >  	/* Resource reservation for other cores */
+> >  	struct edma_rsv_info	*rsv;
+> >  
+> > -	const s8	(*queue_tc_mapping)[2];
+> > -	const s8	(*queue_priority_mapping)[2];
+> > +	s8	(*queue_tc_mapping)[2];
+> > +	s8	(*queue_priority_mapping)[2];
+> >  };
+> >  
+> >  #endif
+> > -- 
+> > 1.7.9.5
+> > 
+> > _______________________________________________
+> > Davinci-linux-open-source mailing list
+> > Davinci-linux-open-source@linux.davincidsp.com
+> > http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> > 
+> 
+> 
+> Regards, 
+> Gururaja
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
