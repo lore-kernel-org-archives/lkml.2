@@ -1,85 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab2JINHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 09:07:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59675 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab2JINHj (ORCPT
+	id S1755623Ab2JINIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 09:08:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52364 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab2JINH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 09:07:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 05/16] vfs: bogus warnings in fs/namei.c
-Date: Tue, 9 Oct 2012 13:07:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <20121008115116.GA9243@quack.suse.cz> <201210091227.46324.arnd@arndb.de>
-In-Reply-To: <201210091227.46324.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210091307.19225.arnd@arndb.de>
-X-Provags-ID: V02:K0:0vrz4LyCeChq4+BJnm0QCtriXJfw++qGzFq2K57+L2M
- 5HTT1NRDmXi8PlvgQ0QsbJmaVvOz3iW3pVz9PBfuQNzPEaoSIl
- mUPhHO+txa3HHrGI5gnYrOFCNSbkeAtw0ihmKx8AGzaUlQ/FRG
- Nrh9OWEvYqHJ77pv+Tk8EQdAY63M/0oYYkzHaMT1P7U+I1rbIX
- B/DZNHLCDFplowEYWS9K+1+gvUR4DlijJYCl/H3O5KEphcZm3C
- P0e5EbXmq0NHEosbU+f/p55Prfs56m/O9Rtn6+5VQ02Hbv8Rr9
- 3BfGWOoQV66AD3OUW+IpL9Ut2MPsFuGhIwoMeVKCRKvegmZmzm
- SZymz+uVa/7Itc40AWdE=
+	Tue, 9 Oct 2012 09:07:59 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/unioxx5.c
+Date: Tue,  9 Oct 2012 22:07:52 +0900
+Message-Id: <1349788072-5809-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Arnd Bergmann wrote:
-> On Monday 08 October 2012, Jan Kara wrote:
-> > On Fri 05-10-12 16:55:19, Arnd Bergmann wrote:
-> > > The follow_link() function always initializes its *p argument,
-> > > or returns an error, but not all versions of gcc figure this
-> > > out, so we have to work around this using the uninitialized_var()
-> > > macro.
-> >   Well, I'm somewhat sceptical to this approach. I agree that bogus
-> > warnings are not nice but later when the code is changed and possibly real
-> > use without initialization is added, we won't notice it. Without changing
-> > anything, we'd at least have a chance of catching it with gcc versions
-> > which were clever enough to not warn with the original code. Or
-> > alternatively if we unconditionally initialized the variable that would get
-> > rid of the warning and made the code more future-proof (that's what I
-> > usually end up doing)... I don't really care that much about the chosen
-> > solution, Al is the one to decide. But I wanted to point out there are
-> > downsides to your solution.
-> 
-> I'll drop the patch for now and won't send it from my tree then. I agree
-> that uninitialized_var() is not ideal, but none of the alternatives seemed
-> better.
-> 
-> With my latest compiler, I don't actually see the warnings any more, so
-> maybe someone fixed gcc instead, or this went away after another change.
-> I'll let you know if it comes back so we can discuss about a better fix then.
-> 
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
-Update: I could actually reproduce the problem now, but it only happens when
-building with 'gcc -s' (i.e. CONFIG_CC_OPTIMIZE_FOR_SIZE). It does happen
-with both gcc-4.6 and with gcc-4.8, and on both x86-64 and ARM. An alternative
-patch that would also make it go away is the variant below, but I think that's
-even worse than the first version I suggested because it makes the binary
-output slightly worse by adding an unnecessary initialization when building with
-'make -s'.
+and added pr_fmt.
 
-	Arnd
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/comedi/drivers/unioxx5.c |   45 +++++++++++++++---------------
+ 1 file changed, 23 insertions(+), 22 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index aa30d19..c3612a5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -810,6 +810,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
- 	return error;
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 9f1fdec..b5e58f5 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -42,6 +42,8 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
  
- out_put_nd_path:
-+	*p = NULL;
- 	path_put(&nd->path);
- 	path_put(link);
- 	return error;
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../comedidev.h"
+ #include <linux/ioport.h>
+ #include <linux/slab.h>
+@@ -144,8 +146,7 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++		pr_err("comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+ 		       minor, channel);
+ 		return 0;
+ 	}
+@@ -171,8 +172,7 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
+ 
+ 	/* defining if given module can work on input */
+ 	if (usp->usp_module_type[module_no] & MODULE_OUTPUT_MASK) {
+-		printk(KERN_ERR
+-		       "comedi%d: module in position %d with id 0x%02x is for output only",
++		pr_err("comedi%d: module in position %d with id 0x%02x is for output only",
+ 		       minor, module_no, usp->usp_module_type[module_no]);
+ 		return 0;
+ 	}
+@@ -209,8 +209,7 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++		pr_err("comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+ 		       minor, channel);
+ 		return 0;
+ 	}
+@@ -240,8 +239,7 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
+ 
+ 	/* defining if given module can work on output */
+ 	if (!(usp->usp_module_type[module] & MODULE_OUTPUT_MASK)) {
+-		printk(KERN_ERR
+-		       "comedi%d: module in position %d with id 0x%0x is for input only!\n",
++		pr_err("comedi%d: module in position %d with id 0x%0x is for input only!\n",
+ 		       minor, module, usp->usp_module_type[module]);
+ 		return 0;
+ 	}
+@@ -323,17 +321,17 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 	type = usp->usp_module_type[channel / 2];
+ 
+ 	if (type != MODULE_DIGITAL) {
+-		printk(KERN_ERR
+-		       "comedi%d: channel configuration accessible only for digital modules\n",
+-		       dev->minor);
++		dev_err(dev->class_dev,
++			"comedi%d: channel configuration accessible only for digital modules\n",
++			dev->minor);
+ 		return -1;
+ 	}
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+-		       dev->minor, channel);
++		dev_err(dev->class_dev,
++			"comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++			dev->minor, channel);
+ 		return -1;
+ 	}
+ 
+@@ -348,7 +346,8 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 		flags |= mask;
+ 		break;
+ 	default:
+-		printk(KERN_ERR "comedi%d: unknown flag\n", dev->minor);
++		dev_err(dev->class_dev,
++			"comedi%d: unknown flag\n", dev->minor);
+ 		return -1;
+ 	}
+ 
+@@ -375,19 +374,21 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	int i, to, ndef_flag = 0;
+ 
+ 	if (!request_region(subdev_iobase, UNIOXX5_SIZE, DRIVER_NAME)) {
+-		printk(KERN_ERR "comedi%d: I/O port conflict\n", minor);
++		dev_err(subdev->class_dev,
++			"comedi%d: I/O port conflict\n", minor);
+ 		return -EIO;
+ 	}
+ 
+ 	usp = kzalloc(sizeof(*usp), GFP_KERNEL);
+ 
+ 	if (usp == NULL) {
+-		printk(KERN_ERR "comedi%d: error! --> out of memory!\n", minor);
++		dev_err(subdev->class_dev,
++			"comedi%d: error! --> out of memory!\n", minor);
+ 		return -1;
+ 	}
+ 
+ 	usp->usp_iobase = subdev_iobase;
+-	printk(KERN_INFO "comedi%d: |", minor);
++	dev_info(subdev->class_dev, "comedi%d: |", minor);
+ 
+ 	/* defining modules types */
+ 	for (i = 0; i < 12; i++) {
+@@ -433,7 +434,7 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	/* for digital modules only!!! */
+ 	subdev->insn_config = unioxx5_insn_config;
+ 
+-	printk(KERN_INFO "subdevice configured\n");
++	dev_info(subdev->class_dev, "subdevice configured\n");
+ 
+ 	return 0;
+ }
+@@ -464,8 +465,8 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 
+ 	/* unioxx5 can has from two to four subdevices */
+ 	if (n_subd < 2) {
+-		printk(KERN_ERR
+-		       "your card must has at least 2 'g01' subdevices\n");
++		dev_err(dev->class_dev,
++			"your card must has at least 2 'g01' subdevices\n");
+ 		return -1;
+ 	}
+ 
+@@ -480,7 +481,7 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 			return -1;
+ 	}
+ 
+-	printk(KERN_INFO "attached\n");
++	dev_info(dev->class_dev, "attached\n");
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
