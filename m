@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab2JIXng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 19:43:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57154 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab2JIXne (ORCPT
+	id S1752121Ab2JIXpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 19:45:42 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44625 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab2JIXpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 19:43:34 -0400
-Date: Tue, 9 Oct 2012 16:45:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build failure after merge of the origin tree
-Message-Id: <20121009164514.b7a7e227.akpm@linux-foundation.org>
-In-Reply-To: <20121010102150.81c192c6fdf60689dc823b20@canb.auug.org.au>
-References: <20121010102150.81c192c6fdf60689dc823b20@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 19:45:41 -0400
+X-AuditID: 9c930179-b7bf9ae000000e4c-db-5074b7223fae
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] zram: correct obsolete comment on max_zpage_size
+Date: Wed, 10 Oct 2012 08:49:52 +0900
+Message-Id: <1349826592-27965-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012 10:21:50 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Zram doesn't use xv_malloc any more so it doesn't have
+limitation about zobj_header.
 
-> Hi Linus,
-> 
-> In Linus' tree, today's linux-next build (powerpc ppc64_defconfig) failed
-> like this:
-> 
-> arch/powerpc/platforms/pseries/hotplug-memory.c: In function 'pseries_remove_memblock':
-> arch/powerpc/platforms/pseries/hotplug-memory.c:103:17: error: unused variable 'pfn' [-Werror=unused-variable]
-> 
-> Caused by commit d760afd4d257 ("memory-hotplug: suppress "Trying to free
-> nonexistent resource <XXXXXXXXXXXXXXXX-YYYYYYYYYYYYYYYY>" warning").
-> 
-> I can't see what the point of the "pfn" variable is
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-This:
-
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c~a
-+++ a/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -101,7 +101,7 @@ static int pseries_remove_memblock(unsig
- 	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
- 		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
--		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
-+		ret = __remove_pages(zone, pfn, PAGES_PER_SECTION);
- 		if (ret)
- 			return ret;
- 	}
-
-> and this patch never
-> appeared in linux-next before being merged.  :-(
-
-It was first sighted October 3.
-
-> I have reverted that commit for today.
-> 
-> If this patch truly was authored yesterday (according the Author Date in
-> git), why was it merged yesterday while still under discussion?  And the
-> latest update to it still has this build problem ... did anyone even try
-> to build this for powerpc (since that architecture was obviously
-> affected)?
-
-Apparently not - the ppc bit was a best-effort fixup for a patch which
-addresses an x86 problem.
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 572c0b1..df2eec4 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -39,8 +39,8 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
+ 
+ /*
+  * NOTE: max_zpage_size must be less than or equal to:
+- *   ZS_MAX_ALLOC_SIZE - sizeof(struct zobj_header)
+- * otherwise, xv_malloc() would always return failure.
++ *   ZS_MAX_ALLOC_SIZE. Otherwise, zs_malloc() would
++ * always return failure.
+  */
+ 
+ /*-- End of configurable params */
+-- 
+1.7.9.5
 
