@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab2JIUOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:14:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55093 "EHLO
+	id S1756788Ab2JIUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:14:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64943 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab2JIUOh (ORCPT
+	with ESMTP id S1754784Ab2JIUOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:14:37 -0400
+	Tue, 9 Oct 2012 16:14:19 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: arm@kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux-samsung-soc@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: [PATCH v2 v2 v2 8/8] spi/s3c64xx: use correct dma_transfer_direction type
-Date: Tue,  9 Oct 2012 22:13:58 +0200
-Message-Id: <1349813638-4617-9-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Pavel Machek <pavel@suse.cz>, linux-pcmcia@lists.infradead.org,
+        Jochen Friedrich <jochen@scram.de>, stable@vger.kernel.org
+Subject: [PATCH v2 6/8] pcmcia: sharpsl: don't discard sharpsl_pcmcia_ops
+Date: Tue,  9 Oct 2012 22:13:56 +0200
+Message-Id: <1349813638-4617-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1349813638-4617-1-git-send-email-arnd@arndb.de>
 References: <1349813638-4617-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:K1ol/Cd3KrrQPauNR/ShSFuQ4k5gbg5VAGtb6igR2Ms
- WOtKj95SoW/n2Loke5UpKjgvmSZf9vnFLdAmhbZDPPiJEgWZvt
- 25A65YEP/NkBha1zEnvSApRyMrTQZ6enqDmpf0nO/tGKD6VDkE
- OKTjCZLM753d4g9fkIUuGwGIORtB9cqMfOR4lM3wfG+/ne4UMV
- VWn66dF25pRj+1TtXJkGH78+TFeEumm1nC7Y4SXHdF31nBmjdU
- +TTTqnT56G77zaA5fCQjh6uCbPryKmE0pqOzvcK2i6BQa6UhYe
- Vrpfqr51XLalQ3BfekXqrTE1IRooetATO9ZPz5g/D2mEgNeMlX
- +8LGXXAcL2btFnb8kTVWhduRczMNoT7VEF/A0rR69
+X-Provags-ID: V02:K0:QzzISXOVjBuGfD6krTrEAj8c5WNDPtA0uwxYGchQqfD
+ LPfXlsE22tEcA0mz0D6qVTM7Pf5pSRo/YmQk30MAb2DpNVmWdF
+ umK3b1fosO9g/g7OEeSec4A4pf1712fvWv+Kes0YwKm7UpPzaM
+ 99Z2m1CvJoIUZIwEeYVQv7Wizbr4Uzc8l7mUvG2t3+b8xrMS8x
+ 5l0Ae3MT6yDwRDyZl6kaEcXpWbdxYyL8EJSRp5Zjd+OX6XfOVz
+ 6ZqBB3swL8KfOjbnWlvyyVkuZD42A4Zf8nc9SYv0EgA2AmkF0v
+ M9FiS01e95rK9XExlJJ5rx5uusyuluKw4rHEikWzGNXGSj7syh
+ tXYQOkiEbyUj74R7gnx7tpmwJBm8SB4OnkbOox5eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a subtle difference between dma_transfer_direction and
-dma_data_direction: the former is used by the dmaengine framework,
-while the latter is used by the dma-mapping API. Although the
-purpose is comparable, the actual values are different and must
-not be mixed. In this case, the driver just wants to use
-dma_transfer_direction.
+The sharpsl_pcmcia_ops structure gets passed into
+sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
+unlike all other pcmcia drivers that pass their structures
+into platform_device_add_data, which makes a copy.
 
-Without this patch, building s3c6400_defconfig results in:
+This means the gcc warning is valid and the structure
+must not be marked as __initdata.
 
-drivers/spi/spi-s3c64xx.c: In function 's3c64xx_spi_dmacb':
-drivers/spi/spi-s3c64xx.c:239:21: warning: comparison between
-	'enum dma_data_direction' and 'enum dma_transfer_direction' [-Wenum-compare]
+Without this patch, building collie_defconfig results in:
+
+drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
+compilation terminated.
+make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
+make[2]: *** [drivers/pcmcia] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: spi-devel-general@lists.sourceforge.net
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Pavel Machek <pavel@suse.cz>
+Cc: linux-pcmcia@lists.infradead.org
+Cc: Jochen Friedrich <jochen@scram.de>
+Cc: stable@vger.kernel.org
 ---
- drivers/spi/spi-s3c64xx.c |    2 +-
+ drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index d1c8441f..2e44dd6 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -132,7 +132,7 @@
+diff --git a/drivers/pcmcia/pxa2xx_sharpsl.c b/drivers/pcmcia/pxa2xx_sharpsl.c
+index b066273..7dd879c 100644
+--- a/drivers/pcmcia/pxa2xx_sharpsl.c
++++ b/drivers/pcmcia/pxa2xx_sharpsl.c
+@@ -194,7 +194,7 @@ static void sharpsl_pcmcia_socket_suspend(struct soc_pcmcia_socket *skt)
+ 	sharpsl_pcmcia_init_reset(skt);
+ }
  
- struct s3c64xx_spi_dma_data {
- 	unsigned		ch;
--	enum dma_data_direction direction;
-+	enum dma_transfer_direction direction;
- 	enum dma_ch	dmach;
- 	struct property		*dma_prop;
- };
+-static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
++static struct pcmcia_low_level sharpsl_pcmcia_ops = {
+ 	.owner                  = THIS_MODULE,
+ 	.hw_init                = sharpsl_pcmcia_hw_init,
+ 	.socket_state           = sharpsl_pcmcia_socket_state,
 -- 
 1.7.10
 
