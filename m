@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507Ab2JIEt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:49:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40866 "EHLO mx1.redhat.com"
+	id S1752565Ab2JIEuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:50:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404Ab2JIEtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:49:53 -0400
+	id S1752429Ab2JIEuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 00:50:00 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [RFC PATCH 3/5] amd_iommu: Split upstream bus device lookup
+Subject: [RFC PATCH 4/5] amd_iommu: Split IOMMU group allocation and attach
 To: Joerg.Roedel@amd.com, florian@dazinger.net
 Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 08 Oct 2012 22:49:48 -0600
-Message-ID: <20121009044948.16302.92834.stgit@bling.home>
+Date: Mon, 08 Oct 2012 22:49:54 -0600
+Message-ID: <20121009044954.16302.75951.stgit@bling.home>
 In-Reply-To: <20121009044057.16302.44577.stgit@bling.home>
 References: <20121009044057.16302.44577.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -22,59 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a WARN_ON to make it clear why we don't add dma_pdev->dev to the
+group we're allocating.
+
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- drivers/iommu/amd_iommu.c |   24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ drivers/iommu/amd_iommu.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 6edbd0e..3a00b5ce 100644
+index 3a00b5ce..7fa97a5 100644
 --- a/drivers/iommu/amd_iommu.c
 +++ b/drivers/iommu/amd_iommu.c
-@@ -274,6 +274,18 @@ static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
- 	*from = to;
+@@ -325,6 +325,24 @@ static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
+ 	return dma_pdev;
  }
  
-+static struct pci_bus *find_hosted_bus(struct pci_bus *bus)
++static int use_pdev_iommu_group(struct pci_dev *pdev, struct device *dev)
 +{
-+	while (!bus->self) {
-+		if (!pci_is_root_bus(bus))
-+			bus = bus->parent;
-+		else
-+			return ERR_PTR(-ENODEV);
++	struct iommu_group *group = iommu_group_get(&pdev->dev);
++	int ret;
++
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group))
++			return PTR_ERR(group);
++
++		WARN_ON(&pdev->dev != dev);
 +	}
 +
-+	return bus;
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
++	return ret;
 +}
 +
- #define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+ static int init_iommu_group(struct device *dev)
+ {
+ 	struct iommu_dev_data *dev_data;
+@@ -353,18 +371,8 @@ static int init_iommu_group(struct device *dev)
+ 		dma_pdev = pci_dev_get(to_pci_dev(dev));
  
- static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
-@@ -300,14 +312,9 @@ static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
- 	 * Finding the next device may require skipping virtual buses.
- 	 */
- 	while (!pci_is_root_bus(dma_pdev->bus)) {
--		struct pci_bus *bus = dma_pdev->bus;
+ 	dma_pdev = get_isolation_root(dma_pdev);
+-	group = iommu_group_get(&dma_pdev->dev);
++	ret = use_pdev_iommu_group(dma_pdev, dev);
+ 	pci_dev_put(dma_pdev);
+-	if (!group) {
+-		group = iommu_group_alloc();
+-		if (IS_ERR(group))
+-			return PTR_ERR(group);
+-	}
 -
--		while (!bus->self) {
--			if (!pci_is_root_bus(bus))
--				bus = bus->parent;
--			else
--				goto root_bus;
--		}
-+		struct pci_bus *bus = find_hosted_bus(dma_pdev->bus);
-+		if (IS_ERR(bus))
-+			break;
- 
- 		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
- 			break;
-@@ -315,7 +322,6 @@ static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
- 		swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
- 	}
- 
--root_bus:
- 	return dma_pdev;
+-	ret = iommu_group_add_device(group, dev);
+-
+-	iommu_group_put(group);
+-
+ 	return ret;
  }
  
 
