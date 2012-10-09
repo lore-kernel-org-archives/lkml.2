@@ -1,37 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab2JIPZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 11:25:50 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64696 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab2JIPZo (ORCPT
+	id S1756118Ab2JIPcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 11:32:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61543 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063Ab2JIPcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 11:25:44 -0400
+	Tue, 9 Oct 2012 11:32:05 -0400
+From: Mark Asselstine <mark.asselstine@windriver.com>
+To: <len.brown@intel.com>, <linux-kernel@vger.kernel.org>
+CC: <mark.asselstine@windriver.com>
+Subject: [PATCH] tools/power: turbostat: make Makefile a bit more capable
+Date: Tue, 9 Oct 2012 11:31:44 -0400
+Message-ID: <1349796704-6640-1-git-send-email-mark.asselstine@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <507371DA.9080309@samsung.com>
-References: <CAH+eYFCJTtF+FeqKs_ho5yyX0tkUBoaa-yfsd1rVshcQ5Xxp=A@mail.gmail.com>
- <507371DA.9080309@samsung.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Tue, 9 Oct 2012 17:25:03 +0200
-X-Google-Sender-Auth: WE7hnNT_73RPQUYNUIwN1BQPHJg
-Message-ID: <CAH+eYFDK=C4=e5D00=TM=rv+zzE1rEuQ_=97A5T0z6pORTLMpA@mail.gmail.com>
-Subject: Re: CMA and zone watermarks
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [128.224.146.23]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek, Minchan,
+The turbostat Makefile is pretty simple, its output is placed in the
+same directory as the source, the install rule has no concept of a
+prefix or sysroot, and you can set CC to use a specific compiler but
+not use the more familiar CROSS_COMPILE. By making a few minor changes
+these limitations are removed while leaving the default behavior
+matching what it used to be.
 
-2012/10/9 Marek Szyprowski <m.szyprowski@samsung.com>:
-> Could You run your test with latest linux-next kernel? There have been some
-> patches merged to akpm tree which should fix accounting for free and free
-> cma pages. I hope it should fix this issue.
+Example build with these changes:
+make CROSS_COMPILE=i686-wrs-linux-gnu- DESTDIR=/tmp install
 
-I've tested with the mentioned patches (which seem to have also reached
-Linus' tree today) and they appear to resolve the problem.
+or from the tools directory
+make CROSS_COMPILE=i686-wrs-linux-gnu- DESTDIR=/tmp turbostat_install
 
-Thanks.
+Signed-off-by: Mark Asselstine <mark.asselstine@windriver.com>
+---
+Hi,
+
+Just throwing this out there. I am not sure there is interest in
+making these changes but when packaging turbostat I am thinking
+these changes can prove to be useful.
+
+Regards,
+Mark
+
+ tools/power/x86/turbostat/Makefile |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
+index f856495..aa354e3 100644
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -1,9 +1,21 @@
++CC              = $(CROSS_COMPILE)gcc
++BUILD_OUTPUT    := $(PWD)
++PREFIX          := /usr
++DESTDIR         :=
++
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+ 
++%: %.c
++	@mkdir -p $(BUILD_OUTPUT)
++	$(CC) $(CFLAGS) $< -o $(BUILD_OUTPUT)/$@
++
++.PHONY : clean
+ clean :
+-	rm -f turbostat
++	@rm -f $(BUILD_OUTPUT)/turbostat
+ 
+-install :
+-	install turbostat /usr/bin/turbostat
+-	install turbostat.8 /usr/share/man/man8
++install : turbostat
++	install -d  $(DESTDIR)$(PREFIX)/bin
++	install $(BUILD_OUTPUT)/turbostat $(DESTDIR)$(PREFIX)/bin/turbostat
++	install -d  $(DESTDIR)$(PREFIX)/share/man/man8
++	install turbostat.8 $(DESTDIR)$(PREFIX)/share/man/man8
+-- 
+1.7.9.5
+
