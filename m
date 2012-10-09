@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2JICJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Oct 2012 22:09:12 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33861 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab2JICIp (ORCPT
+	id S1753356Ab2JICUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Oct 2012 22:20:49 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52480 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab2JICUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Oct 2012 22:08:45 -0400
-X-AuditID: b753bd60-900c0ba0000047ca-8a-5073872aac6c
-X-AuditID: b753bd60-900c0ba0000047ca-8a-5073872aac6c
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Subject: [PATCH 1/2] ftrace: Change unsigned long type of
- ring_buffer_oldest_event_ts() to u64
-To: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 09 Oct 2012 11:08:41 +0900
-Message-ID: <20121009020841.12110.70256.stgit@localhost.localdomain>
-In-Reply-To: <20121009020838.12110.90016.stgit@localhost.localdomain>
-References: <20121009020838.12110.90016.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Mon, 8 Oct 2012 22:20:46 -0400
+Message-ID: <507389F4.9060906@linux.vnet.ibm.com>
+Date: Tue, 09 Oct 2012 10:20:36 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, wfg@linux.intel.com
+Subject: Re: [PATCH] sched: fix should_resched() to avoid do schedule in atomic
+References: <1347937984-5817-1-git-send-email-wangyun@linux.vnet.ibm.com>
+In-Reply-To: <1347937984-5817-1-git-send-email-wangyun@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+x-cbid: 12100902-4790-0000-0000-000004FADCAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ring_buffer_oldest_event_ts() should return a value of u64 type, because
-ring_buffer_per_cpu->buffer_page->buffer_data_page->time_stamp is u64 type.
+On 09/18/2012 11:13 AM, Michael Wang wrote:
+> This patch try to fix the BUG:
+> 
+> [    0.043953] BUG: scheduling while atomic: swapper/0/1/0x10000002
+> [    0.044017] no locks held by swapper/0/1.
+> [    0.044692] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc1-00420-gb7aebb9 #34
+> [    0.045861] Call Trace:
+> [    0.048071]  [<c106361e>] __schedule_bug+0x5e/0x70
+> [    0.048890]  [<c1b28701>] __schedule+0x91/0xb10
+> [    0.049660]  [<c14472ea>] ? vsnprintf+0x33a/0x450
+> [    0.050444]  [<c1060006>] ? lg_local_lock+0x6/0x70
+> [    0.051256]  [<c14fb5b1>] ? wait_for_xmitr+0x31/0x90
+> [    0.052019]  [<c144fd55>] ? do_raw_spin_unlock+0xa5/0xf0
+> [    0.052903]  [<c1b2a532>] ? _raw_spin_unlock+0x22/0x30
+> [    0.053759]  [<c105cdbb>] ? up+0x1b/0x70
+> [    0.054421]  [<c1065d6b>] __cond_resched+0x1b/0x30
+> [    0.055228]  [<c1b292d5>] _cond_resched+0x45/0x50
+> [    0.056020]  [<c1b26c58>] mutex_lock_nested+0x28/0x370
+> [    0.056884]  [<c1034222>] ? console_unlock+0x3a2/0x4e0
+> [    0.057741]  [<c1ac8559>] __irq_alloc_descs+0x39/0x1c0
+> [    0.058589]  [<c10223bc>] io_apic_setup_irq_pin+0x2c/0x310
+> [    0.060042]  [<c20638df>] setup_IO_APIC+0x101/0x744
+> [    0.060878]  [<c1021d51>] ? clear_IO_APIC+0x31/0x50
+> [    0.061695]  [<c20600f4>] native_smp_prepare_cpus+0x538/0x680
+> [    0.062644]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.063517]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.064016]  [<c2056adc>] kernel_init+0x4b/0x17f
+> [    0.064790]  [<c2056a91>] ? do_one_initcall+0x12c/0x12c
+> [    0.065660]  [<c1b2bbd6>] kernel_thread_helper+0x6/0x10
+> 
+> The process to trigger the BUG is:
+> 
+> 	native_smp_prepare_cpus()
+> 	preempt_disable()		//preempt_count++
+> 	__irq_alloc_descs()
+> 	mutex_lock()
+> 	might_sleep()			//should_resched() return true
+> 	__schedule()
+> 	preempt_disable()		//preempt_count++
+> 	schedule_bug()			//preempt_count > 1, report bug
+> 
+> So the issue is that should_resched() should not return true while the preempt
+> already disabled.
+> 
+> This patch will fix the issue, then might_sleep() won't do schedule in atomic
+> any more.
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
+Could I get some comments on the patch?
 
- include/linux/ring_buffer.h |    2 +-
- kernel/trace/ring_buffer.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Regards,
+Michael Wang
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 6c8835f..c68a09a 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -159,7 +159,7 @@ int ring_buffer_record_is_on(struct ring_buffer *buffer);
- void ring_buffer_record_disable_cpu(struct ring_buffer *buffer, int cpu);
- void ring_buffer_record_enable_cpu(struct ring_buffer *buffer, int cpu);
- 
--unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu);
-+u64 ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu);
- unsigned long ring_buffer_bytes_cpu(struct ring_buffer *buffer, int cpu);
- unsigned long ring_buffer_entries(struct ring_buffer *buffer);
- unsigned long ring_buffer_overruns(struct ring_buffer *buffer);
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index b32ed0e..7f4129e 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2925,12 +2925,12 @@ rb_num_of_entries(struct ring_buffer_per_cpu *cpu_buffer)
-  * @buffer: The ring buffer
-  * @cpu: The per CPU buffer to read from.
-  */
--unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
-+u64 ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
- {
- 	unsigned long flags;
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long ret;
-+	u64 ret;
- 
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
- 		return 0;
+
+> 
+> Reported-by: Fengguang Wu <wfg@linux.intel.com>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  kernel/sched/core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b38f00e..2b7cd15 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4171,7 +4171,7 @@ SYSCALL_DEFINE0(sched_yield)
+> 
+>  static inline int should_resched(void)
+>  {
+> -	return need_resched() && !(preempt_count() & PREEMPT_ACTIVE);
+> +	return need_resched() && !preempt_count();
+>  }
+> 
+>  static void __cond_resched(void)
+> 
 
