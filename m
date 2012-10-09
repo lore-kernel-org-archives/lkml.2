@@ -1,169 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab2JIWTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 18:19:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56583 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2JIWTJ (ORCPT
+	id S1755650Ab2JIWTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 18:19:16 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50755 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab2JIWTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 18:19:09 -0400
-Date: Tue, 9 Oct 2012 15:19:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
- v3
-Message-Id: <20121009151907.3f61ebca.akpm@linux-foundation.org>
-In-Reply-To: <1349303063-12766-2-git-send-email-andi@firstfloor.org>
-References: <1349303063-12766-1-git-send-email-andi@firstfloor.org>
-	<1349303063-12766-2-git-send-email-andi@firstfloor.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 18:19:13 -0400
+Date: Tue, 9 Oct 2012 17:18:50 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: gang.wei@intel.com
+Cc: key@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, james.l.morris@oracle.com,
+        ebiederm@xmission.com, ben@guthro.net
+Subject: Re: [PATCH] driver/char/tpm: fix regression causesd by ppi
+Message-ID: <20121009221848.GA17467@ennui.austin.ibm.com>
+References: <1349775322-7896-1-git-send-email-gang.wei@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349775322-7896-1-git-send-email-gang.wei@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12100922-7408-0000-0000-0000092D997D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Oct 2012 15:24:23 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+Hi Jimmy,
 
-> From: Andi Kleen <ak@linux.intel.com>
+On Tue, Oct 09, 2012 at 05:35:22PM +0800, gang.wei@intel.com wrote:
+> From: Gang Wei <gang.wei@intel.com>
 > 
-> There was some desire in large applications using MAP_HUGETLB/SHM_HUGETLB
-> to use 1GB huge pages on some mappings, and stay with 2MB on others. This
-> is useful together with NUMA policy: use 2MB interleaving on some mappings,
-> but 1GB on local mappings.
+> This patch try to fix the S3 regression https://lkml.org/lkml/2012/10/5/433,
+> which includes below line:
+> [ 1554.684638] sysfs: cannot create duplicate filename '/devices/pnp0/00:0c/ppi'
 > 
-> This patch extends the IPC/SHM syscall interfaces slightly to allow specifying
-> the page size.
+> The root cause is that ppi sysfs teardown code is MIA, so while S3 resume,
+> the ppi kobject will be created again upon existing one.
 > 
-> It borrows some upper bits in the existing flag arguments and allows encoding
-> the log of the desired page size in addition to the *_HUGETLB flag.
-> When 0 is specified the default size is used, this makes the change fully
-> compatible.
+> To make the tear down code simple, change the ppi subfolder creation from
+> using kobject_create_and_add to just using a named ppi attribute_group. Then
+> ppi sysfs teardown could be done with a simple sysfs_remove_group call.
 > 
-> Extending the internal hugetlb code to handle this is straight forward. Instead
-> of a single mount it just keeps an array of them and selects the right
-> mount based on the specified page size.
+> Adjusted the name & return type for ppi sysfs init function.
 > 
-> I also exported the new flags to the user headers
-> (they were previously under __KERNEL__). Right now only symbols
-> for x86 and some other architecture for 1GB and 2MB are defined.
-> The interface should already work for all other architectures
-> though.
-
-So some manpages need updating.  I'm not sure which - mmap(2) surely,
-but which for the IPC change?
-
-> v2: Port to new tree. Fix unmount.
-> v3: Ported to latest tree.
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> Reported-by: Ben Guthro <ben@guthro.net>
+> Signed-off-by: Gang Wei <gang.wei@intel.com>
 > ---
->  arch/x86/include/asm/mman.h |    3 ++
->  fs/hugetlbfs/inode.c        |   63 ++++++++++++++++++++++++++++++++++---------
->  include/asm-generic/mman.h  |   13 +++++++++
->  include/linux/hugetlb.h     |   12 +++++++-
->  include/linux/shm.h         |   19 +++++++++++++
->  ipc/shm.c                   |    3 +-
->  mm/mmap.c                   |    5 ++-
+>  drivers/char/tpm/tpm.c     |    3 ++-
+>  drivers/char/tpm/tpm.h     |    9 +++++++--
+>  drivers/char/tpm/tpm_ppi.c |   18 ++++++++++--------
+>  3 files changed, 19 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index f26afdb..b429f1e 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -1259,6 +1259,7 @@ void tpm_remove_hardware(struct device *dev)
+> 
+>  	misc_deregister(&chip->vendor.miscdev);
+>  	sysfs_remove_group(&dev->kobj, chip->vendor.attr_group);
+> +	tpm_remove_ppi(&dev->kobj);
+>  	tpm_bios_log_teardown(chip->bios_dir);
+> 
+>  	/* write it this way to be explicit (chip->dev == dev) */
+> @@ -1476,7 +1477,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+>  		goto put_device;
+>  	}
+> 
+> -	if (sys_add_ppi(&dev->kobj)) {
+> +	if (tpm_add_ppi(&dev->kobj)) {
+>  		misc_deregister(&chip->vendor.miscdev);
+>  		goto put_device;
+>  	}
 
-Alas, include/asm-generic/mman.h doesn't exist now.
+  Hmm, tpm_add_ppi is just sysfs_create_group, which only ever returns
+0. Looks like we can remove this error path, but PPI is unusable in the
+failure case.
 
-Does this change touch all the hugetlb-capable architectures?
-
-z:/usr/src/linux-3.6> grep -rl MAP_HUGETLB arch
-arch/alpha/include/asm/mman.h
-arch/xtensa/include/asm/mman.h
-arch/parisc/include/asm/mman.h
-arch/tile/include/asm/mman.h
-arch/sparc/include/asm/mman.h
-arch/powerpc/include/asm/mman.h
-arch/mips/include/asm/mman.h
-
->
-> ...
->
-> @@ -933,9 +933,22 @@ static int can_do_hugetlb_shm(void)
->  	return capable(CAP_IPC_LOCK) || in_group_p(shm_group);
->  }
->  
-> +static int get_hstate_idx(int page_size_log)
-
-nitlet: "page_size_order" would be more kernely.  Or just "page_order".
-
-> +{
-> +	struct hstate *h;
-> +
-> +	if (!page_size_log)
-> +		return default_hstate_idx;
-> +	h = size_to_hstate(1 << page_size_log);
-> +	if (!h)
-> +		return -1;
-> +	return h - hstates;
-> +}
->
-> ...
->
->  static int __init init_hugetlbfs_fs(void)
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index 02c266a..8ef7649 100644
+> --- a/drivers/char/tpm/tpm.h
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -329,10 +329,15 @@ extern int wait_for_tpm_stat(struct tpm_chip *, u8, unsigned long,
+>  			     wait_queue_head_t *);
+> 
+>  #ifdef CONFIG_ACPI
+> -extern ssize_t sys_add_ppi(struct kobject *parent);
+> +extern int tpm_add_ppi(struct kobject *);
+> +extern void tpm_remove_ppi(struct kobject *);
+>  #else
+> -static inline ssize_t sys_add_ppi(struct kobject *parent)
+> +static inline int tpm_add_ppi(struct kobject *parent)
 >  {
-> +	struct hstate *h;
->  	int error;
-> -	struct vfsmount *vfsmount;
-> +	int i;
->  
->  	error = bdi_init(&hugetlbfs_backing_dev_info);
->  	if (error)
-> @@ -1030,14 +1049,26 @@ static int __init init_hugetlbfs_fs(void)
->  	if (error)
->  		goto out;
->  
-> -	vfsmount = kern_mount(&hugetlbfs_fs_type);
-> +	i = 0;
-> +	for_each_hstate (h) {
-> +		char buf[50];
-> +		unsigned ps_kb = 1U << (h->order + PAGE_SHIFT - 10);
->  
-> -	if (!IS_ERR(vfsmount)) {
-> -		hugetlbfs_vfsmount = vfsmount;
+>  	return 0;
+>  }
+> +
+> +static inline void tpm_remove_ppi(struct kobject *parent)
+> +{
+> +}
+>  #endif
+> diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+> index f27b58c..720ebcf 100644
+> --- a/drivers/char/tpm/tpm_ppi.c
+> +++ b/drivers/char/tpm/tpm_ppi.c
+> @@ -444,18 +444,20 @@ static struct attribute *ppi_attrs[] = {
+>  	&dev_attr_vs_operations.attr, NULL,
+>  };
+>  static struct attribute_group ppi_attr_grp = {
+> +	.name = "ppi",
+>  	.attrs = ppi_attrs
+>  };
+> 
+> -ssize_t sys_add_ppi(struct kobject *parent)
+> +int tpm_add_ppi(struct kobject *parent)
+>  {
+> -	struct kobject *ppi;
+> -	ppi = kobject_create_and_add("ppi", parent);
+> -	if (sysfs_create_group(ppi, &ppi_attr_grp))
+> -		return -EFAULT;
+> -	else
 > -		return 0;
-> -	}
-> +		snprintf(buf, sizeof buf, "pagesize=%uK", ps_kb);
-> +		hugetlbfs_vfsmount[i] = kern_mount_data(&hugetlbfs_fs_type,
-> +							buf);
->  
-> -	error = PTR_ERR(vfsmount);
-> +		if (IS_ERR(hugetlbfs_vfsmount[i])) {
-> +				pr_err(
-> +			"hugetlb: Cannot mount internal hugetlbfs for page size %uK",
-> +			       ps_kb);
-> +			error = PTR_ERR(hugetlbfs_vfsmount[i]);
-> +		}
-> +		i++;
-> +	}
-> +	/* Non default hstates are optional */
-> +	if (hugetlbfs_vfsmount[default_hstate_idx])
-> +		return 0;
+> +	return sysfs_create_group(parent, &ppi_attr_grp);
+> +}
+> +EXPORT_SYMBOL_GPL(tpm_add_ppi);
+> +
+> +void tpm_remove_ppi(struct kobject *parent)
+> +{
+> +	sysfs_remove_group(parent, &ppi_attr_grp);
+>  }
+> -EXPORT_SYMBOL_GPL(sys_add_ppi);
+> +EXPORT_SYMBOL_GPL(tpm_remove_ppi);
 
-hm, so if I'm understanding this, the patch mounts hugetlbfs N times,
-once for each page size.  And presumably the shm code somehow selects
-one of these mounts, based on incoming flags.  And presumably if those
-flags are all-zero, the behaviour is unaltered.
+ Do we need to export these symbols?  These might have been left around
+from when ppi was a standalone module.
 
-Please update the changelog to describe all this - the overview of how
-the patch actually operates.
+Kent
 
-Also, all this affects the /proc/mounts contents, yes?  Let's changelog
-that very-slightly-non-back-compatible user-visible change as well.
-
-There's some overhead to doing all those additional mounts.  Can we
-quantify it?
-
->
-> ...
->
+>  MODULE_LICENSE("GPL");
+> -- 
+> 1.7.7.6
+> 
 
