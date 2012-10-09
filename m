@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab2JIGVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:21:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64144 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab2JIGVk (ORCPT
+	id S1753563Ab2JIGWV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:22:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18863 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab2JIGWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:21:40 -0400
-Date: Mon, 8 Oct 2012 23:21:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Tang Chen <tangchen@cn.fujitsu.com>
-cc: mingo@redhat.com, peterz@infradead.org, miaox@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1210082308230.360@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 9 Oct 2012 02:22:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 08 Oct 2012 23:22:17 -0700
+Message-ID: <5073BAA8.4060404@nvidia.com>
+Date: Tue, 9 Oct 2012 11:18:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mfd: Convert tps6586x to irq_domain
+References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com> <1349712805-10014-2-git-send-email-ldewangan@nvidia.com> <20121009060641.GE8237@opensource.wolfsonmicro.com>
+In-Reply-To: <20121009060641.GE8237@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Oct 2012, Tang Chen wrote:
+On Tuesday 09 October 2012 11:36 AM, Mark Brown wrote:
+> On Mon, Oct 08, 2012 at 09:43:23PM +0530, Laxman Dewangan wrote:
+>> Allocate the irq base if it base is not porvided i.e.
+>> in case of device tree invocation of this driver.
+>> Convert the tps6586x driver to irq domain, using a
+>> legacy IRQ mapping if an irq_base is specified in
+>> platform data or dynamically allocated and otherwise
+>> using a linear mapping.
+> Reviewed-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>
+> but can you convert to regmap_irq?
 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 66b36ab..e76dce9 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1263,18 +1263,24 @@ EXPORT_SYMBOL_GPL(kick_process);
->   */
->  static int select_fallback_rq(int cpu, struct task_struct *p)
->  {
-> -	const struct cpumask *nodemask = cpumask_of_node(cpu_to_node(cpu));
-> +	int nid = cpu_to_node(cpu);
-> +	const struct cpumask *nodemask = NULL;
->  	enum { cpuset, possible, fail } state = cpuset;
->  	int dest_cpu;
->  
-> -	/* Look for allowed, online CPU in same node. */
-> -	for_each_cpu(dest_cpu, nodemask) {
-> -		if (!cpu_online(dest_cpu))
-> -			continue;
-> -		if (!cpu_active(dest_cpu))
-> -			continue;
-> -		if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
-> -			return dest_cpu;
-> +	/* If the cpu has been offlined, its nid was set to -1. */
-> +	if (nid != -1) {
+Yes, the motivation was this when I started this cleanups but found that 
+there is 4 interrupt status and 5 interrupt mask register. Probably we 
+need to pass the number of interrupt status and interrupt mask register 
+to expand the regmap-irq framework to handle this case also. If it is 
+fine then I can work towards that.
 
-NUMA_NO_NODE.
-
-Eek, the nid shouldn't be -1 yet, though, for cpu hotplug since this 
-should be called at CPU_DYING level and migrate_tasks() still sees a valid 
-cpu.
-
-On x86, cpumask_of_node() is always guaranteed to return a valid cpumask 
-after boot so presumably this is a problem in some non-x86 arch code and 
-isn't actually a sched problem.
-
-> +		nodemask = cpumask_of_node(nid);
-> +
-> +		/* Look for allowed, online CPU in same node. */
-> +		for_each_cpu(dest_cpu, nodemask) {
-> +			if (!cpu_online(dest_cpu))
-> +				continue;
-> +			if (!cpu_active(dest_cpu))
-> +				continue;
-> +			if (cpumask_test_cpu(dest_cpu, tsk_cpus_allowed(p)))
-> +				return dest_cpu;
-> +		}
->  	}
->  
->  	for (;;) {
