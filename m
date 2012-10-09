@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab2JIRtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 13:49:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21073 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab2JIRtW (ORCPT
+	id S1756593Ab2JIRu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:50:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33733 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab2JIRuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 13:49:22 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=ygo09mYXcr3UguTFmm8A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349804961.24256.27.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.45-rt67
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Tue, 09 Oct 2012 13:49:21 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 13:50:24 -0400
+Date: Tue, 9 Oct 2012 10:38:22 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-b880deeaffd9df0cec9a4496447d0d7fd78086f2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+        haodong@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1349716656-48165-7-git-send-email-dsahern@gmail.com>
+References: <1349716656-48165-7-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm: Remove typecast in init_kvm_event_record
+Git-Commit-ID: b880deeaffd9df0cec9a4496447d0d7fd78086f2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 09 Oct 2012 10:38:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  b880deeaffd9df0cec9a4496447d0d7fd78086f2
+Gitweb:     http://git.kernel.org/tip/b880deeaffd9df0cec9a4496447d0d7fd78086f2
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Mon, 8 Oct 2012 11:17:30 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 8 Oct 2012 17:14:57 -0300
 
-Dear RT Folks,
+perf kvm: Remove typecast in init_kvm_event_record
 
-I'm pleased to announce the 3.0.45-rt67 stable release.
+Not needed after changing i to unsigned int.
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Dong Hao <haodong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1349716656-48165-7-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-kvm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-This release is just an update to the new stable 3.0.45 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 52f216aa838163d892de6b8b3ec7d63cceb70adf
-
-
-Or to build 3.0.45-rt67 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.45.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.45-rt67.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index b98095e..8416754 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -313,9 +313,9 @@ struct vcpu_event_record {
+ 
+ static void init_kvm_event_record(struct perf_kvm *kvm)
+ {
+-	int i;
++	unsigned int i;
+ 
+-	for (i = 0; i < (int)EVENTS_CACHE_SIZE; i++)
++	for (i = 0; i < EVENTS_CACHE_SIZE; i++)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
