@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab2JIMMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:12:38 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:45327 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab2JIMMg (ORCPT
+	id S1754179Ab2JIMNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:13:12 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50351 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab2JIMNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:12:36 -0400
-Date: Tue, 9 Oct 2012 14:12:20 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Ryan Mallon <rmallon@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        kernel-janitors@vger.kernel.org, shubhrajyoti@ti.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/13] drivers/media/tuners/qt1010.c: use macros for
- i2c_msg initialization
-Message-ID: <20121009141220.412c15c8@endymion.delvare>
-In-Reply-To: <alpine.DEB.2.02.1210080722470.1972@localhost6.localdomain6>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1349624323-15584-5-git-send-email-Julia.Lawall@lip6.fr>
-	<5071FA5D.30003@gmail.com>
-	<alpine.DEB.2.02.1210080704440.1972@localhost6.localdomain6>
-	<50726110.5020901@gmail.com>
-	<alpine.DEB.2.02.1210080722470.1972@localhost6.localdomain6>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Oct 2012 08:13:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1349776921.21172.4091.camel@edumazet-glaptop>
+References: <20120731103724.20515.60334.stgit@zurg> <20120731104239.20515.702.stgit@zurg>
+ <1349776921.21172.4091.camel@edumazet-glaptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 9 Oct 2012 21:12:48 +0900
+X-Google-Sender-Auth: gNeaPz8uCmnBPg3HkpbzCAXIbs4
+Message-ID: <CA+55aFzCCSE3bnPL7pquYq9pW6YLs_2QZR7r9kZEgwxxc7rzYg@mail.gmail.com>
+Subject: Re: [PATCH v3 10/10] mm: kill vma flag VM_RESERVED and
+ mm->reserved_vm counter
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Alex Williamson <alex.williamson@redhat.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+On Tue, Oct 9, 2012 at 7:02 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> It seems drivers/vfio/pci/vfio_pci.c uses VM_RESERVED
 
-On Mon, 8 Oct 2012 07:24:11 +0200 (CEST), Julia Lawall wrote:
-> > Sorry, I mean either:
-> >
-> > 	I2C_MSG_WRITE(priv->cfg->i2c_address, &reg, sizeof(reg)),
-> > 	I2C_MSG_READ(priv->cfg->i2c_address, val, sizeof(*val)),
-> 
-> Of course.  Sorry for not having seen that.  I can do that.
+Yeah, I just pushed out what I think is the right (trivial) fix.
 
-Eek, no, you can't, not in the general case at least. sizeof(*val) will
-return the size of the _first_ element of the destination buffer, which
-has nothing to do with the length of that buffer (which in turn might
-be rightfully longer than the read length for this specific message.)
-
--- 
-Jean Delvare
+               Linus
