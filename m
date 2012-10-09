@@ -1,174 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab2JIIsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 04:48:41 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51165 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab2JIIsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 04:48:38 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5073E4CC.3090600@jp.fujitsu.com>
-Date: Tue, 9 Oct 2012 17:48:12 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1754274Ab2JIIvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 04:51:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61201 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab2JIIvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 04:51:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,560,1344236400"; 
+   d="scan'208";a="202240110"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Subject: RE: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
+ irq affinity mask
+Thread-Topic: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the
+ irq affinity mask
+Thread-Index: AQHNnDjGDpe1bOH9KUSPm3S1s2HgPpewvQtg
+Date: Tue, 9 Oct 2012 08:51:33 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A19171C@SHSMSX101.ccr.corp.intel.com>
+References: <1348681092.19514.10.camel@cliu38-desktop-build>
+	 <1348703122.19514.17.camel@cliu38-desktop-build>
+	 <50632767.5050607@linux.vnet.ibm.com>
+	 <1348679199.26695.455.camel@sbsiddha-desk.sc.intel.com>
+	 <50633BA0.5030700@linux.vnet.ibm.com>
+ <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1348699588.6644.21.camel@sbsiddha-desk.sc.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <toshi.kani@hp.com>, <lenb@kernel.org>, <wency@cn.fujitsu.com>,
-        <vasilis.liaskovitis@profitbricks.com>
-Subject: acpi : acpi_bus_trim() stops removing devices when failing to remove
- the device
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q998q2N5003902
 
-acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-number. But acpi_bus_remove() cannot return error number correctly.
-acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-even if the device is running on the system. In this case, the system cannot
-work well.
+One suggestion below, thanks.
 
-Vasilis hit the bug at memory hotplug and reported it as follow:
-https://lkml.org/lkml/2012/9/26/318
+> -----Original Message-----
+> From: Siddha, Suresh B
+> Sent: Thursday, September 27, 2012 6:46 AM
+> To: Srivatsa S. Bhat
+> Cc: Liu, Chuansheng; tglx@linutronix.de; mingo@redhat.com; x86@kernel.org;
+> linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; Paul E.
+> McKenney; Peter Zijlstra; rusty@rustcorp.com.au
+> Subject: Re: [PATCH RESEND] x86/fixup_irq: Clean the offlining CPU from the irq
+> affinity mask
+> 
+> On Wed, 2012-09-26 at 23:00 +0530, Srivatsa S. Bhat wrote:
+> > On 09/26/2012 10:36 PM, Suresh Siddha wrote:
+> > > On Wed, 2012-09-26 at 21:33 +0530, Srivatsa S. Bhat wrote:
+> > >> I have some fundamental questions here:
+> > >> 1. Why was the CPU never removed from the affinity masks in the original
+> > >> code? I find it hard to believe that it was just an oversight, because the
+> > >> whole point of fixup_irqs() is to affine the interrupts to other CPUs, IIUC.
+> > >> So, is that really a bug or is the existing code correct for some reason
+> > >> which I don't know of?
+> > >
+> > > I am not aware of the history but my guess is that the affinity mask
+> > > which is coming from the user-space wants to be preserved. And
+> > > fixup_irqs() is fixing the underlying interrupt routing when the cpu
+> > > goes down
+> >
+> > and the code that corresponds to that is:
+> > irq_force_complete_move(irq); is it?
+> 
+> No. irq_set_affinity()
+> 
+> > > with a hope that things will be corrected when the cpu comes
+> > > back online. But  as Liu noted, we are not correcting the underlying
+> > > routing when the cpu comes back online. I think we should fix that
+> > > rather than modifying the user-specified affinity.
+> > >
+> >
+> > Hmm, I didn't entirely get your suggestion. Are you saying that we should
+> change
+> > data->affinity (by calling ->irq_set_affinity()) during offline but maintain a
+> > copy of the original affinity mask somewhere, so that we can try to match it
+> > when possible (ie., when CPU comes back online)?
+> 
+> Don't change the data->affinity in the fixup_irqs() and shortly after a
+> cpu is online, call irq_chip's irq_set_affinity() for those irq's who
+> affinity included this cpu (now that the cpu is back online,
+> irq_set_affinity() will setup the HW routing tables correctly).
+> 
+> This presumes that across the suspend/resume, cpu offline/online
+> operations, we don't want to break the irq affinity setup by the
+> user-level entity like irqbalance etc...
+> 
+In fixup_irqs(), could we untouch the data->affinity, but calling ->irq_set_affinity() without offlined CPU.
+If so, the better affinity is set, and user-space can use the data->affinity correctly, also new affinity setting
+will and online cpus.
 
-So acpi_bus_trim() should check whether device was removed or not correctly.
-The patch adds error check into some functions to remove the device.
+> > > That happens only if the irq chip doesn't have the irq_set_affinity() setup.
+> >
+> > That is my other point of concern : setting irq affinity can fail even if
+> > we have ->irq_set_affinity(). (If __ioapic_set_affinity() fails, for example).
+> > Why don't we complain in that case? I think we should... and if its serious
+> > enough, abort the hotplug operation or atleast indicate that offline failed..
+> 
+> yes if there is a failure then we are in trouble, as the cpu is already
+> disappeared from the online-masks etc. For platforms with
+> interrupt-remapping, interrupts can be migrated from the process context
+> and as such this all can be done much before.
+> 
+> And for legacy platforms we have done quite a few changes in the recent
+> past like using eoi_ioapic_irq() for level triggered interrupts etc,
+> that makes it as safe as it can be. Perhaps we can move most of the
+> fixup_irqs() code much ahead and the lost section of the current
+> fixup_irqs() (which check IRR bits and use the retrigger function to
+> trigger the interrupt on another cpu) can still be done late just like
+> now.
+> 
+> thanks,
+> suresh
 
-Applying the patch, acpi_bus_trim() stops removing devices when failing
-to remove the device. But I think there is no impact with the
-exceptionof CPU and Memory hotplug path. Because other device also fails
-but the fail is an irregular case like device is NULL.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
----
- drivers/acpi/scan.c    |   15 ++++++++++++---
- drivers/base/dd.c      |   22 +++++++++++++++++-----
- include/linux/device.h |    2 +-
- 3 files changed, 30 insertions(+), 9 deletions(-)
-
-Index: linux-3.6/drivers/acpi/scan.c
-===================================================================
---- linux-3.6.orig/drivers/acpi/scan.c	2012-10-09 17:25:40.956496325 +0900
-+++ linux-3.6/drivers/acpi/scan.c	2012-10-09 17:25:55.405497800 +0900
-@@ -445,12 +445,17 @@ static int acpi_device_remove(struct dev
- {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
- 	struct acpi_driver *acpi_drv = acpi_dev->driver;
-+	int ret;
- 
- 	if (acpi_drv) {
- 		if (acpi_drv->ops.notify)
- 			acpi_device_remove_notify_handler(acpi_dev);
--		if (acpi_drv->ops.remove)
--			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
-+		if (acpi_drv->ops.remove) {
-+			ret = acpi_drv->ops.remove(acpi_dev,
-+						   acpi_dev->removal_type);
-+			if (ret)
-+				return ret;
-+		}
- 	}
- 	acpi_dev->driver = NULL;
- 	acpi_dev->driver_data = NULL;
-@@ -1226,11 +1231,15 @@ static int acpi_device_set_context(struc
- 
- static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
- {
-+	int ret;
-+
- 	if (!dev)
- 		return -EINVAL;
- 
- 	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
--	device_release_driver(&dev->dev);
-+	ret = device_release_driver(&dev->dev);
-+	if (ret)
-+		return ret;
- 
- 	if (!rmdevice)
- 		return 0;
-Index: linux-3.6/drivers/base/dd.c
-===================================================================
---- linux-3.6.orig/drivers/base/dd.c	2012-10-01 08:47:46.000000000 +0900
-+++ linux-3.6/drivers/base/dd.c	2012-10-09 17:25:55.442497825 +0900
-@@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
-  * __device_release_driver() must be called with @dev lock held.
-  * When called for a USB interface, @dev->parent lock must be held as well.
-  */
--static void __device_release_driver(struct device *dev)
-+static int __device_release_driver(struct device *dev)
- {
- 	struct device_driver *drv;
-+	int ret = 0;
- 
- 	drv = dev->driver;
- 	if (drv) {
-@@ -493,9 +494,11 @@ static void __device_release_driver(stru
- 		pm_runtime_put_sync(dev);
- 
- 		if (dev->bus && dev->bus->remove)
--			dev->bus->remove(dev);
-+			ret = dev->bus->remove(dev);
- 		else if (drv->remove)
--			drv->remove(dev);
-+			ret = drv->remove(dev);
-+		if (ret)
-+			goto rollback;
- 		devres_release_all(dev);
- 		dev->driver = NULL;
- 		dev_set_drvdata(dev, NULL);
-@@ -506,6 +509,12 @@ static void __device_release_driver(stru
- 						     dev);
- 
- 	}
-+
-+	return ret;
-+
-+rollback:
-+	driver_sysfs_add(dev);
-+	return ret;
- }
- 
- /**
-@@ -515,16 +524,19 @@ static void __device_release_driver(stru
-  * Manually detach device from driver.
-  * When called for a USB interface, @dev->parent lock must be held.
-  */
--void device_release_driver(struct device *dev)
-+int device_release_driver(struct device *dev)
- {
-+	int ret;
- 	/*
- 	 * If anyone calls device_release_driver() recursively from
- 	 * within their ->remove callback for the same device, they
- 	 * will deadlock right here.
- 	 */
- 	device_lock(dev);
--	__device_release_driver(dev);
-+	ret = __device_release_driver(dev);
- 	device_unlock(dev);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(device_release_driver);
- 
-Index: linux-3.6/include/linux/device.h
-===================================================================
---- linux-3.6.orig/include/linux/device.h	2012-10-01 08:47:46.000000000 +0900
-+++ linux-3.6/include/linux/device.h	2012-10-09 17:25:55.479497852 +0900
-@@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
-  * for information on use.
-  */
- extern int __must_check device_bind_driver(struct device *dev);
--extern void device_release_driver(struct device *dev);
-+extern int device_release_driver(struct device *dev);
- extern int  __must_check device_attach(struct device *dev);
- extern int __must_check driver_attach(struct device_driver *drv);
- extern int __must_check device_reprobe(struct device *dev);
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
