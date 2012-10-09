@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab2JIGYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:24:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56138 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752651Ab2JIGYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:24:09 -0400
-Date: Tue, 9 Oct 2012 15:23:57 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: Convert tps6586x to irq_domain
-Message-ID: <20121009062355.GJ8237@opensource.wolfsonmicro.com>
-References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com>
- <1349712805-10014-2-git-send-email-ldewangan@nvidia.com>
- <20121009060641.GE8237@opensource.wolfsonmicro.com>
- <5073BAA8.4060404@nvidia.com>
+	id S1753822Ab2JIGZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:25:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5297 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab2JIGZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 02:25:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,558,1344236400"; 
+   d="scan'208";a="223947757"
+Message-ID: <5073C357.6080805@zytor.com>
+Date: Tue, 09 Oct 2012 14:25:27 +0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5073BAA8.4060404@nvidia.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v2 00/10] x86: Use BRK to pre mapping page table to make
+ xen happy
+References: <1349757558-10856-1-git-send-email-yinghai@kernel.org> <5073BF32.7040003@zytor.com> <CAE9FiQWUg0wmMLANmshxob3ftxa2xY9mUSivzsWCGkJ2_==_Qg@mail.gmail.com>
+In-Reply-To: <CAE9FiQWUg0wmMLANmshxob3ftxa2xY9mUSivzsWCGkJ2_==_Qg@mail.gmail.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:18:24AM +0530, Laxman Dewangan wrote:
-> On Tuesday 09 October 2012 11:36 AM, Mark Brown wrote:
+On 10/09/2012 02:21 PM, Yinghai Lu wrote:
+>>
+>> Hi Yinghai,
+>>
+>> This patchset doesn't apply on top of tip:x86/mm2, starting at patch 08/10.
+> 
+> sorry for that. I refresh my base to current linus/master and tip/master.
+> 
+> could be some change there.
+> 
+> could solve it:
+> 1. update x86/mm2 to linus/master
+> 2. or i resend the patch again with x86/mm2 as base.
+> 
+> please let me know which one you like.
+> 
 
-> >but can you convert to regmap_irq?
+If it doesn't have cross-dependencies on other code, x86/mm2 is probably
+the best base; if there are other dependencies then that's fine, but we
+need to know what they are.  We don't want to create unnecessary tangles
+among topic branches, it makes Linus very unhappy.
 
-> Yes, the motivation was this when I started this cleanups but found
-> that there is 4 interrupt status and 5 interrupt mask register.
-> Probably we need to pass the number of interrupt status and
-> interrupt mask register to expand the regmap-irq framework to handle
-> this case also. If it is fine then I can work towards that.
+	-hpa
 
-Can you explain in more detail - I guess there's a different mapping of
-the bits into the registers for mask and status (in which case the
-generic code just won't work anyway).
