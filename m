@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab2JIOzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 10:55:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43950 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab2JIOzT (ORCPT
+	id S1755059Ab2JIO47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 10:56:59 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:28168 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab2JIO4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 10:55:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121009123629.GB11061@opensource.wolfsonmicro.com>
-References: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com>
-	<20121009041947.GB8237@opensource.wolfsonmicro.com>
-	<CACVXFVOT+_nWxZOV0hckVrJwafgb_qr35eKaYg9j=toEJ2DNMQ@mail.gmail.com>
-	<20121009071343.GW8237@opensource.wolfsonmicro.com>
-	<CACVXFVN1sL1FwUx9t1kQZHW=J-v3_9gDj+jOH2wLgP_a+ywX7g@mail.gmail.com>
-	<20121009074138.GB8237@opensource.wolfsonmicro.com>
-	<CACVXFVONtkA5tUq3zcvrn6+RmC0_VLgeK5aR7g8yV2dJbgCysA@mail.gmail.com>
-	<20121009123629.GB11061@opensource.wolfsonmicro.com>
-Date: Tue, 9 Oct 2012 22:55:17 +0800
-Message-ID: <CACVXFVNZPxG3pNnQfSEqvPvLV3LoutFCX_0eZpwjAWEwd8RByA@mail.gmail.com>
-Subject: Re: [PATCH] firmware: Don't attempt to allocate zero bytes with vmalloc()
-From: Ming Lei <ming.lei@canonical.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Oct 2012 10:56:54 -0400
+Message-ID: <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
+Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
+From: Mike Yoknis <mike.yoknis@hp.com>
+Reply-To: mike.yoknis@hp.com
+To: Mel Gorman <mgorman@suse.de>
+Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
+        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 09 Oct 2012 08:56:37 -0600
+In-Reply-To: <20121008151656.GM29125@suse.de>
+References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+	 <20121008151656.GM29125@suse.de>
+Organization: Hewlett-Packard
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 8:36 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Oct 09, 2012 at 08:02:18PM +0800, Ming Lei wrote:
->
->> If loading via user space, timeout or not depends on userspace,
->> at least udev won't timeout on non-existent firmware image.
->
-> This may be a mdev or old udev thing...  it's definitely prevelant.
+On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
+> On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
+> > memmap_init_zone() loops through every Page Frame Number (pfn),
+> > including pfn values that are within the gaps between existing
+> > memory sections.  The unneeded looping will become a boot
+> > performance issue when machines configure larger memory ranges
+> > that will contain larger and more numerous gaps.
+> > 
+> > The code will skip across invalid sections to reduce the
+> > number of loops executed.
+> > 
+> > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+> 
+> This only helps SPARSEMEM and changes more headers than should be
+> necessary. It would have been easier to do something simple like
+> 
+> if (!early_pfn_valid(pfn)) {
+> 	pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
+> 	continue;
+> }
+> 
+> because that would obey the expectation that pages within a
+> MAX_ORDER_NR_PAGES-aligned range are all valid or all invalid (ARM is the
+> exception that breaks this rule). It would be less efficient on
+> SPARSEMEM than what you're trying to merge but I do not see the need for
+> the additional complexity unless you can show it makes a big difference
+> to boot times.
+> 
 
-I just checked history of udev, and looks it can't timeout on
-non-existent firmware file, even with the oldest shell script of
-firmware.sh.
+Mel,
+I, too, was concerned that pfn_valid() was defined in so many header
+files.  But, I did not feel that it was appropriate for me to try to
+restructure things to consolidate those definitions just to add this one
+new function.  Being a kernel newbie I did not believe that I had a good
+enough understanding of what combinations and permutations of CONFIG and
+architecture may have made all of those different definitions necessary,
+so I left them in.
 
-Also looks mdev of busybox checks firmware file too before loading.
+Yes, indeed, this fix is targeted for systems that have holes in memory.
+That is where we see the problem.  We are creating large computer
+systems and we would like for those machines to perform well, including
+boot times.
 
-IMO, firmware loader can't help the problem if userspace
-chooses to timeout on non-existent file. Maybe you have to
-depend on direct loading.
+Let me pass along the numbers I have.  We have what we call an
+"architectural simulator".  It is a computer program that pretends that
+it is a computer system.  We use it to test the firmware before real
+hardware is available.  We have booted Linux on our simulator.  As you
+would expect it takes longer to boot on the simulator than it does on
+real hardware.
 
->
->> Also looks request_firmware_nowait() is better for the case, _nowait()
->> can avoid unnecessary delay and speedup firmware loading if there
->> are more than one firmware to load.
->
-> It doesn't really help as the ABI is such that you can only have one
+With my patch - boot time 41 minutes
+Without patch - boot time 94 minutes
 
-Could you let me know where the ABI is?
+These numbers do not scale linearly to real hardware.  But indicate to
+me a place where Linux can be improved.
 
-> request_firmware() in play at once (unless this changed since I last
-> looked at it).
+Mike Yoknis
 
-I guess you mean that only one firmware device can be added
-as child of the device which is requesting firmware.
 
-The commit below(already merged into linus tree) should fix
-the problem:
-
-    99c2aa72306079976369aad7fc62cc71931d692a(firmware loader:
-    fix creation failure of fw loader device)
-
-Could you test it to see if more than one request_firmware_nowait()
-can be called concurrently for the same device?
-
-Thanks,
---
-Ming Lei
