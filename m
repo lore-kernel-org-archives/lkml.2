@@ -1,120 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab2JIEkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 00:40:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36613 "EHLO
+	id S1752083Ab2JIEkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 00:40:17 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36710 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab2JIEkB (ORCPT
+	with ESMTP id S1752047Ab2JIEkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 00:40:01 -0400
+	Tue, 9 Oct 2012 00:40:12 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/10] x86, mm: get early page table from BRK
-Date: Mon,  8 Oct 2012 21:39:11 -0700
-Message-Id: <1349757558-10856-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 04/10] x86, mm: Don't clear page table if next range is ram
+Date: Mon,  8 Oct 2012 21:39:12 -0700
+Message-Id: <1349757558-10856-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
 References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get pgt_buf early from BRK, and use it to map page table at first.
+After we add code use BRK to map buffer for final page table,
 
-also use the left at first, then use new one.
+It should be safe to remove early_memmap for page table accessing.
 
--v2: extra xen call back for that new range.
--v3: fix compiling about #llx in print out that is reported by Fengguang
--v4: remove the early_pgt_buf_* stuff, because xen interface is ready yet.
-     still need to run x86_init.mapping.pagetable_reserve separately.
-     so we will waste some pages in BRK, will address that later.
+But we get panic with that.
+
+It turns out we clear the initial page table wrongly for next range that is
+separated by holes.
+And it only happens when we are trying to map range one by one range separately.
+
+After we add checking before clearing the related page table, that panic will
+not happen anymore.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/pgtable.h |    1 +
- arch/x86/kernel/setup.c        |    2 ++
- arch/x86/mm/init.c             |   26 +++++++++++++++++++++++++-
- 3 files changed, 28 insertions(+), 1 deletions(-)
+ arch/x86/mm/init_64.c |   37 ++++++++++++++++---------------------
+ 1 files changed, 16 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 52d40a1..25fa5bb 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -599,6 +599,7 @@ static inline int pgd_none(pgd_t pgd)
- 
- extern int direct_gbpages;
- void init_mem_mapping(void);
-+void early_alloc_pgt_buf(void);
- 
- /* local pte updates need not use xchg for locking */
- static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4989f80..7eb6855 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -896,6 +896,8 @@ void __init setup_arch(char **cmdline_p)
- 
- 	reserve_ibft_region();
- 
-+	early_alloc_pgt_buf();
-+
- 	/*
- 	 * Need to conclude brk, before memblock_x86_fill()
- 	 *  it could use memblock_find_in_range, could overlap with
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 0c58f2d..a89f485 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -317,12 +317,22 @@ static void __init find_early_table_space(unsigned long start,
- 					  unsigned long good_end,
- 					  unsigned long tables)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index f40f383..61b3c44 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -363,20 +363,19 @@ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
  {
--	phys_addr_t base;
-+	unsigned long base;
+-	unsigned pages = 0;
++	unsigned long pages = 0, next;
+ 	unsigned long last_map_addr = end;
+ 	int i;
  
- 	base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
- 	if (!base)
- 		panic("Cannot find space for the kernel page tables");
+ 	pte_t *pte = pte_page + pte_index(addr);
  
-+	init_memory_mapping(base, base + tables);
-+	if (pgt_buf_end > pgt_buf_start) {
-+		printk(KERN_DEBUG "kernel direct mapping tables from %#lx to %#lx @ [mem %#010lx-%#010lx]\n",
-+			base, base + tables - 1, pgt_buf_start << PAGE_SHIFT,
-+			(pgt_buf_end << PAGE_SHIFT) - 1);
-+
-+		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
-+						PFN_PHYS(pgt_buf_end));
-+	}
-+
- 	pgt_buf_start = base >> PAGE_SHIFT;
- 	pgt_buf_end = pgt_buf_start;
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
-@@ -469,6 +479,20 @@ void __init init_mem_mapping(void)
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
+-	for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
+-
++	for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
++		next = (addr & PAGE_MASK) + PAGE_SIZE;
+ 		if (addr >= end) {
+-			if (!after_bootmem) {
+-				for(; i < PTRS_PER_PTE; i++, pte++)
+-					set_pte(pte, __pte(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PAGE_MASK, next, 0))
++				set_pte(pte, __pte(0));
++			continue;
+ 		}
  
-+RESERVE_BRK(early_pgt_alloc, 16384);
-+
-+void  __init early_alloc_pgt_buf(void)
-+{
-+	unsigned long tables = 16384;
-+	phys_addr_t base;
-+
-+	base = __pa(extend_brk(tables, PAGE_SIZE));
-+
-+	pgt_buf_start = base >> PAGE_SHIFT;
-+	pgt_buf_end = pgt_buf_start;
-+	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
-+}
-+
- /*
-  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
-  * is valid. The argument is a physical page number.
+ 		/*
+@@ -418,16 +417,14 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
+ 
++		next = (address & PMD_MASK) + PMD_SIZE;
+ 		if (address >= end) {
+-			if (!after_bootmem) {
+-				for (; i < PTRS_PER_PMD; i++, pmd++)
+-					set_pmd(pmd, __pmd(0));
+-			}
+-			break;
++			if (!after_bootmem &&
++			    !e820_any_mapped(address & PMD_MASK, next, 0))
++				set_pmd(pmd, __pmd(0));
++			continue;
+ 		}
+ 
+-		next = (address & PMD_MASK) + PMD_SIZE;
+-
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+@@ -494,13 +491,11 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
+ 
+-		if (addr >= end)
+-			break;
+-
+ 		next = (addr & PUD_MASK) + PUD_SIZE;
+-
+-		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
+-			set_pud(pud, __pud(0));
++		if (addr >= end) {
++			if (!after_bootmem &&
++			    !e820_any_mapped(addr & PUD_MASK, next, 0))
++				set_pud(pud, __pud(0));
+ 			continue;
+ 		}
+ 
 -- 
 1.7.7
 
