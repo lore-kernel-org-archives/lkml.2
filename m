@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab2JITDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 15:03:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39572 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752871Ab2JITDF (ORCPT
+	id S1756874Ab2JITDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 15:03:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40220 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab2JITD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 15:03:05 -0400
-X-Sasl-enc: ZDSj4Vm/EulFmdTs2ZSK1stKMlQwMhlDb4v7q6aoFI7c 1349809383
-Date: Tue, 9 Oct 2012 12:03:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
-Message-ID: <20121009190300.GB22108@kroah.com>
-References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
- <20121009114821.dc4c2aff.akpm@linux-foundation.org>
+	Tue, 9 Oct 2012 15:03:28 -0400
+Date: Tue, 9 Oct 2012 21:03:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.1-rt1
+In-Reply-To: <1349806129.24256.28.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.02.1210092102460.10988@ionos>
+References: <alpine.LFD.2.02.1210091535140.10988@ionos> <1349806129.24256.28.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009114821.dc4c2aff.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 11:48:21AM -0700, Andrew Morton wrote:
-> On Sat,  6 Oct 2012 23:56:33 +0400
-> Andrew Vagin <avagin@openvz.org> wrote:
+On Tue, 9 Oct 2012, Steven Rostedt wrote:
+
+> On Tue, 2012-10-09 at 15:46 +0200, Thomas Gleixner wrote:
 > 
-> > Here is a stack trace of recursion:
-> > free_pid_ns(parent)
-> >   put_pid_ns(parent)
-> >     kref_put(&ns->kref, free_pid_ns);
-> >       free_pid_ns
+> > The RT patch against 3.6.1 can be found here:
 > > 
-> > This patch turns recursion into loops.
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.1-rt1.patch.xz
 > > 
-> > pidns can be nested many times, so in case of recursion
-> > a simple user space program can provoke a kernel panic
-> > due to exceed of a kernel stack.
+> > The split quilt queue is available at:
+> > 
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patches-3.6.1-rt1.tar.xz
+> > 
 > 
-> So we should backport this into earlier kernels.
+> I think you meant:
 > 
-> > --- a/include/linux/kref.h
-> > +++ b/include/linux/kref.h
-> > @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
-> >  	return kref_sub(kref, 1, release);
-> >  }
-> >  
-> > +/**
-> > + * kref_put - decrement refcount for object.
-> > + * @kref: object.
-> > + *
-> > + * Decrement the refcount.
-> > + * Return 1 if refcount is zero.
-> > + */
-> > +static inline int __kref_put(struct kref *kref)
-> > +{
-> > +	return atomic_dec_and_test(&kref->refcount);
-> > +}
-> 
-> Greg might be interested in this.
-> 
-> It's a pretty specialised thing and perhaps it needs some stern words
-> in the description explaining when and why it should and shouldn't be
-> used.
-> 
-> I wonder if people might (ab)use this to avoid the "doesn't
-> have a release function" warning.
+>     http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.1-rt1.tar.xz
 
-Yes they would, please don't do this at all.
-
-In fact, why is it needed?  It doesn't solve anything (if it does,
-something in the way the kref is being used is wrong.)
-
-Please no, I don't want this patch.
-
-greg k-h
+Bah. Copy and paste should be something which can be disabled :)
