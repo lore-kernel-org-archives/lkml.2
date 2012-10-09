@@ -1,175 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2JIQ7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 12:59:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53577 "EHLO mx2.suse.de"
+	id S1754317Ab2JIRHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 13:07:51 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:39274 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab2JIQ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 12:58:47 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Stable <stable@vger.kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/5] mempolicy: fix a race in shared_policy_replace()
-Date: Tue,  9 Oct 2012 17:58:39 +0100
-Message-Id: <1349801921-16598-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1349801921-16598-1-git-send-email-mgorman@suse.de>
-References: <1349801921-16598-1-git-send-email-mgorman@suse.de>
+	id S1752303Ab2JIRHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 13:07:49 -0400
+Date: Tue, 9 Oct 2012 19:07:34 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: perf build error (linux/rbtree_augmented.h)
+Message-ID: <20121009170734.GB32508@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b22d127a39ddd10d93deee3d96e643657ad53a49 upstream.
+Is this an already known issue (building perf on latest linus):
 
-shared_policy_replace() use of sp_alloc() is unsafe.  1) sp_node cannot
-be dereferenced if sp->lock is not held and 2) another thread can modify
-sp_node between spin_unlock for allocating a new sp node and next
-spin_lock.  The bug was introduced before 2.6.12-rc2.
+$ make tools/perf_install
 
-Kosaki's original patch for this problem was to allocate an sp node and
-policy within shared_policy_replace and initialise it when the lock is
-reacquired.  I was not keen on this approach because it partially
-duplicates sp_alloc().  As the paths were sp->lock is taken are not that
-performance critical this patch converts sp->lock to sp->mutex so it can
-sleep when calling sp_alloc().
+...
 
-[kosaki.motohiro@jp.fujitsu.com: Original patch]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mempolicy.h |    2 +-
- mm/mempolicy.c            |   37 ++++++++++++++++---------------------
- 2 files changed, 17 insertions(+), 22 deletions(-)
+../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory
+compilation terminated.
+make[2]: *** [util/rbtree.o] Error 1
+make[1]: *** [perf_install] Error 2
+make: *** [tools/perf_install] Error 2
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 95b738c..df08254 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -188,7 +188,7 @@ struct sp_node {
- 
- struct shared_policy {
- 	struct rb_root root;
--	spinlock_t lock;
-+	struct mutex mutex;
- };
- 
- void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index f0728ae..b2f12ec 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2083,7 +2083,7 @@ bool __mpol_equal(struct mempolicy *a, struct mempolicy *b)
-  */
- 
- /* lookup first element intersecting start-end */
--/* Caller holds sp->lock */
-+/* Caller holds sp->mutex */
- static struct sp_node *
- sp_lookup(struct shared_policy *sp, unsigned long start, unsigned long end)
- {
-@@ -2147,13 +2147,13 @@ mpol_shared_policy_lookup(struct shared_policy *sp, unsigned long idx)
- 
- 	if (!sp->root.rb_node)
- 		return NULL;
--	spin_lock(&sp->lock);
-+	mutex_lock(&sp->mutex);
- 	sn = sp_lookup(sp, idx, idx+1);
- 	if (sn) {
- 		mpol_get(sn->policy);
- 		pol = sn->policy;
- 	}
--	spin_unlock(&sp->lock);
-+	mutex_unlock(&sp->mutex);
- 	return pol;
- }
- 
-@@ -2193,10 +2193,10 @@ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
- static int shared_policy_replace(struct shared_policy *sp, unsigned long start,
- 				 unsigned long end, struct sp_node *new)
- {
--	struct sp_node *n, *new2 = NULL;
-+	struct sp_node *n;
-+	int ret = 0;
- 
--restart:
--	spin_lock(&sp->lock);
-+	mutex_lock(&sp->mutex);
- 	n = sp_lookup(sp, start, end);
- 	/* Take care of old policies in the same range. */
- 	while (n && n->start < end) {
-@@ -2209,16 +2209,14 @@ restart:
- 		} else {
- 			/* Old policy spanning whole new range. */
- 			if (n->end > end) {
-+				struct sp_node *new2;
-+				new2 = sp_alloc(end, n->end, n->policy);
- 				if (!new2) {
--					spin_unlock(&sp->lock);
--					new2 = sp_alloc(end, n->end, n->policy);
--					if (!new2)
--						return -ENOMEM;
--					goto restart;
-+					ret = -ENOMEM;
-+					goto out;
- 				}
- 				n->end = start;
- 				sp_insert(sp, new2);
--				new2 = NULL;
- 				break;
- 			} else
- 				n->end = start;
-@@ -2229,12 +2227,9 @@ restart:
- 	}
- 	if (new)
- 		sp_insert(sp, new);
--	spin_unlock(&sp->lock);
--	if (new2) {
--		mpol_put(new2->policy);
--		kmem_cache_free(sn_cache, new2);
--	}
--	return 0;
-+out:
-+	mutex_unlock(&sp->mutex);
-+	return ret;
- }
- 
- /**
-@@ -2252,7 +2247,7 @@ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
- 	int ret;
- 
- 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
--	spin_lock_init(&sp->lock);
-+	mutex_init(&sp->mutex);
- 
- 	if (mpol) {
- 		struct vm_area_struct pvma;
-@@ -2318,7 +2313,7 @@ void mpol_free_shared_policy(struct shared_policy *p)
- 
- 	if (!p->root.rb_node)
- 		return;
--	spin_lock(&p->lock);
-+	mutex_lock(&p->mutex);
- 	next = rb_first(&p->root);
- 	while (next) {
- 		n = rb_entry(next, struct sp_node, nd);
-@@ -2327,7 +2322,7 @@ void mpol_free_shared_policy(struct shared_policy *p)
- 		mpol_put(n->policy);
- 		kmem_cache_free(sn_cache, n);
- 	}
--	spin_unlock(&p->lock);
-+	mutex_unlock(&p->mutex);
- }
- 
- /* assumes fs == KERNEL_DS */
+?
+
+Thanks.
+
 -- 
-1.7.9.2
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
