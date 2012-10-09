@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2JIGDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 02:03:43 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38957 "EHLO
+	id S1753374Ab2JIGDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 02:03:48 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34159 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab2JIGDf (ORCPT
+	with ESMTP id S1753281Ab2JIGDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 02:03:35 -0400
+	Tue, 9 Oct 2012 02:03:43 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH 24/30] Thermal: Fix bug on cpu_cooling, cooling device's id conflict problem.
-Date: Tue,  9 Oct 2012 01:54:14 -0400
-Message-Id: <a4b6fec977020a508ff04b05f0fa01221a4ecf29.1349761836.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH 25/30] thermal: Exynos: Fix NULL pointer dereference in exynos_unregister_thermal()
+Date: Tue,  9 Oct 2012 01:54:15 -0400
+Message-Id: <c072fed95c9855a920c114d7fa3351f0f54ea06e.1349761836.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.8.0.rc1
 In-Reply-To: <1349762060-25334-1-git-send-email-lenb@kernel.org>
 References: <1349762060-25334-1-git-send-email-lenb@kernel.org>
@@ -24,39 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-This patch fixes small bug on cpu_cooling. CPU cooling device has own
-id generated with idr mathod. However in the previous version, it swapped
-to all same id at last stage of probing as 0. This makes id's collision and
-also occures error when it releases that id.
+exynos_unregister_thermal() is functional only when 'th_zone' is not
+NULL (ensured by the NULL checks). However, in the event it is NULL, it
+gets dereferenced in the for loop. This patch fixes this issue.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 ---
- drivers/thermal/cpu_cooling.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/thermal/exynos_thermal.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index 99a5d75..9050c1b 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -351,7 +351,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
- 	struct cpufreq_cooling_device *cpufreq_dev = NULL;
- 	unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
- 	char dev_name[THERMAL_NAME_LENGTH];
--	int ret = 0, id = 0, i;
-+	int ret = 0, i;
- 	struct cpufreq_policy policy;
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index e84acde..fd03e85 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -475,11 +475,14 @@ static void exynos_unregister_thermal(void)
+ {
+ 	int i;
  
- 	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
-@@ -396,7 +396,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
- 		kfree(cpufreq_dev);
- 		return ERR_PTR(-EINVAL);
+-	if (th_zone && th_zone->therm_dev)
++	if (!th_zone)
++		return;
++
++	if (th_zone->therm_dev)
+ 		thermal_zone_device_unregister(th_zone->therm_dev);
+ 
+ 	for (i = 0; i < th_zone->cool_dev_size; i++) {
+-		if (th_zone && th_zone->cool_dev[i])
++		if (th_zone->cool_dev[i])
+ 			cpufreq_cooling_unregister(th_zone->cool_dev[i]);
  	}
--	cpufreq_dev->id = id;
- 	cpufreq_dev->cool_dev = cool_dev;
- 	cpufreq_dev->cpufreq_state = 0;
- 	mutex_lock(&cooling_cpufreq_lock);
+ 
 -- 
 1.8.0.rc1
 
