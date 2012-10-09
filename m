@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab2JIMgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 08:36:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:30383 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab2JIMgW (ORCPT
+	id S1755435Ab2JIMge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 08:36:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40644 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754699Ab2JIMgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 08:36:22 -0400
-Date: Tue, 9 Oct 2012 15:36:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Instead of IP addresses the kernel started to show zero's
-Message-ID: <20121009123601.GA21710@mwanda>
-References: <20120921182703.GH16609@beaver>
+	Tue, 9 Oct 2012 08:36:31 -0400
+Date: Tue, 9 Oct 2012 13:36:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firmware: Don't attempt to allocate zero bytes with
+	vmalloc()
+Message-ID: <20121009123629.GB11061@opensource.wolfsonmicro.com>
+References: <1349456731-19977-1-git-send-email-broonie@opensource.wolfsonmicro.com> <CACVXFVOuQosgF+w6k1RH5D360J4pTM-N=quiSCc=GmWt0102rA@mail.gmail.com> <20121009041947.GB8237@opensource.wolfsonmicro.com> <CACVXFVOT+_nWxZOV0hckVrJwafgb_qr35eKaYg9j=toEJ2DNMQ@mail.gmail.com> <20121009071343.GW8237@opensource.wolfsonmicro.com> <CACVXFVN1sL1FwUx9t1kQZHW=J-v3_9gDj+jOH2wLgP_a+ywX7g@mail.gmail.com> <20121009074138.GB8237@opensource.wolfsonmicro.com> <CACVXFVONtkA5tUq3zcvrn6+RmC0_VLgeK5aR7g8yV2dJbgCysA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120921182703.GH16609@beaver>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CACVXFVONtkA5tUq3zcvrn6+RmC0_VLgeK5aR7g8yV2dJbgCysA@mail.gmail.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add netdev to the CC list.
+On Tue, Oct 09, 2012 at 08:02:18PM +0800, Ming Lei wrote:
 
-regards,
-dan carpenter
+> If loading via user space, timeout or not depends on userspace,
+> at least udev won't timeout on non-existent firmware image.
 
-On Fri, Sep 21, 2012 at 10:27:04PM +0400, Alexey Vlasov wrote:
-> Hi.
-> 
-> Here it writes LOG module (netfilter) in syslog:
-> ====
-> Sep 21 22:24:04 l24 kernel: ipsec:SYN-OUTPUT-HTTP IN= OUT=eth0
-> SRC=0000000000000000 DST=0000000000000000 LEN=60 TOS=0x00 PREC=0x00
-> TTL=64 ID=9042 DF PROTO=TCP SPT=51169 DPT=80 WINDOW=14600 RES=0x00 SYN
-> URGP=0 UID=545369 GID=155
-> ====
-> 
-> This is recent, here go zero's again.
-> ====
-> cat /proc/net/xt_recent/j-brute
-> src=0000000000000000 ttl: 117 last_seen: 4349942400 oldest_pkt: 1
-> 4349942400
-> src=0000000000000000 ttl: 119 last_seen: 4349968063 oldest_pkt: 1
-> 4349968063
-> ====
-> 
-> Can it be fixed without restarting the box?
-> Thanks.
-> 
-> # uname -a
-> Linux l24 3.4.6 ...
-> 
-> --
-> BRGDS. Alexey Vlasov.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This may be a mdev or old udev thing...  it's definitely prevelant.
+
+> Also looks request_firmware_nowait() is better for the case, _nowait()
+> can avoid unnecessary delay and speedup firmware loading if there
+> are more than one firmware to load.
+
+It doesn't really help as the ABI is such that you can only have one
+request_firmware() in play at once (unless this changed since I last
+looked at it).
