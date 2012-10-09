@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2JIUCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 16:02:36 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:39286 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab2JIUCe (ORCPT
+	id S1753516Ab2JIUGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 16:06:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55135 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab2JIUGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 16:02:34 -0400
-Message-ID: <507482D7.909@tilera.com>
-Date: Tue, 9 Oct 2012 16:02:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <aneesh.kumar@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <sparclinux@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <aarcange@redhat.com>, <hannes@cmpxchg.org>
-Subject: Re: [PATCH 3/8] sparc64: Eliminate PTE table memory wastage.
-References: <20121002.182642.49574627747120711.davem@davemloft.net>	<87y5jmfbd3.fsf@linux.vnet.ibm.com> <20121004.142003.851528112593506369.davem@davemloft.net>
-In-Reply-To: <20121004.142003.851528112593506369.davem@davemloft.net>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 9 Oct 2012 16:06:39 -0400
+Date: Tue, 9 Oct 2012 13:06:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        Ed Cashin <ecashin@coraid.com>, Christopher Li <sparse@chrisli.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] linux/compiler.h: Add __must_hold macro for functions
+ called with a lock held
+Message-Id: <20121009130637.5e61078f.akpm@linux-foundation.org>
+In-Reply-To: <20121008020610.GA9197@leaf>
+References: <20121008020610.GA9197@leaf>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/2012 2:23 PM, David Miller wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> Date: Thu, 04 Oct 2012 22:00:48 +0530
-> 
->> David Miller <davem@davemloft.net> writes:
->>
->>> We've split up the PTE tables so that they take up half a page instead
->>> of a full page.  This is in order to facilitate transparent huge page
->>> support, which works much better if our PMDs cover 4MB instead of 8MB.
->>>
->>> What we do is have a one-behind cache for PTE table allocations in the
->>> mm struct.
->>>
->>> This logic triggers only on allocations.  For example, we don't try to
->>> keep track of free'd up page table blocks in the style that the s390
->>> port does.
->>
->> I am also implementing a similar change for powerpc. We have a 64K page
->> size, and want to make sure PMD cover 16MB, which is the huge page size
->> supported by the hardware. I was looking at using the s390 logic,
->> considering we have 16 PMDs mapping to same PTE page. Should we look at
->> generalizing the case so that other architectures can start using the
->> same code ?
-> 
-> I think until we have multiple cases we won't know what's common or not.
-> 
-> Each arch has different need.  I need to split the page into two pieces
-> so my code is simpler, and juse uses page counting to manage alloc/free.
-> 
-> Whereas s390 uses an bitmask to manage page state, and also reclaims
-> pgtable pages into a per-mm list on free.  I decided not to do that
-> and to just let the page allocator do the work.
-> 
-> So I don't think it's appropriate to think about commonization at this
-> time, as even the only two cases existing are very non-common :-)
+On Sun, 7 Oct 2012 19:06:10 -0700
+Josh Triplett <josh@joshtriplett.org> wrote:
 
-I'll add arch/tile to the list of architectures that would benefit.
-We currently allocate PTEs using the page allocator, but by default
-we use 64K pages and 16M huge pages, so with 8-byte PTEs that's
-just 2K for the page table, so we could fit 32 of them on a page
-if we wished.  Instead, for the time being, we just waste the space.
+> linux/compiler.h has macros to denote functions that acquire or release
+> locks, but not to denote functions called with a lock held that return
+> with the lock still held.  Add a __must_hold macro to cover that case.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+hum.  How does this work?  Any code examples and sample sparse output? 
+Does it apply to all lock types, etc?
+
+IOW, where is all this stuff documented?
+
