@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab2JIHWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 03:22:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61257 "EHLO mga01.intel.com"
+	id S1753674Ab2JIH0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 03:26:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30091 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab2JIHWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 03:22:45 -0400
+	id S1753070Ab2JIH0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 03:26:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,558,1344236400"; 
-   d="scan'208";a="231584499"
-Message-ID: <5073D0C1.4020606@zytor.com>
-Date: Tue, 09 Oct 2012 15:22:41 +0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH 08/10] x86, xen, mm: fix mapping_pagetable_reserve logic
-References: <1349757558-10856-1-git-send-email-yinghai@kernel.org> <1349757558-10856-9-git-send-email-yinghai@kernel.org> <5073C05E.5020402@zytor.com> <CAE9FiQXa9fqLOyqzap6o_0HA=oBRKqkcWm9bdpK9M6R5cQMU-A@mail.gmail.com>
-In-Reply-To: <CAE9FiQXa9fqLOyqzap6o_0HA=oBRKqkcWm9bdpK9M6R5cQMU-A@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
+   d="scan'208";a="202213116"
+Date: Tue, 9 Oct 2012 15:19:59 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 27/30] ACPI: EC: Add a quirk for CLEVO M720T/M730T
+ laptop
+Message-ID: <20121009151959.548d8718@feng-i7>
+In-Reply-To: <20121009065907.GB3648@elie.Belkin>
+References: <e3f25e6e5836c4790fbe395ff42e241f372d859d.1349761836.git.len.brown@intel.com>
+	<67bfa9b60bd689601554526d144b21d529f78a09.1349761836.git.len.brown@intel.com>
+	<20121009061633.GA3648@elie.Belkin>
+	<20121009142206.63dd9981@feng-i7>
+	<20121009065907.GB3648@elie.Belkin>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 02:33 PM, Yinghai Lu wrote:
->>
->> make_range_readwrite is particularly toxic, though, because it makes it
->> sound like it something along the lines of set_memory_rw(), which it
->> most distinctly is not.
-> 
-> it just change some page range from RO back to RW.
-> 
-> so how about update_range_ro_to_rw?
-> 
+On Mon, 8 Oct 2012 23:59:07 -0700
+Jonathan Nieder <jrnieder@gmail.com> wrote:
 
-You're focusing on what the low-level mechanics of one particular
-implementation (Xen) of the hook, and then try to make it describe the
-hook itself.
-
-What the hook does, if I am reading it correctly, is take a range that
-used to be page tables and turn it back to "ordinary memory".  As such,
-assuming I'm following the logic correctly, something like
-pagetable_unreserve() seems like a reasonable name.
-
-However, why during initialization, why do we have to unreserve memory
-that has already been reserved for pagetables?  (Keep in mind there may
-very well be an entirely sensible answer for that question -- I just
-can't tell from the patchset without a much more in-depth analysis.
-Keep in mind that that in-depth analysis sucks up time, and it doesn't
-scale to expect the maintainer to have to do that.)
-
->>
->> Magic variables augmented with more magic variables.  Why?  This also
->> seems to assume that we still do all the kernel page tables in one
->> chunk, which is exactly what we don't want to do.
+> Feng Tang wrote:
+> > Jonathan Nieder <jrnieder@gmail.com> wrote:
 > 
-> for 64bit, page table will be three parts
-> 1. initial page table from arch/x86/kernel/head_64.S
-> 2. page table from BRK.
-> 3. page near end of RAM.
+> >> What would go wrong if the threshold were just increased to 20 on all
+> >> models?
+> >
+> > Then some other platform will stop to work.
+> >	https://bugzilla.kernel.org/show_bug.cgi?id=11892 
+> >
+> > The 26/30 and 27/30 patches are bound together to fix one bug. Some
+> > quote from description from the 26th patch:
+> >
+> > ACPI_EC_STORM_THRESHOLD was initially 20 when it's created, and
+> > was changed to 8 in 2.6.28 commit 06cf7d3c7 "ACPI: EC: lower interrupt storm
+> > threshold" to fix kernel bug 11892 by forcing the laptop in that bug to
+> > work in polling mode.
+> >
+> > Hope this answers your question.
 > 
-> verified from /sys/kernel/debug/kernel_page_tables
+> Thanks much.  Yes, that clarifies.
 > 
-> only range E820_RAM is mapped.
-> 
-> all initial page table for hole between [0, 1G) get cleared too.
-> 
+> The magic numbers are not too thrilling.  If the polling mode just
+> doesn't work on the Clevo M720, why isn't the appropriate storm
+> threshold 999999 or infinity rather than 20?  Do we know why the
+> polling mode doesn't work?
 
-No, this is wrong, and more importantly, your choice of data structures
-encode this.  There should not be any requirement for the page tables
-near the end of RAM to be contiguous -- consider the case of a memory
-hole near the end of RAM, or a large-memory machine where memory is
-highly discontiguous and we have to use more than one chunk before we
-run out.  Then the questions become:
+I don't know why it doesn't work, if you check the https://bugzilla.kernel.org/show_bug.cgi?id=45151 
+you'll see the debugging model is
+   test result --> patch --> 1-2 weeks + result --> patch
+    --> 1-2 weeks + result ...
+over and over, which makes it difficult to root cause it but
+provide a workaround.
 
-1. do we *have* to have this tracking at all?  Obviously we have to know
-this memory is in use, but memblock reserve should take care of that.
+And frankly speaking, I'm not sure if I can figure it out 100%
+even if I had that HW at hand. As per my understanding, EC is
+very tricky, as OS, ACPI FW, EC FW, BIOS will all access it
+without a global lock (in most cases), which makes it hard
+to work properly without race condition. Not mentioning its
+hardware may be broken.
 
-2. if we do, please use a data structure which can handle an arbitrary
-number of ranges.
-
-	-hpa
+Thanks,
+Feng 
