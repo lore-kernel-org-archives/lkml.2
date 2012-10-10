@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2JJTQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:16:59 -0400
-Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:50460 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753731Ab2JJTQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:16:58 -0400
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 15:16:58 EDT
-Date: Wed, 10 Oct 2012 21:04:37 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 5/6] ARM: ux500: Enable SDI4 port on the u9540 when
- booting with Device Tree
-Message-ID: <20121010190437.GU12801@game.jcrosoft.org>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
- <1349882335-6786-6-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349882335-6786-6-git-send-email-lee.jones@linaro.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 14362260686850468863
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+	id S1756102Ab2JJTX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:23:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:32965 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755632Ab2JJTX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 15:23:28 -0400
+Message-ID: <1349897005.2035.24.camel@joe-AO722>
+Subject: [PATCH net-next? V2] pktgen: Use simpler test for non-zero ipv6
+ address
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Brian Haley <brian.haley@hp.com>
+Date: Wed, 10 Oct 2012 12:23:25 -0700
+In-Reply-To: <1349895710.21172.7235.camel@edumazet-glaptop>
+References: <1349894559.2035.12.camel@joe-AO722>
+	 <1349895710.21172.7235.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:18 Wed 10 Oct     , Lee Jones wrote:
-> Here we add the device node for the SDI4 (MMC) port to the u9540
-> Device Tree source file. This will allow successful probing of
-> the internal MMC storage device when booting with DT enabled.
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  arch/arm/boot/dts/u9540.dts |   12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/u9540.dts b/arch/arm/boot/dts/u9540.dts
-> index 28efe20..2dade76 100644
-> --- a/arch/arm/boot/dts/u9540.dts
-> +++ b/arch/arm/boot/dts/u9540.dts
-> @@ -21,7 +21,6 @@
->  	};
->  
->  	soc-u9500 {
-> -
-why?
->  		uart@80120000 {
->  			status = "okay";
->  		};
-> @@ -33,5 +32,16 @@
->  		uart@80007000 {
->  			status = "okay";
->  		};
-> +
-> +		// On-board eMMC
-no c++ comment
-> +		sdi4_per2@80114000 {
-> +			arm,primecell-periphid = <0x10480180>;
-> +		        max-frequency = <50000000>;
-> +			bus-width = <8>;
-> +			mmc-cap-mmc-highspeed;
-> +			vmmc-supply = <&ab8500_ldo_aux2_reg>;
-you need add the pinctrl here
+Reduces object size and should be slightly faster.
 
-Best Regards,
-J.
+allyesconfig: 
+$ size net/core/pktgen.o*
+   text	   data	    bss	    dec	    hex	filename
+  52284	   4321	  11840	  68445	  10b5d	net/core/pktgen.o.new
+  52310	   4293	  11848	  68451	  10b63	net/core/pktgen.o.old
+ 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+> What about ipv6_addr_any() ?
+
+That's better I guess.
+I forgot about it and didn't see it.
+I saw the IPV6_ADDR_ANY type tests and
+didn't look further.
+
+Anyway, it's odd that it generates slightly larger code
+than the original patch's direct tests in 32bit with
+gcc 4.7.2.  Perhaps an interesting lack of optimization?
+
+cheers, Joe
+
+ net/core/pktgen.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 148e73d..a811a7d 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2422,11 +2422,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 		}
+ 	} else {		/* IPV6 * */
+ 
+-		if (pkt_dev->min_in6_daddr.s6_addr32[0] == 0 &&
+-		    pkt_dev->min_in6_daddr.s6_addr32[1] == 0 &&
+-		    pkt_dev->min_in6_daddr.s6_addr32[2] == 0 &&
+-		    pkt_dev->min_in6_daddr.s6_addr32[3] == 0) ;
+-		else {
++		if (!ipv6_addr_any(&pkt_dev->min_in6_daddr)) {
+ 			int i;
+ 
+ 			/* Only random destinations yet */
+
+
