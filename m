@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab2JJTx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:53:57 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:45802 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756172Ab2JJTx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:53:56 -0400
-Date: Wed, 10 Oct 2012 21:53:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
-        "deller@gmx.de" <deller@gmx.de>
-Subject: Re: [RFC PATCH 0/3] mca_config stuff
-Message-ID: <20121010195354.GA5681@aftab.osrc.amd.com>
-References: <1349878801-15956-1-git-send-email-bp@amd64.org>
- <3908561D78D1C84285E8C5FCA982C28F19D49FA8@ORSMSX108.amr.corp.intel.com>
+	id S1757123Ab2JJTzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:55:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48435 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172Ab2JJTzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 15:55:41 -0400
+Message-ID: <5075D2AF.1010409@pengutronix.de>
+Date: Wed, 10 Oct 2012 21:55:27 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D49FA8@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Howells <dhowells@redhat.com>
+CC: socketcan@hartkopp.net, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [GIT PULL] Disintegrate UAPI for can
+References: <5075B2F4.60708@pengutronix.de> <30687.1349789402@warthog.procyon.org.uk> <27643.1349892024@warthog.procyon.org.uk>
+In-Reply-To: <27643.1349892024@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigCBBC7362FF2770E479476DAF"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 03:35:56PM +0000, Luck, Tony wrote:
-> > Therefore, I can toggle the bits in the mce code with mca_cfg.<bitname>.
-> > When defining accessing them through the device attributes in sysfs, I
-> > use a new macro DEVICE_BIT_ATTR which gets the corresponding bit number
-> > of that same bit in the bitfield. This gives only one function which
-> > operates on a bitfield instead of a single function per bit in the
-> > bitfield.
-> 
-> Is this true across all architectures? I know that pa-risc instructions
-> that operate on bitfields use "0" to operate on the high order bit
-> rather than the low order one. I don't recall whether this spills over
-> into the compiler. If it did, then you'd have to have different #defines
-> for the bit numbers[1].  For this specific use case it wouldn't matter because
-> you are just using it in x86 code. But device_store_bit() and device_show_bit()
-> are in generic code - so they must be able to work across all architectures.
-> 
-> -Tony
-> 
-> [1] Or fix the store/show bit functions to transform the bit numbers from
-> "little-bitian" to "big-bitian" on architectures that count the other way.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigCBBC7362FF2770E479476DAF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ok, the question is whether those device_{show,store}_bit functions
-should be really made available in generic code. If yes, then the store case
-could be made to work on any arch like this:
+On 10/10/2012 08:00 PM, David Howells wrote:
+> Marc Kleine-Budde <mkl@pengutronix.de> wrote:
+>=20
+>> On 10/09/2012 03:30 PM, David Howells wrote:
+>>> Can you merge the following branch into the can tree please.
+>>>
+>>> This is to complete part of the Userspace API (UAPI) disintegration f=
+or which
+>>> the preparatory patches were pulled recently.  After these patches, u=
+serspace
+>>> headers will be segregated into:
+>>>
+>>> 	include/uapi/linux/.../foo.h
+>>>
+>>> for the userspace interface stuff, and:
+>>>
+>>> 	include/linux/.../foo.h
+>>>
+>>> for the strictly kernel internal stuff.
+>>
+>> Nice work David. The upstream for can-next is David Miller's net-next
+>> tree. He doesn't like if I pull unrelated stuff into my tree, so I'm
+>> going to cherry pick your patch. This is not yet possible, as net-next=
 
-       if (val)
-               *bvec |= le64_to_cpu(BIT_64(bit));
-       else
-               *bvec &= le64_to_cpu(~BIT_64(bit));
+>> doesn't include the latest patches from the 3.7 merge window, so that
+>> compilation breaks. After the merge window closes David Miller merges
+>> back the latest changes to net-next. I'll postpone your patch until
+>> then, this means the code will go into v3.8. I'm not familiar with the=
 
-by keeping the bitnumbers little endian.
+>> UAPI conversion, should your patch go via linux-can and David's net in=
+to
+>> v3.7?
+>=20
+> It's okay for the patch to go into 3.8 if that is easier for you.  As i=
+t's
+> scripted, I can regenerate your branch after -rc1 if that helps too.
 
-IMHO of course.
+I don't mind, as long as it compiles (using you tag), and it does, the
+patch doesn't break anything. From the linux-can and David Miller's net
+point of view, v3.7 is closed for new features just bug fixes are
+allowed. But I'm open to make an exception, if UAPI hits mainline in
+v3.7 on most subsystems. Hopefully David sees it the same way.
 
-Thanks.
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+--------------enigCBBC7362FF2770E479476DAF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iEYEARECAAYFAlB10rMACgkQjTAFq1RaXHM8rwCfUp33JTr0iZ+xepiDxqG1mHgu
+qPIAn26/x4xYzrLulKWpHUMKjkVViUsb
+=kasl
+-----END PGP SIGNATURE-----
+
+--------------enigCBBC7362FF2770E479476DAF--
