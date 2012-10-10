@@ -1,49 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab2JJPUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:20:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36539 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360Ab2JJPTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:19:14 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/6] ARM: ux500: Remove unused board compatible string
-Date: Wed, 10 Oct 2012 16:18:50 +0100
-Message-Id: <1349882335-6786-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+	id S1755606Ab2JJKKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:10:07 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58668 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755558Ab2JJKKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:10:03 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v3 07/13] vfs: add function for updating map arrays
+Date: Wed, 10 Oct 2012 18:07:29 +0800
+Message-Id: <1349863655-29320-8-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+x-cbid: 12101010-5930-0000-0000-00000CEFC045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'st-ericsson,u8500' is too much of a broad name to be used for
-any of the supported development boards supported by ST-Ericsson.
-As such it was never used. It has no place to remain in the board
-compatible list, hence why it's being removed.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- arch/arm/mach-ux500/cpu-db8500.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/hot_tracking.c |  153 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_tracking.h |   60 +++++++++++++++++++++
+ 2 files changed, 213 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 9f87b4d..3d8e321 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -330,7 +330,6 @@ static void __init u8500_init_machine(void)
- static const char * u8500_dt_board_compat[] = {
- 	"calaosystems,snowball-a9500",
- 	"st-ericsson,hrefv60+",
--	"st-ericsson,u8500",
- 	"st-ericsson,mop500",
- 	NULL,
- };
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index 08c42c5..717faa7 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -376,6 +376,159 @@ inline void hot_update_freqs(struct hot_info *root,
+ 	hot_inode_item_put(he);
+ }
+ 
++static u64 hot_raw_shift(u64 counter, u32 bits, bool dir)
++{
++	if (dir)
++		return counter << bits;
++	else
++		return counter >> bits;
++}
++
++/*
++ * hot_temperature_calculate() is responsible for distilling the six heat
++ * criteria, which are described in detail in hot_tracking.h) down into a single
++ * temperature value for the data, which is an integer between 0
++ * and HEAT_MAX_VALUE.
++ *
++ * To accomplish this, the raw values from the hot_freq_data structure
++ * are shifted various ways in order to make the temperature calculation more
++ * or less sensitive to each value.
++ *
++ * Once this calibration has happened, we do some additional normalization and
++ * make sure that everything fits nicely in a u32. From there, we take a very
++ * rudimentary kind of "average" of each of the values, where the *_COEFF_POWER
++ * values act as weights for the average.
++ *
++ * Finally, we use the HEAT_HASH_BITS value, which determines the size of the
++ * heat list array, to normalize the temperature to the proper granularity.
++ */
++int hot_temperature_calculate(struct hot_freq_data *freq_data)
++{
++	u64 result = 0;
++
++	struct timespec ckt = current_kernel_time();
++	u64 cur_time = timespec_to_ns(&ckt);
++
++	u32 nrr_heat = (u32)hot_raw_shift((u64)freq_data->nr_reads,
++					NRR_MULTIPLIER_POWER, true);
++	u32 nrw_heat = (u32)hot_raw_shift((u64)freq_data->nr_writes,
++					NRW_MULTIPLIER_POWER, true);
++
++	u64 ltr_heat =
++	hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_read_time)),
++			LTR_DIVIDER_POWER, false);
++	u64 ltw_heat =
++	hot_raw_shift((cur_time - timespec_to_ns(&freq_data->last_write_time)),
++			LTW_DIVIDER_POWER, false);
++
++	u64 avr_heat =
++	hot_raw_shift((((u64) -1) - freq_data->avg_delta_reads),
++			AVR_DIVIDER_POWER, false);
++	u64 avw_heat =
++	hot_raw_shift((((u64) -1) - freq_data->avg_delta_writes),
++			AVW_DIVIDER_POWER, false);
++
++	/* ltr_heat is now guaranteed to be u32 safe */
++	if (ltr_heat >= hot_raw_shift((u64) 1, 32, true))
++		ltr_heat = 0;
++	else
++		ltr_heat = hot_raw_shift((u64) 1, 32, true) - ltr_heat;
++
++	/* ltw_heat is now guaranteed to be u32 safe */
++	if (ltw_heat >= hot_raw_shift((u64) 1, 32, true))
++		ltw_heat = 0;
++	else
++		ltw_heat = hot_raw_shift((u64) 1, 32, true) - ltw_heat;
++
++	/* avr_heat is now guaranteed to be u32 safe */
++	if (avr_heat >= hot_raw_shift((u64) 1, 32, true))
++		avr_heat = (u32) -1;
++
++	/* avw_heat is now guaranteed to be u32 safe */
++	if (avw_heat >= hot_raw_shift((u64) 1, 32, true))
++		avw_heat = (u32) -1;
++
++	nrr_heat = (u32)hot_raw_shift((u64)nrr_heat,
++		(3 - NRR_COEFF_POWER), false);
++	nrw_heat = (u32)hot_raw_shift((u64)nrw_heat,
++		(3 - NRW_COEFF_POWER), false);
++	ltr_heat = hot_raw_shift(ltr_heat, (3 - LTR_COEFF_POWER), false);
++	ltw_heat = hot_raw_shift(ltw_heat, (3 - LTW_COEFF_POWER), false);
++	avr_heat = hot_raw_shift(avr_heat, (3 - AVR_COEFF_POWER), false);
++	avw_heat = hot_raw_shift(avw_heat, (3 - AVW_COEFF_POWER), false);
++
++	result = nrr_heat + nrw_heat + (u32) ltr_heat +
++		(u32) ltw_heat + (u32) avr_heat + (u32) avw_heat;
++
++	return result >> (32 - HEAT_MAP_BITS);
++}
++
++/*
++ * Calculate a new temperature and, if necessary,
++ * move the list_head corresponding to this inode or range
++ * to the proper list with the new temperature
++ */
++static void hot_map_array_update(struct hot_freq_data *freq_data,
++				struct hot_info *root)
++{
++	struct hot_map_head *buckets, *cur_bucket;
++	struct hot_comm_item *comm_item;
++	struct hot_inode_item *he;
++	struct hot_range_item *hr;
++	u32 temperature = 0;
++
++	comm_item = container_of(freq_data,
++			struct hot_comm_item, hot_freq_data);
++
++	if (freq_data->flags & FREQ_DATA_TYPE_INODE) {
++		he = container_of(comm_item,
++			struct hot_inode_item, hot_inode);
++		buckets = root->heat_inode_map;
++
++		spin_lock(&he->hot_inode.lock);
++		temperature = hot_temperature_calculate(freq_data);
++		spin_unlock(&he->hot_inode.lock);
++
++		if (he == NULL)
++			return;
++
++		spin_lock(&he->hot_inode.lock);
++		if (list_empty(&he->hot_inode.n_list)
++			|| (freq_data->last_temperature != temperature)) {
++			if (!list_empty(&he->hot_inode.n_list))
++				list_del_init(&he->hot_inode.n_list);
++
++			cur_bucket = buckets + temperature;
++			list_add_tail(&he->hot_inode.n_list, &cur_bucket->node_list);
++			freq_data->last_temperature = temperature;
++		}
++		spin_unlock(&he->hot_inode.lock);
++	} else if (freq_data->flags & FREQ_DATA_TYPE_RANGE) {
++		hr = container_of(comm_item,
++			struct hot_range_item, hot_range);
++		buckets = root->heat_range_map;
++
++		spin_lock(&hr->hot_range.lock);
++		temperature = hot_temperature_calculate(freq_data);
++		spin_unlock(&hr->hot_range.lock);
++
++		if (hr == NULL)
++			return;
++
++		spin_lock(&hr->hot_range.lock);
++		if (list_empty(&hr->hot_range.n_list)
++			|| (freq_data->last_temperature != temperature)) {
++			if (!list_empty(&hr->hot_range.n_list))
++				list_del_init(&hr->hot_range.n_list);
++
++			cur_bucket = buckets + temperature;
++			list_add_tail(&hr->hot_range.n_list, &cur_bucket->node_list);
++			freq_data->last_temperature = temperature;
++		}
++		spin_unlock(&hr->hot_range.lock);
++	}
++}
++
+ /*
+  * Initialize inode and range map arrays.
+  */
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+index 42e0273..5a9517b 100644
+--- a/fs/hot_tracking.h
++++ b/fs/hot_tracking.h
+@@ -30,6 +30,64 @@
+ 
+ #define FREQ_POWER 4
+ 
++/*
++ * The following comments explain what exactly comprises a unit of heat.
++ *
++ * Each of six values of heat are calculated and combined in order to form an
++ * overall temperature for the data:
++ *
++ * NRR - number of reads since mount
++ * NRW - number of writes since mount
++ * LTR - time elapsed since last read (ns)
++ * LTW - time elapsed since last write (ns)
++ * AVR - average delta between recent reads (ns)
++ * AVW - average delta between recent writes (ns)
++ *
++ * These values are divided (right-shifted) according to the *_DIVIDER_POWER
++ * values defined below to bring the numbers into a reasonable range. You can
++ * modify these values to fit your needs. However, each heat unit is a u32 and
++ * thus maxes out at 2^32 - 1. Therefore, you must choose your dividers quite
++ * carefully or else they could max out or be stuck at zero quite easily.
++ *
++ * (E.g., if you chose AVR_DIVIDER_POWER = 0, nothing less than 4s of atime
++ * delta would bring the temperature above zero, ever.)
++ *
++ * Finally, each value is added to the overall temperature between 0 and 8
++ * times, depending on its *_COEFF_POWER value. Note that the coefficients are
++ * also actually implemented with shifts, so take care to treat these values
++ * as powers of 2. (I.e., 0 means we'll add it to the temp once; 1 = 2x, etc.)
++ */
++
++/* NRR/NRW heat unit = 2^X accesses */
++#define NRR_MULTIPLIER_POWER 20
++#define NRR_COEFF_POWER 0
++#define NRW_MULTIPLIER_POWER 20
++#define NRW_COEFF_POWER 0
++
++/* LTR/LTW heat unit = 2^X ns of age */
++#define LTR_DIVIDER_POWER 30
++#define LTR_COEFF_POWER 1
++#define LTW_DIVIDER_POWER 30
++#define LTW_COEFF_POWER 1
++
++/*
++ * AVR/AVW cold unit = 2^X ns of average delta
++ * AVR/AVW heat unit = HEAT_MAX_VALUE - cold unit
++ *
++ * E.g., data with an average delta between 0 and 2^X ns
++ * will have a cold value of 0, which means a heat value
++ * equal to HEAT_MAX_VALUE.
++ */
++#define AVR_DIVIDER_POWER 40
++#define AVR_COEFF_POWER 0
++#define AVW_DIVIDER_POWER 40
++#define AVW_COEFF_POWER 0
++
++struct hot_update_work {
++	struct work_struct work;
++	struct hot_info *hot_info;
++};
++
+ struct hot_inode_item
+ *hot_inode_item_find(struct hot_info *root, u64 ino);
+ void hot_inode_item_put(struct hot_inode_item *he);
+@@ -37,6 +95,8 @@ inline void hot_update_freqs(struct hot_info *root,
+                         struct inode *inode, u64 start,
+                         u64 len, int rw);
+ 
++int hot_temperature_calculate(struct hot_freq_data *freq_data);
++
+ void hot_track_init(struct super_block *sb);
+ void hot_track_exit(struct super_block *sb);
+ 
 -- 
-1.7.9.5
+1.7.6.5
 
