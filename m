@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab2JJXV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:21:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54296 "EHLO
+	id S932657Ab2JJXVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:21:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40947 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757784Ab2JJWyo (ORCPT
+	by vger.kernel.org with ESMTP id S1757751Ab2JJWyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:44 -0400
-X-Sasl-enc: M/GxPsrhh58h9vefLUlkUWcWz775tIqLL3Boq9G4Myc9 1349909683
+	Wed, 10 Oct 2012 18:54:39 -0400
+X-Sasl-enc: KS9rjAsZrCPJhIzaWlvMBShprl5XyfgKhkTvKaYPsv5G 1349909678
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florian Fainelli <florian@openwrt.org>,
+        Paolo Valente <paolo.valente@unimore.it>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 037/133] ixp4xx_hss: fix build failure due to missing linux/module.h inclusion
-Date: Thu, 11 Oct 2012 07:51:03 +0900
-Message-Id: <20121010224901.162326569@linuxfoundation.org>
+Subject: [ 040/133] pkt_sched: fix virtual-start-time update in QFQ
+Date: Thu, 11 Oct 2012 07:51:06 +0900
+Message-Id: <20121010224901.709840828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,47 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Paolo Valente <paolo.valente@unimore.it>
 
-[ Upstream commit 0b836ddde177bdd5790ade83772860940bd481ea ]
+[ Upstream commit 71261956973ba9e0637848a5adb4a5819b4bae83 ]
 
-Commit 36a1211970193ce215de50ed1e4e1272bc814df1 (netprio_cgroup.h:
-dont include module.h from other includes) made the following build
-error on ixp4xx_hss pop up:
+If the old timestamps of a class, say cl, are stale when the class
+becomes active, then QFQ may assign to cl a much higher start time
+than the maximum value allowed. This may happen when QFQ assigns to
+the start time of cl the finish time of a group whose classes are
+characterized by a higher value of the ratio
+max_class_pkt/weight_of_the_class with respect to that of
+cl. Inserting a class with a too high start time into the bucket list
+corrupts the data structure and may eventually lead to crashes.
+This patch limits the maximum start time assigned to a class.
 
-  CC [M]  drivers/net/wan/ixp4xx_hss.o
- drivers/net/wan/ixp4xx_hss.c:1412:20: error: expected ';', ',' or ')'
- before string constant
- drivers/net/wan/ixp4xx_hss.c:1413:25: error: expected ';', ',' or ')'
- before string constant
- drivers/net/wan/ixp4xx_hss.c:1414:21: error: expected ';', ',' or ')'
- before string constant
- drivers/net/wan/ixp4xx_hss.c:1415:19: error: expected ';', ',' or ')'
- before string constant
- make[8]: *** [drivers/net/wan/ixp4xx_hss.o] Error 1
-
-This was previously hidden because ixp4xx_hss includes linux/hdlc.h which
-includes linux/netdevice.h which includes linux/netprio_cgroup.h which
-used to include linux/module.h. The real issue was actually present since
-the initial commit that added this driver since it uses macros from
-linux/module.h without including this file.
-
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/wan/ixp4xx_hss.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sched/sch_qfq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wan/ixp4xx_hss.c
-+++ b/drivers/net/wan/ixp4xx_hss.c
-@@ -10,6 +10,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/module.h>
- #include <linux/bitops.h>
- #include <linux/cdev.h>
- #include <linux/dma-mapping.h>
+--- a/net/sched/sch_qfq.c
++++ b/net/sched/sch_qfq.c
+@@ -831,7 +831,10 @@ static void qfq_update_start(struct qfq_
+ 		if (mask) {
+ 			struct qfq_group *next = qfq_ffs(q, mask);
+ 			if (qfq_gt(roundedF, next->F)) {
+-				cl->S = next->F;
++				if (qfq_gt(limit, next->F))
++					cl->S = next->F;
++				else /* preserve timestamp correctness */
++					cl->S = limit;
+ 				return;
+ 			}
+ 		}
 
 
