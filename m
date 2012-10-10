@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab2JJXRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:17:35 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42767 "EHLO
+	id S932495Ab2JJXRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:17:52 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42643 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753906Ab2JJXBN (ORCPT
+	by vger.kernel.org with ESMTP id S932230Ab2JJXBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:13 -0400
-X-Sasl-enc: vHiglFO2zkl0Bc/rA59Ndqo6mVocDOCzrVDsiNsYAEBb 1349910072
+	Wed, 10 Oct 2012 19:01:07 -0400
+X-Sasl-enc: e0cLbEVahTzUrgI7H7vmnhiEVSf3IKAQvA+0inRWkijb 1349910066
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 018/122] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
-Date: Thu, 11 Oct 2012 07:53:04 +0900
-Message-Id: <20121010225341.399657015@linuxfoundation.org>
+        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: =?UTF-8?q?=5B=20012/122=5D=20media=3A=20gspca=5Fpac7302=3A=20add=20support=20for=20device=201ae7=3A2001=20Speedlink=20Snappy=20Microphone=20SL-6825-SBK?=
+Date: Thu, 11 Oct 2012 07:52:58 +0900
+Message-Id: <20121010225340.254830509@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,38 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Frank Schäfer <fschaefer.oss@googlemail.com>
 
-commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
+commit 97d2fbf501e3cf105ac957086c7e40e62e15cdf8 upstream.
 
-As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
-have kernel_restart() call disable_nonboot_cpus().  Doing so can help
-machines that require boot cpu be the last alive cpu during reboot to
-survive with kernel restart.
-
-This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
-requires that the restart routine be run on the primary cpu rather than
-secondary ones.  Otherwise, the secondary core running the restart
-routine will fail to come to online after reboot.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |    1 +
+ drivers/media/video/gspca/pac7302.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -368,6 +368,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
- void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
-+	disable_nonboot_cpus();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
+--- a/drivers/media/video/gspca/pac7302.c
++++ b/drivers/media/video/gspca/pac7302.c
+@@ -905,6 +905,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x093a, 0x262a)},
+ 	{USB_DEVICE(0x093a, 0x262c)},
+ 	{USB_DEVICE(0x145f, 0x013c)},
++	{USB_DEVICE(0x1ae7, 0x2001)}, /* SpeedLink Snappy Mic SL-6825-SBK */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(usb, device_table);
 
 
