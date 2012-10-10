@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab2JJU0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:26:42 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:7045 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756582Ab2JJU0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:26:40 -0400
-Message-ID: <1349900796.2691.32.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [RFC] ip tunnel flag byte order issue
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: David Miller <davem@davemloft.net>,
-        Saurabh Mohan <saurabh.mohan@vyatta.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Oct 2012 21:26:36 +0100
-In-Reply-To: <20121010120630.5e9f2c2c@nehalam.linuxnetplumber.net>
-References: <20121010120630.5e9f2c2c@nehalam.linuxnetplumber.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S932358Ab2JJU1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:27:30 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:46291 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756582Ab2JJU13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 16:27:29 -0400
+Message-ID: <5075DA1D.60006@parallels.com>
+Date: Thu, 11 Oct 2012 00:27:09 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+To: David Rientjes <rientjes@google.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [patch for-linus] memcg, kmem: fix build error when CONFIG_INET
+ is disabled
+References: <alpine.DEB.2.00.1210092325500.9528@chino.kir.corp.google.com> <5075383A.1000001@parallels.com> <20121010092700.GD23011@dhcp22.suse.cz> <50753FFF.6060102@parallels.com> <20121010143331.GA7880@localhost> <alpine.DEB.2.00.1210101312330.28583@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210101312330.28583@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.173.3.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 12:06 -0700, Stephen Hemminger wrote:
-> Sparse found a real problem with the ABI for tunnelling.
+On 10/11/2012 12:17 AM, David Rientjes wrote:
+> On Wed, 10 Oct 2012, Fengguang Wu wrote:
 > 
-> The SIT and VTI tunnel ioctl's both overload the i_flags field in the
-> ip_tunnel parameters structure. This field is defined as big endian
-> (be16) and the various GRE_XXX macros do the necessary byte swapping.
+>>> Fengguang, was that this error? Why hasn't it showed up before in the
+>>> test system?
+>>
+>> I do find this error in the build error log:
+>>
+>>         (.text+0x867f): undefined reference to `sock_update_memcg'
+>>         2012-09-24 04:54:53 snb next:akpm:69921c3 x86_64-randconfig-s005 0a7f618
+>>
+>> Unfortunately it was not reported because the build system could
+>> miss/ignore build bugs due to various reasons/imperfections. It has
+>> since then undergo lots of enhancements and as a result, the daily
+>> reported errors have more than doubled. :-)
+>>
 > 
-> The problem is that both SIT and VTI are using an additional flag bit
-> that is defined in host byte order, and is then or'd in. It happens to
-> work because both possible locations hit holes in the current usage of
-> GRE.  For big endian cpu's it overlaps the GRE_VERSION which is always
-> zero, and for little endian it overlaps the GRE recursion field also
-> always zero.
+> Not sure where this discussion is going.  Do people who can't build their 
+> kernel and have a fix for it need to verify that your build system shows 
+> the same thing first?  This isn't a false positive.
+> 
+> As I said in the first message, Randy reported this on September 24 (the 
+> same date you're reporting above) and received no response when he 
+> reported it to LKML here: 
+> http://marc.info/?l=linux-kernel&m=134852557320089
+> 
+> Regardless, Linus' tree is messed up and I don't think we need to go back 
+> reverting patches out of his tree when it's trivial to fix with my patch, 
+> which Michal acked.  Sheesh.
+> 
+I am perfectly fine with your patch.
 
-Why do these fields exist if they're always going to be 0?
+As I said when he first posted it: I see no reason to oppose cleanup
+patches, as long as they don't break anything. Unfortunately it did, but
+that is water under the bridge.
 
-> Having the field in different places on different CPU architectures
-> was a mistake. The problem is fixing it will break the ABI on one or
-> the other architecture.  I choose to break big endian since it the
-> minority.
+Again, since the goal of Michal patches was just to move things around,
+I don't really care if you patch is applied or if Michal's is reverted.
 
-Or we can define the 'flag' to have both bits set (0x0101, with a
-__cpu_to_be16 to keep sparse happy) while accepting either set on input.
 
-> Also both VTI and SIT are overloading the same bit which is an
-> accident waiting to happen.  Since VTI is newer, I propose giving a
-> different bit to VTI.
-
-Indeed VTI is new in 3.6, so there is still a short window in which it's
-fairly safe to tweak its ABI.
-
-> The other alternative is keeping the same ABI, but putting a big note
-> as to why it works in spite of our stupidity.
-[...]
-
-Does it even matter that different tunnel types have different meanings
-for flags?
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
