@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab2JKAUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:20:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43603 "EHLO
+	id S933056Ab2JKAUx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:20:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36250 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932989Ab2JKAQf (ORCPT
+	by vger.kernel.org with ESMTP id S932999Ab2JKAQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:35 -0400
-X-Sasl-enc: n9ANFM0e6JP6xfHmFMyHOkWp4NCKSzpC4PkJtJ45pds0 1349914593
+	Wed, 10 Oct 2012 20:16:24 -0400
+X-Sasl-enc: cTQ7xj3SUTwmOaM4q1431JmdK3S9rK4H7uReEBXs9c1t 1349914582
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 123/133] mtd: autcpu12-nvram: Fix compile breakage
-Date: Thu, 11 Oct 2012 07:52:29 +0900
-Message-Id: <20121010224916.686047112@linuxfoundation.org>
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Yang Guang <guang.a.yang@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 121/133] Revert "drm/i915: correctly order the ring init sequence"
+Date: Thu, 11 Oct 2012 07:52:27 +0900
+Message-Id: <20121010224916.321548770@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,73 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
+This reverts 622ecb9ace2ec006b58f6779732961945ea303ca which is
+commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
 
-Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
-no longer exist in the kernel so the driver is totally broken.
-Additionally, map_info name passed to simple_map_init is incorrect.
+We may only start to set up the new register values after having
+confirmed that the ring is truely off. Otherwise the hw might lose the
+newly written register values. This is caught later on in the init
+sequence, when we check whether the register writes have stuck.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Reported-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+Cc: Jani Nikula <jani.nikula@intel.com>
+Cc: Yang Guang <guang.a.yang@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/mtd/maps/autcpu12-nvram.c
-+++ b/drivers/mtd/maps/autcpu12-nvram.c
-@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -280,6 +280,8 @@ static int init_ring_common(struct intel
+ 	I915_WRITE_HEAD(ring, 0);
+ 	ring->write_tail(ring, 0);
  
- static int __init init_autcpu12_sram (void)
- {
--	int err, save0, save1;
-+	map_word tmp, save0, save1;
-+	int err;
++	/* Initialize the ring. */
++	I915_WRITE_START(ring, obj->gtt_offset);
+ 	head = I915_READ_HEAD(ring) & HEAD_ADDR;
  
- 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
- 	if (!autcpu12_sram_map.virt) {
-@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
- 		err = -EIO;
- 		goto out;
+ 	/* G45 ring initialization fails to reset head to zero */
+@@ -305,11 +307,6 @@ static int init_ring_common(struct intel
+ 		}
  	}
--	simple_map_init(&autcpu_sram_map);
-+	simple_map_init(&autcpu12_sram_map);
  
- 	/*
- 	 * Check for 32K/128K
-@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
- 	 * Read	and check result on ofs 0x0
- 	 * Restore contents
- 	 */
--	save0 = map_read32(&autcpu12_sram_map,0);
--	save1 = map_read32(&autcpu12_sram_map,0x10000);
--	map_write32(&autcpu12_sram_map,~save0,0x10000);
-+	save0 = map_read(&autcpu12_sram_map, 0);
-+	save1 = map_read(&autcpu12_sram_map, 0x10000);
-+	tmp.x[0] = ~save0.x[0];
-+	map_write(&autcpu12_sram_map, tmp, 0x10000);
- 	/* if we find this pattern on 0x0, we have 32K size
- 	 * restore contents and exit
- 	 */
--	if ( map_read32(&autcpu12_sram_map,0) != save0) {
--		map_write32(&autcpu12_sram_map,save0,0x0);
-+	tmp = map_read(&autcpu12_sram_map, 0);
-+	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
-+		map_write(&autcpu12_sram_map, save0, 0x0);
- 		goto map;
- 	}
- 	/* We have a 128K found, restore 0x10000 and set size
- 	 * to 128K
- 	 */
--	map_write32(&autcpu12_sram_map,save1,0x10000);
-+	map_write(&autcpu12_sram_map, save1, 0x10000);
- 	autcpu12_sram_map.size = SZ_128K;
- 
- map:
+-	/* Initialize the ring. This must happen _after_ we've cleared the ring
+-	 * registers with the above sequence (the readback of the HEAD registers
+-	 * also enforces ordering), otherwise the hw might lose the new ring
+-	 * register values. */
+-	I915_WRITE_START(ring, obj->gtt_offset);
+ 	I915_WRITE_CTL(ring,
+ 			((ring->size - PAGE_SIZE) & RING_NR_PAGES)
+ 			| RING_VALID);
 
 
