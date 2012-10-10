@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab2JJUyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:54:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37321 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2JJUyJ (ORCPT
+	id S1753175Ab2JJU5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:57:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63305 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab2JJU5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:54:09 -0400
-Date: Wed, 10 Oct 2012 13:54:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns() v5
-Message-Id: <20121010135408.515c2e21.akpm@linux-foundation.org>
-In-Reply-To: <20121010204256.GD29501@moon>
-References: <20121010204256.GD29501@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Oct 2012 16:57:14 -0400
+Date: Wed, 10 Oct 2012 13:57:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        mingo@redhat.com, miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
+ node.
+In-Reply-To: <20121010133709.7eaefcdb.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1210101351050.31237@chino.kir.corp.google.com>
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
+ <1349860216.7880.105.camel@twins> <alpine.DEB.2.00.1210101324000.28583@chino.kir.corp.google.com> <20121010133709.7eaefcdb.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Oct 2012 00:42:56 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Wed, 10 Oct 2012, Andrew Morton wrote:
 
-> The free_pid_ns function done in recursion fashion:
+> > > So for now, let me NACK that patch. You cannot go change stuff like
+> > > that.
+> > > 
+> > 
+> > Agreed, that makes the nack-count up to 2 now.  Andrew, please remove 
+> > cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch
+> > cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch
+> > from -mm.
 > 
-> free_pid_ns(parent)
->   put_pid_ns(parent)
->     kref_put(&ns->kref, free_pid_ns);
->       free_pid_ns
+> Nope.  It fixes a BUG() and so I'll be keeping it around until I see a
+> better fix.  It's one of the ways in which I prevent things from falling
+> through cracks.
 > 
-> thus if there was a huge nesting of namespaces the userspace
-> may trigger avalanche calling of free_pid_ns leading to
-> kernel stack exhausting and a panic eventually.
-> 
-> This patch turns the recursion into iterative loop.
-> 
-> v5 (from oleg@):
->  - Drop @ret variable
->  - Make put_pid_ns non-inline since it grows in size,
->    in turn make free_pid_ns static
 
-OK, let's try that.  I'll sit on this until -rc2 to give it a bit of
-time to cook.
+It fixes a BUG() that only affects users who are doing node hot-remove, 
+which is still radically under development, and nobody cares about except 
+those on the cc list, but it also introduces the NULL pointer dereference 
+that is attempting to be addressed in this patch.  The "fix" that causes 
+this NULL pointer is clearly not the direction we want to go, I think we 
+have agreement at node hot-remove to iterate all possible cpus are map all 
+offline cpus with cpu_to_node(cpu) == node to NUMA_NO_NODE instead in the 
+generic hotplug code.
 
-A -stable backport might be needed.  What capabilities does userspace
-need to be able to trigger the kernel stack overflow?
+Regardless, this shouldn't be touching the acpi code which
+cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch and 
+cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch do since 
+it makes the behavior inconsistent across interfaces and architectures.
