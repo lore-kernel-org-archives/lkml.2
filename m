@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2JJQId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:08:33 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59486 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2JJQI3 (ORCPT
+	id S932388Ab2JJQWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:22:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46762 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2JJQWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:08:29 -0400
+	Wed, 10 Oct 2012 12:22:05 -0400
+Message-ID: <5075A0AA.2000605@wwwdotorg.org>
+Date: Wed, 10 Oct 2012 10:22:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <CAMP44s0TL+d6dOdScmoBR=hE8Jf_KZ_A+KHOJfHQD=p+0k+ZbQ@mail.gmail.com>
-References: <506C562E.5090909@redhat.com>
-	<CA+55aFweE2BgGjGkxLPkmHeV=Omc4RsuU6Kc6SLZHgJPsqDpeA@mail.gmail.com>
-	<20121003170907.GA23473@ZenIV.linux.org.uk>
-	<CA+55aFw0pB99ztq5YUS56db-ijdxzevA=mvY3ce5O_yujVFOcA@mail.gmail.com>
-	<20121003195059.GA13541@kroah.com>
-	<CA+55aFwjyABgr-nmsDb-184nQF7KfA8+5kbuBNwyQBHs671qQg@mail.gmail.com>
-	<3560b86d-e2ad-484d-ab6e-2b9048894a12@email.android.com>
-	<CA+55aFwVFtUU4TCjz4EDgGDaeR_QwLjmBAJA0kijHkQQ+jxLCw@mail.gmail.com>
-	<CAPXgP1189dn=vHqWrp1JgHs7Yv=BP3dbLyT3zb31Sp8mcEhAvg@mail.gmail.com>
-	<87zk42tab4.fsf@xmission.com>
-	<20121004174254.GA14301@kroah.com>
-	<20121004201704.36d35755@pyramind.ukuu.org.uk>
-	<CAMP44s0TL+d6dOdScmoBR=hE8Jf_KZ_A+KHOJfHQD=p+0k+ZbQ@mail.gmail.com>
-Date: Wed, 10 Oct 2012 18:08:28 +0200
-X-Google-Sender-Auth: aSdDFfrkrpLOmV7-t5dLiSFoYUE
-Message-ID: <CAMuHMdUgppkHiNmNcDCaxOAL6+PmJCA_tbQkPG3gOZRs=jUt5Q@mail.gmail.com>
-Subject: Re: udev breakages -
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kay Sievers <kay@vrfy.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Scott Wood <scottwood@freescale.com>
+CC: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: dtc: import latest upstream dtc
+References: <1349827466.26044.16@snotra> <50759105.2000406@wwwdotorg.org> <1349885393.21493.2@snotra>
+In-Reply-To: <1349885393.21493.2@snotra>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 5:19 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> On Thu, Oct 4, 2012 at 9:17 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>> I don't know how to handle the /dev/ptmx issue properly from within
->>> devtmpfs, does anyone?  Proposals are always welcome, the last time this
->>> came up a week or so ago, I don't recall seeing any proposals, just a
->>> general complaint.
+On 10/10/2012 10:09 AM, Scott Wood wrote:
+> On 10/10/2012 10:15:17 AM, Stephen Warren wrote:
+>> On 10/09/2012 06:04 PM, Scott Wood wrote:
+>> > On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>> >> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>> >> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>> >> >>>
+>> >> >>> What more do you think needs discussion re: dtc+cpp?
+>> >> >>
+>> >> >> How not to abuse the ever-loving shit out of it? :-)
+>> >> >
+>> >> > Perhaps we can just handle this through the regular patch review
+>> >> > process; I think it may be difficult to define and agree upon
+>> exactly
+>> >> > what "abuse" means ahead of time, but it's probably going to be easy
+>> >> > enough to recognize it when one sees it?
+>> >>
+>> >>
+>> >> One of the ways it could get out of hand would be via "include
+>> >> dependency hell".  People will be tempted to reuse existing .h files
+>> >> containing pin definitions, which, if history is a guide, will end up
+>> >> depending on all sorts of other .h files.
+>> >>
+>> >> Another problem I often face with symbolic names is the difficulty of
+>> >> figuring out what the numerical values really are (for debugging),
+>> >> especially when .h files are in different subtrees from the files that
+>> >> use the definitions, and when they use multiple macro levels and fancy
+>> >> features like concatenation.  Sometimes I think it's clearer just to
+>> >> write the number and use a comment to say what it is.
+>> >
+>> > Both comments apply just as well to ordinary C code, and I don't think
+>> > anyone would seriously suggest just using comments instead for C code.
+>> >
+>> > Is there a way to ask CPP to evaluate a macro in the context of the
+>> > input file, rather than produce normal output?  If not, I guess you
+>> > could make a tool that creates a wrapper file that includes the main
+>> > file and then evaluates the symbol you want.
 >>
->> Is it really a problem - devtmpfs is optional. It's a problem for the
->> userspace folks to handle and if they made it mandatory in their code
->> diddums, someone better go fork working versions.
->
-> If only there was a viable alternative to udev.
->
-> Distributions are being pushed around by the udev+systemd project
-> precisely because of this reason; udev maintainers have said that udev
-> on non-systemd systems is a dead end, so everyone that uses udev
-> (everyone) is being forced to switch to systemd if they want to
-> receive proper support, and at some point there might not be even a
-> choice.
->
-> I for one would like an alternative to both systemd and udev on my
-> Linux systems, and as of yet, I don't know of one.
+>> I'm not sure what "evaluate a macro in the context of the input file"
+>> means. Macros are obviously already evaluated based on the current set
+>> of macros defined by the file that's been processed or those it
+>> included. Do you mean only allowing the use of macros in the current
+>> file and not included files? What exactly would the wrapper you
+>> mentioned do?
+> 
+> I just meant a way for a developer to quickly ask the preprocessor what
+> a particular macro expands to, rather than try to figure it out
+> manually.  I was not suggesting any change to normal operation.
 
-A few years ago, the OpenWRT people pointed me to hotplug2 when I mentioned
-udev made my poor m68k box with 12 MiB of RAM immediately go OOM.
-Don't know if it's suitable for "bigger" machines, though.
+Oh right. Well, the patch I proposed to the kernel was basically:
 
-Gr{oetje,eeting}s,
+%.dtb: %.dtsp
+    cpp -E $< | dtc -o $@ -
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+A developer could run the same cpp -E command to find that out, or that
+build rule could instead save the intermediate result rather than just
+piping it, so you could just go read the file.
