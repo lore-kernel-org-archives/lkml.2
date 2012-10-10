@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab2JKAP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51388 "EHLO
+	id S932983Ab2JKAQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:16:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43591 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932920Ab2JKAPs (ORCPT
+	by vger.kernel.org with ESMTP id S932966Ab2JKAP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:48 -0400
-X-Sasl-enc: cs/8dEQz367UY62AvorLmUt3LmyiWcVJ/nQfq3BzgaAe 1349914547
+	Wed, 10 Oct 2012 20:15:58 -0400
+X-Sasl-enc: qmZtNmueA2x9LWlChyQ61Z0+vnuawtFDp5IvuTi935uM 1349914556
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 115/133] mempolicy: fix refcount leak in mpol_set_shared_policy()
-Date: Thu, 11 Oct 2012 07:52:21 +0900
-Message-Id: <20121010224915.226548076@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [ 117/133] Revert "KVM: VMX: Fix KVM_SET_SREGS with big real mode segments"
+Date: Thu, 11 Oct 2012 07:52:23 +0900
+Message-Id: <20121010224915.584742394@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,72 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Avi Kivity <avi@redhat.com>
 
-commit 63f74ca21f1fad36d075e063f06dcc6d39fe86b2 upstream.
+This reverts commit b398aa3174cd.  It
+causes a regression with some versions of ipxe.  3.6 has other fixes
+that cannot be backported to 3.5, so it is better to live with the
+minor problem that b398aa3174cd fixes.
 
-When shared_policy_replace() fails to allocate new->policy is not freed
-correctly by mpol_set_shared_policy().  The problem is that shared
-mempolicy code directly call kmem_cache_free() in multiple places where
-it is easy to make a mistake.
+https://bugzilla.redhat.com/show_bug.cgi?id=854983
 
-This patch creates an sp_free wrapper function and uses it. The bug was
-introduced pre-git age (IOW, before 2.6.12-rc2).
-
-[mgorman@suse.de: Editted changelog]
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ arch/x86/kvm/vmx.c |   74 ++++++++++-------------------------------------------
+ 1 file changed, 14 insertions(+), 60 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2151,12 +2151,17 @@ mpol_shared_policy_lookup(struct shared_
- 	return pol;
- }
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -615,10 +615,6 @@ static void kvm_cpu_vmxon(u64 addr);
+ static void kvm_cpu_vmxoff(void);
+ static void vmx_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3);
+ static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
+-static void vmx_set_segment(struct kvm_vcpu *vcpu,
+-			    struct kvm_segment *var, int seg);
+-static void vmx_get_segment(struct kvm_vcpu *vcpu,
+-			    struct kvm_segment *var, int seg);
  
-+static void sp_free(struct sp_node *n)
-+{
-+	mpol_put(n->policy);
-+	kmem_cache_free(sn_cache, n);
-+}
-+
- static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+ static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
+@@ -2767,7 +2763,6 @@ static void enter_rmode(struct kvm_vcpu
  {
- 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
- 	rb_erase(&n->nd, &sp->root);
--	mpol_put(n->policy);
--	kmem_cache_free(sn_cache, n);
-+	sp_free(n);
+ 	unsigned long flags;
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+-	struct kvm_segment var;
+ 
+ 	if (enable_unrestricted_guest)
+ 		return;
+@@ -2811,23 +2806,20 @@ static void enter_rmode(struct kvm_vcpu
+ 	if (emulate_invalid_guest_state)
+ 		goto continue_rmode;
+ 
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_SS);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_SS);
+-
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_CS);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_CS);
+-
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_ES);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_ES);
+-
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_DS);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_DS);
+-
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_GS);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_GS);
+-
+-	vmx_get_segment(vcpu, &var, VCPU_SREG_FS);
+-	vmx_set_segment(vcpu, &var, VCPU_SREG_FS);
++	vmcs_write16(GUEST_SS_SELECTOR, vmcs_readl(GUEST_SS_BASE) >> 4);
++	vmcs_write32(GUEST_SS_LIMIT, 0xffff);
++	vmcs_write32(GUEST_SS_AR_BYTES, 0xf3);
++
++	vmcs_write32(GUEST_CS_AR_BYTES, 0xf3);
++	vmcs_write32(GUEST_CS_LIMIT, 0xffff);
++	if (vmcs_readl(GUEST_CS_BASE) == 0xffff0000)
++		vmcs_writel(GUEST_CS_BASE, 0xf0000);
++	vmcs_write16(GUEST_CS_SELECTOR, vmcs_readl(GUEST_CS_BASE) >> 4);
++
++	fix_rmode_seg(VCPU_SREG_ES, &vmx->rmode.es);
++	fix_rmode_seg(VCPU_SREG_DS, &vmx->rmode.ds);
++	fix_rmode_seg(VCPU_SREG_GS, &vmx->rmode.gs);
++	fix_rmode_seg(VCPU_SREG_FS, &vmx->rmode.fs);
+ 
+ continue_rmode:
+ 	kvm_mmu_reset_context(vcpu);
+@@ -3230,44 +3222,6 @@ static void vmx_set_segment(struct kvm_v
+ 
+ 	vmcs_write32(sf->ar_bytes, ar);
+ 	__clear_bit(VCPU_EXREG_CPL, (ulong *)&vcpu->arch.regs_avail);
+-
+-	/*
+-	 * Fix segments for real mode guest in hosts that don't have
+-	 * "unrestricted_mode" or it was disabled.
+-	 * This is done to allow migration of the guests from hosts with
+-	 * unrestricted guest like Westmere to older host that don't have
+-	 * unrestricted guest like Nehelem.
+-	 */
+-	if (!enable_unrestricted_guest && vmx->rmode.vm86_active) {
+-		switch (seg) {
+-		case VCPU_SREG_CS:
+-			vmcs_write32(GUEST_CS_AR_BYTES, 0xf3);
+-			vmcs_write32(GUEST_CS_LIMIT, 0xffff);
+-			if (vmcs_readl(GUEST_CS_BASE) == 0xffff0000)
+-				vmcs_writel(GUEST_CS_BASE, 0xf0000);
+-			vmcs_write16(GUEST_CS_SELECTOR,
+-				     vmcs_readl(GUEST_CS_BASE) >> 4);
+-			break;
+-		case VCPU_SREG_ES:
+-			fix_rmode_seg(VCPU_SREG_ES, &vmx->rmode.es);
+-			break;
+-		case VCPU_SREG_DS:
+-			fix_rmode_seg(VCPU_SREG_DS, &vmx->rmode.ds);
+-			break;
+-		case VCPU_SREG_GS:
+-			fix_rmode_seg(VCPU_SREG_GS, &vmx->rmode.gs);
+-			break;
+-		case VCPU_SREG_FS:
+-			fix_rmode_seg(VCPU_SREG_FS, &vmx->rmode.fs);
+-			break;
+-		case VCPU_SREG_SS:
+-			vmcs_write16(GUEST_SS_SELECTOR,
+-				     vmcs_readl(GUEST_SS_BASE) >> 4);
+-			vmcs_write32(GUEST_SS_LIMIT, 0xffff);
+-			vmcs_write32(GUEST_SS_AR_BYTES, 0xf3);
+-			break;
+-		}
+-	}
  }
  
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
-@@ -2295,7 +2300,7 @@ int mpol_set_shared_policy(struct shared
- 	}
- 	err = shared_policy_replace(info, vma->vm_pgoff, vma->vm_pgoff+sz, new);
- 	if (err && new)
--		kmem_cache_free(sn_cache, new);
-+		sp_free(new);
- 	return err;
- }
- 
-@@ -2312,9 +2317,7 @@ void mpol_free_shared_policy(struct shar
- 	while (next) {
- 		n = rb_entry(next, struct sp_node, nd);
- 		next = rb_next(&n->nd);
--		rb_erase(&n->nd, &p->root);
--		mpol_put(n->policy);
--		kmem_cache_free(sn_cache, n);
-+		sp_delete(p, n);
- 	}
- 	mutex_unlock(&p->mutex);
- }
+ static void vmx_get_cs_db_l_bits(struct kvm_vcpu *vcpu, int *db, int *l)
 
 
