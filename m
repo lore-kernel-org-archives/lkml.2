@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2JJNCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:02:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51826 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755907Ab2JJNCE (ORCPT
+	id S1756559Ab2JJNkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:40:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7493 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756357Ab2JJNio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:02:04 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+9xfsKZrC92QLTR66IlrEXhIs/4D5jt9stPP8ufq
-	bmDR6jwiYY041i
-Message-ID: <1349874121.6992.80.camel@marge.simpson.net>
-Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
- ttwu_queue()
-From: Mike Galbraith <efault@gmx.de>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Oct 2012 15:02:01 +0200
-In-Reply-To: <20121010122921.GX29125@suse.de>
-References: <20121002065143.GK29125@suse.de>
-	 <1349164176.7086.43.camel@marge.simpson.net>
-	 <20121002084501.GL29125@suse.de>
-	 <1349170282.7086.56.camel@marge.simpson.net>
-	 <20121002131421.GN29125@suse.de>
-	 <1349247011.4465.24.camel@marge.simpson.net>
-	 <1349251997.4465.42.camel@marge.simpson.net>
-	 <1349271001.4465.66.camel@marge.simpson.net>
-	 <20121010122921.GX29125@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Wed, 10 Oct 2012 09:38:44 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Qbx_YyVk3h4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6vidgQ2l4MoA:10 a=20KFwNOVAAAA:8 a=JqEG_dyiAAAA:8 a=2-J6K_Kjc2weECRg5QsA:9 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121010133843.341664414@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 10 Oct 2012 09:38:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 6/6] Linux 3.0.45-rt68-rc1
+References: <20121010133801.331863565@goodmis.org>
+Content-Disposition: inline; filename=0006-Linux-3.0.45-rt68-rc1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 13:29 +0100, Mel Gorman wrote: 
-> On Wed, Oct 03, 2012 at 03:30:01PM +0200, Mike Galbraith wrote:
+From: Steven Rostedt <srostedt@redhat.com>
 
-> > nohz=off, pipe-test with one half pinned to CPU0, the other to CPU1.
-> > 
-> > procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
-> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> > TTW_QUEUE
-> >  1  0      0 3039488  50948 444720    0    0     0     0 539724 1013417  1 15 84  0  0
-> >  1  0      0 3039488  50956 444720    0    0     0     1 540853 1015679  1 15 84  0  0
-> >  1  0      0 3039364  50956 444720    0    0     0     0 541630 1017239  1 16 83  0  0
-> >  2  0      0 3038992  50956 444720    0    0     0     0 335550 1096569  4 20 76  0  0
-> > NO_TTWU_QUEUE
-> >  1  0      0 3038992  50956 444720    0    0     0     0 33100 1318984  1 27 71  0  0
-> >  1  0      0 3038868  50956 444720    0    0     0     0 33100 1319126  2 27 71  0  0
-> >  1  0      0 3038868  50956 444720    0    0     0     0 33097 1317968  1 27 72  0  0
-> >  2  0      0 3038868  50964 444720    0    0     0     1 33104 1318558  2 27 71  0  0
-> > 
-> > We can switch faster with NO_TTWU_QUEUE, so we switch more, and that
-> > hurts netperf UDP_STREAM throughput.. somehow.  Fatter is better is not
-> > the way context switch happy benchmarks usually work.
-> > 
-> 
-> Do we really switch more though?
+---
+ localversion-rt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yup, pipe-test measures the full round trip, and agrees with vmstat.
-netperf TCP_RR agrees, tbench agrees... this STREAM thingy is the only
-high frequency switcher I've seen go all weird like this.
+diff --git a/localversion-rt b/localversion-rt
+index 5513b84..970646d 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt67
++-rt68-rc1
+-- 
+1.7.10.4
 
-(hm, wonder how fast box can blast IPIs.. 1MHz?)
-
--Mike
 
