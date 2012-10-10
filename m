@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab2JJFet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:34:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28430 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750740Ab2JJFer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:34:47 -0400
-X-IronPort-AV: E=Sophos;i="4.80,564,1344182400"; 
-   d="scan'208";a="5973647"
-Message-ID: <5075098E.9090808@cn.fujitsu.com>
-Date: Wed, 10 Oct 2012 13:37:18 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [PATCH V2] task_work: avoid unneeded cmpxchg() in task_work_run()
-References: <50729A78.9090601@cn.fujitsu.com>	 <20121008123815.GA847@redhat.com> <1349780697.7880.14.camel@twins>
-In-Reply-To: <1349780697.7880.14.camel@twins>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 13:34:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 13:34:36,
-	Serialize complete at 2012/10/10 13:34:36
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753193Ab2JJFmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:42:04 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44628 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046Ab2JJFmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 01:42:01 -0400
+Message-ID: <1349847713.17211.4.camel@localhost>
+Subject: Re: [PATCH] No need to call irq_domain_legacy_revmap() for twice
+From: Mike <qiudayu@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, benh@kernel.crashing.org, grant.likely@secretlab.ca
+Date: Wed, 10 Oct 2012 13:41:53 +0800
+In-Reply-To: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+References: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+x-cbid: 12101005-9574-0000-0000-000004CC918D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 07:04 PM, Peter Zijlstra wrote:
-> On Mon, 2012-10-08 at 14:38 +0200, Oleg Nesterov wrote:
->> But the code looks more complex, and the only advantage is that
->> non-exiting task does xchg() instead of cmpxchg(). Not sure this
->> worth the trouble, in this case task_work_run() will likey run
->> the callbacks (the caller checks ->task_works != NULL), I do not
->> think this can add any noticeable speedup. 
+Any comments?
+Thanks
+在 2012-09-24一的 17:37 +0800，Mike Qiu写道：
+> Function irq_create_mapping() calls irq_find_mapping(). The later
+> function has checked if the indicated IRQ domain has hw IRQ mapped to
+> virtual IRQ through legacy mode or not and return the value of the
+> legacy irq number by call irq_domain_legacy_revmap(). We needn't
+> to call irq_domain_legacy_revmap() to do same check in
+> irq_create_mapping() again.
 > 
-> Yeah, I agree, the patch doesn't seem worth the trouble. It makes tricky
-> code unreadable at best.
+> The patch removes the duplicate call.
 > 
+> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+> ---
+>  kernel/irq/irqdomain.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 49a7772..286d672 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+>  		return virq;
+>  	}
+> 
+> -	/* Get a virtual interrupt number */
+> +	/*
+> +	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
+> +	 * create the IRQ mapping for non-existing one, so just return 0.
+> +	 */
+>  	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
+> -		return irq_domain_legacy_revmap(domain, hwirq);
+> +		return 0;
+> 
+>  	/* Allocate a virtual interrupt number */
+>  	hint = hwirq % nr_irqs;
 
-To gain better readability, we need to move work_exited things out
-from task_work_run() too.
 
-Thanks,
-Lai
-
-Subject: task_work: avoid unneeded cmpxchg() in task_work_run()
-
-We only require cmpxchg()&retry when task is exiting.
-xchg() is enough in other cases like original code in ac3d0da8.
-
-So we use xchg() for task_work_run() and move the logic
-of exit_task_work() out from task_work_run().
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-
-diff --git a/include/linux/task_work.h b/include/linux/task_work.h
-index ca5a1cf..1e686a5 100644
---- a/include/linux/task_work.h
-+++ b/include/linux/task_work.h
-@@ -15,10 +15,6 @@ init_task_work(struct callback_head *twork, task_work_func_t func)
- int task_work_add(struct task_struct *task, struct callback_head *twork, bool);
- struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
- void task_work_run(void);
--
--static inline void exit_task_work(struct task_struct *task)
--{
--	task_work_run();
--}
-+void exit_task_work(struct task_struct *task);
- 
- #endif	/* _LINUX_TASK_WORK_H */
-diff --git a/kernel/task_work.c b/kernel/task_work.c
-index 65bd3c9..87ef3b7 100644
---- a/kernel/task_work.c
-+++ b/kernel/task_work.c
-@@ -52,16 +52,7 @@ void task_work_run(void)
- 	struct callback_head *work, *head, *next;
- 
- 	for (;;) {
--		/*
--		 * work->func() can do task_work_add(), do not set
--		 * work_exited unless the list is empty.
--		 */
--		do {
--			work = ACCESS_ONCE(task->task_works);
--			head = !work && (task->flags & PF_EXITING) ?
--				&work_exited : NULL;
--		} while (cmpxchg(&task->task_works, work, head) != work);
--
-+		work = xchg(&task->task_works, NULL);
- 		if (!work)
- 			break;
- 		/*
-@@ -90,3 +81,17 @@ void task_work_run(void)
- 		} while (work);
- 	}
- }
-+
-+void exit_task_work(struct task_struct *task)
-+{
-+	for (;;) {
-+		/*
-+		 * work->func() can do task_work_add(), do not set
-+		 * work_exited unless the list is empty.
-+		 */
-+		if (unlikely(task->task_works))
-+			task_work_run();
-+		if (cmpxchg(&task->task_works, NULL, &work_exited) == NULL)
-+			break;
-+	}
-+}
