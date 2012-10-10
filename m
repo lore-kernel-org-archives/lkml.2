@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab2JKART (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:17:19 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37625 "EHLO
+	id S933047Ab2JKARZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:17:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51377 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933048Ab2JKARN (ORCPT
+	by vger.kernel.org with ESMTP id S932986Ab2JKARV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:17:13 -0400
-X-Sasl-enc: n+RFMMBQ3UV+sB1/juAcOcxsfte3thMtHg51clzj/VbG 1349914631
+	Wed, 10 Oct 2012 20:17:21 -0400
+X-Sasl-enc: uynuw3UAAmkMUHNHWqzxVtSg+DE59pK/8s0es6mzN2jw 1349914640
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 131/133] JFFS2: dont fail on bitflips in OOB
-Date: Thu, 11 Oct 2012 07:52:37 +0900
-Message-Id: <20121010224918.122418199@linuxfoundation.org>
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 133/133] Convert properly UTF-8 to UTF-16
+Date: Thu, 11 Oct 2012 07:52:39 +0900
+Message-Id: <20121010224918.473597435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,53 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Frediano Ziglio <frediano.ziglio@citrix.com>
 
-commit 74d83beaa229aac7d126ac1ed9414658ff1a89d2 upstream.
+commit fd3ba42c76d3d4b776120c2b24c1791e7bb3deb1 upstream.
 
-JFFS2 was designed without thought for OOB bitflips, it seems, but they
-can occur and will be reported to JFFS2 via mtd_read_oob()[1]. We don't
-want to fail on these transactions, since the data was corrected.
+wchar_t is currently 16bit so converting a utf8 encoded characters not
+in plane 0 (>= 0x10000) to wchar_t (that is calling char2uni) lead to a
+-EINVAL return. This patch detect utf8 in cifs_strtoUTF16 and add special
+code calling utf8s_to_utf16s.
 
-[1] Few drivers report bitflips for OOB-only transactions. With such
-    drivers, this patch should have no effect.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/wbuf.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/cifs/cifs_unicode.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1044,10 +1044,10 @@ int jffs2_check_oob_empty(struct jffs2_s
- 	ops.datbuf = NULL;
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -203,6 +203,27 @@ cifs_strtoUTF16(__le16 *to, const char *
+ 	int i;
+ 	wchar_t wchar_to; /* needed to quiet sparse */
  
- 	ret = mtd_read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		pr_err("cannot read OOB for EB at %08x, requested %zd bytes, read %zd bytes, error %d\n",
- 		       jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
++	/* special case for utf8 to handle no plane0 chars */
++	if (!strcmp(codepage->charset, "utf8")) {
++		/*
++		 * convert utf8 -> utf16, we assume we have enough space
++		 * as caller should have assumed conversion does not overflow
++		 * in destination len is length in wchar_t units (16bits)
++		 */
++		i  = utf8s_to_utf16s(from, len, UTF16_LITTLE_ENDIAN,
++				       (wchar_t *) to, len);
++
++		/* if success terminate and exit */
++		if (i >= 0)
++			goto success;
++		/*
++		 * if fails fall back to UCS encoding as this
++		 * function should not return negative values
++		 * currently can fail only if source contains
++		 * invalid encoded characters
++		 */
++	}
++
+ 	for (i = 0; len && *from; i++, from += charlen, len -= charlen) {
+ 		charlen = codepage->char2uni(from, len, &wchar_to);
+ 		if (charlen < 1) {
+@@ -215,6 +236,7 @@ cifs_strtoUTF16(__le16 *to, const char *
+ 		put_unaligned_le16(wchar_to, &to[i]);
  	}
-@@ -1086,10 +1086,10 @@ int jffs2_check_nand_cleanmarker(struct
- 	ops.datbuf = NULL;
  
- 	ret = mtd_read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		pr_err("cannot read OOB for EB at %08x, requested %zd bytes, read %zd bytes, error %d\n",
- 		       jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
- 	}
++success:
+ 	put_unaligned_le16(0, &to[i]);
+ 	return i;
+ }
 
 
