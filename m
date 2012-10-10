@@ -1,194 +1,486 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab2JJDVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 23:21:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55049 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab2JJDVX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 23:21:23 -0400
-Date: Tue, 9 Oct 2012 20:21:20 -0700
-From: mark gross <markgross@thegnar.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Huang Ying <ying.huang@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jean Pihet <j-pihet@ti.com>, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] PM / QoS: Introduce request and constraint data
- types for PM QoS flags
-Message-ID: <20121010032120.GB21067@MGROSS-X220VM>
-Reply-To: markgross@thegnar.org
-References: <201209282351.10663.rjw@sisk.pl>
- <1413438.1MkXj8vjQK@vostro.rjw.lan>
- <5257738.DZvocH2moA@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5257738.DZvocH2moA@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753157Ab2JJDXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 23:23:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16702 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab2JJDXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 23:23:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,563,1344236400"; 
+   d="scan'208";a="232013898"
+From: Lv Zheng <lv.zheng@intel.com>
+To: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Feng Tang <feng.tang@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, Lv Zheng <lv.zheng@intel.com>
+Subject: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
+Date: Wed, 10 Oct 2012 11:23:01 +0800
+Message-Id: <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1348652044.git.lv.zheng@intel.com>
+References: <cover.1348652044.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 10:05:07AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Introduce struct pm_qos_flags_request and struct pm_qos_flags
-> representing PM QoS flags request type and PM QoS flags constraint
-> type, respectively.  With these definitions the data structures
-> will be arranged so that the list member of a struct pm_qos_flags
-> object will contain the head of a list of struct pm_qos_flags_request
-> objects representing all of the "flags" requests present for the
-> given device.  Then, the effective_flags member of a struct
-> pm_qos_flags object will contain the bitwise OR of the flags members
-> of all the struct pm_qos_flags_request objects in the list.
-> 
-> Additionally, introduce helper function pm_qos_update_flags()
-> allowing the caller to manage the list of struct pm_qos_flags_request
-> pointed to by the list member of struct pm_qos_flags.
-> 
-> The flags are of type s32 so that the request's "value" field
-> is always of the same type regardless of what kind of request it
-> is (latency requests already have value fields of type s32).
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reviewed-by: Jean Pihet <j-pihet@ti.com>
-> ---
->  include/linux/pm_qos.h |   17 +++++++++++--
->  kernel/power/qos.c     |   63 +++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 78 insertions(+), 2 deletions(-)
-> 
-> Index: linux/include/linux/pm_qos.h
-> ===================================================================
-> --- linux.orig/include/linux/pm_qos.h
-> +++ linux/include/linux/pm_qos.h
-> @@ -33,6 +33,11 @@ struct pm_qos_request {
->  	struct delayed_work work; /* for pm_qos_update_request_timeout */
->  };
->  
-> +struct pm_qos_flags_request {
-> +	struct list_head node;
-> +	s32 flags;	/* Do not change to 64 bit */
-> +};
-> +
->  struct dev_pm_qos_request {
->  	struct plist_node node;
->  	struct device *dev;
-> @@ -45,8 +50,8 @@ enum pm_qos_type {
->  };
->  
->  /*
-> - * Note: The lockless read path depends on the CPU accessing
-> - * target_value atomically.  Atomic access is only guaranteed on all CPU
-> + * Note: The lockless read path depends on the CPU accessing target_value
-> + * or effective_flags atomically.  Atomic access is only guaranteed on all CPU
->   * types linux supports for 32 bit quantites
->   */
->  struct pm_qos_constraints {
-> @@ -57,6 +62,11 @@ struct pm_qos_constraints {
->  	struct blocking_notifier_head *notifiers;
->  };
->  
-> +struct pm_qos_flags {
-> +	struct list_head list;
-> +	s32 effective_flags;	/* Do not change to 64 bit */
-> +};
-> +
->  struct dev_pm_qos {
->  	struct pm_qos_constraints latency;
->  };
-> @@ -75,6 +85,9 @@ static inline int dev_pm_qos_request_act
->  
->  int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
->  			 enum pm_qos_req_action action, int value);
-> +bool pm_qos_update_flags(struct pm_qos_flags *pqf,
-> +			 struct pm_qos_flags_request *req,
-> +			 enum pm_qos_req_action action, s32 val);
->  void pm_qos_add_request(struct pm_qos_request *req, int pm_qos_class,
->  			s32 value);
->  void pm_qos_update_request(struct pm_qos_request *req,
-> Index: linux/kernel/power/qos.c
-> ===================================================================
-> --- linux.orig/kernel/power/qos.c
-> +++ linux/kernel/power/qos.c
-> @@ -213,6 +213,69 @@ int pm_qos_update_target(struct pm_qos_c
->  }
->  
->  /**
-> + * pm_qos_flags_remove_req - Remove device PM QoS flags request.
-> + * @pqf: Device PM QoS flags set to remove the request from.
-> + * @req: Request to remove from the set.
-> + */
-> +static void pm_qos_flags_remove_req(struct pm_qos_flags *pqf,
-> +				    struct pm_qos_flags_request *req)
-> +{
-> +	s32 val = 0;
-> +
-> +	list_del(&req->node);
-> +	list_for_each_entry(req, &pqf->list, node)
-> +		val |= req->flags;
-> +
-> +	pqf->effective_flags = val;
-> +}
-> +
-> +/**
-> + * pm_qos_update_flags - Update a set of PM QoS flags.
-> + * @pqf: Set of flags to update.
-> + * @req: Request to add to the set, to modify, or to remove from the set.
-> + * @action: Action to take on the set.
-> + * @val: Value of the request to add or modify.
-> + *
-> + * Update the given set of PM QoS flags and call notifiers if the aggregate
-> + * value has changed.  Returns 1 if the aggregate constraint value has changed,
-> + * 0 otherwise.
-> + */
-> +bool pm_qos_update_flags(struct pm_qos_flags *pqf,
-> +			 struct pm_qos_flags_request *req,
-> +			 enum pm_qos_req_action action, s32 val)
-> +{
-> +	unsigned long irqflags;
-> +	s32 prev_value, curr_value;
-> +
-> +	spin_lock_irqsave(&pm_qos_lock, irqflags);
-> +
-> +	prev_value = list_empty(&pqf->list) ? 0 : pqf->effective_flags;
-> +
-> +	switch (action) {
-> +	case PM_QOS_REMOVE_REQ:
-> +		pm_qos_flags_remove_req(pqf, req);
-> +		break;
-> +	case PM_QOS_UPDATE_REQ:
-> +		pm_qos_flags_remove_req(pqf, req);
-> +	case PM_QOS_ADD_REQ:
-> +		req->flags = val;
-> +		INIT_LIST_HEAD(&req->node);
-> +		list_add_tail(&req->node, &pqf->list);
-> +		pqf->effective_flags |= val;
-> +		break;
-> +	default:
-> +		/* no action */
-> +		;
-> +	}
-> +
-> +	curr_value = list_empty(&pqf->list) ? 0 : pqf->effective_flags;
-> +
-> +	spin_unlock_irqrestore(&pm_qos_lock, irqflags);
-> +
-> +	return prev_value != curr_value;
-> +}
-> +
-> +/**
->   * pm_qos_request - returns current system wide qos expectation
->   * @pm_qos_class: identification of which qos value is requested
->   *
-> 
+Microsoft Debug Port Table (DBGP or DBG2) is used by the Windows SoC
+platforms to describe their debugging facilities.
+DBGP: http://msdn.microsoft.com/en-us/windows/hardware/hh134821
+DBG2: http://msdn.microsoft.com/en-us/library/windows/hardware/hh673515
 
-acked-by: mark gross <markgross@thegnar.org>
---mark
+This patch enables the DBGP/DBG2 debug ports as Linux early console
+launcher.  Individual early console drivers are also needed to get the
+early kernel messages dumped on the consoles.  For example, to use the
+SPI UART early console for the Low Power Intel Architecture (LPIA)
+platforms, you need to enable the following kernel configurations:
+  CONFIG_EARLY_PRINTK_ACPI=y
+  CONFIG_EARLY_PRINTK_INTEL_MID_SPI=y
+Then you need to append the following kernel parameter to the kernel
+command line in your the boot loader configuration file:
+  earlyprintk=acpi
+
+There is a dilemma in designing this patch set.  Let me describe it in
+details.
+There should be three steps to enable an early console for an operating
+system:
+1. Probe: In this stage, the Linux kernel can detect the early consoles
+          and the base address of their register block can be determined.
+          This can be done by parsing the descriptors in the ACPI DBGP/DBG2
+          tables.  Note that acpi_table_init() must be called before
+          parsing.
+2. Setup: In this stage, the Linux kernel can apply user specified
+          configuration options (ex. baudrate of serial ports) for the
+          early consoles.  This is done by parsing the early parameters
+          passed to the kernel from the boot loaders.  Note that
+          parse_early_params() is called very early to allow parameters to
+          be passed to other kernel subsystems.
+3. Start: In this stage, the Linux kernel can make the consoles ready to
+          output logs.  Since the early consoles are always used for the
+          kernel boot up debugging, this must be done as early as possible
+          to arm the kernel with the highest testability for other kernel
+          subsystems.  Note that, this stage happens when the
+          register_console() is called.
+The preferred sequence for the above steps is:
+   +-----------------+    +-------------------+    +--------------------+
+   | ACPI DBGP PROBE | -> | EARLY_PARAM SETUP | -> | EARLY_RPINTK START |
+   +-----------------+    +-------------------+    +--------------------+
+But unfortunately, in the current x86 implementation, early parameters and
+early printk initialization are called before acpi_table_init() which
+depends on the early memory mapping facility.
+There are some choices for me to design this patch set:
+1. Invoking acpi_table_init() before parse_early_param() to maintain the
+   sequence:
+   +-----------------+    +-------------------+    +--------------------+
+   | ACPI DBGP PROBE | -> | EARLY_PARAM SETUP | -> | EARLY_RPINTK START |
+   +-----------------+    +-------------------+    +--------------------+
+   This requires other subsystem maintainers' review to ensure no
+   regressions will be introduced.  At the first glance, I found there
+   might be problems for the EFI subsystsm:
+   The EFI boot services and runtime services are mixed up in the x86
+   specific initialization process before the ACPI table initialization.
+   Things are much worse that you even cannot disable the runtime services
+   while still allow the boot services codes to be executed in the kernel
+   compilation stage.  Enabling the early consoles after the ACPI table
+   initialization will make it difficult to debug the runtime BIOS bugs.
+   If any progress is made to the kernel boot sequences, please let me
+   know.  I'll be willing to redesign the ACPI DBGP/DBG2 console probing
+   facility.  You can reach me at <lv.zheng@intel.com> and
+   <zetalog@gmail.com>.
+2. Modifying the above sequece to make it look like:
+   +-------------------+    +-----------------+    +--------------------+
+   | EARLY_PARAM SETUP | -> | ACPI DBGP PROBE | -> | EARLY_RPINTK START |
+   +-------------------+    +-----------------+    +--------------------+
+   Early consoles started in this style will lose part of the testability
+   in the kernel boot up sequence.  If the system does not crash very
+   early, developers still can see the bufferred kernel outputs when the
+   register_console() is called.
+   Current early console implementations need to be modified to be
+   compatible with this design.  The original codes need to be split up
+   into tow parts:
+   1. Detecting hardware.  This part can be called in the PROBE stage.
+   2. Applying user parameters.  This part can be called in the SETUP
+      stage.
+   Individual early console drver maintainers need to be involved to avoid
+   regressions that might occur if we do things in this way.  And the
+   maintainers can offer better tests than I can do.
+3. Introducing a brand new debugging facility that does not relate to the
+   current early console implementation to allow the early consoles to be
+   automatically detected.
+   +-------------------+    +--------------------+
+   | EARLY_PARAM SETUP | -> | EARLY_RPINTK START |
+   +-------------------+    +--------------------+
+   +-----------------+    +--------------------+
+   | ACPI DBGP PROBE | -> | EARLY_RPINTK START |
+   +-----------------+    +--------------------+
+   Early consoles started in this style will lose part of the testability
+   in the kernel boot up sequence.  If the system does not crash very
+   early, developers still can see the bufferred kernel outputs when the
+   register_console() is called.
+   Comparing to the solution 2, we can notice that the user configuration
+   can not be applied to the registered early consoles in this way as the
+   acpi_table_init() is still called after the parse_early_param().
+   Instead, the early consoles should derive the hardware settings used in
+   the BIOS/bootloaders.
+   This is what the patch set has done to enable this new usage model.
+   It is known as "ACPI early console launcher mode".
+   As a launcher, ACPI DBGP will not actually output kernel messages
+   without the real early console drivers, that's why the
+   CONFIG_EARLY_PRINTK_INTEL_MID_SPI still need to be enabled along with
+   the CONFIG_EARLY_PRINTK_ACPI.
+   In order to disable this facility by default and enable it at runtime,
+   an kernel parameter "earlyprintk=acpi" is introduced.  This makes the
+   actual sequence look like:
+   +-------------------+    +--------------------+
+   | EARLY_PARAM SETUP | -> | EARLY_RPINTK START |
+   +-------------------+    +....................+
+                            | ACPI DBGP LAUNCH   | ->
+                            +--------------------+
+      +-----------------+    +--------------------+
+   -> | ACPI DBGP PROBE | -> | EARLY_PRINTK START |
+      +-----------------+    +--------------------+
+
+Version 1:
+ 1. Enables single DBG2 debug port support.
+Version 2:
+ 1. Applies Rui's comments.
+Version 3:
+ 1. Applies Len's comments (earlycon should be disabled by default).
+ 2. Enables single DBG2 debug ports support.
+Version 4:
+ 1. Fixes the CodingStyle issues reported by checkpatch.pl.
+ 2. Enables single DBGP debug port support.
+Version 5:
+ 1. Enables multiple DBG2 debug ports support.
+ 2. Applies Konrad's comments (pr_debug should be used in earlycon).
+ 3. Changes kstrtoul back to simple_strtoul.
+Version 6:
+ 1. Applies Konrad's comments (MAX_ACPI_DBG_PORTS bug and count improvement)
+ 2. Adds "__init" and "__initdata" to the symbols introduced in this patch.
+
+Known Issues:
+1. The simple_strtoul function cannot be replaced by the kstrtoul in
+   the x86 specific booting codes.  The kstrtoul will return error on
+   strings like "acpi0,keep".  This will leave one CodingStyle issue
+   reported by the checkpatch.pl.
+
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ Documentation/kernel-parameters.txt |    1 +
+ arch/x86/Kconfig.debug              |   15 +++
+ arch/x86/kernel/acpi/boot.c         |    1 +
+ arch/x86/kernel/early_printk.c      |   13 +++
+ drivers/acpi/Makefile               |    2 +
+ drivers/acpi/early_printk.c         |  172 +++++++++++++++++++++++++++++++++++
+ include/linux/acpi.h                |   22 +++++
+ 7 files changed, 226 insertions(+)
+ create mode 100644 drivers/acpi/early_printk.c
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ad7e2e5..f656765 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -763,6 +763,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			earlyprintk=serial[,ttySn[,baudrate]]
+ 			earlyprintk=ttySn[,baudrate]
+ 			earlyprintk=dbgp[debugController#]
++			earlyprintk=acpi[debugController#]
+ 
+ 			Append ",keep" to not disable it when the real console
+ 			takes over.
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index b322f12..5778082 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -59,6 +59,21 @@ config EARLY_PRINTK_DBGP
+ 	  with klogd/syslogd or the X server. You should normally N here,
+ 	  unless you want to debug such a crash. You need usb debug device.
+ 
++config EARLY_PRINTK_ACPI
++	bool "Early printk launcher via ACPI debug port tables"
++	depends on EARLY_PRINTK && ACPI
++	---help---
++	  Write kernel log output directly into the debug ports described
++	  in the ACPI tables known as DBGP and DBG2.
++
++	  To enable such debugging facilities, you need to enable this
++	  configuration option and append the "earlyprintk=acpi" kernel
++	  parameter through the boot loaders.  Please refer the
++	  "Documentation/kernel-parameters.txt" for details.  Since this
++	  is an early console launcher, you still need to enable actual
++	  early console drivers that are suitable for your platform.
++	  If in doubt, say "N".
++
+ config DEBUG_STACKOVERFLOW
+ 	bool "Check for stack overflows"
+ 	depends on DEBUG_KERNEL
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index b2297e5..cc10ea5 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1518,6 +1518,7 @@ void __init acpi_boot_table_init(void)
+ 		return;
+ 	}
+ 
++	acpi_early_console_probe();
+ 	acpi_table_parse(ACPI_SIG_BOOT, acpi_parse_sbf);
+ 
+ 	/*
+diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
+index 9b9f18b..bf5b596 100644
+--- a/arch/x86/kernel/early_printk.c
++++ b/arch/x86/kernel/early_printk.c
+@@ -200,6 +200,15 @@ static inline void early_console_register(struct console *con, int keep_early)
+ 	register_console(early_console);
+ }
+ 
++#ifdef CONFIG_EARLY_PRINTK_ACPI
++#include <linux/acpi.h>
++
++int __init __acpi_early_console_start(struct acpi_debug_port *info)
++{
++	return 0;
++}
++#endif
++
+ static int __init setup_early_printk(char *buf)
+ {
+ 	int keep;
+@@ -236,6 +245,10 @@ static int __init setup_early_printk(char *buf)
+ 		if (!strncmp(buf, "dbgp", 4) && !early_dbgp_init(buf + 4))
+ 			early_console_register(&early_dbgp_console, keep);
+ #endif
++#ifdef CONFIG_EARLY_PRINTK_ACPI
++		if (!strncmp(buf, "acpi", 4))
++			acpi_early_console_launch(buf + 4, keep);
++#endif
+ #ifdef CONFIG_HVC_XEN
+ 		if (!strncmp(buf, "xen", 3))
+ 			early_console_register(&xenboot_console, keep);
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 47199e2..99dbd64 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -46,6 +46,8 @@ ifdef CONFIG_ACPI_VIDEO
+ acpi-y				+= video_detect.o
+ endif
+ 
++obj-$(CONFIG_EARLY_PRINTK_ACPI)	+= early_printk.o
++
+ # These are (potentially) separate modules
+ obj-$(CONFIG_ACPI_AC) 		+= ac.o
+ obj-$(CONFIG_ACPI_BUTTON)	+= button.o
+diff --git a/drivers/acpi/early_printk.c b/drivers/acpi/early_printk.c
+new file mode 100644
+index 0000000..32b3c13
+--- /dev/null
++++ b/drivers/acpi/early_printk.c
+@@ -0,0 +1,172 @@
++/*
++ * acpi/early_printk.c - ACPI Boot-Time Debug Ports
++ *
++ * Copyright (c) 2012, Intel Corporation
++ * Author: Lv Zheng <lv.zheng@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#define DEBUG
++#define pr_fmt(fmt)	"ACPI: " KBUILD_MODNAME ": " fmt
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/errno.h>
++#include <linux/acpi.h>
++#include <linux/bitmap.h>
++#include <linux/bootmem.h>
++
++#define MAX_ACPI_DBG_PORTS	16
++
++static __initdata DECLARE_BITMAP(acpi_early_flags, MAX_ACPI_DBG_PORTS*2);
++static __initdata bool acpi_early_enabled;
++
++static int __init acpi_early_console_enable(u8 port, int keep)
++{
++	if (port >= MAX_ACPI_DBG_PORTS)
++		return -ENODEV;
++
++	set_bit(port, acpi_early_flags);
++	if (keep)
++		set_bit(port+MAX_ACPI_DBG_PORTS, acpi_early_flags);
++	acpi_early_enabled = true;
++
++	pr_debug("DBGx LAUNCH - console %d.\n", port);
++
++	return 0;
++}
++
++static bool __init acpi_early_console_enabled(u8 port)
++{
++	BUG_ON(port >= MAX_ACPI_DBG_PORTS);
++	return test_bit(port, acpi_early_flags);
++}
++
++int __init acpi_early_console_keep(struct acpi_debug_port *info)
++{
++	BUG_ON(!info || info->port_index >= MAX_ACPI_DBG_PORTS);
++	return test_bit(info->port_index+MAX_ACPI_DBG_PORTS, acpi_early_flags);
++}
++
++static int __init acpi_early_console_start(struct acpi_debug_port *info)
++{
++	if (!acpi_early_console_enabled(info->port_index))
++		return 0;
++
++	pr_debug("DBGx START - console %d(%04x:%04x).\n",
++		 info->port_index, info->port_type, info->port_subtype);
++	__acpi_early_console_start(info);
++
++	return 0;
++}
++
++static int __init acpi_parse_dbg2(struct acpi_table_header *table)
++{
++	struct acpi_table_dbg2 *dbg2;
++	struct acpi_dbg2_device *entry;
++	void *tbl_end;
++	u32 count = 0;
++	u32 max_entries;
++	struct acpi_debug_port devinfo;
++
++	dbg2 = (struct acpi_table_dbg2 *)table;
++	if (!dbg2) {
++		pr_debug("DBG2 not present.\n");
++		return -ENODEV;
++	}
++
++	tbl_end = (void *)table + table->length;
++
++	entry = (struct acpi_dbg2_device *)((void *)dbg2 + dbg2->info_offset);
++	max_entries = min_t(u32, MAX_ACPI_DBG_PORTS, dbg2->info_count);
++
++	while (((void *)entry) + sizeof(struct acpi_dbg2_device) < tbl_end) {
++		if (entry->revision != 0) {
++			pr_debug("DBG2 revision %d not supported.\n",
++				 entry->revision);
++			return -ENODEV;
++		}
++		if (count < max_entries) {
++			pr_debug("DBG2 PROBE - console %d(%04x:%04x).\n",
++				 count, entry->port_type, entry->port_subtype);
++
++			devinfo.port_index = (u8)count;
++			devinfo.port_type = entry->port_type;
++			devinfo.port_subtype = entry->port_subtype;
++			devinfo.register_count = entry->register_count;
++			devinfo.registers = (struct acpi_generic_address *)
++			    ((void *)entry + entry->base_address_offset);
++			devinfo.namepath_length = entry->namepath_length;
++			devinfo.namepath = (char *)
++			    ((void *)entry + entry->namepath_offset);
++			devinfo.oem_data_length = entry->oem_data_length;
++			devinfo.oem_data = (u8 *)
++			    ((void *)entry + entry->oem_data_offset);
++
++			acpi_early_console_start(&devinfo);
++			count++;
++		}
++
++		entry = (struct acpi_dbg2_device *)
++			((void *)entry + entry->length);
++	}
++
++	return 0;
++}
++
++static int __init acpi_parse_dbgp(struct acpi_table_header *table)
++{
++	struct acpi_table_dbgp *dbgp;
++	struct acpi_debug_port devinfo;
++
++	dbgp = (struct acpi_table_dbgp *)table;
++	if (!dbgp) {
++		pr_debug("DBGP not present.\n");
++		return -ENODEV;
++	}
++
++	pr_debug("DBGP PROBE - console (%04x).\n", dbgp->type);
++
++	devinfo.port_index = 0;
++	devinfo.port_type = ACPI_DBG2_SERIAL_PORT;
++	devinfo.port_subtype = dbgp->type;
++	devinfo.register_count = 1;
++	devinfo.registers = (struct acpi_generic_address *)&dbgp->debug_port;
++	devinfo.namepath_length = 0;
++	devinfo.namepath = NULL;
++	devinfo.oem_data_length = 0;
++	devinfo.oem_data = NULL;
++
++	acpi_early_console_start(&devinfo);
++
++	return 0;
++}
++
++int __init acpi_early_console_probe(void)
++{
++	if (!acpi_early_enabled)
++		return -EINVAL;
++
++	if (acpi_table_parse(ACPI_SIG_DBG2, acpi_parse_dbg2) != 0)
++		acpi_table_parse(ACPI_SIG_DBGP, acpi_parse_dbgp);
++
++	return 0;
++}
++
++int __init acpi_early_console_launch(char *s, int keep)
++{
++	char *e;
++	unsigned long port = 0;
++
++	if (*s)
++		port = simple_strtoul(s, &e, 10);
++
++	return acpi_early_console_enable(port, keep);
++}
++
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 4f2a762..641366c 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -430,4 +430,26 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+ #define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
+ #endif
+ 
++#ifdef CONFIG_EARLY_PRINTK_ACPI
++struct acpi_debug_port {
++	u8 port_index;
++	u16 port_type;
++	u16 port_subtype;
++	u16 register_count;
++	struct acpi_generic_address *registers;
++	u16 namepath_length;
++	char *namepath;
++	u16 oem_data_length;
++	u8 *oem_data;
++};
++
++int __init acpi_early_console_keep(struct acpi_debug_port *info);
++int __init acpi_early_console_launch(char *s, int keep);
++int __init acpi_early_console_probe(void);
++/* This interface is arch specific. */
++int __init __acpi_early_console_start(struct acpi_debug_port *info);
++#else
++static int acpi_early_console_probe(void) { return 0; }
++#endif
++
+ #endif	/*_LINUX_ACPI_H*/
+-- 
+1.7.10
 
