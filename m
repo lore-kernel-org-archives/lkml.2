@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab2JJXBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:01:03 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41010 "EHLO
+	id S1757725Ab2JJXSi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:18:38 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42334 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756850Ab2JJXA5 (ORCPT
+	by vger.kernel.org with ESMTP id S1756637Ab2JJXA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:00:57 -0400
-X-Sasl-enc: UDqnsaSzRrJZ5Atr4dyEtRux7yO6LRY5+0/c8u8By7vM 1349910056
+	Wed, 10 Oct 2012 19:00:59 -0400
+X-Sasl-enc: XiYv8OojdoP8o8xB96my/XBjranGW84R461e7sze8FeB 1349910058
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Graf <agraf@suse.de>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 007/122] powerpc/iommu: Fix multiple issues with IOMMU pools code
-Date: Thu, 11 Oct 2012 07:52:53 +0900
-Message-Id: <20121010225339.317252972@linuxfoundation.org>
+        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: =?UTF-8?q?=5B=20013/122=5D=20media=3A=20gspca=5Fpac7302=3A=20make=20red=20balance=20and=20blue=20balance=20controls=20work=20again?=
+Date: Thu, 11 Oct 2012 07:52:59 +0900
+Message-Id: <20121010225340.496383770@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,100 +32,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Frank Schäfer <fschaefer.oss@googlemail.com>
 
-commit d900bd7366463fd96a907b2c212242e2b68b27d8 upstream.
+commit db43b9ca2f101d0945d043fa7d5ecd8f2da17fef upstream.
 
-There are a number of issues in the recent IOMMU pools code:
+Fix a regression from kernel 3.4 which has been introduced with the conversion of the gspca driver to the v4l2 control framework.
 
-- On a preempt kernel we might switch CPUs in the middle of building
-  a scatter gather list. When this happens the handle hint passed in
-  no longer falls within the local CPU's pool. Check for this and
-  fall back to the pool hint.
-
-- We were missing a spin_unlock/spin_lock in one spot where we
-  switch pools.
-
-- We need to provide locking around dart_tlb_invalidate_all and
-  dart_tlb_invalidate_one now that the global lock is gone.
-
-Reported-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/iommu.c      |    5 ++++-
- arch/powerpc/sysdev/dart_iommu.c |   12 ++++++++++++
- 2 files changed, 16 insertions(+), 1 deletion(-)
+ drivers/media/video/gspca/pac7302.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -215,7 +215,8 @@ static unsigned long iommu_range_alloc(s
- 	spin_lock_irqsave(&(pool->lock), flags);
+--- a/drivers/media/video/gspca/pac7302.c
++++ b/drivers/media/video/gspca/pac7302.c
+@@ -616,7 +616,7 @@ static int sd_init_controls(struct gspca
+ 	sd->red_balance = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
+ 					V4L2_CID_RED_BALANCE, 0, 3, 1, 1);
+ 	sd->blue_balance = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
+-					V4L2_CID_RED_BALANCE, 0, 3, 1, 1);
++					V4L2_CID_BLUE_BALANCE, 0, 3, 1, 1);
  
- again:
--	if ((pass == 0) && handle && *handle)
-+	if ((pass == 0) && handle && *handle &&
-+	    (*handle >= pool->start) && (*handle < pool->end))
- 		start = *handle;
- 	else
- 		start = pool->hint;
-@@ -236,7 +237,9 @@ again:
- 		 * but on second pass, start at 0 in pool 0.
- 		 */
- 		if ((start & mask) >= limit || pass > 0) {
-+			spin_unlock(&(pool->lock));
- 			pool = &(tbl->pools[0]);
-+			spin_lock(&(pool->lock));
- 			start = pool->start;
- 		} else {
- 			start &= mask;
---- a/arch/powerpc/sysdev/dart_iommu.c
-+++ b/arch/powerpc/sysdev/dart_iommu.c
-@@ -74,11 +74,16 @@ static int dart_is_u4;
- 
- #define DBG(...)
- 
-+static DEFINE_SPINLOCK(invalidate_lock);
-+
- static inline void dart_tlb_invalidate_all(void)
- {
- 	unsigned long l = 0;
- 	unsigned int reg, inv_bit;
- 	unsigned long limit;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&invalidate_lock, flags);
- 
- 	DBG("dart: flush\n");
- 
-@@ -111,12 +116,17 @@ retry:
- 			panic("DART: TLB did not flush after waiting a long "
- 			      "time. Buggy U3 ?");
- 	}
-+
-+	spin_unlock_irqrestore(&invalidate_lock, flags);
- }
- 
- static inline void dart_tlb_invalidate_one(unsigned long bus_rpn)
- {
- 	unsigned int reg;
- 	unsigned int l, limit;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&invalidate_lock, flags);
- 
- 	reg = DART_CNTL_U4_ENABLE | DART_CNTL_U4_IONE |
- 		(bus_rpn & DART_CNTL_U4_IONE_MASK);
-@@ -138,6 +148,8 @@ wait_more:
- 			panic("DART: TLB did not flush after waiting a long "
- 			      "time. Buggy U4 ?");
- 	}
-+
-+	spin_unlock_irqrestore(&invalidate_lock, flags);
- }
- 
- static void dart_flush(struct iommu_table *tbl)
+ 	gspca_dev->autogain = v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
+ 					V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
 
 
