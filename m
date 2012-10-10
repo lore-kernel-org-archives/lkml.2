@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab2JJOrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:47:42 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18757 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413Ab2JJOrl (ORCPT
+	id S1754259Ab2JJPdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:33:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35259 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab2JJPdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:47:41 -0400
-X-IronPort-AV: E=Sophos;i="4.80,564,1344211200"; 
-   d="scan'208";a="15078191"
-Date: Wed, 10 Oct 2012 15:47:23 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
-In-Reply-To: <1349855687.6952.75.camel@dagon.hellion.org.uk>
-Message-ID: <alpine.DEB.2.02.1210101544500.2689@kaball.uk.xensource.com>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de>  <1349796183-30648-6-git-send-email-arnd@arndb.de>  <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>  <201210091821.27818.arnd@arndb.de>
- <1349855687.6952.75.camel@dagon.hellion.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 10 Oct 2012 11:33:35 -0400
+Message-ID: <5075954B.8030008@gmail.com>
+Date: Wed, 10 Oct 2012 10:33:31 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: David Gibson <david@gibson.dropbear.id.au>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Scott Wood <scottwood@freescale.com>
+Subject: Re: dtc: import latest upstream dtc
+References: <1349827466.26044.16@snotra> <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com> <20121010072401.GA28467@truffula.fritz.box> <50759152.9050407@wwwdotorg.org>
+In-Reply-To: <50759152.9050407@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Ian Campbell wrote:
-> On Tue, 2012-10-09 at 19:21 +0100, Arnd Bergmann wrote:
-> > On Tuesday 09 October 2012, Stefano Stabellini wrote:
-> > > >  config XEN
-> > > >       bool "Xen guest support on ARM (EXPERIMENTAL)"
-> > > >       depends on EXPERIMENTAL && ARM && OF
-> > > > +     depends on !CPU_V6
-> > > >       help
-> > > >         Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-> > > 
-> > > Considering that we rely on the virtualization extensions, this one can
-> > > be:
-> > > 
-> > >     depends on CPU_V7
-> > > 
-> > > The rest looks fine. I can submit a second patch to change !CPU_V6 into
-> > > CPU_V7 later, if you prefer.
-> > 
-> > CPU_V6 and CPU_V7 are not exclusive, I saw the problem when building a
-> > combined kernel for both V6 and V7. The code also needs to depend on ARMv7
-> > with virtualization extensions, but that is a different issue. We don't
-> > actually have a configuration symbol for that yet, as far as I can tell.
+On 10/10/2012 10:16 AM, Stephen Warren wrote:
+> On 10/10/2012 01:24 AM, David Gibson wrote:
+>> On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
+>>>
+>>> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+>>>
+>>>> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>>>>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>>>>>> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>>>>>>>>
+>>>>>>>> What more do you think needs discussion re: dtc+cpp?
+>>>>>>>
+>>>>>>> How not to abuse the ever-loving shit out of it? :-)
+>>>>>>
+>>>>>> Perhaps we can just handle this through the regular patch review
+>>>>>> process; I think it may be difficult to define and agree upon exactly
+>>>>>> what "abuse" means ahead of time, but it's probably going to be easy
+>>>>>> enough to recognize it when one sees it?
+>>>>> One of the ways it could get out of hand would be via "include
+>>>>> dependency hell".  People will be tempted to reuse existing .h files
+>>>>> containing pin definitions, which, if history is a guide, will end up
+>>>>> depending on all sorts of other .h files.
+>>>>> Another problem I often face with symbolic names is the difficulty of
+>>>>> figuring out what the numerical values really are (for debugging),
+>>>>> especially when .h files are in different subtrees from the files that
+>>>>> use the definitions, and when they use multiple macro levels and fancy
+>>>>> features like concatenation.  Sometimes I think it's clearer just to
+>>>>> write the number and use a comment to say what it is.
+>>>>
+>>>> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+>>>
+>>> .h files include both structs and defines, which are fine for
+>>> ordinary C code, but problematic in this context.
+>>
+>> Right, cpp should be invoked with similar options to the way it's done
+>> for asm files which have the same problem.  I'm not sure if the
+>> current patch does so.
 > 
-> I don't think the guest kernels (including dom0) need the extensions to
-> run under Xen, they are only need by Xen itself. The guests should just
-> see a relatively normal v7 processor. 
-> 
-> Stefano, does that sound right?
+> That's probably a reasonable idea, although I imagined that people would
+> actually split out the portions of any header file they wanted to use
+> with dtc, so that any headers included by *.dts would only include
+> #defines. Those headers could be used by both dtc and other .h files (or
+> .c files).
 
-Keep in mind that we are using HVC to issue hypercalls, and HVC has been
-introduced with the virtualization extensions, if I am not mistaken.
+Used by what other files? kernel files? We ultimately want to split out
+dts files from the kernel, so whatever we add needs to be self
+contained. I don't see this as a huge issue though because the whole
+point of the DT data is to move that information out of the kernel. If
+it is needed in both places, then something is wrong.
+
+Rob
