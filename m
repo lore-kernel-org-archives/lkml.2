@@ -1,152 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab2JJNfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:35:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24413 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab2JJNfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:35:25 -0400
-X-Authority-Analysis: v=2.0 cv=e+uEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=y04pA6cgBwwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0XAreQrArBoA:10 a=VwQbUJbxAAAA:8 a=ZZu7y38RQH-epXu9WawA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133523.438476409@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:34:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 3/8] mm: slab: Fix potential deadlock
-References: <20121010133406.053812290@goodmis.org>
-Content-Disposition: inline; filename=0003-mm-slab-Fix-potential-deadlock.patch
+	id S1755977Ab2JJM66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:58:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752550Ab2JJM65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:58:57 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 1/8] perf x86: Making hardware events translations available in sysfs
+Date: Wed, 10 Oct 2012 14:53:11 +0200
+Message-Id: <1349873598-12583-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+Adding support to display hardware events translations available
+through the sysfs. Adding 'events' group attribute under the sysfs
+x86 PMU record with attribute/file for each hardware event.
 
- =============================================
-[ INFO: possible recursive locking detected ]
- 3.6.0-rt1+ #49 Not tainted
- ---------------------------------------------
- swapper/0/1 is trying to acquire lock:
- lock_slab_on+0x72/0x77
+This patch adds only backbone for PMUs to display config under
+'events' directory. The specific PMU support itself will come
+in next patches, however this is how the sysfs group will look
+like:
 
- but task is already holding lock:
- __local_lock_irq+0x24/0x77
+  # ls  /sys/devices/cpu/events/
+  branch-instructions
+  branch-misses
+  bus-cycles
+  cache-misses
+  cache-references
+  cpu-cycles
+  instructions
+  ref-cycles
+  stalled-cycles-backend
+  stalled-cycles-frontend
 
- other info that might help us debug this:
-  Possible unsafe locking scenario:
+The file - hw event ID mappings is:
 
-        CPU0
-        ----
-   lock(&per_cpu(slab_lock, __cpu).lock);
-   lock(&per_cpu(slab_lock, __cpu).lock);
+  file                      hw event ID
+  ---------------------------------------------------------------
+  cpu-cycles                PERF_COUNT_HW_CPU_CYCLES
+  instructions              PERF_COUNT_HW_INSTRUCTIONS
+  cache-references          PERF_COUNT_HW_CACHE_REFERENCES
+  cache-misses              PERF_COUNT_HW_CACHE_MISSES
+  branch-instructions       PERF_COUNT_HW_BRANCH_INSTRUCTIONS
+  branch-misses             PERF_COUNT_HW_BRANCH_MISSES
+  bus-cycles                PERF_COUNT_HW_BUS_CYCLES
+  stalled-cycles-frontend   PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
+  stalled-cycles-backend    PERF_COUNT_HW_STALLED_CYCLES_BACKEND
+  ref-cycles                PERF_COUNT_HW_REF_CPU_CYCLES
 
-  *** DEADLOCK ***
+Each file in 'events' directory contains term translation for
+the symbolic hw event for the currently running cpu model.
 
-  May be due to missing lock nesting notation
+  # cat /sys/devices/cpu/events/stalled-cycles-backend
+  event=0xb1,umask=0x01,inv,cmask=0x01
 
- 2 locks held by swapper/0/1:
- kmem_cache_create+0x33/0x89
- __local_lock_irq+0x24/0x77
-
- stack backtrace:
- Pid: 1, comm: swapper/0 Not tainted 3.6.0-rt1+ #49
- Call Trace:
- __lock_acquire+0x9a4/0xdc4
- ? __local_lock_irq+0x24/0x77
- ? lock_slab_on+0x72/0x77
- lock_acquire+0xc4/0x108
- ? lock_slab_on+0x72/0x77
- ? unlock_slab_on+0x5b/0x5b
- rt_spin_lock+0x36/0x3d
- ? lock_slab_on+0x72/0x77
- ? migrate_disable+0x85/0x93
- lock_slab_on+0x72/0x77
- do_ccupdate_local+0x19/0x44
- slab_on_each_cpu+0x36/0x5a
- do_tune_cpucache+0xc1/0x305
- enable_cpucache+0x8c/0xb5
- setup_cpu_cache+0x28/0x182
- __kmem_cache_create+0x34b/0x380
- ? shmem_mount+0x1a/0x1a
- kmem_cache_create+0x4a/0x89
- ? shmem_mount+0x1a/0x1a
- shmem_init+0x3e/0xd4
- kernel_init+0x11c/0x214
- kernel_thread_helper+0x4/0x10
- ? retint_restore_args+0x13/0x13
- ? start_kernel+0x3bc/0x3bc
- ? gs_change+0x13/0x13
-
-It's not a missing annotation. It's simply wrong code and needs to be
-fixed. Instead of nesting the local and the remote cpu lock simply
-acquire only the remote cpu lock, which is sufficient protection for
-this procedure.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
 ---
- include/linux/locallock.h |    8 ++++++++
- mm/slab.c                 |   10 ++--------
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 60 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |  2 ++
+ 2 files changed, 62 insertions(+)
 
-diff --git a/include/linux/locallock.h b/include/linux/locallock.h
-index 8fbc393..0161fbb 100644
---- a/include/linux/locallock.h
-+++ b/include/linux/locallock.h
-@@ -96,6 +96,9 @@ static inline void __local_lock_irq(struct local_irq_lock *lv)
- #define local_lock_irq(lvar)						\
- 	do { __local_lock_irq(&get_local_var(lvar)); } while (0)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 915b876..bff2eaa 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1308,6 +1308,62 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
  
-+#define local_lock_irq_on(lvar, cpu)					\
-+	do { __local_lock_irq(&per_cpu(lvar, cpu)); } while (0)
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++};
 +
- static inline void __local_unlock_irq(struct local_irq_lock *lv)
- {
- 	LL_WARN(!lv->nestcnt);
-@@ -111,6 +114,11 @@ static inline void __local_unlock_irq(struct local_irq_lock *lv)
- 		put_local_var(lvar);					\
- 	} while (0)
- 
-+#define local_unlock_irq_on(lvar, cpu)					\
-+	do {								\
-+		__local_unlock_irq(&per_cpu(lvar, cpu));		\
-+	} while (0)
++ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
++			  char *page)
++{
++	struct perf_pmu_events_attr *pmu_attr = \
++		container_of(attr, struct perf_pmu_events_attr, attr);
 +
- static inline int __local_lock_irqsave(struct local_irq_lock *lv)
++	u64 config = x86_pmu.event_map(pmu_attr->id);
++	return x86_pmu.events_sysfs_show(page, config);
++}
++
++#define EVENT_VAR(_id)  event_attr_##_id
++#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++
++#define EVENT_ATTR(_name, _id)					\
++static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
++	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id   =  PERF_COUNT_HW_##_id,				\
++};
++
++EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
++EVENT_ATTR(instructions,		INSTRUCTIONS		);
++EVENT_ATTR(cache-references,		CACHE_REFERENCES	);
++EVENT_ATTR(cache-misses, 		CACHE_MISSES		);
++EVENT_ATTR(branch-instructions,		BRANCH_INSTRUCTIONS	);
++EVENT_ATTR(branch-misses,		BRANCH_MISSES		);
++EVENT_ATTR(bus-cycles,			BUS_CYCLES		);
++EVENT_ATTR(stalled-cycles-frontend,	STALLED_CYCLES_FRONTEND	);
++EVENT_ATTR(stalled-cycles-backend,	STALLED_CYCLES_BACKEND	);
++EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
++
++static struct attribute *empty_attrs;
++
++struct attribute *events_attr[] = {
++	EVENT_PTR(CPU_CYCLES),
++	EVENT_PTR(INSTRUCTIONS),
++	EVENT_PTR(CACHE_REFERENCES),
++	EVENT_PTR(CACHE_MISSES),
++	EVENT_PTR(BRANCH_INSTRUCTIONS),
++	EVENT_PTR(BRANCH_MISSES),
++	EVENT_PTR(BUS_CYCLES),
++	EVENT_PTR(STALLED_CYCLES_FRONTEND),
++	EVENT_PTR(STALLED_CYCLES_BACKEND),
++	EVENT_PTR(REF_CPU_CYCLES),
++	NULL,
++};
++
++static struct attribute_group x86_pmu_events_group = {
++	.name = "events",
++	.attrs = events_attr,
++};
++
+ static int __init init_hw_perf_events(void)
  {
- 	if (lv->owner != current) {
-diff --git a/mm/slab.c b/mm/slab.c
-index 64eb636..09addf6 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -751,18 +751,12 @@ slab_on_each_cpu(void (*func)(void *arg, int this_cpu), void *arg)
+ 	struct x86_pmu_quirk *quirk;
+@@ -1354,6 +1410,9 @@ static int __init init_hw_perf_events(void)
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
  
- static void lock_slab_on(unsigned int cpu)
- {
--	if (cpu == smp_processor_id())
--		local_lock_irq(slab_lock);
--	else
--		local_spin_lock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+	local_lock_irq_on(slab_lock, cpu);
- }
++	if (!x86_pmu.events_sysfs_show)
++		x86_pmu_events_group.attrs = &empty_attrs;
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+@@ -1643,6 +1702,7 @@ static struct attribute_group x86_pmu_attr_group = {
+ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	&x86_pmu_attr_group,
+ 	&x86_pmu_format_group,
++	&x86_pmu_events_group,
+ 	NULL,
+ };
  
- static void unlock_slab_on(unsigned int cpu)
- {
--	if (cpu == smp_processor_id())
--		local_unlock_irq(slab_lock);
--	else
--		local_spin_unlock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+	local_unlock_irq_on(slab_lock, cpu);
- }
- #endif
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 6605a81..63e223b 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -354,6 +354,8 @@ struct x86_pmu {
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
  
++	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++
+ 	/*
+ 	 * CPU Hotplug hooks
+ 	 */
 -- 
-1.7.10.4
-
+1.7.11.4
 
