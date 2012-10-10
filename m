@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab2JJXB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:01:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46554 "EHLO
+	id S932464Ab2JJXBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49610 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751826Ab2JJXBW (ORCPT
+	by vger.kernel.org with ESMTP id S1756880Ab2JJXBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:22 -0400
-X-Sasl-enc: +UOf6PhtIPTuAEbI48sw9LlrQspJnQkZnpziQswwkrnY 1349910080
+	Wed, 10 Oct 2012 19:01:16 -0400
+X-Sasl-enc: KOGVeMi9X+b79TKAmkSZdwS8go69c9pdXrpPqm/GaG0y 1349910075
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 016/122] mfd: 88pm860x: Move _IO resources out of ioport_ioresource
-Date: Thu, 11 Oct 2012 07:53:02 +0900
-Message-Id: <20121010225341.032176649@linuxfoundation.org>
+        Martin Michlmayr <tbm@cyrius.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 019/122] drivers/scsi/atp870u.c: fix bad use of udelay
+Date: Thu, 11 Oct 2012 07:53:05 +0900
+Message-Id: <20121010225341.591800360@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -30,148 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit c10c2aab634a3c61c46b98875988b2f53040bc9c upstream.
+commit 0f6d93aa9d96cc9022b51bd10d462b03296be146 upstream.
 
-The removal of mach/io.h from most ARM platforms also set the range of
-valid IO ports to be empty for most platforms when previously any 32
-bit integer had been valid. This makes it impossible to add IO resources
-as the added range is smaller than that of the root resource for IO ports.
+The ACARD driver calls udelay() with a value > 2000, which leads to to
+the following compilation error on ARM:
 
-Since we're not really using IO memory at all fix this by defining our
-own root resource outside the normal tree and make that the parent of
-all IO resources. This also ensures we won't conflict with read IO ports
-if we ever run on a platform which happens to use them.
+  ERROR: "__bad_udelay" [drivers/scsi/atp870u.ko] undefined!
+  make[1]: *** [__modpost] Error 1
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Tested-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+This is because udelay is defined on ARM, roughly speaking, as
+
+	#define udelay(n) ((n) > 2000 ? __bad_udelay() : \
+		__const_udelay((n) * ((2199023U*HZ)>>11)))
+
+The argument to __const_udelay is the number of jiffies to wait divided
+by 4, but this does not work unless the multiplication does not
+overflow, and that is what the build error is designed to prevent.  The
+intended behavior can be achieved by using mdelay to call udelay
+multiple times in a loop.
+
+[jrnieder@gmail.com: adding context]
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/88pm860x-core.c |   92 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 63 insertions(+), 29 deletions(-)
+ drivers/scsi/atp870u.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -21,40 +21,73 @@
- 
- #define INT_STATUS_NUM			3
- 
-+static struct resource io_parent = {
-+	.start = 0,
-+	.end   = 0xffffffff,
-+	.flags = IORESOURCE_IO,
-+};
-+
- static struct resource bk_resources[] __devinitdata = {
--	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,},
--	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,},
--	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,},
-+	{PM8606_BACKLIGHT1, PM8606_BACKLIGHT1, "backlight-0", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_BACKLIGHT2, PM8606_BACKLIGHT2, "backlight-1", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_BACKLIGHT3, PM8606_BACKLIGHT3, "backlight-2", IORESOURCE_IO,
-+	 &io_parent,},
- };
- 
- static struct resource led_resources[] __devinitdata = {
--	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,},
--	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,},
--	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,},
--	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,},
--	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,},
--	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,},
-+	{PM8606_LED1_RED,   PM8606_LED1_RED,   "led0-red",   IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_LED1_GREEN, PM8606_LED1_GREEN, "led0-green", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_LED1_BLUE,  PM8606_LED1_BLUE,  "led0-blue",  IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_LED2_RED,   PM8606_LED2_RED,   "led1-red",   IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_LED2_GREEN, PM8606_LED2_GREEN, "led1-green", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8606_LED2_BLUE,  PM8606_LED2_BLUE,  "led1-blue",  IORESOURCE_IO,
-+	 &io_parent,},
- };
- 
- static struct resource regulator_resources[] __devinitdata = {
--	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,},
--	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,},
--	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,},
--	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,},
--	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,},
--	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,},
--	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,},
--	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,},
--	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,},
--	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,},
--	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,},
--	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,},
--	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,},
--	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,},
--	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,},
--	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,},
--	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,},
--	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,},
-+	{PM8607_ID_BUCK1, PM8607_ID_BUCK1, "buck-1", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_BUCK2, PM8607_ID_BUCK2, "buck-2", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_BUCK3, PM8607_ID_BUCK3, "buck-3", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO1,  PM8607_ID_LDO1,  "ldo-01", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO2,  PM8607_ID_LDO2,  "ldo-02", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO3,  PM8607_ID_LDO3,  "ldo-03", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO4,  PM8607_ID_LDO4,  "ldo-04", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO5,  PM8607_ID_LDO5,  "ldo-05", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO6,  PM8607_ID_LDO6,  "ldo-06", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO7,  PM8607_ID_LDO7,  "ldo-07", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO8,  PM8607_ID_LDO8,  "ldo-08", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO9,  PM8607_ID_LDO9,  "ldo-09", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO10, PM8607_ID_LDO10, "ldo-10", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO11, PM8607_ID_LDO11, "ldo-11", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO12, PM8607_ID_LDO12, "ldo-12", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO13, PM8607_ID_LDO13, "ldo-13", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO14, PM8607_ID_LDO14, "ldo-14", IORESOURCE_IO,
-+	 &io_parent,},
-+	{PM8607_ID_LDO15, PM8607_ID_LDO15, "ldo-15", IORESOURCE_IO,
-+	 &io_parent,},
- };
- 
- static struct resource touch_resources[] __devinitdata = {
-@@ -91,11 +124,12 @@ static struct resource charger_resources
- };
- 
- static struct resource preg_resources[] __devinitdata = {
--	{PM8606_ID_PREG,  PM8606_ID_PREG,  "preg",   IORESOURCE_IO,},
-+	{PM8606_ID_PREG,  PM8606_ID_PREG,  "preg",   IORESOURCE_IO,
-+	 &io_parent,},
- };
- 
- static struct resource rtc_resources[] __devinitdata = {
--	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ,},
-+	{PM8607_IRQ_RTC, PM8607_IRQ_RTC, "rtc", IORESOURCE_IRQ, &io_parent,},
- };
- 
- static struct mfd_cell bk_devs[] = {
+--- a/drivers/scsi/atp870u.c
++++ b/drivers/scsi/atp870u.c
+@@ -1173,7 +1173,16 @@ wait_io1:
+ 	outw(val, tmport);
+ 	outb(2, 0x80);
+ TCM_SYNC:
+-	udelay(0x800);
++	/*
++	 * The funny division into multiple delays is to accomodate
++	 * arches like ARM where udelay() multiplies its argument by
++	 * a large number to initialize a loop counter.  To avoid
++	 * overflow, the maximum supported udelay is 2000 microseconds.
++	 *
++	 * XXX it would be more polite to find a way to use msleep()
++	 */
++	mdelay(2);
++	udelay(48);
+ 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
+ 		outw(0, tmport--);
+ 		outb(0, tmport);
 
 
