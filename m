@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab2JKAQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:16:30 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52181 "EHLO
+	id S933038Ab2JKAQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:16:38 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57567 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932989Ab2JKAQM (ORCPT
+	by vger.kernel.org with ESMTP id S933021Ab2JKAQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:12 -0400
-X-Sasl-enc: bmRYI22SoafIUJ01vF/K23gVQmvHcW5miiil8b6RhwYy 1349914571
+	Wed, 10 Oct 2012 20:16:30 -0400
+X-Sasl-enc: AljDYmC/lXPBHZ+HHO5HwfweLoW3TFM7qT+amzNfUKLe 1349914588
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>, Ivan Hu <ivan.hu@canonical.com>
-Subject: [ 119/133] efi: initialize efi.runtime_version to make query_variable_info/update_capsule workable
-Date: Thu, 11 Oct 2012 07:52:25 +0900
-Message-Id: <20121010224915.946664447@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 114/133] mempolicy: fix a race in shared_policy_replace()
+Date: Thu, 11 Oct 2012 07:52:20 +0900
+Message-Id: <20121010224915.050017367@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,45 +31,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit d6cf86d8f23253225fe2a763d627ecf7dfee9dae upstream.
+commit b22d127a39ddd10d93deee3d96e643657ad53a49 upstream.
 
-A value of efi.runtime_version is checked before calling
-update_capsule()/query_variable_info() as follows.
-But it isn't initialized anywhere.
+shared_policy_replace() use of sp_alloc() is unsafe.  1) sp_node cannot
+be dereferenced if sp->lock is not held and 2) another thread can modify
+sp_node between spin_unlock for allocating a new sp node and next
+spin_lock.  The bug was introduced before 2.6.12-rc2.
 
-<snip>
-static efi_status_t virt_efi_query_variable_info(u32 attr,
-                                                 u64 *storage_space,
-                                                 u64 *remaining_space,
-                                                 u64 *max_variable_size)
-{
-        if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
-                return EFI_UNSUPPORTED;
-<snip>
+Kosaki's original patch for this problem was to allocate an sp node and
+policy within shared_policy_replace and initialise it when the lock is
+reacquired.  I was not keen on this approach because it partially
+duplicates sp_alloc().  As the paths were sp->lock is taken are not that
+performance critical this patch converts sp->lock to sp->mutex so it can
+sleep when calling sp_alloc().
 
-This patch initializes a value of efi.runtime_version at boot time.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Ivan Hu <ivan.hu@canonical.com>
+[kosaki.motohiro@jp.fujitsu.com: Original patch]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/mempolicy.h |    2 +-
+ mm/mempolicy.c            |   37 ++++++++++++++++---------------------
+ 2 files changed, 17 insertions(+), 22 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -890,6 +890,7 @@ void __init efi_enter_virtual_mode(void)
- 	 *
- 	 * Call EFI services through wrapper functions.
- 	 */
-+	efi.runtime_version = efi_systab.fw_revision;
- 	efi.get_time = virt_efi_get_time;
- 	efi.set_time = virt_efi_set_time;
- 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -188,7 +188,7 @@ struct sp_node {
+ 
+ struct shared_policy {
+ 	struct rb_root root;
+-	spinlock_t lock;
++	struct mutex mutex;
+ };
+ 
+ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2077,7 +2077,7 @@ bool __mpol_equal(struct mempolicy *a, s
+  */
+ 
+ /* lookup first element intersecting start-end */
+-/* Caller holds sp->lock */
++/* Caller holds sp->mutex */
+ static struct sp_node *
+ sp_lookup(struct shared_policy *sp, unsigned long start, unsigned long end)
+ {
+@@ -2141,13 +2141,13 @@ mpol_shared_policy_lookup(struct shared_
+ 
+ 	if (!sp->root.rb_node)
+ 		return NULL;
+-	spin_lock(&sp->lock);
++	mutex_lock(&sp->mutex);
+ 	sn = sp_lookup(sp, idx, idx+1);
+ 	if (sn) {
+ 		mpol_get(sn->policy);
+ 		pol = sn->policy;
+ 	}
+-	spin_unlock(&sp->lock);
++	mutex_unlock(&sp->mutex);
+ 	return pol;
+ }
+ 
+@@ -2187,10 +2187,10 @@ static struct sp_node *sp_alloc(unsigned
+ static int shared_policy_replace(struct shared_policy *sp, unsigned long start,
+ 				 unsigned long end, struct sp_node *new)
+ {
+-	struct sp_node *n, *new2 = NULL;
++	struct sp_node *n;
++	int ret = 0;
+ 
+-restart:
+-	spin_lock(&sp->lock);
++	mutex_lock(&sp->mutex);
+ 	n = sp_lookup(sp, start, end);
+ 	/* Take care of old policies in the same range. */
+ 	while (n && n->start < end) {
+@@ -2203,16 +2203,14 @@ restart:
+ 		} else {
+ 			/* Old policy spanning whole new range. */
+ 			if (n->end > end) {
++				struct sp_node *new2;
++				new2 = sp_alloc(end, n->end, n->policy);
+ 				if (!new2) {
+-					spin_unlock(&sp->lock);
+-					new2 = sp_alloc(end, n->end, n->policy);
+-					if (!new2)
+-						return -ENOMEM;
+-					goto restart;
++					ret = -ENOMEM;
++					goto out;
+ 				}
+ 				n->end = start;
+ 				sp_insert(sp, new2);
+-				new2 = NULL;
+ 				break;
+ 			} else
+ 				n->end = start;
+@@ -2223,12 +2221,9 @@ restart:
+ 	}
+ 	if (new)
+ 		sp_insert(sp, new);
+-	spin_unlock(&sp->lock);
+-	if (new2) {
+-		mpol_put(new2->policy);
+-		kmem_cache_free(sn_cache, new2);
+-	}
+-	return 0;
++out:
++	mutex_unlock(&sp->mutex);
++	return ret;
+ }
+ 
+ /**
+@@ -2246,7 +2241,7 @@ void mpol_shared_policy_init(struct shar
+ 	int ret;
+ 
+ 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
+-	spin_lock_init(&sp->lock);
++	mutex_init(&sp->mutex);
+ 
+ 	if (mpol) {
+ 		struct vm_area_struct pvma;
+@@ -2312,7 +2307,7 @@ void mpol_free_shared_policy(struct shar
+ 
+ 	if (!p->root.rb_node)
+ 		return;
+-	spin_lock(&p->lock);
++	mutex_lock(&p->mutex);
+ 	next = rb_first(&p->root);
+ 	while (next) {
+ 		n = rb_entry(next, struct sp_node, nd);
+@@ -2321,7 +2316,7 @@ void mpol_free_shared_policy(struct shar
+ 		mpol_put(n->policy);
+ 		kmem_cache_free(sn_cache, n);
+ 	}
+-	spin_unlock(&p->lock);
++	mutex_unlock(&p->mutex);
+ }
+ 
+ /* assumes fs == KERNEL_DS */
 
 
