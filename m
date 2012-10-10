@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab2JKAOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:14:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54959 "EHLO
+	id S932793Ab2JKAOa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:14:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45675 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932633Ab2JKAOS (ORCPT
+	by vger.kernel.org with ESMTP id S932775Ab2JKAOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:14:18 -0400
-X-Sasl-enc: EDu1dHhCMEPoGav0wi5Qg+4Vum7kj6vvpP7JRXerlxLG 1349914457
+	Wed, 10 Oct 2012 20:14:23 -0400
+X-Sasl-enc: 0ur8gl3MvxwGkmP4T878AurpJuOQT0g2r8paGbntMjcT 1349914462
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 096/133] drm/radeon: force MSIs on RS690 asics
-Date: Thu, 11 Oct 2012 07:52:02 +0900
-Message-Id: <20121010224911.785231471@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 089/133] ALSA: hda - limit internal mic boost for Asus X202E
+Date: Thu, 11 Oct 2012 07:51:55 +0900
+Message-Id: <20121010224910.509652656@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,33 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit fb6ca6d154cdcd53e7f27f8dbba513830372699b upstream.
+commit 4b527b6516ab1f0af8aaedd02dbf71ee2c1180f4 upstream.
 
-There are so many quirks, lets just try and force
-this for all RS690s.  See:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
+When the input gain for the internal mic is set to its maximum level,
+the background noise becomes so high - and any relevant signal clipped -
+that the setting becomes unusable. It is better to limit the amplification.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+BugLink: https://bugs.launchpad.net/bugs/1052460
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ sound/pci/hda/patch_via.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -155,6 +155,10 @@ static bool radeon_msi_ok(struct radeon_
- 	    (rdev->pdev->subsystem_device == 0x0185))
- 		return true;
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -3661,6 +3661,32 @@ static void set_widgets_power_state_vt20
+ 		update_power_state(codec, 0x21, AC_PWRST_D3);
+ }
  
-+	/* try and enable MSIs by default on all RS690s */
-+	if (rdev->family == CHIP_RS690)
-+		return true;
++/*
++ * pin fix-up
++ */
++enum {
++	VIA_FIXUP_INTMIC_BOOST,
++};
 +
- 	/* RV515 seems to have MSI issues where it loses
- 	 * MSI rearms occasionally. This leads to lockups and freezes.
- 	 * disable it by default.
++static void via_fixup_intmic_boost(struct hda_codec *codec,
++				  const struct hda_fixup *fix, int action)
++{
++	if (action == HDA_FIXUP_ACT_PRE_PROBE)
++		override_mic_boost(codec, 0x30, 0, 2, 40);
++}
++
++static const struct hda_fixup via_fixups[] = {
++	[VIA_FIXUP_INTMIC_BOOST] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = via_fixup_intmic_boost,
++	},
++};
++
++static const struct snd_pci_quirk vt2002p_fixups[] = {
++	SND_PCI_QUIRK(0x1043, 0x8532, "Asus X202E", VIA_FIXUP_INTMIC_BOOST),
++	{}
++};
++
+ /* patch for vt2002P */
+ static int patch_vt2002P(struct hda_codec *codec)
+ {
+@@ -3677,6 +3703,9 @@ static int patch_vt2002P(struct hda_code
+ 	override_mic_boost(codec, 0x29, 0, 3, 40);
+ 	add_secret_dac_path(codec);
+ 
++	snd_hda_pick_fixup(codec, NULL, vt2002p_fixups, via_fixups);
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
++
+ 	/* automatic parse from the BIOS config */
+ 	err = via_parse_auto_config(codec);
+ 	if (err < 0) {
 
 
