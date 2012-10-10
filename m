@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab2JJSKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 14:10:04 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:10964 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756686Ab2JJSKA (ORCPT
+	id S1755488Ab2JJRo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:44:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43493 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab2JJRoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 14:10:00 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJji0Kfg==
-X-RZG-CLASS-ID: mo00
-Date: Wed, 10 Oct 2012 20:09:56 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/3] xen/pv-on-hvm kexec: add quirk for Xen 3.4 and
- shutdown watches.
-Message-ID: <20121010180956.GA2130@aepfle.de>
-References: <1349890849-17471-1-git-send-email-konrad.wilk@oracle.com>
- <1349890849-17471-2-git-send-email-konrad.wilk@oracle.com>
+	Wed, 10 Oct 2012 13:44:24 -0400
+Date: Wed, 10 Oct 2012 18:44:06 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
+Message-ID: <20121010174406.GA13861@srcf.ucam.org>
+References: <cover.1348652044.git.lv.zheng@intel.com>
+ <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349890849-17471-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
+In-Reply-To: <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, Konrad Rzeszutek Wilk wrote:
+On Wed, Oct 10, 2012 at 11:23:01AM +0800, Lv Zheng wrote:
+> Microsoft Debug Port Table (DBGP or DBG2) is used by the Windows SoC
+> platforms to describe their debugging facilities.
+> DBGP: http://msdn.microsoft.com/en-us/windows/hardware/hh134821
+> DBG2: http://msdn.microsoft.com/en-us/library/windows/hardware/hh673515
 
-> The commit 254d1a3f02ebc10ccc6e4903394d8d3f484f715e, titled
-> "xen/pv-on-hvm kexec: shutdown watches from old kernel" assumes that the
-> XenBus backend can deal with reading of values from:
->  "control/platform-feature-xs_reset_watches":
-> 
->     ... a patch for xenstored is required so that it
->     accepts the XS_RESET_WATCHES request from a client (see changeset
->     23839:42a45baf037d in xen-unstable.hg). Without the patch for xenstored
->     the registration of watches will fail and some features of a PVonHVM
->     guest are not available. The guest is still able to boot, but repeated
->     kexec boots will fail."
-> 
-> Sadly this is not true when using a Xen 3.4 hypervisor and booting a PVHVM
-> guest. We end up hanging at:
+The license for these specifications only covers BIOS implementations, 
+not OS implementations. Has this had appropriate legal review?
 
-This is sad.
-So far I have not seen reports like that with a sles11sp1 or sles11sp2
-guest. Thats either because noone uses Xen 3.4+sles11 (or recent
-openSuSE) HVM guests, or because it happens to work with that
-combination.
-
-If the patch solves the issue:
-
-Acked-by: Olaf Hering <olaf@aepfle.de>
-
-Olaf
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
