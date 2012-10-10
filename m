@@ -1,55 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab2JJH3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 03:29:20 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44741 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab2JJH3N (ORCPT
+	id S1753860Ab2JJH3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 03:29:41 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42575 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab2JJH33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 03:29:13 -0400
+	Wed, 10 Oct 2012 03:29:29 -0400
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Subject: [RESEND PATCH v1 1/3] cpuidle: (POWER) Fix target residency
- initialisation in pseries cpuidle
+Subject: [RESEND PATCH v1 3/3] cpuidle: (POWER) Fix snooze state problem
+ persistant in the current cpuidle design on pseries.
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
-Date: Wed, 10 Oct 2012 12:59:08 +0530
-Message-ID: <20121010072906.29317.32144.stgit@deepthi.in.ibm.com>
+Date: Wed, 10 Oct 2012 12:59:23 +0530
+Message-ID: <20121010072921.29317.67508.stgit@deepthi.in.ibm.com>
 In-Reply-To: <20121010072859.29317.71472.stgit@deepthi.in.ibm.com>
 References: <20121010072859.29317.71472.stgit@deepthi.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101007-3864-0000-0000-000004FF7CCE
+x-cbid: 12101007-9264-0000-0000-00000279720C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the redundant target residency initialisation in pseries_cpuidle_driver_init().
-This is currently over-writing the residency time updated as part of the static
-table, resulting in  all the idle states having the same target
-residency of 100us which is incorrect. This may result in the menu governor making
-wrong state decisions.
+Earlier without cpuidle framework on pseries, the native arch
+idle routine comprised of both snooze and nap
+states.  smt_snooze_delay variable was used to delay
+the idle process entry to deeper idle state like  nap.
+With the coming of cpuidle, this arch specific idle was replaced
+by two different idle routines, one for supporting snooze and other
+for nap. This enabled addition of more
+low level idle states on pseries in the future.
+
+On adopting the generic cpuidle framework for POWER systems,
+the decision of which idle state to choose from,  given a predicted
+idle time is taken by the menu governor based on
+target_residency and  exit_latency of the idle states.
+target_residency is the minimum time to be resident in that idle state.
+Exit_latency is time taken to exit out of idle state.
+Deeper the idle state, both the target residency and exit latency
+would be higher.
+
+In the current design, smt_snooze_delay is used as target_residency
+for the  snooze state which is incorrect, as it is not the
+minimum but the maximum duration to be in snooze state.
+This would  result in the governor in taking bad decision,
+as presently target_residency of nap < target_residency of snooze
+inspite of nap being deeper idle state.
+
+This patch aims to fix this problem by replacing the smt_snooze_delay loop
+in snooze state, with the need_resched()  as the governor is aware of
+entry and exit of various idle transitions based on which
+next idle time prediction.
+
+The governor is intelligent enough to determine the idle state the needs to
+be transitioned to and maintains a whole of heuristics including
+io load, previous idle states predictions etc for the same, based on
+which idle state entry decision is taken.
+
+With this fix, of setting target_residency of snooze to 0
+					     nap to smt_snooze_delay
+if the predicted idle time is less
+than smt_snooze_delay (target_residency of nap)
+value governor would pick snooze state, else nap. This adhers to the
+previous native idle design.
 
 Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
 
- arch/powerpc/platforms/pseries/processor_idle.c |    4 ----
- 1 file changed, 4 deletions(-)
+ arch/powerpc/platforms/pseries/processor_idle.c |   36 ++++++++---------------
+ 1 file changed, 13 insertions(+), 23 deletions(-)
 
 diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-index 455760b..02e425a 100644
+index a32d56d..45d00e5 100644
 --- a/arch/powerpc/platforms/pseries/processor_idle.c
 +++ b/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -246,10 +246,6 @@ static int pseries_cpuidle_driver_init(void)
- 		drv->states[drv->state_count] =	/* structure copy */
- 			cpuidle_state_table[idle_state];
+@@ -59,32 +59,22 @@ static int snooze_loop(struct cpuidle_device *dev,
+ {
+ 	unsigned long in_purr;
+ 	ktime_t kt_before;
+-	unsigned long start_snooze;
+-	long snooze = drv->states[0].target_residency;
++	int cpu = dev->cpu;
  
--		if (cpuidle_state_table == dedicated_states)
--			drv->states[drv->state_count].target_residency =
--				__get_cpu_var(smt_snooze_delay);
+ 	idle_loop_prolog(&in_purr, &kt_before);
++	local_irq_enable();
++	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+-	if (snooze) {
+-		start_snooze = get_tb() + snooze * tb_ticks_per_usec;
+-		local_irq_enable();
+-		set_thread_flag(TIF_POLLING_NRFLAG);
 -
- 		drv->state_count += 1;
+-		while ((snooze < 0) || (get_tb() < start_snooze)) {
+-			if (need_resched() || cpu_is_offline(dev->cpu))
+-				goto out;
+-			ppc64_runlatch_off();
+-			HMT_low();
+-			HMT_very_low();
+-		}
+-
+-		HMT_medium();
+-		clear_thread_flag(TIF_POLLING_NRFLAG);
+-		smp_mb();
+-		local_irq_disable();
++	while ((!need_resched()) && cpu_online(cpu)) {
++		ppc64_runlatch_off();
++		HMT_low();
++		HMT_very_low();
  	}
  
+-out:
+ 	HMT_medium();
++	clear_thread_flag(TIF_POLLING_NRFLAG);
++	smp_mb();
++
+ 	dev->last_residency =
+ 		(int)idle_loop_epilog(in_purr, kt_before);
+ 	return index;
+@@ -165,8 +155,8 @@ static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
+ 		.name = "CEDE",
+ 		.desc = "CEDE",
+ 		.flags = CPUIDLE_FLAG_TIME_VALID,
+-		.exit_latency = 1,
+-		.target_residency = 10,
++		.exit_latency = 10,
++		.target_residency = 100,
+ 		.enter = &dedicated_cede_loop },
+ };
+ 
+@@ -197,7 +187,7 @@ void update_smt_snooze_delay(int cpu, int residency)
+ 			dev->states_usage[1].disable = 1;
+ 	} else
+ 		if (drv)
+-			drv->states[0].target_residency = residency;
++			drv->states[1].target_residency = residency;
+ }
+ 
+ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
 
