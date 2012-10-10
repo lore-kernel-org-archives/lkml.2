@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab2JJN7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:59:45 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65522 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502Ab2JJN7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:59:40 -0400
-Date: Wed, 10 Oct 2012 10:00:27 -0400
-From: Matt Porter <mporter@ti.com>
-To: Vaibhav Hiremath <hvaibhav@ti.com>
-Cc: linux-omap@vger.kernel.org, Afzal Mohammed <afzal@ti.com>,
-        Tony Lindgren <tony@atomide.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
-Message-ID: <20121010140027.GB13724@beef>
-References: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756074Ab2JJM7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:59:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755990Ab2JJM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:59:07 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/8] perf x86: Filter out undefined events from sysfs events attribute
+Date: Wed, 10 Oct 2012 14:53:12 +0200
+Message-Id: <1349873598-12583-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 02:27:20PM +0530, Vaibhav Hiremath wrote:
-> With recent changes in omap gpmc driver code, in case of DT
-> boot mode, where bootloader does not configure gpmc cs space
-> will result into kernel BUG() inside gpmc_mem_init() function,
-> as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
-> gpmc_config7[0].baseaddress is set to '0' on reset.
-> 
-> This use-case is applicable for any board/EVM which doesn't have
-> any peripheral connected to gpmc cs0, for example BeagleXM and
-> BeagleBone, so DT boot mode fails.
-> 
-> This patch adds of_have_populated_dt() check before creating
-> device, so that for DT boot mode, gpmc probe will not be called
-> which is expected behavior, as gpmc is not supported yet from DT.
-> 
-> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> Cc: Afzal Mohammed <afzal@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc Paul Walmsley <paul@pwsan.com>
-> ---
-> This should go in for rc1, as this breaks AM33xx boot.
+The sysfs events group attribute currently shows all hw events,
+including also undefined ones.
 
-Fixes BeagleBone on mainline.
+This patch filters out all undefined events out of the sysfs events
+group attribute, so they don't even show up.
 
-Tested-by: Matt Porter <mporter@ti.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
--Matt
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bff2eaa..9b6f83c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1313,6 +1313,26 @@ struct perf_pmu_events_attr {
+ 	u64 id;
+ };
+ 
++/*
++ * Remove all undefined events (x86_pmu.event_map(id) == 0)
++ * out of events_attr attributes.
++ */
++static void __init filter_events(struct attribute **attrs)
++{
++	int i, j;
++
++	for (i = 0; attrs[i]; i++) {
++		if (x86_pmu.event_map(i))
++			continue;
++
++		for (j = i; attrs[j]; j++)
++			attrs[j] = attrs[j + 1];
++
++		/* Check the shifted attr. */
++		i--;
++	}
++}
++
+ ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1412,6 +1432,8 @@ static int __init init_hw_perf_events(void)
+ 
+ 	if (!x86_pmu.events_sysfs_show)
+ 		x86_pmu_events_group.attrs = &empty_attrs;
++	else
++		filter_events(x86_pmu_events_group.attrs);
+ 
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+-- 
+1.7.11.4
+
