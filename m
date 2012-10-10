@@ -1,114 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab2JJWzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:55:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58548 "EHLO
+	id S1757891Ab2JJXAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:00:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56135 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757841Ab2JJWzB (ORCPT
+	by vger.kernel.org with ESMTP id S1756850Ab2JJXAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:01 -0400
-X-Sasl-enc: /RWf5wpw0DZHvaOryIyrE3CyG6wkROCLmvQQN4as3b3u 1349909700
+	Wed, 10 Oct 2012 19:00:46 -0400
+X-Sasl-enc: PU67byoCi5b3yNmIdNbsL7gzwLkn5pzB7fv2Ar9oA/LC 1349910045
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Graf <tgraf@suug.ch>, Vlad Yasevich <vyasevic@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        Vlad Yasevich <vyasevich@gmail.com>
-Subject: [ 048/133] sctp: Dont charge for data in sndbuf again when transmitting packet
-Date: Thu, 11 Oct 2012 07:51:14 +0900
-Message-Id: <20121010224903.162058012@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Donald Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 008/122] intel-iommu: Default to non-coherent for domains unattached to iommus
+Date: Thu, 11 Oct 2012 07:52:54 +0900
+Message-Id: <20121010225339.492182548@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
-References: <20121010224854.313159132@linuxfoundation.org>
+In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
+References: <20121010225337.989799482@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Alex Williamson <alex.williamson@redhat.com>
 
-From: Thomas Graf <tgraf@suug.ch>
+commit 2e12bc29fc5a12242d68e11875db3dd58efad9ff upstream.
 
-[ Upstream commit 4c3a5bdae293f75cdf729c6c00124e8489af2276 ]
+domain_update_iommu_coherency() currently defaults to setting domains
+as coherent when the domain is not attached to any iommus.  This
+allows for a window in domain_context_mapping_one() where such a
+domain can update context entries non-coherently, and only after
+update the domain capability to clear iommu_coherency.
 
-SCTP charges wmem_alloc via sctp_set_owner_w() in sctp_sendmsg() and via
-skb_set_owner_w() in sctp_packet_transmit(). If a sender runs out of
-sndbuf it will sleep in sctp_wait_for_sndbuf() and expects to be waken up
-by __sctp_write_space().
+This can be seen using KVM device assignment on VT-d systems that
+do not support coherency in the ecap register.  When a device is
+added to a guest, a domain is created (iommu_coherency = 0), the
+device is attached, and ranges are mapped.  If we then hot unplug
+the device, the coherency is updated and set to the default (1)
+since no iommus are attached to the domain.  A subsequent attach
+of a device makes use of the same dmar domain (now marked coherent)
+updates context entries with coherency enabled, and only disables
+coherency as the last step in the process.
 
-Buffer space charged via sctp_set_owner_w() is released in sctp_wfree()
-which calls __sctp_write_space() directly.
+To fix this, switch domain_update_iommu_coherency() to use the
+safer, non-coherent default for domains not attached to iommus.
 
-Buffer space charged via skb_set_owner_w() is released via sock_wfree()
-which calls sk->sk_write_space() _if_ SOCK_USE_WRITE_QUEUE is not set.
-sctp_endpoint_init() sets SOCK_USE_WRITE_QUEUE on all sockets.
-
-Therefore if sctp_packet_transmit() manages to queue up more than sndbuf
-bytes, sctp_wait_for_sndbuf() will never be woken up again unless it is
-interrupted by a signal.
-
-This could be fixed by clearing the SOCK_USE_WRITE_QUEUE flag but ...
-
-Charging for the data twice does not make sense in the first place, it
-leads to overcharging sndbuf by a factor 2. Therefore this patch only
-charges a single byte in wmem_alloc when transmitting an SCTP packet to
-ensure that the socket stays alive until the packet has been released.
-
-This means that control chunks are no longer accounted for in wmem_alloc
-which I believe is not a problem as skb->truesize will typically lead
-to overcharging anyway and thus compensates for any control overhead.
-
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-CC: Vlad Yasevich <vyasevic@redhat.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: David Miller <davem@davemloft.net>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Donald Dutile <ddutile@redhat.com>
+Acked-by: Donald Dutile <ddutile@redhat.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/output.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -339,6 +339,25 @@ finish:
- 	return retval;
- }
+---
+ drivers/iommu/intel-iommu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -589,7 +589,9 @@ static void domain_update_iommu_coherenc
+ {
+ 	int i;
  
-+static void sctp_packet_release_owner(struct sk_buff *skb)
-+{
-+	sk_free(skb->sk);
-+}
+-	domain->iommu_coherency = 1;
++	i = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
 +
-+static void sctp_packet_set_owner_w(struct sk_buff *skb, struct sock *sk)
-+{
-+	skb_orphan(skb);
-+	skb->sk = sk;
-+	skb->destructor = sctp_packet_release_owner;
-+
-+	/*
-+	 * The data chunks have already been accounted for in sctp_sendmsg(),
-+	 * therefore only reserve a single byte to keep socket around until
-+	 * the packet has been transmitted.
-+	 */
-+	atomic_inc(&sk->sk_wmem_alloc);
-+}
-+
- /* All packets are sent to the network through this function from
-  * sctp_outq_tail().
-  *
-@@ -380,7 +399,7 @@ int sctp_packet_transmit(struct sctp_pac
- 	/* Set the owning socket so that we know where to get the
- 	 * destination IP address.
- 	 */
--	skb_set_owner_w(nskb, sk);
-+	sctp_packet_set_owner_w(nskb, sk);
++	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
  
- 	if (!sctp_transport_dst_check(tp)) {
- 		sctp_transport_route(tp, NULL, sctp_sk(sk));
+ 	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
+ 		if (!ecap_coherent(g_iommus[i]->ecap)) {
 
 
