@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2JJJ13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:27:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55914 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418Ab2JJJ10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:27:26 -0400
-Date: Wed, 10 Oct 2012 11:27:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch for-linus] memcg, kmem: fix build error when CONFIG_INET
- is disabled
-Message-ID: <20121010092725.GA23288@dhcp22.suse.cz>
-References: <alpine.DEB.2.00.1210092325500.9528@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210092325500.9528@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932224Ab2JJOaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:30:02 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50922 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab2JJOaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 10:30:00 -0400
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Vaibhav Hiremath <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+Cc: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Date: Wed, 10 Oct 2012 10:30:49 -0400
+Message-Id: <1349879449-22657-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-10-12 23:32:35, David Rientjes wrote:
-> Commit e1aab161e013 ("socket: initial cgroup code.") causes a build error 
-> when CONFIG_INET is disabled in Linus' tree:
-> 
-> net/built-in.o: In function `sk_update_clone':
-> net/core/sock.c:1336: undefined reference to `sock_update_memcg'
-> 
-> sock_update_memcg() is only defined when CONFIG_INET is enabled, so fix it 
-> by defining the dummy function without this option.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
+exposes a bug in the AM33XX clock data for mcasp. After moving to
+clk_get() usage, the _init() of all registered hwmods fails on mcasp0
+due to incorrect clock data causing clk_get() to fail. This causes all
+successive hwmods to fail to _init() leaving them in a bad state.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+This patch updates the mcasp clock entries so clk_get() will succeed.
+It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
+boot.
 
-Thanks!
+Signed-off-by: Matt Porter <mporter@ti.com>
+---
+ arch/arm/mach-omap2/clock33xx_data.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> ---
->  Checking the logs, Randy reported this in an email to LKML on 
->  September 24 and didn't get a response...
-> 
->  include/linux/memcontrol.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -396,7 +396,7 @@ enum {
->  };
->  
->  struct sock;
-> -#ifdef CONFIG_MEMCG_KMEM
-> +#if defined(CONFIG_INET) && defined(CONFIG_MEMCG_KMEM)
->  void sock_update_memcg(struct sock *sk);
->  void sock_release_memcg(struct sock *sk);
->  #else
-> @@ -406,6 +406,6 @@ static inline void sock_update_memcg(struct sock *sk)
->  static inline void sock_release_memcg(struct sock *sk)
->  {
->  }
-> -#endif /* CONFIG_MEMCG_KMEM */
-> +#endif /* CONFIG_INET && CONFIG_MEMCG_KMEM */
->  #endif /* _LINUX_MEMCONTROL_H */
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/arch/arm/mach-omap2/clock33xx_data.c b/arch/arm/mach-omap2/clock33xx_data.c
+index b87b88c..0a64139 100644
+--- a/arch/arm/mach-omap2/clock33xx_data.c
++++ b/arch/arm/mach-omap2/clock33xx_data.c
+@@ -1033,8 +1033,8 @@ static struct omap_clk am33xx_clks[] = {
+ 	CLK("481d0000.d_can",	NULL,		&dcan1_fck,	CK_AM33XX),
+ 	CLK(NULL,	"debugss_ick",		&debugss_ick,	CK_AM33XX),
+ 	CLK(NULL,	"pruss_ocp_gclk",	&pruss_ocp_gclk,	CK_AM33XX),
+-	CLK("davinci-mcasp.0",  NULL,           &mcasp0_fck,    CK_AM33XX),
+-	CLK("davinci-mcasp.1",  NULL,           &mcasp1_fck,    CK_AM33XX),
++	CLK(NULL,	"mcasp0_fck",		&mcasp0_fck,    CK_AM33XX),
++	CLK(NULL,	"mcasp1_fck",		&mcasp1_fck,    CK_AM33XX),
+ 	CLK("NULL",	"mmc2_fck",		&mmc2_fck,	CK_AM33XX),
+ 	CLK(NULL,	"mmu_fck",		&mmu_fck,	CK_AM33XX),
+ 	CLK(NULL,	"smartreflex0_fck",	&smartreflex0_fck,	CK_AM33XX),
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
