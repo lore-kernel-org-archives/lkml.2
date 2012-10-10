@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab2JJXBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:01:50 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43927 "EHLO
+	id S1757988Ab2JJXBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33783 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757947Ab2JJXBk (ORCPT
+	by vger.kernel.org with ESMTP id S1757841Ab2JJXBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:40 -0400
-X-Sasl-enc: 0wwLmrJufQjPQG63Xrg+sCGmbfyJT+g1J6H2EhG9UKbs 1349910099
+	Wed, 10 Oct 2012 19:01:46 -0400
+X-Sasl-enc: PYJmfzU0eGYrjl/Lnk+qQRWxrGLixgp/RWWyCaVjCrvv 1349910105
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [ 028/122] workqueue: add missing smp_wmb() in process_one_work()
-Date: Thu, 11 Oct 2012 07:53:14 +0900
-Message-Id: <20121010225343.189831573@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 025/122] drxk: allow loading firmware synchrousnously
+Date: Thu, 11 Oct 2012 07:53:11 +0900
+Message-Id: <20121010225342.666021217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,44 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 959d1af8cffc8fd38ed53e8be1cf4ab8782f9c00 upstream.
+commit 8e30783b0b3270736b2cff6415c68b894bc411df upstream.
 
-WORK_STRUCT_PENDING is used to claim ownership of a work item and
-process_one_work() releases it before starting execution.  When
-someone else grabs PENDING, all pre-release updates to the work item
-should be visible and all updates made by the new owner should happen
-afterwards.
+Due to udev-182, the firmware load was changed to be async, as
+otherwise udev would give up of loading a firmware.
 
-Grabbing PENDING uses test_and_set_bit() and thus has a full barrier;
-however, clearing doesn't have a matching wmb.  Given the preceding
-spin_unlock and use of clear_bit, I don't believe this can be a
-problem on an actual machine and there hasn't been any related report
-but it still is theretically possible for clear_pending to permeate
-upwards and happen before work->entry update.
+Add an option to return to the previous behaviour, async firmware
+loads cause failures with the tda18271 driver.
 
-Add an explicit smp_wmb() before work_clear_pending().
+Antti tested it with the following hardware:
+        Hauppauge WinTV HVR 930C
+        MaxMedia UB425-TC
+        PCTV QuatroStick nano (520e)
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Tested-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/dvb/frontends/drxk.h      |    2 ++
+ drivers/media/dvb/frontends/drxk_hard.c |   20 +++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2073,7 +2073,9 @@ __acquires(&gcwq->lock)
+--- a/drivers/media/dvb/frontends/drxk.h
++++ b/drivers/media/dvb/frontends/drxk.h
+@@ -28,6 +28,7 @@
+  *				A value of 0 (default) or lower indicates that
+  *				the correct number of parameters will be
+  *				automatically detected.
++ * @load_firmware_sync:		Force the firmware load to be synchronous.
+  *
+  * On the *_gpio vars, bit 0 is UIO-1, bit 1 is UIO-2 and bit 2 is
+  * UIO-3.
+@@ -39,6 +40,7 @@ struct drxk_config {
+ 	bool	parallel_ts;
+ 	bool	dynamic_clk;
+ 	bool	enable_merr_cfg;
++	bool	load_firmware_sync;
  
- 	spin_unlock_irq(&gcwq->lock);
+ 	bool	antenna_dvbt;
+ 	u16	antenna_gpio;
+--- a/drivers/media/dvb/frontends/drxk_hard.c
++++ b/drivers/media/dvb/frontends/drxk_hard.c
+@@ -6609,15 +6609,25 @@ struct dvb_frontend *drxk_attach(const s
  
-+	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
- 	work_clear_pending(work);
+ 	/* Load firmware and initialize DRX-K */
+ 	if (state->microcode_name) {
+-		status = request_firmware_nowait(THIS_MODULE, 1,
++		if (config->load_firmware_sync) {
++			const struct firmware *fw = NULL;
 +
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
++			status = request_firmware(&fw, state->microcode_name,
++						  state->i2c->dev.parent);
++			if (status < 0)
++				fw = NULL;
++			load_firmware_cb(fw, state);
++		} else {
++			status = request_firmware_nowait(THIS_MODULE, 1,
+ 					      state->microcode_name,
+ 					      state->i2c->dev.parent,
+ 					      GFP_KERNEL,
+ 					      state, load_firmware_cb);
+-		if (status < 0) {
+-			printk(KERN_ERR
+-			"drxk: failed to request a firmware\n");
+-			return NULL;
++			if (status < 0) {
++				printk(KERN_ERR
++				       "drxk: failed to request a firmware\n");
++				return NULL;
++			}
+ 		}
+ 	} else if (init_drxk(state) < 0)
+ 		goto error;
 
 
