@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab2JJBAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 21:00:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39181 "EHLO
+	id S1757241Ab2JJBDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 21:03:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63748 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab2JJBAO (ORCPT
+	with ESMTP id S1755184Ab2JJBDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 21:00:14 -0400
+	Tue, 9 Oct 2012 21:03:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121009154611.GC7639@phenom.dumpdata.com>
-References: <CAE9FiQV_xVsHN_+6ui_Vgnn6tk8UBOEKL+0XnoEN9VLw3gcOXA@mail.gmail.com>
-	<1349509469-11475-1-git-send-email-yinghai@kernel.org>
-	<1349509469-11475-3-git-send-email-yinghai@kernel.org>
-	<20121009154611.GC7639@phenom.dumpdata.com>
-Date: Tue, 9 Oct 2012 18:00:12 -0700
-X-Google-Sender-Auth: kHkFARDgPou0qcm8jytBZZYlWRU
-Message-ID: <CAE9FiQV2r6GsuxkceBrR7Tpv40SwQku0Z+ZtMBbNKZ9BJgvUXg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] x86, mm: Don't clear page table if next range is ram
+In-Reply-To: <20121009160133.GF7639@phenom.dumpdata.com>
+References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
+	<1349757558-10856-4-git-send-email-yinghai@kernel.org>
+	<20121009160133.GF7639@phenom.dumpdata.com>
+Date: Tue, 9 Oct 2012 18:03:33 -0700
+X-Google-Sender-Auth: t1OYqr76q2kFV3gxpHWZKmWEdF4
+Message-ID: <CAE9FiQW8ubsQmtJk=bvZ5yGdBaBQSNWPpuACku+8sbb6_CG+rA@mail.gmail.com>
+Subject: Re: [PATCH 03/10] x86, mm: get early page table from BRK
 From: Yinghai Lu <yinghai@kernel.org>
 To: Konrad Rzeszutek Wilk <konrad@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -29,28 +28,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 8:46 AM, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
->> +                         !e820_any_mapped(addr & PAGE_MASK, next, 0))
+On Tue, Oct 9, 2012 at 9:01 AM, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
+>> +RESERVE_BRK(early_pgt_alloc, 16384);
 >
-> What is the 0 parameter for?
+> How did you come up with 16KB being the right size? What is this
+> based on? Can you provide a comment explaining why 16KB is the
+> right value on 32-bit and 64-bit machines?
 
-any type
+good point, i add one line comment to the revised patch.
 
-if type != 0, the will only check entries with same type.
-
-int
-e820_any_mapped(u64 start, u64 end, unsigned type)
-{
-        int i;
-
-        for (i = 0; i < e820.nr_map; i++) {
-                struct e820entry *ei = &e820.map[i];
-
-                if (type && ei->type != type)
-                        continue;
-                if (ei->addr >= end || ei->addr + ei->size <= start)
-                        continue;
-                return 1;
-        }
-        return 0;
-}
++/* need 3 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
