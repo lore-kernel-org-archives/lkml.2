@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab2JJV5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:57:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:51894 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab2JJV5C (ORCPT
+	id S1757253Ab2JJV5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:57:54 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56350 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab2JJV5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:57:02 -0400
-From: Christopher Kenna <cjk@cs.unc.edu>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Christopher Kenna <cjk@cs.unc.edu>
-Subject: [PATCH] Add forgotten mask in cache way unlock for PL310.
-Date: Wed, 10 Oct 2012 17:56:43 -0400
-Message-Id: <1349906203-7839-1-git-send-email-cjk@cs.unc.edu>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Oct 2012 17:57:51 -0400
+Date: Wed, 10 Oct 2012 14:57:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+In-Reply-To: <alpine.LSU.2.00.1210091600450.30446@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1210101428470.1939@eggly.anvils>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009101822.79bdcb65@mschwide> <alpine.LSU.2.00.1210091600450.30446@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The part number should be masked out of the cache ID when detecting if
-the cache controller is a PL310. Since this is done elsewhere, add a
-macro for brevity.
+On Tue, 9 Oct 2012, Hugh Dickins wrote:
+> On Tue, 9 Oct 2012, Martin Schwidefsky wrote:
+> > On Mon, 8 Oct 2012 21:24:40 -0700 (PDT)
+> > Hugh Dickins <hughd@google.com> wrote:
+> > 
+> > > A separate worry came to mind as I thought about your patch: where
+> > > in page migration is s390's dirty storage key migrated from old page
+> > > to new?  And if there is a problem there, that too should be fixed
+> > > by what I propose in the previous paragraph.
+> > 
+> > That is covered by the SetPageUptodate() in migrate_page_copy().
+> 
+> I don't think so: that makes sure that the newpage is not marked
+> dirty in storage key just because of the copy_highpage to it; but
+> I see nothing to mark the newpage dirty in storage key when the
+> old page was dirty there.
 
-Tested on a PandaBoard ES.
+I went to prepare a patch to fix this, and ended up finding no such
+problem to fix - which fits with how no such problem has been reported.
 
-Signed-off-by: Christopher Kenna <cjk@cs.unc.edu>
----
- arch/arm/mm/cache-l2x0.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Most of it is handled by page migration's unmap_and_move() having to
+unmap the old page first: so the old page will pass through the final
+page_remove_rmap(), which will transfer storage key to page_dirty in
+those cases which it deals with (with the old code, any file or swap
+page; with the new code, any unaccounted file or swap page, now that
+we realize the accounted files don't even need this); and page_dirty
+is already properly migrated to the new page.
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 8a97e64..bdf2f66 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -27,6 +27,7 @@
- #include <asm/hardware/cache-l2x0.h>
- 
- #define CACHE_LINE_SIZE		32
-+#define CACHE_ID_PART(id)	((id) & L2X0_CACHE_ID_PART_MASK)
- 
- static void __iomem *l2x0_base;
- static DEFINE_RAW_SPINLOCK(l2x0_lock);
-@@ -292,7 +293,7 @@ static void l2x0_unlock(u32 cache_id)
- 	int lockregs;
- 	int i;
- 
--	if (cache_id == L2X0_CACHE_ID_PART_L310)
-+	if (CACHE_ID_PART(cache_id) == L2X0_CACHE_ID_PART_L310)
- 		lockregs = 8;
- 	else
- 		/* L210 and unknown types */
-@@ -323,7 +324,7 @@ void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask)
- 	aux |= aux_val;
- 
- 	/* Determine the number of ways */
--	switch (cache_id & L2X0_CACHE_ID_PART_MASK) {
-+	switch (CACHE_ID_PART(cache_id)) {
- 	case L2X0_CACHE_ID_PART_L310:
- 		if (aux & (1 << 16))
- 			ways = 16;
--- 
-1.7.9.5
+But that does leave one case behind: an anonymous page not yet in
+swapcache, migrated via a swap-like migration entry.  But this case
+is not a problem because PageDirty doesn't actually affect anything
+for an anonymous page not in swapcache.  There are various places
+where we set it, and its life-history is hard to make sense of, but
+in fact it's meaningless in 2.6, where page reclaim adds anon to swap
+(and sets PageDirty) whether the page was marked dirty before or not
+(which makes sense when we use the ZERO_PAGE for anon read faults).
 
+2.4 did behave differently: it was liable to free anon pages not
+marked dirty, and I think most of our anon SetPageDirtys are just a
+relic of those days - I do have a patch from 18 months ago to remove
+them (adding PG_dirty to the flags which should not be set when a
+page is freed), but there are usually more urgent things to attend
+to than rebase and retest that.
+
+Hugh
