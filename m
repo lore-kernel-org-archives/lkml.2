@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2JJAJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 20:09:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54731 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab2JJAJr (ORCPT
+	id S1753484Ab2JJALI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 20:11:08 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64316 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab2JJALF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 20:09:47 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH] rtc: kconfig: fix RTC_INTF defaults connected to RTC_CLASS
-Date: Tue,  9 Oct 2012 17:09:44 -0700
-Message-Id: <1349827784-8646-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.9.2
+	Tue, 9 Oct 2012 20:11:05 -0400
+X-AuditID: 9c93016f-b7b1eae000000815-85-5074bd13b75f
+Date: Wed, 10 Oct 2012 09:15:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Mike Hommey <mh@glandium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
+Message-ID: <20121010001514.GJ13817@bbox>
+References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
+ <20121009080735.GA24375@glandium.org>
+ <5074975B.20809@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5074975B.20809@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@ti.com>
+On Tue, Oct 09, 2012 at 02:30:03PM -0700, John Stultz wrote:
+> On 10/09/2012 01:07 AM, Mike Hommey wrote:
+> >Note it doesn't have to be a vs. situation. madvise could be an
+> >additional way to interface with volatile ranges on a given fd.
+> >
+> >That is, madvise doesn't have to mean anonymous memory. As a matter of
+> >fact, MADV_WILLNEED/MADV_DONTNEED are usually used on mmaped files.
+> >Similarly, there could be a way to use madvise to mark volatile ranges,
+> >without the application having to track what memory ranges are
+> >associated to what part of what file, which the kernel already tracks.
+> 
+> Good point. We could add madvise() interface, but limit it only to
+> mmapped tmpfs files, in parallel with the fallocate() interface.
+> 
+> However, I would like to think through how MADV_MARK_VOLATILE with
+> purely anonymous memory could work, before starting that approach.
+> That and Neil's point that having an identical kernel interface
+> restricted to tmpfs, only as a convenience to userland in switching
+> from virtual address to/from mmapped file offset may be better left
+> to a userland library.
 
-commit 6b8029fab64164b5895d58d23229b75c82e3a6fc (rtc: kconfig: remove
-unnecessary dependencies) removed various 'depends on RTC_CLASS'
-dependencies but also removed a few 'default RTC_CLASS' statements,
-which actually changed default behavior.
+How about this?
 
-This resulted in the various RTC interfaces (sysfs, proc, dev) all
-being disabled by default, even when RTC_CLASS is enabled:
+The scenario I imagine about madvise semantic following as.
 
-   # CONFIG_RTC_INTF_SYSFS is not set
-   # CONFIG_RTC_INTF_PROC is not set
-   # CONFIG_RTC_INTF_DEV is not set
+1) Anonymous pages
+Assume that there is some allocator library which manage mmaped reserved pool.
+If it has lots of free memory which isn't used by anyone, it can unmap part of
+reserved pool but unmap isn't cheap because kernel should zap all ptes of the
+pages in the range. But if we avoid unmap, VM would swap out that range which
+have just garbage unnecessary when memory pressure happens.
+If it mark that range volatile, we can avoid unnecessary swap out and even
+reclaim them with no swap. Only thing allocator have to do is unmark that range
+before allocating to user.
 
-which is different from previous behavior (all of these where enabled.)
+2) File pages(NOT tmpfs)
+We can reclaim volatile file pages easily without recycling of LRU
+although it is accessed recently.
+The difference with DONTNEED is that DONTNEED always move pages to
+tail of inactive LRU to reclaim early but VOLATILE semantic leave them
+as it is without moving to tail and reclaim them without considering
+recently-used when they reach at tail of LRU by aging because they can
+be unmarked sooner or later for using and we can't expect cost of
+recreating of the object.
 
-To fix, add back the 'default RTC_CLASS' statments to each of the
-RTC_INTF_* options.
+So reclaim preference : NORMAL < VOLATILE < DONTNEED
 
-I noticed this because some RTC tests started failing on my TI OMAP
-platforms because /dev/rtc0 was not present anymore, even though the
-driver was present and RTC_CLASS was enabled.
 
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
-Targeted as a fix for v3.7-rc.
-Applies on Linus' master, just after merging "Andrew's patch bomb"
-commit 11126c611e10abb18b6f1ed0300c0548c3906b54
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
- drivers/rtc/Kconfig |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index e069f17..19c03ab 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -59,6 +59,7 @@ comment "RTC interfaces"
- config RTC_INTF_SYSFS
- 	boolean "/sys/class/rtc/rtcN (sysfs)"
- 	depends on SYSFS
-+	default RTC_CLASS
- 	help
- 	  Say yes here if you want to use your RTCs using sysfs interfaces,
- 	  /sys/class/rtc/rtc0 through /sys/.../rtcN.
-@@ -68,6 +69,7 @@ config RTC_INTF_SYSFS
- config RTC_INTF_PROC
- 	boolean "/proc/driver/rtc (procfs for rtcN)"
- 	depends on PROC_FS
-+	default RTC_CLASS
- 	help
- 	  Say yes here if you want to use your system clock RTC through
- 	  the proc interface, /proc/driver/rtc.
-@@ -79,6 +81,7 @@ config RTC_INTF_PROC
- 
- config RTC_INTF_DEV
- 	boolean "/dev/rtcN (character devices)"
-+	default RTC_CLASS
- 	help
- 	  Say yes here if you want to use your RTCs using the /dev
- 	  interfaces, which "udev" sets up as /dev/rtc0 through
 -- 
-1.7.9.2
-
+Kind regards,
+Minchan Kim
