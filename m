@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2JJXX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:23:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47496 "EHLO
+	id S1757639Ab2JJWyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41717 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757646Ab2JJWyT (ORCPT
+	by vger.kernel.org with ESMTP id S1757583Ab2JJWyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:19 -0400
-X-Sasl-enc: Xno+GQSZjgtgg6cCylGddU1AOHx+Yj3YyX+LU0+WX0zR 1349909658
+	Wed, 10 Oct 2012 18:54:03 -0400
+X-Sasl-enc: h627KTho3tdWXRVE0fI1ZIjOZv/qxgQemb/k2ykd1J3X 1349909642
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
         Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 028/133] xfrm_user: return error pointer instead of NULL
-Date: Thu, 11 Oct 2012 07:50:54 +0900
-Message-Id: <20121010224859.543211963@linuxfoundation.org>
+Subject: [ 027/133] xfrm: Workaround incompatibility of ESN and async crypto
+Date: Thu, 11 Oct 2012 07:50:53 +0900
+Message-Id: <20121010224859.360130529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,49 +30,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 864745d291b5ba80ea0bd0edcbe67273de368836 ]
+[ Upstream commit 3b59df46a449ec9975146d71318c4777ad086744 ]
 
-When dump_one_state() returns an error, e.g. because of a too small
-buffer to dump the whole xfrm state, xfrm_state_netlink() returns NULL
-instead of an error pointer. But its callers expect an error pointer
-and therefore continue to operate on a NULL skbuff.
+ESN for esp is defined in RFC 4303. This RFC assumes that the
+sequence number counters are always up to date. However,
+this is not true if an async crypto algorithm is employed.
 
-This could lead to a privilege escalation (execution of user code in
-kernel context) if the attacker has CAP_NET_ADMIN and is able to map
-address 0.
+If the sequence number counters are not up to date on sequence
+number check, we may incorrectly update the upper 32 bit of
+the sequence number. This leads to a DOS.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+We workaround this by comparing the upper sequence number,
+(used for authentication) with the upper sequence number
+computed after the async processing. We drop the packet
+if these numbers are different.
+
+To do this, we introduce a recheck function that does this
+check in the ESN case.
+
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/net/xfrm.h     |    3 +++
+ net/xfrm/xfrm_input.c  |    2 +-
+ net/xfrm/xfrm_replay.c |   15 +++++++++++++++
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -872,6 +872,7 @@ static struct sk_buff *xfrm_state_netlin
+--- a/include/net/xfrm.h
++++ b/include/net/xfrm.h
+@@ -269,6 +269,9 @@ struct xfrm_replay {
+ 	int	(*check)(struct xfrm_state *x,
+ 			 struct sk_buff *skb,
+ 			 __be32 net_seq);
++	int	(*recheck)(struct xfrm_state *x,
++			   struct sk_buff *skb,
++			   __be32 net_seq);
+ 	void	(*notify)(struct xfrm_state *x, int event);
+ 	int	(*overflow)(struct xfrm_state *x, struct sk_buff *skb);
+ };
+--- a/net/xfrm/xfrm_input.c
++++ b/net/xfrm/xfrm_input.c
+@@ -212,7 +212,7 @@ resume:
+ 		/* only the first xfrm gets the encap type */
+ 		encap_type = 0;
+ 
+-		if (async && x->repl->check(x, skb, seq)) {
++		if (async && x->repl->recheck(x, skb, seq)) {
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
+ 			goto drop_unlock;
+ 		}
+--- a/net/xfrm/xfrm_replay.c
++++ b/net/xfrm/xfrm_replay.c
+@@ -420,6 +420,18 @@ err:
+ 	return -EINVAL;
+ }
+ 
++static int xfrm_replay_recheck_esn(struct xfrm_state *x,
++				   struct sk_buff *skb, __be32 net_seq)
++{
++	if (unlikely(XFRM_SKB_CB(skb)->seq.input.hi !=
++		     htonl(xfrm_replay_seqhi(x, net_seq)))) {
++			x->stats.replay_window++;
++			return -EINVAL;
++	}
++
++	return xfrm_replay_check_esn(x, skb, net_seq);
++}
++
+ static void xfrm_replay_advance_esn(struct xfrm_state *x, __be32 net_seq)
  {
- 	struct xfrm_dump_info info;
- 	struct sk_buff *skb;
-+	int err;
- 
- 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC);
- 	if (!skb)
-@@ -882,9 +883,10 @@ static struct sk_buff *xfrm_state_netlin
- 	info.nlmsg_seq = seq;
- 	info.nlmsg_flags = 0;
- 
--	if (dump_one_state(x, 0, &info)) {
-+	err = dump_one_state(x, 0, &info);
-+	if (err) {
- 		kfree_skb(skb);
--		return NULL;
-+		return ERR_PTR(err);
- 	}
- 
- 	return skb;
+ 	unsigned int bitnr, nr, i;
+@@ -479,6 +491,7 @@ static void xfrm_replay_advance_esn(stru
+ static struct xfrm_replay xfrm_replay_legacy = {
+ 	.advance	= xfrm_replay_advance,
+ 	.check		= xfrm_replay_check,
++	.recheck	= xfrm_replay_check,
+ 	.notify		= xfrm_replay_notify,
+ 	.overflow	= xfrm_replay_overflow,
+ };
+@@ -486,6 +499,7 @@ static struct xfrm_replay xfrm_replay_le
+ static struct xfrm_replay xfrm_replay_bmp = {
+ 	.advance	= xfrm_replay_advance_bmp,
+ 	.check		= xfrm_replay_check_bmp,
++	.recheck	= xfrm_replay_check_bmp,
+ 	.notify		= xfrm_replay_notify_bmp,
+ 	.overflow	= xfrm_replay_overflow_bmp,
+ };
+@@ -493,6 +507,7 @@ static struct xfrm_replay xfrm_replay_bm
+ static struct xfrm_replay xfrm_replay_esn = {
+ 	.advance	= xfrm_replay_advance_esn,
+ 	.check		= xfrm_replay_check_esn,
++	.recheck	= xfrm_replay_recheck_esn,
+ 	.notify		= xfrm_replay_notify_bmp,
+ 	.overflow	= xfrm_replay_overflow_esn,
+ };
 
 
