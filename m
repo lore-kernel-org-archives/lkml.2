@@ -1,46 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab2JJCw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:52:29 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43811 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab2JJCw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:52:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFLxGvw3yMf9eYd-5X3ZNGNmQnGvMNUAGpJ+D5ZhNe-2a8vebw@mail.gmail.com>
-References: <1349637532-27466-1-git-send-email-elezegarcia@gmail.com>
-	<CAFLxGvw3yMf9eYd-5X3ZNGNmQnGvMNUAGpJ+D5ZhNe-2a8vebw@mail.gmail.com>
-Date: Tue, 9 Oct 2012 23:52:27 -0300
-Message-ID: <CALF0-+WQX6vbDx+qWDw-rc-FEXV2ESp7621Q4cbwbFPcpgBYiA@mail.gmail.com>
-Subject: Re: [PATCH v2] Makefile: Add option to disable gcc automatic inlining
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>,
-        mmarek@suse.cz, sam@ravnborg.org, rientjes@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932348Ab2JJDAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 23:00:01 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60100 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755325Ab2JJC75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 22:59:57 -0400
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+In-Reply-To: <20121009185108.GA2549@linux.vnet.ibm.com>
+References: <20120921120000.27611.71321.sendpatchset@codeblue>
+	 <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>
+	 <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>
+	 <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com>
+	 <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins>
+	 <506DA48C.8050200@redhat.com>  <20121009185108.GA2549@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 09 Oct 2012 21:59:47 -0500
+Message-ID: <1349837987.5551.182.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101002-3534-0000-0000-00000DA30388
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Richard,
+On Wed, 2012-10-10 at 00:21 +0530, Raghavendra K T wrote:
+> * Avi Kivity <avi@redhat.com> [2012-10-04 17:00:28]:
+> 
+> > On 10/04/2012 03:07 PM, Peter Zijlstra wrote:
+> > > On Thu, 2012-10-04 at 14:41 +0200, Avi Kivity wrote:
+> > >> 
+> > >> Again the numbers are ridiculously high for arch_local_irq_restore.
+> > >> Maybe there's a bad perf/kvm interaction when we're injecting an
+> > >> interrupt, I can't believe we're spending 84% of the time running the
+> > >> popf instruction. 
+> > > 
+> > > Smells like a software fallback that doesn't do NMI, hrtimer based
+> > > sampling typically hits popf where we re-enable interrupts.
+> > 
+> > Good nose, that's probably it.  Raghavendra, can you ensure that the PMU
+> > is properly exposed?  'dmesg' in the guest will tell.  If it isn't, -cpu
+> > host will expose it (and a good idea anyway to get best performance).
+> > 
+> 
+> Hi Avi, you are right. SandyBridge machine result was not proper.
+> I cleaned up the services, enabled PMU, re-ran all the test again.
+> 
+> Here is the summary:
+> We do get good benefit by increasing ple window. Though we don't
+> see good benefit for kernbench and sysbench, for ebizzy, we get huge
+> improvement for 1x scenario. (almost 2/3rd of ple disabled case).
+> 
+> Let me know if you think we can increase the default ple_window
+> itself to 16k.
+> 
+> I am experimenting with V2 version of undercommit improvement(this) patch
+> series, But I think if you wish  to go for increase of
+> default ple_window, then we would have to measure the benefit of patches
+> when ple_window = 16k.
+> 
+> I can respin the whole series including this default ple_window change.
+> 
+> I also have the perf kvm top result for both ebizzy and kernbench.
+> I think they are in expected lines now.
+> 
+> Improvements
+> ================
+> 
+> 16 core PLE machine with 16 vcpu guest
+> 
+> base = 3.6.0-rc5 + ple handler optimization patches
+> base_pleopt_16k = base + ple_window = 16k
+> base_pleopt_32k = base + ple_window = 32k
+> base_pleopt_nople = base + ple_gap = 0
+> kernbench, hackbench, sysbench (time in sec lower is better)
+> ebizzy (rec/sec higher is better)
+> 
+> % improvements w.r.t base (ple_window = 4k)
+> ---------------+---------------+-----------------+-------------------+
+>                |base_pleopt_16k| base_pleopt_32k | base_pleopt_nople |
+> ---------------+---------------+-----------------+-------------------+
+> kernbench_1x   |  0.42371      |  1.15164        |   0.09320         |
+> kernbench_2x   | -1.40981      | -17.48282       |  -570.77053       |
+> ---------------+---------------+-----------------+-------------------+
+> sysbench_1x    | -0.92367      | 0.24241         | -0.27027          |
+> sysbench_2x    | -2.22706      |-0.30896         | -1.27573          |
+> sysbench_3x    | -0.75509      | 0.09444         | -2.97756          |
+> ---------------+---------------+-----------------+-------------------+
+> ebizzy_1x      | 54.99976      | 67.29460        |  74.14076         |
+> ebizzy_2x      | -8.83386      |-27.38403        | -96.22066         |
+> ---------------+---------------+-----------------+-------------------+
+> 
+> perf kvm top observation for kernbench and ebizzy (nople, 4k, 32k window) 
+> ========================================================================
 
-On Sun, Oct 7, 2012 at 7:30 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Sun, Oct 7, 2012 at 9:18 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
->> The new option is CONFIG_CC_DISABLE_AUTO_INLINE and it's
->> located at:
->>   * Kernel hacking
->>     * Disable gcc automatic inlining
->
-> Can you guarantee that this will still produce a valid kernel?
-> AFAIK we have some functions which have to be inlined in any case.
->
+Is the perf data for 1x overcommit?
 
-As a matter of fact, you're right... this breaks compilation on my
-desktop machine.
-I guess I'll have to give it a respin :-(
+> pleopt   ple_gap=0
+> --------------------
+> ebizzy : 18131 records/s
+> 63.78%  [guest.kernel]  [g] _raw_spin_lock_irqsave
+>     5.65%  [guest.kernel]  [g] smp_call_function_many
+>     3.12%  [guest.kernel]  [g] clear_page
+>     3.02%  [guest.kernel]  [g] down_read_trylock
+>     1.85%  [guest.kernel]  [g] async_page_fault
+>     1.81%  [guest.kernel]  [g] up_read
+>     1.76%  [guest.kernel]  [g] native_apic_mem_write
+>     1.70%  [guest.kernel]  [g] find_vma
 
-Thanks for the feedback.
+Does 'perf kvm top' not give host samples at the same time?  Would be
+nice to see the host overhead as a function of varying ple window.  I
+would expect that to be the major difference between 4/16/32k window
+sizes.
 
-    Ezequiel
+A big concern I have (if this is 1x overcommit) for ebizzy is that it
+has just terrible scalability to begin with.  I do not think we should
+try to optimize such a bad workload.
+
+> kernbench :Elapsed Time 29.4933 (27.6007)
+>    5.72%  [guest.kernel]  [g] async_page_fault
+>     3.48%  [guest.kernel]  [g] pvclock_clocksource_read
+>     2.68%  [guest.kernel]  [g] copy_user_generic_unrolled
+>     2.58%  [guest.kernel]  [g] clear_page
+>     2.09%  [guest.kernel]  [g] page_cache_get_speculative
+>     2.00%  [guest.kernel]  [g] do_raw_spin_lock
+>     1.78%  [guest.kernel]  [g] unmap_single_vma
+>     1.74%  [guest.kernel]  [g] kmem_cache_alloc
+
+> 
+> pleopt ple_window = 4k
+> ---------------------------
+> ebizzy: 10176 records/s
+>    69.17%  [guest.kernel]  [g] _raw_spin_lock_irqsave
+>     3.34%  [guest.kernel]  [g] clear_page
+>     2.16%  [guest.kernel]  [g] down_read_trylock
+>     1.94%  [guest.kernel]  [g] async_page_fault
+>     1.89%  [guest.kernel]  [g] native_apic_mem_write
+>     1.63%  [guest.kernel]  [g] smp_call_function_many
+>     1.58%  [guest.kernel]  [g] SetPageLRU
+>     1.37%  [guest.kernel]  [g] up_read
+>     1.01%  [guest.kernel]  [g] find_vma
+> 
+> 
+> kernbench: 29.9533
+> nts: 240K cycles
+>     6.04%  [guest.kernel]  [g] async_page_fault
+>     4.17%  [guest.kernel]  [g] pvclock_clocksource_read
+>     3.28%  [guest.kernel]  [g] clear_page
+>     2.57%  [guest.kernel]  [g] copy_user_generic_unrolled
+>     2.30%  [guest.kernel]  [g] do_raw_spin_lock
+>     2.13%  [guest.kernel]  [g] _raw_spin_lock_irqsave
+>     1.93%  [guest.kernel]  [g] page_cache_get_speculative
+>     1.92%  [guest.kernel]  [g] unmap_single_vma
+>     1.77%  [guest.kernel]  [g] kmem_cache_alloc
+>     1.61%  [guest.kernel]  [g] __d_lookup_rcu
+>     1.19%  [guest.kernel]  [g] find_vma
+>     1.19%  [guest.kernel]  [g] __list_del_entry
+> 
+> 
+> pleopt: ple_window=16k
+> -------------------------
+> ebizzy: 16990
+>  62.35%  [guest.kernel]  [g] _raw_spin_lock_irqsave
+>     5.22%  [guest.kernel]  [g] smp_call_function_many
+>     3.57%  [guest.kernel]  [g] down_read_trylock
+>     3.20%  [guest.kernel]  [g] clear_page
+>     2.16%  [guest.kernel]  [g] up_read
+>     1.89%  [guest.kernel]  [g] find_vma
+>     1.86%  [guest.kernel]  [g] async_page_fault
+>     1.81%  [guest.kernel]  [g] native_apic_mem_write
+> 
+> kernbench: 28.5
+>  6.24%  [guest.kernel]  [g] async_page_fault
+>     4.16%  [guest.kernel]  [g] pvclock_clocksource_read
+>     3.33%  [guest.kernel]  [g] clear_page
+>     2.50%  [guest.kernel]  [g] copy_user_generic_unrolled
+>     2.08%  [guest.kernel]  [g] do_raw_spin_lock
+>     1.98%  [guest.kernel]  [g] unmap_single_vma
+>     1.89%  [guest.kernel]  [g] kmem_cache_alloc
+>     1.82%  [guest.kernel]  [g] page_cache_get_speculative
+>     1.46%  [guest.kernel]  [g] __d_lookup_rcu
+>     1.42%  [guest.kernel]  [g] _raw_spin_lock_irqsave
+>     1.15%  [guest.kernel]  [g] __list_del_entry
+>     1.10%  [guest.kernel]  [g] find_vma
+> 
+> 
+> 
+> Detailed result for the run
+> =============================
+> patched = base_pleopt_16k 
+> +-----------+-----------+-----------+------------+-----------+
+>                               kernbench 
+> +-----------+-----------+-----------+------------+-----------+
+>    base        stddev       patched    stdev        %improve     
+> +-----------+-----------+-----------+------------+-----------+
+> 1x    30.0440     1.1896    29.9167     1.6755	   0.42371
+> 2x    62.0083     3.4884    62.8825     2.5509	  -1.40981
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               sysbench 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x     7.1779     0.0577     7.2442     0.0479	  -0.92367
+> 2x    15.5362     0.3370    15.8822     0.3591	  -2.22706
+> 3x    23.8249     0.1513    24.0048     0.1844	  -0.75509
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               ebizzy 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x 10358.0000   442.6598   16054.8750  252.5088    54.99976
+> 2x  2705.5000   130.0286   2466.5000   120.0024	  -8.83386
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> patched = base_pleopt_32k
+> +-----------+-----------+-----------+------------+-----------+
+>                               kernbench 
+> +-----------+-----------+-----------+------------+-----------+
+>    base        stddev       patched    stdev        %improve     
+> +-----------+-----------+-----------+------------+-----------+
+> 1x    30.0440     1.1896    29.6980     0.6760	   1.15164
+> 2x    62.0083     3.4884    72.8491     4.4616	 -17.48282
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               sysbench 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x     7.1779     0.0577     7.1605     0.0447	   0.24241
+> 2x    15.5362     0.3370    15.5842     0.1731	  -0.30896
+> 3x    23.8249     0.1513    23.8024     0.2342	   0.09444
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               ebizzy 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x  10358.0000   442.6598   17328.3750   281.4569   67.29460
+> 2x  2705.5000   130.0286    1964.6250   143.0793   -27.38403
+> +-----------+-----------+-----------+------------+-----------+
+> 
+> patched = base_pleopt_nople
+> +-----------+-----------+-----------+------------+-----------+
+>                               kernbench 
+> +-----------+-----------+-----------+------------+-----------+
+>    base        stddev       patched    stdev        %improve     
+> +-----------+-----------+-----------+------------+-----------+
+> 1x    30.0440     1.1896    30.0160     0.7523	   0.09320
+> 2x    62.0083     3.4884   415.9334   189.9901	  -570.77053
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               sysbench 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x     7.1779     0.0577     7.1973     0.0354	  -0.27027
+> 2x    15.5362     0.3370    15.7344     0.2315	  -1.27573
+> 3x    23.8249     0.1513    24.5343     0.3437	  -2.97756
+> +-----------+-----------+-----------+------------+-----------+
+> +-----------+-----------+-----------+------------+-----------+
+>                               ebizzy 
+> +-----------+-----------+-----------+------------+-----------+
+> 1x 10358.0000   442.6598 18037.5000   315.2074	   74.14076
+> 2x  2705.5000   130.0286   102.2500   104.3521	  -96.22066
+> +-----------+-----------+-----------+------------+-----------+
+> 
+
+
