@@ -1,118 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab2JJMdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:33:37 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:42997 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750953Ab2JJMdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:33:35 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: nsekhar@ti.com, gregkh@linuxfoundation.org
-Cc: Constantine Shulyupin <const@MakeLinux.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6] Enable USB peripheral mode on dm365 EVM
-Date: Wed, 10 Oct 2012 14:33:32 +0200
-Message-Id: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.113.105 authed with poster@makelinux.net}
+	id S1755126Ab2JJKIh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:08:37 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56841 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755039Ab2JJKId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:08:33 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v3 03/13] vfs: Initialize and free main data structures
+Date: Wed, 10 Oct 2012 18:07:25 +0800
+Message-Id: <1349863655-29320-4-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+x-cbid: 12101010-5112-0000-0000-00000D488EAE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Sets USB PHY clock source to 24 MHz clock and call USB configuration from board initialization.
+  Add initialization function to create some
+key data structures when hot tracking is enabled;
+Clean up them when hot tracking is disabled
 
-Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
-
-References:
-
-Definition of USB_PHY_CTRL and PHYCLKFREQ:
-- http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
-
-Original patch by miguel.aguilar@ridgerun.com three years ago:
-- http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
-
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
+ fs/btrfs/super.c             |    8 +++
+ fs/hot_tracking.c            |  118 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h           |    3 +
+ include/linux/hot_tracking.h |    4 ++
+ 4 files changed, 133 insertions(+), 0 deletions(-)
 
-Note:
-
-Changelog
-
-Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
-accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
-- phy configuration moved to drivers/usb/musb/davinci.c
-- USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
-- Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
-
-Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
-- removed fix of dev_info in musb_init_controller
-
-Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
-- removed optional altering of pr_info
-
-Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
-- removed optional code and reordered
-- removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
-
-This patch is based on code from projects Arago, Angstom and RidgeRun.
-
----
- arch/arm/mach-davinci/board-dm365-evm.c |    2 ++
- drivers/usb/musb/davinci.c              |    3 +++
- drivers/usb/musb/davinci.h              |    1 +
- 3 files changed, 6 insertions(+)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 688a9c5..ba5ffc1 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -38,6 +38,7 @@
- #include <mach/mmc.h>
- #include <mach/nand.h>
- #include <mach/keyscan.h>
-+#include <mach/usb.h>
- 
- #include <media/tvp514x.h>
- 
-@@ -610,6 +611,7 @@ static __init void dm365_evm_init(void)
- 
- 	dm365_init_spi0(BIT(0), dm365_evm_spi_info,
- 			ARRAY_SIZE(dm365_evm_spi_info));
-+	davinci_setup_usb(1000, 8);
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 00be9e3..da4438f 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -294,6 +294,10 @@ static void btrfs_put_super(struct super_block *sb)
+ 	 * last process that kept it busy.  Or segfault in the aforementioned
+ 	 * process...  Whom would you report that to?
+ 	 */
++
++	/* Hot data tracking */
++	if (btrfs_test_opt(btrfs_sb(sb)->tree_root, HOT_TRACK))
++		hot_track_exit(sb);
  }
  
- MACHINE_START(DAVINCI_DM365_EVM, "DaVinci DM365 EVM")
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index 472c8b4..af09ebf 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
- 		__raw_writel(deepsleep, DM355_DEEPSLEEP);
+ enum {
+@@ -828,6 +832,10 @@ static int btrfs_fill_super(struct super_block *sb,
+ 		goto fail_close;
  	}
  
-+	if (machine_is_davinci_dm365_evm())
-+		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
++	if (btrfs_test_opt(fs_info->tree_root, HOT_TRACK)) {
++		hot_track_init(sb);
++	}
 +
- 	/* reset the controller */
- 	musb_writel(tibase, DAVINCI_USB_CTRL_REG, 0x1);
+ 	save_mount_options(sb, data);
+ 	cleancache_init_fs(sb);
+ 	sb->s_flags |= MS_ACTIVE;
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index 634ec03..5fd993e 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -21,6 +21,8 @@
+ #include <linux/limits.h>
+ #include "hot_tracking.h"
  
-diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
-index 371baa0..e737d97 100644
---- a/drivers/usb/musb/davinci.h
-+++ b/drivers/usb/musb/davinci.h
-@@ -16,6 +16,7 @@
++struct hot_info *global_hot_tracking_info;
++
+ /* kmem_cache pointers for slab caches */
+ static struct kmem_cache *hot_inode_item_cachep;
+ static struct kmem_cache *hot_range_item_cachep;
+@@ -81,6 +83,97 @@ static void hot_inode_item_init(struct hot_inode_item *he, u64 ino,
+ 	hot_range_tree_init(he);
+ }
  
- /* Integrated highspeed/otg PHY */
- #define USBPHY_CTL_PADDR	0x01c40034
-+#define USBPHY_CLKFREQ_24MHZ	BIT(13)
- #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
- #define USBPHY_PHYCLKGD		BIT(8)
- #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
++static void hot_range_item_free(struct kref *kref)
++{
++	struct hot_comm_item *comm_item = container_of(kref,
++		struct hot_comm_item, refs);
++	struct hot_range_item *hr = container_of(comm_item,
++		struct hot_range_item, hot_range);
++
++	radix_tree_delete(&hr->hot_inode->hot_range_tree, hr->start);
++	kmem_cache_free(hot_range_item_cachep, hr);
++}
++
++/*
++ * Drops the reference out on hot_range_item by one
++ * and free the structure
++ * if the reference count hits zero
++ */
++static void hot_range_item_put(struct hot_range_item *hr)
++{
++	kref_put(&hr->hot_range.refs, hot_range_item_free);
++}
++
++/* Frees the entire hot_range_tree. */
++static void hot_range_tree_free(struct hot_inode_item *he)
++{
++	struct hot_range_item *hr_nodes[8];
++	u32 start = 0;
++	int i, n;
++
++	while (1) {
++		spin_lock(&he->lock);
++		n = radix_tree_gang_lookup(&he->hot_range_tree,
++					(void **)hr_nodes, start,
++					ARRAY_SIZE(hr_nodes));
++		if (!n) {
++			spin_unlock(&he->lock);
++			break;
++		}
++
++		start = hr_nodes[n - 1]->start + 1;
++		for (i = 0; i < n; i++)
++			hot_range_item_put(hr_nodes[i]);
++		spin_unlock(&he->lock);
++	}
++}
++
++static void hot_inode_item_free(struct kref *kref)
++{
++	struct hot_comm_item *comm_item = container_of(kref,
++			struct hot_comm_item, refs);
++	struct hot_inode_item *he = container_of(comm_item,
++			struct hot_inode_item, hot_inode);
++
++	hot_range_tree_free(he);
++	radix_tree_delete(he->hot_inode_tree, he->i_ino);
++	kmem_cache_free(hot_inode_item_cachep, he);
++}
++
++/*
++ * Drops the reference out on hot_inode_item by one
++ * and free the structure
++ * if the reference count hits zero
++ */
++void hot_inode_item_put(struct hot_inode_item *he)
++{
++	kref_put(&he->hot_inode.refs, hot_inode_item_free);
++}
++
++/* Frees the entire hot_inode_tree. */
++static void hot_inode_tree_exit(struct hot_info *root)
++{
++	struct hot_inode_item *hi_nodes[8];
++	u64 ino = 0;
++	int i, n;
++
++	while (1) {
++		spin_lock(&root->lock);
++		n = radix_tree_gang_lookup(&root->hot_inode_tree,
++					   (void **)hi_nodes, ino,
++					   ARRAY_SIZE(hi_nodes));
++		if (!n) {
++			spin_unlock(&root->lock);
++			break;
++		}
++
++		ino = hi_nodes[n - 1]->i_ino + 1;
++		for (i = 0; i < n; i++)
++			hot_inode_item_put(hi_nodes[i]);
++		spin_unlock(&root->lock);
++	}
++}
++
+ /*
+  * Initialize kmem cache for hot_inode_item and hot_range_item.
+  */
+@@ -122,6 +215,7 @@ static inline void hot_cache_exit(void)
+  */
+ void hot_track_init(struct super_block *sb)
+ {
++	struct hot_info *root;
+ 	int err;
+ 
+ 	err = hot_cache_init();
+@@ -130,9 +224,33 @@ void hot_track_init(struct super_block *sb)
+ 				__func__, err);
+ 		return;
+ 	}
++
++	root = kmalloc(sizeof(struct hot_info), GFP_NOFS);
++	if (!root) {
++		printk(KERN_ERR "%s: failed to malloc memory for "
++				"global_hot_tracking_info: %d\n",
++				__func__, err);
++		goto failed_root;
++	}
++
++	global_hot_tracking_info = root;
++	sb->hot_flags |= MS_HOT_TRACKING;
++	hot_inode_tree_init(root);
++
++	printk(KERN_INFO "vfs: turning on hot data tracking\n");
++
++	return;
++
++failed_root:
++	hot_cache_exit();
+ }
+ 
+ void hot_track_exit(struct super_block *sb)
+ {
++	struct hot_info *root = global_hot_tracking_info;
++
++	hot_inode_tree_exit(root);
++	sb->hot_flags &= ~MS_HOT_TRACKING;
+ 	hot_cache_exit();
++	kfree(root);
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c617ed0..3b1a389 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1582,6 +1582,9 @@ struct super_block {
+ 
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
++
++	/* Hot data tracking*/
++	unsigned long hot_flags;
+ };
+ 
+ /* superblock cache pruning functions */
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 78adb0d..13aa54b 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -20,6 +20,8 @@
+ #include <linux/kref.h>
+ #include <linux/fs.h>
+ 
++#define MS_HOT_TRACKING	(1<<0)
++
+ /*
+  * A frequency data struct holds values that are used to
+  * determine temperature of files and file ranges. These structs
+@@ -68,6 +70,8 @@ struct hot_info {
+ 	spinlock_t lock; /*protect inode tree */
+ };
+ 
++extern struct hot_info *global_hot_tracking_info;
++
+ extern void hot_track_init(struct super_block *sb);
+ extern void hot_track_exit(struct super_block *sb);
+ 
 -- 
-1.7.9.5
+1.7.6.5
 
