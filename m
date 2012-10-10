@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2JJQjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:39:17 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59673 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab2JJQjO (ORCPT
+	id S1756767Ab2JJRym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:54:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4734 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab2JJRxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:39:14 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: mcgrof@qca.qualcomm.com
-Cc: jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
-        senthilb@qca.qualcomm.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V3] ath/ath9k/ar9003_eeprom.c: Remove semicolon after if
-Date: Wed, 10 Oct 2012 18:38:17 +0200
-Message-Id: <1349887097-24980-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
-References: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
+	Wed, 10 Oct 2012 13:53:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 10 Oct 2012 10:53:29 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>,
+        <sameo@linux.intel.com>
+CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 1/5] mfd: tps65910: Initialize mfd devices after all initialization done
+Date: Wed, 10 Oct 2012 22:49:01 +0530
+Message-ID: <1349889545-21517-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
+References: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove a semicolon after if(...) that is preventing the
-error check to work correctly. Removing this semicolon will change the
-code behavior, but this is intended.
+Add sub devices of tps65910 after all initialization like interrupt,
+clock etc. is done. This will make sure that require data gets
+initialized properly before sub devices probe's get called.
 
-The semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r1@
-position p;
-@@
-if (...);@p
-
-@script:python@
-p0 << r1.p;
-@@
-// Emacs org-mode output
-cocci.print_main("", p0)
-cocci.print_secs("", p0)
-// </smpl>
-
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-NOTE: This patch changes the semantics.
+Changes from V:
+- Rearrange patches so that this patch become first in place of third of
+  series.
+- Added Reviewed by: Mark as it is already revieved in patch V1.
 
-Changes from V1:
-Commit message
-Added a note about semantics change
+ drivers/mfd/tps65910.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-Changes from V2:
-Commit message
-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-index 5bbe505..189aeb2 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -2989,7 +2989,7 @@ static u32 ath9k_hw_ar9300_get_eeprom(struct ath_hw *ah,
- 	case EEP_PAPRD:
- 		if (AR_SREV_9462(ah))
- 			return false;
--		if (!ah->config.enable_paprd);
-+		if (!ah->config.enable_paprd)
- 			return false;
- 		return !!(pBase->featureEnable & BIT(5));
- 	case EEP_CHAIN_MASK_REDUCE:
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 0d79ce2..27fbbe5 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -279,14 +279,6 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	ret = mfd_add_devices(tps65910->dev, -1,
+-			      tps65910s, ARRAY_SIZE(tps65910s),
+-			      NULL, 0, NULL);
+-	if (ret < 0) {
+-		dev_err(&i2c->dev, "mfd_add_devices failed: %d\n", ret);
+-		return ret;
+-	}
+-
+ 	init_data->irq = pmic_plat_data->irq;
+ 	init_data->irq_base = pmic_plat_data->irq_base;
+ 
+@@ -299,6 +291,14 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
+ 		pm_power_off = tps65910_power_off;
+ 	}
+ 
++	ret = mfd_add_devices(tps65910->dev, -1,
++			      tps65910s, ARRAY_SIZE(tps65910s),
++			      NULL, 0, NULL);
++	if (ret < 0) {
++		dev_err(&i2c->dev, "mfd_add_devices failed: %d\n", ret);
++		return ret;
++	}
++
+ 	return ret;
+ }
+ 
 -- 
-1.7.11.4
+1.7.1.1
 
