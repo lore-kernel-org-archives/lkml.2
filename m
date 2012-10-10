@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab2JJMyU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:54:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36481 "EHLO mx1.redhat.com"
+	id S1756180Ab2JJNGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:06:21 -0400
+Received: from mx1.etf.rs ([147.91.14.169]:51380 "EHLO mx1.etf.bg.ac.rs"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab2JJMyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:54:17 -0400
-From: Jiri Olsa <jolsa@redhat.com>
+	id S1756026Ab2JJNGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 09:06:10 -0400
+X-Greylist: delayed 1636 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 09:06:10 EDT
+MIME-Version: 1.0
+Reply-To: igorm@etf.rs
+Date: Wed, 10 Oct 2012 14:38:48 +0200
+Message-ID: <CAFdo_mV4bUWvH7v4e1612i7K321+5QzYb=CQspo7ydUZWpxd+A@mail.gmail.com>
+Subject: Regresion from 3.5.0-rc4 in 3.6-rc5
+From: =?ISO-8859-2?Q?Igor_Maravi=E6?= <igorm@etf.rs>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 6/8] perf tools: Fix pmu object alias initialization
-Date: Wed, 10 Oct 2012 14:53:16 +0200
-Message-Id: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
-References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+Cc: mjg@redhat.com, holger@homac.de, ming.m.lin@intel.com, jgarzik@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pmu_lookup should return pmus that do not expose the 'events'
-group attribute in sysfs. Also it should fail when any other error
-during 'events' lookup is hit (pmu_aliases fails).
+I can't boot up my machine, with the latest kernel, that I've cloned
+from git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
+It just hangs. Last message that I see is
+
+powernow-k8: this CPU is not supported anymore, using acpi-cpufreq instead
+
+My CPU is AMD Athlon II X2 240.
+
+In linux 3.5 it worked, although it complained that
+
+"No compatible ACPI _PSS objects found"
+
+This is what I've found with bisect:
 ---
- tools/perf/util/pmu.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+30dcf76acc695cbd2fa919e294670fe9552e16e7 is the first bad commit
+commit 30dcf76acc695cbd2fa919e294670fe9552e16e7
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Mon Jun 25 16:13:04 2012 +0800
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8a2229d..18e8480 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -164,7 +164,7 @@ static int pmu_aliases(char *name, struct list_head *head)
- 		 "%s/bus/event_source/devices/%s/events", sysfs, name);
- 
- 	if (stat(path, &st) < 0)
--		return -1;
-+		return 0;	 /* no error if 'events' does not exist */
- 
- 	if (pmu_aliases_parse(path, head))
- 		return -1;
-@@ -296,6 +296,9 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (pmu_format(name, &format))
- 		return NULL;
- 
-+	if (pmu_aliases(name, &aliases))
-+		return NULL;
-+
- 	if (pmu_type(name, &type))
- 		return NULL;
- 
-@@ -305,8 +308,6 @@ static struct perf_pmu *pmu_lookup(char *name)
- 
- 	pmu->cpus = pmu_cpumask(name);
- 
--	pmu_aliases(name, &aliases);
--
- 	INIT_LIST_HEAD(&pmu->format);
- 	INIT_LIST_HEAD(&pmu->aliases);
- 	list_splice(&format, &pmu->format);
--- 
-1.7.11.4
+    libata: migrate ACPI code over to new bindings
 
+    Now that we have the ability to directly glue the ACPI namespace to the
+    driver model in libata, we don't need the custom code to handle the same
+    thing. Remove it and migrate the functions over to the new code.
+
+    Signed-off-by: Matthew Garrett <mjg@redhat.com>
+    Signed-off-by: Holger Macht <holger@homac.de>
+    Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+
+:040000 040000 6a659a9d4a92b2085f6d0b58484cb2f82cd12cfa
+125fe5d5fa8b208a08792b03e752571d825465d2 M	drivers
+:040000 040000 b7c3819be4e82ae6e2ac9688055aeb2bc1bc4ebd
+9cbc8fd15b147a178f723bcdb9e7c34f9868400f M	include
+---
+
+BR
+Igor
