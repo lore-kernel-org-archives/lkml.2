@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab2JJEmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 00:42:31 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36116 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2JJEm2 (ORCPT
+	id S1751961Ab2JJEn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 00:43:57 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52069 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2JJEnx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 00:42:28 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Sudeep.KarkadaNagesha@arm.com,
-        Robin.Randhawa@arm.com, Arvind.Chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq:core: Fix printing of governor and driver name
-Date: Wed, 10 Oct 2012 10:12:11 +0530
-Message-Id: <51be8f865e4c80f91ac8e41e54cbd5905382ddb7.1349844049.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 10 Oct 2012 04:42:25.0371 (UTC) FILETIME=[A51D2AB0:01CDA6A1]
-X-MC-Unique: 112101005422600401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 10 Oct 2012 00:43:53 -0400
+Subject: Re: dtc: import latest upstream dtc
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Warner Losh <imp@bsdimp.com>
+In-Reply-To: <1349827466.26044.16@snotra>
+Date: Tue, 9 Oct 2012 22:43:50 -0600
+Cc: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com>
+References: <1349827466.26044.16@snotra>
+To: Scott Wood <scottwood@freescale.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9A4gcCB009017
-
-Arrays for governer and driver name are of size CPUFREQ_NAME_LEN or 16.
-i.e. 15 bytes for name and 1 for trailing '\0'.
-
-When cpufreq driver print these names (for sysfs), it includes '\n' or ' ' in
-the fmt string and still passes length as CPUFREQ_NAME_LEN. If the driver or
-governor names are using all 15 fields allocated to them, then the trailing '\n'
-or ' ' will never be printed. And so commands like:
-
-root@linaro-developer# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
-
-will print something like:
-
-cpufreq_foodrvroot@linaro-developer#
-
-Fix this by increasing print length by one character.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 6 +++---
- include/linux/cpufreq.h   | 2 ++
- 2 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 021973b..db6e337 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -445,7 +445,7 @@ static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
- 	else if (policy->policy == CPUFREQ_POLICY_PERFORMANCE)
- 		return sprintf(buf, "performance\n");
- 	else if (policy->governor)
--		return scnprintf(buf, CPUFREQ_NAME_LEN, "%s\n",
-+		return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n",
- 				policy->governor->name);
- 	return -EINVAL;
- }
-@@ -491,7 +491,7 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
-  */
- static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
- {
--	return scnprintf(buf, CPUFREQ_NAME_LEN, "%s\n", cpufreq_driver->name);
-+	return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", cpufreq_driver->name);
- }
- 
- /**
-@@ -512,7 +512,7 @@ static ssize_t show_scaling_available_governors(struct cpufreq_policy *policy,
- 		if (i >= (ssize_t) ((PAGE_SIZE / sizeof(char))
- 		    - (CPUFREQ_NAME_LEN + 2)))
- 			goto out;
--		i += scnprintf(&buf[i], CPUFREQ_NAME_LEN, "%s ", t->name);
-+		i += scnprintf(&buf[i], CPUFREQ_NAME_PLEN, "%s ", t->name);
- 	}
- out:
- 	i += sprintf(&buf[i], "\n");
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index b60f6ba..fc4b785 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -22,6 +22,8 @@
- #include <asm/div64.h>
- 
- #define CPUFREQ_NAME_LEN 16
-+/* Print length for names. Extra 1 space for accomodating '\n' in prints */
-+#define CPUFREQ_NAME_PLEN (CPUFREQ_NAME_LEN + 1)
- 
- 
- /*********************************************************************
--- 
-1.7.12.rc2.18.g61b472e
 
 
+On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+
+> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>> >>>
+>> >>> What more do you think needs discussion re: dtc+cpp?
+>> >>
+>> >> How not to abuse the ever-loving shit out of it? :-)
+>> >
+>> > Perhaps we can just handle this through the regular patch review
+>> > process; I think it may be difficult to define and agree upon exactly
+>> > what "abuse" means ahead of time, but it's probably going to be easy
+>> > enough to recognize it when one sees it?
+>> One of the ways it could get out of hand would be via "include
+>> dependency hell".  People will be tempted to reuse existing .h files
+>> containing pin definitions, which, if history is a guide, will end up
+>> depending on all sorts of other .h files.
+>> Another problem I often face with symbolic names is the difficulty of
+>> figuring out what the numerical values really are (for debugging),
+>> especially when .h files are in different subtrees from the files that
+>> use the definitions, and when they use multiple macro levels and fancy
+>> features like concatenation.  Sometimes I think it's clearer just to
+>> write the number and use a comment to say what it is.
+> 
+> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+
+.h files include both structs and defines, which are fine for ordinary C code, but problematic in this context.
+
+> Is there a way to ask CPP to evaluate a macro in the context of the input file, rather than produce normal output?  If not, I guess you could make a tool that creates a wrapper file that includes the main file and then evaluates the symbol you want.
+
+Not in the standard CPP, but perhaps you could scan the .dts file for all the values you need, and have it output the right values to use.
+
+Warner
