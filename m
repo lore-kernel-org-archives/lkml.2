@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2JJMpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:45:25 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:40289 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754562Ab2JJMpX (ORCPT
+	id S1755816Ab2JJMep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:34:45 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:48525 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754898Ab2JJMem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:45:23 -0400
-Date: Wed, 10 Oct 2012 15:40:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: viresh kumar <viresh.kumar@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, balbi@ti.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH 1/4] dmaengine: dw_dmac: use helper macro
- module_platform_driver()
-Message-ID: <20121010124002.GF3197@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1349178121-9105-2-git-send-email-andriy.shevchenko@linux.intel.com>
- <1349859841.10584.122.camel@smile>
- <CAOh2x=mNiL4k=v3YGexq7YMZUx131QWBpm11QXupnWLUPuKU4Q@mail.gmail.com>
- <CAHp75VePqj3FViNrOcicHXhv9BzhJQgSg6KvA31HmdEFf7BXOg@mail.gmail.com>
+	Wed, 10 Oct 2012 08:34:42 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19B/89rdE9Bs27+FcsgD59ooMSgOr0UrDA+j2uht5
+	4Z+AFzgL8NDeYd
+Message-ID: <50756B55.9040100@gmx.de>
+Date: Wed, 10 Oct 2012 12:34:29 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8TaQrIeukR7mmbKf"
-Content-Disposition: inline
-In-Reply-To: <CAHp75VePqj3FViNrOcicHXhv9BzhJQgSg6KvA31HmdEFf7BXOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: Antonino Daplas <adaplas@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/video/savage/savagefb_driver.c: fix error
+ return code
+References: <1349268044-32616-1-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1349268044-32616-1-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/03/2012 12:40 PM, Peter Senna Tschudin wrote:
+> From: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Convert a nonnegative error return code to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> // </smpl>
+> 
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
---8TaQrIeukR7mmbKf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied.
 
-On Wed, Oct 10, 2012 at 12:21:04PM +0300, Andy Shevchenko wrote:
-> On Wed, Oct 10, 2012 at 12:08 PM, viresh kumar <viresh.kumar@linaro.org> =
-wrote:
-> > On Wed, Oct 10, 2012 at 2:34 PM, Andy Shevchenko
-> > <andriy.shevchenko@linux.intel.com> wrote:
-> >> On Tue, 2012-10-02 at 14:41 +0300, Andy Shevchenko wrote:
-> >>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >>>
-> >>> Since v3.2 we have nice macro to define the platform driver's init an=
-d exit
-> >>> calls. This patch simplifies the dw_dmac driver by using that macro.
-> >>
-> >> Actually we can't do this. It will break initialization of some other
-> >> drivers.
-> >
-> > why?
->=20
-> We have spi, i2c and hsuart devices connected to the DMA controller.
-> In case we would like to use DMA we have to have the dw_dmac loaded
-> before them. Currently we have spi driver on subsys_initcall level,
-> and Mika, who is developing it, will change to module_init_call level.
-> However, it will just hide the potential issue. He also tried to use
-> deferred module loading, but we don't know if it's good solution or
-> not, and that solution requires something to stop deferring at some
-> moment.
->=20
-> Might be we missed something and there is a better solution.
 
-if they can only work with DMA, they should return -EPROBE_DEFER so
-their probe() function can be called after DMA driver has finished
-probing.
+Thanks,
 
---=20
-balbi
+Florian Tobias Schandinat
 
---8TaQrIeukR7mmbKf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> ---
+>  drivers/video/savage/savagefb_driver.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/video/savage/savagefb_driver.c b/drivers/video/savage/savagefb_driver.c
+> index 0d0f52c..f4f53b0 100644
+> --- a/drivers/video/savage/savagefb_driver.c
+> +++ b/drivers/video/savage/savagefb_driver.c
+> @@ -2266,8 +2266,10 @@ static int __devinit savagefb_probe(struct pci_dev* dev,
+>  	lpitch = info->var.xres_virtual*((info->var.bits_per_pixel + 7) >> 3);
+>  	info->var.yres_virtual = info->fix.smem_len/lpitch;
+>  
+> -	if (info->var.yres_virtual < info->var.yres)
+> +	if (info->var.yres_virtual < info->var.yres) {
+> +		err = -ENOMEM;
+>  		goto failed;
+> +	}
+>  
+>  #if defined(CONFIG_FB_SAVAGE_ACCEL)
+>  	/*
+> 
+> 
 
-iQIcBAEBAgAGBQJQdWyiAAoJEIaOsuA1yqREqi8P/2exBlkQnKZvOPe44e6hJQe7
-G9Ln1IBDwTU7NY/zRVUmbRKL8Wtwfejbqq/V6z3c9yGsD0SmWK5IblUtqrZQw7Mp
-EEjs+Pg8VWSC4yHHqC+7ikATj48AyYE3VO21jeJXDtUhOv0Cay6gRa0yAsDrrrjh
-2EUsC7QszB0av3cqRTxbGJOuQt4dVRfxcZOvXbzMcgzW6cfZOmFPUZHZEXqw1EpG
-lxI1egiydHDMbw5WK4dIcae7ylN7L6g2KnluSVIROKm6mBKukNuCYTINRh+P82q7
-BnvgTCpB/qfT00lzAP1Y+BQ8J//TYkTz3J7HGZj7Tud524zQUU6LbTMzz9LfMhlX
-zHG8GPnJvLIk/WVyBr9uJ/mUVa6d+KbP0TCoaK+ITuV4dcq6nBZ5PGgWFEYMe5dJ
-YN6ahbMLg62oiWoFUfvrmgfCNFURM9uvTAAdHvpNKQyc7ni5MI0vLq1yM/yERbyX
-wbbg28uf8x4+VL44T/A4whxXPM3GT/Cwbzvdwk5ycRTDHkhyfT94D0Ga2UFuSLu/
-KN/ZT7iDBhrOyCpCyB/nk4cUHBG4/kxFYNMcc+T7by+FUPRQerV4hr7sC1Hk/19O
-Cl5WgQTRlziDvIZmb4y+zOI+jpUy6FbI/KkKmLUw8xmqZHMCkR5ZqQTyz4BTmcs4
-TmdwnwE/0LKrp6qWqzw1
-=Wk4q
------END PGP SIGNATURE-----
-
---8TaQrIeukR7mmbKf--
