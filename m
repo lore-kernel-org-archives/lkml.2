@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab2JKARl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:17:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41673 "EHLO
+	id S933153Ab2JKARr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:17:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35075 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932986Ab2JKARg (ORCPT
+	by vger.kernel.org with ESMTP id S932986Ab2JKARm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:17:36 -0400
-X-Sasl-enc: Gf+y7KgUGNycj1yL1BLpzopYYgsi1wDfHP0oxJgAB9GB 1349914655
+	Wed, 10 Oct 2012 20:17:42 -0400
+X-Sasl-enc: QemSjC9gz/CCDtXocce29ZqOiVNUkSdTZXGIjAKd5Z6P 1349914660
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sascha Hauer <s.hauer@pengutronix.de>, Jan Luebbe <jlu@pengutronix.de>,
-        Sam Ravnborg <sam@ravnborg.org>, Bernhard Walle <bernhard@bwalle.de>,
-        Michal Marek <mmarek@suse.cz>,
+        Tony Breeds <tony@bakeyournoodle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 002/122] kbuild: make: fix if_changed when command contains backslashes
-Date: Thu, 11 Oct 2012 07:52:48 +0900
-Message-Id: <20121010225338.424554082@linuxfoundation.org>
+Subject: [ 001/122] mn10300: only add -mmem-funcs to KBUILD_CFLAGS if gcc supports it
+Date: Thu, 11 Oct 2012 07:52:47 +0900
+Message-Id: <20121010225338.246600435@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -31,43 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit c353acba28fb3fa1fd05fd6b85a9fc7938330f9c upstream.
+commit 9957423f035c2071f6d1c5d2f095cdafbeb25ad7 upstream.
 
-The call if_changed mechanism does not work when the command contains
-backslashes.  This basically is an issue with lzo and bzip2 compressed
-kernels.  The compressed binaries do not contain the uncompressed image
-size, so these use size_append to append the size.  This results in
-backslashes in the executed command.  With this if_changed always
-detects a change in the command and rebuilds the compressed image even
-if nothing has changed.
+It seems the current (gcc 4.6.3) no longer provides this so make it
+conditional.
 
-Fix this by escaping backslashes in make-cmd
+As reported by Tony before, the mn10300 architecture cross-compiles with
+gcc-4.6.3 if -mmem-funcs is not added to KBUILD_CFLAGS.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Bernhard Walle <bernhard@bwalle.de>
-Cc: Michal Marek <mmarek@suse.cz>
+Reported-by: Tony Breeds <tony@bakeyournoodle.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/Kbuild.include |    2 +-
+ arch/mn10300/Makefile |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -209,7 +209,7 @@ endif
- # >$< substitution to preserve $ when reloading .cmd file
- # note: when using inline perl scripts [perl -e '...$$t=1;...']
- # in $(cmd_xxx) double $$ your perl vars
--make-cmd = $(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1)))))
-+make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
+--- a/arch/mn10300/Makefile
++++ b/arch/mn10300/Makefile
+@@ -26,7 +26,7 @@ CHECKFLAGS	+=
+ PROCESSOR	:= unset
+ UNIT		:= unset
  
- # Find any prerequisites that is newer than target or that does not exist.
- # PHONY targets skipped in both cases.
+-KBUILD_CFLAGS	+= -mam33 -mmem-funcs -DCPU=AM33
++KBUILD_CFLAGS	+= -mam33 -DCPU=AM33 $(call cc-option,-mmem-funcs,)
+ KBUILD_AFLAGS	+= -mam33 -DCPU=AM33
+ 
+ ifeq ($(CONFIG_MN10300_CURRENT_IN_E2),y)
 
 
