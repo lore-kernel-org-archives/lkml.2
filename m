@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2JJQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:33:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54649 "EHLO e8.ny.us.ibm.com"
+	id S932368Ab2JJPMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:12:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60866 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755488Ab2JJQdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:33:55 -0400
-Date: Wed, 10 Oct 2012 11:33:24 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH] TPM: Let the tpm char device be openable multiple times
-Message-ID: <20121010163324.GB5013@ennui.austin.ibm.com>
-References: <20120930233345.GJ30637@obsidianresearch.com>
+	id S932264Ab2JJPMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:12:23 -0400
+Date: Wed, 10 Oct 2012 12:11:25 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 1/5] KVM: MMU: fix release noslot pfn
+Message-ID: <20121010151125.GA28406@amt.cnet>
+References: <50716EE0.6010504@linux.vnet.ibm.com>
+ <50716F1E.90308@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120930233345.GJ30637@obsidianresearch.com>
+In-Reply-To: <50716F1E.90308@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12101016-9360-0000-0000-00000B93BA43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 30, 2012 at 05:33:45PM -0600, Jason Gunthorpe wrote:
-> How to use the TPM is really a user space policy choice, if the
-> environment wants to use middleware then fine, but it is possible to
-> make correct TPM apps without using middleware.
-
-  I'm not sure how I feel about this. The single open rule doesn't
-prevent replacement of the middleware, it just requires a open()/close()
-around any use of the device node. That seems simple enough to me. In
-places where you do want TSS to be the sole opener, it can't enforce
-that rule itself, so I think we need to preserve the option of a single
-open at a minimum.
-
-Kent
-
-> So, remove the kernel restriction that only one process may open the TPM.
-> - TPM low level functions (in kernel users) are already locked proprely
->   and can run in parallel with the user space interface anyhow.
-> - Move the user space data buffer and related goop into a
->   struct tpm_file, create one struct tpm_file per open file.
+On Sun, Oct 07, 2012 at 08:01:34PM +0800, Xiao Guangrong wrote:
+> We can not directly call kvm_release_pfn_clean to release the pfn
+> since we can meet noslot pfn which is used to cache mmio info into
+> spte
 > 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > ---
->  drivers/char/tpm/tpm.c |   97 +++++++++++++++++++++---------------------------
->  drivers/char/tpm/tpm.h |   23 ++++++-----
->  2 files changed, 55 insertions(+), 65 deletions(-)
+>  arch/x86/kvm/mmu.c  |    3 +--
+>  virt/kvm/kvm_main.c |    4 +---
+>  2 files changed, 2 insertions(+), 5 deletions(-)
 > 
-> This is rebase, retest, resend of a patch I sent two years ago. The
-> discussion on that earlier patch fizzled out. Resending incase there
-> is renewed interest :)
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index d289fee..6f85fe0 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2497,8 +2497,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+>  		}
+>  	}
 > 
+> -	if (!is_error_pfn(pfn))
+> -		kvm_release_pfn_clean(pfn);
+> +	kvm_release_pfn_clean(pfn);
+>  }
+> 
+>  static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index cc3f6dc..b65ec97 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1322,9 +1322,7 @@ EXPORT_SYMBOL_GPL(kvm_release_page_clean);
+> 
+>  void kvm_release_pfn_clean(pfn_t pfn)
+>  {
+> -	WARN_ON(is_error_pfn(pfn));
+> -
+> -	if (!kvm_is_mmio_pfn(pfn))
+> +	if (!is_error_pfn(pfn) && !kvm_is_mmio_pfn(pfn))
+>  		put_page(pfn_to_page(pfn));
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_release_pfn_clean);
+> -- 
+> 1.7.7.6
+
+Why does is_error_pfn() return true for mmio spte? Its not an "error",
+after all. 
+
+Please kill is_invalid_pfn and use
+
+-> is_error_pfn for checking for errors (mmio spte is not an error pfn,
+its a special pfn)
+
+-> add explicit is_noslot_pfn checks where necessary in the code
+(say to avoid interpreting a noslot_pfn's pfn "address" bits).
+
+(should have noticed this earlier, sorry).
+
 
