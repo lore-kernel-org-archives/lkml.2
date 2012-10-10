@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2JJW7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:59:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59304 "EHLO
+	id S1757950Ab2JJW72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:59:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41002 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757750Ab2JJWzb (ORCPT
+	by vger.kernel.org with ESMTP id S1757863Ab2JJWz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:31 -0400
-X-Sasl-enc: 2j9UinKTjwMqmKbBJLpFLU3eBzzuJW9uvep3X+j2N2g2 1349909730
+	Wed, 10 Oct 2012 18:55:28 -0400
+X-Sasl-enc: 3Tx9I78d/n/IashQoAn0fJ7QQoqnE0MAPoG3ngN2Tlwq 1349909727
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florian Zumbiehl <florz@florz.de>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 059/133] drm/savage: re-add busmaster enable, regression fix
-Date: Thu, 11 Oct 2012 07:51:25 +0900
-Message-Id: <20121010224905.136474066@linuxfoundation.org>
+        Ed Cashin <ecashin@coraid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 058/133] aoe: assert AoE packets marked as requiring no checksum
+Date: Thu, 11 Oct 2012 07:51:24 +0900
+Message-Id: <20121010224904.949594725@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,34 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Zumbiehl <florz@florz.de>
 
-commit df86b5765a48d5f557489577652bd6df145b0e1b upstream.
+From: Ed Cashin <ecashin@coraid.com>
 
-466e69b8b03b8c1987367912782bc12988ad8794 dropped busmaster enable from the
-global drm code and moved it to the individual drivers, but missed the savage
-driver. So, this re-adds busmaster enable to the savage driver, fixing the
-regression.
+[ Upstream commit 8babe8cc6570ed896b7b596337eb8fe730c3ff45 ]
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+In order for the network layer to see that AoE requires
+no checksumming in a generic way, the packets must be
+marked as requiring no checksum, so we make this requirement
+explicit with the assertion.
+
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/savage/savage_bci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/block/aoe/aoecmd.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -547,6 +547,8 @@ int savage_driver_load(struct drm_device
- 
- 	dev_priv->chipset = (enum savage_family)chipset;
- 
-+	pci_set_master(dev->pdev);
-+
- 	return 0;
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -35,6 +35,7 @@ new_skb(ulong len)
+ 		skb_reset_mac_header(skb);
+ 		skb_reset_network_header(skb);
+ 		skb->protocol = __constant_htons(ETH_P_AOE);
++		skb_checksum_none_assert(skb);
+ 	}
+ 	return skb;
  }
- 
 
 
