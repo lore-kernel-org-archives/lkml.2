@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab2JJBXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 21:23:53 -0400
-Received: from fieldses.org ([174.143.236.118]:38002 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757243Ab2JJBXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 21:23:50 -0400
-Date: Tue, 9 Oct 2012 21:23:36 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121010012336.GA2935@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
- <87txu3bdnj.fsf@xmission.com>
- <20121009223139.GA25826@fieldses.org>
- <87bogb1cvl.fsf@xmission.com>
+	id S1757309Ab2JJB0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 21:26:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60565 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757243Ab2JJB0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 21:26:40 -0400
+Date: Tue, 9 Oct 2012 18:26:36 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf: fix duplicate header inclusion
+Message-ID: <20121010012636.GA19749@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87bogb1cvl.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 03:47:42PM -0700, Eric W. Biederman wrote:
-> "J. Bruce Fields" <bfields@fieldses.org> writes:
-> 
-> > On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
-> >> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
-> >> 
-> >> > On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
-> >> >> Cc'ing Eric since I seem to recall he suggested doing it this way?
-> >> 
-> >> Yes.  On second look setting fs->root won't work. We need to change fs.
-> >> The problem is that by default all kernel threads share fs so changing
-> >> fs->root will have non-local consequences.
-> >
-> > Oh, huh.  And we can't "unshare" it somehow?
-> 
-> I don't fully understand how nfs uses kernel threads and work queues.
-> My general understanding is work queues reuse their kernel threads
-> between different users.  So it is mostly a don't pollute your
-> environment thing.  If there was a dedicated kernel thread for each
-> environment this would be trivial.
-> 
-> What I was suggesting here is changing task->fs instead of
-> task->fs.root.  That should just require task_lock().
+#include <stdbool.h> somehow got duplicated on its way to linus's tree
+(probably as a conflict resolution as things got sent through multiple trees)
 
-Oh, OK, got it--if that works, great.
+Signed-off-by: Michel Lespinasse <walken@google.com>
+---
+ tools/perf/util/include/linux/rbtree.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> > Sorry, I don't know much about devtmpfs, are you suggesting it as a
-> > model?  What exactly should we look at?
-> 
-> Roughly all I meant was that devtmpsfsd is a kernel thread that runs
-> with an unshared fs struct.  Although I admit devtmpfsd is for all
-> practical purposes a userspace daemon that just happens to run in kernel
-> space.
-
-Thanks for the explanation.
-
---b.
+diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+index 9bcdc844b330..2a030c5af3aa 100644
+--- a/tools/perf/util/include/linux/rbtree.h
++++ b/tools/perf/util/include/linux/rbtree.h
+@@ -1,3 +1,2 @@
+ #include <stdbool.h>
+-#include <stdbool.h>
+ #include "../../../../include/linux/rbtree.h"
+-- 
+1.7.7.3
