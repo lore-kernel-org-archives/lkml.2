@@ -1,106 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab2JJMfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:35:11 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44958 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753512Ab2JJMfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:35:06 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18L9zwVbAALvwOeFtpJhpKPlbgpDYNCSH11w/cet7
-	ZGjKIgtO/q+0nJ
-Message-ID: <50756B6D.8070308@gmx.de>
-Date: Wed, 10 Oct 2012 12:34:53 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
-MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: Inki Dae <inki.dae@samsung.com>, kernel-janitors@vger.kernel.org,
-        Donghwa Lee <dh09.lee@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-fbdev@vger.kernel.org,
+	id S1753067Ab2JJLyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 07:54:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab2JJLys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 07:54:48 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, egtvedt@samfundet.no, hskinnemoen@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/video/exynos/exynos_mipi_dsi.c: fix error
- return code
-References: <1349268044-32616-2-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1349268044-32616-2-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Subject: [GIT PULL] UAPI disintegration for MN10300, FRV and AVR32 arches
+Date: Wed, 10 Oct 2012 12:54:37 +0100
+Message-ID: <6025.1349870077@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 12:40 PM, Peter Senna Tschudin wrote:
-> From: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> Convert a nonnegative error return code to a negative one, as returned
-> elsewhere in the function.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> (
-> if@p1 (\(ret < 0\|ret != 0\))
->  { ... return ret; }
-> |
-> ret@p1 = 0
-> )
-> ... when != ret = e1
->     when != &ret
-> *if(...)
-> {
->   ... when != ret = e2
->       when forall
->  return ret;
-> }
-> // </smpl>
-> 
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Applied.
+Hi Linus,
+
+Could you pull this please?  It contains the UAPI disintegration for the
+MN10300 and FRV arches that I maintain and for the AVR32 arch the maintainers
+for which have asked me to handle it for them.
+
+David
+---
+The following changes since commit 42859eea96ba6beabfb0369a1eeffa3c7d2bd9cb:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal (2012-10-10 12:02:25 +0900)
+
+are available in the git repository at:
 
 
-Thanks,
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-misc-arches-20121010
 
-Florian Tobias Schandinat
+for you to fetch changes up to 7190632b78de594f3dabe174e9df373bfc790d89:
 
+  Merge branch 'disintegrate-avr32' into disintegrate-misc-arches (2012-10-10 12:34:45 +0100)
 
-> 
-> ---
->  drivers/video/exynos/exynos_mipi_dsi.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
-> index c4f25de..07d70a3 100644
-> --- a/drivers/video/exynos/exynos_mipi_dsi.c
-> +++ b/drivers/video/exynos/exynos_mipi_dsi.c
-> @@ -375,6 +375,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	dsim->clock = clk_get(&pdev->dev, "dsim0");
->  	if (IS_ERR(dsim->clock)) {
->  		dev_err(&pdev->dev, "failed to get dsim clock source\n");
-> +		ret = -ENODEV;
->  		goto err_clock_get;
->  	}
->  
-> @@ -383,6 +384,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
->  		dev_err(&pdev->dev, "failed to get io memory region\n");
-> +		ret = -ENODEV;
->  		goto err_platform_get;
->  	}
->  
-> @@ -407,6 +409,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
->  	dsim_ddi = exynos_mipi_dsi_bind_lcd_ddi(dsim, dsim_pd->lcd_panel_name);
->  	if (!dsim_ddi) {
->  		dev_err(&pdev->dev, "mipi_dsim_ddi object not found.\n");
-> +		ret = -EINVAL;
->  		goto err_bind;
->  	}
->  
-> 
-> 
+----------------------------------------------------------------
 
+UAPI Disintegration 2012-10-10
+
+----------------------------------------------------------------
+David Howells (5):
+      UAPI: (Scripted) Disintegrate arch/avr32/include/asm
+      UAPI: (Scripted) Disintegrate arch/frv/include/asm
+      UAPI: (Scripted) Disintegrate arch/mn10300/include/asm
+      Merge branch 'disintegrate-frv' into disintegrate-misc-arches
+      Merge branch 'disintegrate-avr32' into disintegrate-misc-arches
+
+ arch/avr32/include/asm/Kbuild                     |   3 -
+ arch/avr32/include/asm/param.h                    |  18 +-
+ arch/avr32/include/asm/ptrace.h                   | 115 +------
+ arch/avr32/include/asm/setup.h                    |   5 +-
+ arch/avr32/include/asm/signal.h                   | 121 +-------
+ arch/avr32/include/asm/termios.h                  |  41 +--
+ arch/avr32/include/asm/types.h                    |   6 +-
+ arch/avr32/include/asm/unistd.h                   | 296 +-----------------
+ arch/avr32/include/uapi/asm/Kbuild                |  32 ++
+ arch/avr32/include/{ => uapi}/asm/auxvec.h        |   0
+ arch/avr32/include/{ => uapi}/asm/bitsperlong.h   |   0
+ arch/avr32/include/{ => uapi}/asm/byteorder.h     |   0
+ arch/avr32/include/{ => uapi}/asm/cachectl.h      |   0
+ arch/avr32/include/{ => uapi}/asm/errno.h         |   0
+ arch/avr32/include/{ => uapi}/asm/fcntl.h         |   0
+ arch/avr32/include/{ => uapi}/asm/ioctl.h         |   0
+ arch/avr32/include/{ => uapi}/asm/ioctls.h        |   0
+ arch/avr32/include/{ => uapi}/asm/ipcbuf.h        |   0
+ arch/avr32/include/{ => uapi}/asm/kvm_para.h      |   0
+ arch/avr32/include/{ => uapi}/asm/mman.h          |   0
+ arch/avr32/include/{ => uapi}/asm/msgbuf.h        |   0
+ arch/avr32/include/uapi/asm/param.h               |  18 ++
+ arch/avr32/include/{ => uapi}/asm/poll.h          |   0
+ arch/avr32/include/{ => uapi}/asm/posix_types.h   |   0
+ arch/avr32/include/uapi/asm/ptrace.h              | 126 ++++++++
+ arch/avr32/include/{ => uapi}/asm/resource.h      |   0
+ arch/avr32/include/{ => uapi}/asm/sembuf.h        |   0
+ arch/avr32/include/uapi/asm/setup.h               |  17 ++
+ arch/avr32/include/{ => uapi}/asm/shmbuf.h        |   0
+ arch/avr32/include/{ => uapi}/asm/sigcontext.h    |   0
+ arch/avr32/include/{ => uapi}/asm/siginfo.h       |   0
+ arch/avr32/include/uapi/asm/signal.h              | 128 ++++++++
+ arch/avr32/include/{ => uapi}/asm/socket.h        |   0
+ arch/avr32/include/{ => uapi}/asm/sockios.h       |   0
+ arch/avr32/include/{ => uapi}/asm/stat.h          |   0
+ arch/avr32/include/{ => uapi}/asm/statfs.h        |   0
+ arch/avr32/include/{ => uapi}/asm/swab.h          |   0
+ arch/avr32/include/{ => uapi}/asm/termbits.h      |   0
+ arch/avr32/include/uapi/asm/termios.h             |  50 +++
+ arch/avr32/include/uapi/asm/types.h               |   8 +
+ arch/avr32/include/uapi/asm/unistd.h              | 305 +++++++++++++++++++
+ arch/frv/include/asm/Kbuild                       |   3 -
+ arch/frv/include/asm/ptrace.h                     |  51 +---
+ arch/frv/include/asm/setup.h                      |   7 +-
+ arch/frv/include/asm/signal.h                     |  33 +-
+ arch/frv/include/asm/termios.h                    |  46 +--
+ arch/frv/include/asm/types.h                      |   6 +-
+ arch/frv/include/asm/unistd.h                     | 346 +--------------------
+ arch/frv/include/uapi/asm/Kbuild                  |  32 ++
+ arch/frv/include/{ => uapi}/asm/auxvec.h          |   0
+ arch/frv/include/{ => uapi}/asm/bitsperlong.h     |   0
+ arch/frv/include/{ => uapi}/asm/byteorder.h       |   0
+ arch/frv/include/{ => uapi}/asm/errno.h           |   0
+ arch/frv/include/{ => uapi}/asm/fcntl.h           |   0
+ arch/frv/include/{ => uapi}/asm/ioctl.h           |   0
+ arch/frv/include/{ => uapi}/asm/ioctls.h          |   0
+ arch/frv/include/{ => uapi}/asm/ipcbuf.h          |   0
+ arch/frv/include/{ => uapi}/asm/kvm_para.h        |   0
+ arch/frv/include/{ => uapi}/asm/mman.h            |   0
+ arch/frv/include/{ => uapi}/asm/msgbuf.h          |   0
+ arch/frv/include/{ => uapi}/asm/param.h           |   0
+ arch/frv/include/{ => uapi}/asm/poll.h            |   0
+ arch/frv/include/{ => uapi}/asm/posix_types.h     |   0
+ arch/frv/include/uapi/asm/ptrace.h                |  60 ++++
+ arch/frv/include/{ => uapi}/asm/registers.h       |   0
+ arch/frv/include/{ => uapi}/asm/resource.h        |   0
+ arch/frv/include/{ => uapi}/asm/sembuf.h          |   0
+ arch/frv/include/uapi/asm/setup.h                 |  18 ++
+ arch/frv/include/{ => uapi}/asm/shmbuf.h          |   0
+ arch/frv/include/{ => uapi}/asm/sigcontext.h      |   0
+ arch/frv/include/{ => uapi}/asm/siginfo.h         |   0
+ arch/frv/include/uapi/asm/signal.h                |  36 +++
+ arch/frv/include/{ => uapi}/asm/socket.h          |   0
+ arch/frv/include/{ => uapi}/asm/sockios.h         |   0
+ arch/frv/include/{ => uapi}/asm/stat.h            |   0
+ arch/frv/include/{ => uapi}/asm/statfs.h          |   0
+ arch/frv/include/{ => uapi}/asm/swab.h            |   0
+ arch/frv/include/{ => uapi}/asm/termbits.h        |   0
+ arch/frv/include/uapi/asm/termios.h               |  46 +++
+ arch/frv/include/uapi/asm/types.h                 |  11 +
+ arch/frv/include/uapi/asm/unistd.h                | 348 +++++++++++++++++++++
+ arch/mn10300/include/asm/Kbuild                   |   1 -
+ arch/mn10300/include/asm/ptrace.h                 |  72 +----
+ arch/mn10300/include/asm/setup.h                  |   4 +-
+ arch/mn10300/include/asm/signal.h                 | 121 +-------
+ arch/mn10300/include/asm/termios.h                |  81 +----
+ arch/mn10300/include/asm/types.h                  |   5 +-
+ arch/mn10300/include/asm/unistd.h                 | 342 +--------------------
+ arch/mn10300/include/uapi/asm/Kbuild              |  31 ++
+ arch/mn10300/include/{ => uapi}/asm/auxvec.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/mn10300/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/mn10300/include/{ => uapi}/asm/errno.h       |   0
+ arch/mn10300/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/mn10300/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/mn10300/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/kvm_para.h    |   0
+ arch/mn10300/include/{ => uapi}/asm/mman.h        |   0
+ arch/mn10300/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/param.h       |   0
+ arch/mn10300/include/{ => uapi}/asm/poll.h        |   0
+ arch/mn10300/include/{ => uapi}/asm/posix_types.h |   0
+ arch/mn10300/include/uapi/asm/ptrace.h            |  84 +++++
+ arch/mn10300/include/{ => uapi}/asm/resource.h    |   0
+ arch/mn10300/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/mn10300/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/mn10300/include/uapi/asm/signal.h            | 131 ++++++++
+ arch/mn10300/include/{ => uapi}/asm/socket.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/sockios.h     |   0
+ arch/mn10300/include/{ => uapi}/asm/stat.h        |   0
+ arch/mn10300/include/{ => uapi}/asm/statfs.h      |   0
+ arch/mn10300/include/{ => uapi}/asm/swab.h        |   0
+ arch/mn10300/include/{ => uapi}/asm/termbits.h    |   0
+ arch/mn10300/include/uapi/asm/termios.h           |  83 +++++
+ arch/mn10300/include/uapi/asm/types.h             |  11 +
+ arch/mn10300/include/uapi/asm/unistd.h            | 354 ++++++++++++++++++++++
+ 119 files changed, 1950 insertions(+), 1702 deletions(-)
+ rename arch/avr32/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/cachectl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/param.h
+ rename arch/avr32/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/ptrace.h
+ rename arch/avr32/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/setup.h
+ rename arch/avr32/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/signal.h
+ rename arch/avr32/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/avr32/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/avr32/include/uapi/asm/termios.h
+ create mode 100644 arch/avr32/include/uapi/asm/types.h
+ create mode 100644 arch/avr32/include/uapi/asm/unistd.h
+ rename arch/frv/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/msgbuf.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/param.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/frv/include/uapi/asm/ptrace.h
+ rename arch/frv/include/{ => uapi}/asm/registers.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/frv/include/uapi/asm/setup.h
+ rename arch/frv/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/frv/include/uapi/asm/signal.h
+ rename arch/frv/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/frv/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/frv/include/uapi/asm/termios.h
+ create mode 100644 arch/frv/include/uapi/asm/types.h
+ create mode 100644 arch/frv/include/uapi/asm/unistd.h
+ rename arch/mn10300/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/msgbuf.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/param.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/mn10300/include/uapi/asm/ptrace.h
+ rename arch/mn10300/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/mn10300/include/uapi/asm/setup.h
+ rename arch/mn10300/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/mn10300/include/uapi/asm/signal.h
+ rename arch/mn10300/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/mn10300/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/mn10300/include/uapi/asm/termios.h
+ create mode 100644 arch/mn10300/include/uapi/asm/types.h
+ create mode 100644 arch/mn10300/include/uapi/asm/unistd.h
