@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932381Ab2JJPPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:15:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49907 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab2JJPPV (ORCPT
+	id S1754103Ab2JJQGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:06:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50431 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753543Ab2JJQGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:15:21 -0400
-Message-ID: <50759105.2000406@wwwdotorg.org>
-Date: Wed, 10 Oct 2012 09:15:17 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: dtc: import latest upstream dtc
-References: <1349827466.26044.16@snotra>
-In-Reply-To: <1349827466.26044.16@snotra>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Oct 2012 12:06:48 -0400
+Date: Wed, 10 Oct 2012 12:06:45 -0400 (EDT)
+Message-Id: <20121010.120645.144599458222040514.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-10-09
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121009183844.GB1993@tuxdriver.com>
+References: <20121009183844.GB1993@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 06:04 PM, Scott Wood wrote:
-> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
->> On 10/9/2012 11:16 AM, Stephen Warren wrote:
->> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->> >>>
->> >>> What more do you think needs discussion re: dtc+cpp?
->> >>
->> >> How not to abuse the ever-loving shit out of it? :-)
->> >
->> > Perhaps we can just handle this through the regular patch review
->> > process; I think it may be difficult to define and agree upon exactly
->> > what "abuse" means ahead of time, but it's probably going to be easy
->> > enough to recognize it when one sees it?
->>
->>
->> One of the ways it could get out of hand would be via "include
->> dependency hell".  People will be tempted to reuse existing .h files
->> containing pin definitions, which, if history is a guide, will end up
->> depending on all sorts of other .h files.
->>
->> Another problem I often face with symbolic names is the difficulty of
->> figuring out what the numerical values really are (for debugging),
->> especially when .h files are in different subtrees from the files that
->> use the definitions, and when they use multiple macro levels and fancy
->> features like concatenation.  Sometimes I think it's clearer just to
->> write the number and use a comment to say what it is.
-> 
-> Both comments apply just as well to ordinary C code, and I don't think
-> anyone would seriously suggest just using comments instead for C code.
-> 
-> Is there a way to ask CPP to evaluate a macro in the context of the
-> input file, rather than produce normal output?  If not, I guess you
-> could make a tool that creates a wrapper file that includes the main
-> file and then evaluates the symbol you want.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 9 Oct 2012 14:38:44 -0400
 
-I'm not sure what "evaluate a macro in the context of the input file"
-means. Macros are obviously already evaluated based on the current set
-of macros defined by the file that's been processed or those it
-included. Do you mean only allowing the use of macros in the current
-file and not included files? What exactly would the wrapper you
-mentioned do?
+> Here is a batch of fixes intended for 3.7...
+> 
+> Amitkumar Karwar provides a couple of mwifiex fixes to correctly
+> report some reason codes for certain connection failures.  He also
+> provides a fix to cleanup after a scanning failure.  Bing Zhao rounds
+> that out with another mwifiex scanning fix.
+> 
+> Daniel Golle gives us a fix for a copy/paste error in rt2x00.
+> 
+> Felix Fietkau brings a couple of ath9k fixes related to suspend/resume,
+> and a couple of fixes to prevent memory leaks in ath9k and mac80211.
+> 
+> Ronald Wahl sends a carl9170 fix for a sleep in softirq context.
+> 
+> Thomas Pedersen reorders some code to prevent drv_get_tsf from being
+> called while holding a spinlock, now that it can sleep.
+> 
+> Finally, Wei Yongjun prevents a NULL pointer dereference in the
+> ath5k driver.
+ ...
+>   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git tags/master-2012-10-08
 
+Pulled, thanks John.
