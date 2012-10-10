@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab2JJW5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:57:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57852 "EHLO
+	id S1758009Ab2JJW6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:58:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42991 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757962Ab2JJWz6 (ORCPT
+	by vger.kernel.org with ESMTP id S1757945Ab2JJWzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:58 -0400
-X-Sasl-enc: tNxvOyivVjHAsuS06ta0RXdkcDrfQaNy9AfdfZcWziXt 1349909757
+	Wed, 10 Oct 2012 18:55:45 -0400
+X-Sasl-enc: 7moNKUCyLcZ+Ytp2kpwhvV99Xs9XOZPh/V7F0R/DCjVs 1349909744
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 069/133] ext4: dont copy non-existent gdt blocks when resizing
-Date: Thu, 11 Oct 2012 07:51:35 +0900
-Message-Id: <20121010224906.913669033@linuxfoundation.org>
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 064/133] SCSI: zfcp: remove invalid reference to list iterator variable
+Date: Thu, 11 Oct 2012 07:51:30 +0900
+Message-Id: <20121010224906.035638702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,44 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit 6df935ad2fced9033ab52078825fcaf6365f34b7 upstream.
+commit ca579c9f136af4274ccfd1bcaee7f38a29a0e2e9 upstream.
 
-The resize code was copying blocks at the beginning of each block
-group in order to copy the superblock and block group descriptor table
-(gdt) blocks.  This was, unfortunately, being done even for block
-groups that did not have super blocks or gdt blocks.  This is a
-complete waste of perfectly good I/O bandwidth, to skip writing those
-blocks for sparse bg's.
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.  Replace port->adapter->scsi_host by
+adapter->scsi_host.
 
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+
+Oversight in upsteam commit of v2.6.37
+a1ca48319a9aa1c5b57ce142f538e76050bb8972
+"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
+which merged the content of zfcp_erp_port_access_changed().
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/s390/scsi/zfcp_cfdc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -456,6 +456,9 @@ static int setup_new_flex_group_blocks(s
- 		gdblocks = ext4_bg_num_gdb(sb, group);
- 		start = ext4_group_first_block_no(sb, group);
+--- a/drivers/s390/scsi/zfcp_cfdc.c
++++ b/drivers/s390/scsi/zfcp_cfdc.c
+@@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(st
+ 	}
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
  
-+		if (!ext4_bg_has_super(sb, group))
-+			goto handle_itb;
-+
- 		/* Copy all of the GDT blocks into the backup in this group */
- 		for (j = 0, block = start + 1; j < gdblocks; j++, block++) {
- 			struct buffer_head *gdb;
-@@ -498,6 +501,7 @@ static int setup_new_flex_group_blocks(s
- 				goto out;
- 		}
- 
-+handle_itb:
- 		/* Initialize group tables of the grop @group */
- 		if (!(bg_flags[i] & EXT4_BG_INODE_ZEROED))
- 			goto handle_bb;
+-	shost_for_each_device(sdev, port->adapter->scsi_host) {
++	shost_for_each_device(sdev, adapter->scsi_host) {
+ 		zfcp_sdev = sdev_to_zfcp(sdev);
+ 		status = atomic_read(&zfcp_sdev->status);
+ 		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
 
 
