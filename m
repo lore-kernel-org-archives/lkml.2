@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab2JJXjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:39:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29733 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756850Ab2JJXjX convert rfc822-to-8bit (ORCPT
+	id S1757523Ab2JJXkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:40:33 -0400
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:47162 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757470Ab2JJXkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:39:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
-   d="scan'208";a="232463341"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: "Brown, Len" <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "Tang, Feng" <feng.tang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: RE: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Thread-Topic: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Thread-Index: AQHNppakcK1u0Yu8n0KwBO23isKqApeyDtoAgAEgjyA=
-Date: Wed, 10 Oct 2012 23:39:19 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88B9CCEC@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1348652044.git.lv.zheng@intel.com>
- <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
- <20121010141057.GF4005@phenom.dumpdata.com>
-In-Reply-To: <20121010141057.GF4005@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 10 Oct 2012 19:40:31 -0400
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] ring-buffer: Check for uninitialized cpu buffer before resizing
+Date: Wed, 10 Oct 2012 16:40:27 -0700
+Message-Id: <1349912427-6486-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static __initdata DECLARE_BITMAP(acpi_early_flags,
-> > +MAX_ACPI_DBG_PORTS*2);
+With a system where, num_present_cpus < num_possible_cpus, even if all
+CPUs are online, non-present CPUs don't have per_cpu buffers allocated.
+If per_cpu/<cpu>/buffer_size_kb is modified for such a CPU, it can cause
+a panic due to NULL dereference in ring_buffer_resize().
 
-It's OK since the keep bit will be derived by the real earlycon drivers in the __acpi_early_console_start() which is an arch specific interface.
-You can find this usage in the [PATCH v6 2/2].
+To fix this, resize operation is allowed only if the per-cpu buffer has
+been initialized.
 
-> > +	set_bit(port, acpi_early_flags);
-> > +	if (keep)
-> > +		set_bit(port+MAX_ACPI_DBG_PORTS, acpi_early_flags);
-> Put a comment explaining why you use half of the bitmap to mark them as
-> 'keep'. Thought wouldn't be just easier if you had another bitmap:
-> acpi_keep_ports?
-> To set those instead of using this bitmap?
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ kernel/trace/ring_buffer.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-I prefer to put comment here.
-I've been a deep embedded engineer for the last 5 years, implementing software containing 4 bus protocol stacks within 128bytes ram and 16kbytes rom, where we used high modularity design patterns.
-Thus made my habit being critical to ram/rom consumption...
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index b32ed0e..b979426 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1567,6 +1567,10 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
+ 
+ 		put_online_cpus();
+ 	} else {
++		/* Make sure this CPU has been intitialized */
++		if (!cpumask_test_cpu(cpu_id, buffer->cpumask))
++			goto out;
++
+ 		cpu_buffer = buffer->buffers[cpu_id];
+ 
+ 		if (nr_pages == cpu_buffer->nr_pages)
+-- 
+1.7.7.3
 
-I'm OOO now, the updated version will be sent next week.
-
-Thanks for your comments and best regards/Lv Zheng
