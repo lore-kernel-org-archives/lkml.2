@@ -1,257 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2JJKIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:08:37 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:56841 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab2JJKId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:08:33 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v3 03/13] vfs: Initialize and free main data structures
-Date: Wed, 10 Oct 2012 18:07:25 +0800
-Message-Id: <1349863655-29320-4-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12101010-5112-0000-0000-00000D488EAE
+	id S1756392Ab2JJNhb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:37:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29238 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2JJNfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 09:35:25 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QR-o9JM4IVQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=oHo0cinKwKoA:10 a=VwQbUJbxAAAA:8 a=00CX1lbMB8ObnoKVni4A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121010133523.682693439@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 10 Oct 2012 09:34:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 5/8] rt: rwsem/rwlock: lockdep annotations
+References: <20121010133406.053812290@goodmis.org>
+Content-Disposition: inline; filename=0005-rt-rwsem-rwlock-lockdep-annotations.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-  Add initialization function to create some
-key data structures when hot tracking is enabled;
-Clean up them when hot tracking is disabled
+rwlocks and rwsems on RT do not allow multiple readers. Annotate the
+lockdep acquire functions accordingly.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/btrfs/super.c             |    8 +++
- fs/hot_tracking.c            |  118 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h           |    3 +
- include/linux/hot_tracking.h |    4 ++
- 4 files changed, 133 insertions(+), 0 deletions(-)
+ kernel/rt.c |   46 +++++++++++++++++++++++++---------------------
+ 1 file changed, 25 insertions(+), 21 deletions(-)
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 00be9e3..da4438f 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -294,6 +294,10 @@ static void btrfs_put_super(struct super_block *sb)
- 	 * last process that kept it busy.  Or segfault in the aforementioned
- 	 * process...  Whom would you report that to?
+diff --git a/kernel/rt.c b/kernel/rt.c
+index 092d6b3..aa10504 100644
+--- a/kernel/rt.c
++++ b/kernel/rt.c
+@@ -216,15 +216,17 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
+ 	 * write locked.
  	 */
-+
-+	/* Hot data tracking */
-+	if (btrfs_test_opt(btrfs_sb(sb)->tree_root, HOT_TRACK))
-+		hot_track_exit(sb);
- }
- 
- enum {
-@@ -828,6 +832,10 @@ static int btrfs_fill_super(struct super_block *sb,
- 		goto fail_close;
- 	}
- 
-+	if (btrfs_test_opt(fs_info->tree_root, HOT_TRACK)) {
-+		hot_track_init(sb);
+ 	migrate_disable();
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
+ 		ret = rt_mutex_trylock(lock);
+-	else if (!rwlock->read_depth)
++		if (ret)
++			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
++	} else if (!rwlock->read_depth) {
+ 		ret = 0;
 +	}
-+
- 	save_mount_options(sb, data);
- 	cleancache_init_fs(sb);
- 	sb->s_flags |= MS_ACTIVE;
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 634ec03..5fd993e 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -21,6 +21,8 @@
- #include <linux/limits.h>
- #include "hot_tracking.h"
  
-+struct hot_info *global_hot_tracking_info;
-+
- /* kmem_cache pointers for slab caches */
- static struct kmem_cache *hot_inode_item_cachep;
- static struct kmem_cache *hot_range_item_cachep;
-@@ -81,6 +83,97 @@ static void hot_inode_item_init(struct hot_inode_item *he, u64 ino,
- 	hot_range_tree_init(he);
- }
+-	if (ret) {
++	if (ret)
+ 		rwlock->read_depth++;
+-		rwlock_acquire_read(&rwlock->dep_map, 0, 1, _RET_IP_);
+-	} else
++	else
+ 		migrate_enable();
  
-+static void hot_range_item_free(struct kref *kref)
-+{
-+	struct hot_comm_item *comm_item = container_of(kref,
-+		struct hot_comm_item, refs);
-+	struct hot_range_item *hr = container_of(comm_item,
-+		struct hot_range_item, hot_range);
-+
-+	radix_tree_delete(&hr->hot_inode->hot_range_tree, hr->start);
-+	kmem_cache_free(hot_range_item_cachep, hr);
-+}
-+
-+/*
-+ * Drops the reference out on hot_range_item by one
-+ * and free the structure
-+ * if the reference count hits zero
-+ */
-+static void hot_range_item_put(struct hot_range_item *hr)
-+{
-+	kref_put(&hr->hot_range.refs, hot_range_item_free);
-+}
-+
-+/* Frees the entire hot_range_tree. */
-+static void hot_range_tree_free(struct hot_inode_item *he)
-+{
-+	struct hot_range_item *hr_nodes[8];
-+	u32 start = 0;
-+	int i, n;
-+
-+	while (1) {
-+		spin_lock(&he->lock);
-+		n = radix_tree_gang_lookup(&he->hot_range_tree,
-+					(void **)hr_nodes, start,
-+					ARRAY_SIZE(hr_nodes));
-+		if (!n) {
-+			spin_unlock(&he->lock);
-+			break;
-+		}
-+
-+		start = hr_nodes[n - 1]->start + 1;
-+		for (i = 0; i < n; i++)
-+			hot_range_item_put(hr_nodes[i]);
-+		spin_unlock(&he->lock);
-+	}
-+}
-+
-+static void hot_inode_item_free(struct kref *kref)
-+{
-+	struct hot_comm_item *comm_item = container_of(kref,
-+			struct hot_comm_item, refs);
-+	struct hot_inode_item *he = container_of(comm_item,
-+			struct hot_inode_item, hot_inode);
-+
-+	hot_range_tree_free(he);
-+	radix_tree_delete(he->hot_inode_tree, he->i_ino);
-+	kmem_cache_free(hot_inode_item_cachep, he);
-+}
-+
-+/*
-+ * Drops the reference out on hot_inode_item by one
-+ * and free the structure
-+ * if the reference count hits zero
-+ */
-+void hot_inode_item_put(struct hot_inode_item *he)
-+{
-+	kref_put(&he->hot_inode.refs, hot_inode_item_free);
-+}
-+
-+/* Frees the entire hot_inode_tree. */
-+static void hot_inode_tree_exit(struct hot_info *root)
-+{
-+	struct hot_inode_item *hi_nodes[8];
-+	u64 ino = 0;
-+	int i, n;
-+
-+	while (1) {
-+		spin_lock(&root->lock);
-+		n = radix_tree_gang_lookup(&root->hot_inode_tree,
-+					   (void **)hi_nodes, ino,
-+					   ARRAY_SIZE(hi_nodes));
-+		if (!n) {
-+			spin_unlock(&root->lock);
-+			break;
-+		}
-+
-+		ino = hi_nodes[n - 1]->i_ino + 1;
-+		for (i = 0; i < n; i++)
-+			hot_inode_item_put(hi_nodes[i]);
-+		spin_unlock(&root->lock);
-+	}
-+}
-+
- /*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
-@@ -122,6 +215,7 @@ static inline void hot_cache_exit(void)
-  */
- void hot_track_init(struct super_block *sb)
+ 	return ret;
+@@ -242,13 +244,13 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
  {
-+	struct hot_info *root;
- 	int err;
+ 	struct rt_mutex *lock = &rwlock->lock;
  
- 	err = hot_cache_init();
-@@ -130,9 +224,33 @@ void hot_track_init(struct super_block *sb)
- 				__func__, err);
- 		return;
- 	}
-+
-+	root = kmalloc(sizeof(struct hot_info), GFP_NOFS);
-+	if (!root) {
-+		printk(KERN_ERR "%s: failed to malloc memory for "
-+				"global_hot_tracking_info: %d\n",
-+				__func__, err);
-+		goto failed_root;
+-	rwlock_acquire_read(&rwlock->dep_map, 0, 0, _RET_IP_);
+-
+ 	/*
+ 	 * recursive read locks succeed when current owns the lock
+ 	 */
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
++		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
+ 		__rt_spin_lock(lock);
 +	}
-+
-+	global_hot_tracking_info = root;
-+	sb->hot_flags |= MS_HOT_TRACKING;
-+	hot_inode_tree_init(root);
-+
-+	printk(KERN_INFO "vfs: turning on hot data tracking\n");
-+
-+	return;
-+
-+failed_root:
-+	hot_cache_exit();
+ 	rwlock->read_depth++;
  }
  
- void hot_track_exit(struct super_block *sb)
+@@ -264,11 +266,11 @@ EXPORT_SYMBOL(rt_write_unlock);
+ 
+ void __lockfunc rt_read_unlock(rwlock_t *rwlock)
  {
-+	struct hot_info *root = global_hot_tracking_info;
-+
-+	hot_inode_tree_exit(root);
-+	sb->hot_flags &= ~MS_HOT_TRACKING;
- 	hot_cache_exit();
-+	kfree(root);
+-	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
+-
+ 	/* Release the lock only when read_depth is down to 0 */
+-	if (--rwlock->read_depth == 0)
++	if (--rwlock->read_depth == 0) {
++		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
+ 		__rt_spin_unlock(&rwlock->lock);
++	}
  }
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index c617ed0..3b1a389 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1582,6 +1582,9 @@ struct super_block {
+ EXPORT_SYMBOL(rt_read_unlock);
  
- 	/* Being remounted read-only */
- 	int s_readonly_remount;
-+
-+	/* Hot data tracking*/
-+	unsigned long hot_flags;
- };
+@@ -315,9 +317,10 @@ EXPORT_SYMBOL(rt_up_write);
  
- /* superblock cache pruning functions */
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 78adb0d..13aa54b 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -20,6 +20,8 @@
- #include <linux/kref.h>
- #include <linux/fs.h>
+ void  rt_up_read(struct rw_semaphore *rwsem)
+ {
+-	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+-	if (--rwsem->read_depth == 0)
++	if (--rwsem->read_depth == 0) {
++		rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+ 		rt_mutex_unlock(&rwsem->lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_up_read);
  
-+#define MS_HOT_TRACKING	(1<<0)
-+
- /*
-  * A frequency data struct holds values that are used to
-  * determine temperature of files and file ranges. These structs
-@@ -68,6 +70,8 @@ struct hot_info {
- 	spinlock_t lock; /*protect inode tree */
- };
+@@ -366,15 +369,16 @@ int  rt_down_read_trylock(struct rw_semaphore *rwsem)
+ 	 * but not when read_depth == 0 which means that the rwsem is
+ 	 * write locked.
+ 	 */
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
+ 		ret = rt_mutex_trylock(&rwsem->lock);
+-	else if (!rwsem->read_depth)
++		if (ret)
++			rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
++	} else if (!rwsem->read_depth) {
+ 		ret = 0;
++	}
  
-+extern struct hot_info *global_hot_tracking_info;
-+
- extern void hot_track_init(struct super_block *sb);
- extern void hot_track_exit(struct super_block *sb);
+-	if (ret) {
++	if (ret)
+ 		rwsem->read_depth++;
+-		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
+-	}
+ 	return ret;
+ }
+ EXPORT_SYMBOL(rt_down_read_trylock);
+@@ -383,10 +387,10 @@ static void __rt_down_read(struct rw_semaphore *rwsem, int subclass)
+ {
+ 	struct rt_mutex *lock = &rwsem->lock;
+ 
+-	rwsem_acquire_read(&rwsem->dep_map, subclass, 0, _RET_IP_);
+-
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
++		rwsem_acquire(&rwsem->dep_map, subclass, 0, _RET_IP_);
+ 		rt_mutex_lock(&rwsem->lock);
++	}
+ 	rwsem->read_depth++;
+ }
  
 -- 
-1.7.6.5
+1.7.10.4
+
 
