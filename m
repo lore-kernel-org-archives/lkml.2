@@ -1,99 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab2JJM31 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:29:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35882 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841Ab2JJM30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:29:26 -0400
-Date: Wed, 10 Oct 2012 13:29:21 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
- ttwu_queue()
-Message-ID: <20121010122921.GX29125@suse.de>
-References: <20121002065143.GK29125@suse.de>
- <1349164176.7086.43.camel@marge.simpson.net>
- <20121002084501.GL29125@suse.de>
- <1349170282.7086.56.camel@marge.simpson.net>
- <20121002131421.GN29125@suse.de>
- <1349247011.4465.24.camel@marge.simpson.net>
- <1349251997.4465.42.camel@marge.simpson.net>
- <1349271001.4465.66.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1349271001.4465.66.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755692Ab2JJKON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:14:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:39591 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab2JJKOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:14:09 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v3 00/13] vfs: hot data tracking
+Date: Wed, 10 Oct 2012 18:07:22 +0800
+Message-Id: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101010-2398-0000-0000-00000C1F7BE3
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00181224; UDB=6.00041046; UTC=2012-10-10
+ 10:14:07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 03:30:01PM +0200, Mike Galbraith wrote:
-> On Wed, 2012-10-03 at 10:13 +0200, Mike Galbraith wrote:
-> 
-> > Watching all cores instead. 
-> > 
-> > switch rate ~890KHz                            switch rate ~570KHz
-> > NO_TTWU_QUEUE nohz=off                         TTWU_QUEUE nohz=off
-> > 5.38%  [kernel]  [k] __schedule                4.81%  [kernel]   [k] _raw_spin_lock_irqsave
-> > 4.29%  [kernel]  [k] _raw_spin_lock_irqsave    3.36%  [kernel]   [k] __skb_recv_datagram
-> > 2.88%  [kernel]  [k] resched_task              2.71%  [kernel]   [k] copy_user_generic_string
-> > 2.60%  [kernel]  [k] copy_user_generic_string  2.67%  [kernel]   [k] reschedule_interrupt
-> > 2.38%  [kernel]  [k] __switch_to               2.62%  [kernel]   [k] sock_alloc_send_pskb
-> > 2.15%  [kernel]  [k] sock_alloc_send_pskb      2.52%  [kernel]   [k] __schedule
-> > 2.08%  [kernel]  [k] __skb_recv_datagram       2.31%  [kernel]   [k] try_to_wake_up
-> > 1.81%  [kernel]  [k] udp_sendmsg               2.14%  [kernel]   [k] system_call
-> > 1.76%  [kernel]  [k] system_call               1.98%  [kernel]   [k] udp_sendmsg
-> > 1.73%  [kernel]  [k] __udp4_lib_lookup         1.96%  [kernel]   [k] __udp4_lib_lookup
-> > 1.65%  [kernel]  [k] __slab_free.isra.42       1.78%  [kernel]   [k] sock_def_readable
-> > 1.62%  [kernel]  [k] try_to_wake_up            1.63%  [kernel]   [k] __slab_free.isra.42
-> > 1.43%  [kernel]  [k] update_rq_clock           1.60%  [kernel]   [k] __switch_to
-> > 1.43%  [kernel]  [k] sock_def_readable         1.52%  [kernel]   [k] dma_issue_pending_all
-> > 1.41%  [kernel]  [k] dma_issue_pending_all     1.48%  [kernel]   [k] __ip_append_data.isra.35
-> > 1.40%  [kernel]  [k] menu_select               1.44%  [kernel]   [k] _raw_spin_lock
-> > 1.36%  [kernel]  [k] finish_task_switch        1.38%  [kernel]   [k] _raw_spin_unlock_irqrestore
-> > 1.30%  [kernel]  [k] ksize                     1.33%  [kernel]   [k] __udp4_lib_rcv
-> > 
-> > Strange.
-> 
-> nohz=off, pipe-test with one half pinned to CPU0, the other to CPU1.
-> 
-> procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
->  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> TTW_QUEUE
->  1  0      0 3039488  50948 444720    0    0     0     0 539724 1013417  1 15 84  0  0
->  1  0      0 3039488  50956 444720    0    0     0     1 540853 1015679  1 15 84  0  0
->  1  0      0 3039364  50956 444720    0    0     0     0 541630 1017239  1 16 83  0  0
->  2  0      0 3038992  50956 444720    0    0     0     0 335550 1096569  4 20 76  0  0
-> NO_TTWU_QUEUE
->  1  0      0 3038992  50956 444720    0    0     0     0 33100 1318984  1 27 71  0  0
->  1  0      0 3038868  50956 444720    0    0     0     0 33100 1319126  2 27 71  0  0
->  1  0      0 3038868  50956 444720    0    0     0     0 33097 1317968  1 27 72  0  0
->  2  0      0 3038868  50964 444720    0    0     0     1 33104 1318558  2 27 71  0  0
-> 
-> We can switch faster with NO_TTWU_QUEUE, so we switch more, and that
-> hurts netperf UDP_STREAM throughput.. somehow.  Fatter is better is not
-> the way context switch happy benchmarks usually work.
-> 
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Do we really switch more though?
+NOTE:
 
-Look at the difference in interrupts vs context switch. IPIs are an interrupt
-so if TTWU_QUEUE wakes process B using an IPI, does that count as a context
-switch? It probably does not get accounted as a context switch even though
-it's functionally similar in this case but I'd like to hear confirmation
-of that.
+  The patchset is currently post out mainly to make sure
+it is going in the correct direction and hope to get some
+helpful comments from other guys.
+  For more infomation, please check hot_tracking.txt in Documentation
 
-If we did assume that these IPIs are effectively context switches then look
-at the TTWU_QUEUE figures. There are 530K interrupts versus 33K interrupts
-for NO_TTWU_QUEUE. If each one of those IPIs are effectively a context
-switch then the actual switch rates are 1.5M switches versus 1.3 switches
-and TTWU_QUEUE is actually switching faster.
+TODO List:
+
+ 1.) Need to do scalability or performance tests.
+ 2.) Turn some Micro into be tunable
+       TIME_TO_KICK, and HEAT_UPDATE_DELAY
+ 3.) Rafactor hot_hash_is_aging()
+       If you just made the timeout value a timespec and compared
+     the _timespecs_, you would be doing a lot fewer conversions.
+ 4.) Cleanup some unnecessary lock protect
+ 5.) Add more comments to explain how to calc temperature
+       How to "read" the avg read/write time (nanoseconds,
+     microseconds, jiffies....??)
+ 6.) Make updating tempreture more parallel
+ 7.) How to save the file tempreture among the umount to be able to
+     preserve the file tempreture after reboot
+ 8.) Add one new ioctl inteface to set temperature value.
+
+Ben Chociej, Matt Lupfer and Conor Scott originally wrote this code to
+ be very btrfs-specific.  I've taken their code and attempted to
+make it more generic and integrate it at the VFS level.
+
+Changelog from v2:
+ 1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
+ 2.) Added memory shrinker [Dave Chinner]
+ 3.) Converted to one workqueue to update map info periodically [Dave Chinner]
+ 4.) Cleanedup a lot of other issues [Dave Chinner]
+
+v1:
+ 1.) Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
+ 2.) The first three patches can probably just be flattened into one.
+                                        [Marco Stornelli , Dave Chinner]
+
+Zhi Yong Wu (13):
+  btrfs: add one new mount option '-o hot_track'
+  vfs: introduce private radix tree structures
+  vfs: Initialize and free main data structures
+  vfs: add function for collecting raw access info
+  vfs: add two map arrays
+  vfs: add hooks to enable hot data tracking
+  vfs: add function for updating map arrays
+  vfs: add aging function for old map info
+  vfs: add one wq to update map info periodically
+  vfs: register one memory shrinker
+  vfs: add 3 new ioctl interfaces
+  vfs: add debugfs support
+  vfs: add documentation
+
+ Documentation/filesystems/00-INDEX         |    2 +
+ Documentation/filesystems/hot_tracking.txt |  165 ++++
+ fs/Makefile                                |    2 +-
+ fs/btrfs/ctree.h                           |    1 +
+ fs/btrfs/super.c                           |   15 +-
+ fs/compat_ioctl.c                          |    9 +
+ fs/direct-io.c                             |    8 +
+ fs/hot_tracking.c                          | 1321 ++++++++++++++++++++++++++++
+ fs/hot_tracking.h                          |  155 ++++
+ fs/ioctl.c                                 |  122 +++
+ include/linux/fs.h                         |    4 +
+ include/linux/hot_tracking.h               |  123 +++
+ mm/filemap.c                               |    7 +
+ mm/page-writeback.c                        |   13 +
+ mm/readahead.c                             |    7 +
+ 15 files changed, 1952 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/filesystems/hot_tracking.txt
+ create mode 100644 fs/hot_tracking.c
+ create mode 100644 fs/hot_tracking.h
+ create mode 100644 include/linux/hot_tracking.h
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.6.5
+
