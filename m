@@ -1,44 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2JJNkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:40:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7493 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756357Ab2JJNio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:38:44 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Qbx_YyVk3h4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6vidgQ2l4MoA:10 a=20KFwNOVAAAA:8 a=JqEG_dyiAAAA:8 a=2-J6K_Kjc2weECRg5QsA:9 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133843.341664414@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:38:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 6/6] Linux 3.0.45-rt68-rc1
-References: <20121010133801.331863565@goodmis.org>
-Content-Disposition: inline; filename=0006-Linux-3.0.45-rt68-rc1.patch
+	id S932362Ab2JJPIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:08:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932316Ab2JJPIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:08:39 -0400
+Date: Wed, 10 Oct 2012 17:08:36 +0200
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.22.1
+Message-ID: <20121010150836.GA12577@x2.net.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
 
----
- localversion-rt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The util-linux release v2.22.1 is available at
 
-diff --git a/localversion-rt b/localversion-rt
-index 5513b84..970646d 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt67
-+-rt68-rc1
+   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.22
+
+Feedback and bug reports, as always, are welcomed.
+
+    Karel
+
+
+util-linux 2.22.1 Release Notes
+===============================
+
+Changes since v2.22
+-------------------
+
+ For more details see ChangeLog files at:
+ ftp://ftp.infradead.org/pub/util-linux/v2.22/
+
+
+blkid:
+   - document LIBBLKID_DEBUG users  [Davidlohr Bueso]
+build-sys:
+   - add --disable-wdctl  [Karel Zak]
+   - clean update-potfiles script  [Karel Zak]
+   - fix --localstatedir heuristics  [Karel Zak]
+   - install su.1 if building su  [Dave Reisner]
+   - remove --enable-gtk-doc from make check  [Karel Zak]
+   - simplify usrlib_execdir initialization  [Karel Zak]
+dmesg:
+   - fix console-level off-by-one  [Bjørn Mork]
+docs:
+   - AUTHORS, NEWS  UTF-8 fixes.  [Ville Skyttä]
+   - umount.8 syntax fix.  [Ville Skyttä]
+   - update AUTHORS file  [Karel Zak]
+eject:
+   - robust strings usage [coverity scan]  [Karel Zak]
+fdisk:
+   - add AArch64 support  [Marcin Juszkiewicz]
+hwclock:
+   - don't warp the systemtime if the RTC is in UTC  [Tom Gundersen]
+   - wait time in hwclock is not long enough for some ARM devices  [Karel Zak]
+ipcrm:
+   - avoid 'uninitialized' warning  [Bernhard Voelker]
+lib/pager:
+   - robust work with file descriptors [coverity scan]  [Karel Zak]
+lib/sysfs:
+   - fix sysfs_devname_to_devno for dm partitions  [Peter Rajnoha]
+   - more robust sysfs_opendir() [coverity scan]  [Karel Zak]
+libblkid:
+   - check fchmod() return value [coverity scan]  [Karel Zak]
+   - fix copyright noticed to be consistent (so all are LGPL)  [Karel Zak]
+   - improve DBG() macro  [Karel Zak]
+libmount:
+   - append loop option when automatically create loopdev  [Karel Zak]
+   - detach loopdev on umount if loop option in mtab  [Karel Zak]
+   - document LIBMOUNT_DEBUG users  [Davidlohr Bueso]
+   - don't remove user= when executed by root  [Karel Zak]
+   - don't setup new loopdev on remount with regular mtab  [Karel Zak]
+   - fix umount file.img  [Karel Zak]
+   - improve mnt_table_get_root_fs() docs  [Karel Zak]
+   - optimize mtab and utab parsing in umount  [Karel Zak]
+   - segfaults if neither /etc/filesystems nor/proc/filesystems exists  [Karel Zak]
+   - user-mounted loopback fs cannot be unmounted by user  [Karel Zak]
+login:
+   - reuse DEAD_PROCESS utmp entries  [Karel Zak]
+lsblk:
+   - fix processing of dm partition mappings  [Peter Rajnoha]
+   - fix reporting of 'part' type  [Peter Rajnoha]
+md5:
+   - fix strict aliasing warnings  [Mike Frysinger]
+mkswap:
+   - wipe old signature if there is no part table by default  [Milan Broz]
+mount:
+   - add verbose messages  [Karel Zak]
+   - fix a few typos  [Mike Frysinger]
+   - fix man pahe typo in quota mount option names  [Björn Jacke]
+namei:
+   - remove dead code [coverity scan]  [Karel Zak]
+po:
+   - add hr.po (from translationproject.org)  [Tomislav Krznar]
+   - merge changes  [Karel Zak]
+   - update vi.po (from translationproject.org)  [Trần Ngọc Quân]
+rtcwake:
+   - doesn't reset wakealarm  [Giacomo]
+setterm:
+   - make error message more informative  [Petr Uzel]
+sfdisk:
+   - Fix format specifiers for size_t  [Thierry Reding]
+   - fix aliasing warnings  [Mike Frysinger]
+su:
+   - don't modify PATH if -l not specified  [Karel Zak]
+switch_root:
+   - check open() return value [coverity scan]  [Karel Zak]
+tests:
+   - fix mount move test to work with shared mount  [Milan Broz]
+   - fix timezone for cramfs  [Milan Broz]
+   - ignore test if kernel doesn't support minix fs  [Milan Broz]
+   - remove libgcc from config test results  [Karel Zak]
+textual:
+   - typo fixes  [Gilles Espinasse]
+tunelp:
+   - add missing break [coverity scan]  [Karel Zak]
+wdctl:
+   - add fallbacks for old kernel headers  [Karel Zak]
+whereis:
+   - improve readability for analysers  [Karel Zak]
+
 -- 
-1.7.10.4
-
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
