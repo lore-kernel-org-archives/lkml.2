@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab2JKAVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:21:55 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43699 "EHLO
+	id S932805Ab2JKAPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:15:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53270 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932916Ab2JKAPd (ORCPT
+	by vger.kernel.org with ESMTP id S932835Ab2JKAPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:33 -0400
-X-Sasl-enc: dRQZCdxMFG9KUiltXPrQcjTE+PUhff4ghMnpCeEq4Zsk 1349914532
+	Wed, 10 Oct 2012 20:15:20 -0400
+X-Sasl-enc: dJgOJurMA8jnylJvieMSaLk1PQnBNdIXQ/YkeAttT/Ku 1349914519
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 112/133] revert "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages"
-Date: Thu, 11 Oct 2012 07:52:18 +0900
-Message-Id: <20121010224914.680370000@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 109/133] m32r: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:15 +0900
+Message-Id: <20121010224914.148202766@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,85 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 8d34694c1abf29df1f3c7317936b7e3e2e308d9b upstream.
+commit 48ae077cfce72591b8fc80e1dcc87806f86fed7f upstream.
 
-Commit 05f144a0d5c2 ("mm: mempolicy: Let vma_merge and vma_split handle
-vma->vm_policy linkages") removed vma->vm_policy updates code but it is
-the purpose of mbind_range().  Now, mbind_range() is virtually a no-op
-and while it does not allow memory corruption it is not the right fix.
-This patch is a revert.
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-[mgorman@suse.de: Edited changelog]
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
+
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in the m32r's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   41 ++++++++++++++++++++++++-----------------
- 1 file changed, 24 insertions(+), 17 deletions(-)
+ arch/m32r/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -607,6 +607,27 @@ check_range(struct mm_struct *mm, unsign
- 	return first;
- }
+--- a/arch/m32r/kernel/process.c
++++ b/arch/m32r/kernel/process.c
+@@ -26,6 +26,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/unistd.h>
+ #include <linux/hardirq.h>
++#include <linux/rcupdate.h>
  
-+/* Apply policy to a single VMA */
-+static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
-+{
-+	int err = 0;
-+	struct mempolicy *old = vma->vm_policy;
-+
-+	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
-+		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
-+		 vma->vm_ops, vma->vm_file,
-+		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
-+
-+	if (vma->vm_ops && vma->vm_ops->set_policy)
-+		err = vma->vm_ops->set_policy(vma, new);
-+	if (!err) {
-+		mpol_get(new);
-+		vma->vm_policy = new;
-+		mpol_put(old);
-+	}
-+	return err;
-+}
-+
- /* Step 2: apply policy to a range and do splits. */
- static int mbind_range(struct mm_struct *mm, unsigned long start,
- 		       unsigned long end, struct mempolicy *new_pol)
-@@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+@@ -82,6 +83,7 @@ void cpu_idle (void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched()) {
+ 			void (*idle)(void) = pm_idle;
+ 
+@@ -90,6 +92,7 @@ void cpu_idle (void)
+ 
+ 			idle();
  		}
--
--		/*
--		 * Apply policy to a single VMA. The reference counting of
--		 * policy for vma_policy linkages has already been handled by
--		 * vma_merge and split_vma as necessary. If this is a shared
--		 * policy then ->set_policy will increment the reference count
--		 * for an sp node.
--		 */
--		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
--			vma->vm_start, vma->vm_end, vma->vm_pgoff,
--			vma->vm_ops, vma->vm_file,
--			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
--		if (vma->vm_ops && vma->vm_ops->set_policy) {
--			err = vma->vm_ops->set_policy(vma, new_pol);
--			if (err)
--				goto out;
--		}
-+		err = policy_vma(vma, new_pol);
-+		if (err)
-+			goto out;
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
  	}
- 
-  out:
+ }
 
 
