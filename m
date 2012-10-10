@@ -1,147 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab2JJXXC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:23:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45778 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676Ab2JJXWy (ORCPT
+	id S1757684Ab2JJWy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54011 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757625Ab2JJWyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:22:54 -0400
-Date: Wed, 10 Oct 2012 16:20:47 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>,
-        linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>
-Subject: Re: include/linux/cgroup.h:566 suspicious rcu_dereference_check()
- usage!
-Message-ID: <20121010232047.GF4628@swordfish.datadirect.datadirectnet.com>
-References: <506F649F.4050109@opensuse.org>
- <20121008194921.GF2453@linux.vnet.ibm.com>
- <20121010010859.GA3210@swordfish.datadirect.datadirectnet.com>
- <20121010032503.GB13994@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010032503.GB13994@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Oct 2012 18:54:14 -0400
+X-Sasl-enc: 2VxA5DSXBSX2j9it9UjewxqstT31L7kaBBawV/LZBTJm 1349909653
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 031/133] xfrm_user: fix info leak in copy_to_user_auth()
+Date: Thu, 11 Oct 2012 07:50:57 +0900
+Message-Id: <20121010224900.073068936@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
+References: <20121010224854.313159132@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/09/12 20:25), Paul E. McKenney wrote:
-> 
-> Looks sane to me!  Dropping my patch.
-> 
-> 							Thanx, Paul
->
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks a lot, Paul. I will resend with proper subject, so it'll be more visible in the list.
+------------------
 
-	-ss
 
+From: Mathias Krause <minipli@googlemail.com>
+
+[ Upstream commit 4c87308bdea31a7b4828a51f6156e6f721a1fcc9 ]
+
+copy_to_user_auth() fails to initialize the remainder of alg_name and
+therefore discloses up to 54 bytes of heap memory via netlink to
+userland.
+
+Use strncpy() instead of strcpy() to fill the trailing bytes of alg_name
+with null bytes.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/xfrm/xfrm_user.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -742,7 +742,7 @@ static int copy_to_user_auth(struct xfrm
+ 		return -EMSGSIZE;
  
-> > ----------------------------------------------------------------------------
-> > 
-> > Commit ad676077
-> >  | Author: Aristeu Rozanski <aris@redhat.com>
-> >  | Date:   Thu Oct 4 17:15:17 2012 -0700
-> >  |   device_cgroup: convert device_cgroup internally to policy + exceptions
-> > 
-> > moved RCU read-side protection from devcgroup_inode_mknod(), which, however is required
-> > by task_devcgroup(). Patch also add RCU read-side protection to __devcgroup_inode_permission()
-> > function, introduced in commit ad676077.
-> > 
-> > [    0.946303] include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
-> > [    0.946511] 
-> > [    0.946606] 2 locks held by kdevtmpfs/28:
-> > [    0.946684]  #0:  (sb_writers){.+.+.+}, at: [<ffffffff81144bcb>] mnt_want_write+0x24/0x4b
-> > [    0.947083]  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff81133d04>] kern_path_create+0x83/0x144
-> > [    0.947598] 
-> > [    0.947787] Call Trace:
-> > [    0.947868]  [<ffffffff81089644>] lockdep_rcu_suspicious+0x109/0x112
-> > [    0.947958]  [<ffffffff81258fa0>] devcgroup_inode_mknod+0x9e/0xee
-> > [    0.948043]  [<ffffffff81132ee7>] vfs_mknod+0x8a/0xed
-> > [    0.948129]  [<ffffffff813b98af>] handle_create.isra.2+0x144/0x1b5
-> > [    0.948214]  [<ffffffff813b99bf>] ? devtmpfsd+0x9f/0x138
-> > [    0.948298]  [<ffffffff81295d5c>] ? do_raw_spin_lock+0x67/0xde
-> > [    0.948384]  [<ffffffff81295e92>] ? do_raw_spin_unlock+0x8f/0x98
-> > [    0.948469]  [<ffffffff813b9920>] ? handle_create.isra.2+0x1b5/0x1b5
-> > [    0.948554]  [<ffffffff813b9a04>] devtmpfsd+0xe4/0x138
-> > [    0.948638]  [<ffffffff813b9920>] ? handle_create.isra.2+0x1b5/0x1b5
-> > [    0.948724]  [<ffffffff810582b6>] kthread+0xd5/0xdd
-> > [    0.948814]  [<ffffffff814db664>] kernel_thread_helper+0x4/0x10
-> > [    0.948900]  [<ffffffff814d2973>] ? retint_restore_args+0x13/0x13
-> > [    0.948985]  [<ffffffff810581e1>] ? __init_kthread_worker+0x5a/0x5a
-> > [    0.949069]  [<ffffffff814db660>] ? gs_change+0x13/0x13
-> > 
-> > 
-> > devcgroup_inode_mknod() part submitted by Paul E. McKenney.
-> > 
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > 
-> > ---
-> > 
-> >  security/device_cgroup.c | 21 +++++++++++++++++----
-> >  1 file changed, 17 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-> > index 44dfc41..043eb00 100644
-> > --- a/security/device_cgroup.c
-> > +++ b/security/device_cgroup.c
-> > @@ -558,7 +558,8 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-> > 
-> >  int __devcgroup_inode_permission(struct inode *inode, int mask)
-> >  {
-> > -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-> > +	struct dev_cgroup *dev_cgroup;
-> > +	int ret;
-> >  	short type, access = 0;
-> > 
-> >  	if (S_ISBLK(inode->i_mode))
-> > @@ -570,13 +571,20 @@ int __devcgroup_inode_permission(struct inode *inode, int mask)
-> >  	if (mask & MAY_READ)
-> >  		access |= ACC_READ;
-> > 
-> > -	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-> > +	rcu_read_lock();
-> > +
-> > +	dev_cgroup = task_devcgroup(current);
-> > +	ret = __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-> >  					    iminor(inode), access);
-> > +
-> > +	rcu_read_unlock();
-> > +	return ret;
-> >  }
-> > 
-> >  int devcgroup_inode_mknod(int mode, dev_t dev)
-> >  {
-> > -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-> > +	struct dev_cgroup *dev_cgroup;
-> > +	int ret;
-> >  	short type;
-> > 
-> >  	if (!S_ISBLK(mode) && !S_ISCHR(mode))
-> > @@ -587,7 +595,12 @@ int devcgroup_inode_mknod(int mode, dev_t dev)
-> >  	else
-> >  		type = DEV_CHAR;
-> > 
-> > -	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-> > +	rcu_read_lock();
-> > +
-> > +	dev_cgroup = task_devcgroup(current);
-> > +	ret = __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-> >  					    MINOR(dev), ACC_MKNOD);
-> > 
-> > +	rcu_read_unlock();
-> > +	return ret; 
-> >  }
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
+ 	algo = nla_data(nla);
+-	strcpy(algo->alg_name, auth->alg_name);
++	strncpy(algo->alg_name, auth->alg_name, sizeof(algo->alg_name));
+ 	memcpy(algo->alg_key, auth->alg_key, (auth->alg_key_len + 7) / 8);
+ 	algo->alg_key_len = auth->alg_key_len;
+ 
+
+
