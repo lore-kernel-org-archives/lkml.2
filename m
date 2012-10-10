@@ -1,561 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab2JJRxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:53:48 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2380 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424Ab2JJRxj (ORCPT
+	id S1755971Ab2JJRty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:49:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46301 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776Ab2JJRtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:53:39 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 10 Oct 2012 10:53:34 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>,
-        <sameo@linux.intel.com>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 3/5] mfd: tps65910: move interrupt implementation code to mfd file
-Date: Wed, 10 Oct 2012 22:49:03 +0530
-Message-ID: <1349889545-21517-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
-References: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
+	Wed, 10 Oct 2012 13:49:52 -0400
+Message-ID: <5075B2F4.60708@pengutronix.de>
+Date: Wed, 10 Oct 2012 19:40:04 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Howells <dhowells@redhat.com>
+CC: socketcan@hartkopp.net, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Disintegrate UAPI for can
+References: <30687.1349789402@warthog.procyon.org.uk>
+In-Reply-To: <30687.1349789402@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5BF68A89947E52AE682F4C89"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In place of implementing the irq support in separate file,
-moving implementation to main mfd file.
-The irq files only contains the table and init steps only
-and does not need extra file to have this only for this
-purpose.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5BF68A89947E52AE682F4C89
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
-No change from V1, just rearrange this patch.
-It was already reviwed by Mark and hence adding his reviewed by.
+On 10/09/2012 03:30 PM, David Howells wrote:
+> Can you merge the following branch into the can tree please.
+>=20
+> This is to complete part of the Userspace API (UAPI) disintegration for=
+ which
+> the preparatory patches were pulled recently.  After these patches, use=
+rspace
+> headers will be segregated into:
+>=20
+> 	include/uapi/linux/.../foo.h
+>=20
+> for the userspace interface stuff, and:
+>=20
+> 	include/linux/.../foo.h
+>=20
+> for the strictly kernel internal stuff.
 
- drivers/mfd/Makefile         |    2 +-
- drivers/mfd/tps65910-irq.c   |  243 ------------------------------------------
- drivers/mfd/tps65910.c       |  216 +++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps65910.h |    4 -
- 4 files changed, 217 insertions(+), 248 deletions(-)
- delete mode 100644 drivers/mfd/tps65910-irq.c
+Nice work David. The upstream for can-next is David Miller's net-next
+tree. He doesn't like if I pull unrelated stuff into my tree, so I'm
+going to cherry pick your patch. This is not yet possible, as net-next
+doesn't include the latest patches from the 3.7 merge window, so that
+compilation breaks. After the merge window closes David Miller merges
+back the latest changes to net-next. I'll postpone your patch until
+then, this means the code will go into v3.8. I'm not familiar with the
+UAPI conversion, should your patch go via linux-can and David's net into
+v3.7?
 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index d8ccb63..47811a5 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_TPS6105X)		+= tps6105x.o
- obj-$(CONFIG_TPS65010)		+= tps65010.o
- obj-$(CONFIG_TPS6507X)		+= tps6507x.o
- obj-$(CONFIG_MFD_TPS65217)	+= tps65217.o
--obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-irq.o
-+obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o
- tps65912-objs                   := tps65912-core.o tps65912-irq.o
- obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
- obj-$(CONFIG_MFD_TPS65912_I2C)	+= tps65912-i2c.o
-diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
-deleted file mode 100644
-index 554543a..0000000
---- a/drivers/mfd/tps65910-irq.c
-+++ /dev/null
-@@ -1,243 +0,0 @@
--/*
-- * tps65910-irq.c  --  TI TPS6591x
-- *
-- * Copyright 2010 Texas Instruments Inc.
-- *
-- * Author: Graeme Gregory <gg@slimlogic.co.uk>
-- * Author: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-- *
-- *  This program is free software; you can redistribute it and/or modify it
-- *  under  the terms of the GNU General  Public License as published by the
-- *  Free Software Foundation;  either version 2 of the License, or (at your
-- *  option) any later version.
-- *
-- */
--
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/init.h>
--#include <linux/bug.h>
--#include <linux/device.h>
--#include <linux/interrupt.h>
--#include <linux/irq.h>
--#include <linux/irqdomain.h>
--#include <linux/gpio.h>
--#include <linux/mfd/tps65910.h>
--
--
--static const struct regmap_irq tps65911_irqs[] = {
--	/* INT_STS */
--	[TPS65911_IRQ_PWRHOLD_F] = {
--		.mask = INT_MSK_PWRHOLD_F_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_VBAT_VMHI] = {
--		.mask = INT_MSK_VMBHI_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_PWRON] = {
--		.mask = INT_MSK_PWRON_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_PWRON_LP] = {
--		.mask = INT_MSK_PWRON_LP_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_PWRHOLD_R] = {
--		.mask = INT_MSK_PWRHOLD_R_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_HOTDIE] = {
--		.mask = INT_MSK_HOTDIE_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_RTC_ALARM] = {
--		.mask = INT_MSK_RTC_ALARM_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65911_IRQ_RTC_PERIOD] = {
--		.mask = INT_MSK_RTC_PERIOD_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--
--	/* INT_STS2 */
--	[TPS65911_IRQ_GPIO0_R] = {
--		.mask = INT_MSK2_GPIO0_R_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO0_F] = {
--		.mask = INT_MSK2_GPIO0_F_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO1_R] = {
--		.mask = INT_MSK2_GPIO1_R_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO1_F] = {
--		.mask = INT_MSK2_GPIO1_F_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO2_R] = {
--		.mask = INT_MSK2_GPIO2_R_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO2_F] = {
--		.mask = INT_MSK2_GPIO2_F_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO3_R] = {
--		.mask = INT_MSK2_GPIO3_R_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65911_IRQ_GPIO3_F] = {
--		.mask = INT_MSK2_GPIO3_F_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--
--	/* INT_STS3 */
--	[TPS65911_IRQ_GPIO4_R] = {
--		.mask = INT_MSK3_GPIO4_R_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_GPIO4_F] = {
--		.mask = INT_MSK3_GPIO4_F_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_GPIO5_R] = {
--		.mask = INT_MSK3_GPIO5_R_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_GPIO5_F] = {
--		.mask = INT_MSK3_GPIO5_F_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_WTCHDG] = {
--		.mask = INT_MSK3_WTCHDG_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_VMBCH2_H] = {
--		.mask = INT_MSK3_VMBCH2_H_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_VMBCH2_L] = {
--		.mask = INT_MSK3_VMBCH2_L_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--	[TPS65911_IRQ_PWRDN] = {
--		.mask = INT_MSK3_PWRDN_IT_MSK_MASK,
--		.reg_offset = 2,
--	},
--};
--
--static const struct regmap_irq tps65910_irqs[] = {
--	/* INT_STS */
--	[TPS65910_IRQ_VBAT_VMBDCH] = {
--		.mask = TPS65910_INT_MSK_VMBDCH_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_VBAT_VMHI] = {
--		.mask = TPS65910_INT_MSK_VMBHI_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_PWRON] = {
--		.mask = TPS65910_INT_MSK_PWRON_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_PWRON_LP] = {
--		.mask = TPS65910_INT_MSK_PWRON_LP_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_PWRHOLD] = {
--		.mask = TPS65910_INT_MSK_PWRHOLD_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_HOTDIE] = {
--		.mask = TPS65910_INT_MSK_HOTDIE_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_RTC_ALARM] = {
--		.mask = TPS65910_INT_MSK_RTC_ALARM_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--	[TPS65910_IRQ_RTC_PERIOD] = {
--		.mask = TPS65910_INT_MSK_RTC_PERIOD_IT_MSK_MASK,
--		.reg_offset = 0,
--	},
--
--	/* INT_STS2 */
--	[TPS65910_IRQ_GPIO_R] = {
--		.mask = TPS65910_INT_MSK2_GPIO0_F_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--	[TPS65910_IRQ_GPIO_F] = {
--		.mask = TPS65910_INT_MSK2_GPIO0_R_IT_MSK_MASK,
--		.reg_offset = 1,
--	},
--};
--
--static struct regmap_irq_chip tps65911_irq_chip = {
--	.name = "tps65910",
--	.irqs = tps65911_irqs,
--	.num_irqs = ARRAY_SIZE(tps65911_irqs),
--	.num_regs = 3,
--	.irq_reg_stride = 2,
--	.status_base = TPS65910_INT_STS,
--	.mask_base = TPS65910_INT_MSK,
--	.ack_base = TPS65910_INT_MSK,
--};
--
--static struct regmap_irq_chip tps65910_irq_chip = {
--	.name = "tps65910",
--	.irqs = tps65910_irqs,
--	.num_irqs = ARRAY_SIZE(tps65910_irqs),
--	.num_regs = 2,
--	.irq_reg_stride = 2,
--	.status_base = TPS65910_INT_STS,
--	.mask_base = TPS65910_INT_MSK,
--	.ack_base = TPS65910_INT_MSK,
--};
--
--int tps65910_irq_init(struct tps65910 *tps65910, int irq,
--		    struct tps65910_platform_data *pdata)
--{
--	int ret = 0;
--	static struct regmap_irq_chip *tps6591x_irqs_chip;
--
--	if (!irq) {
--		dev_warn(tps65910->dev, "No interrupt support, no core IRQ\n");
--		return -EINVAL;
--	}
--
--	if (!pdata) {
--		dev_warn(tps65910->dev, "No interrupt support, no pdata\n");
--		return -EINVAL;
--	}
--
--
--	switch (tps65910_chip_id(tps65910)) {
--	case TPS65910:
--		tps6591x_irqs_chip = &tps65910_irq_chip;
--		break;
--	case TPS65911:
--		tps6591x_irqs_chip = &tps65911_irq_chip;
--		break;
--	}
--
--	tps65910->chip_irq = irq;
--	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
--		IRQF_ONESHOT, pdata->irq_base,
--		tps6591x_irqs_chip, &tps65910->irq_data);
--	if (ret < 0) {
--		dev_warn(tps65910->dev,
--				"Failed to add irq_chip %d\n", ret);
--		return ret;
--	}
--	return ret;
--}
--
--int tps65910_irq_exit(struct tps65910 *tps65910)
--{
--	if (tps65910->chip_irq > 0)
--		regmap_del_irq_chip(tps65910->chip_irq, tps65910->irq_data);
--	return 0;
--}
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 27fbbe5..d4d4eb5 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -19,6 +19,9 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
- #include <linux/mfd/core.h>
- #include <linux/regmap.h>
- #include <linux/mfd/tps65910.h>
-@@ -50,6 +53,219 @@ static struct mfd_cell tps65910s[] = {
- };
- 
- 
-+static const struct regmap_irq tps65911_irqs[] = {
-+	/* INT_STS */
-+	[TPS65911_IRQ_PWRHOLD_F] = {
-+		.mask = INT_MSK_PWRHOLD_F_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_VBAT_VMHI] = {
-+		.mask = INT_MSK_VMBHI_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_PWRON] = {
-+		.mask = INT_MSK_PWRON_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_PWRON_LP] = {
-+		.mask = INT_MSK_PWRON_LP_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_PWRHOLD_R] = {
-+		.mask = INT_MSK_PWRHOLD_R_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_HOTDIE] = {
-+		.mask = INT_MSK_HOTDIE_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_RTC_ALARM] = {
-+		.mask = INT_MSK_RTC_ALARM_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65911_IRQ_RTC_PERIOD] = {
-+		.mask = INT_MSK_RTC_PERIOD_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+
-+	/* INT_STS2 */
-+	[TPS65911_IRQ_GPIO0_R] = {
-+		.mask = INT_MSK2_GPIO0_R_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO0_F] = {
-+		.mask = INT_MSK2_GPIO0_F_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO1_R] = {
-+		.mask = INT_MSK2_GPIO1_R_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO1_F] = {
-+		.mask = INT_MSK2_GPIO1_F_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO2_R] = {
-+		.mask = INT_MSK2_GPIO2_R_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO2_F] = {
-+		.mask = INT_MSK2_GPIO2_F_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO3_R] = {
-+		.mask = INT_MSK2_GPIO3_R_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65911_IRQ_GPIO3_F] = {
-+		.mask = INT_MSK2_GPIO3_F_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+
-+	/* INT_STS2 */
-+	[TPS65911_IRQ_GPIO4_R] = {
-+		.mask = INT_MSK3_GPIO4_R_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_GPIO4_F] = {
-+		.mask = INT_MSK3_GPIO4_F_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_GPIO5_R] = {
-+		.mask = INT_MSK3_GPIO5_R_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_GPIO5_F] = {
-+		.mask = INT_MSK3_GPIO5_F_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_WTCHDG] = {
-+		.mask = INT_MSK3_WTCHDG_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_VMBCH2_H] = {
-+		.mask = INT_MSK3_VMBCH2_H_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_VMBCH2_L] = {
-+		.mask = INT_MSK3_VMBCH2_L_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+	[TPS65911_IRQ_PWRDN] = {
-+		.mask = INT_MSK3_PWRDN_IT_MSK_MASK,
-+		.reg_offset = 2,
-+	},
-+};
-+
-+static const struct regmap_irq tps65910_irqs[] = {
-+	/* INT_STS */
-+	[TPS65910_IRQ_VBAT_VMBDCH] = {
-+		.mask = TPS65910_INT_MSK_VMBDCH_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_VBAT_VMHI] = {
-+		.mask = TPS65910_INT_MSK_VMBHI_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_PWRON] = {
-+		.mask = TPS65910_INT_MSK_PWRON_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_PWRON_LP] = {
-+		.mask = TPS65910_INT_MSK_PWRON_LP_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_PWRHOLD] = {
-+		.mask = TPS65910_INT_MSK_PWRHOLD_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_HOTDIE] = {
-+		.mask = TPS65910_INT_MSK_HOTDIE_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_RTC_ALARM] = {
-+		.mask = TPS65910_INT_MSK_RTC_ALARM_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+	[TPS65910_IRQ_RTC_PERIOD] = {
-+		.mask = TPS65910_INT_MSK_RTC_PERIOD_IT_MSK_MASK,
-+		.reg_offset = 0,
-+	},
-+
-+	/* INT_STS2 */
-+	[TPS65910_IRQ_GPIO_R] = {
-+		.mask = TPS65910_INT_MSK2_GPIO0_F_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+	[TPS65910_IRQ_GPIO_F] = {
-+		.mask = TPS65910_INT_MSK2_GPIO0_R_IT_MSK_MASK,
-+		.reg_offset = 1,
-+	},
-+};
-+
-+static struct regmap_irq_chip tps65911_irq_chip = {
-+	.name = "tps65910",
-+	.irqs = tps65911_irqs,
-+	.num_irqs = ARRAY_SIZE(tps65911_irqs),
-+	.num_regs = 3,
-+	.irq_reg_stride = 2,
-+	.status_base = TPS65910_INT_STS,
-+	.mask_base = TPS65910_INT_MSK,
-+	.ack_base = TPS65910_INT_MSK,
-+};
-+
-+static struct regmap_irq_chip tps65910_irq_chip = {
-+	.name = "tps65910",
-+	.irqs = tps65910_irqs,
-+	.num_irqs = ARRAY_SIZE(tps65910_irqs),
-+	.num_regs = 2,
-+	.irq_reg_stride = 2,
-+	.status_base = TPS65910_INT_STS,
-+	.mask_base = TPS65910_INT_MSK,
-+	.ack_base = TPS65910_INT_MSK,
-+};
-+
-+static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
-+		    struct tps65910_platform_data *pdata)
-+{
-+	int ret = 0;
-+	static struct regmap_irq_chip *tps6591x_irqs_chip;
-+
-+	if (!irq) {
-+		dev_warn(tps65910->dev, "No interrupt support, no core IRQ\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!pdata) {
-+		dev_warn(tps65910->dev, "No interrupt support, no pdata\n");
-+		return -EINVAL;
-+	}
-+
-+	switch (tps65910_chip_id(tps65910)) {
-+	case TPS65910:
-+		tps6591x_irqs_chip = &tps65910_irq_chip;
-+		break;
-+	case TPS65911:
-+		tps6591x_irqs_chip = &tps65911_irq_chip;
-+		break;
-+	}
-+
-+	tps65910->chip_irq = irq;
-+	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
-+		IRQF_ONESHOT, pdata->irq_base,
-+		tps6591x_irqs_chip, &tps65910->irq_data);
-+	if (ret < 0)
-+		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
-+	return ret;
-+}
-+
-+static int tps65910_irq_exit(struct tps65910 *tps65910)
-+{
-+	if (tps65910->chip_irq > 0)
-+		regmap_del_irq_chip(tps65910->chip_irq, tps65910->irq_data);
-+	return 0;
-+}
-+
- static bool is_volatile_reg(struct device *dev, unsigned int reg)
- {
- 	struct tps65910 *tps65910 = dev_get_drvdata(dev);
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index b564ac2..0b16903 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -915,10 +915,6 @@ struct tps65910_platform_data {
- 	int irq_base;
- };
- 
--int tps65910_irq_init(struct tps65910 *tps65910, int irq,
--		struct tps65910_platform_data *pdata);
--int tps65910_irq_exit(struct tps65910 *tps65910);
--
- static inline int tps65910_chip_id(struct tps65910 *tps65910)
- {
- 	return tps65910->id;
--- 
-1.7.1.1
+regards, Marc
 
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig5BF68A89947E52AE682F4C89
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iEYEARECAAYFAlB1svkACgkQjTAFq1RaXHP3WgCfciHeHTYM3mQLvyldV6D+feL+
+1/EAnRlixVfp6dxZWdplNxojKVwWWBl/
+=gloJ
+-----END PGP SIGNATURE-----
+
+--------------enig5BF68A89947E52AE682F4C89--
