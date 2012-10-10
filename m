@@ -1,47 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab2JJPnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:43:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63054 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab2JJPm7 (ORCPT
+	id S1754204Ab2JJQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:06:09 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42802 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab2JJQGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:42:59 -0400
+	Wed, 10 Oct 2012 12:06:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121010135529.GD4005@phenom.dumpdata.com>
-References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
-	<1349827115-16600-6-git-send-email-yinghai@kernel.org>
-	<20121010135529.GD4005@phenom.dumpdata.com>
-Date: Wed, 10 Oct 2012 08:42:57 -0700
-X-Google-Sender-Auth: gLLxOcryCIcBZc2Aa4xpSDMobXY
-Message-ID: <CAE9FiQVVJxr6TX7=Jk8A1NQ7pA=9LtwGxS_3ZCnB9=vCaiSi6g@mail.gmail.com>
-Subject: Re: [PATCH 5/7] x86, mm: Break down init_all_memory_mapping
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+	<1349374497-9540-11-git-send-email-monstr@monstr.eu>
+	<1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+	<506EA9C4.2000609@monstr.eu>
+	<1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
+	<5073E988.60701@monstr.eu>
+	<1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
+Date: Wed, 10 Oct 2012 18:06:05 +0200
+Message-ID: <CAHTX3dJuHxAqZOkkSymPz5ots1Edq4ty3o1rGAuhnpWrUwtWZQ@mail.gmail.com>
+Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
+From: Michal Simek <monstr@monstr.eu>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, John Linn <linnj@xilinx.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 6:55 AM, Konrad Rzeszutek Wilk
-<konrad@kernel.org> wrote:
-> On Tue, Oct 09, 2012 at 04:58:33PM -0700, Yinghai Lu wrote:
->> Will replace that will top-down page table initialization.
+2012/10/9 Ben Hutchings <bhutchings@solarflare.com>:
+> On Tue, 2012-10-09 at 11:08 +0200, Michal Simek wrote:
+>> On 10/05/2012 03:51 PM, Ben Hutchings wrote:
+>> > On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
+>> >> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
+>> >>> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
+>> >>>> Just show current setting in bootlog.
+>> >>> [...]
+>> >>>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+>> >>>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+>> >>>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
+>> >>>>          /* Setup checksum offload, but default to off if not specified */
+>> >>>>          lp->temac_features = 0;
+>> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
+>> >>>> +        dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
+>> >>>>          if (p && be32_to_cpu(*p)) {
+>> >>>>                  lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
+>> >>>>                  /* Can checksum TCP/UDP over IPv4. */
+>> >>>>                  ndev->features |= NETIF_F_IP_CSUM;
+>> >>>>          }
+>> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
+>> >>>> +        dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
+>> >>> [...]
+>> >>>
+>> >>> Is there any particular reason you think this needs to be logged by
+>> >>> default, rather than letting users run ethtool -k?  I suggest using
+>> >>> dev_dbg() instead.
+>> >>
+>> >> Ok. I have looked at it and there are missing some bits in ndev->features.
+>> >>
+>> >> Can you please check that my setting is correct?
+>> >>
+>> >> It is SG DMA ip/driver.
+>> >> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
+>> >
+>> > NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
+>> > through the frag_list pointer.
+>>
+>> The driver is able to handle skb fragments too. temac_start_xmit
 >
-> s/will/with?
->
->> new one need to take range.
->
-> Huh? I have no idea what this patch does from your description.
-> It says it will replace something (not identified) with
-> top-down table initialization.
->
-> And the code is not that simple - you should explain _how_ you
-> are changing it. From what it did before to what it does _now_.
+> "git grep -w -E 'frag_list|skb_walk_frags|skb_to_sgvec' drivers/net/ethernet/xilinx"
+> returns nothing in net-next.
 
-I tried to make the next patch to be little smaller, so split this change out.
+What about this? Maybe it is different fragmentation.
+drivers/net/ethernet/xilinx/ll_temac_main.c
+ 688         num_frag = skb_shinfo(skb)->nr_frags;
+ 689         frag = &skb_shinfo(skb)->frags[0];
+
+
+>
+> [...]
+>> >> rx Full csum -> NETIF_F_RXCSUM
+>> >>
+>> >> Is there any option to support partial csum?
+>> >
+>> > There is no need to differentiate these in the device features.  For TX
+>> > the stack needs to know whether to use a software fallback before
+>> > passing the skb to you, but on RX it looks at the ip_summed field of
+>> > each skb you pass up.
+>>
+>> Hardware can be setup asymmetrically. It means enable CSUM only on RX or TX.
+>> All combination are valid.
+>> The point here is if Linux is not able to handle this then we have to
+>> create logic in the driver to support these options too.
+>
+> Linux handles this just fine.  The point is you don't have to tell the
+> stack in advance whether or what kind of RX checksum validation your
+> devices will do.  (In fact the only reason that feature flag exists at
+> all is so that it can be generically exposed through the ethtool API.)
+
+Ok.
+
+Thanks,
+Michal
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
