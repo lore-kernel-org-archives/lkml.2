@@ -1,100 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab2JJHtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 03:49:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56268 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752245Ab2JJHt2 (ORCPT
+	id S1752667Ab2JJHtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 03:49:45 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59871 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab2JJHte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 03:49:28 -0400
-X-Sasl-enc: /cOmN48NXt7wiNkdE6w3LTkysPL5ZKeCaDJAYafeDXW0 1349855366
-Date: Wed, 10 Oct 2012 16:49:23 +0900
-From: Greg KH <greg@kroah.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
-Message-ID: <20121010074923.GA11894@kroah.com>
-References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
- <20121009114821.dc4c2aff.akpm@linux-foundation.org>
- <20121009190300.GB22108@kroah.com>
- <20121009120831.8a6d81d8.akpm@linux-foundation.org>
+	Wed, 10 Oct 2012 03:49:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009120831.8a6d81d8.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349712805-10014-4-git-send-email-ldewangan@nvidia.com>
+References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com>
+	<1349712805-10014-4-git-send-email-ldewangan@nvidia.com>
+Date: Wed, 10 Oct 2012 09:49:33 +0200
+Message-ID: <CACRpkdZTMqUV1gFhREcRjWgnKq3h6NySGJVZt3dzkXCLKroCxA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mfd: tps6586x: implement gpio_to_irq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 12:08:31PM -0700, Andrew Morton wrote:
-> On Tue, 9 Oct 2012 12:03:00 -0700
-> Greg KH <greg@kroah.com> wrote:
-> 
-> > On Tue, Oct 09, 2012 at 11:48:21AM -0700, Andrew Morton wrote:
-> > > On Sat,  6 Oct 2012 23:56:33 +0400
-> > > Andrew Vagin <avagin@openvz.org> wrote:
-> > > 
-> > > > Here is a stack trace of recursion:
-> > > > free_pid_ns(parent)
-> > > >   put_pid_ns(parent)
-> > > >     kref_put(&ns->kref, free_pid_ns);
-> > > >       free_pid_ns
-> > > > 
-> > > > This patch turns recursion into loops.
-> > > > 
-> > > > pidns can be nested many times, so in case of recursion
-> > > > a simple user space program can provoke a kernel panic
-> > > > due to exceed of a kernel stack.
-> > > 
-> > > So we should backport this into earlier kernels.
-> > > 
-> > > > --- a/include/linux/kref.h
-> > > > +++ b/include/linux/kref.h
-> > > > @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
-> > > >  	return kref_sub(kref, 1, release);
-> > > >  }
-> > > >  
-> > > > +/**
-> > > > + * kref_put - decrement refcount for object.
-> > > > + * @kref: object.
-> > > > + *
-> > > > + * Decrement the refcount.
-> > > > + * Return 1 if refcount is zero.
-> > > > + */
-> > > > +static inline int __kref_put(struct kref *kref)
-> > > > +{
-> > > > +	return atomic_dec_and_test(&kref->refcount);
-> > > > +}
-> > > 
-> > > Greg might be interested in this.
-> > > 
-> > > It's a pretty specialised thing and perhaps it needs some stern words
-> > > in the description explaining when and why it should and shouldn't be
-> > > used.
-> > > 
-> > > I wonder if people might (ab)use this to avoid the "doesn't
-> > > have a release function" warning.
-> > 
-> > Yes they would, please don't do this at all.
-> > 
-> > In fact, why is it needed?  It doesn't solve anything (if it does,
-> > something in the way the kref is being used is wrong.)
-> > 
-> 
-> It's right there in the changelog.  The patch fixes deep
-> kref_put->release->kref_put recursion by turning the operation for
-> pidns into a loop.
+On Mon, Oct 8, 2012 at 6:13 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-But why would a kref release function ever decrement the same kref
-again causing a loop in the first place?
+> The TPS6586x adds the interrupt of this device using
+> linear mapping on irq domain.
+> Hence, implement gpio_to_irq to get the irq number
+> corresponding to TPS6586x GPIOs which is created
+> dynamically.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-That's what I was referring to.  This strongly sounds like a problem in
-how the kref is being used, not in the kref code itself.
+Looks good to me:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Is a kref even the correct thing here?
+I guess you will funnel this through Sam's MFD tree?
 
-greg k-h
+Yours,
+Linus Walleij
