@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2JJCBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:01:01 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2622 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab2JJCAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:00:55 -0400
-X-IronPort-AV: E=Sophos;i="4.80,563,1344182400"; 
-   d="scan'208";a="5972038"
-Message-ID: <5074D824.6020204@cn.fujitsu.com>
-Date: Wed, 10 Oct 2012 10:06:28 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1753448Ab2JJCIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:08:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58337 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477Ab2JJCIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 22:08:34 -0400
+Date: Wed, 10 Oct 2012 11:08:22 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] regmap: add API to get irq_domain from regmap irq
+Message-ID: <20121010020819.GD17288@opensource.wolfsonmicro.com>
+References: <1349782116-9757-1-git-send-email-ldewangan@nvidia.com>
+ <1349782116-9757-5-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        mingo@redhat.com, miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 10:00:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 10:00:45,
-	Serialize complete at 2012/10/10 10:00:45
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349782116-9757-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/10/2012 07:27 AM, David Rientjes Wrote:
-> On Tue, 9 Oct 2012, Peter Zijlstra wrote:
-> 
->> Well the code they were patching is in the wakeup path. As I think Tang
->> said, we leave !runnable tasks on whatever cpu they ran on last, even if
->> that cpu is offlined, we try and fix up state when we get a wakeup.
->>
->> On wakeup, it tries to find a cpu to run on and will try a cpu of the
->> same node first.
->>
->> Now if that node's entirely gone away, it appears the cpu_to_node() map
->> will not return a valid node number.
->>
->> I think that's a change in behaviour, it didn't used to do that afaik.
->> Certainly this code hasn't change in a while.
->>
-> 
-> If cpu_to_node() always returns a valid node id even if all cpus on the 
-> node are offline, then the cpumask_of_node() implementation, which the 
-> sched code is using, should either return an empty cpumask (if 
-> node_to_cpumask_map[nid] isn't freed) or cpu_online_mask.  The change in 
-> behavior here occurred because 
-> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch in -mm doesn't 
-> return a valid node id and forces it to return -1 so a kzalloc_node(..., 
-> -1) fallsback to allocate anywhere.
-> 
-> But if you only need cpu_to_node() when waking up to find a runnable cpu 
-> for this NUMA information, then I think you can just change the 
-> kzalloc_node() in alloc_{fair,rt}_sched_group() to do 
-> kzalloc(..., cpu_online(cpu) ? cpu_to_node(cpu) : NUMA_NO_NODE).
-> 
->  [ The changelog here is confusing because it's fixing a problem in 
->    linux-next without saying so. ]
-> 
+On Tue, Oct 09, 2012 at 04:58:35PM +0530, Laxman Dewangan wrote:
+> Add API regmap_irq_get_irq_domain() for getting the
+> irq domain from regmap irq.
+> The irq domain created on result of regmap_add_irq_chip()
+> from driver.
 
-I don't agree with this way. Because it only fix the code which causes a
-problem, and we can't say there is no any similar problem. So it is
-why I clear the cpu-to-node mapping.
+This needs stubbing.  
 
-What about the following solution:
-1. clear the cpu-to-node mapping when the node is offlined
-2. tang's patch is still necessary because we leave !runnable tasks on
-   whatever cpu they ran on last. If cpu's node is NUMA_NO_NODE, it means
-   the entire node is offlined, and we must migrate the task to the other
-   node.
-
-Thanks
-Wen Congyang
+Please also fix the formatting of your commit log, you're either
+wrapping randomly in the middle of paragraphs or not leaving blank lines
+between paragraphs.
