@@ -1,142 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab2JJTYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:24:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4056 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632Ab2JJTYG (ORCPT
+	id S1755390Ab2JJT1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:27:31 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40159 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab2JJT13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:24:06 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=zYwCYAMbQIkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=1UqZbzc3nZ0A:10 a=VwQbUJbxAAAA:8 a=4M0vJZQeAAAA:8 a=fSm92gvxgDq1-3xaEzUA:9 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349897043.24256.63.camel@gandalf.local.home>
-Subject: stable backport: sched: Fix migration thread runtime bogosity
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 10 Oct 2012 15:24:03 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Wed, 10 Oct 2012 15:27:29 -0400
+Message-ID: <5075CC15.3040809@mvista.com>
+Date: Wed, 10 Oct 2012 21:27:17 +0200
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121005 Thunderbird/16.0
+MIME-Version: 1.0
+To: Constantine Shulyupin <const@MakeLinux.com>
+CC: nsekhar@ti.com, gregkh@linuxfoundation.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6] Enable USB peripheral mode on dm365 EVM
+References: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
+In-Reply-To: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg, Ben,
+Hello.
 
-Can you add this commit to the stable branches. Without it, the
-migration thread's accounting is just totally screwed up:
+On 10-10-2012 14:33, Constantine Shulyupin wrote:
 
-By running a simple shell while loop along with a ps loop, top shows:
+> From: Constantine Shulyupin <const@MakeLinux.com>
+>
+> Sets USB PHY clock source to 24 MHz clock and call USB configuration from board initialization.
+>
+> Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
+>
+> References:
+>
+> Definition of USB_PHY_CTRL and PHYCLKFREQ:
+> - http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
+>
+> Original patch by miguel.aguilar@ridgerun.com three years ago:
+> - http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
+>
+> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+> ---
+>
+> Note:
+>
+> Changelog
+>
+> Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
+> accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
+> - phy configuration moved to drivers/usb/musb/davinci.c
+> - USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
+> - Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
+>
+> Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
+> - removed fix of dev_info in musb_init_controller
+>
+> Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
+> - removed optional altering of pr_info
+>
+> Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
+> - removed optional code and reordered
+> - removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
+>
+> This patch is based on code from projects Arago, Angstom and RidgeRun.
+>
+> ---
+>   arch/arm/mach-davinci/board-dm365-evm.c |    2 ++
+>   drivers/usb/musb/davinci.c              |    3 +++
+>   drivers/usb/musb/davinci.h              |    1 +
+>   3 files changed, 6 insertions(+)
+>
+> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+> index 688a9c5..ba5ffc1 100644
+> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+> @@ -38,6 +38,7 @@
+>   #include <mach/mmc.h>
+>   #include <mach/nand.h>
+>   #include <mach/keyscan.h>
+> +#include <mach/usb.h>
+>   
+>   #include <media/tvp514x.h>
+>   
+> @@ -610,6 +611,7 @@ static __init void dm365_evm_init(void)
+>   
+>   	dm365_init_spi0(BIT(0), dm365_evm_spi_info,
+>   			ARRAY_SIZE(dm365_evm_spi_info));
+> +	davinci_setup_usb(1000, 8);
+>   }
+>   
+>   MACHINE_START(DAVINCI_DM365_EVM, "DaVinci DM365 EVM")
 
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            
-   17 root      RT   0     0    0    0 S 9999.0  0.0   9:27.50 migration/3    
-   13 root      RT   0     0    0    0 S 128.2  0.0   9:50.23 migration/2       
- 2805 root      20   0  105m 1904 1416 S 13.9  0.1   0:06.69 bash               
- 4090 root      20   0  105m 1904 1416 S  2.0  0.1   0:00.90 bash               
- 2773 root      20   0 85484 3372 2620 S  0.3  0.2   0:00.03 sshd               
+     You need to split the patch at this point. Above part should be 
+applied to the DaVinci tree, below part to the MUSB tree.
 
+> diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+> index 472c8b4..af09ebf 100644
+> --- a/drivers/usb/musb/davinci.c
+> +++ b/drivers/usb/musb/davinci.c
+> @@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
+>   		__raw_writel(deepsleep, DM355_DEEPSLEEP);
+>   	}
+>   
+> +	if (machine_is_davinci_dm365_evm())
+> +		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
 
-For 3.4, the commit can be directly cherry picked:
+     I'd put that to the board file instead, like in board-da830-evm.c....
 
-commit 8f6189684eb4e85e6c593cd710693f09c944450a
-Author: Mike Galbraith <mgalbraith@suse.de>
-Date:   Sat Aug 4 05:44:14 2012 +0200
-
-    sched: Fix migration thread runtime bogosity
-
-Below is a backport for 3.2.
-
-Thanks! 
-
--- Steve
-
->From 8f6189684eb4e85e6c593cd710693f09c944450a Mon Sep 17 00:00:00 2001
-From: Mike Galbraith <mgalbraith@suse.de>
-Date: Sat, 4 Aug 2012 05:44:14 +0200
-Subject: [PATCH] sched: Fix migration thread runtime bogosity
-
-Make stop scheduler class do the same accounting as other classes,
-
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
-
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched_stoptask.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
-
-Index: linux-trace.git/kernel/sched_stoptask.c
-===================================================================
---- linux-trace.git.orig/kernel/sched_stoptask.c
-+++ linux-trace.git/kernel/sched_stoptask.c
-@@ -25,8 +25,10 @@ static struct task_struct *pick_next_tas
- {
- 	struct task_struct *stop = rq->stop;
- 
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
-+	}
- 
- 	return NULL;
- }
-@@ -50,6 +52,21 @@ static void yield_task_stop(struct rq *r
- 
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
- {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
-+
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
- 
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -58,6 +75,9 @@ static void task_tick_stop(struct rq *rq
- 
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
- 
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
-
+WBR, Sergei
 
