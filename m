@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab2JJHv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 03:51:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41692 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab2JJHvX (ORCPT
+	id S1754439Ab2JJHx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 03:53:58 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33905 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab2JJHx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 03:51:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org, hbabu@us.ibm.com,
-        andi@firstfloor.org, ddutile@redhat.com, vgoyal@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, mingo@redhat.com,
-        Takao Indoh <indou.takao@jp.fujitsu.com>
-Message-Id: <20121010074612.1084.52398.sendpatchset@indoh>
-In-Reply-To: <20121010074553.1084.52175.sendpatchset@indoh>
-References: <20121010074553.1084.52175.sendpatchset@indoh>
-Subject: [PATCH v3 2/2] x86, pci: Enable PCI INTx when MSI is disabled
-Date: Wed, 10 Oct 2012 16:51:21 +0900 (JST)
+	Wed, 10 Oct 2012 03:53:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <201210091535.56487.arnd@arndb.de>
+References: <201210091535.56487.arnd@arndb.de>
+Date: Wed, 10 Oct 2012 09:53:55 +0200
+Message-ID: <CACRpkdZE9xjKB_+nY263fBefBy7Hsgo7uxTsHs78xbAr3_N-VQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: sirf: remove sirfsoc_gpio_set_pull function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables INTx if MSI is disabled in pcibios_enable_device().
-In normal case interrupt disable bit in command register is 0b on boot
-time, but in case of kdump, this bit may be 1b. It causes problems of
-some drivers. At leaset I confirmed mptsas driver does not work in such
-a case. This patch fix this problem.
+On Tue, Oct 9, 2012 at 5:35 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
----
- arch/x86/pci/common.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+> The prima2 platform advertises needing no mach/gpio.h header file,
+> but its pinctrl driver now has a sirfsoc_gpio_set_pull function
+> that uses constants defined in arch/arm/mach-prima2/include/mach/gpio.h,
+> which fails to build.
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 720e973..2bb7ecc 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -615,8 +615,10 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
- 	if ((err = pci_enable_resources(dev, mask)) < 0)
- 		return err;
- 
--	if (!pci_dev_msi_enabled(dev))
-+	if (!pci_dev_msi_enabled(dev)) {
-+		pci_intx(dev, true);
- 		return pcibios_enable_irq(dev);
-+	}
- 	return 0;
- }
- 
+Applied to my pinctrl "fixes" branch with Barry's ACK.
 
+Thanks!
+Linus Walleij
