@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab2JKAOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:14:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54900 "EHLO
+	id S932824Ab2JKAOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:14:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35185 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932775Ab2JKAOc (ORCPT
+	by vger.kernel.org with ESMTP id S932775Ab2JKAOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:14:32 -0400
-X-Sasl-enc: RbU9EwWoZjG/PMwtX0hXbdHPcR6KConipG5UtRLpDuy2 1349914471
+	Wed, 10 Oct 2012 20:14:38 -0400
+X-Sasl-enc: AuVVLzsA6fx3b6qOBleQpjfWA9O8bvPsZR8gNFwAEIHo 1349914476
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 099/133] drm/i915: Fix GT_MODE default value
-Date: Thu, 11 Oct 2012 07:52:05 +0900
-Message-Id: <20121010224912.333302920@linuxfoundation.org>
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 100/133] ia64: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:06 +0900
+Message-Id: <20121010224912.515372953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,51 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-commit f8f2ac9a76b0f80a6763ca316116a7bab8486997 upstream.
+commit 93482f4ef1093f5961a63359a34612183d6beea0 upstream.
 
-I can't even find how I figured this might be needed anymore. But sure
-enough, the value I'm reading back on platforms doesn't match what the
-docs recommends.
+Traditionally, the entire idle task served as an RCU quiescent state.
+But when RCU read side critical sections started appearing within the
+idle loop, this traditional strategy became untenable.  The fix was to
+create new RCU APIs named rcu_idle_enter() and rcu_idle_exit(), which
+must be called by each architecture's idle loop so that RCU can tell
+when it is safe to ignore a given idle CPU.
 
-It seemed to fix Chris' GT1 in limited testing as well.
+Unfortunately, this fix was never applied to ia64, a shortcoming remedied
+by this commit.
 
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested by: Tony Luck <tony.luck@intel.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h |    3 +++
- drivers/gpu/drm/i915/intel_pm.c |    5 +++++
- 2 files changed, 8 insertions(+)
+ arch/ia64/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -514,6 +514,9 @@
- # define VS_TIMER_DISPATCH				(1 << 6)
- # define MI_FLUSH_ENABLE				(1 << 12)
+--- a/arch/ia64/kernel/process.c
++++ b/arch/ia64/kernel/process.c
+@@ -29,6 +29,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/utsname.h>
+ #include <linux/tracehook.h>
++#include <linux/rcupdate.h>
  
-+#define GEN6_GT_MODE	0x20d0
-+#define   GEN6_GT_MODE_HI	(1 << 9)
-+
- #define GFX_MODE	0x02520
- #define GFX_MODE_GEN7	0x0229c
- #define RING_MODE_GEN7(ring)	((ring)->mmio_base+0x29c)
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3363,6 +3363,11 @@ static void gen6_init_clock_gating(struc
- 			   DISPPLANE_TRICKLE_FEED_DISABLE);
- 		intel_flush_display_plane(dev_priv, pipe);
- 	}
-+
-+	/* The default value should be 0x200 according to docs, but the two
-+	 * platforms I checked have a 0 for this. (Maybe BIOS overrides?) */
-+	I915_WRITE(GEN6_GT_MODE, _MASKED_BIT_DISABLE(0xffff));
-+	I915_WRITE(GEN6_GT_MODE, _MASKED_BIT_ENABLE(GEN6_GT_MODE_HI));
- }
+ #include <asm/cpu.h>
+ #include <asm/delay.h>
+@@ -279,6 +280,7 @@ cpu_idle (void)
  
- static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		if (can_do_pal_halt) {
+ 			current_thread_info()->status &= ~TS_POLLING;
+ 			/*
+@@ -309,6 +311,7 @@ cpu_idle (void)
+ 			normal_xtp();
+ #endif
+ 		}
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 		check_pgt_cache();
+ 		if (cpu_is_offline(cpu))
 
 
