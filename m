@@ -1,153 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2JJNf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:35:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8859 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab2JJNfZ (ORCPT
+	id S1756681Ab2JJOS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:18:28 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33059 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab2JJOS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:35:25 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=XLHUghm2YIoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=4NeZhUYj7XsA:10 a=VwQbUJbxAAAA:8 a=jQ7QLwwa_tqRxytmtO8A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133523.194434423@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:34:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 1/8] random: Make it work on rt
-References: <20121010133406.053812290@goodmis.org>
-Content-Disposition: inline; filename=0001-random-Make-it-work-on-rt.patch
+	Wed, 10 Oct 2012 10:18:26 -0400
+Date: Wed, 10 Oct 2012 10:06:36 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Brown, Len" <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "Tang, Feng" <feng.tang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH v5 1/2] ACPI: Add early console framework for DBGP/DBG2.
+Message-ID: <20121010140635.GE4005@phenom.dumpdata.com>
+References: <cover.1347453194.git.zetalog@gmail.com>
+ <6a6a79654294bf4a3a9df1cf81880a44aeea4b44.1349749925.git.lv.zheng@intel.com>
+ <20121009170220.GE25276@phenom.dumpdata.com>
+ <1AE640813FDE7649BE1B193DEA596E88B9C9BE@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88B9C9BE@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Wed, Oct 10, 2012 at 01:31:54AM +0000, Zheng, Lv wrote:
+> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > > Reviewed-by: Len Brown <len.brown@intel.com>
+> > > Reviewed-by: Rui Zhang <rui.zhang@intel.com>
+> > > Reviewed-by: Ying Huang <ying.huang@intel.com>
+> > > Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
+> > Please don't include that unless I (or other folks looking at your code) say
+> > explicitly 'Acked' or 'Reviewed-by'
+> 
+> ACK.
+> I'll remove these names and resend.  Thanks.
+> 
+> > > +#define DEBUG
+> > That should not be the default case.
+> 
+> RFC.
 
-Delegate the random insertion to the forced threaded interrupt
-handler. Store the return IP of the hard interrupt handler in the irq
-descriptor and feed it into the random generator as a source of
-entropy.
+The title of the patch does not have RFC anymore.. Please put it back
+then.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/char/random.c   |   10 ++++++----
- include/linux/irqdesc.h |    1 +
- include/linux/random.h  |    2 +-
- kernel/irq/handle.c     |    7 +++++--
- kernel/irq/manage.c     |    6 ++++++
- 5 files changed, 19 insertions(+), 7 deletions(-)
+> If we do not add ignore_loglevel to the command line, the acpi earlycon will be mute just as what you want.
+> Do you really want this to be:
+> #undef DEBUG
+> If we do this, all pr_debug invocations in this file will be empty in compilation stage and are there any other means for us to view the output of ACPI earlycon without recompiling?
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index feae549..f786798 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -745,18 +745,16 @@ EXPORT_SYMBOL_GPL(add_input_randomness);
- 
- static DEFINE_PER_CPU(struct fast_pool, irq_randomness);
- 
--void add_interrupt_randomness(int irq, int irq_flags)
-+void add_interrupt_randomness(int irq, int irq_flags, __u64 ip)
- {
- 	struct entropy_store	*r;
- 	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
--	struct pt_regs		*regs = get_irq_regs();
- 	unsigned long		now = jiffies;
- 	__u32			input[4], cycles = get_cycles();
- 
- 	input[0] = cycles ^ jiffies;
- 	input[1] = irq;
--	if (regs) {
--		__u64 ip = instruction_pointer(regs);
-+	if (ip) {
- 		input[2] = ip;
- 		input[3] = ip >> 32;
- 	}
-@@ -770,7 +768,11 @@ void add_interrupt_randomness(int irq, int irq_flags)
- 	fast_pool->last = now;
- 
- 	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
-+#ifndef CONFIG_PREEMPT_RT_FULL
- 	__mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
-+#else
-+	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool), NULL);
-+#endif
- 	/*
- 	 * If we don't have a valid cycle counter, and we see
- 	 * back-to-back timer interrupts, then skip giving credit for
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 9a323d1..5bf5add 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -52,6 +52,7 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	u64			random_ip;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
-diff --git a/include/linux/random.h b/include/linux/random.h
-index ac621ce..9ae01e2 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -51,7 +51,7 @@ struct rnd_state {
- extern void add_device_randomness(const void *, unsigned int);
- extern void add_input_randomness(unsigned int type, unsigned int code,
- 				 unsigned int value);
--extern void add_interrupt_randomness(int irq, int irq_flags);
-+extern void add_interrupt_randomness(int irq, int irq_flags, __u64 ip);
- 
- extern void get_random_bytes(void *buf, int nbytes);
- extern void get_random_bytes_arch(void *buf, int nbytes);
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 311c4e6..7f50c55 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -132,6 +132,8 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
- irqreturn_t
- handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- {
-+	struct pt_regs *regs = get_irq_regs();
-+	u64 ip = regs ? instruction_pointer(regs) : 0;
- 	irqreturn_t retval = IRQ_NONE;
- 	unsigned int flags = 0, irq = desc->irq_data.irq;
- 
-@@ -173,8 +175,9 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- 	} while (action);
- 
- #ifndef CONFIG_PREEMPT_RT_FULL
--	/* FIXME: Can we unbreak that ? */
--	add_interrupt_randomness(irq, flags);
-+	add_interrupt_randomness(irq, flags, ip);
-+#else
-+	desc->random_ip = ip;
- #endif
- 
- 	if (!noirqdebug)
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index ede56ac..90bf44a 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -814,6 +814,12 @@ static int irq_thread(void *data)
- 		if (!noirqdebug)
- 			note_interrupt(action->irq, desc, action_ret);
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		migrate_disable();
-+		add_interrupt_randomness(action->irq, 0,
-+					 desc->random_ip ^ (u64) action);
-+		migrate_enable();
-+#endif
- 		wake_threads_waitq(desc);
- 	}
- 
--- 
-1.7.10.4
+Correct. By the time you remove the 'RFC' part this should be the
+default.
+> 
+> > > +DECLARE_BITMAP(acpi_early_flags, MAX_ACPI_DBG_PORTS);
+> > static?
+> 
+> ACK.
+> I'll do the modification.
+> 
+> > > +int acpi_early_enabled;
+> > __read_mostly and you could also make it a bool.
+> 
+> NAK.
+> I think this variable will be read only once and written up to 16 times so __read_mostly is not required.
+> I'll check and add __init and __initdata for this patch.
+> 
+> > > +	set_bit(port, acpi_early_flags);
+> > > +	if (keep)
+> > > +		set_bit(port+MAX_ACPI_DBG_PORTS, acpi_early_flags);
+> > Huh? The bitmap is up to MAX_ACPI_DB_PORTS, but here you offset it past
+> > that? Why?
+> 
+> ACK.
+> It's my mistake.  The size of the bitmap should be "MAX_ACPI_DBG_PORTS<<1 or MAX_ACPI_DBG_PORTS*2".
+> The reason is:
+> I think MAX_ACPI_DBG_PORTS=4 is enough in this case.
+> Since the systems running Linux are 32/64 bit architectures, using 2 bitmaps will be waste.
+> As the systems are at least 32 bit, the MAX_ACPI_DB_PORTS is defined as 16 to make full use of the bitmap.
 
+> 
+> > > +	if (!acpi_early_console_enabled(info->port_index))
+> > > +		return 0;
+> > Not -ENODEV?
+> 
+> NAK.
+> This is to support "MULTIPLE DBG2 debug ports".
+> 
+> ** MULTIPLE DBGP table versions and MULTIPLE DBG2 debug ports support **
+> The whole patch takes ENODEV as the semantics of "table not exist or table version not supported" in PROBE/START stage so that we can obtain the ability of probing Microsoft's future tables in the order from DBGn, ..., DBG2, DBGP.
+> We should not return here as users may pass the following command line:
+> earlyprintk=acpi2,keep
+> to let the first 2 debug ports mute, but take the 3rd as a Linux earlycon.
 
+OK? How will this function get called three times then? I thought it
+would just get called once?
+
+> 
+> > > +	while (((unsigned long)entry) + sizeof(struct acpi_dbg2_device) <
+> > > +	       tbl_end) {
+> > Just make it one line. Ignore the 80 characters limit here.
+> 
+> ACK.
+> I'll try to implement this within 80 characters.
+
+Well, you don't have to - not for this.
+> 
+> > > +		if (!max_entries || count++ < max_entries) {
+> > How about you just make this 'count'
+> > > +			pr_debug("early: DBG2 PROBE - console %d(%04x:%04x).\n",
+> > > +				 count-1,
+> > > +				 entry->port_type, entry->port_subtype);
+> > > +			devinfo.port_index = (u8)count-1;
+> > Then you don't this 'count -1'
+> > and then do
+> > 		count++ here?
+> 
+> ACK.
+> It's my mistake, the previous version uses port_index=1 as the first debug port, but this version takes 0 as the first port.
+> 
+> > > +			acpi_early_console_start(&devinfo);
+> > no check of the return value to see whether you should return immediately?
+> 
+> NAK.
+> See " MULTIPLE DBGP tables and MULTIPLE DBG2 debug ports support" above.
+> 
+> > > +	acpi_early_console_start(&devinfo);
+> > how about 'return acpi_early_console_start(..)'
+> 
+> NAK.
+> See " MULTIPLE DBGP tables and MULTIPLE DBG2 debug ports support" above.
+> 
+> > > +	if (acpi_table_parse(ACPI_SIG_DBG2, acpi_parse_dbg2) != 0)
+> > > +		acpi_table_parse(ACPI_SIG_DBGP, acpi_parse_dbgp);
+> 
+> RFC.
+> This is to support "MULTIPLE DBGP table versions".
+> 
+> 
