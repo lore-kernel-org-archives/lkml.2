@@ -1,115 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab2JJLn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 07:43:59 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:36443
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752755Ab2JJLn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 07:43:57 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: [alsa-devel] [PATCH] ASoC: codecs: da9055: Minor improvements
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Oct 2012 17:24:53 +0530
-Message-ID: <1349870093.13275.16.camel@matrix>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+	id S932148Ab2JJKKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:10:50 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58681 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755563Ab2JJKKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:10:03 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v3 09/13] vfs: add one wq to update map info periodically
+Date: Wed, 10 Oct 2012 18:07:31 +0800
+Message-Id: <1349863655-29320-10-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+x-cbid: 12101010-5930-0000-0000-00000CEFC07B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes two minor improvements for da9055 codec driver
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-(1) Adding support for DSP mode of AIF
-(2) Muting Mic PGAs during ALC calibration process
+  Add a per-superblock workqueue and a work_struct
+ to run periodic work to update map info on each superblock.
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- sound/soc/codecs/da9055.c |   26 +++++++++++++++++++++++++-
- 1 files changed, 25 insertions(+), 1 deletions(-)
+ fs/hot_tracking.c            |   94 ++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_tracking.h            |    3 +
+ include/linux/hot_tracking.h |    2 +
+ 3 files changed, 99 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
-index 185d8dd..abf3e43 100644
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -173,11 +173,18 @@
- #define DA9055_AIF_FORMAT_I2S_MODE	(0 << 0)
- #define DA9055_AIF_FORMAT_LEFT_J	(1 << 0)
- #define DA9055_AIF_FORMAT_RIGHT_J	(2 << 0)
-+#define DA9055_AIF_FORMAT_DSP		(3 << 0)
- #define DA9055_AIF_WORD_S16_LE		(0 << 2)
- #define DA9055_AIF_WORD_S20_3LE		(1 << 2)
- #define DA9055_AIF_WORD_S24_LE		(2 << 2)
- #define DA9055_AIF_WORD_S32_LE		(3 << 2)
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index a8dc599..f333c47 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -15,6 +15,8 @@
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/hardirq.h>
++#include <linux/kthread.h>
++#include <linux/freezer.h>
+ #include <linux/fs.h>
+ #include <linux/blkdev.h>
+ #include <linux/types.h>
+@@ -623,6 +625,88 @@ static void hot_map_array_exit(struct hot_info *root)
+ }
  
-+/* MIC_L_CTRL bit fields */
-+#define DA9055_MIC_L_MUTE_EN		(1 << 6)
+ /*
++ * Update temperatures for each hot inode item and
++ * hot range item for aging purposes
++ */
++static void hot_temperature_update_work(struct work_struct *work)
++{
++	struct hot_update_work *hot_work =
++			container_of(work, struct hot_update_work, work);
++	struct hot_info *root = hot_work->hot_info;
++	struct hot_inode_item *hi_nodes[8];
++	unsigned long delay = HZ * HEAT_UPDATE_DELAY;
++	u64 ino = 0;
++	int i, n;
 +
-+/* MIC_R_CTRL bit fields */
-+#define DA9055_MIC_R_MUTE_EN		(1 << 6)
++	do {
++		while (1) {
++			spin_lock(&root->lock);
++			n = radix_tree_gang_lookup(&root->hot_inode_tree,
++					   (void **)hi_nodes, ino,
++					   ARRAY_SIZE(hi_nodes));
++			if (!n) {
++				spin_unlock(&root->lock);
++				break;
++			}
 +
- /* MIXIN_L_CTRL bit fields */
- #define DA9055_MIXIN_L_MIX_EN		(1 << 3)
++			ino = hi_nodes[n - 1]->i_ino + 1;
++			for (i = 0; i < n; i++) {
++				kref_get(&hi_nodes[i]->hot_inode.refs);
++				hot_map_array_update(
++					&hi_nodes[i]->hot_inode.hot_freq_data, root);
++				hot_range_update(hi_nodes[i], root);
++				hot_inode_item_put(hi_nodes[i]);
++			}
++			spin_unlock(&root->lock);
++		}
++
++		if (unlikely(freezing(current))) {
++			__refrigerator(true);
++		} else {
++			set_current_state(TASK_INTERRUPTIBLE);
++			if (!kthread_should_stop()) {
++				schedule_timeout(delay);
++			}
++			__set_current_state(TASK_RUNNING);
++		}
++	} while (!kthread_should_stop());
++}
++
++static int hot_wq_init(struct hot_info *root)
++{
++	struct hot_update_work *hot_work;
++	int ret = 0;
++
++	root->update_wq = alloc_workqueue(
++		"hot_temperature_update", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
++	if (!root->update_wq) {
++		printk(KERN_ERR "%s: failed to create "
++			"temperature update workqueue\n",
++			__func__);
++		return 1;
++	}
++
++	hot_work = kmalloc(sizeof(*hot_work), GFP_NOFS);
++	if (hot_work) {
++		hot_work->hot_info = root;
++		INIT_WORK(&hot_work->work, hot_temperature_update_work);
++		queue_work(root->update_wq, &hot_work->work);
++	} else {
++		printk(KERN_ERR "%s: failed to create update work\n",
++				__func__);
++		ret = 1;
++	}
++
++	return ret;
++}
++
++static void hot_wq_exit(struct workqueue_struct *wq)
++{
++	flush_workqueue(wq);
++	destroy_workqueue(wq);
++}
++
++/*
+  * Initialize kmem cache for hot_inode_item and hot_range_item.
+  */
+ static int __init hot_cache_init(void)
+@@ -686,10 +770,19 @@ void hot_track_init(struct super_block *sb)
+ 	hot_inode_tree_init(root);
+ 	hot_map_array_init(root);
  
-@@ -476,7 +483,7 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 			     struct snd_ctl_elem_value *ucontrol)
++	err = hot_wq_init(root);
++	if (err)
++		goto failed_wq;
++
+ 	printk(KERN_INFO "vfs: turning on hot data tracking\n");
+ 
+ 	return;
+ 
++failed_wq:
++	hot_map_array_exit(root);
++	hot_inode_tree_exit(root);
++	sb->hot_flags &= ~MS_HOT_TRACKING;
++	kfree(root);
+ failed_root:
+ 	hot_cache_exit();
+ }
+@@ -698,6 +791,7 @@ void hot_track_exit(struct super_block *sb)
  {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
--	u8 reg_val, adc_left, adc_right;
-+	u8 reg_val, adc_left, adc_right, mic_left, mic_right;
- 	int avg_left_data, avg_right_data, offset_l, offset_r;
+ 	struct hot_info *root = global_hot_tracking_info;
  
- 	if (ucontrol->value.integer.value[0]) {
-@@ -485,6 +492,16 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 		 * offsets must be done first
- 		 */
++	hot_wq_exit(root->update_wq);
+ 	hot_map_array_exit(root);
+ 	hot_inode_tree_exit(root);
+ 	sb->hot_flags &= ~MS_HOT_TRACKING;
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+index d19e64a..7a79a6d 100644
+--- a/fs/hot_tracking.h
++++ b/fs/hot_tracking.h
+@@ -36,6 +36,9 @@
+  */
+ #define TIME_TO_KICK 400
  
-+		/* Save current values from Mic control registers */
-+		mic_left = snd_soc_read(codec, DA9055_MIC_L_CTRL);
-+		mic_right = snd_soc_read(codec, DA9055_MIC_R_CTRL);
++/* set how often to update temperatures (seconds) */
++#define HEAT_UPDATE_DELAY 400
 +
-+		/* Mute Mic PGA Left and Right */
-+		snd_soc_update_bits(codec, DA9055_MIC_L_CTRL,
-+				    DA9055_MIC_L_MUTE_EN, DA9055_MIC_L_MUTE_EN);
-+		snd_soc_update_bits(codec, DA9055_MIC_R_CTRL,
-+				    DA9055_MIC_R_MUTE_EN, DA9055_MIC_R_MUTE_EN);
-+
- 		/* Save current values from ADC control registers */
- 		adc_left = snd_soc_read(codec, DA9055_ADC_L_CTRL);
- 		adc_right = snd_soc_read(codec, DA9055_ADC_R_CTRL);
-@@ -520,6 +537,10 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 		/* Restore original values of ADC control registers */
- 		snd_soc_write(codec, DA9055_ADC_L_CTRL, adc_left);
- 		snd_soc_write(codec, DA9055_ADC_R_CTRL, adc_right);
-+
-+		/* Restore original values of Mic control registers */
-+		snd_soc_write(codec, DA9055_MIC_L_CTRL, mic_left);
-+		snd_soc_write(codec, DA9055_MIC_R_CTRL, mic_right);
- 	}
+ /*
+  * The following comments explain what exactly comprises a unit of heat.
+  *
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 7114179..b37e0f8 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -84,6 +84,8 @@ struct hot_info {
  
- 	return snd_soc_put_volsw(kcontrol, ucontrol);
-@@ -1155,6 +1176,9 @@ static int da9055_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
- 	case SND_SOC_DAIFMT_RIGHT_J:
- 		aif_ctrl = DA9055_AIF_FORMAT_RIGHT_J;
- 		break;
-+	case SND_SOC_DAIFMT_DSP_A:
-+		aif_ctrl = DA9055_AIF_FORMAT_DSP;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
+ 	/* map of range temperature */
+ 	struct hot_map_head heat_range_map[HEAT_MAP_SIZE];
++
++	struct workqueue_struct *update_wq;
+ };
+ 
+ extern struct hot_info *global_hot_tracking_info;
 -- 
-1.7.1
-
+1.7.6.5
 
