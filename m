@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab2JJUad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:30:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35540 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757215Ab2JJUab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:30:31 -0400
-Date: Wed, 10 Oct 2012 13:30:29 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-cc: Tang Chen <tangchen@cn.fujitsu.com>, mingo@redhat.com,
-        miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <1349860216.7880.105.camel@twins>
-Message-ID: <alpine.DEB.2.00.1210101324000.28583@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
- <1349860216.7880.105.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757288Ab2JJUfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:35:04 -0400
+Received: from foo.stuge.se ([212.116.89.98]:42226 "HELO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757192Ab2JJUfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 16:35:01 -0400
+Message-ID: <20121010203459.20663.qmail@stuge.se>
+Date: Wed, 10 Oct 2012 22:34:59 +0200
+From: Peter Stuge <peter@stuge.se>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: REGRESSION: usbdevfs:
+	Use-scatter-gather-lists-for-large-bulk-transfers
+Mail-Followup-To: Henrik Rydberg <rydberg@euromail.se>,
+	Hans de Goede <hdegoede@redhat.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20121010203118.GA792@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121010203118.GA792@polaris.bitmath.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Peter Zijlstra wrote:
+Hej Henrik,
 
-> > If cpu_to_node() always returns a valid node id even if all cpus on the 
-> > node are offline, then the cpumask_of_node() implementation, which the 
-> > sched code is using, should either return an empty cpumask (if 
-> > node_to_cpumask_map[nid] isn't freed) or cpu_online_mask.  The change in 
-> > behavior here occurred because 
-> > cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch in -mm doesn't 
-> > return a valid node id and forces it to return -1 so a kzalloc_node(..., 
-> > -1) fallsback to allocate anywhere.
+Henrik Rydberg wrote:
+> commit 3d97ff63f8997761f12c8fbe8082996c6eeaba1a
+> Author: Hans de Goede <hdegoede@redhat.com>
+> Date:   Wed Jul 4 09:18:03 2012 +0200
 > 
-> I think that's broken semantics.. so far the entire cpu<->node mapping
-> was invariant during hotplug. Changing that is going to be _very_
-> interesting and cannot be done lightly.
+>     usbdevfs: Use scatter-gather lists for large bulk transfers
+>     
+> breaks an usb programming cable over here. The problem is reported as
+> "bulk tranfer failed" [sic] by the tool, and bisection leads to this
+> commit. Reverting on top of 3.6 solves it for me.
 > 
-> Because as I said, per-cpu memory is preserved over hotplug, and that
-> has numa affinity.
-> 
-> So for now, let me NACK that patch. You cannot go change stuff like
-> that.
-> 
+> I am happy to test alternatives.
 
-Agreed, that makes the nack-count up to 2 now.  Andrew, please remove 
-cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch
-cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch
-from -mm.
+In order to make full use of the new kernel commit you also need
+changes in libusb, if the tool uses libusb, but I agree that the
+kernel change must under no circumstance cause existing userland
+software to regress.
 
-> > But if you only need cpu_to_node() when waking up to find a runnable cpu 
-> > for this NUMA information, then I think you can just change the 
-> > kzalloc_node() in alloc_{fair,rt}_sched_group() to do 
-> > kzalloc(..., cpu_online(cpu) ? cpu_to_node(cpu) : NUMA_NO_NODE).
-> 
-> That's a confusing statement, the wakeup stuff and the
-> alloc_{fair,rt}_sched_group() stuff are unrelated, although both sites
-> might need fixing if we're going to go ahead with this.
-> 
+What is the programming cable and software that uses it?
 
-The alternative is for node hot-remove to do an iteration of all possible 
-cpus and set cpu-to-node to be NUMA_NO_NODE for all offlined cpus that map 
-to that node.  If cpu_online() is true for any of those cpus, then 
-obviously it can't be offlined.  We want to do this so that 
-kzalloc_node(..., cpu_to_node()) fallsback to allocating from any node, 
-which it should, and because a subsequent node hot-add event that reuses 
-the same node id may not be the same node.
+
+//Peter
