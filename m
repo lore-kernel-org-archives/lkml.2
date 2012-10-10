@@ -1,90 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2JJG1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 02:27:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64466 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2JJG1G (ORCPT
+	id S1753181Ab2JJG14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 02:27:56 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62708 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab2JJG1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 02:27:06 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: <linux-mtd@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Marek Vasut <marex@denx.de>
-Subject: [PATCH for 3.7] mtd: nand: fix Samsung SLC NAND identification regression
-Date: Tue,  9 Oct 2012 23:26:06 -0700
-Message-Id: <1349850366-4731-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 10 Oct 2012 02:27:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1210080924310.28357@pobox.suse.cz>
+References: <alpine.LNX.2.00.1210021810350.23544@pobox.suse.cz>
+	<20121002170149.GC2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210022324050.23544@pobox.suse.cz>
+	<alpine.LNX.2.00.1210022331130.23544@pobox.suse.cz>
+	<alpine.LNX.2.00.1210022356370.23544@pobox.suse.cz>
+	<20121002233138.GD2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210030142570.23544@pobox.suse.cz>
+	<20121003001530.GF2465@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210030227430.23544@pobox.suse.cz>
+	<0000013a26fb253a-fb5df733-ad41-47c1-af1d-3d6739e417de-000000@email.amazonses.com>
+	<alpine.LNX.2.00.1210031631150.23544@pobox.suse.cz>
+	<506C52FC.4040305@linux.vnet.ibm.com>
+	<alpine.LNX.2.00.1210031703500.23544@pobox.suse.cz>
+	<alpine.DEB.2.00.1210031148520.2412@chino.kir.corp.google.com>
+	<alpine.LNX.2.00.1210080924310.28357@pobox.suse.cz>
+Date: Wed, 10 Oct 2012 09:27:47 +0300
+X-Google-Sender-Auth: VZOQbCpDROIvTjUPk0kkGJBv664
+Message-ID: <CAOJsxLEg5U1VgZfZhW=cKjDAFRHfHTeQjKCjfmipS6dydR78ZA@mail.gmail.com>
+Subject: Re: [PATCH] [RESEND] mm, slab: release slab_mutex earlier in kmem_cache_destroy()
+From: Pekka Enberg <penberg@kernel.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A combination of the following two commits caused a regression in 3.7-rc1
-when identifying some Samsung NAND, so that some previously working NAND
-were no longer detected properly:
+On Mon, Oct 8, 2012 at 10:26 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> Commit 1331e7a1bbe1 ("rcu: Remove _rcu_barrier() dependency on
+> __stop_machine()") introduced slab_mutex -> cpu_hotplug.lock dependency
+> through kmem_cache_destroy() -> rcu_barrier() -> _rcu_barrier() ->
+> get_online_cpus().
+>
+> Lockdep thinks that this might actually result in ABBA deadlock,
+> and reports it as below:
+>
+> === [ cut here ] ===
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.6.0-rc5-00004-g0d8ee37 #143 Not tainted
+>  -------------------------------------------------------
+>  kworker/u:2/40 is trying to acquire lock:
+>   (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+>
+>  but task is already holding lock:
+>   (slab_mutex){+.+.+.}, at: [<ffffffff81176e15>] kmem_cache_destroy+0x45/0xe0
+>
+>  which lock already depends on the new lock.
+>
+>  the existing dependency chain (in reverse order) is:
+>
+>  -> #2 (slab_mutex){+.+.+.}:
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff81558cb5>] cpuup_callback+0x2f/0xbe
+>         [<ffffffff81564b83>] notifier_call_chain+0x93/0x140
+>         [<ffffffff81076f89>] __raw_notifier_call_chain+0x9/0x10
+>         [<ffffffff8155719d>] _cpu_up+0xba/0x14e
+>         [<ffffffff815572ed>] cpu_up+0xbc/0x117
+>         [<ffffffff81ae05e3>] smp_init+0x6b/0x9f
+>         [<ffffffff81ac47d6>] kernel_init+0x147/0x1dc
+>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+>
+>  -> #1 (cpu_hotplug.lock){+.+.+.}:
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff81049197>] get_online_cpus+0x37/0x50
+>         [<ffffffff810f21bb>] _rcu_barrier+0xbb/0x1e0
+>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+>         [<ffffffff8118c129>] deactivate_locked_super+0x49/0x90
+>         [<ffffffff8118cc01>] deactivate_super+0x61/0x70
+>         [<ffffffff811aaaa7>] mntput_no_expire+0x127/0x180
+>         [<ffffffff811ab49e>] sys_umount+0x6e/0xd0
+>         [<ffffffff81569979>] system_call_fastpath+0x16/0x1b
+>
+>  -> #0 (rcu_sched_state.barrier_mutex){+.+...}:
+>         [<ffffffff810adb4e>] check_prev_add+0x3de/0x440
+>         [<ffffffff810ae1e2>] validate_chain+0x632/0x720
+>         [<ffffffff810ae5d9>] __lock_acquire+0x309/0x530
+>         [<ffffffff810ae921>] lock_acquire+0x121/0x190
+>         [<ffffffff8155d4cc>] __mutex_lock_common+0x5c/0x450
+>         [<ffffffff8155d9ee>] mutex_lock_nested+0x3e/0x50
+>         [<ffffffff810f2126>] _rcu_barrier+0x26/0x1e0
+>         [<ffffffff810f22f0>] rcu_barrier_sched+0x10/0x20
+>         [<ffffffff810f2309>] rcu_barrier+0x9/0x10
+>         [<ffffffff81176ea1>] kmem_cache_destroy+0xd1/0xe0
+>         [<ffffffffa04c3154>] nf_conntrack_cleanup_net+0xe4/0x110 [nf_conntrack]
+>         [<ffffffffa04c31aa>] nf_conntrack_cleanup+0x2a/0x70 [nf_conntrack]
+>         [<ffffffffa04c42ce>] nf_conntrack_net_exit+0x5e/0x80 [nf_conntrack]
+>         [<ffffffff81454b79>] ops_exit_list+0x39/0x60
+>         [<ffffffff814551ab>] cleanup_net+0xfb/0x1b0
+>         [<ffffffff8106917b>] process_one_work+0x26b/0x4c0
+>         [<ffffffff81069f3e>] worker_thread+0x12e/0x320
+>         [<ffffffff8106f73e>] kthread+0x9e/0xb0
+>         [<ffffffff8156ab44>] kernel_thread_helper+0x4/0x10
+>
+>  other info that might help us debug this:
+>
+>  Chain exists of:
+>    rcu_sched_state.barrier_mutex --> cpu_hotplug.lock --> slab_mutex
+>
+>   Possible unsafe locking scenario:
+>
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(slab_mutex);
+>                                 lock(cpu_hotplug.lock);
+>                                 lock(slab_mutex);
+>    lock(rcu_sched_state.barrier_mutex);
+>
+>   *** DEADLOCK ***
+> === [ cut here ] ===
+>
+> This is actually a false positive. Lockdep has no way of knowing the fact
+> that the ABBA can actually never happen, because of special semantics of
+> cpu_hotplug.refcount and its handling in cpu_hotplug_begin(); the mutual
+> exclusion there is not achieved through mutex, but through
+> cpu_hotplug.refcount.
+>
+> The "neither cpu_up() nor cpu_down() will proceed past cpu_hotplug_begin()
+> until everyone who called get_online_cpus() will call put_online_cpus()"
+> semantics is totally invisible to lockdep.
+>
+> This patch therefore moves the unlock of slab_mutex so that rcu_barrier()
+> is being called with it unlocked. It has two advantages:
+>
+> - it slightly reduces hold time of slab_mutex; as it's used to protect
+>   the cachep list, it's not necessary to hold it over kmem_cache_free()
+>   call any more
+> - it silences the lockdep false positive warning, as it avoids lockdep ever
+>   learning about slab_mutex -> cpu_hotplug.lock dependency
+>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  mm/slab_common.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 9c21725..069a24e6 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -168,6 +168,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
+>                 list_del(&s->list);
+>
+>                 if (!__kmem_cache_shutdown(s)) {
+> +                       mutex_unlock(&slab_mutex);
+>                         if (s->flags & SLAB_DESTROY_BY_RCU)
+>                                 rcu_barrier();
+>
+> @@ -175,12 +176,14 @@ void kmem_cache_destroy(struct kmem_cache *s)
+>                         kmem_cache_free(kmem_cache, s);
+>                 } else {
+>                         list_add(&s->list, &slab_caches);
+> +                       mutex_unlock(&slab_mutex);
+>                         printk(KERN_ERR "kmem_cache_destroy %s: Slab cache still has objects\n",
+>                                 s->name);
+>                         dump_stack();
+>                 }
+> +       } else {
+> +               mutex_unlock(&slab_mutex);
+>         }
+> -       mutex_unlock(&slab_mutex);
+>         put_online_cpus();
+>  }
+>  EXPORT_SYMBOL(kmem_cache_destroy);
 
-    commit e3b88bd604283ef83ae6e8f53622d5b1ffe9d43a
-    mtd: nand: add generic READ ID length calculation functions
-
-    commit e2d3a35ee427aaba99b6c68a56609ce276c51270
-    mtd: nand: detect Samsung K9GBG08U0A, K9GAG08U0F ID
-
-Particularly, a regression was seen on Samsung K9F2G08U0B, with the
-following full 8-byte READ ID string:
-
-    ec da 10 95 44 00 ec da
-
-The basic problem is that Samsung manufactures both SLC and MLC NAND
-that use a non-standard decoding table for deriving information from
-their IDs. I have heuristically determined that all the chips that use
-the new table have ID strings which wrap around after the 6th byte.
-Unfortunately, I overlooked the fact that some older Samsung SLC (which
-use a different decoding table) have "5 byte ID strings" which also wrap
-around after the 6th byte.
-
-This patch re-introduces a distinction between these old and new Samsung
-NAND by checking that the 6th byte is non-zero, allowing both old and
-new Samsung NAND to be detected properly.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Tested-by: Brian Norris <computersforpeace@gmail.com>
-Reported-by: Marek Vasut <marex@denx.de>
-Tested-by: Marek Vasut <marex@denx.de>
----
-David,
-
-Marek and I just discovered this issue during the merge window. Please merge
-this fix in the 3.7-rc cycle. Thanks.
-
- drivers/mtd/nand/nand_base.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index ec6841d..d5ece6e 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2983,13 +2983,14 @@ static void nand_decode_ext_id(struct mtd_info *mtd, struct nand_chip *chip,
- 	/*
- 	 * Field definitions are in the following datasheets:
- 	 * Old style (4,5 byte ID): Samsung K9GAG08U0M (p.32)
--	 * New style   (6 byte ID): Samsung K9GAG08U0F (p.44)
-+	 * New Samsung (6 byte ID): Samsung K9GAG08U0F (p.44)
- 	 * Hynix MLC   (6 byte ID): Hynix H27UBG8T2B (p.22)
- 	 *
--	 * Check for ID length, cell type, and Hynix/Samsung ID to decide what
--	 * to do.
-+	 * Check for ID length, non-zero 6th byte, cell type, and Hynix/Samsung
-+	 * ID to decide what to do.
- 	 */
--	if (id_len == 6 && id_data[0] == NAND_MFR_SAMSUNG) {
-+	if (id_len == 6 && id_data[0] == NAND_MFR_SAMSUNG &&
-+			id_data[5] != 0x00) {
- 		/* Calc pagesize */
- 		mtd->writesize = 2048 << (extid & 0x03);
- 		extid >>= 2;
--- 
-1.7.11.3
-
+Applied, thanks!
