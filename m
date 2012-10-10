@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab2JJOgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:36:53 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40928 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932174Ab2JJOgv (ORCPT
+	id S1755447Ab2JJQbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:31:53 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22697 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2JJQbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:36:51 -0400
-Date: Wed, 10 Oct 2012 10:37:42 -0400
-From: Matt Porter <mporter@ti.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Mohammed, Afzal" <afzal@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
-Message-ID: <20121010143742.GE13724@beef>
-References: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
- <20121010140027.GB13724@beef>
- <79CD15C6BA57404B839C016229A409A83EB3B573@DBDE01.ent.ti.com>
- <20121010143501.GC13724@beef>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010143501.GC13724@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Oct 2012 12:31:52 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        srinivas.kandagatla@st.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] of/mdio: fix build errors when CONFIG_OF isn't set
+Date: Wed, 10 Oct 2012 12:31:23 -0400
+Message-Id: <1349886683-26351-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.7.12
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 10:35:01AM -0400, Matt Porter wrote:
-> On Wed, Oct 10, 2012 at 02:19:40PM +0000, Vaibhav Hiremath wrote:
-> > On Wed, Oct 10, 2012 at 19:30:27, Porter, Matt wrote:
-> > > On Tue, Oct 09, 2012 at 02:27:20PM +0530, Vaibhav Hiremath wrote:
-> > > > With recent changes in omap gpmc driver code, in case of DT
-> > > > boot mode, where bootloader does not configure gpmc cs space
-> > > > will result into kernel BUG() inside gpmc_mem_init() function,
-> > > > as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
-> > > > gpmc_config7[0].baseaddress is set to '0' on reset.
-> > > > 
-> > > > This use-case is applicable for any board/EVM which doesn't have
-> > > > any peripheral connected to gpmc cs0, for example BeagleXM and
-> > > > BeagleBone, so DT boot mode fails.
-> > > > 
-> > > > This patch adds of_have_populated_dt() check before creating
-> > > > device, so that for DT boot mode, gpmc probe will not be called
-> > > > which is expected behavior, as gpmc is not supported yet from DT.
-> > > > 
-> > > > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > > > Cc: Afzal Mohammed <afzal@ti.com>
-> > > > Cc: Tony Lindgren <tony@atomide.com>
-> > > > Cc Paul Walmsley <paul@pwsan.com>
-> > > > ---
-> > > > This should go in for rc1, as this breaks AM33xx boot.
-> > > 
-> > > Fixes BeagleBone on mainline.
-> > > 
-> > > Tested-by: Matt Porter <mporter@ti.com>
-> > > 
-> > 
-> > Thanks Matt and Afzal,
-> > 
-> > Tony can this be picked up for rc1?? I know you have already sent pull 
-> > request for rc1, but by any chance you are planning to send another request?
-> 
-> I also found a separate problem with the mcasp clock data that's needed
-> for rc1. I just posted a patch for that as I need both this patch and the
-> clock data fix to boot from current mainline.
+Commit f9dc9ac5 ("of/mdio: Add dummy functions in of_mdio.h.") has added
+empty stubs into of_mdio.h which were not static, this causes build errors
+when these symbols were defined across several objects.
 
-Disregard now that you got me pointed to the pull request with this :)
+Fix it by marking those stubs as 'static inline'.
 
--Matt
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ include/linux/of_mdio.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
+index 6ef49b8..7f17b9c 100644
+--- a/include/linux/of_mdio.h
++++ b/include/linux/of_mdio.h
+@@ -26,17 +26,17 @@ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
+ 
+ #else /* CONFIG_OF */
+-int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
++static inline int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ {
+ 	return -ENOSYS;
+ }
+ 
+-struct phy_device *of_phy_find_device(struct device_node *phy_np)
++static inline struct phy_device *of_phy_find_device(struct device_node *phy_np)
+ {
+ 	return NULL;
+ }
+ 
+-struct phy_device *of_phy_connect(struct net_device *dev,
++static inline struct phy_device *of_phy_connect(struct net_device *dev,
+ 					 struct device_node *phy_np,
+ 					 void (*hndlr)(struct net_device *),
+ 					 u32 flags, phy_interface_t iface)
+@@ -44,14 +44,14 @@ struct phy_device *of_phy_connect(struct net_device *dev,
+ 	return NULL;
+ }
+ 
+-struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
++static inline struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
+ 					 void (*hndlr)(struct net_device *),
+ 					 phy_interface_t iface)
+ {
+ 	return NULL;
+ }
+ 
+-struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
++static inline struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
+ {
+ 	return NULL;
+ }
+-- 
+1.7.12
+
