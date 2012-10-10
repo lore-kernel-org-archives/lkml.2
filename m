@@ -1,42 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab2JKAe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:34:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56944 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933021Ab2JKAex (ORCPT
+	id S933239Ab2JKAfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:35:19 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57713 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933208Ab2JKAX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:34:53 -0400
-Date: Wed, 10 Oct 2012 20:34:51 -0400 (EDT)
-Message-Id: <20121010.203451.2057992842427697875.davem@davemloft.net>
-To: viro@ZenIV.linux.org.uk
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121010051110.GC2616@ZenIV.linux.org.uk>
-References: <20121008.161806.2146082252793236167.davem@davemloft.net>
-	<20121010051110.GC2616@ZenIV.linux.org.uk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Oct 2012 20:23:59 -0400
+X-Sasl-enc: kpmQMeNSKK9JyfT37SihSGEkTHPQZjKwZSmobUjCOm29 1349915038
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 075/122] ALSA: hda - use LPIB for delay estimation
+Date: Thu, 11 Oct 2012 07:54:01 +0900
+Message-Id: <20121010225351.615170615@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
+References: <20121010225337.989799482@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Wed, 10 Oct 2012 06:11:10 +0100
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-> sparc64: fix ptrace interaction with force_successful_syscall_return()
->     
-> we want syscall_trace_leave() called on exit from any syscall;
-> skipping its call in case we'd done force_successful_syscall_return()
-> is broken...
->     
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+------------------
 
-My eyes say this one is good, I'm testing it now and will push to
-Linus if I don't hit any problems.
+From: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
 
-Thanks!
+commit 90accc58a6946e7245993da6079f88d8c29cb731 upstream.
+
+DMA Position in Buffer (DPIB) should be used for
+ring buffer management, while LPIB register provides
+information on the number of samples transfered on
+the link. The difference between the two pieces of
+information corresponds to hardware/DMA buffering.
+
+This patch reports this difference in runtime->delay, and
+removes the use of the COMBO mode on recent Intel hardware.
+
+Credits to Takashi Iwai for an initial patch.
+
+[rebased to for-next branch and replaced snd_printk() with
+ snd_printdd() by tiwai]
+
+Signed-off-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/hda_intel.c |   36 +++++++++++++++++++++++++++++-------
+ 1 file changed, 29 insertions(+), 7 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -538,6 +538,7 @@ enum {
+ #define AZX_DCAPS_ALIGN_BUFSIZE	(1 << 22)	/* buffer size alignment */
+ #define AZX_DCAPS_4K_BDLE_BOUNDARY (1 << 23)	/* BDLE in 4k boundary */
+ #define AZX_DCAPS_POSFIX_COMBO  (1 << 24)	/* Use COMBO as default */
++#define AZX_DCAPS_COUNT_LPIB_DELAY  (1 << 25)	/* Take LPIB as delay */
+ 
+ /* quirks for ATI SB / AMD Hudson */
+ #define AZX_DCAPS_PRESET_ATI_SB \
+@@ -2120,6 +2121,27 @@ static unsigned int azx_get_position(str
+ 
+ 	if (pos >= azx_dev->bufsize)
+ 		pos = 0;
++
++	/* calculate runtime delay from LPIB */
++	if (azx_dev->substream->runtime &&
++	    chip->position_fix[stream] == POS_FIX_POSBUF &&
++	    (chip->driver_caps & AZX_DCAPS_COUNT_LPIB_DELAY)) {
++		unsigned int lpib_pos = azx_sd_readl(azx_dev, SD_LPIB);
++		int delay;
++		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
++			delay = pos - lpib_pos;
++		else
++			delay = lpib_pos - pos;
++		if (delay < 0)
++			delay += azx_dev->bufsize;
++		if (delay >= azx_dev->period_bytes) {
++			snd_printdd("delay %d > period_bytes %d\n",
++				delay, azx_dev->period_bytes);
++			delay = 0; /* something is wrong */
++		}
++		azx_dev->substream->runtime->delay =
++			bytes_to_frames(azx_dev->substream->runtime, delay);
++	}
+ 	return pos;
+ }
+ 
+@@ -3260,7 +3282,7 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	/* CPT */
+ 	{ PCI_DEVICE(0x8086, 0x1c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* PBG */
+ 	{ PCI_DEVICE(0x8086, 0x1d20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+@@ -3268,26 +3290,26 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	/* Panther Point */
+ 	{ PCI_DEVICE(0x8086, 0x1e20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* Lynx Point */
+ 	{ PCI_DEVICE(0x8086, 0x8c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* Lynx Point-LP */
+ 	{ PCI_DEVICE(0x8086, 0x9c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* Lynx Point-LP */
+ 	{ PCI_DEVICE(0x8086, 0x9c21),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* Haswell */
+ 	{ PCI_DEVICE(0x8086, 0x0c0c),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	{ PCI_DEVICE(0x8086, 0x0d0c),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+-	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
+ 	/* SCH */
+ 	{ PCI_DEVICE(0x8086, 0x811b),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+
+
