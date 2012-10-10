@@ -1,197 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab2JJKKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:10:50 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58681 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755563Ab2JJKKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:10:03 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v3 09/13] vfs: add one wq to update map info periodically
-Date: Wed, 10 Oct 2012 18:07:31 +0800
-Message-Id: <1349863655-29320-10-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12101010-5930-0000-0000-00000CEFC07B
+	id S1755879Ab2JJMgR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:36:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33246 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754084Ab2JJMgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:36:13 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/zM68Dy2PzX2dzR4Zx80YpnYMJH4TA4aANoM2bPy
+	3UhqyLtaKcs+Eq
+Message-ID: <50756BB0.20005@gmx.de>
+Date: Wed, 10 Oct 2012 12:36:00 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120724 Icedove/3.0.11
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Wan ZongShun <mcuos.com@gmail.com>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH v2 7/8] video: mark nuc900fb_map_video_memory as __devinit
+References: <1349813638-4617-1-git-send-email-arnd@arndb.de> <1349813638-4617-8-git-send-email-arnd@arndb.de>
+In-Reply-To: <1349813638-4617-8-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 10/09/2012 08:13 PM, Arnd Bergmann wrote:
+> nuc900fb_map_video_memory is called by an devinit function
+> that may be called at run-time, but the function itself is
+> marked __init and will be discarded after boot.
+> 
+> To avoid calling into a function that may have been overwritten,
+> mark nuc900fb_map_video_memory itself as __devinit.
+> 
+> Without this patch, building nuc950_defconfig results in:
+> 
+> WARNING: drivers/video/built-in.o(.devinit.text+0x26c): Section mismatch in reference from the function nuc900fb_probe() to the function .init.text:nuc900fb_map_video_memory()
+> The function __devinit nuc900fb_probe() references
+> a function __init nuc900fb_map_video_memory().
+> If nuc900fb_map_video_memory is only used by nuc900fb_probe then
+> annotate nuc900fb_map_video_memory with a matching annotation.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Wan ZongShun <mcuos.com@gmail.com>
+> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Cc: linux-fbdev@vger.kernel.org
 
-  Add a per-superblock workqueue and a work_struct
- to run periodic work to update map info on each superblock.
+Applied.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/hot_tracking.c            |   94 ++++++++++++++++++++++++++++++++++++++++++
- fs/hot_tracking.h            |    3 +
- include/linux/hot_tracking.h |    2 +
- 3 files changed, 99 insertions(+), 0 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index a8dc599..f333c47 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -15,6 +15,8 @@
- #include <linux/module.h>
- #include <linux/spinlock.h>
- #include <linux/hardirq.h>
-+#include <linux/kthread.h>
-+#include <linux/freezer.h>
- #include <linux/fs.h>
- #include <linux/blkdev.h>
- #include <linux/types.h>
-@@ -623,6 +625,88 @@ static void hot_map_array_exit(struct hot_info *root)
- }
- 
- /*
-+ * Update temperatures for each hot inode item and
-+ * hot range item for aging purposes
-+ */
-+static void hot_temperature_update_work(struct work_struct *work)
-+{
-+	struct hot_update_work *hot_work =
-+			container_of(work, struct hot_update_work, work);
-+	struct hot_info *root = hot_work->hot_info;
-+	struct hot_inode_item *hi_nodes[8];
-+	unsigned long delay = HZ * HEAT_UPDATE_DELAY;
-+	u64 ino = 0;
-+	int i, n;
-+
-+	do {
-+		while (1) {
-+			spin_lock(&root->lock);
-+			n = radix_tree_gang_lookup(&root->hot_inode_tree,
-+					   (void **)hi_nodes, ino,
-+					   ARRAY_SIZE(hi_nodes));
-+			if (!n) {
-+				spin_unlock(&root->lock);
-+				break;
-+			}
-+
-+			ino = hi_nodes[n - 1]->i_ino + 1;
-+			for (i = 0; i < n; i++) {
-+				kref_get(&hi_nodes[i]->hot_inode.refs);
-+				hot_map_array_update(
-+					&hi_nodes[i]->hot_inode.hot_freq_data, root);
-+				hot_range_update(hi_nodes[i], root);
-+				hot_inode_item_put(hi_nodes[i]);
-+			}
-+			spin_unlock(&root->lock);
-+		}
-+
-+		if (unlikely(freezing(current))) {
-+			__refrigerator(true);
-+		} else {
-+			set_current_state(TASK_INTERRUPTIBLE);
-+			if (!kthread_should_stop()) {
-+				schedule_timeout(delay);
-+			}
-+			__set_current_state(TASK_RUNNING);
-+		}
-+	} while (!kthread_should_stop());
-+}
-+
-+static int hot_wq_init(struct hot_info *root)
-+{
-+	struct hot_update_work *hot_work;
-+	int ret = 0;
-+
-+	root->update_wq = alloc_workqueue(
-+		"hot_temperature_update", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
-+	if (!root->update_wq) {
-+		printk(KERN_ERR "%s: failed to create "
-+			"temperature update workqueue\n",
-+			__func__);
-+		return 1;
-+	}
-+
-+	hot_work = kmalloc(sizeof(*hot_work), GFP_NOFS);
-+	if (hot_work) {
-+		hot_work->hot_info = root;
-+		INIT_WORK(&hot_work->work, hot_temperature_update_work);
-+		queue_work(root->update_wq, &hot_work->work);
-+	} else {
-+		printk(KERN_ERR "%s: failed to create update work\n",
-+				__func__);
-+		ret = 1;
-+	}
-+
-+	return ret;
-+}
-+
-+static void hot_wq_exit(struct workqueue_struct *wq)
-+{
-+	flush_workqueue(wq);
-+	destroy_workqueue(wq);
-+}
-+
-+/*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
- static int __init hot_cache_init(void)
-@@ -686,10 +770,19 @@ void hot_track_init(struct super_block *sb)
- 	hot_inode_tree_init(root);
- 	hot_map_array_init(root);
- 
-+	err = hot_wq_init(root);
-+	if (err)
-+		goto failed_wq;
-+
- 	printk(KERN_INFO "vfs: turning on hot data tracking\n");
- 
- 	return;
- 
-+failed_wq:
-+	hot_map_array_exit(root);
-+	hot_inode_tree_exit(root);
-+	sb->hot_flags &= ~MS_HOT_TRACKING;
-+	kfree(root);
- failed_root:
- 	hot_cache_exit();
- }
-@@ -698,6 +791,7 @@ void hot_track_exit(struct super_block *sb)
- {
- 	struct hot_info *root = global_hot_tracking_info;
- 
-+	hot_wq_exit(root->update_wq);
- 	hot_map_array_exit(root);
- 	hot_inode_tree_exit(root);
- 	sb->hot_flags &= ~MS_HOT_TRACKING;
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index d19e64a..7a79a6d 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -36,6 +36,9 @@
-  */
- #define TIME_TO_KICK 400
- 
-+/* set how often to update temperatures (seconds) */
-+#define HEAT_UPDATE_DELAY 400
-+
- /*
-  * The following comments explain what exactly comprises a unit of heat.
-  *
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 7114179..b37e0f8 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -84,6 +84,8 @@ struct hot_info {
- 
- 	/* map of range temperature */
- 	struct hot_map_head heat_range_map[HEAT_MAP_SIZE];
-+
-+	struct workqueue_struct *update_wq;
- };
- 
- extern struct hot_info *global_hot_tracking_info;
--- 
-1.7.6.5
+Thanks,
+
+Florian Tobias Schandinat
+
+> ---
+>  drivers/video/nuc900fb.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/video/nuc900fb.c b/drivers/video/nuc900fb.c
+> index e10f551..b31b12b 100644
+> --- a/drivers/video/nuc900fb.c
+> +++ b/drivers/video/nuc900fb.c
+> @@ -387,7 +387,7 @@ static int nuc900fb_init_registers(struct fb_info *info)
+>   *    The buffer should be a non-cached, non-buffered, memory region
+>   *    to allow palette and pixel writes without flushing the cache.
+>   */
+> -static int __init nuc900fb_map_video_memory(struct fb_info *info)
+> +static int __devinit nuc900fb_map_video_memory(struct fb_info *info)
+>  {
+>  	struct nuc900fb_info *fbi = info->par;
+>  	dma_addr_t map_dma;
 
