@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2JJIFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 04:05:49 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33501 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752109Ab2JJIFj (ORCPT
+	id S1753741Ab2JJILx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 04:11:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47094 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab2JJILs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 04:05:39 -0400
-Message-ID: <1349856333.1889.92.camel@slavad-ubuntu>
-Subject: RE: [PATCH 00/16] f2fs: introduce flash-friendly file system
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: Jooyoung Hwang <jooyoung.hwang@samsung.com>
-Cc: "'Marco Stornelli'" <marco.stornelli@gmail.com>,
-        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>,
-        "'Al Viro'" <viro@zeniv.linux.org.uk>, tytso@mit.edu,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        linux-fsdevel@vger.kernel.org
-Date: Wed, 10 Oct 2012 12:05:33 +0400
-In-Reply-To: <1349812406.18456.41.camel@adg-desktop-09.cs.wisc.edu>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-	 <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
-	 <1349553966.12699.132.camel@kjgkr> <50712AAA.5030807@gmail.com>
-	 <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
-	 <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
-	 <004101cda52e$72210e20$56632a60$%kim@samsung.com>
-	 <55A93BD0-CBCB-4707-A970-EB823EC54B2D@dubeyko.com>
-	 <006f01cda5ec$e63e9b60$b2bbd220$%kim@samsung.com>
-	 <1349812406.18456.41.camel@adg-desktop-09.cs.wisc.edu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 10 Oct 2012 04:11:48 -0400
+Message-ID: <50752DC0.1090508@suse.cz>
+Date: Wed, 10 Oct 2012 10:11:44 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0a2
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: ODEBUG: free active (active state 0) object type: work_struct
+ hint: flush_to_ldisc+0x0/0x1a0
+References: <20121010042656.GA32075@redhat.com>
+In-Reply-To: <20121010042656.GA32075@redhat.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 178.177.141.123 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 14:53 -0500, Jooyoung Hwang wrote:
-> On Tue, 2012-10-09 at 16:08 +0900, Jaegeuk Kim wrote:
-> > > -----Original Message-----
-> > > From: Vyacheslav Dubeyko [mailto:slava@dubeyko.com]
-> > > Sent: Tuesday, October 09, 2012 4:23 AM
-> > > To: Jaegeuk Kim
-> > > Cc: 'Marco Stornelli'; 'Jaegeuk Kim'; 'Al Viro'; tytso@mit.edu; gregkh@linuxfoundation.org; linux-
-> > > kernel@vger.kernel.org; chur.lee@samsung.com; cm224.lee@samsung.com; jooyoung.hwang@samsung.com;
-> > > linux-fsdevel@vger.kernel.org
-> > > Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+On 10/10/2012 06:26 AM, Dave Jones wrote:
+> Just hit this..
 
-> 
-> I'd like you to refer to the following link as well which is about
-> mobile workload pattern.
-> http://www.cs.cmu.edu/~fuyaoz/courses/15712/report.pdf
-> It's reported that in Android there are frequent issues of fsync and
-> most of them are only for small size of data.
-> 
-> To provide efficient fsync, F2FS minimizes the amount of metadata
-> written to serve a fsync. Fsync in F2FS is completed by writing user
-> data blocks and direct node blocks which point to them rather than
-> creating a new checkpoint which would incur more I/O loads. 
-> If sudden power failure happens, then F2FS recovery routine rolls back
-> to the latest checkpoint and thereafter recovers file system state to
-> reflect all the completed fsync operations, which we call roll-forward
-> recovery.
-> You may want to look at the code about the roll-forward in recover_fsync_data().
-> 
+That'd be me perhaps. Do you have some serial device connected? Or is it
+a pure terminals + ptys? Did you do something special? This very smells
+like tty_port is being freed while flushing work_struct is still active.
 
-Thank you.
+> WARNING: at lib/debugobjects.c:261 debug_print_object+0x8c/0xb0()
+> ODEBUG: free active (active state 0) object type: work_struct hint: flush_to_ldisc+0x0/0x1a0
+> Modules linked in: fuse ipt_ULOG nfnetlink tun binfmt_misc nfc caif_socket caif phonet can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 lockd sunrpc bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel usb_debug kvm crc32c_intel ghash_clmulni_intel microcode pcspkr i2c_i801 e1000e uinput i915 video i2c_algo_bit drm_kms_helper drm i2c_core
+> Pid: 23707, comm: kworker/3:0 Not tainted 3.6.0+ #26
+> Call Trace:
+>  [<ffffffff8107005f>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff81070156>] warn_slowpath_fmt+0x46/0x50
+>  [<ffffffff813728fc>] debug_print_object+0x8c/0xb0
+>  [<ffffffff8141c200>] ? tty_insert_flip_string_fixed_flag+0x100/0x100
+>  [<ffffffff81373699>] debug_check_no_obj_freed+0x119/0x210
+>  [<ffffffff814122c6>] ? free_tty_struct+0x46/0x50
+>  [<ffffffff811cd166>] kfree+0xe6/0x340
+>  [<ffffffff814122c6>] free_tty_struct+0x46/0x50
+>  [<ffffffff81412377>] release_one_tty+0xa7/0xc0
+>  [<ffffffff81094bc7>] process_one_work+0x207/0x770
+>  [<ffffffff81094b57>] ? process_one_work+0x197/0x770
+>  [<ffffffff814122d0>] ? free_tty_struct+0x50/0x50
+>  [<ffffffff8109550e>] worker_thread+0x15e/0x440
+>  [<ffffffff810953b0>] ? rescuer_thread+0x240/0x240
+>  [<ffffffff8109c25d>] kthread+0xed/0x100
+>  [<ffffffff816bdcd9>] ? sub_preempt_count+0x79/0xd0
+>  [<ffffffff816c34a4>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff810aa29c>] ? finish_task_switch+0x7c/0x120
+>  [<ffffffff816b92bb>] ? _raw_spin_unlock_irq+0x4b/0x80
+>  [<ffffffff816b9d37>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8109c170>] ? kthread_create_on_node+0x160/0x160
+>  [<ffffffff816c34a0>] ? gs_change+0x13/0x13
 
-With the best regards,
-Vyacheslav Dubeyko.
-
-> --
-> Jooyoung Hwang
-> Samsung Electronics
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+thanks,
+-- 
+js
+suse labs
