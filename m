@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab2JJXTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:19:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54484 "EHLO
+	id S1757873Ab2JJXTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:19:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33418 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757596Ab2JJXAs (ORCPT
+	by vger.kernel.org with ESMTP id S1757606Ab2JJWzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:00:48 -0400
-X-Sasl-enc: jZFBZn0FBoNBYpl4JUAcindV2yFumwTfGdEm8gBrb0IY 1349910047
+	Wed, 10 Oct 2012 18:55:06 -0400
+X-Sasl-enc: pSIhpwgsfxlfySymqzC2X5EOPVCfisYdqrr7OqG1UdS1 1349909705
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 009/122] ARM: 7548/1: include linux/sched.h in syscall.h
-Date: Thu, 11 Oct 2012 07:52:55 +0900
-Message-Id: <20121010225339.667728798@linuxfoundation.org>
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 050/133] net: small bug on rxhash calculation
+Date: Thu, 11 Oct 2012 07:51:16 +0900
+Message-Id: <20121010224903.519214495@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
+In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
+References: <20121010224854.313159132@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wade Farnsworth <wade_farnsworth@mentor.com>
 
-commit 8ef102c6b4bc996ff96ca52b34775fe931ec90c9 upstream.
+From: Chema Gonzalez <chema@google.com>
 
-The syscall tracing patch introduces a compile bug in lttng-modules
-when the latter calls syscall_get_nr(), similar to the following:
+[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
 
-<path-to-linux>/arch/arm/include/asm/syscall.h:21:2: error: implicit declaration of function 'task_thread_info' [-Werror=implicit-function-declaration]
+In the current rxhash calculation function, while the
+sorting of the ports/addrs is coherent (you get the
+same rxhash for packets sharing the same 4-tuple, in
+both directions), ports and addrs are sorted
+independently. This implies packets from a connection
+between the same addresses but crossed ports hash to
+the same rxhash.
 
-The issue is that we are using task_thread_info() in the
-syscall_get_nr() function in asm/syscall.h, but not explicitly
-including sched.h from this file, so we can expect this bug might
-surface any time that syscall_get_nr() is called.
+For example, traffic between A=S:l and B=L:s is hashed
+(in both directions) from {L, S, {s, l}}. The same
+rxhash is obtained for packets between C=S:s and D=L:l.
 
-Explicitly including sched.h solves the problem.
+This patch ensures that you either swap both addrs and ports,
+or you swap none. Traffic between A and B, and traffic
+between C and D, get their rxhash from different sources
+({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
 
-Signed-off-by: Wade Farnsworth <wade_farnsworth@mentor.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The patch is co-written with Eric Dumazet <edumazet@google.com>
+
+Signed-off-by: Chema Gonzalez <chema@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/include/asm/syscall.h |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/dev.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/arch/arm/include/asm/syscall.h
-+++ b/arch/arm/include/asm/syscall.h
-@@ -8,6 +8,7 @@
- #define _ASM_ARM_SYSCALL_H
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2615,15 +2615,16 @@ void __skb_get_rxhash(struct sk_buff *sk
+ 	if (!skb_flow_dissect(skb, &keys))
+ 		return;
  
- #include <linux/err.h>
-+#include <linux/sched.h>
+-	if (keys.ports) {
+-		if ((__force u16)keys.port16[1] < (__force u16)keys.port16[0])
+-			swap(keys.port16[0], keys.port16[1]);
++	if (keys.ports)
+ 		skb->l4_rxhash = 1;
+-	}
  
- extern const unsigned long sys_call_table[];
+ 	/* get a consistent hash (same value on both flow directions) */
+-	if ((__force u32)keys.dst < (__force u32)keys.src)
++	if (((__force u32)keys.dst < (__force u32)keys.src) ||
++	    (((__force u32)keys.dst == (__force u32)keys.src) &&
++	     ((__force u16)keys.port16[1] < (__force u16)keys.port16[0]))) {
+ 		swap(keys.dst, keys.src);
++		swap(keys.port16[0], keys.port16[1]);
++	}
  
+ 	hash = jhash_3words((__force u32)keys.dst,
+ 			    (__force u32)keys.src,
 
 
