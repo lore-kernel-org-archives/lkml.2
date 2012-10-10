@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2JJFJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:09:30 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46667 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab2JJFJ1 convert rfc822-to-8bit (ORCPT
+	id S1752797Ab2JJFLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:11:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35821 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab2JJFLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:09:27 -0400
-Message-ID: <50750304.2000007@parallels.com>
-Date: Wed, 10 Oct 2012 09:09:24 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 10 Oct 2012 01:11:12 -0400
+Date: Wed, 10 Oct 2012 06:11:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Sparc
+Message-ID: <20121010051110.GC2616@ZenIV.linux.org.uk>
+References: <20121008.161806.2146082252793236167.davem@davemloft.net>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting
- local transports
-References: <20121008105437.18668.99905.stgit@localhost.localdomain> <20121009193506.GA19680@fieldses.org> <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com> <87txu3bdnj.fsf@xmission.com> <20121009223139.GA25826@fieldses.org> <87bogb1cvl.fsf@xmission.com> <87obkbytks.fsf@xmission.com>
-In-Reply-To: <87obkbytks.fsf@xmission.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121008.161806.2146082252793236167.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10.10.2012 06:00, Eric W. Biederman пишет:
-> ebiederm@xmission.com (Eric W. Biederman) writes:
->
->> "J. Bruce Fields" <bfields@fieldses.org> writes:
->>
->>> On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
->>>> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
->>>>
->>>>> On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
->>>>>> Cc'ing Eric since I seem to recall he suggested doing it this way?
->>>> Yes.  On second look setting fs->root won't work. We need to change fs.
->>>> The problem is that by default all kernel threads share fs so changing
->>>> fs->root will have non-local consequences.
->>> Oh, huh.  And we can't "unshare" it somehow?
->> I don't fully understand how nfs uses kernel threads and work queues.
->> My general understanding is work queues reuse their kernel threads
->> between different users.  So it is mostly a don't pollute your
->> environment thing.  If there was a dedicated kernel thread for each
->> environment this would be trivial.
->>
->> What I was suggesting here is changing task->fs instead of
->> task->fs.root.  That should just require task_lock().
->>
->>> Or, previously you suggested:
->>>
->>> 	- introduce sockaddr_fd that can be applied to AF_UNIX sockets,
->>> 	  and teach unix_bind and unix_connect how to deal with a second
->>> 	  type of sockaddr, AT_FD:
->>> 	  struct sockaddr_fd { short fd_family; short pad; int fd; }
->>>
->>> 	- introduce sockaddr_unix_at that takes a directory file
->>> 	  descriptor as well as a unix path, and teach unix_bind and
->>> 	  unix_connect to deal with a second sockaddr type, AF_UNIX_AT:
->>> 	  struct sockaddr_unix_at { short family; short pad; int dfd; char path[102]; }
->>>
->>> Any other options?
->> I am still half hoping we don't have to change the userspace API/ABI.
->> There is sanity checking on that path that no one seems interested in to
->> solve this problem.
-> There is a good option if we are up to userspace ABI extensions.
->
-> Implement open(2) on unix domain sockets.  Where open(2) would
-> essentially equal connect(2) on unix domain sockets.
->
-> With an open(2) implementation we could use file_open_path and the
-> implementation should be pretty straight forward and maintainable.
-> So implementing open(2) looks like a good alternative implementation
-> route.
+On Mon, Oct 08, 2012 at 04:18:06PM -0400, David Miller wrote:
+> 
+> There is an attempt to fix a bad interaction between syscall tracing
+> and force_successful_syscall() from Al Viro, but it needs to be redone
+> as it introduced regressions and thus had to be reverted for now.
+> 
+> Al is working on an updated version.
 
-This requires patching of vfs layer as well. I don't want to say, that 
-the idea is not good. But it requires much more time to implement and test.
-And this patch addresses the problem, which exist already and would be 
-great to fix it as soon as possible.
-So, probably, implementing open for unix sockets is the next and more 
-generic step.
-Thanks.
+See below.  Just in case: Linus, please DO NOT APPLY unless it goes through
+sparc tree - this is modulo approval by davem.
 
-> Eric
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+sparc64: fix ptrace interaction with force_successful_syscall_return()
+    
+we want syscall_trace_leave() called on exit from any syscall;
+skipping its call in case we'd done force_successful_syscall_return()
+is broken...
+    
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
+diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
+index 1d7e274..7f5f65d 100644
+--- a/arch/sparc/kernel/syscalls.S
++++ b/arch/sparc/kernel/syscalls.S
+@@ -212,24 +212,20 @@ linux_sparc_syscall:
+ 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+ ret_sys_call:
+ 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
+-	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	sra	%o0, 0, %o0
+ 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
+ 	sllx	%g2, 32, %g2
+ 
+-	/* Check if force_successful_syscall_return()
+-	 * was invoked.
+-	 */
+-	ldub	[%g6 + TI_SYS_NOERROR], %l2
+-	brnz,a,pn %l2, 80f
+-	 stb	%g0, [%g6 + TI_SYS_NOERROR]
+-
+ 	cmp	%o0, -ERESTART_RESTARTBLOCK
+ 	bgeu,pn	%xcc, 1f
+-	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
+-80:
++	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
++	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
++
++2:
++	stb	%g0, [%g6 + TI_SYS_NOERROR]
+ 	/* System call success, clear Carry condition code. */
+ 	andn	%g3, %g2, %g3
++3:
+ 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
+ 	bne,pn	%icc, linux_syscall_trace2
+ 	 add	%l1, 0x4, %l2			! npc = npc+4
+@@ -238,20 +234,20 @@ ret_sys_call:
+ 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
+ 
+ 1:
++	/* Check if force_successful_syscall_return()
++	 * was invoked.
++	 */
++	ldub	[%g6 + TI_SYS_NOERROR], %l2
++	brnz,pn %l2, 2b
++	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	/* System call failure, set Carry condition code.
+ 	 * Also, get abs(errno) to return to the process.
+ 	 */
+-	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
+ 	sub	%g0, %o0, %o0
+-	or	%g3, %g2, %g3
+ 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+-	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
+-	bne,pn	%icc, linux_syscall_trace2
+-	 add	%l1, 0x4, %l2			! npc = npc+4
+-	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
++	ba,pt	%xcc, 3b
++	 or	%g3, %g2, %g3
+ 
+-	b,pt	%xcc, rtrap
+-	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
+ linux_syscall_trace2:
+ 	call	syscall_trace_leave
+ 	 add	%sp, PTREGS_OFF, %o0
