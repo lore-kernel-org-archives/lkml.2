@@ -1,104 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab2JJTzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:55:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48435 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab2JJTzl (ORCPT
+	id S1757207Ab2JJT7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:59:31 -0400
+Received: from lunge.queued.net ([173.255.254.236]:42134 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab2JJT7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:55:41 -0400
-Message-ID: <5075D2AF.1010409@pengutronix.de>
-Date: Wed, 10 Oct 2012 21:55:27 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: socketcan@hartkopp.net, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [GIT PULL] Disintegrate UAPI for can
-References: <5075B2F4.60708@pengutronix.de> <30687.1349789402@warthog.procyon.org.uk> <27643.1349892024@warthog.procyon.org.uk>
-In-Reply-To: <27643.1349892024@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCBBC7362FF2770E479476DAF"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 10 Oct 2012 15:59:30 -0400
+Date: Wed, 10 Oct 2012 12:59:27 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Woodhouse <dwmw2@infradead.org>, Vivek Goyal <vgoyal@in.ibm.com>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        techteam@lists.laptop.org
+Subject: Re: [RFC PATCH] x86-32: Start out eflags and cr4 clean
+Message-ID: <20121010125927.0968dd8b@dev.queued.net>
+In-Reply-To: <1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+References: <87sjaaj3cx.fsf@xmission.com>
+	<1348529239-17943-1-git-send-email-hpa@linux.intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCBBC7362FF2770E479476DAF
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Thanks for Cc'ing me.  I just tested this on an XO-1, and it doesn't
+appear to break anything.  So, looks fine to me.
 
-On 10/10/2012 08:00 PM, David Howells wrote:
-> Marc Kleine-Budde <mkl@pengutronix.de> wrote:
->=20
->> On 10/09/2012 03:30 PM, David Howells wrote:
->>> Can you merge the following branch into the can tree please.
->>>
->>> This is to complete part of the Userspace API (UAPI) disintegration f=
-or which
->>> the preparatory patches were pulled recently.  After these patches, u=
-serspace
->>> headers will be segregated into:
->>>
->>> 	include/uapi/linux/.../foo.h
->>>
->>> for the userspace interface stuff, and:
->>>
->>> 	include/linux/.../foo.h
->>>
->>> for the strictly kernel internal stuff.
->>
->> Nice work David. The upstream for can-next is David Miller's net-next
->> tree. He doesn't like if I pull unrelated stuff into my tree, so I'm
->> going to cherry pick your patch. This is not yet possible, as net-next=
-
->> doesn't include the latest patches from the 3.7 merge window, so that
->> compilation breaks. After the merge window closes David Miller merges
->> back the latest changes to net-next. I'll postpone your patch until
->> then, this means the code will go into v3.8. I'm not familiar with the=
-
->> UAPI conversion, should your patch go via linux-can and David's net in=
-to
->> v3.7?
->=20
-> It's okay for the patch to go into 3.8 if that is easier for you.  As i=
-t's
-> scripted, I can regenerate your branch after -rc1 if that helps too.
-
-I don't mind, as long as it compiles (using you tag), and it does, the
-patch doesn't break anything. From the linux-can and David Miller's net
-point of view, v3.7 is closed for new features just bug fixes are
-allowed. But I'm open to make an exception, if UAPI hits mainline in
-v3.7 on most subsystems. Hopefully David sees it the same way.
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Acked-by: Andres Salomon <dilinger@queued.net>
 
 
---------------enigCBBC7362FF2770E479476DAF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+On Mon, 24 Sep 2012 16:27:19 -0700 "H. Peter
+Anvin" <hpa@linux.intel.com> wrote:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlB10rMACgkQjTAFq1RaXHM8rwCfUp33JTr0iZ+xepiDxqG1mHgu
-qPIAn26/x4xYzrLulKWpHUMKjkVViUsb
-=kasl
------END PGP SIGNATURE-----
-
---------------enigCBBC7362FF2770E479476DAF--
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
+> 
+> %cr4 is supposed to reflect a set of features into which the operating
+> system is opting in.  If the BIOS or bootloader leaks bits here, this
+> is not desirable.  Consider a bootloader passing in %cr4.pae set to a
+> legacy paging kernel, for example -- it will not have any immediate
+> effect, but the kernel would crash when turning paging on.
+> 
+> A similar argument applies to %eflags, and since we have to look for
+> %eflags.id being settable we can use a sequence which clears %eflags
+> as a side effect.
+> 
+> Note that we already do this for x86-64.
+> 
+> I would like opinions on this especially from the PV crowd and
+> nonstandard platforms (e.g. OLPC) to make sure we don't screw them up.
+> 
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  arch/x86/kernel/head_32.S |   31 ++++++++++++++++---------------
+>  1 files changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> index d42ab17..957a47a 100644
+> --- a/arch/x86/kernel/head_32.S
+> +++ b/arch/x86/kernel/head_32.S
+> @@ -287,27 +287,28 @@ ENTRY(startup_32_smp)
+>  	leal -__PAGE_OFFSET(%ecx),%esp
+>  
+>  default_entry:
+> -
+>  /*
+>   *	New page tables may be in 4Mbyte page mode and may
+>   *	be using the global pages. 
+>   *
+>   *	NOTE! If we are on a 486 we may have no cr4 at all!
+> - *	So we do not try to touch it unless we really have
+> - *	some bits in it to set.  This won't work if the BSP
+> - *	implements cr4 but this AP does not -- very unlikely
+> - *	but be warned!  The same applies to the pse feature
+> - *	if not equally supported. --macro
+> - *
+> - *	NOTE! We have to correct for the fact that we're
+> - *	not yet offset PAGE_OFFSET..
+> + *	Specifically, cr4 exists if and only if CPUID exists,
+> + *	which in turn exists if and only if EFLAGS.ID exists.
+>   */
+> -#define cr4_bits pa(mmu_cr4_features)
+> -	movl cr4_bits,%edx
+> -	andl %edx,%edx
+> -	jz 6f
+> -	movl %cr4,%eax		# Turn on paging options
+> (PSE,PAE,..)
+> -	orl %edx,%eax
+> +	movl $X86_EFLAGS_ID,%ecx
+> +	pushl %ecx
+> +	popfl
+> +	pushfl
+> +	popl %eax
+> +	pushl $0
+> +	popfl
+> +	pushfl
+> +	popl %edx
+> +	xorl %edx,%eax
+> +	testl %ecx,%eax
+> +	jz 6f			# No ID flag = no CPUID = no CR4
+> +
+> +	movl pa(mmu_cr4_features),%eax
+>  	movl %eax,%cr4
+>  
+>  	testb $X86_CR4_PAE, %al		# check if PAE is
+> enabled
