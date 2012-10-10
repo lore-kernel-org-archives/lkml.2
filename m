@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2JJMUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:20:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54102 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab2JJMUm (ORCPT
+	id S1752376Ab2JJPql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:46:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61114 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab2JJPqk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:20:42 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/serial2002.c
-Date: Wed, 10 Oct 2012 21:20:33 +0900
-Message-Id: <1349871634-4479-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Oct 2012 11:46:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,564,1344236400"; 
+   d="scan'208";a="225140673"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: RE: [RFC PATCH 3/3] Convert mce_disabled
+Thread-Topic: [RFC PATCH 3/3] Convert mce_disabled
+Thread-Index: AQHNpvJoe4YCF/JU9UKk6x+JHaLQpZeyrcYA
+Date: Wed, 10 Oct 2012 15:46:39 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D49FC7@ORSMSX108.amr.corp.intel.com>
+References: <1349878801-15956-1-git-send-email-bp@amd64.org>
+ <1349878801-15956-4-git-send-email-bp@amd64.org>
+In-Reply-To: <1349878801-15956-4-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+struct mca_config {
+-	u64 dont_log_ce	: 1,
+-#define MCA_CFG_DONT_LOG_CE	0
+-	    __resv1	: 63;
++	u64	dont_log_ce	: 1,
++#define MCA_CFG_DONT_LOG_CE	  0
++		mca_disabled	: 1,
++#define MCA_CFG_MCA_DISABLED	  1
++	    __resv1	: 62;
+ };
 
-and added pr_fmt.
+If we do head in this direction - I don't think it is useful to change just one bit
+on each commit. We should batch in larger groups.
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/serial2002.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
-index 5bf84cf..cc4f6e7 100644
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -31,6 +31,8 @@ Status: in development
- 
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include "../comedidev.h"
- 
- #include <linux/delay.h>
-@@ -282,7 +284,7 @@ static struct serial_data serial_read(struct file *f, int timeout)
- 
- 		length++;
- 		if (data < 0) {
--			printk(KERN_ERR "serial2002 error\n");
-+			pr_err("serial2002 error\n");
- 			break;
- 		} else if (data & 0x80) {
- 			result.value = (result.value << 7) | (data & 0x7f);
-@@ -355,7 +357,8 @@ static int serial_2002_open(struct comedi_device *dev)
- 	devpriv->tty = filp_open(port, O_RDWR, 0);
- 	if (IS_ERR(devpriv->tty)) {
- 		result = (int)PTR_ERR(devpriv->tty);
--		printk(KERN_ERR "serial_2002: file open error = %d\n", result);
-+		dev_err(dev->class_dev,
-+			"serial_2002: file open error = %d\n", result);
- 	} else {
- 		struct config_t {
- 
--- 
-1.7.9.5
-
+-Tony
