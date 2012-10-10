@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab2JJCYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:24:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59356 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751607Ab2JJCYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:24:17 -0400
-Message-ID: <1349835846.6336.24.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 028/108] ARM: imx: armadillo5x0: Fix illegal register access
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Estevam Fabio-R49496 <r49496@freescale.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>
-Date: Wed, 10 Oct 2012 03:24:06 +0100
-In-Reply-To: <86D15885F63D1143A519F161FB828EAF165AA3@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <20121007225834.673681075@decadent.org.uk>
-	,<20121007225838.581640179@decadent.org.uk>
-	 <86D15885F63D1143A519F161FB828EAF165AA3@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-EZYyhMYCXmy5nfXNPosc"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1756385Ab2JJCZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:25:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63710 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607Ab2JJCZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 22:25:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,563,1344236400"; 
+   d="scan'208";a="203693465"
+Date: Tue, 9 Oct 2012 19:25:23 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v3
+Message-ID: <20121010022523.GE2095@tassilo.jf.intel.com>
+References: <1349303063-12766-1-git-send-email-andi@firstfloor.org>
+ <1349303063-12766-2-git-send-email-andi@firstfloor.org>
+ <20121009151907.3f61ebca.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121009151907.3f61ebca.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-EZYyhMYCXmy5nfXNPosc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for the review.
 
-On Sun, 2012-10-07 at 23:37 +0000, Estevam Fabio-R49496 wrote:
-> No, please drop it from 3.2-stable.
->=20
-> This one should only go to 3.5/3.6 stable trees.
->=20
-> Otherwise it will break 3.2-stable.
+> > I also exported the new flags to the user headers
+> > (they were previously under __KERNEL__). Right now only symbols
+> > for x86 and some other architecture for 1GB and 2MB are defined.
+> > The interface should already work for all other architectures
+> > though.
+> 
+> So some manpages need updating.  I'm not sure which - mmap(2) surely,
+> but which for the IPC change?
 
-Thanks, I've dropped this.
+mmap and shmget. Was already planned.
 
-Ben.
+> 
+> > v2: Port to new tree. Fix unmount.
+> > v3: Ported to latest tree.
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  arch/x86/include/asm/mman.h |    3 ++
+> >  fs/hugetlbfs/inode.c        |   63 ++++++++++++++++++++++++++++++++++---------
+> >  include/asm-generic/mman.h  |   13 +++++++++
+> >  include/linux/hugetlb.h     |   12 +++++++-
+> >  include/linux/shm.h         |   19 +++++++++++++
+> >  ipc/shm.c                   |    3 +-
+> >  mm/mmap.c                   |    5 ++-
+> 
+> Alas, include/asm-generic/mman.h doesn't exist now.
+> 
+> Does this change touch all the hugetlb-capable architectures?
 
---=20
-Ben Hutchings
-Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
+Right now only symbols
+for x86 and some other architecture for 1GB and 2MB are defined.
+The interface should already work for all other architectures
+though.
 
---=-EZYyhMYCXmy5nfXNPosc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+So they can add new symbols for their page sizes at their leisure.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> >  	return capable(CAP_IPC_LOCK) || in_group_p(shm_group);
+> >  }
+> >  
+> > +static int get_hstate_idx(int page_size_log)
+> 
+> nitlet: "page_size_order" would be more kernely.  Or just "page_order".
 
-iQIVAwUAUHTcRue/yOyVhhEJAQpbrQ/6Akqm8aSuHvyGZYa8pq5nRPu9cn9yrn6X
-qoCCpLF0TA4sjNPkpPd+UjUpBdrjUJto+s8fWsCqeO1Sm0HBXiielEIfUH88HYLi
-zke8KCgjDgxnlMT+9fvOe5P42OAFIE9EVoq0i2LOXBQxSxWTi37ReAZD92913n4u
-rrbN8MjkWniWIicIwYR+qJ/33MS7/fbGQF0QQ4NSu3OEOzEjWDP76ObPWsM9rt6z
-EtTHLmC4ukUdRXMVwcfn15XR4TfW6k7CB8zZxF8QH2LN6Bs4wXuAg5lfBD9Km1lR
-VEDhY47ezifNFG1Y2IWdqDKXVVMt6YqnBPb56DCYlzpLk6HiwPKv1pG5kJPWFo4j
-Favzg7e39CPFiPVt+YjB8bEYVG4kVzhkgeyl2pvrD4LDfDXjTVI2Jry1pUBIqQ4p
-+GYLYXGcmwGY6FeYzOmcK5+UW0BBnrjP5dowVGBAykYnXV/r+57/ugbbj2mXA7pm
-qhe7aLawkIh5wDjKOeXEjRzeCtSZQIO7o0VzULsao/VFBKFu6FIXWSRBVohvN8lH
-wBGm6AvhDrR5pZQ67BV0FQSYBEM4Qgj3KovJtWBn/JJc5htJbWUyUBa8buZOkAZm
-fvKkjapMnQpv089MD4WKMc4JDTw3NIEcilqbB6uD7lsCa+SxvmHO++rP8Y66fM0u
-GDws6c2+oqQ=
-=qt1d
------END PGP SIGNATURE-----
+It's not really an order, just the index.  I think I would prefer the current name,
+order would be misleading.
 
---=-EZYyhMYCXmy5nfXNPosc--
+For x86 it's only 0 and 1
+
+> > +		if (IS_ERR(hugetlbfs_vfsmount[i])) {
+> > +				pr_err(
+> > +			"hugetlb: Cannot mount internal hugetlbfs for page size %uK",
+> > +			       ps_kb);
+> > +			error = PTR_ERR(hugetlbfs_vfsmount[i]);
+> > +		}
+> > +		i++;
+> > +	}
+> > +	/* Non default hstates are optional */
+> > +	if (hugetlbfs_vfsmount[default_hstate_idx])
+> > +		return 0;
+> 
+> hm, so if I'm understanding this, the patch mounts hugetlbfs N times,
+> once for each page size.  And presumably the shm code somehow selects
+> one of these mounts, based on incoming flags.  And presumably if those
+> flags are all-zero, the behaviour is unaltered.
+
+Yes.
+
+> 
+> Please update the changelog to describe all this - the overview of how
+> the patch actually operates.
+
+Ok.
+
+> 
+> Also, all this affects the /proc/mounts contents, yes?  Let's changelog
+> that very-slightly-non-back-compatible user-visible change as well.
+
+AFAIK not. The internal mounts are not visible. At least my laptop
+doesn't show them.
+
+> There's some overhead to doing all those additional mounts.  Can we
+> quantify it?
+
+On x86 it's one more mount (1GB). AFAIK it's just the sb structure, there's
+nothing else preallocated. Maybe a couple hundred bytes per page size.
+
+The number of huge page sizes is normally small, I don't think any architecture
+has a large number.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
