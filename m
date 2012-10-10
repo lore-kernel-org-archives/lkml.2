@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab2JJVuC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:50:02 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63361 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab2JJVt7 (ORCPT
+	id S1756743Ab2JJVuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:50:37 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:41837 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab2JJVuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:49:59 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAKMK7uFsYUYuvWu2tWNc6+soPJpsJt6pz-A5EePc9oF7fG6uAA@mail.gmail.com>
-References: <CAHFgRy9vSEwBe34VffBWZgy6ik_O0_FHW+fwasnN643WQX8gCg@mail.gmail.com>
-	<CAKMK7uFsYUYuvWu2tWNc6+soPJpsJt6pz-A5EePc9oF7fG6uAA@mail.gmail.com>
-Date: Wed, 10 Oct 2012 23:49:58 +0200
-Message-ID: <CAKMK7uEQ2+45wg_n9PKEaOyvOJ=HrSYn2=4dNGBODvNidn9FEQ@mail.gmail.com>
-Subject: Re: 3.6.0+ (GIT) -- WARNING: at drivers/gpu/drm/i915/intel_display.c:1271
- intel_disable_pipe+0xab/0x12e() -- plane B assertion failure, should be off
- on pipe B but is still active
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Eric Anholt <eric@anholt.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Oct 2012 17:50:32 -0400
+Message-ID: <1349905825.5993.2.camel@lorien2>
+Subject: Re: [PATCH v4] dma-debug: New interfaces to debug dma mapping errors
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, stern@rowland.harvard.edu,
+        joerg.roedel@amd.com, bhelgaas@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
+Date: Wed, 10 Oct 2012 15:50:25 -0600
+In-Reply-To: <20121009140215.5c0a65c9.akpm@linux-foundation.org>
+References: <1347843171.4370.13.camel@lorien2>
+	 <1348621517.3091.6.camel@lorien2> <1349276159.3192.4.camel@lorien2>
+	 <1349400193.2547.29.camel@lorien2>
+	 <20121005155108.d8d88fd2.akpm@linux-foundation.org>
+	 <1349716040.2674.19.camel@lorien2>
+	 <20121009140215.5c0a65c9.akpm@linux-foundation.org>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 4:56 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> This should help: https://patchwork.kernel.org/patch/1436231/
->
-> It's not merged yet since it cause a black screen on resume on one of
-> my really old machines. Issue isn't new at all, but the new modeset
-> code is _much_ more anal about cross-checking the hw state with what
-> we expect to be there.
+On Tue, 2012-10-09 at 14:02 -0700, Andrew Morton wrote:
+> On Mon, 08 Oct 2012 11:07:20 -0600
+> Shuah Khan <shuah.khan@hp.com> wrote:
+> 
+> > > 
+> > > Still seems overly complicated to me, but whatev.
+> > > 
+> > > I think the way to handle this is pretty simple: set a flag in the dma
+> > > entry when someone runs dma_mapping_error() and, if that flag wasn't
+> > > set at unmap time, emit a loud warning.
+> > > 
+> > > From my reading of the code, this patch indeed does that, along with a
+> > > bunch of other (unnecessary?) stuff.  But boy, the changelog conceals
+> > > this information well!
+> > 
+> > Are you referring to the system wide error counters when you say
+> > unnecessary stuff. The reason I added those was to catch errors when
+> > drivers don't do unmap. Several drivers fail to do unmap. Checking flag
+> > from unmap debug interfaces, doesn't cover these cases. However, I think
+> > the value of system wide counters is limited in the sense that they
+> > don't really identify the driver that needs fixing. In that sense it can
+> > be deemed unnecessary. I dropped them in v5 patch, which I am sending
+> > out.
+> 
+> hm.  Could we keep a counter of the number of map/unmap calls within
+> the dma object and then emit a warning if that is non-zero at teardown
+> time?  That should identify the offending driver.
+> 
 
-I think I've tracked down the gen2 issue I've seen, so the above
-linked patch can go in. Does it get rid of the WARN backtraces on your
-machine? A tested-by would be most welcome ...
+Thanks. That would work. Will take a look and see what it takes to
+implement.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+-- Shuah
+
+
+
