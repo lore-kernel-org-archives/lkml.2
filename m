@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab2JKANh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:13:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34558 "EHLO
+	id S1758171Ab2JKANq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:13:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34954 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932305Ab2JKAN3 (ORCPT
+	by vger.kernel.org with ESMTP id S932305Ab2JKANh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:29 -0400
-X-Sasl-enc: pZkMbpnV276Lmo63XYrHZUIUI2SsYY3KClbbZmhBNRVx 1349914408
+	Wed, 10 Oct 2012 20:13:37 -0400
+X-Sasl-enc: CT+rIRf45j3YfzPSdbpDZikvxHwPT4Ri3/IYFNlx3mZK 1349914416
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: [ 085/133] drm/i915: prevent possible pin leak on error path
-Date: Thu, 11 Oct 2012 07:51:51 +0900
-Message-Id: <20121010224909.794559909@linuxfoundation.org>
+        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 087/133] ALSA: aloop - add locking to timer access
+Date: Thu, 11 Oct 2012 07:51:53 +0900
+Message-Id: <20121010224910.159167923@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,35 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
 
-commit ab3951eb74e7c33a2f5b7b64d72e82f1eea61571 upstream.
+commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
 
-We should not hit this under any sane conditions, but still, this does not
-looks right.
+When the loopback timer handler is running, calling del_timer() (for STOP
+trigger) will not wait for the handler to complete before deactivating the
+timer. The timer gets rescheduled in the handler as usual. Then a subsequent
+START trigger will try to start the timer using add_timer() with a timer pending
+leading to a kernel panic.
 
-Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wlison <chris@chris-wilson.co.uk>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
+this.
+
+Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/drivers/aloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6167,7 +6167,7 @@ static int intel_gen7_queue_flip(struct
- 	default:
- 		WARN_ONCE(1, "unknown plane in flip command\n");
- 		ret = -ENODEV;
--		goto err;
-+		goto err_unpin;
- 	}
+--- a/sound/drivers/aloop.c
++++ b/sound/drivers/aloop.c
+@@ -120,6 +120,7 @@ struct loopback_pcm {
+ 	unsigned int last_drift;
+ 	unsigned long last_jiffies;
+ 	struct timer_list timer;
++	spinlock_t timer_lock;
+ };
  
- 	ret = intel_ring_begin(ring, 4);
+ static struct platform_device *devices[SNDRV_CARDS];
+@@ -170,6 +171,7 @@ static void loopback_timer_start(struct
+ 	unsigned long tick;
+ 	unsigned int rate_shift = get_rate_shift(dpcm);
+ 
++	spin_lock(&dpcm->timer_lock);
+ 	if (rate_shift != dpcm->pcm_rate_shift) {
+ 		dpcm->pcm_rate_shift = rate_shift;
+ 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
+@@ -182,12 +184,15 @@ static void loopback_timer_start(struct
+ 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
+ 	dpcm->timer.expires = jiffies + tick;
+ 	add_timer(&dpcm->timer);
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
+ {
++	spin_lock(&dpcm->timer_lock);
+ 	del_timer(&dpcm->timer);
+ 	dpcm->timer.expires = 0;
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
+@@ -667,6 +672,7 @@ static int loopback_open(struct snd_pcm_
+ 	dpcm->substream = substream;
+ 	setup_timer(&dpcm->timer, loopback_timer_function,
+ 		    (unsigned long)dpcm);
++	spin_lock_init(&dpcm->timer_lock);
+ 
+ 	cable = loopback->cables[substream->number][dev];
+ 	if (!cable) {
 
 
