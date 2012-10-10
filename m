@@ -1,174 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab2JJLEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 07:04:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52651 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab2JJLEo convert rfc822-to-8bit (ORCPT
+	id S1753263Ab2JJPxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:53:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36703 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751351Ab2JJPxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 07:04:44 -0400
-Date: Wed, 10 Oct 2012 12:04:40 +0100
-From: Morten Rasmussen <Morten.Rasmussen@arm.com>
-To: tixy@linaro.org
-Cc: "linaro-sched-sig@lists.linaro.org" 
-	<linaro-sched-sig@lists.linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 06/10] ARM: sched: Use device-tree to provide
- fast/slow CPU list for HMP
-Message-ID: <20121010110440.GE3729@e103034-lin>
-References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
- <1348252345-5642-7-git-send-email-morten.rasmussen@arm.com>
-MIME-Version: 1.0
-In-Reply-To: <1348252345-5642-7-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Oct 2012 11:04:39.0931 (UTC) FILETIME=[0B2D4CB0:01CDA6D7]
-X-MC-Unique: 112101012044115901
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Wed, 10 Oct 2012 11:53:12 -0400
+Message-ID: <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, axboe@kernel.dk,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 10 Oct 2012 16:52:54 +0100
+In-Reply-To: <50742600.10606@gmail.com>
+References: <505E2108.2060108@gmail.com>
+	 <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>
+	 <20121008172207.GB14767@quack.suse.cz>
+	 <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>
+	 <507424F7.60801@gmail.com> <50742600.10606@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-kFrmacWGrt7UrJdGn/KR"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tixy,
 
-Could you have a look at my code stealing patch below? Since it is
-basically a trimmed version of one of your patches I would prefer to
-put you as author and have your SOB on it. What is your opinion?
+--=-kFrmacWGrt7UrJdGn/KR
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Morten
+On Tue, 2012-10-09 at 09:26 -0400, Sasha Levin wrote:
+> On 10/09/2012 09:21 AM, Sasha Levin wrote:
+> > On 10/08/2012 05:45 PM, Jiri Kosina wrote:
+> >> On Mon, 8 Oct 2012, Jan Kara wrote:
+> >>
+> >>>>>> I'm still seeing this on linux-next.
+> >>>>   I think this is floppy related (see redo_fd_request() in the stack
+> >>>> trace). And there were quite some changes to the area recently. Addi=
+ng
+> >>>> maintainer to CC.
+> >> Hmm ... I don't immediately see how this is happening.
+> >>
+> >> Sasha, could you please do git bisect on drivers/block/floppy.c betwee=
+n=20
+> >> f6365201d and your git HEAD for starters (assuming that f6365201d work=
+s=20
+> >> well for you?).
+> >>
+> >=20
+> > A bisect on floppy.c yielded the following:
+> >=20
+> > b33d002f4b6bae912463e5a66387c498aa69b6fe is the first bad commit
+> > commit b33d002f4b6bae912463e5a66387c498aa69b6fe
+> > Author: Ben Hutchings <ben@decadent.org.uk>
+> > Date:   Mon Aug 27 20:56:53 2012 -0300
+> >=20
+> >     genhd: Make put_disk() safe for disks that have not been registered
+>=20
+> 2 more things:
+>=20
+>  1. The guest vm which I'm testing on doesn't emulate anything which even=
+ looks like a floppy.
+>  2. I'm seeing the following lines before the BUG:
+>=20
+> [    9.836604] floppy0: no floppy controllers found
+> [    9.837246] work still pending
+> [    9.837743] floppy0: floppy_shutdown: timeout handler died.
 
-On Fri, Sep 21, 2012 at 07:32:21PM +0100, Morten Rasmussen wrote:
-> From: Morten Rasmussen <morten.rasmussen@arm.com>
-> 
-> We can't rely on Kconfig options to set the fast and slow CPU lists for
-> HMP scheduling if we want a single kernel binary to support multiple
-> devices with different CPU topology. E.g. TC2 (ARM's Test-Chip-2
-> big.LITTLE system), Fast Models, or even non big.LITTLE devices.
-> 
-> This patch adds the function arch_get_fast_and_slow_cpus() to generate
-> the lists at run-time by parsing the CPU nodes in device-tree; it
-> assumes slow cores are A7s and everything else is fast. The function
-> still supports the old Kconfig options as this is useful for testing the
-> HMP scheduler on devices without big.LITTLE.
-> 
-> This patch is reuse of a patch by Jon Medhurst <tixy@linaro.org> with a
-> few bits left out.
-> 
-> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-> ---
->  arch/arm/Kconfig           |    4 ++-
->  arch/arm/kernel/topology.c |   69 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 72 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index cb80846..f1271bc 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1588,13 +1588,15 @@ config HMP_FAST_CPU_MASK
->  	string "HMP scheduler fast CPU mask"
->  	depends on SCHED_HMP
->  	help
-> -          Specify the cpuids of the fast CPUs in the system as a list string,
-> +          Leave empty to use device tree information.
-> +	  Specify the cpuids of the fast CPUs in the system as a list string,
->  	  e.g. cpuid 0+1 should be specified as 0-1.
->  
->  config HMP_SLOW_CPU_MASK
->  	string "HMP scheduler slow CPU mask"
->  	depends on SCHED_HMP
->  	help
-> +	  Leave empty to use device tree information.
->  	  Specify the cpuids of the slow CPUs in the system as a list string,
->  	  e.g. cpuid 0+1 should be specified as 0-1.
->  
-> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-> index 26c12c6..7682e12 100644
-> --- a/arch/arm/kernel/topology.c
-> +++ b/arch/arm/kernel/topology.c
-> @@ -317,6 +317,75 @@ void store_cpu_topology(unsigned int cpuid)
->  		cpu_topology[cpuid].socket_id, mpidr);
->  }
->  
-> +
-> +#ifdef CONFIG_SCHED_HMP
-> +
-> +static const char * const little_cores[] = {
-> +	"arm,cortex-a7",
-> +	NULL,
-> +};
-> +
-> +static bool is_little_cpu(struct device_node *cn)
-> +{
-> +	const char * const *lc;
-> +	for (lc = little_cores; *lc; lc++)
-> +		if (of_device_is_compatible(cn, *lc))
-> +			return true;
-> +	return false;
-> +}
-> +
-> +void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
-> +					struct cpumask *slow)
-> +{
-> +	struct device_node *cn = NULL;
-> +	int cpu = 0;
-> +
-> +	cpumask_clear(fast);
-> +	cpumask_clear(slow);
-> +
-> +	/*
-> +	 * Use the config options if they are given. This helps testing
-> +	 * HMP scheduling on systems without a big.LITTLE architecture.
-> +	 */
-> +	if (strlen(CONFIG_HMP_FAST_CPU_MASK) && strlen(CONFIG_HMP_SLOW_CPU_MASK)) {
-> +		if (cpulist_parse(CONFIG_HMP_FAST_CPU_MASK, fast))
-> +			WARN(1, "Failed to parse HMP fast cpu mask!\n");
-> +		if (cpulist_parse(CONFIG_HMP_SLOW_CPU_MASK, slow))
-> +			WARN(1, "Failed to parse HMP slow cpu mask!\n");
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Else, parse device tree for little cores.
-> +	 */
-> +	while ((cn = of_find_node_by_type(cn, "cpu"))) {
-> +
-> +		if (cpu >= num_possible_cpus())
-> +			break;
-> +
-> +		if (is_little_cpu(cn))
-> +			cpumask_set_cpu(cpu, slow);
-> +		else
-> +			cpumask_set_cpu(cpu, fast);
-> +
-> +		cpu++;
-> +	}
-> +
-> +	if (!cpumask_empty(fast) && !cpumask_empty(slow))
-> +		return;
-> +
-> +	/*
-> +	 * We didn't find both big and little cores so let's call all cores
-> +	 * fast as this will keep the system running, with all cores being
-> +	 * treated equal.
-> +	 */
-> +	cpumask_setall(fast);
-> +	cpumask_clear(slow);
-> +}
-> +
-> +#endif /* CONFIG_SCHED_HMP */
-> +
-> +
->  /*
->   * init_cpu_topology is called at boot when only one cpu is running
->   * which prevent simultaneous write access to cpu_topology array
-> -- 
-> 1.7.9.5
-> 
+I see two problems:
 
+1. redo_fd_request() races with tear-down of the disks, but because
+set_next_request() checks disk->queue before doing anything this was
+usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
+the race condition is much easier to hit.  This may fix that problem in
+do_floppy_init(), though there appear to be worse bugs in tear-down
+order in floppy_module_exit():
+
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4320,13 +4320,13 @@ out_unreg_region:
+ out_unreg_blkdev:
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+ out_put_disk:
++	destroy_workqueue(floppy_wq);
+ 	while (dr--) {
+ 		del_timer_sync(&motor_off_timer[dr]);
+ 		if (disks[dr]->queue)
+ 			blk_cleanup_queue(disks[dr]->queue);
+ 		put_disk(disks[dr]);
+ 	}
+-	destroy_workqueue(floppy_wq);
+ 	return err;
+ }
+=20
+--- END ---
+
+2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
+cleared by del_gendisk().  Incremental patch below, but it should be
+squashed into the previous patch if that branch is still rebase-able.
+
+Ben.
+
+---
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Wed, 10 Oct 2012 16:17:01 +0100
+Subject: [PATCH] genhd: Make put_disk() safe again for disks that *have* be=
+en
+ registered
+
+Commit b33d002 ('genhd: Make put_disk() safe for disks that have not
+been registered') wrongly used the GENHD_FL_UP flag to test whether a
+disk held a reference to its queue.  Since this is cleared by
+del_gendisk(), queues will not be properly cleaned up if a disk has
+been registered and then torn down in the normal way.  Introduce a
+new flag for this purpose.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ block/genhd.c         |    7 +++++--
+ include/linux/genhd.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/block/genhd.c b/block/genhd.c
+index 633751d..b5f482f 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -617,7 +617,10 @@ void add_disk(struct gendisk *disk)
+ 	 * Take an extra ref on queue which will be put on disk_release()
+ 	 * so that it sticks around as long as @disk is there.
+ 	 */
+-	WARN_ON_ONCE(!blk_get_queue(disk->queue));
++	if (blk_get_queue(disk->queue))
++		disk->flags |=3D GENHD_FL_GOT_QUEUE;
++	else
++		WARN_ON(1);
+=20
+ 	retval =3D sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
+ 				   "bdi");
+@@ -1105,7 +1108,7 @@ static void disk_release(struct device *dev)
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
+-	if (disk->queue && disk->flags & GENHD_FL_UP)
++	if (disk->queue && disk->flags & GENHD_FL_GOT_QUEUE)
+ 		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 4f440b3..7c2560c 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -134,6 +134,7 @@ struct hd_struct {
+ #define GENHD_FL_NATIVE_CAPACITY		128
+ #define GENHD_FL_BLOCK_EVENTS_ON_EXCL_WRITE	256
+ #define GENHD_FL_NO_PART_SCAN			512
++#define GENHD_FL_GOT_QUEUE			1024
+=20
+ enum {
+ 	DISK_EVENT_MEDIA_CHANGE			=3D 1 << 0, /* media changed */
+
+
+--=20
+Ben Hutchings
+Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
+
+--=-kFrmacWGrt7UrJdGn/KR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUHWZ1ue/yOyVhhEJAQpFAw//dztvaIozJPN7r7mFU+Ju+l9zTDI9x1lV
+eBKjVdii8POAtRgMlXk1KLwSkbRtVN4ceOYnlRCW4ucl7shqW8+Cu5Q0+khtqEDl
+VtFicDqPVP+LXECGEpumkp+QgfoJFKci6qW/m9eqZ+rQ4n7HNAEhrARuW34shrh7
+Q6vipvRb5s8oI0OSJ0u4HXAGyt/nZoD0IgW6ETyCyxNkWWYXhPr/3Jrnxs0OufNo
+yNEeh3yGAuYhfDPAJnZq++0mlP1ujdFgdi7q6ZgIf5Tnz2m43uNVqQkYUUUr64Cu
+QqJZ6vw1VYx9LpcDJl34KGAmlKssWptyLS0nhUUqOKlekGKD4S9brZBPuyHVNmF4
+lIDX2ojp7paMT8u/pMlHLsHK9lj4BMJi3H1U3cpwEUUSofepxW1IZD1Q3ChcQKfk
+HGuLJJ2wu/BsYZoh9MA7h+mtM9DI/u2ikufSM/dTD3Sp1HtNC8zprXyO9K5wF1J3
+HqpkWpC7fayDSE6UafgB9Q0nNlDMTilh341r6AuH2hvqeY5KRpEbTTZ15VvbY6A6
+ov1AGGi4m5SFTyrnL5nw0l0n7v2DAm+xEEnViWzcMDGActMVpxdBP7ePmon6SuSC
+udfldp7fjEExne0eY3HwDSR+GQHI6EQ5/pbmL7baF2+btsKMh4l5gOUhalNiClv/
+a29g/KAMi3g=
+=ehy6
+-----END PGP SIGNATURE-----
+
+--=-kFrmacWGrt7UrJdGn/KR--
