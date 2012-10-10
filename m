@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab2JJW63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:58:29 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44369 "EHLO
+	id S1757994Ab2JJW6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:58:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43861 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757696Ab2JJWzj (ORCPT
+	by vger.kernel.org with ESMTP id S1757640Ab2JJWze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:39 -0400
-X-Sasl-enc: doPCwXpISdKI8RHlrvw9Yd/Bc1POlQFgs/7KTqLTYVCc 1349909738
+	Wed, 10 Oct 2012 18:55:34 -0400
+X-Sasl-enc: uj+1NPKRRUtx8E+9R3hiEiYj58UUTlNegxTW1oG6T3Xg 1349909733
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Steffen Maier <maier@linux.vnet.ibm.com>,
         Martin Peschke <mpeschke@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 062/133] SCSI: zfcp: Bounds checking for deferred error trace
-Date: Thu, 11 Oct 2012 07:51:28 +0900
-Message-Id: <20121010224905.675283495@linuxfoundation.org>
+Subject: [ 060/133] SCSI: zfcp: Adapt to new FC_PORTSPEED semantics
+Date: Thu, 11 Oct 2012 07:51:26 +0900
+Message-Id: <20121010224905.323859126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,19 +31,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 01e60527f0a49b3d7df603010bd6079bb4b6cf07 upstream.
+commit d22019778cd9ea04c1dadf7bf453920d5288f8d9 upstream.
 
-The pl vector has scount elements, i.e. pl[scount-1] is the last valid
-element. For maximum sized requests, payload->counter == scount after
-the last loop iteration. Therefore, do bounds checking first (with
-boolean shortcut) to not access the invalid element pl[scount].
+Commit a9277e7783651d4e0a849f7988340b1c1cf748a4
+"[SCSI] scsi_transport_fc: Getting FC Port Speed in sync with FC-GS"
+changed the semantics of FC_PORTSPEED defines to
+FDMI port attributes of FC-HBA/SM-HBA
+which is different from the previous bit reversed
+Report Port Speed Capabilities (RPSC) ELS of FC-GS/FC-LS.
 
-Do not trust the maximum sbale->scount value from the HBA
-but ensure we won't access the pl vector out of our allocated bounds.
-While at it, clean up scoping and prevent unnecessary memset.
-
-Minor fix for 86a9668a8d29ea711613e1cb37efa68e7c4db564
-"[SCSI] zfcp: support for hardware data router"
+Zfcp showed "10 Gbit" instead of "4 Gbit" for supported_speeds.
+It now uses explicit bit conversion as the other LLDs already
+do, in order to be independent of the kernel bit semantics.
+See also http://marc.info/?l=linux-scsi&m=134452926830730&w=2
 
 Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
 Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
@@ -51,51 +51,65 @@ Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_dbf.c  |    2 +-
- drivers/s390/scsi/zfcp_qdio.c |   16 ++++++++++------
- 2 files changed, 11 insertions(+), 7 deletions(-)
+ drivers/s390/scsi/zfcp_fsf.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_dbf.c
-+++ b/drivers/s390/scsi/zfcp_dbf.c
-@@ -191,7 +191,7 @@ void zfcp_dbf_hba_def_err(struct zfcp_ad
- 	length = min((u16)sizeof(struct qdio_buffer),
- 		     (u16)ZFCP_DBF_PAY_MAX_REC);
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -437,6 +437,34 @@ void zfcp_fsf_req_dismiss_all(struct zfc
+ 	}
+ }
  
--	while ((char *)pl[payload->counter] && payload->counter < scount) {
-+	while (payload->counter < scount && (char *)pl[payload->counter]) {
- 		memcpy(payload->data, (char *)pl[payload->counter], length);
- 		debug_event(dbf->pay, 1, payload, zfcp_dbf_plen(length));
- 		payload->counter++;
---- a/drivers/s390/scsi/zfcp_qdio.c
-+++ b/drivers/s390/scsi/zfcp_qdio.c
-@@ -102,18 +102,22 @@ static void zfcp_qdio_int_resp(struct cc
- {
- 	struct zfcp_qdio *qdio = (struct zfcp_qdio *) parm;
- 	struct zfcp_adapter *adapter = qdio->adapter;
--	struct qdio_buffer_element *sbale;
- 	int sbal_no, sbal_idx;
--	void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
--	u64 req_id;
--	u8 scount;
- 
- 	if (unlikely(qdio_err)) {
--		memset(pl, 0, ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
- 		if (zfcp_adapter_multi_buffer_active(adapter)) {
-+			void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
-+			struct qdio_buffer_element *sbale;
-+			u64 req_id;
-+			u8 scount;
++#define ZFCP_FSF_PORTSPEED_1GBIT	(1 <<  0)
++#define ZFCP_FSF_PORTSPEED_2GBIT	(1 <<  1)
++#define ZFCP_FSF_PORTSPEED_4GBIT	(1 <<  2)
++#define ZFCP_FSF_PORTSPEED_10GBIT	(1 <<  3)
++#define ZFCP_FSF_PORTSPEED_8GBIT	(1 <<  4)
++#define ZFCP_FSF_PORTSPEED_16GBIT	(1 <<  5)
++#define ZFCP_FSF_PORTSPEED_NOT_NEGOTIATED (1 << 15)
 +
-+			memset(pl, 0,
-+			       ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
- 			sbale = qdio->res_q[idx]->element;
- 			req_id = (u64) sbale->addr;
--			scount = sbale->scount + 1; /* incl. signaling SBAL */
-+			scount = min(sbale->scount + 1,
-+				     ZFCP_QDIO_MAX_SBALS_PER_REQ + 1);
-+				     /* incl. signaling SBAL */
++static u32 zfcp_fsf_convert_portspeed(u32 fsf_speed)
++{
++	u32 fdmi_speed = 0;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_1GBIT)
++		fdmi_speed |= FC_PORTSPEED_1GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_2GBIT)
++		fdmi_speed |= FC_PORTSPEED_2GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_4GBIT)
++		fdmi_speed |= FC_PORTSPEED_4GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_10GBIT)
++		fdmi_speed |= FC_PORTSPEED_10GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_8GBIT)
++		fdmi_speed |= FC_PORTSPEED_8GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_16GBIT)
++		fdmi_speed |= FC_PORTSPEED_16GBIT;
++	if (fsf_speed & ZFCP_FSF_PORTSPEED_NOT_NEGOTIATED)
++		fdmi_speed |= FC_PORTSPEED_NOT_NEGOTIATED;
++	return fdmi_speed;
++}
++
+ static int zfcp_fsf_exchange_config_evaluate(struct zfcp_fsf_req *req)
+ {
+ 	struct fsf_qtcb_bottom_config *bottom = &req->qtcb->bottom.config;
+@@ -456,7 +484,8 @@ static int zfcp_fsf_exchange_config_eval
+ 	fc_host_port_name(shost) = nsp->fl_wwpn;
+ 	fc_host_node_name(shost) = nsp->fl_wwnn;
+ 	fc_host_port_id(shost) = ntoh24(bottom->s_id);
+-	fc_host_speed(shost) = bottom->fc_link_speed;
++	fc_host_speed(shost) =
++		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
+ 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
  
- 			for (sbal_no = 0; sbal_no < scount; sbal_no++) {
- 				sbal_idx = (idx + sbal_no) %
+ 	adapter->hydra_version = bottom->adapter_type;
+@@ -580,7 +609,8 @@ static void zfcp_fsf_exchange_port_evalu
+ 	} else
+ 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
+ 	fc_host_maxframe_size(shost) = bottom->maximum_frame_size;
+-	fc_host_supported_speeds(shost) = bottom->supported_speed;
++	fc_host_supported_speeds(shost) =
++		zfcp_fsf_convert_portspeed(bottom->supported_speed);
+ 	memcpy(fc_host_supported_fc4s(shost), bottom->supported_fc4_types,
+ 	       FC_FC4_LIST_SIZE);
+ 	memcpy(fc_host_active_fc4s(shost), bottom->active_fc4_types,
 
 
