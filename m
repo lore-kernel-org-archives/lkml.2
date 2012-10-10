@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab2JJXGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:06:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50635 "EHLO
+	id S932662Ab2JJXHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:07:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40616 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932645Ab2JJXD3 (ORCPT
+	by vger.kernel.org with ESMTP id S932585Ab2JJXDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:29 -0400
-X-Sasl-enc: 0ASeLERdKbg5HeMmeYfbVdCC3MxnYPdPa2rjaTH/yxdW 1349910207
+	Wed, 10 Oct 2012 19:03:25 -0400
+X-Sasl-enc: s/9+gQDTnelLoGUbcjRNWoqfsOhdyj4wZ6Y2zE9PuZFA 1349910204
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 067/122] ALSA: aloop - add locking to timer access
-Date: Thu, 11 Oct 2012 07:53:53 +0900
-Message-Id: <20121010225350.196951543@linuxfoundation.org>
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 062/122] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
+Date: Thu, 11 Oct 2012 07:53:48 +0900
+Message-Id: <20121010225349.283752613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,69 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
+commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
 
-When the loopback timer handler is running, calling del_timer() (for STOP
-trigger) will not wait for the handler to complete before deactivating the
-timer. The timer gets rescheduled in the handler as usual. Then a subsequent
-START trigger will try to start the timer using add_timer() with a timer pending
-leading to a kernel panic.
+In many places !pmd_present has been converted to pmd_none.  For pmds
+that's equivalent and pmd_none is quicker so using pmd_none is better.
 
-Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
-this.
+However (unless we delete pmd_present) we should provide an accurate
+pmd_present too.  This will avoid the risk of code thinking the pmd is non
+present because it's under __split_huge_page_map, see the pmd_mknotpresent
+there and the comment above it.
 
-Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+If the page has been mprotected as PROT_NONE, it would also lead to a
+pmd_present false negative in the same way as the race with
+split_huge_page.
+
+Because the PSE bit stays on at all times (both during split_huge_page and
+when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
+but checking the PROTNONE bit too is still good to remember pmd_present
+must always keep PROT_NONE into account.
+
+This explains a not reproducible BUG_ON that was seldom reported on the
+lists.
+
+The same issue is in pmd_large, it would go wrong with both PROT_NONE and
+if it races with split_huge_page.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/drivers/aloop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/include/asm/pgtable.h |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -120,6 +120,7 @@ struct loopback_pcm {
- 	unsigned int last_drift;
- 	unsigned long last_jiffies;
- 	struct timer_list timer;
-+	spinlock_t timer_lock;
- };
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
  
- static struct platform_device *devices[SNDRV_CARDS];
-@@ -170,6 +171,7 @@ static void loopback_timer_start(struct
- 	unsigned long tick;
- 	unsigned int rate_shift = get_rate_shift(dpcm);
- 
-+	spin_lock(&dpcm->timer_lock);
- 	if (rate_shift != dpcm->pcm_rate_shift) {
- 		dpcm->pcm_rate_shift = rate_shift;
- 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
-@@ -182,12 +184,15 @@ static void loopback_timer_start(struct
- 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
- 	dpcm->timer.expires = jiffies + tick;
- 	add_timer(&dpcm->timer);
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
+ static inline int pmd_large(pmd_t pte)
  {
-+	spin_lock(&dpcm->timer_lock);
- 	del_timer(&dpcm->timer);
- 	dpcm->timer.expires = 0;
-+	spin_unlock(&dpcm->timer_lock);
+-	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
+-		(_PAGE_PSE | _PAGE_PRESENT);
++	return pmd_flags(pte) & _PAGE_PSE;
  }
  
- #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
-@@ -667,6 +672,7 @@ static int loopback_open(struct snd_pcm_
- 	dpcm->substream = substream;
- 	setup_timer(&dpcm->timer, loopback_timer_function,
- 		    (unsigned long)dpcm);
-+	spin_lock_init(&dpcm->timer_lock);
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
  
- 	cable = loopback->cables[substream->number][dev];
- 	if (!cable) {
+ static inline int pmd_present(pmd_t pmd)
+ {
+-	return pmd_flags(pmd) & _PAGE_PRESENT;
++	/*
++	 * Checking for _PAGE_PSE is needed too because
++	 * split_huge_page will temporarily clear the present bit (but
++	 * the _PAGE_PSE flag will remain set at all times while the
++	 * _PAGE_PRESENT bit is clear).
++	 */
++	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+ }
+ 
+ static inline int pmd_none(pmd_t pmd)
 
 
