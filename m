@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab2JJRik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:38:40 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56058 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2JJRii (ORCPT
+	id S932406Ab2JJPVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:21:15 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55819 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335Ab2JJPVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:38:38 -0400
+	Wed, 10 Oct 2012 11:21:12 -0400
+Date: Wed, 10 Oct 2012 10:12:26 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
+        gang.wei@intel.com
+Subject: [PULL] tpmdd fix for ppi
+Message-ID: <20121010151225.GA1650@ennui.austin.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1210101821540.2689@kaball.uk.xensource.com>
-References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
-	<1349827115-16600-7-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210101733220.2689@kaball.uk.xensource.com>
-	<CAE9FiQVuU=KfMM0Q16Lddz8ZL_wzg5PLkWWK=6navQdC_j0KbA@mail.gmail.com>
-	<alpine.DEB.2.02.1210101821540.2689@kaball.uk.xensource.com>
-Date: Wed, 10 Oct 2012 10:38:36 -0700
-X-Google-Sender-Auth: djJ0_d3zVTGwFNl3zZp8NQoackE
-Message-ID: <CAE9FiQVSMP2TpTPxEB62T-uELY-W67m6LX-qTJ7yYSEE-cOZbA@mail.gmail.com>
-Subject: Re: [PATCH 6/7] x86, mm: setup page table from top-down
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=000e0cd1e0cea7dd6004cbb7ec84
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101015-7606-0000-0000-0000045FE5E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd1e0cea7dd6004cbb7ec84
-Content-Type: text/plain; charset=ISO-8859-1
+Hi James,
 
-On Wed, Oct 10, 2012 at 10:26 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Wed, 10 Oct 2012, Yinghai Lu wrote:
->
-> It doesn't matter whether they come from BRK or other memory: Xen
-> assumes that all the pagetable pages come from
-> pgt_buf_start-pgt_buf_top, so if you are going to use another range you
-> need to tell Xen about it.
->
-> Alternatively, you can follow Peter's suggestion and replace the current
-> hooks with a new one with a more precise and well defined semantic.
-> Something along the lines of "this pagetable page is about to be hooked
-> into the live pagetable". Xen would use the hook to mark it RO.
+The following changes since commit ecefbd94b834fa32559d854646d777c56749ef1c:
 
-attached patch on top of this patch will fix the problem?
+  Merge tag 'kvm-3.7-1' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-10-04 09:30:33 -0700)
 
---000e0cd1e0cea7dd6004cbb7ec84
-Content-Type: application/octet-stream; name="fix_xen.patch"
-Content-Disposition: attachment; filename="fix_xen.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h84q24o60
+are available in the git repository at:
 
-LS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS94ODZfaW5pdC5oIHwgICAgMiArLQogYXJjaC94ODYv
-a2VybmVsL3g4Nl9pbml0LmMgICAgICB8ICAgIDMgKystCiBhcmNoL3g4Ni9tbS9pbml0XzMyLmMg
-ICAgICAgICAgIHwgICAgMSArCiBhcmNoL3g4Ni9tbS9pbml0XzY0LmMgICAgICAgICAgIHwgICAg
-MSArCiBhcmNoL3g4Ni94ZW4vbW11LmMgICAgICAgICAgICAgIHwgICAxNSArKystLS0tLS0tLS0t
-LS0KIDUgZmlsZXMgY2hhbmdlZCwgOCBpbnNlcnRpb25zKCspLCAxNCBkZWxldGlvbnMoLSkKCklu
-ZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20veDg2X2luaXQuaAo9PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS94ODZfaW5pdC5oCisrKyBs
-aW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20veDg2X2luaXQuaApAQCAtNzYsNyArNzYsNyBA
-QCBzdHJ1Y3QgeDg2X2luaXRfb2VtIHsKICAqIGluaXRfbWVtb3J5X21hcHBpbmcgYW5kIHRoZSBj
-b21taXQgdGhhdCBhZGRlZCBpdC4KICAqLwogc3RydWN0IHg4Nl9pbml0X21hcHBpbmcgewotCXZv
-aWQgKCpwYWdldGFibGVfcmVzZXJ2ZSkodTY0IHN0YXJ0LCB1NjQgZW5kKTsKKwl2b2lkICgqbWFy
-a19wYWdlX3JvKSh1NjQgYWRkcik7CiB9OwogCiAvKioKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4
-Ni9rZXJuZWwveDg2X2luaXQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
-Ni9rZXJuZWwveDg2X2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC94ODZfaW5p
-dC5jCkBAIC0yOCw2ICsyOCw3IEBAIHZvaWQgX19jcHVpbml0IHg4Nl9pbml0X25vb3Aodm9pZCkg
-eyB9CiB2b2lkIF9faW5pdCB4ODZfaW5pdF91aW50X25vb3AodW5zaWduZWQgaW50IHVudXNlZCkg
-eyB9CiBpbnQgX19pbml0IGlvbW11X2luaXRfbm9vcCh2b2lkKSB7IHJldHVybiAwOyB9CiB2b2lk
-IGlvbW11X3NodXRkb3duX25vb3Aodm9pZCkgeyB9CitzdGF0aWMgdm9pZCBtYXJrX3BhZ2Vfcm9f
-bm9vcCh1NjQgYWRkcikgeyB9CiAKIC8qCiAgKiBUaGUgcGxhdGZvcm0gc2V0dXAgZnVuY3Rpb25z
-IGFyZSBwcmVzZXQgd2l0aCB0aGUgZGVmYXVsdCBmdW5jdGlvbnMKQEAgLTYzLDcgKzY0LDcgQEAg
-c3RydWN0IHg4Nl9pbml0X29wcyB4ODZfaW5pdCBfX2luaXRkYXRhCiAJfSwKIAogCS5tYXBwaW5n
-ID0gewotCQkucGFnZXRhYmxlX3Jlc2VydmUJCT0gbmF0aXZlX3BhZ2V0YWJsZV9yZXNlcnZlLAor
-CQkubWFya19wYWdlX3JvCQkJPSBtYXJrX3BhZ2Vfcm9fbm9vcDsKIAl9LAogCiAJLnBhZ2luZyA9
-IHsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni94ZW4vbW11LmMKPT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGlu
-dXgtMi42Lm9yaWcvYXJjaC94ODYveGVuL21tdS5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYveGVu
-L21tdS5jCkBAIC0xMTc3LDE4ICsxMTc3LDkgQEAgc3RhdGljIHZvaWQgeGVuX2V4aXRfbW1hcChz
-dHJ1Y3QgbW1fc3RydQogCiBzdGF0aWMgdm9pZCB4ZW5fcG9zdF9hbGxvY2F0b3JfaW5pdCh2b2lk
-KTsKIAotc3RhdGljIF9faW5pdCB2b2lkIHhlbl9tYXBwaW5nX3BhZ2V0YWJsZV9yZXNlcnZlKHU2
-NCBzdGFydCwgdTY0IGVuZCkKK3N0YXRpYyBfX2luaXQgdm9pZCB4ZW5fbWFwcGluZ19tYXJrX3Bh
-Z2Vfcm8odTY0IGFkZHIpCiB7Ci0JLyogcmVzZXJ2ZSB0aGUgcmFuZ2UgdXNlZCAqLwotCW5hdGl2
-ZV9wYWdldGFibGVfcmVzZXJ2ZShzdGFydCwgZW5kKTsKLQotCS8qIHNldCBhcyBSVyB0aGUgcmVz
-dCAqLwotCXByaW50ayhLRVJOX0RFQlVHICJ4ZW46IHNldHRpbmcgUlcgdGhlIHJhbmdlICVsbHgg
-LSAlbGx4XG4iLCBlbmQsCi0JCQlQRk5fUEhZUyhwZ3RfYnVmX3RvcCkpOwotCXdoaWxlIChlbmQg
-PCBQRk5fUEhZUyhwZ3RfYnVmX3RvcCkpIHsKLQkJbWFrZV9sb3dtZW1fcGFnZV9yZWFkd3JpdGUo
-X192YShlbmQpKTsKLQkJZW5kICs9IFBBR0VfU0laRTsKLQl9CisJbWFrZV9sb3dtZW1fcGFnZV9y
-ZWFkb25seShfX3ZhKGFkZHIpKTsKIH0KIAogI2lmZGVmIENPTkZJR19YODZfNjQKQEAgLTIxNzcs
-NyArMjE2OCw3IEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcHZfbW11X29wcyB4ZW5fbW11X28KIAog
-dm9pZCBfX2luaXQgeGVuX2luaXRfbW11X29wcyh2b2lkKQogewotCXg4Nl9pbml0Lm1hcHBpbmcu
-cGFnZXRhYmxlX3Jlc2VydmUgPSB4ZW5fbWFwcGluZ19wYWdldGFibGVfcmVzZXJ2ZTsKKwl4ODZf
-aW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyA9IHhlbl9tYXBwaW5nX21hcmtfcGFnZV9ybzsKIAl4
-ODZfaW5pdC5wYWdpbmcucGFnZXRhYmxlX2luaXQgPSB4ZW5fcGFnZXRhYmxlX2luaXQ7CiAJcHZf
-bW11X29wcyA9IHhlbl9tbXVfb3BzOwogCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5p
-dF8zMi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L21tL2luaXRfMzIu
-YworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXRfMzIuYwpAQCAtNzgsNiArNzgsNyBAQCBz
-dGF0aWMgX19pbml0IHZvaWQgKmFsbG9jX2xvd19wYWdlKHZvaWQpCiAJfSBlbHNlCiAJCXBmbiA9
-IHBndF9idWZfZW5kKys7CiAKKwl4ODZfaW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyhwZm4gPDwg
-UEFHRV9TSElGVCk7CiAJYWRyID0gX192YShwZm4gKiBQQUdFX1NJWkUpOwogCWNsZWFyX3BhZ2Uo
-YWRyKTsKIAlyZXR1cm4gYWRyOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L21tL2luaXRfNjQu
-Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKKysr
-IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKQEAgLTM0MCw2ICszNDAsNyBAQCBzdGF0
-aWMgX19yZWYgdm9pZCAqYWxsb2NfbG93X3BhZ2UodW5zaWduCiAJfSBlbHNlCiAJCXBmbiA9IHBn
-dF9idWZfZW5kKys7CiAKKwl4ODZfaW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyhwZm4gPDwgUEFH
-RV9TSElGVCk7CiAJYWRyID0gZWFybHlfbWVtcmVtYXAocGZuICogUEFHRV9TSVpFLCBQQUdFX1NJ
-WkUpOwogCWNsZWFyX3BhZ2UoYWRyKTsKIAkqcGh5cyAgPSBwZm4gKiBQQUdFX1NJWkU7Cg==
---000e0cd1e0cea7dd6004cbb7ec84--
+
+  git://github.com/shpedoikal/linux.git tpmdd-fixes-v3.6
+
+for you to fetch changes up to 1631cfb7cee28388b04aef6c0a73050f6fd76e4d:
+
+  driver/char/tpm: fix regression causesd by ppi (2012-10-10 09:50:56 -0500)
+
+----------------------------------------------------------------
+Gang Wei (1):
+      driver/char/tpm: fix regression causesd by ppi
+
+ drivers/char/tpm/tpm.c     |  3 ++-
+ drivers/char/tpm/tpm.h     |  9 +++++++--
+ drivers/char/tpm/tpm_ppi.c | 18 ++++++++++--------
+ 3 files changed, 19 insertions(+), 11 deletions(-)
+
