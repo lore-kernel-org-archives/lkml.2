@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab2JJXFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:05:55 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59869 "EHLO
+	id S932724Ab2JJXGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:06:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36644 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932679Ab2JJXDo (ORCPT
+	by vger.kernel.org with ESMTP id S932634Ab2JJXDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:44 -0400
-X-Sasl-enc: 605MjRLepjq3vPz5CYoOa0YDPk8sThNiA7Ef9Brbc3Vi 1349910223
+	Wed, 10 Oct 2012 19:03:36 -0400
+X-Sasl-enc: dmz1gqSU0oWGxE6w1FhiOwuArddN2z42IgwLTgRyOio4 1349910215
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marko Friedemann <mfr@bmx-chemnitz.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 073/122] ALSA: USB: Support for (original) Xbox Communicator
-Date: Thu, 11 Oct 2012 07:53:59 +0900
-Message-Id: <20121010225351.254726362@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 070/122] ALSA: hda - limit internal mic boost for Asus X202E
+Date: Thu, 11 Oct 2012 07:53:56 +0900
+Message-Id: <20121010225350.724538909@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,81 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marko Friedemann <mfr@bmx-chemnitz.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit c05fce586d4da2dfe0309bef3795a8586e967bc3 upstream.
+commit 4b527b6516ab1f0af8aaedd02dbf71ee2c1180f4 upstream.
 
-Added support for Xbox Communicator to USB quirks.
+When the input gain for the internal mic is set to its maximum level,
+the background noise becomes so high - and any relevant signal clipped -
+that the setting becomes unusable. It is better to limit the amplification.
 
-Signed-off-by: Marko Friedemann <mfr@bmx-chemnitz.de>
+BugLink: https://bugs.launchpad.net/bugs/1052460
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |   53 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ sound/pci/hda/patch_via.c |   29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -2781,6 +2781,59 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	}
- },
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -3670,6 +3670,32 @@ static void set_widgets_power_state_vt20
+ 		update_power_state(codec, 0x21, AC_PWRST_D3);
+ }
  
-+/* Microsoft XboxLive Headset/Xbox Communicator */
-+{
-+	USB_DEVICE(0x045e, 0x0283),
-+	.bInterfaceClass = USB_CLASS_PER_INTERFACE,
-+	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
-+		.vendor_name = "Microsoft",
-+		.product_name = "XboxLive Headset/Xbox Communicator",
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = &(const struct snd_usb_audio_quirk[]) {
-+			{
-+				/* playback */
-+				.ifnum = 0,
-+				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
-+				.data = &(const struct audioformat) {
-+					.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+					.channels = 1,
-+					.iface = 0,
-+					.altsetting = 0,
-+					.altset_idx = 0,
-+					.attributes = 0,
-+					.endpoint = 0x04,
-+					.ep_attr = 0x05,
-+					.rates = SNDRV_PCM_RATE_CONTINUOUS,
-+					.rate_min = 22050,
-+					.rate_max = 22050
-+				}
-+			},
-+			{
-+				/* capture */
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
-+				.data = &(const struct audioformat) {
-+					.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+					.channels = 1,
-+					.iface = 1,
-+					.altsetting = 0,
-+					.altset_idx = 0,
-+					.attributes = 0,
-+					.endpoint = 0x85,
-+					.ep_attr = 0x05,
-+					.rates = SNDRV_PCM_RATE_CONTINUOUS,
-+					.rate_min = 16000,
-+					.rate_max = 16000
-+				}
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
++/*
++ * pin fix-up
++ */
++enum {
++	VIA_FIXUP_INTMIC_BOOST,
++};
 +
++static void via_fixup_intmic_boost(struct hda_codec *codec,
++				  const struct hda_fixup *fix, int action)
++{
++	if (action == HDA_FIXUP_ACT_PRE_PROBE)
++		override_mic_boost(codec, 0x30, 0, 2, 40);
++}
++
++static const struct hda_fixup via_fixups[] = {
++	[VIA_FIXUP_INTMIC_BOOST] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = via_fixup_intmic_boost,
++	},
++};
++
++static const struct snd_pci_quirk vt2002p_fixups[] = {
++	SND_PCI_QUIRK(0x1043, 0x8532, "Asus X202E", VIA_FIXUP_INTMIC_BOOST),
++	{}
++};
++
+ /* patch for vt2002P */
+ static int patch_vt2002P(struct hda_codec *codec)
  {
- 	/*
- 	 * Some USB MIDI devices don't have an audio control interface,
+@@ -3686,6 +3712,9 @@ static int patch_vt2002P(struct hda_code
+ 	override_mic_boost(codec, 0x29, 0, 3, 40);
+ 	add_secret_dac_path(codec);
+ 
++	snd_hda_pick_fixup(codec, NULL, vt2002p_fixups, via_fixups);
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
++
+ 	/* automatic parse from the BIOS config */
+ 	err = via_parse_auto_config(codec);
+ 	if (err < 0) {
 
 
