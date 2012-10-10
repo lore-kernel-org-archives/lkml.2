@@ -1,70 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2JJKEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:04:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61719 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab2JJKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:04:37 -0400
-X-IronPort-AV: E=Sophos;i="4.80,565,1344182400"; 
-   d="scan'208";a="5976639"
-Message-ID: <50754981.80900@cn.fujitsu.com>
-Date: Wed, 10 Oct 2012 18:10:09 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: David Rientjes <rientjes@google.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        mingo@redhat.com, miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com>		 <1349780256.7880.12.camel@twins>		 <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com>		 <1349815676.7880.85.camel@twins>		 <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>	 <1349860216.7880.105.camel@twins> <507540F5.7040501@cn.fujitsu.com> <1349862694.7880.114.camel@twins>
-In-Reply-To: <1349862694.7880.114.camel@twins>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 18:04:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/10 18:04:24,
-	Serialize complete at 2012/10/10 18:04:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754672Ab2JJKLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:11:52 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34485 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755265Ab2JJKIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:08:52 -0400
+From: zwu.kernel@gmail.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC v3 04/13] vfs: add function for collecting raw access info
+Date: Wed, 10 Oct 2012 18:07:26 +0800
+Message-Id: <1349863655-29320-5-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+x-cbid: 12101010-8974-0000-0000-00000F4E4071
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00181223; UDB=6.00041045; UTC=2012-10-10
+ 10:08:49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/10/2012 05:51 PM, Peter Zijlstra Wrote:
-> On Wed, 2012-10-10 at 17:33 +0800, Wen Congyang wrote:
->>
->> Hmm, if per-cpu memory is preserved, and we can't offline and remove
->> this memory. So we can't offline the node.
->>
->> But, if the node is hot added, and per-cpu memory doesn't use the
->> memory on this node. We can hotremove cpu/memory on this node, and then
->> offline this node.
->>
->> Before the cpu is hotadded, cpu's node is -1. We set cpu<->node mapping
->> when it is hotadded. So the entire cpu<->node mapping was not invariant
->> during hotplug.
->>
->> So it is why I try to clear it when the cpu is hot-removed.
->>
->> As we need the mapping to migrate a task to the cpu on the same node first,
->> I think we can clear the mapping when the node is offlined.
-> 
-> Hmm maybe, but hardware that can hot-add is rare and nobody has it so
-> nobody cares ;-)
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Yes, nobody cares it now. But we have a such hardware, so I care it now.
+  Add some utils helpers to update access frequencies
+for one file or its range.
 
-> 
-> But by clearing cpu_to_node on every hotplug you change semantics for
-> all hardware and everybody gets to feel the pain.
-> 
-> I'm not saying you cannot change things, I'm only saying you should be
-> far more careful about it, not change it and wait for things to break.
-> Put in some effort to find things that might break and warn people --
-> sure, you'll always miss some, and that's ok.
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/hot_tracking.c            |  190 ++++++++++++++++++++++++++++++++++++++++++
+ fs/hot_tracking.h            |   12 +++
+ include/linux/hot_tracking.h |    4 +
+ 3 files changed, 206 insertions(+), 0 deletions(-)
 
-I use ./scripts/get_maintainer.pl, and it doesn't tell me that I should cc
-you when I post that patch.
-
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index 5fd993e..86c87c7 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -174,6 +174,196 @@ static void hot_inode_tree_exit(struct hot_info *root)
+ 	}
+ }
+ 
++struct hot_inode_item
++*hot_inode_item_find(struct hot_info *root, u64 ino)
++{
++	struct hot_inode_item *he;
++	int ret;
++
++again:
++	spin_lock(&root->lock);
++	he = radix_tree_lookup(&root->hot_inode_tree, ino);
++	if (he) {
++		kref_get(&he->hot_inode.refs);
++		spin_unlock(&root->lock);
++		return he;
++	}
++	spin_unlock(&root->lock);
++
++	he = kmem_cache_zalloc(hot_inode_item_cachep,
++				GFP_KERNEL | GFP_NOFS);
++	if (!he)
++		return ERR_PTR(-ENOMEM);
++
++	hot_inode_item_init(he, ino, &root->hot_inode_tree);
++
++	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
++	if (ret) {
++		kmem_cache_free(hot_inode_item_cachep, he);
++		return ERR_PTR(ret);
++	}
++
++	spin_lock(&root->lock);
++	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
++	if (ret == -EEXIST) {
++		kmem_cache_free(hot_inode_item_cachep, he);
++		spin_unlock(&root->lock);
++		radix_tree_preload_end();
++		goto again;
++	}
++	spin_unlock(&root->lock);
++	radix_tree_preload_end();
++
++	kref_get(&he->hot_inode.refs);
++	return he;
++}
++
++static struct hot_range_item
++*hot_range_item_find(struct hot_inode_item *he,
++			u32 start)
++{
++	struct hot_range_item *hr;
++	int ret;
++
++again:
++	spin_lock(&he->lock);
++	hr = radix_tree_lookup(&he->hot_range_tree, start);
++	if (hr) {
++		kref_get(&hr->hot_range.refs);
++		spin_unlock(&he->lock);
++		return hr;
++	}
++	spin_unlock(&he->lock);
++
++	hr = kmem_cache_zalloc(hot_range_item_cachep,
++				GFP_KERNEL | GFP_NOFS);
++	if (!hr)
++		return ERR_PTR(-ENOMEM);
++
++	hot_range_item_init(hr, start, he);
++
++	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
++	if (ret) {
++		kmem_cache_free(hot_range_item_cachep, hr);
++		return ERR_PTR(ret);
++	}
++
++	spin_lock(&he->lock);
++	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
++	if (ret == -EEXIST) {
++		kmem_cache_free(hot_range_item_cachep, hr);
++		spin_unlock(&he->lock);
++		radix_tree_preload_end();
++		goto again;
++	}
++	spin_unlock(&he->lock);
++	radix_tree_preload_end();
++
++	kref_get(&hr->hot_range.refs);
++	return hr;
++}
++
++/*
++ * This function does the actual work of updating the frequency numbers,
++ * whatever they turn out to be. FREQ_POWER determines how many atime
++ * deltas we keep track of (as a power of 2). So, setting it to anything above
++ * 16ish is probably overkill. Also, the higher the power, the more bits get
++ * right shifted out of the timestamp, reducing precision, so take note of that
++ * as well.
++ *
++ * The caller should have already locked freq_data's parent's spinlock.
++ *
++ * FREQ_POWER, defined immediately below, determines how heavily to weight
++ * the current frequency numbers against the newest access. For example, a value
++ * of 4 means that the new access information will be weighted 1/16th (ie 2^-4)
++ * as heavily as the existing frequency info. In essence, this is a kludged-
++ * together version of a weighted average, since we can't afford to keep all of
++ * the information that it would take to get a _real_ weighted average.
++ */
++static u64 hot_average_update(struct timespec old_atime,
++		struct timespec cur_time, u64 old_avg)
++{
++	struct timespec delta_ts;
++	u64 new_avg;
++	u64 new_delta;
++
++	delta_ts = timespec_sub(cur_time, old_atime);
++	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
++
++	new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
++	new_avg = new_avg >> FREQ_POWER;
++
++	return new_avg;
++}
++
++static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
++{
++	struct timespec cur_time = current_kernel_time();
++
++	if (write) {
++		freq_data->nr_writes += 1;
++		freq_data->avg_delta_writes = hot_average_update(
++				freq_data->last_write_time,
++				cur_time,
++				freq_data->avg_delta_writes);
++		freq_data->last_write_time = cur_time;
++	} else {
++		freq_data->nr_reads += 1;
++		freq_data->avg_delta_reads = hot_average_update(
++				freq_data->last_read_time,
++				cur_time,
++				freq_data->avg_delta_reads);
++		freq_data->last_read_time = cur_time;
++	}
++}
++
++/*
++ * Main function to update access frequency from read/writepage(s) hooks
++ */
++inline void hot_update_freqs(struct hot_info *root,
++			struct inode *inode, u64 start,
++			u64 len, int rw)
++{
++	struct hot_inode_item *he;
++	struct hot_range_item *hr;
++	u32 cur, end;
++
++	if (!TRACK_THIS_INODE(inode) || (len == 0))
++		return;
++
++	he = hot_inode_item_find(root, inode->i_ino);
++	if (IS_ERR(he)) {
++		WARN_ON(1);
++		return;
++	}
++
++	spin_lock(&he->hot_inode.lock);
++	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
++	spin_unlock(&he->hot_inode.lock);
++
++	/*
++	 * Align ranges on RANGE_SIZE boundary
++	 * to prevent proliferation of range structs
++	 */
++	end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
++	for (cur = (start >> RANGE_BITS); cur < end; cur++) {
++		hr = hot_range_item_find(he, cur);
++		if (IS_ERR(hr)) {
++			WARN_ON(1);
++			hot_inode_item_put(he);
++			return;
++		}
++
++		spin_lock(&hr->hot_range.lock);
++		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
++		spin_unlock(&hr->hot_range.lock);
++
++		hot_range_item_put(hr);
++	}
++
++	hot_inode_item_put(he);
++}
++
+ /*
+  * Initialize kmem cache for hot_inode_item and hot_range_item.
+  */
+diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+index 4e8aa77..37f69ee 100644
+--- a/fs/hot_tracking.h
++++ b/fs/hot_tracking.h
+@@ -19,6 +19,18 @@
+ /* values for hot_freq_data flags */
+ #define FREQ_DATA_TYPE_INODE (1 << 0)
+ #define FREQ_DATA_TYPE_RANGE (1 << 1)
++/* size of sub-file ranges */
++#define RANGE_BITS 20
++#define RANGE_SIZE (1 << RANGE_BITS)
++
++#define FREQ_POWER 4
++
++struct hot_inode_item
++*hot_inode_item_find(struct hot_info *root, u64 ino);
++void hot_inode_item_put(struct hot_inode_item *he);
++inline void hot_update_freqs(struct hot_info *root,
++                        struct inode *inode, u64 start,
++                        u64 len, int rw);
+ 
+ void hot_track_init(struct super_block *sb);
+ void hot_track_exit(struct super_block *sb);
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 13aa54b..1e0aed5 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -75,4 +75,8 @@ extern struct hot_info *global_hot_tracking_info;
+ extern void hot_track_init(struct super_block *sb);
+ extern void hot_track_exit(struct super_block *sb);
+ 
++extern inline void hot_update_freqs(struct hot_info *root,
++                        struct inode *inode, u64 start,
++                        u64 len, int rw);
++
+ #endif  /* _LINUX_HOTTRACK_H */
+-- 
+1.7.6.5
 
