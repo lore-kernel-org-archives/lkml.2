@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab2JJXGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:06:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54937 "EHLO
+	id S932682Ab2JJXGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:06:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50635 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932648Ab2JJXDb (ORCPT
+	by vger.kernel.org with ESMTP id S932645Ab2JJXD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:31 -0400
-X-Sasl-enc: m7wWNSNZHPwu5yurUsqqjFb5BX3wd00jTlcrBD2QsTY2 1349910210
+	Wed, 10 Oct 2012 19:03:29 -0400
+X-Sasl-enc: 0ASeLERdKbg5HeMmeYfbVdCC3MxnYPdPa2rjaTH/yxdW 1349910207
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 068/122] ALSA: hda/via - dont report presence on HPs with no presence support
-Date: Thu, 11 Oct 2012 07:53:54 +0900
-Message-Id: <20121010225350.371773404@linuxfoundation.org>
+        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 067/122] ALSA: aloop - add locking to timer access
+Date: Thu, 11 Oct 2012 07:53:53 +0900
+Message-Id: <20121010225350.196951543@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,42 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
 
-commit cf55e904516947597d75fd3844acc24891a95772 upstream.
+commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
 
-If headphone jack can't detect plug presence, and we have the jack in
-the jack table, snd_hda_jack_detect will return the plug as always
-present (as it'll be considered as a phantom jack). The problem is that
-when this happens, line out pins will always be disabled, resulting in
-no sound if there are no headphones connected.
+When the loopback timer handler is running, calling del_timer() (for STOP
+trigger) will not wait for the handler to complete before deactivating the
+timer. The timer gets rescheduled in the handler as usual. Then a subsequent
+START trigger will try to start the timer using add_timer() with a timer pending
+leading to a kernel panic.
 
-This was reported as a no sound problem after suspend on
-http://bugs.launchpad.net/bugs/1052499, since the bug doesn't manifests
-on first initialization before the phantom jack is added, but on resume
-we reexecute the initialization code, and via_hp_automute starts
-reporting HP always present with the jack now on the table.
+Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
+this.
 
-BugLink: https://bugs.launchpad.net/bugs/1052499
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_via.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/drivers/aloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/pci/hda/patch_via.c
-+++ b/sound/pci/hda/patch_via.c
-@@ -1672,7 +1672,8 @@ static void via_hp_automute(struct hda_c
- 	struct via_spec *spec = codec->spec;
+--- a/sound/drivers/aloop.c
++++ b/sound/drivers/aloop.c
+@@ -120,6 +120,7 @@ struct loopback_pcm {
+ 	unsigned int last_drift;
+ 	unsigned long last_jiffies;
+ 	struct timer_list timer;
++	spinlock_t timer_lock;
+ };
  
- 	if (!spec->hp_independent_mode && spec->autocfg.hp_pins[0] &&
--	    (spec->codec_type != VT1708 || spec->vt1708_jack_detect))
-+	    (spec->codec_type != VT1708 || spec->vt1708_jack_detect) &&
-+	    is_jack_detectable(codec, spec->autocfg.hp_pins[0]))
- 		present = snd_hda_jack_detect(codec, spec->autocfg.hp_pins[0]);
+ static struct platform_device *devices[SNDRV_CARDS];
+@@ -170,6 +171,7 @@ static void loopback_timer_start(struct
+ 	unsigned long tick;
+ 	unsigned int rate_shift = get_rate_shift(dpcm);
  
- 	if (spec->smart51_enabled)
++	spin_lock(&dpcm->timer_lock);
+ 	if (rate_shift != dpcm->pcm_rate_shift) {
+ 		dpcm->pcm_rate_shift = rate_shift;
+ 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
+@@ -182,12 +184,15 @@ static void loopback_timer_start(struct
+ 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
+ 	dpcm->timer.expires = jiffies + tick;
+ 	add_timer(&dpcm->timer);
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
+ {
++	spin_lock(&dpcm->timer_lock);
+ 	del_timer(&dpcm->timer);
+ 	dpcm->timer.expires = 0;
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
+@@ -667,6 +672,7 @@ static int loopback_open(struct snd_pcm_
+ 	dpcm->substream = substream;
+ 	setup_timer(&dpcm->timer, loopback_timer_function,
+ 		    (unsigned long)dpcm);
++	spin_lock_init(&dpcm->timer_lock);
+ 
+ 	cable = loopback->cables[substream->number][dev];
+ 	if (!cable) {
 
 
