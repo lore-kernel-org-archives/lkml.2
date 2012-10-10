@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab2JJVOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:14:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35085 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab2JJVOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:14:33 -0400
-Date: Thu, 11 Oct 2012 01:14:29 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns() v5
-Message-ID: <20121010211429.GF12859@moon>
-References: <20121010204256.GD29501@moon>
- <20121010135408.515c2e21.akpm@linux-foundation.org>
+	id S1756231Ab2JJVVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:21:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755538Ab2JJVU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 17:20:59 -0400
+Date: Wed, 10 Oct 2012 14:20:51 -0700
+From: Zach Brown <zab@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Kent Overstreet <koverstreet@google.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: [PATCH 2/5] aio: kiocb_cancel()
+Message-ID: <20121010212051.GD6371@lenny.home.zabbo.net>
+References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
+ <1349764760-21093-2-git-send-email-koverstreet@google.com>
+ <20121009182625.GM26187@lenny.home.zabbo.net>
+ <20121009213700.GF29494@google.com>
+ <20121010110356.GA11468@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121010135408.515c2e21.akpm@linux-foundation.org>
+In-Reply-To: <20121010110356.GA11468@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 01:54:08PM -0700, Andrew Morton wrote:
-> On Thu, 11 Oct 2012 00:42:56 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > The free_pid_ns function done in recursion fashion:
-> > 
-> > free_pid_ns(parent)
-> >   put_pid_ns(parent)
-> >     kref_put(&ns->kref, free_pid_ns);
-> >       free_pid_ns
-> > 
-> > thus if there was a huge nesting of namespaces the userspace
-> > may trigger avalanche calling of free_pid_ns leading to
-> > kernel stack exhausting and a panic eventually.
-> > 
-> > This patch turns the recursion into iterative loop.
-> > 
-> > v5 (from oleg@):
-> >  - Drop @ret variable
-> >  - Make put_pid_ns non-inline since it grows in size,
-> >    in turn make free_pid_ns static
-> 
-> OK, let's try that.  I'll sit on this until -rc2 to give it a bit of
-> time to cook.
-> 
-> A -stable backport might be needed.  What capabilities does userspace
-> need to be able to trigger the kernel stack overflow?
+> And maybe the current way of doing things isn't the best way.  But it
+> would be nice if we didn't completely give up on the functionality of
+> aio_cancel.
 
-I believe it'll apply on stable even in current form. As Eric mentioned
-CAP_SYS_ADMIN is required (so it's not that urgent i think).
+I sympathize, but the reality is that the current infrastructure
+is very bad and no one is using it.
+
+It's not like we're getting rid of the syscall.  I'll be behaving
+exactly as it does today: returning the error code that indicates that
+cancellation failed because it lost the race with completion.  Every
+caller has to cope with that to use cancel safely.
+
+So if someone eventually implements iocb cancel safely we'll be able to
+plumb it back under the aio syscalls.  But until that day I see no
+reason to carry around buggy infrastructure that is only slowing down
+the fast path.
+
+- z
+
