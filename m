@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab2JJXPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:15:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35956 "EHLO
+	id S1758067Ab2JJXQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:16:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37150 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757898Ab2JJXBi (ORCPT
+	by vger.kernel.org with ESMTP id S1757887Ab2JJXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:38 -0400
-X-Sasl-enc: 8zPQabJwr++6XQGpIQnqYH03ecEE20fr4DOgW05Ak/hL 1349910097
+	Wed, 10 Oct 2012 19:01:32 -0400
+X-Sasl-enc: lemwspLUCCpPRY1TurPRkTs7L0ljELtTUunPFB5/iRbJ 1349910091
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Feng Hong <hongfeng@marvell.com>, Raul Xiong <xjian@marvell.com>,
-        Neil Zhang <zhangwm@marvell.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 027/122] PM / Sleep: use resume event when call dpm_resume_early
-Date: Thu, 11 Oct 2012 07:53:13 +0900
-Message-Id: <20121010225343.021412112@linuxfoundation.org>
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 021/122] lguest: fix occasional crash in example launcher.
+Date: Thu, 11 Oct 2012 07:53:07 +0900
+Message-Id: <20121010225341.940527993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,33 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feng Hong <hongfeng@marvell.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 997a031107ec962967ce36db9bc500f1fad491c1 upstream.
+commit ca16f580a5db7e60bfafe59a50bb133bd3347491 upstream.
 
-When dpm_suspend_noirq fail, state is PMSG_SUSPEND,
-should change to PMSG_RESUME when dpm_resume_early is called
+We usually got away with ->next on the final entry being NULL, but it
+finally bit me.
 
-Signed-off-by: Feng Hong <hongfeng@marvell.com>
-Signed-off-by: Raul Xiong <xjian@marvell.com>
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/power/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/lguest/lguest.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -996,7 +996,7 @@ int dpm_suspend_end(pm_message_t state)
+--- a/tools/lguest/lguest.c
++++ b/tools/lguest/lguest.c
+@@ -1299,6 +1299,7 @@ static struct device *new_device(const c
+ 	dev->feature_len = 0;
+ 	dev->num_vq = 0;
+ 	dev->running = false;
++	dev->next = NULL;
  
- 	error = dpm_suspend_noirq(state);
- 	if (error) {
--		dpm_resume_early(state);
-+		dpm_resume_early(resume_event(state));
- 		return error;
- 	}
- 
+ 	/*
+ 	 * Append to device list.  Prepending to a single-linked list is
 
 
