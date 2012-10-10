@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab2JJXC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:02:29 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44814 "EHLO
+	id S932561Ab2JJXCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:02:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57300 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932482Ab2JJXCZ (ORCPT
+	by vger.kernel.org with ESMTP id S932534Ab2JJXCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:02:25 -0400
-X-Sasl-enc: tu0Ht8EcJ58HxN3n74trZXKfS+Gx7NmMm2/8/KTJ/fLc 1349910144
+	Wed, 10 Oct 2012 19:02:36 -0400
+X-Sasl-enc: krmp4dNp78wAgCY9+56ge1xEYUM0bfsXszncTL02sFPU 1349910155
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
         Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 039/122] SCSI: zfcp: Make trace record tags unique
-Date: Thu, 11 Oct 2012 07:53:25 +0900
-Message-Id: <20121010225345.177603911@linuxfoundation.org>
+Subject: [ 044/122] SCSI: zfcp: only access zfcp_scsi_dev for valid scsi_device
+Date: Thu, 11 Oct 2012 07:53:30 +0900
+Message-Id: <20121010225346.073786575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,47 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-commit 0100998dbfe6dfcd90a6e912ca7ed6f255d48f25 upstream.
+commit d436de8ce25f53a8a880a931886821f632247943 upstream.
 
-Duplicate fssrh_2 from a54ca0f62f953898b05549391ac2a8a4dad6482b
-"[SCSI] zfcp: Redesign of the debug tracing for HBA records."
-complicates distinction of generic status read response from
-local link up.
-Duplicate fsscth1 from 2c55b750a884b86dea8b4cc5f15e1484cc47a25c
-"[SCSI] zfcp: Redesign of the debug tracing for SAN records."
-complicates distinction of good common transport response from
-invalid port handle.
+__scsi_remove_device (e.g. due to dev_loss_tmo) calls
+zfcp_scsi_slave_destroy which in turn sends a close LUN FSF request to
+the adapter. After 30 seconds without response,
+zfcp_erp_timeout_handler kicks the ERP thread failing the close LUN
+ERP action. zfcp_erp_wait in zfcp_erp_lun_shutdown_wait and thus
+zfcp_scsi_slave_destroy returns and then scsi_device is no longer
+valid. Sometime later the response to the close LUN FSF request may
+finally come in. However, commit
+b62a8d9b45b971a67a0f8413338c230e3117dff5
+"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit"
+introduced a number of attempts to unconditionally access struct
+zfcp_scsi_dev through struct scsi_device causing a use-after-free.
+This leads to an Oops due to kernel page fault in one of:
+zfcp_fsf_abort_fcp_command_handler, zfcp_fsf_open_lun_handler,
+zfcp_fsf_close_lun_handler, zfcp_fsf_req_trace,
+zfcp_fsf_fcp_handler_common.
+Move dereferencing of zfcp private data zfcp_scsi_dev allocated in
+scsi_device via scsi_transport_reserve_device after the check for
+potentially aborted FSF request and thus no longer valid scsi_device.
+Only then assign sdev_to_zfcp(sdev) to the local auto variable struct
+zfcp_scsi_dev *zfcp_sdev.
 
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_fsf.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/s390/scsi/zfcp_fsf.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
 --- a/drivers/s390/scsi/zfcp_fsf.c
 +++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -219,7 +219,7 @@ static void zfcp_fsf_status_read_handler
+@@ -801,12 +801,14 @@ out:
+ static void zfcp_fsf_abort_fcp_command_handler(struct zfcp_fsf_req *req)
+ {
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	union fsf_status_qual *fsq = &req->qtcb->header.fsf_status_qual;
+ 
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
  		return;
- 	}
  
--	zfcp_dbf_hba_fsf_uss("fssrh_2", req);
-+	zfcp_dbf_hba_fsf_uss("fssrh_4", req);
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	switch (req->qtcb->header.fsf_status) {
+ 	case FSF_PORT_HANDLE_NOT_VALID:
+ 		if (fsq->word[0] == fsq->word[1]) {
+@@ -1769,13 +1771,15 @@ static void zfcp_fsf_open_lun_handler(st
+ {
+ 	struct zfcp_adapter *adapter = req->adapter;
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct fsf_qtcb_header *header = &req->qtcb->header;
+ 	struct fsf_qtcb_bottom_support *bottom = &req->qtcb->bottom.support;
  
- 	switch (sr_buf->status_type) {
- 	case FSF_STATUS_READ_PORT_CLOSED:
-@@ -915,7 +915,7 @@ static void zfcp_fsf_send_ct_handler(str
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
+ 		return;
  
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	atomic_clear_mask(ZFCP_STATUS_COMMON_ACCESS_DENIED |
+ 			  ZFCP_STATUS_COMMON_ACCESS_BOXED |
+ 			  ZFCP_STATUS_LUN_SHARED |
+@@ -1886,11 +1890,13 @@ out:
+ static void zfcp_fsf_close_lun_handler(struct zfcp_fsf_req *req)
+ {
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
+ 		return;
+ 
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	switch (req->qtcb->header.fsf_status) {
+ 	case FSF_PORT_HANDLE_NOT_VALID:
+ 		zfcp_erp_adapter_reopen(zfcp_sdev->port->adapter, 0, "fscuh_1");
+@@ -1980,7 +1986,7 @@ static void zfcp_fsf_req_trace(struct zf
+ {
+ 	struct fsf_qual_latency_info *lat_in;
+ 	struct latency_cont *lat = NULL;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(scsi->device);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct zfcp_blk_drv_data blktrc;
+ 	int ticks = req->adapter->timer_ticks;
+ 
+@@ -1995,6 +2001,7 @@ static void zfcp_fsf_req_trace(struct zf
+ 
+ 	if (req->adapter->adapter_features & FSF_FEATURE_MEASUREMENT_DATA &&
+ 	    !(req->status & ZFCP_STATUS_FSFREQ_ERROR)) {
++		zfcp_sdev = sdev_to_zfcp(scsi->device);
+ 		blktrc.flags |= ZFCP_BLK_LAT_VALID;
+ 		blktrc.channel_lat = lat_in->channel_lat * ticks;
+ 		blktrc.fabric_lat = lat_in->fabric_lat * ticks;
+@@ -2032,12 +2039,14 @@ static void zfcp_fsf_fcp_handler_common(
+ {
+ 	struct scsi_cmnd *scmnd = req->data;
+ 	struct scsi_device *sdev = scmnd->device;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct fsf_qtcb_header *header = &req->qtcb->header;
+ 
+ 	if (unlikely(req->status & ZFCP_STATUS_FSFREQ_ERROR))
+ 		return;
+ 
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
  	switch (header->fsf_status) {
-         case FSF_GOOD:
--		zfcp_dbf_san_res("fsscth1", req);
-+		zfcp_dbf_san_res("fsscth2", req);
- 		ct->status = 0;
- 		break;
-         case FSF_SERVICE_CLASS_NOT_SUPPORTED:
+ 	case FSF_HANDLE_MISMATCH:
+ 	case FSF_PORT_HANDLE_NOT_VALID:
 
 
