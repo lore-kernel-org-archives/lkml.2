@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab2JJXCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:02:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54258 "EHLO
+	id S932709Ab2JJXKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:10:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46244 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932562Ab2JJXCl (ORCPT
+	by vger.kernel.org with ESMTP id S932579Ab2JJXCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:02:41 -0400
-X-Sasl-enc: gYwZ6D3Xix4CmUgdbV0NTmbQBEddLcHS7WriXbuyL448 1349910160
+	Wed, 10 Oct 2012 19:02:52 -0400
+X-Sasl-enc: SYIntmglC+8sOyy8JKG9Yb/8iu6/skFzrFg3XHx6GsfS 1349910171
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        "Theodore Tso" <tytso@mit.edu>, Brad Figg <brad.figg@canonical.com>
-Subject: [ 050/122] ext4: fix crash when accessing /proc/mounts concurrently
-Date: Thu, 11 Oct 2012 07:53:36 +0900
-Message-Id: <20121010225347.116655449@linuxfoundation.org>
+        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
+Subject: [ 054/122] ext4: fix fdatasync() for files with only i_size changes
+Date: Thu, 11 Oct 2012 07:53:40 +0900
+Message-Id: <20121010225347.822641446@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,47 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 50df9fd55e4271e89a7adf3b1172083dd0ca199d upstream.
+commit b71fc079b5d8f42b2a52743c8d2f1d35d655b1c5 upstream.
 
-The crash was caused by a variable being erronously declared static in
-token2str().
+Code tracking when transaction needs to be committed on fdatasync(2) forgets
+to handle a situation when only inode's i_size is changed. Thus in such
+situations fdatasync(2) doesn't force transaction with new i_size to disk
+and that can result in wrong i_size after a crash.
 
-In addition to /proc/mounts, the problem can also be easily replicated
-by accessing /proc/fs/ext4/<partition>/options in parallel:
+Fix the issue by updating inode's i_datasync_tid whenever its size is
+updated.
 
-$ cat /proc/fs/ext4/<partition>/options > options.txt
-
-... and then running the following command in two different terminals:
-
-$ while diff /proc/fs/ext4/<partition>/options options.txt; do true; done
-
-This is also the cause of the following a crash while running xfstests
-#234, as reported in the following bug reports:
-
-	https://bugs.launchpad.net/bugs/1053019
-	https://bugzilla.kernel.org/show_bug.cgi?id=47731
-
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Brad Figg <brad.figg@canonical.com>
+Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/inode.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1735,7 +1735,7 @@ static inline void ext4_show_quota_optio
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4055,6 +4055,7 @@ static int ext4_do_update_inode(handle_t
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	struct buffer_head *bh = iloc->bh;
+ 	int err = 0, rc, block;
++	int need_datasync = 0;
+ 	uid_t i_uid;
+ 	gid_t i_gid;
  
- static const char *token2str(int token)
- {
--	static const struct match_token *t;
-+	const struct match_token *t;
+@@ -4105,7 +4106,10 @@ static int ext4_do_update_inode(handle_t
+ 		raw_inode->i_file_acl_high =
+ 			cpu_to_le16(ei->i_file_acl >> 32);
+ 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
+-	ext4_isize_set(raw_inode, ei->i_disksize);
++	if (ei->i_disksize != ext4_isize(raw_inode)) {
++		ext4_isize_set(raw_inode, ei->i_disksize);
++		need_datasync = 1;
++	}
+ 	if (ei->i_disksize > 0x7fffffffULL) {
+ 		struct super_block *sb = inode->i_sb;
+ 		if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
+@@ -4158,7 +4162,7 @@ static int ext4_do_update_inode(handle_t
+ 		err = rc;
+ 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
  
- 	for (t = tokens; t->token != Opt_err; t++)
- 		if (t->token == token && !strchr(t->pattern, '='))
+-	ext4_update_inode_fsync_trans(handle, inode, 0);
++	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
+ out_brelse:
+ 	brelse(bh);
+ 	ext4_std_error(inode->i_sb, err);
 
 
