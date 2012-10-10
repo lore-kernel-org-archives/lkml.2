@@ -1,68 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757845Ab2JKAGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:06:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55812 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab2JKAGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:06:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
-   d="scan'208";a="204113841"
-Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries(smpboot.c and apic.c )
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Croxon, Nigel" <nigel.croxon@hp.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Date: Wed, 10 Oct 2012 17:07:19 -0700
-In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
-References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net>
-	 <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com>
-	 <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1757905Ab2JKAMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:12:34 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52642 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757469Ab2JKAMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:12:31 -0400
+X-Sasl-enc: rmjC+LbGR8amO1rMKA312jx5ODb0XD4DAQ0sjnF/w+d3 1349914349
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 073/133] ext4: move_extent code cleanup
+Date: Thu, 11 Oct 2012 07:51:39 +0900
+Message-Id: <20121010224907.637579924@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
+References: <20121010224854.313159132@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 00:26 +0000, Zhang, Lin-Bao (Linux Kernel R&D)
-wrote:
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-> So , we can think ,as your patch , during the window , IO-apic is
-> useless or we can think IO-APIC doesn't exist ? 
-> Could you mind please sharing your design details ? thanks very much! 
+------------------
 
-Between the window of interrupt-remapping enabled and the masked IO-APIC
-RTE's are configured properly, linux kernel doesn't wait/depend on any
-external interrupts.
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-> > Can you please apply the appended patch to 2.6.32 kernel and see if the issue
-> > you mentioned gets fixed? If so, we can ask the -stable and OSV's teams to
-> > pick up this fix.
-> Yes , it can resolve current issue. 
+commit 03bd8b9b896c8e940f282f540e6b4de90d666b7c upstream.
 
-Thanks for testing it out.
+- Remove usless checks, because it is too late to check that inode != NULL
+  at the moment it was referenced several times.
+- Double lock routines looks very ugly and locking ordering relays on
+  order of i_ino, but other kernel code rely on order of pointers.
+  Let's make them simple and clean.
+- check that inodes belongs to the same SB as soon as possible.
 
-I will add the appropriate changelog and send the patch out (to 2.6.32
-stable and OSV kernels) with your "Tested-by:" if you are ok.
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-thanks,
-suresh
+---
+ fs/ext4/move_extent.c |  167 ++++++++++++++------------------------------------
+ 1 file changed, 47 insertions(+), 120 deletions(-)
+
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -141,55 +141,21 @@ mext_next_extent(struct inode *inode, st
+ }
+ 
+ /**
+- * mext_check_null_inode - NULL check for two inodes
+- *
+- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
+- */
+-static int
+-mext_check_null_inode(struct inode *inode1, struct inode *inode2,
+-		      const char *function, unsigned int line)
+-{
+-	int ret = 0;
+-
+-	if (inode1 == NULL) {
+-		__ext4_error(inode2->i_sb, function, line,
+-			"Both inodes should not be NULL: "
+-			"inode1 NULL inode2 %lu", inode2->i_ino);
+-		ret = -EIO;
+-	} else if (inode2 == NULL) {
+-		__ext4_error(inode1->i_sb, function, line,
+-			"Both inodes should not be NULL: "
+-			"inode1 %lu inode2 NULL", inode1->i_ino);
+-		ret = -EIO;
+-	}
+-	return ret;
+-}
+-
+-/**
+  * double_down_write_data_sem - Acquire two inodes' write lock of i_data_sem
+  *
+- * @orig_inode:		original inode structure
+- * @donor_inode:	donor inode structure
+- * Acquire write lock of i_data_sem of the two inodes (orig and donor) by
+- * i_ino order.
++ * Acquire write lock of i_data_sem of the two inodes
+  */
+ static void
+-double_down_write_data_sem(struct inode *orig_inode, struct inode *donor_inode)
++double_down_write_data_sem(struct inode *first, struct inode *second)
+ {
+-	struct inode *first = orig_inode, *second = donor_inode;
++	if (first < second) {
++		down_write(&EXT4_I(first)->i_data_sem);
++		down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
++	} else {
++		down_write(&EXT4_I(second)->i_data_sem);
++		down_write_nested(&EXT4_I(first)->i_data_sem, SINGLE_DEPTH_NESTING);
+ 
+-	/*
+-	 * Use the inode number to provide the stable locking order instead
+-	 * of its address, because the C language doesn't guarantee you can
+-	 * compare pointers that don't come from the same array.
+-	 */
+-	if (donor_inode->i_ino < orig_inode->i_ino) {
+-		first = donor_inode;
+-		second = orig_inode;
+ 	}
+-
+-	down_write(&EXT4_I(first)->i_data_sem);
+-	down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
+ }
+ 
+ /**
+@@ -969,14 +935,6 @@ mext_check_arguments(struct inode *orig_
+ 		return -EINVAL;
+ 	}
+ 
+-	/* Files should be in the same ext4 FS */
+-	if (orig_inode->i_sb != donor_inode->i_sb) {
+-		ext4_debug("ext4 move extent: The argument files "
+-			"should be in same FS [ino:orig %lu, donor %lu]\n",
+-			orig_inode->i_ino, donor_inode->i_ino);
+-		return -EINVAL;
+-	}
+-
+ 	/* Ext4 move extent supports only extent based file */
+ 	if (!(ext4_test_inode_flag(orig_inode, EXT4_INODE_EXTENTS))) {
+ 		ext4_debug("ext4 move extent: orig file is not extents "
+@@ -1072,35 +1030,19 @@ mext_check_arguments(struct inode *orig_
+  * @inode1:	the inode structure
+  * @inode2:	the inode structure
+  *
+- * Lock two inodes' i_mutex by i_ino order.
+- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
++ * Lock two inodes' i_mutex
+  */
+-static int
++static void
+ mext_inode_double_lock(struct inode *inode1, struct inode *inode2)
+ {
+-	int ret = 0;
+-
+-	BUG_ON(inode1 == NULL && inode2 == NULL);
+-
+-	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
+-	if (ret < 0)
+-		goto out;
+-
+-	if (inode1 == inode2) {
+-		mutex_lock(&inode1->i_mutex);
+-		goto out;
+-	}
+-
+-	if (inode1->i_ino < inode2->i_ino) {
++	BUG_ON(inode1 == inode2);
++	if (inode1 < inode2) {
+ 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_PARENT);
+ 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_CHILD);
+ 	} else {
+ 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_PARENT);
+ 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_CHILD);
+ 	}
+-
+-out:
+-	return ret;
+ }
+ 
+ /**
+@@ -1109,28 +1051,13 @@ out:
+  * @inode1:     the inode that is released first
+  * @inode2:     the inode that is released second
+  *
+- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
+  */
+ 
+-static int
++static void
+ mext_inode_double_unlock(struct inode *inode1, struct inode *inode2)
+ {
+-	int ret = 0;
+-
+-	BUG_ON(inode1 == NULL && inode2 == NULL);
+-
+-	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
+-	if (ret < 0)
+-		goto out;
+-
+-	if (inode1)
+-		mutex_unlock(&inode1->i_mutex);
+-
+-	if (inode2 && inode2 != inode1)
+-		mutex_unlock(&inode2->i_mutex);
+-
+-out:
+-	return ret;
++	mutex_unlock(&inode1->i_mutex);
++	mutex_unlock(&inode2->i_mutex);
+ }
+ 
+ /**
+@@ -1187,16 +1114,23 @@ ext4_move_extents(struct file *o_filp, s
+ 	ext4_lblk_t block_end, seq_start, add_blocks, file_end, seq_blocks = 0;
+ 	ext4_lblk_t rest_blocks;
+ 	pgoff_t orig_page_offset = 0, seq_end_page;
+-	int ret1, ret2, depth, last_extent = 0;
++	int ret, depth, last_extent = 0;
+ 	int blocks_per_page = PAGE_CACHE_SIZE >> orig_inode->i_blkbits;
+ 	int data_offset_in_page;
+ 	int block_len_in_page;
+ 	int uninit;
+ 
+-	/* orig and donor should be different file */
+-	if (orig_inode->i_ino == donor_inode->i_ino) {
++	if (orig_inode->i_sb != donor_inode->i_sb) {
++		ext4_debug("ext4 move extent: The argument files "
++			"should be in same FS [ino:orig %lu, donor %lu]\n",
++			orig_inode->i_ino, donor_inode->i_ino);
++		return -EINVAL;
++	}
++
++	/* orig and donor should be different inodes */
++	if (orig_inode == donor_inode) {
+ 		ext4_debug("ext4 move extent: The argument files should not "
+-			"be same file [ino:orig %lu, donor %lu]\n",
++			"be same inode [ino:orig %lu, donor %lu]\n",
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+@@ -1210,16 +1144,14 @@ ext4_move_extents(struct file *o_filp, s
+ 	}
+ 
+ 	/* Protect orig and donor inodes against a truncate */
+-	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
+-	if (ret1 < 0)
+-		return ret1;
++	mext_inode_double_lock(orig_inode, donor_inode);
+ 
+ 	/* Protect extent tree against block allocations via delalloc */
+ 	double_down_write_data_sem(orig_inode, donor_inode);
+ 	/* Check the filesystem environment whether move_extent can be done */
+-	ret1 = mext_check_arguments(orig_inode, donor_inode, orig_start,
++	ret = mext_check_arguments(orig_inode, donor_inode, orig_start,
+ 				    donor_start, &len);
+-	if (ret1)
++	if (ret)
+ 		goto out;
+ 
+ 	file_end = (i_size_read(orig_inode) - 1) >> orig_inode->i_blkbits;
+@@ -1227,13 +1159,13 @@ ext4_move_extents(struct file *o_filp, s
+ 	if (file_end < block_end)
+ 		len -= block_end - file_end;
+ 
+-	ret1 = get_ext_path(orig_inode, block_start, &orig_path);
+-	if (ret1)
++	ret = get_ext_path(orig_inode, block_start, &orig_path);
++	if (ret)
+ 		goto out;
+ 
+ 	/* Get path structure to check the hole */
+-	ret1 = get_ext_path(orig_inode, block_start, &holecheck_path);
+-	if (ret1)
++	ret = get_ext_path(orig_inode, block_start, &holecheck_path);
++	if (ret)
+ 		goto out;
+ 
+ 	depth = ext_depth(orig_inode);
+@@ -1252,13 +1184,13 @@ ext4_move_extents(struct file *o_filp, s
+ 		last_extent = mext_next_extent(orig_inode,
+ 					holecheck_path, &ext_cur);
+ 		if (last_extent < 0) {
+-			ret1 = last_extent;
++			ret = last_extent;
+ 			goto out;
+ 		}
+ 		last_extent = mext_next_extent(orig_inode, orig_path,
+ 							&ext_dummy);
+ 		if (last_extent < 0) {
+-			ret1 = last_extent;
++			ret = last_extent;
+ 			goto out;
+ 		}
+ 		seq_start = le32_to_cpu(ext_cur->ee_block);
+@@ -1272,7 +1204,7 @@ ext4_move_extents(struct file *o_filp, s
+ 	if (le32_to_cpu(ext_cur->ee_block) > block_end) {
+ 		ext4_debug("ext4 move extent: The specified range of file "
+ 							"may be the hole\n");
+-		ret1 = -EINVAL;
++		ret = -EINVAL;
+ 		goto out;
+ 	}
+ 
+@@ -1292,7 +1224,7 @@ ext4_move_extents(struct file *o_filp, s
+ 		last_extent = mext_next_extent(orig_inode, holecheck_path,
+ 						&ext_cur);
+ 		if (last_extent < 0) {
+-			ret1 = last_extent;
++			ret = last_extent;
+ 			break;
+ 		}
+ 		add_blocks = ext4_ext_get_actual_len(ext_cur);
+@@ -1349,18 +1281,18 @@ ext4_move_extents(struct file *o_filp, s
+ 						orig_page_offset,
+ 						data_offset_in_page,
+ 						block_len_in_page, uninit,
+-						&ret1);
++						&ret);
+ 
+ 			/* Count how many blocks we have exchanged */
+ 			*moved_len += block_len_in_page;
+-			if (ret1 < 0)
++			if (ret < 0)
+ 				break;
+ 			if (*moved_len > len) {
+ 				EXT4_ERROR_INODE(orig_inode,
+ 					"We replaced blocks too much! "
+ 					"sum of replaced: %llu requested: %llu",
+ 					*moved_len, len);
+-				ret1 = -EIO;
++				ret = -EIO;
+ 				break;
+ 			}
+ 
+@@ -1374,22 +1306,22 @@ ext4_move_extents(struct file *o_filp, s
+ 		}
+ 
+ 		double_down_write_data_sem(orig_inode, donor_inode);
+-		if (ret1 < 0)
++		if (ret < 0)
+ 			break;
+ 
+ 		/* Decrease buffer counter */
+ 		if (holecheck_path)
+ 			ext4_ext_drop_refs(holecheck_path);
+-		ret1 = get_ext_path(orig_inode, seq_start, &holecheck_path);
+-		if (ret1)
++		ret = get_ext_path(orig_inode, seq_start, &holecheck_path);
++		if (ret)
+ 			break;
+ 		depth = holecheck_path->p_depth;
+ 
+ 		/* Decrease buffer counter */
+ 		if (orig_path)
+ 			ext4_ext_drop_refs(orig_path);
+-		ret1 = get_ext_path(orig_inode, seq_start, &orig_path);
+-		if (ret1)
++		ret = get_ext_path(orig_inode, seq_start, &orig_path);
++		if (ret)
+ 			break;
+ 
+ 		ext_cur = holecheck_path[depth].p_ext;
+@@ -1412,12 +1344,7 @@ out:
+ 		kfree(holecheck_path);
+ 	}
+ 	double_up_write_data_sem(orig_inode, donor_inode);
+-	ret2 = mext_inode_double_unlock(orig_inode, donor_inode);
++	mext_inode_double_unlock(orig_inode, donor_inode);
+ 
+-	if (ret1)
+-		return ret1;
+-	else if (ret2)
+-		return ret2;
+-
+-	return 0;
++	return ret;
+ }
+
 
