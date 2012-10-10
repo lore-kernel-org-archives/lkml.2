@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195Ab2JKAXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:23:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40463 "EHLO
+	id S933206Ab2JKAX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:23:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55462 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933020Ab2JKAXt (ORCPT
+	by vger.kernel.org with ESMTP id S933179Ab2JKAXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:23:49 -0400
-X-Sasl-enc: FHX842tqhyKLWxUEd9uAEU20h7pdJ05XrHdBVyYrwB/+ 1349915028
+	Wed, 10 Oct 2012 20:23:45 -0400
+X-Sasl-enc: iCdR8Zo38vTNFDusDUdXg511wZx09/rfqIcwelx7fqtO 1349915022
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [ 006/122] slab: fix the DEADLOCK issue on l3 alien lock
-Date: Thu, 11 Oct 2012 07:52:52 +0900
-Message-Id: <20121010225339.141864097@linuxfoundation.org>
+        Daniel J Blueman <daniel@quora.org>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 005/122] i2c-piix4: Fix build failure
+Date: Thu, 11 Oct 2012 07:52:51 +0900
+Message-Id: <20121010225338.952572928@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -30,102 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+From: Daniel J Blueman <daniel@quora.org>
 
-commit 947ca1856a7e60aa6d20536785e6a42dff25aa6e upstream.
+commit c415b303a704e5c5f766fc0404093910c36cc4ab upstream.
 
-DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
-the process of this fake report is:
+Fix build failure in Intel PIIX4 I2C driver.
 
-	   kmem_cache_free()	//free obj in cachep
-	-> cache_free_alien()	//acquire cachep's l3 alien lock
-	-> __drain_alien_cache()
-	-> free_block()
-	-> slab_destroy()
-	-> kmem_cache_free()	//free slab in cachep->slabp_cache
-	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
-
-Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
-fake report generated.
-
-This should not happen since we already have init_lock_keys() which will
-reassign the lock class for both l3 list and l3 alien.
-
-However, init_lock_keys() was invoked at a wrong position which is before we
-invoke enable_cpucache() on each cache.
-
-Since until set slab_state to be FULL, we won't invoke enable_cpucache()
-on caches to build their l3 alien while creating them, so although we invoked
-init_lock_keys(), the l3 alien lock class won't change since we don't have
-them until invoked enable_cpucache() later.
-
-This patch will invoke init_lock_keys() after we done enable_cpucache()
-instead of before to avoid the fake DEADLOCK report.
-
-Michael traced the problem back to a commit in release 3.0.0:
-
-commit 30765b92ada267c5395fc788623cb15233276f5c
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Thu Jul 28 23:22:56 2011 +0200
-
-    slab, lockdep: Annotate the locks before using them
-
-    Fernando found we hit the regular OFF_SLAB 'recursion' before we
-    annotate the locks, cure this.
-
-    The relevant portion of the stack-trace:
-
-    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
-    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
-    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
-    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
-    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
-    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
-    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
-    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
-    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
-    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
-
-    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-    Acked-by: Pekka Enberg <penberg@kernel.org>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-The commit moved init_lock_keys() before we build up the alien, so we
-failed to reclass it.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Daniel J Blueman <daniel@quora.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slab.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-piix4.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1781,9 +1781,6 @@ void __init kmem_cache_init_late(void)
- 
- 	slab_state = UP;
- 
--	/* Annotate slab for lockdep -- annotate the malloc caches */
--	init_lock_keys();
--
- 	/* 6) resize the head arrays to their final sizes */
- 	mutex_lock(&slab_mutex);
- 	list_for_each_entry(cachep, &slab_caches, list)
-@@ -1791,6 +1788,9 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&slab_mutex);
- 
-+	/* Annotate slab for lockdep -- annotate the malloc caches */
-+	init_lock_keys();
-+
- 	/* Done! */
- 	slab_state = FULL;
- 
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -37,6 +37,7 @@
+ #include <linux/stddef.h>
+ #include <linux/ioport.h>
+ #include <linux/i2c.h>
++#include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/dmi.h>
+ #include <linux/acpi.h>
 
 
