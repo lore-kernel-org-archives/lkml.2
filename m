@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab2JKAns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:43:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41693 "EHLO
+	id S1758172Ab2JKAoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:44:18 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41046 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758138Ab2JKANZ (ORCPT
+	by vger.kernel.org with ESMTP id S1757799Ab2JKANG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:25 -0400
-X-Sasl-enc: HorpJp+NrI50zx0v/DlAze37Z7R5NMFeMt/v2EBP9KN3 1349914404
+	Wed, 10 Oct 2012 20:13:06 -0400
+X-Sasl-enc: 8xIwMaN8SV2dbaBRc/yppJiBOtdy3iDvJ4z3ozW+5ltx 1349914384
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [ 084/133] MIPS: ath79: use correct fractional dividers for {CPU,DDR}_PLL on AR934x
-Date: Thu, 11 Oct 2012 07:51:50 +0900
-Message-Id: <20121010224909.611488612@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 080/133] kpageflags: fix wrong KPF_THP on non-huge compound pages
+Date: Thu, 11 Oct 2012 07:51:46 +0900
+Message-Id: <20121010224908.867230917@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,56 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 65fc7f9957c52ad4fdf4ee5dfe3a75aa0a633d39 upstream.
+commit 7a71932d5676b7410ab64d149bad8bde6b0d8632 upstream.
 
-The current dividers in the code are wrong and this
-leads to broken CPU frequency calculation on boards
-where the fractional part is used.
+KPF_THP can be set on non-huge compound pages (like slab pages or pages
+allocated by drivers with __GFP_COMP) because PageTransCompound only
+checks PG_head and PG_tail.  Obviously this is a bug and breaks user space
+applications which look for thp via /proc/kpageflags.
 
-For example, if the SoC is running from a 40MHz
-reference clock, refdiv=1, nint=14, outdiv=0 and
-nfrac=31 the real frequency is 579.375MHz but the
-current code calculates 569.687MHz instead.
+This patch rules out setting KPF_THP wrongly by additionally checking
+PageLRU on the head pages.
 
-Because the system time is indirectly related to
-the CPU frequency the broken computation causes
-drift in the system time.
-
-The correct divider is 2^6 for the CPU PLL and 2^10
-for the DDR PLL. Use the correct values to fix the
-issue.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/4305/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/ath79/clock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/proc/page.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/mips/ath79/clock.c
-+++ b/arch/mips/ath79/clock.c
-@@ -189,7 +189,7 @@ static void __init ar934x_clocks_init(vo
- 	       AR934X_PLL_CPU_CONFIG_NFRAC_MASK;
+--- a/fs/proc/page.c
++++ b/fs/proc/page.c
+@@ -115,7 +115,13 @@ u64 stable_page_flags(struct page *page)
+ 		u |= 1 << KPF_COMPOUND_TAIL;
+ 	if (PageHuge(page))
+ 		u |= 1 << KPF_HUGE;
+-	else if (PageTransCompound(page))
++	/*
++	 * PageTransCompound can be true for non-huge compound pages (slab
++	 * pages or pages allocated by drivers with __GFP_COMP) because it
++	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
++	 * sure a given page is a thp, not a non-huge compound page.
++	 */
++	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
+ 		u |= 1 << KPF_THP;
  
- 	cpu_pll = nint * ath79_ref_clk.rate / ref_div;
--	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 6));
-+	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 6));
- 	cpu_pll /= (1 << out_div);
- 
- 	pll = ath79_pll_rr(AR934X_PLL_DDR_CONFIG_REG);
-@@ -203,7 +203,7 @@ static void __init ar934x_clocks_init(vo
- 	       AR934X_PLL_DDR_CONFIG_NFRAC_MASK;
- 
- 	ddr_pll = nint * ath79_ref_clk.rate / ref_div;
--	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 10));
-+	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 10));
- 	ddr_pll /= (1 << out_div);
- 
- 	clk_ctrl = ath79_pll_rr(AR934X_PLL_CPU_DDR_CLK_CTRL_REG);
+ 	/*
 
 
