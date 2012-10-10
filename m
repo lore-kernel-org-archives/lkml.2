@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab2JKAcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:32:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41054 "EHLO
+	id S933563Ab2JKAd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:33:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44112 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933185Ab2JKAYo (ORCPT
+	by vger.kernel.org with ESMTP id S933272Ab2JKAYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:24:44 -0400
-X-Sasl-enc: IdJHfD4D9AmnQHIQaabSp/k94e4vvQZp01aHZvRxjwD3 1349915082
+	Wed, 10 Oct 2012 20:24:35 -0400
+X-Sasl-enc: jwBHAiijBsaaUEMzfrC3eGSbDxTmd00+vMeCQhMhDw5Q 1349915074
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 091/122] frv: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:54:17 +0900
-Message-Id: <20121010225354.420936743@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 084/122] drm/i915: Flush the pending flips on the CRTC before modification
+Date: Thu, 11 Oct 2012 07:54:10 +0900
+Message-Id: <20121010225353.194583347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -30,62 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 41d8fe5bb3cf91ce2716ac8f43e4b40d802a99c8 upstream.
+commit 5bb61643f6a70d48de9cfe91ad0fee0d618b6816 upstream.
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+This was meant to be the purpose of the
+intel_crtc_wait_for_pending_flips() function which is called whilst
+preparing the CRTC for a modeset or before disabling. However, as Ville
+Syrjala pointed out, we set the pending flip notification on the old
+framebuffer that is no longer attached to the CRTC by the time we come
+to flush the pending operations. Instead, we can simply wait on the
+pending unpin work to be finished on this CRTC, knowning that the
+hardware has therefore finished modifying the registers, before proceeding
+with our direct access.
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
+Fixes i-g-t/flip_test on non-pch platforms. pch platforms simply
+schedule the flip immediately when the pipe is disabled, leading
+to other funny issues.
 
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
-
-Add this missing pair of calls in the Frv's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Added i-g-t note and cc: stable]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/frv/kernel/process.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/reboot.h>
- #include <linux/interrupt.h>
- #include <linux/pagemap.h>
-+#include <linux/rcupdate.h>
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2823,13 +2823,34 @@ static void ironlake_fdi_disable(struct
+ 	udelay(100);
+ }
  
- #include <asm/asm-offsets.h>
- #include <asm/uaccess.h>
-@@ -69,12 +70,14 @@ void cpu_idle(void)
++static bool intel_crtc_has_pending_flip(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	unsigned long flags;
++	bool pending;
++
++	if (atomic_read(&dev_priv->mm.wedged))
++		return false;
++
++	spin_lock_irqsave(&dev->event_lock, flags);
++	pending = to_intel_crtc(crtc)->unpin_work != NULL;
++	spin_unlock_irqrestore(&dev->event_lock, flags);
++
++	return pending;
++}
++
+ static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
  {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched()) {
- 			check_pgt_cache();
+ 	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
  
- 			if (!frv_dma_inprogress && idle)
- 				idle();
- 		}
-+		rcu_idle_exit();
+ 	if (crtc->fb == NULL)
+ 		return;
  
- 		schedule_preempt_disabled();
- 	}
++	wait_event(dev_priv->pending_flip_queue,
++		   !intel_crtc_has_pending_flip(crtc));
++
+ 	mutex_lock(&dev->struct_mutex);
+ 	intel_finish_fb(crtc->fb);
+ 	mutex_unlock(&dev->struct_mutex);
+@@ -6149,9 +6170,8 @@ static void do_intel_finish_page_flip(st
+ 
+ 	atomic_clear_mask(1 << intel_crtc->plane,
+ 			  &obj->pending_flip.counter);
+-	if (atomic_read(&obj->pending_flip) == 0)
+-		wake_up(&dev_priv->pending_flip_queue);
+ 
++	wake_up(&dev_priv->pending_flip_queue);
+ 	schedule_work(&work->work);
+ 
+ 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
 
 
