@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab2JKAhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:37:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36489 "EHLO
+	id S933165Ab2JKAhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:37:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46439 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933078Ab2JKAW5 (ORCPT
+	by vger.kernel.org with ESMTP id S933029Ab2JKAWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:22:57 -0400
-X-Sasl-enc: ReaBuFUeaSvoYHwLQGDYZkDIB/KTHkNI4rc9VD1bL5YD 1349914976
+	Wed, 10 Oct 2012 20:22:50 -0400
+X-Sasl-enc: Nv68i3LtwppXs+M/85dXQP9qS6290LJwLFNDpuYaaCfZ 1349914968
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 117/122] mmc: slot-gpio: Fix missing assignment to ctx->ro_gpio
-Date: Thu, 11 Oct 2012 07:54:43 +0900
-Message-Id: <20121010225359.026616155@linuxfoundation.org>
+        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 111/122] mtd: autcpu12-nvram: Fix compile breakage
+Date: Thu, 11 Oct 2012 07:54:37 +0900
+Message-Id: <20121010225357.981562953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,38 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <cjb@laptop.org>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit 15e8a8e42966162c207bb97ed55c803bc437eeae upstream.
+commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
 
-mmc_gpio_request_ro() doesn't store the requested gpio in ctx->ro_gpio.
-As a result, subsequent calls to mmc_gpio_get_ro() will always fail
-with -ENOSYS because the gpio number isn't available to that function.
+Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
+no longer exist in the kernel so the driver is totally broken.
+Additionally, map_info name passed to simple_map_init is incorrect.
 
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/core/slot-gpio.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -100,7 +100,13 @@ int mmc_gpio_request_ro(struct mmc_host
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
+@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
  
- 	ctx = host->slot.handler_priv;
+ static int __init init_autcpu12_sram (void)
+ {
+-	int err, save0, save1;
++	map_word tmp, save0, save1;
++	int err;
  
--	return gpio_request_one(gpio, GPIOF_DIR_IN, ctx->ro_label);
-+	ret = gpio_request_one(gpio, GPIOF_DIR_IN, ctx->ro_label);
-+	if (ret < 0)
-+		return ret;
-+
-+	ctx->ro_gpio = gpio;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(mmc_gpio_request_ro);
+ 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
+ 	if (!autcpu12_sram_map.virt) {
+@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
+ 		err = -EIO;
+ 		goto out;
+ 	}
+-	simple_map_init(&autcpu_sram_map);
++	simple_map_init(&autcpu12_sram_map);
  
+ 	/*
+ 	 * Check for 32K/128K
+@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
+ 	 * Read	and check result on ofs 0x0
+ 	 * Restore contents
+ 	 */
+-	save0 = map_read32(&autcpu12_sram_map,0);
+-	save1 = map_read32(&autcpu12_sram_map,0x10000);
+-	map_write32(&autcpu12_sram_map,~save0,0x10000);
++	save0 = map_read(&autcpu12_sram_map, 0);
++	save1 = map_read(&autcpu12_sram_map, 0x10000);
++	tmp.x[0] = ~save0.x[0];
++	map_write(&autcpu12_sram_map, tmp, 0x10000);
+ 	/* if we find this pattern on 0x0, we have 32K size
+ 	 * restore contents and exit
+ 	 */
+-	if ( map_read32(&autcpu12_sram_map,0) != save0) {
+-		map_write32(&autcpu12_sram_map,save0,0x0);
++	tmp = map_read(&autcpu12_sram_map, 0);
++	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
++		map_write(&autcpu12_sram_map, save0, 0x0);
+ 		goto map;
+ 	}
+ 	/* We have a 128K found, restore 0x10000 and set size
+ 	 * to 128K
+ 	 */
+-	map_write32(&autcpu12_sram_map,save1,0x10000);
++	map_write(&autcpu12_sram_map, save1, 0x10000);
+ 	autcpu12_sram_map.size = SZ_128K;
+ 
+ map:
 
 
