@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab2JJW4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:56:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35460 "EHLO
+	id S932439Ab2JJW4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:56:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50193 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757936Ab2JJWz4 (ORCPT
+	by vger.kernel.org with ESMTP id S1757669Ab2JJW4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:56 -0400
-X-Sasl-enc: o9qwwfUrIewQQhwvaEH6FHS07t/ZrazolLKuflPxvnru 1349909755
+	Wed, 10 Oct 2012 18:56:07 -0400
+X-Sasl-enc: ogC9oNbK2eDWJIptuSbLNy82TysjQGRnwcVKY1OuqYcY 1349909765
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Daniel Drake <dsd@laptop.org>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 068/133] ext4: ignore last group w/o enough space when resizing instead of BUGing
-Date: Thu, 11 Oct 2012 07:51:34 +0900
-Message-Id: <20121010224906.732243635@linuxfoundation.org>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        "Theodore Tso" <tytso@mit.edu>, Brad Figg <brad.figg@canonical.com>
+Subject: [ 072/133] ext4: fix crash when accessing /proc/mounts concurrently
+Date: Thu, 11 Oct 2012 07:51:38 +0900
+Message-Id: <20121010224907.458306131@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,71 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit 03c1c29053f678234dbd51bf3d65f3b7529021de upstream.
+commit 50df9fd55e4271e89a7adf3b1172083dd0ca199d upstream.
 
-If the last group does not have enough space for group tables, ignore
-it instead of calling BUG_ON().
+The crash was caused by a variable being erronously declared static in
+token2str().
 
-Reported-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+In addition to /proc/mounts, the problem can also be easily replicated
+by accessing /proc/fs/ext4/<partition>/options in parallel:
+
+$ cat /proc/fs/ext4/<partition>/options > options.txt
+
+... and then running the following command in two different terminals:
+
+$ while diff /proc/fs/ext4/<partition>/options options.txt; do true; done
+
+This is also the cause of the following a crash while running xfstests
+#234, as reported in the following bug reports:
+
+	https://bugs.launchpad.net/bugs/1053019
+	https://bugzilla.kernel.org/show_bug.cgi?id=47731
+
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Brad Figg <brad.figg@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ fs/ext4/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -200,8 +200,11 @@ static void free_flex_gd(struct ext4_new
-  * be a partial of a flex group.
-  *
-  * @sb: super block of fs to which the groups belongs
-+ *
-+ * Returns 0 on a successful allocation of the metadata blocks in the
-+ * block group.
-  */
--static void ext4_alloc_group_tables(struct super_block *sb,
-+static int ext4_alloc_group_tables(struct super_block *sb,
- 				struct ext4_new_flex_group_data *flex_gd,
- 				int flexbg_size)
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1748,7 +1748,7 @@ static inline void ext4_show_quota_optio
+ 
+ static const char *token2str(int token)
  {
-@@ -226,6 +229,8 @@ static void ext4_alloc_group_tables(stru
- 	       (last_group & ~(flexbg_size - 1))));
- next_group:
- 	group = group_data[0].group;
-+	if (src_group >= group_data[0].group + flex_gd->count)
-+		return -ENOSPC;
- 	start_blk = ext4_group_first_block_no(sb, src_group);
- 	last_blk = start_blk + group_data[src_group - group].blocks_count;
+-	static const struct match_token *t;
++	const struct match_token *t;
  
-@@ -235,7 +240,6 @@ next_group:
- 
- 	start_blk += overhead;
- 
--	BUG_ON(src_group >= group_data[0].group + flex_gd->count);
- 	/* We collect contiguous blocks as much as possible. */
- 	src_group++;
- 	for (; src_group <= last_group; src_group++)
-@@ -300,6 +304,7 @@ next_group:
- 			       group_data[i].free_blocks_count);
- 		}
- 	}
-+	return 0;
- }
- 
- static struct buffer_head *bclean(handle_t *handle, struct super_block *sb,
-@@ -1729,7 +1734,8 @@ int ext4_resize_fs(struct super_block *s
- 	 */
- 	while (ext4_setup_next_flex_gd(sb, flex_gd, n_blocks_count,
- 					      flexbg_size)) {
--		ext4_alloc_group_tables(sb, flex_gd, flexbg_size);
-+		if (ext4_alloc_group_tables(sb, flex_gd, flexbg_size) != 0)
-+			break;
- 		err = ext4_flex_group_add(sb, resize_inode, flex_gd);
- 		if (unlikely(err))
- 			break;
+ 	for (t = tokens; t->token != Opt_err; t++)
+ 		if (t->token == token && !strchr(t->pattern, '='))
 
 
