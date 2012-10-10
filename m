@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab2JJXNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:13:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57031 "EHLO
+	id S932526Ab2JJXOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:14:31 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52858 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758076Ab2JJXCF (ORCPT
+	by vger.kernel.org with ESMTP id S1757841Ab2JJXB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:02:05 -0400
-X-Sasl-enc: bwTtJcKQKP7QLfWTikkdMQSZM0eMiXHqu7czMetU1mgq 1349910124
+	Wed, 10 Oct 2012 19:01:57 -0400
+X-Sasl-enc: E6Xybf9P69qIIVTsZfGk+EB1a7QyHRPQcc7MM4Kk3F9M 1349910116
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florian Zumbiehl <florz@florz.de>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 037/122] drm/savage: re-add busmaster enable, regression fix
-Date: Thu, 11 Oct 2012 07:53:23 +0900
-Message-Id: <20121010225344.822316790@linuxfoundation.org>
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 034/122] ipv6: release reference of ip6_null_entrys dst entry in __ip6_del_rt
+Date: Thu, 11 Oct 2012 07:53:20 +0900
+Message-Id: <20121010225344.278862777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,33 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Zumbiehl <florz@florz.de>
 
-commit df86b5765a48d5f557489577652bd6df145b0e1b upstream.
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-466e69b8b03b8c1987367912782bc12988ad8794 dropped busmaster enable from the
-global drm code and moved it to the individual drivers, but missed the savage
-driver. So, this re-adds busmaster enable to the savage driver, fixing the
-regression.
+[ Upstream commit 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b ]
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+as we hold dst_entry before we call __ip6_del_rt,
+so we should alse call dst_release not only return
+-ENOENT when the rt6_info is ip6_null_entry.
+
+and we already hold the dst entry, so I think it's
+safe to call dst_release out of the write-read lock.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/savage/savage_bci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/route.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -547,6 +547,8 @@ int savage_driver_load(struct drm_device
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1589,17 +1589,18 @@ static int __ip6_del_rt(struct rt6_info
+ 	struct fib6_table *table;
+ 	struct net *net = dev_net(rt->dst.dev);
  
- 	dev_priv->chipset = (enum savage_family)chipset;
+-	if (rt == net->ipv6.ip6_null_entry)
+-		return -ENOENT;
++	if (rt == net->ipv6.ip6_null_entry) {
++		err = -ENOENT;
++		goto out;
++	}
  
-+	pci_set_master(dev->pdev);
-+
- 	return 0;
+ 	table = rt->rt6i_table;
+ 	write_lock_bh(&table->tb6_lock);
+-
+ 	err = fib6_del(rt, info);
+-	dst_release(&rt->dst);
+-
+ 	write_unlock_bh(&table->tb6_lock);
+ 
++out:
++	dst_release(&rt->dst);
+ 	return err;
  }
  
 
