@@ -1,60 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab2JJJQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:16:15 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:45358
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751329Ab2JJJQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:16:07 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI936eI1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: Re: [Patch v2 2/7] Regulator: DA9055 Regulator driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <20121010035622.GH17288@opensource.wolfsonmicro.com>
-References: <C3AE124F08223B42BC95AEB82F0F6CED38A84E78@KCHJEXMB03.kpit.com>
-	 <1349780416.5244.39.camel@dhruva>
-	 <20121010035622.GH17288@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Oct 2012 14:57:05 +0530
-Message-ID: <1349861225.7957.9.camel@dhruva>
+	id S1754975Ab2JJKC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:02:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:43912 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754020Ab2JJKCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:02:20 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>
+Cc: Alex Lyashkov <umka@cloudlinux.com>
+Cc: Arnd Bergmann <arnd@arndb.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: linux-crypto@vger.kernel.org
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Milan Broz <mbroz@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Subject: [PULL] modules
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Wed, 10 Oct 2012 20:27:12 +1030
+Message-ID: <87fw5m7ipz.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 12:56 +0900, Mark Brown wrote:
-> On Tue, Oct 09, 2012 at 04:30:16PM +0530, Ashish Jangam wrote:
-> > On Tue, 2012-10-09 at 15:37 +0530, Mark Brown wrote:
-> > > On Mon, Oct 08, 2012 at 07:00:39PM +0530, Ashish Jangam wrote:
-> 
-> > > > +		/* Set the GPIO I/P pin for controlling the regulator state. */
-> > > > +		ret = devm_gpio_request_one(config->dev, gpio, GPIOF_DIR_IN,
-> > > > +					    name);
-> > > > +		if (ret < 0)
-> > > > +			goto err;
-> 
-> > > We never actually appear to use this GPIO anywhere...  why are we
-> > > requesting it?
-> 
-> > DA9055 regulator changes its state by detecting the rising/failing edge at
-> > GPI DA9055. Therefore we just need to set the DA9055 GPIO direction to input.
-> 
-> Right, so there's several problems here.  One is that this code is very
-> obscure - you're really doing pinmux here rather than actually using it
-> as a GPIO, a better comment would clarify this.  The other is that
-> you're requiring a defined gpio_base in platform data, it would be
-> better to allow this to be dynamically assigned as the driver can find
-> it's own GPIOs easily enough.
-Ok, will modify the comments and instead of taking gpio offset I will
-take gpio number from the platform data.
+The following changes since commit 925a6f0bf8bd122d5d2429af7f0ca0fecf4ae71f:
+
+  Merge tag 'hwspinlock-3.6-fix' of git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock (2012-09-18 11:58:54 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git modules-next
+
+for you to fetch changes up to dbadc17683e6c673a69b236c0f041b931cc55c42:
+
+  X.509: Fix indefinite length element skip error handling (2012-10-10 20:06:39 +1030)
+
+----------------------------------------------------------------
+module signing is the highlight, but it's an all-over David Howells frenzy...
+
+----------------------------------------------------------------
+David Howells (30):
+      Make most arch asm/module.h files use asm-generic/module.h
+      KEYS: Add payload preparsing opportunity prior to key instantiate or update
+      MPILIB: Provide count_leading/trailing_zeros() based on arch functions
+      KEYS: Document asymmetric key type
+      KEYS: Implement asymmetric key type
+      KEYS: Asymmetric key pluggable data parsers
+      KEYS: Asymmetric public-key algorithm crypto key subtype
+      KEYS: Provide signature verification with an asymmetric key
+      MPILIB: Reinstate mpi_cmp[_ui]() and export for RSA signature verification
+      RSA: Implement signature verification algorithm [PKCS#1 / RFC3447]
+      RSA: Fix signature verification for shorter signatures
+      X.509: Implement simple static OID registry
+      X.509: Add utility functions to render OIDs as strings
+      X.509: Add simple ASN.1 grammar compiler
+      X.509: Add an ASN.1 decoder
+      MPILIB: Provide a function to read raw data into an MPI
+      X.509: Add a crypto key parser for binary (DER) X.509 certificates
+      MODSIGN: Add FIPS policy
+      MODSIGN: Provide gitignore and make clean rules for extra files
+      MODSIGN: Provide Kconfig options
+      MODSIGN: Automatically generate module signing keys if missing
+      MODSIGN: Provide module signing public keys to the kernel
+      MODSIGN: Implement module signature checking
+      MODSIGN: Provide a script for generating a key ID from an X.509 cert
+      MODSIGN: Sign modules during the build process
+      MODSIGN: Use the same digest for the autogen key sig as for the module sig
+      MODSIGN: Use utf8 strings in signer's name in autogenerated X.509 certs
+      MODSIGN: Fix 32-bit overflow in X.509 certificate validity date checking
+      X.509: Convert some printk calls to pr_devel
+      X.509: Fix indefinite length element skip error handling
+
+Matthew Garrett (1):
+      module: taint kernel when lve module is loaded
+
+Ralf Baechle (1):
+      MIPS: Fix module.c build for 32 bit
+
+Randy Dunlap (1):
+      asymmetric keys: fix printk format warning
+
+Rusty Russell (4):
+      module: fix symbol waiting when module fails before init
+      module: wait when loading a module which is currently initializing.
+      module: signature checking hook
+      MODSIGN: Make mrproper should remove generated files.
+
+ .gitignore                                |   14 +
+ Documentation/crypto/asymmetric-keys.txt  |  312 ++++++
+ Documentation/kernel-parameters.txt       |    6 +
+ Documentation/security/keys.txt           |   50 +-
+ Makefile                                  |    6 +-
+ arch/Kconfig                              |   19 +
+ arch/alpha/Kconfig                        |    2 +
+ arch/alpha/include/asm/module.h           |   10 +-
+ arch/arm/Kconfig                          |    2 +
+ arch/arm/include/asm/module.h             |    8 +-
+ arch/avr32/Kconfig                        |    2 +
+ arch/avr32/include/asm/module.h           |    6 +-
+ arch/blackfin/Kconfig                     |    2 +
+ arch/blackfin/include/asm/module.h        |    4 +-
+ arch/c6x/Kconfig                          |    1 +
+ arch/c6x/include/asm/module.h             |   12 +-
+ arch/cris/Kconfig                         |    1 +
+ arch/cris/include/asm/Kbuild              |    2 +
+ arch/cris/include/asm/module.h            |    9 -
+ arch/frv/include/asm/module.h             |    8 +-
+ arch/h8300/Kconfig                        |    1 +
+ arch/h8300/include/asm/Kbuild             |    2 +
+ arch/h8300/include/asm/module.h           |   11 -
+ arch/hexagon/Kconfig                      |    1 +
+ arch/ia64/Kconfig                         |    2 +
+ arch/ia64/include/asm/module.h            |    6 +-
+ arch/m32r/Kconfig                         |    1 +
+ arch/m32r/include/asm/Kbuild              |    2 +
+ arch/m32r/include/asm/module.h            |   10 -
+ arch/m32r/kernel/module.c                 |   15 -
+ arch/m68k/Kconfig                         |    3 +
+ arch/m68k/include/asm/module.h            |    6 +-
+ arch/microblaze/Kconfig                   |    1 +
+ arch/mips/Kconfig                         |    3 +
+ arch/mips/include/asm/module.h            |   10 +-
+ arch/mips/kernel/Makefile                 |    1 +
+ arch/mips/kernel/module-rela.c            |  145 +++
+ arch/mips/kernel/module.c                 |  121 +--
+ arch/mn10300/Kconfig                      |    1 +
+ arch/mn10300/include/asm/module.h         |    7 +-
+ arch/openrisc/Kconfig                     |    1 +
+ arch/parisc/Kconfig                       |    2 +
+ arch/parisc/include/asm/module.h          |   16 +-
+ arch/powerpc/Kconfig                      |    2 +
+ arch/powerpc/include/asm/module.h         |    7 +-
+ arch/s390/Kconfig                         |    2 +
+ arch/s390/include/asm/module.h            |   18 +-
+ arch/score/Kconfig                        |    2 +
+ arch/score/include/asm/module.h           |    6 +-
+ arch/score/kernel/module.c                |   10 -
+ arch/sh/Kconfig                           |    2 +
+ arch/sh/include/asm/module.h              |   14 +-
+ arch/sparc/Kconfig                        |    1 +
+ arch/sparc/include/asm/Kbuild             |    1 +
+ arch/sparc/include/asm/module.h           |   24 -
+ arch/tile/Kconfig                         |    1 +
+ arch/unicore32/Kconfig                    |    1 +
+ arch/x86/Kconfig                          |    2 +
+ arch/x86/um/Kconfig                       |    2 +
+ arch/xtensa/Kconfig                       |    1 +
+ arch/xtensa/include/asm/module.h          |    9 +-
+ crypto/Kconfig                            |    1 +
+ crypto/Makefile                           |    1 +
+ crypto/asymmetric_keys/.gitignore         |    1 +
+ crypto/asymmetric_keys/Kconfig            |   38 +
+ crypto/asymmetric_keys/Makefile           |   27 +
+ crypto/asymmetric_keys/asymmetric_keys.h  |   15 +
+ crypto/asymmetric_keys/asymmetric_type.c  |  274 +++++
+ crypto/asymmetric_keys/public_key.c       |  108 ++
+ crypto/asymmetric_keys/public_key.h       |   30 +
+ crypto/asymmetric_keys/rsa.c              |  277 ++++++
+ crypto/asymmetric_keys/signature.c        |   49 +
+ crypto/asymmetric_keys/x509.asn1          |   60 ++
+ crypto/asymmetric_keys/x509_cert_parser.c |  496 +++++++++
+ crypto/asymmetric_keys/x509_parser.h      |   36 +
+ crypto/asymmetric_keys/x509_public_key.c  |  239 +++++
+ crypto/asymmetric_keys/x509_rsakey.asn1   |    4 +
+ fs/cifs/cifs_spnego.c                     |    6 +-
+ fs/cifs/cifsacl.c                         |    8 +-
+ include/asm-generic/bitops/count_zeros.h  |   57 ++
+ include/asm-generic/module.h              |   40 +-
+ include/crypto/public_key.h               |  108 ++
+ include/keys/asymmetric-parser.h          |   37 +
+ include/keys/asymmetric-subtype.h         |   55 +
+ include/keys/asymmetric-type.h            |   25 +
+ include/keys/user-type.h                  |    6 +-
+ include/linux/asn1.h                      |   67 ++
+ include/linux/asn1_ber_bytecode.h         |   87 ++
+ include/linux/asn1_decoder.h              |   24 +
+ include/linux/key-type.h                  |   35 +-
+ include/linux/module.h                    |    8 +
+ include/linux/moduleloader.h              |   36 +-
+ include/linux/mpi.h                       |    1 +
+ include/linux/oid_registry.h              |   92 ++
+ init/Kconfig                              |   68 ++
+ kernel/Makefile                           |   77 ++
+ kernel/modsign_pubkey.c                   |  113 +++
+ kernel/module-internal.h                  |   15 +
+ kernel/module.c                           |  157 ++-
+ kernel/module_signing.c                   |  243 +++++
+ lib/.gitignore                            |    2 +-
+ lib/Kconfig                               |    5 +
+ lib/Makefile                              |   18 +
+ lib/asn1_decoder.c                        |  487 +++++++++
+ lib/build_OID_registry                    |  209 ++++
+ lib/mpi/Makefile                          |    1 +
+ lib/mpi/longlong.h                        |  138 +--
+ lib/mpi/mpi-bit.c                         |    2 +-
+ lib/mpi/mpi-cmp.c                         |   70 ++
+ lib/mpi/mpi-pow.c                         |    4 +-
+ lib/mpi/mpicoder.c                        |   55 +
+ lib/oid_registry.c                        |  170 ++++
+ net/ceph/crypto.c                         |    9 +-
+ net/dns_resolver/dns_key.c                |    6 +-
+ net/rxrpc/ar-key.c                        |   40 +-
+ scripts/.gitignore                        |    1 +
+ scripts/Makefile                          |    2 +
+ scripts/Makefile.build                    |   11 +
+ scripts/Makefile.modpost                  |   77 +-
+ scripts/asn1_compiler.c                   | 1545 +++++++++++++++++++++++++++++
+ scripts/sign-file                         |  115 +++
+ scripts/x509keyid                         |  268 +++++
+ security/keys/encrypted-keys/encrypted.c  |   16 +-
+ security/keys/key.c                       |  114 ++-
+ security/keys/keyctl.c                    |   18 +-
+ security/keys/keyring.c                   |    6 +-
+ security/keys/request_key_auth.c          |    8 +-
+ security/keys/trusted.c                   |   16 +-
+ security/keys/user_defined.c              |   14 +-
+ 129 files changed, 6803 insertions(+), 594 deletions(-)
+ create mode 100644 Documentation/crypto/asymmetric-keys.txt
+ delete mode 100644 arch/cris/include/asm/module.h
+ delete mode 100644 arch/h8300/include/asm/module.h
+ delete mode 100644 arch/m32r/include/asm/module.h
+ create mode 100644 arch/mips/kernel/module-rela.c
+ delete mode 100644 arch/sparc/include/asm/module.h
+ create mode 100644 crypto/asymmetric_keys/.gitignore
+ create mode 100644 crypto/asymmetric_keys/Kconfig
+ create mode 100644 crypto/asymmetric_keys/Makefile
+ create mode 100644 crypto/asymmetric_keys/asymmetric_keys.h
+ create mode 100644 crypto/asymmetric_keys/asymmetric_type.c
+ create mode 100644 crypto/asymmetric_keys/public_key.c
+ create mode 100644 crypto/asymmetric_keys/public_key.h
+ create mode 100644 crypto/asymmetric_keys/rsa.c
+ create mode 100644 crypto/asymmetric_keys/signature.c
+ create mode 100644 crypto/asymmetric_keys/x509.asn1
+ create mode 100644 crypto/asymmetric_keys/x509_cert_parser.c
+ create mode 100644 crypto/asymmetric_keys/x509_parser.h
+ create mode 100644 crypto/asymmetric_keys/x509_public_key.c
+ create mode 100644 crypto/asymmetric_keys/x509_rsakey.asn1
+ create mode 100644 include/asm-generic/bitops/count_zeros.h
+ create mode 100644 include/crypto/public_key.h
+ create mode 100644 include/keys/asymmetric-parser.h
+ create mode 100644 include/keys/asymmetric-subtype.h
+ create mode 100644 include/keys/asymmetric-type.h
+ create mode 100644 include/linux/asn1.h
+ create mode 100644 include/linux/asn1_ber_bytecode.h
+ create mode 100644 include/linux/asn1_decoder.h
+ create mode 100644 include/linux/oid_registry.h
+ create mode 100644 kernel/modsign_pubkey.c
+ create mode 100644 kernel/module-internal.h
+ create mode 100644 kernel/module_signing.c
+ create mode 100644 lib/asn1_decoder.c
+ create mode 100755 lib/build_OID_registry
+ create mode 100644 lib/mpi/mpi-cmp.c
+ create mode 100644 lib/oid_registry.c
+ create mode 100644 scripts/asn1_compiler.c
+ create mode 100644 scripts/sign-file
+ create mode 100755 scripts/x509keyid
