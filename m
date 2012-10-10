@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2JJJ3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:29:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53016 "EHLO mx2.parallels.com"
+	id S1752982Ab2JJJLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 05:11:05 -0400
+Received: from ozlabs.org ([203.10.76.45]:40485 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752178Ab2JJJ3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:29:50 -0400
-Message-ID: <50753FFF.6060102@parallels.com>
-Date: Wed, 10 Oct 2012 13:29:35 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751220Ab2JJJLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 05:11:01 -0400
+Date: Wed, 10 Oct 2012 18:24:01 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Warner Losh <imp@bsdimp.com>
+Cc: Scott Wood <scottwood@freescale.com>, Michal Marek <mmarek@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: dtc: import latest upstream dtc
+Message-ID: <20121010072401.GA28467@truffula.fritz.box>
+References: <1349827466.26044.16@snotra>
+ <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [patch for-linus] memcg, kmem: fix build error when CONFIG_INET
- is disabled
-References: <alpine.DEB.2.00.1210092325500.9528@chino.kir.corp.google.com> <5075383A.1000001@parallels.com> <20121010092700.GD23011@dhcp22.suse.cz>
-In-Reply-To: <20121010092700.GD23011@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 01:27 PM, Michal Hocko wrote:
-> On Wed 10-10-12 12:56:26, Glauber Costa wrote:
->> On 10/10/2012 10:32 AM, David Rientjes wrote:
->>> Commit e1aab161e013 ("socket: initial cgroup code.") causes a build error 
->>> when CONFIG_INET is disabled in Linus' tree:
->>>
->> unlikely that something that old would cause a build bug now, specially
->> that commit, that actually wraps things inside CONFIG_INET.
->>
->> More likely caused by the recently merged
->> "memcg-cleanup-kmem-tcp-ifdefs.patch" in -mm by mhocko (CC'd)
+On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
 > 
-> Strange it didn't trigger during my (and Fenguang) build testing.
+> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+> 
+> > On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+> >> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+> >> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+> >> >>>
+> >> >>> What more do you think needs discussion re: dtc+cpp?
+> >> >>
+> >> >> How not to abuse the ever-loving shit out of it? :-)
+> >> >
+> >> > Perhaps we can just handle this through the regular patch review
+> >> > process; I think it may be difficult to define and agree upon exactly
+> >> > what "abuse" means ahead of time, but it's probably going to be easy
+> >> > enough to recognize it when one sees it?
+> >> One of the ways it could get out of hand would be via "include
+> >> dependency hell".  People will be tempted to reuse existing .h files
+> >> containing pin definitions, which, if history is a guide, will end up
+> >> depending on all sorts of other .h files.
+> >> Another problem I often face with symbolic names is the difficulty of
+> >> figuring out what the numerical values really are (for debugging),
+> >> especially when .h files are in different subtrees from the files that
+> >> use the definitions, and when they use multiple macro levels and fancy
+> >> features like concatenation.  Sometimes I think it's clearer just to
+> >> write the number and use a comment to say what it is.
+> > 
+> > Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+> 
+> .h files include both structs and defines, which are fine for
+> ordinary C code, but problematic in this context.
 
-Fengguang mentioned to me while testing my kmemcg tree that were a build
-error occurring in the base tree, IOW, yours.
+Right, cpp should be invoked with similar options to the way it's done
+for asm files which have the same problem.  I'm not sure if the
+current patch does so.
 
-Fengguang, was that this error? Why hasn't it showed up before in the
-test system?
-
-
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
