@@ -1,65 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2JJNWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:22:55 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:54888 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab2JJNWx (ORCPT
+	id S1755786Ab2JJK7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:59:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33700 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752372Ab2JJK66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:22:53 -0400
-Date: Wed, 10 Oct 2012 08:22:27 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: "Wei, Gang" <gang.wei@intel.com>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "ben@guthro.net" <ben@guthro.net>
-Subject: Re: [PATCH] driver/char/tpm: fix regression causesd by ppi
-Message-ID: <20121010132227.GB17467@ennui.austin.ibm.com>
-References: <1349775322-7896-1-git-send-email-gang.wei@intel.com>
- <20121009221848.GA17467@ennui.austin.ibm.com>
- <D0B11485C64D4B47B66902F8A4E901BE34FF5B@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D0B11485C64D4B47B66902F8A4E901BE34FF5B@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101013-7408-0000-0000-00000931AC43
+	Wed, 10 Oct 2012 06:58:58 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 2/2] firmware: Add /proc/fw_path entry to list the firmware paths
+Date: Wed, 10 Oct 2012 11:56:25 +0100
+Message-Id: <1349866585-24883-3-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.12.2
+In-Reply-To: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
+References: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >   Hmm, tpm_add_ppi is just sysfs_create_group, which only ever returns
-> > 0. Looks like we can remove this error path, but PPI is unusable in the
-> > failure case.
-> 
-> sysfs_create_group will return 0 on success or return error code. So I don't
-> think we can remove this error path. The previous call to sysfs_create_group
-> also have similar error path.
+This patch provides the aforementioned procfs file that lists
+the default firmware paths that are used during firmware lookup.
 
- Heh, seems "Returns 0 on success or error." doesn't mean what I
-thought...
+The file contains a white space separated list of paths.
 
-> >> +EXPORT_SYMBOL_GPL(tpm_add_ppi);
-> >> ...
-> >> +EXPORT_SYMBOL_GPL(tpm_remove_ppi);
-> >> 
-> >  Do we need to export these symbols?  These might have been left around
-> > from when ppi was a standalone module.
-> 
-> We definitely need to export these symbols, since ppi was in tpm_bios.ko,
-> and these symbols are called from tpm.ko.
+There will be another patch on top of this that adds the functionality
+to modify the paths at runtime.
 
-  Yes, thanks.
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/firmware_class.c | 55 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
 
-Kent
-
-> Jimmy
-
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 2153eab..22cef4d 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -27,6 +27,8 @@
+ #include <linux/pm.h>
+ #include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ 
+ #include <generated/utsrelease.h>
+ 
+@@ -1430,6 +1432,56 @@ err_fwp_alloc:
+ 	return -ENOMEM;
+ }
+ 
++static void *fw_path_seq_start(struct seq_file *seq, loff_t *pos)
++{
++	return seq_list_start_head(&fw_path_list, *pos);
++}
++
++static void *fw_path_seq_next(struct seq_file *seq, void *v, loff_t *pos)
++{
++	return seq_list_next(v, &fw_path_list, pos);
++}
++
++static int fw_path_seq_show(struct seq_file *seq, void *v)
++{
++	const struct fw_path_rec *fwp;
++	struct list_head *l = v;
++
++	if (l == &fw_path_list)
++		return 0;
++	fwp = list_entry(v, struct fw_path_rec, list);
++	seq_puts(seq, fwp->name);
++	if (l->next != &fw_path_list)
++		seq_putc(seq, ' ');
++	else
++		seq_putc(seq, '\n');
++	return 0;
++}
++
++static void fw_path_seq_stop(struct seq_file *seq, void *v)
++{
++}
++
++static const struct seq_operations fw_path_ops = {
++	.start = fw_path_seq_start,
++	.next = fw_path_seq_next,
++	.stop = fw_path_seq_stop,
++	.show = fw_path_seq_show,
++};
++
++static int fw_path_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &fw_path_ops);
++}
++
++static const struct file_operations fw_path_seq_fops = {
++	.owner = THIS_MODULE,
++	.open = fw_path_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release,
++};
++
+ static void __init fw_cache_init(void)
+ {
+ 	spin_lock_init(&fw_cache.lock);
+@@ -1465,6 +1517,8 @@ static int __init firmware_class_init(void)
+ 		return ret;
+ 	}
+ 
++	proc_create("fw_path", S_IRUGO, NULL, &fw_path_seq_fops);
++
+ 	return class_register(&firmware_class);
+ }
+ 
+@@ -1474,6 +1528,7 @@ static void __exit firmware_class_exit(void)
+ 	unregister_syscore_ops(&fw_syscore_ops);
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
+ #endif
++	remove_proc_entry("fw_path", NULL);
+ 	fw_free_path_list();
+ 	class_unregister(&firmware_class);
+ }
+-- 
+1.7.12.2
 
