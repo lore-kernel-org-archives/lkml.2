@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2JJMhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:37:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36136 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706Ab2JJMhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:37:22 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Constantine Shulyupin <const@makelinux.com>
-Cc: nsekhar@ti.com, gregkh@linuxfoundation.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] USB: usb-skeleton.c: fix compilation error and restore kref_put on fail in skel_open
-Date: Wed, 10 Oct 2012 14:35:36 +0200
-Message-ID: <1952553.sIPjpLauNn@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.6.0-rc4-12-desktop+; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1349865174-21649-1-git-send-email-const@MakeLinux.com>
-References: <1349865174-21649-1-git-send-email-const@MakeLinux.com>
+	id S1755945Ab2JJMif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:38:35 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:52381 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667Ab2JJMid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:38:33 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3/5] pinctrl/nomadik: allow to support several ranges per GPIO bank
+Date: Wed, 10 Oct 2012 14:38:18 +0200
+Message-ID: <1349872698-31245-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 October 2012 12:32:54 Constantine Shulyupin wrote:
-> From: Constantine Shulyupin <const@MakeLinux.com>
-> 
-> Function skel_open increments usage count for the device with kref_get and the usage count should be decremented on the function failure.
-> 
-> Some last changes in function skel_open and finally commit
-> 52a7499 Revert "USB: usb-skeleton.c: fix open/disconnect race"
-> introduced a bug in function skel_open, which this patch fixes.
-> 
-> --
-> Changelog:
-> -- Fixed accordinly feedback of Oliver Neukum oneukum@suse.de: also need to drop the lock.
+From: Patrice Chotard <patrice.chotard@stericsson.com>
 
-Well, touching file->private_data is not nice. It is correct, but
-really dirty. The skeleton driver should be nice. Could you introduce
-a second label for goto at the right place?
+With DB8500 the number of GPIO chips = number GPIO bank =
+number of GPIO ranges.
 
-	Regards
-		Oliver
+With DB8540, a new GPIO range configuration is used, some GPIO
+banks can have several GPIO ranges.
+
+For example, DB8540 GPIO bank0 (GPIO0 to GPIO32) have 2 GPIO
+ranges:
+    - GPIO0 to GPIO17  : routed
+    - GPIO18 to GPIO21 : hole
+    - GPIO22 to GPIO28 : routed
+    - GPIO29 to GPIO32 : hole
+
+Previously, during nmk_pinctrl_probe(), all GPIO ranges were
+parsed, as GPIO ranges are larger than the number of GPIO chips,
+a warning occurs. This commit allows each bank to have several
+GPIO ranges.
+
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-nomadik.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 334cd2f..e4d3778 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -1837,11 +1837,11 @@ static int __devinit nmk_pinctrl_probe(struct platform_device *pdev)
+ 	 * need this to proceed.
+ 	 */
+ 	for (i = 0; i < npct->soc->gpio_num_ranges; i++) {
+-		if (!nmk_gpio_chips[i]) {
++		if (!nmk_gpio_chips[npct->soc->gpio_ranges[i].id]) {
+ 			dev_warn(&pdev->dev, "GPIO chip %d not registered yet\n", i);
+ 			return -EPROBE_DEFER;
+ 		}
+-		npct->soc->gpio_ranges[i].gc = &nmk_gpio_chips[i]->chip;
++		npct->soc->gpio_ranges[i].gc = &nmk_gpio_chips[npct->soc->gpio_ranges[i].id]->chip;
+ 	}
+ 
+ 	nmk_pinctrl_desc.pins = npct->soc->pins;
+-- 
+1.7.11.3
 
