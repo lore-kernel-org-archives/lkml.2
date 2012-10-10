@@ -1,109 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2JJFLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:11:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35821 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197Ab2JJFLM (ORCPT
+	id S1752683Ab2JJFUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:20:15 -0400
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:44872 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab2JJFUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:11:12 -0400
-Date: Wed, 10 Oct 2012 06:11:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Sparc
-Message-ID: <20121010051110.GC2616@ZenIV.linux.org.uk>
-References: <20121008.161806.2146082252793236167.davem@davemloft.net>
+	Wed, 10 Oct 2012 01:20:09 -0400
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 01:20:09 EDT
+Message-ID: <50750367.2070508@ce.jp.nec.com>
+Date: Wed, 10 Oct 2012 14:11:03 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121008.161806.2146082252793236167.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: vgoyal@redhat.com
+Subject: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 04:18:06PM -0400, David Miller wrote:
-> 
-> There is an attempt to fix a bad interaction between syscall tracing
-> and force_successful_syscall() from Al Viro, but it needs to be redone
-> as it introduced regressions and thus had to be reverted for now.
-> 
-> Al is working on an updated version.
+I got system stall after the following warning with 3.6:
 
-See below.  Just in case: Linus, please DO NOT APPLY unless it goes through
-sparc tree - this is modulo approval by davem.
+> WARNING: at /work/build/linux/block/blk-cgroup.h:250 blk_put_rl+0x4d/0x95()
+> Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf ipt_REJEC
+> T nf_conntrack_ipv4 nf_defrag_ipv4
+> Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
+> Call Trace:
+>  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
+>  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
+>  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
+>  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
+>  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
+>  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
+>  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
+>  [<ffffffff811d7728>] blk_end_request+0x10/0x12
+>  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
+>  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
+>  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
+>  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
+>  [<ffffffff810915d5>] ? generic_smp_call_function_single_interrupt+0x9f/0xd7
+>  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
+>  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
+>  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
+>  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
+>  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
+>  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
+>  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
+>  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
+>  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
+>  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
+>  [<ffffffff81017811>] cpu_idle+0xbb/0x114
+>  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
+>  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
+>  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
+>  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
+>  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
+>  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
 
-sparc64: fix ptrace interaction with force_successful_syscall_return()
-    
-we want syscall_trace_leave() called on exit from any syscall;
-skipping its call in case we'd done force_successful_syscall_return()
-is broken...
-    
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+blk_put_rl() does this:
+         if (rl->blkg && rl->blkg->blkcg != &blkcg_root)
+                 blkg_put(rl->blkg);
+but if rl is q->root_rl, rl->blkg might be a bogus pointer
+because blkcg_deactivate_policy() does not clear q->root_rl.blkg
+after blkg_destroy_all().
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 1d7e274..7f5f65d 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -212,24 +212,20 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
--	/* Check if force_successful_syscall_return()
--	 * was invoked.
--	 */
--	ldub	[%g6 + TI_SYS_NOERROR], %l2
--	brnz,a,pn %l2, 80f
--	 stb	%g0, [%g6 + TI_SYS_NOERROR]
--
- 	cmp	%o0, -ERESTART_RESTARTBLOCK
- 	bgeu,pn	%xcc, 1f
--	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
--80:
-+	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
-+	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+Attached patch works for me.
+
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index f3b44a6..5015764 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -285,6 +285,9 @@ static void blkg_destroy_all(struct request_queue *q)
+ 		blkg_destroy(blkg);
+ 		spin_unlock(&blkcg->lock);
+ 	}
 +
-+2:
-+	stb	%g0, [%g6 + TI_SYS_NOERROR]
- 	/* System call success, clear Carry condition code. */
- 	andn	%g3, %g2, %g3
-+3:
- 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
- 	bne,pn	%icc, linux_syscall_trace2
- 	 add	%l1, 0x4, %l2			! npc = npc+4
-@@ -238,20 +234,20 @@ ret_sys_call:
- 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
++	q->root_blkg = NULL;
++	q->root_rl.blkg = NULL;
+ }
  
- 1:
-+	/* Check if force_successful_syscall_return()
-+	 * was invoked.
-+	 */
-+	ldub	[%g6 + TI_SYS_NOERROR], %l2
-+	brnz,pn %l2, 2b
-+	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	/* System call failure, set Carry condition code.
- 	 * Also, get abs(errno) to return to the process.
- 	 */
--	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
- 	sub	%g0, %o0, %o0
--	or	%g3, %g2, %g3
- 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
--	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
--	bne,pn	%icc, linux_syscall_trace2
--	 add	%l1, 0x4, %l2			! npc = npc+4
--	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
-+	ba,pt	%xcc, 3b
-+	 or	%g3, %g2, %g3
+ static void blkg_rcu_free(struct rcu_head *rcu_head)
+@@ -333,7 +336,7 @@ struct request_list *__blk_queue_next_rl(struct request_list *rl,
  
--	b,pt	%xcc, rtrap
--	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- linux_syscall_trace2:
- 	call	syscall_trace_leave
- 	 add	%sp, PTREGS_OFF, %o0
+ 	/* walk to the next list_head, skip root blkcg */
+ 	ent = ent->next;
+-	if (ent == &q->root_blkg->q_node)
++	if (q->root_blkg && ent == &q->root_blkg->q_node)
+ 		ent = ent->next;
+ 	if (ent == &q->blkg_list)
+ 		return NULL;
