@@ -1,74 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2JJMlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:41:21 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64095 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab2JJMlU (ORCPT
+	id S1754889Ab2JJMVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:21:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35039 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab2JJMVv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:41:20 -0400
-Message-ID: <50756CE9.4050604@gmail.com>
-Date: Wed, 10 Oct 2012 07:41:13 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 10 Oct 2012 08:21:51 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/4 v2] irqdomain: augment add_simple() to allocate descs
-References: <1349076922-25874-1-git-send-email-linus.walleij@stericsson.com> <50698880.1090103@gmail.com> <CACRpkdYpS5Q-t_627A3qxgh-0Y6YYj9Nzr7k3Eq-YaL4v3=GMQ@mail.gmail.com>
-In-Reply-To: <CACRpkdYpS5Q-t_627A3qxgh-0Y6YYj9Nzr7k3Eq-YaL4v3=GMQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5075632c.03cc440a.1b33.7805SMTPIN_ADDED@mx.google.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
+	<5075632c.03cc440a.1b33.7805SMTPIN_ADDED@mx.google.com>
+Date: Wed, 10 Oct 2012 20:21:48 +0800
+Message-ID: <CAEH94LgG+F2B=uw4tT1nYrZuq1ot3Sy19JjvSekZbUu4V=oOdA@mail.gmail.com>
+Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, dave@jikos.cz, tytso@mit.edu, cmm@us.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 01:54 AM, Linus Walleij wrote:
-> On Mon, Oct 1, 2012 at 2:11 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 10/01/2012 02:35 AM, Linus Walleij wrote:
->>> From: Linus Walleij <linus.walleij@linaro.org>
->>>
->>> Currently we rely on all IRQ chip instances to dynamically
->>> allocate their IRQ descriptors unless they use the linear
->>> IRQ domain. So for irqdomain_add_legacy() and
->>> irqdomain_add_simple() the caller need to make sure that
->>> descriptors are allocated.
->>>
->>> Let's slightly augment the yet unused irqdomain_add_simple()
->>> to also allocate descriptors as a means to simplify usage
->>> and avoid code duplication throughout the kernel.
->>>
->>> We warn if descriptors cannot be allocated, e.g. if a
->>> platform has the bad habit of hogging descriptors at boot
->>> time.
->>>
->>> Cc: Rob Herring <rob.herring@calxeda.com>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: Grant Likely <grant.likely@secretlab.ca>
->>> Cc: Paul Mundt <lethal@linux-sh.org>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Cc: Lee Jones <lee.jones@linaro.org>
->>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Wed, Oct 10, 2012 at 7:59 PM, Lukáš Czerner <lczerner@redhat.com> wrote:
+> On Wed, 10 Oct 2012, zwu.kernel@gmail.com wrote:
+>
+>> Date: Wed, 10 Oct 2012 18:07:23 +0800
+>> From: zwu.kernel@gmail.com
+>> To: linux-fsdevel@vger.kernel.org
+>> Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+>>     linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+>>     viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+>>     tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> Subject: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
 >>
->> Looks good.
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 >>
->> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
-> 
-> So what do we do with this patch? Grant?
-> 
-> I think the change is good to get in ASAP and since I
-> now have one patch in pinctrl depending on it I have
-> tentatively applied it there.
-> 
-> Nobody sent any irqdomain fixes for this merge
-> window, maybe this is the only relevant patch...
+>> Introduce one new mount option '-o hot_track',
+>> and add its parsing support.
+>>   Its usage looks like:
+>>    mount -o hot_track
+>>    mount -o nouser,hot_track
+>>    mount -o nouser,hot_track,loop
+>>    mount -o hot_track,nouser
+>
+> This patch should probably be at the end of the series.
+Can you let me know your reason? I think that it is not necessary to
+be at the end of the series.
 
-I say merge it with what depends on it. There's been plenty of time for
-review.
+>
+> -Lukas
+>
+>>
+>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> ---
+>>  fs/btrfs/ctree.h |    1 +
+>>  fs/btrfs/super.c |    7 ++++++-
+>>  2 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+>> index 9821b67..094bec6 100644
+>> --- a/fs/btrfs/ctree.h
+>> +++ b/fs/btrfs/ctree.h
+>> @@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY  (1 << 20)
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
+>>  #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR     (1 << 22)
+>> +#define BTRFS_MOUNT_HOT_TRACK                (1 << 23)
+>>
+>>  #define btrfs_clear_opt(o, opt)              ((o) &= ~BTRFS_MOUNT_##opt)
+>>  #define btrfs_set_opt(o, opt)                ((o) |= BTRFS_MOUNT_##opt)
+>> diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+>> index 83d6f9f..00be9e3 100644
+>> --- a/fs/btrfs/super.c
+>> +++ b/fs/btrfs/super.c
+>> @@ -41,6 +41,7 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/cleancache.h>
+>>  #include <linux/ratelimit.h>
+>> +#include <linux/hot_tracking.h>
+>>  #include "compat.h"
+>>  #include "delayed-inode.h"
+>>  #include "ctree.h"
+>> @@ -303,7 +304,7 @@ enum {
+>>       Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
+>>       Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
+>>       Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+>> -     Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
+>> +     Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
+>>       Opt_check_integrity, Opt_check_integrity_including_extent_data,
+>>       Opt_check_integrity_print_mask, Opt_fatal_errors,
+>>       Opt_err,
+>> @@ -342,6 +343,7 @@ static match_table_t tokens = {
+>>       {Opt_no_space_cache, "nospace_cache"},
+>>       {Opt_recovery, "recovery"},
+>>       {Opt_skip_balance, "skip_balance"},
+>> +     {Opt_hot_track, "hot_track"},
+>>       {Opt_check_integrity, "check_int"},
+>>       {Opt_check_integrity_including_extent_data, "check_int_data"},
+>>       {Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
+>> @@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+>>               case Opt_skip_balance:
+>>                       btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
+>>                       break;
+>> +             case Opt_hot_track:
+>> +                     btrfs_set_opt(info->mount_opt, HOT_TRACK);
+>> +                     break;
+>>  #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+>>               case Opt_check_integrity_including_extent_data:
+>>                       printk(KERN_INFO "btrfs: enabling check integrity"
+>>
 
-Rob
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
