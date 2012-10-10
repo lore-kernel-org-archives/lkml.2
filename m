@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2JJPRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:17:37 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54821 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab2JJPRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:17:36 -0400
-Date: Wed, 10 Oct 2012 07:03:56 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Zach Brown <zab@redhat.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [PATCH 2/5] aio: kiocb_cancel()
-Message-ID: <20121010110356.GA11468@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	Zach Brown <zab@redhat.com>, linux-bcache@vger.kernel.org,
-	linux-kernel@vger.kernel.org, dm-devel@redhat.com
-References: <1349764760-21093-1-git-send-email-koverstreet@google.com>
- <1349764760-21093-2-git-send-email-koverstreet@google.com>
- <20121009182625.GM26187@lenny.home.zabbo.net>
- <20121009213700.GF29494@google.com>
+	id S932447Ab2JJRII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:08:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:58693 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab2JJRIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 13:08:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009213700.GF29494@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.02.1210051003120.1958@localhost6.localdomain6>
+References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	<20121004.142335.1467206545795435493.davem@davemloft.net>
+	<CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+	<20121004.145419.1859367129463136197.davem@davemloft.net>
+	<1349395795.2008.26.camel@joe-AO722>
+	<alpine.DEB.2.02.1210050712590.1958@localhost6.localdomain6>
+	<1349422595.2008.55.camel@joe-AO722>
+	<alpine.DEB.2.02.1210051003120.1958@localhost6.localdomain6>
+Date: Wed, 10 Oct 2012 19:08:02 +0200
+Message-ID: <CA+MoWDp8Y0tJoBbz0nxH3Y7J0ur3TJm-dO9OM5BZVBKcbS9TpA@mail.gmail.com>
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
+        shemminger@vyatta.com, mlindner@marvell.com,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 02:37:00PM -0700, Kent Overstreet wrote:
-> > Honestly: I wouldn't bother.  Nothing of consequence uses cancel.
-> > 
-> > I have an RFC patch series that tears it out.  Let me polish that up
-> > send it out, I'll cc: you.
-> 
-> Even better :)
-> 
-> I've been looking at aio locking the past few days, and I was getting
-> ready to write something up about cancellation to the lists.
+Stephen and David,
 
-I can definitely think of use cases (inside of Google) where we could
-really use aio_cancel.  The issue is it's hard use it safely (i.e., we
-need to know whether the file system has already extended the file
-before we can know whether or not we can safely cancel the I/O).
+I've sent V2 of the patches and they were all accepted. Thank you.
 
-> Short version, supporting cancellation without global sychronization is
-> possible but it'd require help from the allocator.
+I've made a template for the commit message, and then copy and paste
+function names from the code. Something like:
 
-Well, we would need some kind of flag to indicate whether cancellation
-is possible, yes.  But if we're doing AIO to a raw disk, or we're
-talking about a read request, we wouldn't need any help from the
-file system's block allocator.
+-- // --
+The function sky2_probe() return 0 for success and negative value
+for most of its internal tests failures. There are two exceptions
+that are error cases going to err_out*:. For this two cases, the
+function abort its success execution path, but returns non negative
+value, making it dificult for a caller function to notice the error.
 
-And maybe the current way of doing things isn't the best way.  But it
-would be nice if we didn't completely give up on the functionality of
-aio_cancel.
+This patch fixes the error cases that do not return negative values.
 
-						- Ted
+This was found by Coccinelle, but the code change was made by hand.
+This patch is not robot generated.
+...
+--//--
+
+How useful it was to have the function names when you were analyzing
+the patches? It took me a lot of time to modify the template by copy
+and paste, check if it is correct, then commit. I have some other
+similar patches to submit and I wonder if having the function names in
+the commit message helped you.
+
+Thank you,
+
+Peter
+
+
+On Fri, Oct 5, 2012 at 10:08 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+> On Fri, 5 Oct 2012, Joe Perches wrote:
+>
+>> On Fri, 2012-10-05 at 07:22 +0200, Julia Lawall wrote:
+>>>
+>>> A tool was used to find a potential problem, and then Peter
+>>> studied the code to see what fix was appropriate.
+>>
+>>
+>> Hi Julia.
+>>
+>> Was it true that a static analysis tool found the original
+>> potential issue?  If so, what tool was it?
+>
+>
+> In the very beginning, I think that I found the problem in a patch when
+> looking at patches that contain oopses.
+>
+> From that I wrote a Coccinelle rule.  As Peter showed, the rule just
+> produces a list of line numbers.  The fix cannot easily be automated,
+> because there are many cases where 0 is a valid error value.  Some
+> functions, for example, have their error value as a nonpositive integer.
+>
+>
+>> But wasn't the scripted fix applied to the rest of the tree
+>> robotically?
+>
+>
+> No.  Peter studied each case and considered what should be done, and then
+> did that.  I guess a potentially bad fix could have been applied
+> automatically and then cleaned up manually, but considering the number of
+> cases where the fix would be wrong, that seem like a bad idea.  Also one
+> might want to adapt a bit to local conventions about where the
+> initialization should be added.
+>
+> julia
+
+
+
+-- 
+Peter
