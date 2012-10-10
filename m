@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab2JJNgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:36:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22258 "EHLO
+	id S1756349Ab2JJNgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:36:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24413 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab2JJNf1 (ORCPT
+	with ESMTP id S1754409Ab2JJNf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Oct 2012 09:35:27 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cFxfNATEjRAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=6vidgQ2l4MoA:10 a=20KFwNOVAAAA:8 a=2-J6K_Kjc2weECRg5QsA:9 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=e+uEuNV/ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Z9t4_RJo5EEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=m2RLpkhMDcQA:10 a=VwQbUJbxAAAA:8 a=6iCpALQLQkUOqRxWQvIA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133524.084047489@goodmis.org>
+Message-Id: <20121010133523.959048417@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:34:14 -0400
+Date: Wed, 10 Oct 2012 09:34:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 8/8] Linux 3.4.13-rt22-rc1
+Subject: [PATCH RT 7/8] stomp_machine: Use mutex_trylock when called from inactive cpu
 References: <20121010133406.053812290@goodmis.org>
-Content-Disposition: inline; filename=0008-Linux-3.4.13-rt22-rc1.patch
+Content-Disposition: inline; filename=0007-stomp_machine-Use-mutex_trylock-when-called-from-ina.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
+If the stop machinery is called from inactive CPU we cannot use
+mutex_lock, because some other stomp machine invokation might be in
+progress and the mutex can be contended. We cannot schedule from this
+context, so trylock and loop.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- localversion-rt |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/stop_machine.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/localversion-rt b/localversion-rt
-index 6c6cde1..e0a34f0 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt21
-+-rt22-rc1
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 561ba3a..e98c70b 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -158,7 +158,7 @@ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
+ 
+ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 				 cpu_stop_fn_t fn, void *arg,
+-				 struct cpu_stop_done *done)
++				 struct cpu_stop_done *done, bool inactive)
+ {
+ 	struct cpu_stop_work *work;
+ 	unsigned int cpu;
+@@ -175,7 +175,12 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 * Make sure that all work is queued on all cpus before we
+ 	 * any of the cpus can execute it.
+ 	 */
+-	mutex_lock(&stopper_lock);
++	if (!inactive) {
++		mutex_lock(&stopper_lock);
++	} else {
++		while (!mutex_trylock(&stopper_lock))
++			cpu_relax();
++	}
+ 	for_each_cpu(cpu, cpumask)
+ 		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
+ 				    &per_cpu(stop_cpus_work, cpu));
+@@ -188,7 +193,7 @@ static int __stop_cpus(const struct cpumask *cpumask,
+ 	struct cpu_stop_done done;
+ 
+ 	cpu_stop_init_done(&done, cpumask_weight(cpumask));
+-	queue_stop_cpus_work(cpumask, fn, arg, &done);
++	queue_stop_cpus_work(cpumask, fn, arg, &done, false);
+ 	wait_for_stop_done(&done);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
+@@ -601,7 +606,7 @@ int stop_machine_from_inactive_cpu(int (*fn)(void *), void *data,
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	cpu_stop_init_done(&done, num_active_cpus());
+ 	queue_stop_cpus_work(cpu_active_mask, stop_machine_cpu_stop, &smdata,
+-			     &done);
++			     &done, true);
+ 	ret = stop_machine_cpu_stop(&smdata);
+ 
+ 	/* Busy wait for completion. */
 -- 
 1.7.10.4
 
