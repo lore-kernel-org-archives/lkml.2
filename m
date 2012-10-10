@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab2JKAiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:38:04 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36495 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932921Ab2JKAiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:38:01 -0400
-Date: Wed, 10 Oct 2012 17:37:52 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        PaX Team <pageexec@freemail.hu>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: [PATCH v3] fix stack memory content leak via UNAME26
-Message-ID: <20121011003752.GA21731@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S933262Ab2JKAi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:38:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42393 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932511Ab2JKAWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:22:41 -0400
+X-Sasl-enc: iJBd94P8GNrLQtyrV+kohQ30XAM9kgYcp5Pb9ObmKFBV 1349914960
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 113/122] mtd: nand: Use the mirror BBT descriptor when reading its version
+Date: Thu, 11 Oct 2012 07:54:39 +0900
+Message-Id: <20121010225358.320758299@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
+References: <20121010225337.989799482@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents. This fixes it by defensively calculating the length of
-copy_to_user() call, making the len argument unsigned, and initializing
-the stack buffer to zero (now technically unneeded, but hey, overkill).
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-CVE-2012-0957
+------------------
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+
+commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
+
+The code responsible for reading the version of the mirror bbt was
+incorrectly using the descriptor of the main bbt.
+
+Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
+version of the mirror bbt.
+
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-v3:
- - use scnprintf, suggested by Andrew Morton.
- - proactively handle impossible len == 0 case.
-v2:
- - corrected credit to PaX Team.
- - moved stack clearing into if case to avoid penalty to common case.
----
- kernel/sys.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/mtd/nand/nand_bbt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c5cb5b9..01865c6 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1265,15 +1265,16 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
- {
- 	int ret = 0;
--	char buf[65];
- 
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
-+		const char *rest = UTS_RELEASE;
-+		char buf[65] = { 0 };
- 		int ndots = 0;
- 		unsigned v;
-+		size_t copy;
- 
- 		while (*rest) {
- 			if (*rest == '.' && ++ndots >= 3)
-@@ -1283,8 +1284,9 @@ static int override_release(char __user *release, int len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
--		ret = copy_to_user(release, buf, len);
-+		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
-+		ret = copy_to_user(release, buf, copy + 1);
- 	}
- 	return ret;
- }
--- 
-1.7.9.5
+--- a/drivers/mtd/nand/nand_bbt.c
++++ b/drivers/mtd/nand/nand_bbt.c
+@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info
+ 	/* Read the mirror version, if available */
+ 	if (md && (md->options & NAND_BBT_VERSION)) {
+ 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
+-			      mtd->writesize, td);
++			      mtd->writesize, md);
+ 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
+ 		pr_info("Bad block table at page %d, version 0x%02X\n",
+ 			 md->pages[0], md->version[0]);
 
 
--- 
-Kees Cook
-Chrome OS Security
