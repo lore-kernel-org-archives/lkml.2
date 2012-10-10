@@ -1,178 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab2JJCTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:19:23 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50235 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab2JJCTT (ORCPT
+	id S1755527Ab2JJCYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:24:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59356 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751607Ab2JJCYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:19:19 -0400
-Date: Tue, 9 Oct 2012 19:19:09 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jan Kara <jack@suse.cz>
-cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
- s390
-In-Reply-To: <20121009162107.GE15790@quack.suse.cz>
-Message-ID: <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
-References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009162107.GE15790@quack.suse.cz>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 9 Oct 2012 22:24:17 -0400
+Message-ID: <1349835846.6336.24.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 028/108] ARM: imx: armadillo5x0: Fix illegal register access
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Estevam Fabio-R49496 <r49496@freescale.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>
+Date: Wed, 10 Oct 2012 03:24:06 +0100
+In-Reply-To: <86D15885F63D1143A519F161FB828EAF165AA3@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <20121007225834.673681075@decadent.org.uk>
+	,<20121007225838.581640179@decadent.org.uk>
+	 <86D15885F63D1143A519F161FB828EAF165AA3@039-SN2MPN1-011.039d.mgd.msft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-EZYyhMYCXmy5nfXNPosc"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Jan Kara wrote:
-> On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
-> > On Mon, 1 Oct 2012, Jan Kara wrote:
-> > 
-> > > On s390 any write to a page (even from kernel itself) sets architecture
-> > > specific page dirty bit. Thus when a page is written to via standard write, HW
-> > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
-> > > finds the dirty bit and calls set_page_dirty().
-> > > 
-> > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
-> > > filesystems. The bug we observed in practice is that buffers from the page get
-> > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
-> > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
-> > > from xfs_count_page_state().
-> > 
-> > What changed recently?  Was XFS hardly used on s390 until now?
->   The problem was originally hit on SLE11-SP2 which is 3.0 based after
-> migration of our s390 build machines from SLE11-SP1 (2.6.32 based). I think
-> XFS just started to be more peevish about what pages it gets between these
-> two releases ;) (e.g. ext3 or ext4 just says "oh, well" and fixes things
-> up).
 
-Right, in 2.6.32 xfs_vm_writepage() had a !page_has_buffers(page) case,
-whereas by 3.0 that had become ASSERT(page_has_buffers(page)), with the
-ASSERT usually compiled out, stumbling later in page_buffers() as you say.
+--=-EZYyhMYCXmy5nfXNPosc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > > Similar problem can also happen when zero_user_segment() call from
-> > > xfs_vm_writepage() (or block_write_full_page() for that matter) set the
-> > > hardware dirty bit during writeback, later buffers get freed, and then page
-> > > unmapped.
+On Sun, 2012-10-07 at 23:37 +0000, Estevam Fabio-R49496 wrote:
+> No, please drop it from 3.2-stable.
+>=20
+> This one should only go to 3.5/3.6 stable trees.
+>=20
+> Otherwise it will break 3.2-stable.
 
-Similar problem, or is that the whole of the problem?  Where else does
-the page get written to, after clearing page dirty?  (It may not be worth
-spending time to answer me, I feel I'm wasting too much time on this.)
+Thanks, I've dropped this.
 
-I keep trying to put my finger on the precise bug.  I said in earlier
-mails to Mel and to Martin that we're mixing a bugfix and an optimization,
-but I cannot quite point to the bug.  Could one say that it's precisely at
-the "page straddles i_size" zero_user_segment(), in XFS or in other FSes?
-that the storage key ought to be re-cleaned after that?
+Ben.
 
-What if one day I happened to copy that code into shmem_writepage()?
-I've no intention to do so!  And it wouldn't cause a BUG.  Ah, and we
-never write shmem to swap while it's still mapped, so it wouldn't even
-have a chance to redirty the page in page_remove_rmap().
+--=20
+Ben Hutchings
+Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
 
-I guess I'm worrying too much; but it's not crystal clear to me why any
-!mapping_cap_account_dirty mapping would necessarily not have the problem.
+--=-EZYyhMYCXmy5nfXNPosc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-> > But here's where I think the problem is.  You're assuming that all
-> > filesystems go the same mapping_cap_account_writeback_dirty() (yeah,
-> > there's no such function, just a confusing maze of three) route as XFS.
-> > 
-> > But filesystems like tmpfs and ramfs (perhaps they're the only two
-> > that matter here) don't participate in that, and wait for an mmap'ed
-> > page to be seen modified by the user (usually via pte_dirty, but that's
-> > a no-op on s390) before page is marked dirty; and page reclaim throws
-> > away undirtied pages.
->   I admit I haven't thought of tmpfs and similar. After some discussion Mel
-> pointed me to the code in mmap which makes a difference. So if I get it
-> right, the difference which causes us problems is that on tmpfs we map the
-> page writeably even during read-only fault. OK, then if I make the above
-> code in page_remove_rmap():
-> 	if ((PageSwapCache(page) ||
-> 	     (!anon && !mapping_cap_account_dirty(page->mapping))) &&
-> 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
-> 		set_page_dirty(page);
-> 
->   Things should be ok (modulo the ugliness of this condition), right?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-(Setting aside my reservations above...) That's almost exactly right, but
-I think the issue of a racing truncation (which could reset page->mapping
-to NULL at any moment) means we have to be a bit more careful.  Usually
-we guard against that with page lock, but here we can rely on mapcount.
+iQIVAwUAUHTcRue/yOyVhhEJAQpbrQ/6Akqm8aSuHvyGZYa8pq5nRPu9cn9yrn6X
+qoCCpLF0TA4sjNPkpPd+UjUpBdrjUJto+s8fWsCqeO1Sm0HBXiielEIfUH88HYLi
+zke8KCgjDgxnlMT+9fvOe5P42OAFIE9EVoq0i2LOXBQxSxWTi37ReAZD92913n4u
+rrbN8MjkWniWIicIwYR+qJ/33MS7/fbGQF0QQ4NSu3OEOzEjWDP76ObPWsM9rt6z
+EtTHLmC4ukUdRXMVwcfn15XR4TfW6k7CB8zZxF8QH2LN6Bs4wXuAg5lfBD9Km1lR
+VEDhY47ezifNFG1Y2IWdqDKXVVMt6YqnBPb56DCYlzpLk6HiwPKv1pG5kJPWFo4j
+Favzg7e39CPFiPVt+YjB8bEYVG4kVzhkgeyl2pvrD4LDfDXjTVI2Jry1pUBIqQ4p
++GYLYXGcmwGY6FeYzOmcK5+UW0BBnrjP5dowVGBAykYnXV/r+57/ugbbj2mXA7pm
+qhe7aLawkIh5wDjKOeXEjRzeCtSZQIO7o0VzULsao/VFBKFu6FIXWSRBVohvN8lH
+wBGm6AvhDrR5pZQ67BV0FQSYBEM4Qgj3KovJtWBn/JJc5htJbWUyUBa8buZOkAZm
+fvKkjapMnQpv089MD4WKMc4JDTw3NIEcilqbB6uD7lsCa+SxvmHO++rP8Y66fM0u
+GDws6c2+oqQ=
+=qt1d
+-----END PGP SIGNATURE-----
 
-page_mapping(page), with its built-in PageSwapCache check, actually ends
-up making the condition look less ugly; and so far as I could tell,
-the extra code does get optimized out on x86 (unless CONFIG_DEBUG_VM,
-when we are left with its VM_BUG_ON(PageSlab(page))).
-
-But please look this over very critically and test (and if you like it,
-please adopt it as your own): I'm not entirely convinced yet myself.
-
-(One day, I do want to move that block further down page_remove_rmap(),
-outside the mem_cgroup_[begin,end]_update_stat() bracketing: I don't think
-there's an actual problem at present in calling set_page_dirty() there,
-but I have seen patches which could give it a lock-ordering issue, so
-better to untangle them.  No reason to muddle that in with your fix,
-but I thought I'd mention it while we're all staring at this.)
-
-Hugh
-
----
-
- mm/rmap.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
-
---- 3.6.0+/mm/rmap.c	2012-10-09 14:01:12.356379322 -0700
-+++ linux/mm/rmap.c	2012-10-09 14:58:48.160445605 -0700
-@@ -56,6 +56,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -926,11 +927,8 @@ int page_mkclean(struct page *page)
- 
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
- 	}
- 
- 	return ret;
-@@ -1116,6 +1114,7 @@ void page_add_file_rmap(struct page *pag
-  */
- void page_remove_rmap(struct page *page)
- {
-+	struct address_space *mapping = page_mapping(page);
- 	bool anon = PageAnon(page);
- 	bool locked;
- 	unsigned long flags;
-@@ -1138,8 +1137,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!anon || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
+--=-EZYyhMYCXmy5nfXNPosc--
