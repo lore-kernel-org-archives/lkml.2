@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab2JJPTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:19:33 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:64154 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab2JJPTV (ORCPT
+	id S1753575Ab2JJMUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:20:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54102 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab2JJMUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:19:21 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 6/6] mfd: Differentiate between u8500 and u9540 TCDM address mapping
-Date: Wed, 10 Oct 2012 16:18:55 +0100
-Message-Id: <1349882335-6786-7-git-send-email-lee.jones@linaro.org>
+	Wed, 10 Oct 2012 08:20:42 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/serial2002.c
+Date: Wed, 10 Oct 2012 21:20:33 +0900
+Message-Id: <1349871634-4479-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TCDM mappings are quite different from u8500 to u9540. If these
-aren't correctly specified for a given board, it will fail to boot.
-Here we add the correct TCDM base for the u9540.
+fixed below checkpatch warning.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-Please note that although this patch allows us to boot the u9540,
-it doesn't provide us with full enablement. For that, another
-patch-set will follow which completely re-vamps the way the PRCMU
-is passed TCDM mappings.
+and added pr_fmt.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- drivers/mfd/db8500-prcmu.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/serial2002.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 9d51585..fd0462a 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2670,7 +2670,7 @@ static int db8500_irq_init(struct device_node *np)
+diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
+index 5bf84cf..cc4f6e7 100644
+--- a/drivers/staging/comedi/drivers/serial2002.c
++++ b/drivers/staging/comedi/drivers/serial2002.c
+@@ -31,6 +31,8 @@ Status: in development
  
- void __init db8500_prcmu_early_init(void)
- {
--	if (cpu_is_u8500v2()) {
-+	if (cpu_is_u8500v2() || cpu_is_u9540()) {
- 		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+ */
  
- 		if (tcpm_base != NULL) {
-@@ -2688,7 +2688,11 @@ void __init db8500_prcmu_early_init(void)
- 			iounmap(tcpm_base);
- 		}
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../comedidev.h"
  
--		tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-+		if (cpu_is_u9540())
-+			tcdm_base = ioremap_nocache(U8500_PRCMU_TCDM_BASE,
-+						SZ_4K + SZ_8K) + SZ_8K;
-+		else
-+			tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
+ #include <linux/delay.h>
+@@ -282,7 +284,7 @@ static struct serial_data serial_read(struct file *f, int timeout)
+ 
+ 		length++;
+ 		if (data < 0) {
+-			printk(KERN_ERR "serial2002 error\n");
++			pr_err("serial2002 error\n");
+ 			break;
+ 		} else if (data & 0x80) {
+ 			result.value = (result.value << 7) | (data & 0x7f);
+@@ -355,7 +357,8 @@ static int serial_2002_open(struct comedi_device *dev)
+ 	devpriv->tty = filp_open(port, O_RDWR, 0);
+ 	if (IS_ERR(devpriv->tty)) {
+ 		result = (int)PTR_ERR(devpriv->tty);
+-		printk(KERN_ERR "serial_2002: file open error = %d\n", result);
++		dev_err(dev->class_dev,
++			"serial_2002: file open error = %d\n", result);
  	} else {
- 		pr_err("prcmu: Unsupported chip version\n");
- 		BUG();
+ 		struct config_t {
+ 
 -- 
 1.7.9.5
 
