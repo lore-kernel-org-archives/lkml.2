@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab2JKAPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:24 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46803 "EHLO
+	id S932927Ab2JKAPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:15:35 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57685 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932750Ab2JKAPP (ORCPT
+	by vger.kernel.org with ESMTP id S932750Ab2JKAPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:15 -0400
-X-Sasl-enc: 7avE97Nw8mI8zmLd1sZoDIVJeu/pttie52tQdFaNfuNa 1349914514
+	Wed, 10 Oct 2012 20:15:25 -0400
+X-Sasl-enc: A7dhz27P4C3iLWAvO7ftXYaBy9CYQXHGGXajk9tnpFCq 1349914524
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Cris <linux-cris-kernel@axis.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
         Josh Triplett <josh@joshtriplett.org>
-Subject: [ 108/133] cris: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:52:14 +0900
-Message-Id: <20121010224913.971197304@linuxfoundation.org>
+Subject: [ 110/133] score: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:16 +0900
+Message-Id: <20121010224914.323829269@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -34,7 +32,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit c633f9e788928e91ad11f44df29b47bbbe9550b0 upstream.
+commit 0ee23fda59740767324b4340247ca41a2f498ca6 upstream.
 
 In the old times, the whole idle task was considered
 as an RCU quiescent state. But as RCU became more and
@@ -51,43 +49,38 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the Cris's idle loop.
+Add this missing pair of calls in scores's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Cris <linux-cris-kernel@axis.com>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/cris/kernel/process.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/score/kernel/process.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/cris/kernel/process.c
-+++ b/arch/cris/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/elfcore.h>
- #include <linux/mqueue.h>
+--- a/arch/score/kernel/process.c
++++ b/arch/score/kernel/process.c
+@@ -27,6 +27,7 @@
  #include <linux/reboot.h>
+ #include <linux/elfcore.h>
+ #include <linux/pm.h>
 +#include <linux/rcupdate.h>
  
- //#define DEBUG
- 
-@@ -74,6 +75,7 @@ void cpu_idle (void)
+ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+@@ -50,9 +51,10 @@ void __noreturn cpu_idle(void)
  {
  	/* endless idle loop with no priority at all */
  	while (1) {
 +		rcu_idle_enter();
- 		while (!need_resched()) {
- 			void (*idle)(void);
- 			/*
-@@ -86,6 +88,7 @@ void cpu_idle (void)
- 				idle = default_idle;
- 			idle();
- 		}
+ 		while (!need_resched())
+ 			barrier();
+-
 +		rcu_idle_exit();
  		schedule_preempt_disabled();
  	}
