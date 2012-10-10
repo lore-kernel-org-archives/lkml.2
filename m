@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab2JJWHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:07:23 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59709 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab2JJWHV (ORCPT
+	id S1757340Ab2JJWRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:17:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37809 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756060Ab2JJWRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:07:21 -0400
-Date: Wed, 10 Oct 2012 15:07:13 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jan Beulich <JBeulich@suse.com>
-cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-64: fix page table accounting
-In-Reply-To: <506DAFBA020000780009FA8C@nat28.tlf.novell.com>
-Message-ID: <alpine.LSU.2.00.1210101458310.2002@eggly.anvils>
-References: <506DAFBA020000780009FA8C@nat28.tlf.novell.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Oct 2012 18:17:01 -0400
+Date: Wed, 10 Oct 2012 15:16:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, Denys Vlasenko <vda.linux@googlemail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Amerigo Wang <amwang@redhat.com>,
+        "Jonathan M. Foote" <jmfoote@cert.org>,
+        Roland McGrath <roland@hack.frob.com>, Pedro Alves <palves@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] Include asm/siginfo.h in linux/coredump.h
+Message-Id: <20121010151659.029b2a46.akpm@linux-foundation.org>
+In-Reply-To: <1349906647-26042-1-git-send-email-richard@nod.at>
+References: <1349906647-26042-1-git-send-email-richard@nod.at>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Oct 2012, Jan Beulich wrote:
+On Thu, 11 Oct 2012 00:04:07 +0200
+Richard Weinberger <richard@nod.at> wrote:
 
-> Commit 20167d3421a089a1bf1bd680b150dc69c9506810 ("x86-64: Fix
-> accounting in kernel_physical_mapping_init()") went a little too far
-> by entirely removing the counting of pre-populated page tables: This
-> should be done at boot time (to cover the page tables set up in early
-> boot code), but shouldn't be done during memory hot add.
+> commit 5ab1c30 (coredump: pass siginfo_t* to do_coredump() and below, not merely signr)
+> added siginfo_t to linux/coredump.h but forgot to include asm/siginfo.h.
+> This breaks the build for UML/i386.
+> (And any other arch where asm/siginfo.h is not magically preincluded...)
 > 
-> Hence, re-add the removed increments of "pages", but make them and the
-> one in phys_pte_init() conditional upon !after_bootmem.
+> In file included from arch/x86/um/elfcore.c:2:0:
+> include/linux/coredump.h:15:25: error: unknown type name 'siginfo_t'
+> make[1]: *** [arch/x86/um/elfcore.o] Error 1
 > 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
-I think this has not yet been picked up: perhaps it's awaiting an
-Acked-by: Hugh Dickins <hughd@google.com>
-or a
-Tested-by: Hugh Dickins <hughd@google.com>
-but I hesitated to give those because you understand what's going
-on here much better than I pretend to.
-
-> 
+> Cc: Denys Vlasenko <vda.linux@googlemail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Amerigo Wang <amwang@redhat.com>
+> Cc: "Jonathan M. Foote" <jmfoote@cert.org>
+> Cc: Roland McGrath <roland@hack.frob.com>
+> Cc: Pedro Alves <palves@redhat.com>
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 > ---
-> Not sure if this ought to be copied to stable@.
-
-I guess not.  Much as I like my kernels to show good meminfo numbers,
-I was recently saying that David Rientjes's patches to get Unevictable
-and Mlocked right were not important enough for stable, and I think
-those numbers are more interesting to most people than the DirectMaps.
-But I'd be happily overruled on all three patches.
-
-Hugh
-
+>  include/linux/coredump.h | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> ---
->  arch/x86/mm/init_64.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> --- 3.6/arch/x86/mm/init_64.c
-> +++ 3.6-x86_64-page-table-count/arch/x86/mm/init_64.c
-> @@ -386,7 +386,8 @@ phys_pte_init(pte_t *pte_page, unsigned
->  		 * these mappings are more intelligent.
->  		 */
->  		if (pte_val(*pte)) {
-> -			pages++;
-> +			if (!after_bootmem)
-> +				pages++;
->  			continue;
->  		}
+> diff --git a/include/linux/coredump.h b/include/linux/coredump.h
+> index 1775eb8..1d73993 100644
+> --- a/include/linux/coredump.h
+> +++ b/include/linux/coredump.h
+> @@ -4,6 +4,7 @@
+>  #include <linux/types.h>
+>  #include <linux/mm.h>
+>  #include <linux/fs.h>
+> +#include <asm/siginfo.h>
 >  
-> @@ -451,6 +452,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned
->  			 * attributes.
->  			 */
->  			if (page_size_mask & (1 << PG_LEVEL_2M)) {
-> +				if (!after_bootmem)
-> +					pages++;
->  				last_map_addr = next;
->  				continue;
->  			}
-> @@ -526,6 +529,8 @@ phys_pud_init(pud_t *pud_page, unsigned
->  			 * attributes.
->  			 */
->  			if (page_size_mask & (1 << PG_LEVEL_1G)) {
-> +				if (!after_bootmem)
-> +					pages++;
->  				last_map_addr = next;
->  				continue;
->  			}
+>  /*
+>   * These are the only things you should do on a core-file: use only these
+
+hm, yes.  It would be nice to jsut forward-declare the struct but we
+can't do that because it's a pesky typedef.
+
+I wonder if it would be cleaner to just include linux/signal.h?  Diving
+down into the arch layer is a bit unusual.  Doesn't matter, I guess.
