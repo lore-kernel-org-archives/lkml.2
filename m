@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab2JJQTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:19:30 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41929 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab2JJQT1 (ORCPT
+	id S1756803Ab2JJOgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:36:05 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36534 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756642Ab2JJOgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:19:27 -0400
-Message-ID: <5075A00B.2040509@wwwdotorg.org>
-Date: Wed, 10 Oct 2012 10:19:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Wed, 10 Oct 2012 10:36:03 -0400
+Date: Wed, 10 Oct 2012 10:36:53 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Message-ID: <20121010143653.GD13724@beef>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+ <79CD15C6BA57404B839C016229A409A83EB3B5BD@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: David Gibson <david@gibson.dropbear.id.au>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: dtc: import latest upstream dtc
-References: <1349827466.26044.16@snotra> <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com> <20121010072401.GA28467@truffula.fritz.box> <50759152.9050407@wwwdotorg.org> <5075954B.8030008@gmail.com>
-In-Reply-To: <5075954B.8030008@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EB3B5BD@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 09:33 AM, Rob Herring wrote:
-> On 10/10/2012 10:16 AM, Stephen Warren wrote:
->> On 10/10/2012 01:24 AM, David Gibson wrote:
->>> On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
->>>>
->>>> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
->>>>
->>>>> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
->>>>>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
->>>>>>> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->>>>>>>>>
->>>>>>>>> What more do you think needs discussion re: dtc+cpp?
->>>>>>>>
->>>>>>>> How not to abuse the ever-loving shit out of it? :-)
->>>>>>>
->>>>>>> Perhaps we can just handle this through the regular patch review
->>>>>>> process; I think it may be difficult to define and agree upon exactly
->>>>>>> what "abuse" means ahead of time, but it's probably going to be easy
->>>>>>> enough to recognize it when one sees it?
->>>>>> One of the ways it could get out of hand would be via "include
->>>>>> dependency hell".  People will be tempted to reuse existing .h files
->>>>>> containing pin definitions, which, if history is a guide, will end up
->>>>>> depending on all sorts of other .h files.
->>>>>> Another problem I often face with symbolic names is the difficulty of
->>>>>> figuring out what the numerical values really are (for debugging),
->>>>>> especially when .h files are in different subtrees from the files that
->>>>>> use the definitions, and when they use multiple macro levels and fancy
->>>>>> features like concatenation.  Sometimes I think it's clearer just to
->>>>>> write the number and use a comment to say what it is.
->>>>>
->>>>> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
->>>>
->>>> .h files include both structs and defines, which are fine for
->>>> ordinary C code, but problematic in this context.
->>>
->>> Right, cpp should be invoked with similar options to the way it's done
->>> for asm files which have the same problem.  I'm not sure if the
->>> current patch does so.
->>
->> That's probably a reasonable idea, although I imagined that people would
->> actually split out the portions of any header file they wanted to use
->> with dtc, so that any headers included by *.dts would only include
->> #defines. Those headers could be used by both dtc and other .h files (or
->> .c files).
+On Wed, Oct 10, 2012 at 02:33:54PM +0000, Vaibhav Hiremath wrote:
+> On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
+> > 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
+> > exposes a bug in the AM33XX clock data for mcasp. After moving to
+> > clk_get() usage, the _init() of all registered hwmods fails on mcasp0
+> > due to incorrect clock data causing clk_get() to fail. This causes all
+> > successive hwmods to fail to _init() leaving them in a bad state.
+> > 
+> > This patch updates the mcasp clock entries so clk_get() will succeed.
+> > It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
+> > boot.
+> > 
 > 
-> Used by what other files? kernel files? We ultimately want to split out
-> dts files from the kernel, so whatever we add needs to be self
-> contained. I don't see this as a huge issue though because the whole
-> point of the DT data is to move that information out of the kernel. If
-> it is needed in both places, then something is wrong.
+> Matt,
+> 
+> I have already submitted patch for this and it is accepted and merged in 
+> Tony's pull request.
+> 
+> https://patchwork.kernel.org/patch/1499271/
 
-One example is the IDs of the GPIOs, e.g.:
+Heh, ok. My search skills failed badly when I ran into this.
 
-#define TEGRA_PIN_VI_GP6_PA0            _GPIO(0)
-#define TEGRA_PIN_UART3_CTS_N_PA1       _GPIO(1)
-#define TEGRA_PIN_DAP2_FS_PA2           _GPIO(2)
-#define TEGRA_PIN_DAP2_SCLK_PA3         _GPIO(3)
+Thanks :)
 
-Those defines are useful to both the .dts files (so named constants can
-be used) and the pinctrl driver. By using the same header file, we
-guarantee that the .dts files and pinctrl driver use the exact same
-naming for the pins; the pin naming/numbering being defined by the DT
-binding more than anything else.
-
-It'd be similarly useful to share GPIO or interrupt flag definitions,
-etc. etc.
-
-We could do something like we do for dtc today, where there's an
-external repository for *.dts (and required *.h), yet those *.h are
-duplicated into the kernel tree as needed by drivers.
+-Matt
