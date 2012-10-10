@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab2JJXAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:00:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55112 "EHLO
+	id S932550Ab2JJXTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:19:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54484 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751792Ab2JJXAn (ORCPT
+	by vger.kernel.org with ESMTP id S1757596Ab2JJXAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:00:43 -0400
-X-Sasl-enc: dsd6Ur6g+s37FyiKZtkNSVNRcdRVTri1diqA6IYFqOtt 1349910042
+	Wed, 10 Oct 2012 19:00:48 -0400
+X-Sasl-enc: jZFBZn0FBoNBYpl4JUAcindV2yFumwTfGdEm8gBrb0IY 1349910047
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andi Kleen <andi@firstfloor.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [ 003/122] kbuild: Do not package /boot and /lib in make tar-pkg
-Date: Thu, 11 Oct 2012 07:52:49 +0900
-Message-Id: <20121010225338.594863941@linuxfoundation.org>
+        Wade Farnsworth <wade_farnsworth@mentor.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 009/122] ARM: 7548/1: include linux/sched.h in syscall.h
+Date: Thu, 11 Oct 2012 07:52:55 +0900
+Message-Id: <20121010225339.667728798@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,66 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Marek <mmarek@suse.cz>
+From: Wade Farnsworth <wade_farnsworth@mentor.com>
 
-commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
+commit 8ef102c6b4bc996ff96ca52b34775fe931ec90c9 upstream.
 
-There were reports of users destroying their Fedora installs by a kernel
-tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
-toplevel directories from the tarball to prevent this from happening.
+The syscall tracing patch introduces a compile bug in lttng-modules
+when the latter calls syscall_get_nr(), similar to the following:
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+<path-to-linux>/arch/arm/include/asm/syscall.h:21:2: error: implicit declaration of function 'task_thread_info' [-Werror=implicit-function-declaration]
+
+The issue is that we are using task_thread_info() in the
+syscall_get_nr() function in asm/syscall.h, but not explicitly
+including sched.h from this file, so we can expect this bug might
+surface any time that syscall_get_nr() is called.
+
+Explicitly including sched.h solves the problem.
+
+Signed-off-by: Wade Farnsworth <wade_farnsworth@mentor.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Makefile        |    2 +-
- scripts/Makefile.fwinst  |    4 ++--
- scripts/package/buildtar |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/syscall.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -142,7 +142,7 @@ KBUILD_CFLAGS += $(call cc-option,-mno-a
- KBUILD_CFLAGS += $(mflags-y)
- KBUILD_AFLAGS += $(mflags-y)
+--- a/arch/arm/include/asm/syscall.h
++++ b/arch/arm/include/asm/syscall.h
+@@ -8,6 +8,7 @@
+ #define _ASM_ARM_SYSCALL_H
  
--archscripts: scripts_basic
-+archscripts:
- 	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
+ #include <linux/err.h>
++#include <linux/sched.h>
  
- ###
---- a/scripts/Makefile.fwinst
-+++ b/scripts/Makefile.fwinst
-@@ -27,7 +27,7 @@ endif
- installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
+ extern const unsigned long sys_call_table[];
  
- installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
--installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
-+installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/.
- 
- # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
- PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
-@@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(sr
- $(installed-fw-dirs):
- 	$(call cmd,mkdir)
- 
--$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
-+$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
- 	$(call cmd,install)
- 
- PHONY +=  __fw_install __fw_modinst FORCE
---- a/scripts/package/buildtar
-+++ b/scripts/package/buildtar
-@@ -109,7 +109,7 @@ esac
- 	if tar --owner=root --group=root --help >/dev/null 2>&1; then
- 		opts="--owner=root --group=root"
- 	fi
--	tar cf - . $opts | ${compress} > "${tarball}${file_ext}"
-+	tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
- )
- 
- echo "Tarball successfully created in ${tarball}${file_ext}"
 
 
