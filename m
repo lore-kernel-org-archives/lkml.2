@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab2JKA3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:29:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37716 "EHLO
+	id S933339Ab2JKA3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:29:11 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52352 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933463Ab2JKAZh (ORCPT
+	by vger.kernel.org with ESMTP id S933459Ab2JKAZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:25:37 -0400
-X-Sasl-enc: nXX1IGi/ny19GwLO1+T02ZqjcR2kCIu7BjggJMhtzNAn 1349915136
+	Wed, 10 Oct 2012 20:25:33 -0400
+X-Sasl-enc: EW0bEse8b2Z9CMmLPdukS3YnG5Yd3WhV1AWUMT1WtW+z 1349915132
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 103/122] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
-Date: Thu, 11 Oct 2012 07:54:29 +0900
-Message-Id: <20121010225356.581245289@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 097/122] score: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:54:23 +0900
+Message-Id: <20121010225355.483884865@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -31,54 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
+commit 0ee23fda59740767324b4340247ca41a2f498ca6 upstream.
 
-Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
-related damage v3") introduced a potential memory corruption.
-shmem_alloc_page() uses a pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has
-MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
-alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
-reference count and frees the policy prematurely.
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in scores's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ arch/score/kernel/process.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1552,8 +1552,18 @@ struct mempolicy *get_vma_policy(struct
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
-+
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
-+		}
+--- a/arch/score/kernel/process.c
++++ b/arch/score/kernel/process.c
+@@ -27,6 +27,7 @@
+ #include <linux/reboot.h>
+ #include <linux/elfcore.h>
+ #include <linux/pm.h>
++#include <linux/rcupdate.h>
+ 
+ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+@@ -50,9 +51,10 @@ void __noreturn cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			barrier();
+-
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
  	}
- 	if (!pol)
- 		pol = &default_policy;
+ }
 
 
