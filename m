@@ -1,163 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab2JJCPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:15:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43131 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569Ab2JJCPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:15:07 -0400
-Message-ID: <1349835292.20486.68.camel@pasglop>
-Subject: Re: [GIT PULL] Disintegrate UAPI for powerpc [ver #2]
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Wed, 10 Oct 2012 13:14:52 +1100
-In-Reply-To: <21173.1349774149@warthog.procyon.org.uk>
-References: <21173.1349774149@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755078Ab2JJCTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:19:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50235 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab2JJCTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 22:19:19 -0400
+Date: Tue, 9 Oct 2012 19:19:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jan Kara <jack@suse.cz>
+cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+In-Reply-To: <20121009162107.GE15790@quack.suse.cz>
+Message-ID: <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009162107.GE15790@quack.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 10:15 +0100, David Howells wrote:
-> Can you merge the following branch into the powerpc tree please.
+On Tue, 9 Oct 2012, Jan Kara wrote:
+> On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
+> > On Mon, 1 Oct 2012, Jan Kara wrote:
+> > 
+> > > On s390 any write to a page (even from kernel itself) sets architecture
+> > > specific page dirty bit. Thus when a page is written to via standard write, HW
+> > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
+> > > finds the dirty bit and calls set_page_dirty().
+> > > 
+> > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
+> > > filesystems. The bug we observed in practice is that buffers from the page get
+> > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
+> > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
+> > > from xfs_count_page_state().
+> > 
+> > What changed recently?  Was XFS hardly used on s390 until now?
+>   The problem was originally hit on SLE11-SP2 which is 3.0 based after
+> migration of our s390 build machines from SLE11-SP1 (2.6.32 based). I think
+> XFS just started to be more peevish about what pages it gets between these
+> two releases ;) (e.g. ext3 or ext4 just says "oh, well" and fixes things
+> up).
 
-Thanks, looking at this right now. If it passes my tests I'll ask Linus
-to pull later today.
+Right, in 2.6.32 xfs_vm_writepage() had a !page_has_buffers(page) case,
+whereas by 3.0 that had become ASSERT(page_has_buffers(page)), with the
+ASSERT usually compiled out, stumbling later in page_buffers() as you say.
 
-Cheers,
-Ben.
+> 
+> > > Similar problem can also happen when zero_user_segment() call from
+> > > xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+> > > hardware dirty bit during writeback, later buffers get freed, and then page
+> > > unmapped.
 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Now that the fixups and the asm-generic chunk have been merged, I've
-> regenerated the patches to get rid of those dependencies and to take account of
-> any changes made so far in the merge window.  If you have already pulled the
-> older version of the branch aimed at you, then please feel free to ignore this
-> request.
-> 
-> The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
-> 
->   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-powerpc-20121009
-> 
-> for you to fetch changes up to c3617f72036c909e1f6086b5b9e364e0ef90a6da:
-> 
->   UAPI: (Scripted) Disintegrate arch/powerpc/include/asm (2012-10-09 09:47:26 +0100)
-> 
-> ----------------------------------------------------------------
-> UAPI Disintegration 2012-10-09
-> 
-> ----------------------------------------------------------------
-> David Howells (1):
->       UAPI: (Scripted) Disintegrate arch/powerpc/include/asm
-> 
->  arch/powerpc/include/asm/Kbuild                   |  35 --
->  arch/powerpc/include/asm/bootx.h                  | 123 +------
->  arch/powerpc/include/asm/cputable.h               |  35 +-
->  arch/powerpc/include/asm/elf.h                    | 311 +-----------------
->  arch/powerpc/include/asm/kvm_para.h               |  70 +---
->  arch/powerpc/include/asm/mman.h                   |  27 +-
->  arch/powerpc/include/asm/nvram.h                  |  55 +---
->  arch/powerpc/include/asm/ptrace.h                 | 242 +-------------
->  arch/powerpc/include/asm/signal.h                 | 143 +-------
->  arch/powerpc/include/asm/spu_info.h               |  29 +-
->  arch/powerpc/include/asm/swab.h                   |  15 +-
->  arch/powerpc/include/asm/termios.h                |  69 +---
->  arch/powerpc/include/asm/types.h                  |  30 +-
->  arch/powerpc/include/asm/unistd.h                 | 374 +--------------------
->  arch/powerpc/include/uapi/asm/Kbuild              |  41 +++
->  arch/powerpc/include/{ => uapi}/asm/auxvec.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/bitsperlong.h |   0
->  arch/powerpc/include/uapi/asm/bootx.h             | 132 ++++++++
->  arch/powerpc/include/{ => uapi}/asm/byteorder.h   |   0
->  arch/powerpc/include/uapi/asm/cputable.h          |  36 ++
->  arch/powerpc/include/uapi/asm/elf.h               | 307 +++++++++++++++++
->  arch/powerpc/include/{ => uapi}/asm/errno.h       |   0
->  arch/powerpc/include/{ => uapi}/asm/fcntl.h       |   0
->  arch/powerpc/include/{ => uapi}/asm/ioctl.h       |   0
->  arch/powerpc/include/{ => uapi}/asm/ioctls.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/ipcbuf.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/kvm.h         |   0
->  arch/powerpc/include/uapi/asm/kvm_para.h          |  90 +++++
->  arch/powerpc/include/{ => uapi}/asm/linkage.h     |   0
->  arch/powerpc/include/uapi/asm/mman.h              |  31 ++
->  arch/powerpc/include/{ => uapi}/asm/msgbuf.h      |   0
->  arch/powerpc/include/uapi/asm/nvram.h             |  62 ++++
->  arch/powerpc/include/{ => uapi}/asm/param.h       |   0
->  arch/powerpc/include/{ => uapi}/asm/poll.h        |   0
->  arch/powerpc/include/{ => uapi}/asm/posix_types.h |   0
->  arch/powerpc/include/{ => uapi}/asm/ps3fb.h       |   0
->  arch/powerpc/include/uapi/asm/ptrace.h            | 259 +++++++++++++++
->  arch/powerpc/include/{ => uapi}/asm/resource.h    |   0
->  arch/powerpc/include/{ => uapi}/asm/seccomp.h     |   0
->  arch/powerpc/include/{ => uapi}/asm/sembuf.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/setup.h       |   0
->  arch/powerpc/include/{ => uapi}/asm/shmbuf.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/sigcontext.h  |   0
->  arch/powerpc/include/{ => uapi}/asm/siginfo.h     |   0
->  arch/powerpc/include/uapi/asm/signal.h            | 145 +++++++++
->  arch/powerpc/include/{ => uapi}/asm/socket.h      |   0
->  arch/powerpc/include/{ => uapi}/asm/sockios.h     |   0
->  arch/powerpc/include/uapi/asm/spu_info.h          |  53 +++
->  arch/powerpc/include/{ => uapi}/asm/stat.h        |   0
->  arch/powerpc/include/{ => uapi}/asm/statfs.h      |   0
->  arch/powerpc/include/uapi/asm/swab.h              |  23 ++
->  arch/powerpc/include/{ => uapi}/asm/termbits.h    |   0
->  arch/powerpc/include/uapi/asm/termios.h           |  76 +++++
->  arch/powerpc/include/uapi/asm/types.h             |  40 +++
->  arch/powerpc/include/{ => uapi}/asm/ucontext.h    |   0
->  arch/powerpc/include/uapi/asm/unistd.h            | 380 ++++++++++++++++++++++
->  56 files changed, 1705 insertions(+), 1528 deletions(-)
->  rename arch/powerpc/include/{ => uapi}/asm/auxvec.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/bitsperlong.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/bootx.h
->  rename arch/powerpc/include/{ => uapi}/asm/byteorder.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/cputable.h
->  create mode 100644 arch/powerpc/include/uapi/asm/elf.h
->  rename arch/powerpc/include/{ => uapi}/asm/errno.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/fcntl.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/ioctl.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/ioctls.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/ipcbuf.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/kvm.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/kvm_para.h
->  rename arch/powerpc/include/{ => uapi}/asm/linkage.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/mman.h
->  rename arch/powerpc/include/{ => uapi}/asm/msgbuf.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/nvram.h
->  rename arch/powerpc/include/{ => uapi}/asm/param.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/poll.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/posix_types.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/ps3fb.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/ptrace.h
->  rename arch/powerpc/include/{ => uapi}/asm/resource.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/seccomp.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/sembuf.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/setup.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/shmbuf.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/sigcontext.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/siginfo.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/signal.h
->  rename arch/powerpc/include/{ => uapi}/asm/socket.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/sockios.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/spu_info.h
->  rename arch/powerpc/include/{ => uapi}/asm/stat.h (100%)
->  rename arch/powerpc/include/{ => uapi}/asm/statfs.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/swab.h
->  rename arch/powerpc/include/{ => uapi}/asm/termbits.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/termios.h
->  create mode 100644 arch/powerpc/include/uapi/asm/types.h
->  rename arch/powerpc/include/{ => uapi}/asm/ucontext.h (100%)
->  create mode 100644 arch/powerpc/include/uapi/asm/unistd.h
-> .
+Similar problem, or is that the whole of the problem?  Where else does
+the page get written to, after clearing page dirty?  (It may not be worth
+spending time to answer me, I feel I'm wasting too much time on this.)
 
+I keep trying to put my finger on the precise bug.  I said in earlier
+mails to Mel and to Martin that we're mixing a bugfix and an optimization,
+but I cannot quite point to the bug.  Could one say that it's precisely at
+the "page straddles i_size" zero_user_segment(), in XFS or in other FSes?
+that the storage key ought to be re-cleaned after that?
 
+What if one day I happened to copy that code into shmem_writepage()?
+I've no intention to do so!  And it wouldn't cause a BUG.  Ah, and we
+never write shmem to swap while it's still mapped, so it wouldn't even
+have a chance to redirty the page in page_remove_rmap().
+
+I guess I'm worrying too much; but it's not crystal clear to me why any
+!mapping_cap_account_dirty mapping would necessarily not have the problem.
+
+> > But here's where I think the problem is.  You're assuming that all
+> > filesystems go the same mapping_cap_account_writeback_dirty() (yeah,
+> > there's no such function, just a confusing maze of three) route as XFS.
+> > 
+> > But filesystems like tmpfs and ramfs (perhaps they're the only two
+> > that matter here) don't participate in that, and wait for an mmap'ed
+> > page to be seen modified by the user (usually via pte_dirty, but that's
+> > a no-op on s390) before page is marked dirty; and page reclaim throws
+> > away undirtied pages.
+>   I admit I haven't thought of tmpfs and similar. After some discussion Mel
+> pointed me to the code in mmap which makes a difference. So if I get it
+> right, the difference which causes us problems is that on tmpfs we map the
+> page writeably even during read-only fault. OK, then if I make the above
+> code in page_remove_rmap():
+> 	if ((PageSwapCache(page) ||
+> 	     (!anon && !mapping_cap_account_dirty(page->mapping))) &&
+> 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+> 		set_page_dirty(page);
+> 
+>   Things should be ok (modulo the ugliness of this condition), right?
+
+(Setting aside my reservations above...) That's almost exactly right, but
+I think the issue of a racing truncation (which could reset page->mapping
+to NULL at any moment) means we have to be a bit more careful.  Usually
+we guard against that with page lock, but here we can rely on mapcount.
+
+page_mapping(page), with its built-in PageSwapCache check, actually ends
+up making the condition look less ugly; and so far as I could tell,
+the extra code does get optimized out on x86 (unless CONFIG_DEBUG_VM,
+when we are left with its VM_BUG_ON(PageSlab(page))).
+
+But please look this over very critically and test (and if you like it,
+please adopt it as your own): I'm not entirely convinced yet myself.
+
+(One day, I do want to move that block further down page_remove_rmap(),
+outside the mem_cgroup_[begin,end]_update_stat() bracketing: I don't think
+there's an actual problem at present in calling set_page_dirty() there,
+but I have seen patches which could give it a lock-ordering issue, so
+better to untangle them.  No reason to muddle that in with your fix,
+but I thought I'd mention it while we're all staring at this.)
+
+Hugh
+
+---
+
+ mm/rmap.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+--- 3.6.0+/mm/rmap.c	2012-10-09 14:01:12.356379322 -0700
++++ linux/mm/rmap.c	2012-10-09 14:58:48.160445605 -0700
+@@ -56,6 +56,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/migrate.h>
+ #include <linux/hugetlb.h>
++#include <linux/backing-dev.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -926,11 +927,8 @@ int page_mkclean(struct page *page)
+ 
+ 	if (page_mapped(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		if (mapping) {
++		if (mapping)
+ 			ret = page_mkclean_file(mapping, page);
+-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+-				ret = 1;
+-		}
+ 	}
+ 
+ 	return ret;
+@@ -1116,6 +1114,7 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
+ {
++	struct address_space *mapping = page_mapping(page);
+ 	bool anon = PageAnon(page);
+ 	bool locked;
+ 	unsigned long flags;
+@@ -1138,8 +1137,19 @@ void page_remove_rmap(struct page *page)
+ 	 * this if the page is anon, so about to be freed; but perhaps
+ 	 * not if it's in swapcache - there might be another pte slot
+ 	 * containing the swap entry, but page not yet written to swap.
++	 *
++	 * And we can skip it on file pages, so long as the filesystem
++	 * participates in dirty tracking; but need to catch shm and tmpfs
++	 * and ramfs pages which have been modified since creation by read
++	 * fault.
++	 *
++	 * Note that mapping must be decided above, before decrementing
++	 * mapcount (which luckily provides a barrier): once page is unmapped,
++	 * it could be truncated and page->mapping reset to NULL at any moment.
++	 * Note also that we are relying on page_mapping(page) to set mapping
++	 * to &swapper_space when PageSwapCache(page).
+ 	 */
+-	if ((!anon || PageSwapCache(page)) &&
++	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+ 		set_page_dirty(page);
+ 	/*
