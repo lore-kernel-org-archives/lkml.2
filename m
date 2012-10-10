@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab2JKAMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:12:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52612 "EHLO
+	id S1758097Ab2JKANB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:13:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39827 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757827Ab2JKAMp (ORCPT
+	by vger.kernel.org with ESMTP id S1757827Ab2JKAMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:12:45 -0400
-X-Sasl-enc: 6/lpmFaiUaV4bdjB+lkIeW/OKDsfYTBnAK/TPiyyCsgv 1349914363
+	Wed, 10 Oct 2012 20:12:50 -0400
+X-Sasl-enc: CpUAY8Xh8vWzkj7JL5POqxE/+66c9JvYYia78uPmXGeZ 1349914368
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
-Subject: [ 076/133] ext4: fix fdatasync() for files with only i_size changes
-Date: Thu, 11 Oct 2012 07:51:42 +0900
-Message-Id: <20121010224908.158698670@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Martin Willi <martin@revosec.ch>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 077/133] xfrm_user: ensure user supplied esn replay window is valid
+Date: Thu, 11 Oct 2012 07:51:43 +0900
+Message-Id: <20121010224908.339104606@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,56 +31,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit b71fc079b5d8f42b2a52743c8d2f1d35d655b1c5 upstream.
+commit ecd7918745234e423dd87fcc0c077da557909720 upstream.
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+The current code fails to ensure that the netlink message actually
+contains as many bytes as the header indicates. If a user creates a new
+state or updates an existing one but does not supply the bytes for the
+whole ESN replay window, the kernel copies random heap bytes into the
+replay bitmap, the ones happen to follow the XFRMA_REPLAY_ESN_VAL
+netlink attribute. This leads to following issues:
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
+1. The replay window has random bits set confusing the replay handling
+   code later on.
 
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+2. A malicious user could use this flaw to leak up to ~3.5kB of heap
+   memory when she has access to the XFRM netlink interface (requires
+   CAP_NET_ADMIN).
+
+Known users of the ESN replay window are strongSwan and Steffen's
+iproute2 patch (<http://patchwork.ozlabs.org/patch/85962/>). The latter
+uses the interface with a bitmap supplied while the former does not.
+strongSwan is therefore prone to run into issue 1.
+
+To fix both issues without breaking existing userland allow using the
+XFRMA_REPLAY_ESN_VAL netlink attribute with either an empty bitmap or a
+fully specified one. For the former case we initialize the in-kernel
+bitmap with zero, for the latter we copy the user supplied bitmap. For
+state updates the full bitmap must be supplied.
+
+To prevent overflows in the bitmap length calculation the maximum size
+of bmp_len is limited to 128 by this patch -- resulting in a maximum
+replay window of 4096 packets. This should be sufficient for all real
+life scenarios (RFC 4303 recommends a default replay window size of 64).
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Martin Willi <martin@revosec.ch>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ include/linux/xfrm.h |    2 ++
+ net/xfrm/xfrm_user.c |   31 +++++++++++++++++++++++++------
+ 2 files changed, 27 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3988,6 +3988,7 @@ static int ext4_do_update_inode(handle_t
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
- 	uid_t i_uid;
- 	gid_t i_gid;
+--- a/include/linux/xfrm.h
++++ b/include/linux/xfrm.h
+@@ -84,6 +84,8 @@ struct xfrm_replay_state {
+ 	__u32	bitmap;
+ };
  
-@@ -4038,7 +4039,10 @@ static int ext4_do_update_inode(handle_t
- 		raw_inode->i_file_acl_high =
- 			cpu_to_le16(ei->i_file_acl >> 32);
- 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
--	ext4_isize_set(raw_inode, ei->i_disksize);
-+	if (ei->i_disksize != ext4_isize(raw_inode)) {
-+		ext4_isize_set(raw_inode, ei->i_disksize);
-+		need_datasync = 1;
++#define XFRMA_REPLAY_ESN_MAX	4096
++
+ struct xfrm_replay_state_esn {
+ 	unsigned int	bmp_len;
+ 	__u32		oseq;
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -123,9 +123,21 @@ static inline int verify_replay(struct x
+ 				struct nlattr **attrs)
+ {
+ 	struct nlattr *rt = attrs[XFRMA_REPLAY_ESN_VAL];
++	struct xfrm_replay_state_esn *rs;
+ 
+-	if ((p->flags & XFRM_STATE_ESN) && !rt)
+-		return -EINVAL;
++	if (p->flags & XFRM_STATE_ESN) {
++		if (!rt)
++			return -EINVAL;
++
++		rs = nla_data(rt);
++
++		if (rs->bmp_len > XFRMA_REPLAY_ESN_MAX / sizeof(rs->bmp[0]) / 8)
++			return -EINVAL;
++
++		if (nla_len(rt) < xfrm_replay_state_esn_len(rs) &&
++		    nla_len(rt) != sizeof(*rs))
++			return -EINVAL;
 +	}
- 	if (ei->i_disksize > 0x7fffffffULL) {
- 		struct super_block *sb = inode->i_sb;
- 		if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-@@ -4091,7 +4095,7 @@ static int ext4_do_update_inode(handle_t
- 		err = rc;
- 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
  
--	ext4_update_inode_fsync_trans(handle, inode, 0);
-+	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
- out_brelse:
- 	brelse(bh);
- 	ext4_std_error(inode->i_sb, err);
+ 	if (!rt)
+ 		return 0;
+@@ -370,14 +382,15 @@ static inline int xfrm_replay_verify_len
+ 					 struct nlattr *rp)
+ {
+ 	struct xfrm_replay_state_esn *up;
++	int ulen;
+ 
+ 	if (!replay_esn || !rp)
+ 		return 0;
+ 
+ 	up = nla_data(rp);
++	ulen = xfrm_replay_state_esn_len(up);
+ 
+-	if (xfrm_replay_state_esn_len(replay_esn) !=
+-			xfrm_replay_state_esn_len(up))
++	if (nla_len(rp) < ulen || xfrm_replay_state_esn_len(replay_esn) != ulen)
+ 		return -EINVAL;
+ 
+ 	return 0;
+@@ -388,22 +401,28 @@ static int xfrm_alloc_replay_state_esn(s
+ 				       struct nlattr *rta)
+ {
+ 	struct xfrm_replay_state_esn *p, *pp, *up;
++	int klen, ulen;
+ 
+ 	if (!rta)
+ 		return 0;
+ 
+ 	up = nla_data(rta);
++	klen = xfrm_replay_state_esn_len(up);
++	ulen = nla_len(rta) >= klen ? klen : sizeof(*up);
+ 
+-	p = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
++	p = kzalloc(klen, GFP_KERNEL);
+ 	if (!p)
+ 		return -ENOMEM;
+ 
+-	pp = kmemdup(up, xfrm_replay_state_esn_len(up), GFP_KERNEL);
++	pp = kzalloc(klen, GFP_KERNEL);
+ 	if (!pp) {
+ 		kfree(p);
+ 		return -ENOMEM;
+ 	}
+ 
++	memcpy(p, up, ulen);
++	memcpy(pp, up, ulen);
++
+ 	*replay_esn = p;
+ 	*preplay_esn = pp;
+ 
 
 
