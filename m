@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2JJFmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:42:04 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44628 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab2JJFmB (ORCPT
+	id S1752249Ab2JJFxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:53:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61947 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2JJFw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:42:01 -0400
-Message-ID: <1349847713.17211.4.camel@localhost>
-Subject: Re: [PATCH] No need to call irq_domain_legacy_revmap() for twice
-From: Mike <qiudayu@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, benh@kernel.crashing.org, grant.likely@secretlab.ca
-Date: Wed, 10 Oct 2012 13:41:53 +0800
-In-Reply-To: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-References: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
-x-cbid: 12101005-9574-0000-0000-000004CC918D
+	Wed, 10 Oct 2012 01:52:58 -0400
+X-AuditID: cbfee61b-b7f2b6d000000f14-90-50750d381c94
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: "'Stefan Hajnoczi'" <stefanha@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+References: <000901cda2f0$7d773eb0$7865bc10$%kim@samsung.com>
+ <20121007064222.GA436@stefanha-thinkpad>
+In-reply-to: <20121007064222.GA436@stefanha-thinkpad>
+Subject: RE: [PATCH 02/16] f2fs: add on-disk layout
+Date: Wed, 10 Oct 2012 14:52:56 +0900
+Message-id: <009901cda6ab$7f00a6e0$7d01f4a0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2kVu309gb6EOauTJmta56HKJQ1+wCUXHvQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQV0L3tIAg0u7dC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGuw2bmAtmcVd0vhZtYNzN0cXIySEhYCJx7P4xJghbTOLCvfVs
+	XYxcHEIC0xkllt5vZIRw5jNJvP2zmLWLkYODTUBbYvN+A5AGEQEtiQ+7GtlBbGYBBYlf9zax
+	gthCAhkSa85cZwOxOQVMJdbdnAkWFxYwltjbcJQRxGYRUJWY9XICWC+vgK1E3/0mVghbUOLH
+	5HssEDP1JD7+uc0IYctLbF7zlhnkBAkBdYlHf3UhTjCSOHvvJzNEiYjEvhfvGCcwCs1CMmkW
+	kkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgIH4mvYNxVYPFIUYBDkYl
+	Ht6KjJIAIdbEsuLK3EOMEhzMSiK8MiuBQrwpiZVVqUX58UWlOanFhxilOViUxHmbPVIChATS
+	E0tSs1NTC1KLYLJMHJxSDYxiK9ZMW7VtA+vC3Bf9RgFnN4R2O5wz3Dn7zlRZI2OW/OeRWQkL
+	XO2MNyvd4XY8aBOmWBNQ41fDU96/mb1lyVMDk0+LH4mkF++MfuoWHDI7jeGM4CMfp79z1nZv
+	X6WWqlX4zVtj1n85hp317tV9XQqLwnf6/77okuFlZTgt48mSmSfX/fe0VldiKc5INNRiLipO
+	BAD6Ulf9XgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments?
-Thanks
-在 2012-09-24一的 17:37 +0800，Mike Qiu写道：
-> Function irq_create_mapping() calls irq_find_mapping(). The later
-> function has checked if the indicated IRQ domain has hw IRQ mapped to
-> virtual IRQ through legacy mode or not and return the value of the
-> legacy irq number by call irq_domain_legacy_revmap(). We needn't
-> to call irq_domain_legacy_revmap() to do same check in
-> irq_create_mapping() again.
-> 
-> The patch removes the duplicate call.
-> 
-> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-> ---
->  kernel/irq/irqdomain.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> index 49a7772..286d672 100644
-> --- a/kernel/irq/irqdomain.c
-> +++ b/kernel/irq/irqdomain.c
-> @@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
->  		return virq;
->  	}
-> 
-> -	/* Get a virtual interrupt number */
-> +	/*
-> +	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
-> +	 * create the IRQ mapping for non-existing one, so just return 0.
-> +	 */
->  	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-> -		return irq_domain_legacy_revmap(domain, hwirq);
-> +		return 0;
-> 
->  	/* Allocate a virtual interrupt number */
->  	hint = hwirq % nr_irqs;
+[snip]
 
+> > +/*
+> > + * For superblock
+> > + */
+> > +struct f2fs_super_block {
+> > +	__le32 magic;		/* Magic Number */
+> > +	__le16 major_ver;	/* Major Version */
+> > +	__le16 minor_ver;	/* Minor Version */
+> > +	__le32 log_sectorsize;	/* log2 (Sector size in bytes) */
+> > +	__le32 log_sectors_per_block;	/* log2 (Number of sectors per block */
+> > +	__le32 log_blocksize;	/* log2 (Block size in bytes) */
+> 
+> Why store log_blocksize on disk when it can be calculated from
+> log_sectorsize and log_sectors_per_block?  It may be handy to keep this
+> in the in-memory superblock but keeping it on-disk means you need a
+> consistency check and error code path when loading the superblock.
+> 
+
+Yes, I added this for sanity check of superblock.
+
+> > +struct f2fs_inode {
+> > +	__le16 i_mode;			/* File mode */
+> > +	__le16 i_reserved;		/* Reserved */
+> > +	__le32 i_uid;			/* User ID */
+> > +	__le32 i_gid;			/* Group ID */
+> > +	__le32 i_links;			/* Links count */
+> > +	__le64 i_size;			/* File size in bytes */
+> > +	__le64 i_blocks;		/* File size in bytes */
+> 
+> File size in blocks
+> 
+> > +struct direct_node {
+> > +	__le32 addr[ADDRS_PER_BLOCK];	/* aray of data block address */
+> 
+> s/aray/array/
+> 
+> > +} __packed;
+> > +
+> > +struct indirect_node {
+> > +	__le32 nid[NIDS_PER_BLOCK];	/* aray of data block address */
+> 
+> s/aray/array/
+
+I'll change them.
+Thank you.
+> 
+> Stefan
 
