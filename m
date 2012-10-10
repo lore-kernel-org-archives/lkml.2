@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2JJV1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:27:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56696 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538Ab2JJV11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:27:27 -0400
-Date: Wed, 10 Oct 2012 23:27:25 +0200
-From: Jan Kara <jack@suse.cz>
-To: Viktor Nagy <viktor.nagy@thx4games.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "Darrick J. Wong" <djwong@us.ibm.com>,
-        chris.mason@fusionio.com
-Subject: Re: Linux 3.0+ Disk performance problem - wrong pdflush behaviour
-Message-ID: <20121010212725.GA11642@quack.suse.cz>
-References: <5073F13C.5050807@thx4games.com>
- <20121010165750.GD32581@quack.suse.cz>
- <5075DE39.8090303@thx4games.com>
+	id S1756461Ab2JJV2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:28:44 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:38280 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916Ab2JJV2l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 17:28:41 -0400
+Date: Wed, 10 Oct 2012 14:28:32 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jan Kara <jack@suse.cz>
+cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+In-Reply-To: <20121010085524.GA32581@quack.suse.cz>
+Message-ID: <alpine.LSU.2.00.1210101402310.1939@eggly.anvils>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz> <alpine.LSU.2.00.1210082029190.2237@eggly.anvils> <20121009162107.GE15790@quack.suse.cz> <alpine.LSU.2.00.1210091824390.30802@eggly.anvils> <20121010085524.GA32581@quack.suse.cz>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5075DE39.8090303@thx4games.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-10-12 22:44:41, Viktor Nagy wrote:
-> On 10/10/2012 06:57 PM, Jan Kara wrote:
-> >   Hello,
-> >
-> >On Tue 09-10-12 11:41:16, Viktor Nagy wrote:
-> >>Since Kernel version 3.0 pdflush blocks writes even the dirty bytes
-> >>are well below /proc/sys/vm/dirty_bytes or /proc/sys/vm/dirty_ratio.
-> >>The kernel 2.6.39 works nice.
-> >>
-> >>How this hurt us in the real life: We have a very high performance
-> >>game server where the MySQL have to do many writes along the reads.
-> >>All writes and reads are very simple and have to be very quick. If
-> >>we run the system with Linux 3.2 we get unacceptable performance.
-> >>Now we are stuck with 2.6.32 kernel here because this problem.
-> >>
-> >>I attach the test program wrote by me which shows the problem. The
-> >>program just writes blocks continously to random position to a given
-> >>big file. The write rate limited to 100 MByte/s. In a well-working
-> >>kernel it have to run with constant 100 MBit/s speed for indefinite
-> >>long. The test have to be run on a simple HDD.
-> >>
-> >>Test steps:
-> >>1. You have to use an XFS, EXT2 or ReiserFS partition for the test,
-> >>Ext4 forces flushes periodically. I recommend to use XFS.
-> >>2. create a big file on the test partiton. For 8 GByte RAM you can
-> >>create a 2 GByte file. For 2 GB RAM I recommend to create 500MByte
-> >>file. File creation can be done with this command:  dd if=/dev/zero
-> >>of=bigfile2048M.bin bs=1M count=2048
-> >>3. compile pdflushtest.c: (gcc -o pdflushtest pdflushtest.c)
-> >>4. run pdflushtest: ./pdflushtest --file=/where/is/the/bigfile2048M.bin
-> >>
-> >>In the beginning there can be some slowness even on well-working
-> >>kernels. If you create the bigfile in the same run then it runs
-> >>usually smootly from the beginning.
-> >>
-> >>I don't know a setting of /proc/sys/vm variables which runs this
-> >>test smootly on a 3.2.29 (3.0+) kernel. I think this is a kernel
-> >>bug, because if I have much more "/proc/sys/vm/dirty_bytes" than the
-> >>testfile size the test program should never be blocked.
-> >   I've run your program and I can confirm your results. As a side note,
-> >your test program as a bug as it uses 'int' for offset arithmetics so when
-> >the file is larger than 2 GB, you can hit some problems but for our case
-> >that's not really important.
-> Sorry for the bug and maybe the poor implementation. I am much
-> better in Pascal than in C.
-> (You can not make such mistake in Pascal (FreePascal). Is there a
-> way (compiler switch) in C/C++ to get there a warning?)
-  Actually I somewhat doubt that even FreePascal is able to give you a
-warning that arithmetic can overflow...
+On Wed, 10 Oct 2012, Jan Kara wrote:
+> On Tue 09-10-12 19:19:09, Hugh Dickins wrote:
+> > On Tue, 9 Oct 2012, Jan Kara wrote:
+> > > On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
+> > > > On Mon, 1 Oct 2012, Jan Kara wrote:
+> > > > 
+> > > > > On s390 any write to a page (even from kernel itself) sets architecture
+> > > > > specific page dirty bit. Thus when a page is written to via standard write, HW
+> > > > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
+> > > > > finds the dirty bit and calls set_page_dirty().
+> > > > > 
+> > > > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
+> > > > > filesystems. The bug we observed in practice is that buffers from the page get
+> > > > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
+> > > > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
+> > > > > from xfs_count_page_state().
+> ...
+> > > > > Similar problem can also happen when zero_user_segment() call from
+> > > > > xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+> > > > > hardware dirty bit during writeback, later buffers get freed, and then page
+> > > > > unmapped.
+> > 
+> > Similar problem, or is that the whole of the problem?  Where else does
+> > the page get written to, after clearing page dirty?  (It may not be worth
+> > spending time to answer me, I feel I'm wasting too much time on this.)
+>   I think the devil is in "after clearing page dirty" -
+> clear_page_dirty_for_io() has an optimization that it does not bother
+> transfering pte or storage key dirty bits to page dirty bit when page is
+> not mapped.
 
-> >The regression you observe is caused by commit 3d08bcc8 "mm: Wait for
-> >writeback when grabbing pages to begin a write". At the first sight I was
-> >somewhat surprised when I saw that code path in the traces but later when I
-> >did some math it's clear. What the commit does is that when a page is just
-> >being written out to disk, we don't allow it's contents to be changed and
-> >wait for IO to finish before letting next write to proceed. Now if you have
-> >1 GB file, that's 256000 pages. By the observation from my test machine,
-> >writeback code keeps around 10000 pages in flight to disk at any moment
-> >(this number fluctuates a lot but average is around that number). Your
-> >program dirties about 25600 pages per second. So the probability one of
-> >dirtied pages is a page under writeback is equal to 1 for all practical
-> >purposes (precisely it is 1-(1-10000/256000)^25600). Actually, on average
-> >you are going to hit about 1000 pages under writeback per second which
-> >clearly has a noticeable impact (even single page can have). Pity I didn't
-> >do the math when we were considering those patches.
-> >
-> >There were plans to avoid waiting if underlying storage doesn't need it but
-> >I'm not sure how far that plans got (added a couple of relevant CCs).
-> >Anyway you are about second or third real workload that sees regression due
-> >to "stable pages" so we have to fix that sooner rather than later... Thanks
-> >for your detailed report!
-> >
-> >								Honza
-> Thank you for your response!
-> 
-> I'm very happy that I've found the right people.
-> 
-> We develop a game server which gets very high load in some
-> countries. We are trying to serve as much players as possible with
-> one server.
-> Currently the CPU usage is below the 50% at the peak times. And with
-> the old kernel it runs smoothly. The pdflush runs non-stop on the
-> database disk with ~3 MByte/s write (minimal read).
-> This is at 43000 active sockets, 18000 rq/s, ~40000 packets/s.
-> I think we are still below the theoratical limits of this server...
-> but only if the disk writes are never done in sync.
-> 
-> I will try the 3.2.31 kernel without the problematic commit
-> (3d08bcc8 "mm: Wait for writeback when grabbing pages to begin a
-> write").
-> Is it a good idea? Will it be worse than 2.6.32?
-  Running without that commit should work just fine unless you use
-something exotic like DIF/DIX or similar. Whether things will be worse than
-in 2.6.32 I cannot say. For me, your test program behaves fine without that
-commit but whether your real workload won't hit some other problem is
-always a question. But if you hit another regression I'm interested in
-hearing about it :).
+Right, its "if (page_mkclean) set_page_dirty".
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> On s390 that results in storage key dirty bit set once buffered
+> write modifies the page.
+
+Ah yes, because set_page_dirty does not clean the storage key,
+as perhaps I was expecting (and we wouldn't want to add that if
+everything is working without).
+
+> 
+> BTW there's no other place I'm aware of (and I was looking for some time
+> before I realized that storage key could remain set from buffered write as
+> described above).
+
+> > I guess I'm worrying too much; but it's not crystal clear to me why any
+> > !mapping_cap_account_dirty mapping would necessarily not have the problem.
+>   They can have a problem - if they cared that page_remove_rmap() can mark
+> as dirty a page which was never written to via mmap. So far we are lucky
+> and all !mapping_cap_account_dirty users don't care.
+
+Yes, I think it's good enough: it's a workaround rather than a thorough
+future-proof fix; a workaround with a nice optimization bonus for s390.
+
+> > >   Things should be ok (modulo the ugliness of this condition), right?
+> > 
+> > (Setting aside my reservations above...) That's almost exactly right, but
+> > I think the issue of a racing truncation (which could reset page->mapping
+> > to NULL at any moment) means we have to be a bit more careful.  Usually
+> > we guard against that with page lock, but here we can rely on mapcount.
+> > 
+> > page_mapping(page), with its built-in PageSwapCache check, actually ends
+> > up making the condition look less ugly; and so far as I could tell,
+> > the extra code does get optimized out on x86 (unless CONFIG_DEBUG_VM,
+> > when we are left with its VM_BUG_ON(PageSlab(page))).
+> > 
+> > But please look this over very critically and test (and if you like it,
+> > please adopt it as your own): I'm not entirely convinced yet myself.
+>   OK, I'll push the kernel with your updated patch to our build machines
+> and let it run there for a few days (it took about a day to reproduce the
+> issue originally). Thanks a lot for helping me with this.
+
+And thank you for explaining it repeatedly for me.
+
+I expect you're most interested in testing the XFS end of it; but if
+you've time to check the swap/tmpfs aspect too, fsx on tmpfs while
+heavily swapping should do it.
+
+But perhaps these machines aren't much into heavy swapping.  Now, 
+if Martin would send me a nice little zSeries netbook for Xmas,
+I could then test that end of it myself ;)
+
+I've just arrived at the conclusion that page migration does _not_
+have a problem with transferring the dirty storage key: I had been
+thinking that your testing might stumble on that issue, and need a
+further patch, but I'll explain in other mail why now I think not.
+
+Hugh
