@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab2JJWzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:55:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58128 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757869Ab2JJWzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757867Ab2JJWzM (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Oct 2012 18:55:12 -0400
-X-Sasl-enc: 81hHIjG4AaRagE2lW/HIowFh4DK1DRMP25yANFjVOM74 1349909711
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54989 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757663Ab2JJWzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 18:55:04 -0400
+X-Sasl-enc: 9eYl76DYyl4PV/OSC/Si6ZzKmGyW9gezjvIKynZQRbM1 1349909703
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
+        Antonio Quartulli <ordex@autistici.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 052/133] ipv4: raw: fix icmp_filter()
-Date: Thu, 11 Oct 2012 07:51:18 +0900
-Message-Id: <20121010224903.875294741@linuxfoundation.org>
+Subject: [ 042/133] 8021q: fix mac_len recomputation in vlan_untag()
+Date: Thu, 11 Oct 2012 07:51:08 +0900
+Message-Id: <20121010224902.064785256@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,51 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Antonio Quartulli <ordex@autistici.org>
 
-[ Upstream commit ab43ed8b7490cb387782423ecf74aeee7237e591 ]
+[ Upstream commit 5316cf9a5197eb80b2800e1acadde287924ca975 ]
 
-icmp_filter() should not modify its input, or else its caller
-would need to recompute ip_hdr() if skb->head is reallocated.
+skb_reset_mac_len() relies on the value of the skb->network_header pointer,
+therefore we must wait for such pointer to be recalculated before computing
+the new mac_len value.
 
-Use skb_header_pointer() instead of pskb_may_pull() and
-change the prototype to make clear both sk and skb are const.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/raw.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ net/8021q/vlan_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -131,18 +131,20 @@ found:
-  *	0 - deliver
-  *	1 - block
-  */
--static __inline__ int icmp_filter(struct sock *sk, struct sk_buff *skb)
-+static int icmp_filter(const struct sock *sk, const struct sk_buff *skb)
- {
--	int type;
-+	struct icmphdr _hdr;
-+	const struct icmphdr *hdr;
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -105,7 +105,6 @@ static struct sk_buff *vlan_reorder_head
+ 		return NULL;
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+-	skb_reset_mac_len(skb);
+ 	return skb;
+ }
  
--	if (!pskb_may_pull(skb, sizeof(struct icmphdr)))
-+	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
-+				 sizeof(_hdr), &_hdr);
-+	if (!hdr)
- 		return 1;
+@@ -139,6 +138,8 @@ struct sk_buff *vlan_untag(struct sk_buf
  
--	type = icmp_hdr(skb)->type;
--	if (type < 32) {
-+	if (hdr->type < 32) {
- 		__u32 data = raw_sk(sk)->filter.data;
+ 	skb_reset_network_header(skb);
+ 	skb_reset_transport_header(skb);
++	skb_reset_mac_len(skb);
++
+ 	return skb;
  
--		return ((1 << type) & data) != 0;
-+		return ((1U << hdr->type) & data) != 0;
- 	}
- 
- 	/* Do not block unknown ICMP types */
+ err_free:
 
 
