@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab2JKAkS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:40:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42153 "EHLO
+	id S932861Ab2JKAlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:41:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52297 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932832Ab2JKAOr (ORCPT
+	by vger.kernel.org with ESMTP id S932779Ab2JKAO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:14:47 -0400
-X-Sasl-enc: 56PMs4RACuiqPUpbVoBWqMj6jw04l9+ZWvoReTXXUcgY 1349914486
+	Wed, 10 Oct 2012 20:14:28 -0400
+X-Sasl-enc: Ea3e15vISu0NHKsVjh3yF3Y9rdVwHSytEvJtyqjU0gJz 1349914466
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, Parisc <linux-parisc@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 102/133] parisc: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:52:08 +0900
-Message-Id: <20121010224912.874143177@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 098/133] drm/i915: call drm_handle_vblank before finish_page_flip
+Date: Thu, 11 Oct 2012 07:52:04 +0900
+Message-Id: <20121010224912.153013090@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,60 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit fbe752188d5589e7fcbb8e79824e560f77dccc92 upstream.
+commit 74d44445afb9f50126eba052adeb89827cee88f3 upstream.
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+... since finish_page_flip needs the vblank timestamp generated
+in drm_handle_vblank. Somehow all the gmch platforms get it right,
+but all the pch platform irq handlers get is wrong. Hooray for copy&
+pasting!
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
+Currently this gets papered over by a gross hack in finish_page_flip.
+A second patch will remove that.
 
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
+Note that without this, the new timestamp sanity checks in flip_test
+occasionally get tripped up, hence the cc: stable tag.
 
-Add this missing pair of calls in the parisc's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Parisc <linux-parisc@vger.kernel.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Reviewed-by: mario.kleiner@tuebingen.mpg.de
+Tested-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/process.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/i915_irq.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/arch/parisc/kernel/process.c
-+++ b/arch/parisc/kernel/process.c
-@@ -48,6 +48,7 @@
- #include <linux/unistd.h>
- #include <linux/kallsyms.h>
- #include <linux/uaccess.h>
-+#include <linux/rcupdate.h>
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -605,12 +605,12 @@ static irqreturn_t ivybridge_irq_handler
+ 			intel_opregion_gse_intr(dev);
  
- #include <asm/io.h>
- #include <asm/asm-offsets.h>
-@@ -69,8 +70,10 @@ void cpu_idle(void)
+ 		for (i = 0; i < 3; i++) {
++			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
++				drm_handle_vblank(dev, i);
+ 			if (de_iir & (DE_PLANEA_FLIP_DONE_IVB << (5 * i))) {
+ 				intel_prepare_page_flip(dev, i);
+ 				intel_finish_page_flip_plane(dev, i);
+ 			}
+-			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
+-				drm_handle_vblank(dev, i);
+ 		}
  
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched())
- 			barrier();
-+		rcu_idle_exit();
- 		schedule_preempt_disabled();
- 		check_pgt_cache();
+ 		/* check event from PCH */
+@@ -692,6 +692,12 @@ static irqreturn_t ironlake_irq_handler(
+ 	if (de_iir & DE_GSE)
+ 		intel_opregion_gse_intr(dev);
+ 
++	if (de_iir & DE_PIPEA_VBLANK)
++		drm_handle_vblank(dev, 0);
++
++	if (de_iir & DE_PIPEB_VBLANK)
++		drm_handle_vblank(dev, 1);
++
+ 	if (de_iir & DE_PLANEA_FLIP_DONE) {
+ 		intel_prepare_page_flip(dev, 0);
+ 		intel_finish_page_flip_plane(dev, 0);
+@@ -702,12 +708,6 @@ static irqreturn_t ironlake_irq_handler(
+ 		intel_finish_page_flip_plane(dev, 1);
  	}
+ 
+-	if (de_iir & DE_PIPEA_VBLANK)
+-		drm_handle_vblank(dev, 0);
+-
+-	if (de_iir & DE_PIPEB_VBLANK)
+-		drm_handle_vblank(dev, 1);
+-
+ 	/* check event from PCH */
+ 	if (de_iir & DE_PCH_EVENT) {
+ 		if (pch_iir & hotplug_mask)
 
 
