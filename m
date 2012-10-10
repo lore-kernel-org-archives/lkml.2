@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab2JJUfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:35:04 -0400
-Received: from foo.stuge.se ([212.116.89.98]:42226 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757192Ab2JJUfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:35:01 -0400
-Message-ID: <20121010203459.20663.qmail@stuge.se>
-Date: Wed, 10 Oct 2012 22:34:59 +0200
-From: Peter Stuge <peter@stuge.se>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION: usbdevfs:
-	Use-scatter-gather-lists-for-large-bulk-transfers
-Mail-Followup-To: Henrik Rydberg <rydberg@euromail.se>,
-	Hans de Goede <hdegoede@redhat.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20121010203118.GA792@polaris.bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010203118.GA792@polaris.bitmath.org>
+	id S1757330Ab2JJUfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:35:43 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:35379 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757180Ab2JJUfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 16:35:40 -0400
+Date: Wed, 10 Oct 2012 13:34:59 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Miller <davem@davemloft.net>,
+        Saurabh Mohan <saurabh.mohan@vyatta.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] ip tunnel flag byte order issue
+Message-ID: <20121010133459.5271d091@nehalam.linuxnetplumber.net>
+In-Reply-To: <1349900796.2691.32.camel@bwh-desktop.uk.solarflarecom.com>
+References: <20121010120630.5e9f2c2c@nehalam.linuxnetplumber.net>
+	<1349900796.2691.32.camel@bwh-desktop.uk.solarflarecom.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hej Henrik,
+On Wed, 10 Oct 2012 21:26:36 +0100
+Ben Hutchings <bhutchings@solarflare.com> wrote:
 
-Henrik Rydberg wrote:
-> commit 3d97ff63f8997761f12c8fbe8082996c6eeaba1a
-> Author: Hans de Goede <hdegoede@redhat.com>
-> Date:   Wed Jul 4 09:18:03 2012 +0200
+> On Wed, 2012-10-10 at 12:06 -0700, Stephen Hemminger wrote:
+> > Sparse found a real problem with the ABI for tunnelling.
+> > 
+> > The SIT and VTI tunnel ioctl's both overload the i_flags field in the
+> > ip_tunnel parameters structure. This field is defined as big endian
+> > (be16) and the various GRE_XXX macros do the necessary byte swapping.
+> > 
+> > The problem is that both SIT and VTI are using an additional flag bit
+> > that is defined in host byte order, and is then or'd in. It happens to
+> > work because both possible locations hit holes in the current usage of
+> > GRE.  For big endian cpu's it overlaps the GRE_VERSION which is always
+> > zero, and for little endian it overlaps the GRE recursion field also
+> > always zero.
 > 
->     usbdevfs: Use scatter-gather lists for large bulk transfers
->     
-> breaks an usb programming cable over here. The problem is reported as
-> "bulk tranfer failed" [sic] by the tool, and bisection leads to this
-> commit. Reverting on top of 3.6 solves it for me.
+> Why do these fields exist if they're always going to be 0?
+
+They exist in the RFC. GRE implementation mixes bits on the wire
+with bits from ioctl().
+
 > 
-> I am happy to test alternatives.
+> > Having the field in different places on different CPU architectures
+> > was a mistake. The problem is fixing it will break the ABI on one or
+> > the other architecture.  I choose to break big endian since it the
+> > minority.
+> 
+> Or we can define the 'flag' to have both bits set (0x0101, with a
+> __cpu_to_be16 to keep sparse happy) while accepting either set on input.
+> 
+> > Also both VTI and SIT are overloading the same bit which is an
+> > accident waiting to happen.  Since VTI is newer, I propose giving a
+> > different bit to VTI.
+> 
+> Indeed VTI is new in 3.6, so there is still a short window in which it's
+> fairly safe to tweak its ABI.
+> 
+> > The other alternative is keeping the same ABI, but putting a big note
+> > as to why it works in spite of our stupidity.
+> [...]
+> 
+> Does it even matter that different tunnel types have different meanings
+> for flags?
+> 
+> Ben.
+> 
 
-In order to make full use of the new kernel commit you also need
-changes in libusb, if the tool uses libusb, but I agree that the
-kernel change must under no circumstance cause existing userland
-software to regress.
-
-What is the programming cable and software that uses it?
-
-
-//Peter
