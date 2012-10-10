@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab2JJTK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:10:59 -0400
-Received: from adoakley.name ([46.4.104.242]:53421 "EHLO ado.is-a-geek.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757159Ab2JJTK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:10:58 -0400
-Date: Wed, 10 Oct 2012 20:11:31 +0100
-From: Andrew Oakley <andrew@ado.is-a-geek.net>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] IOMMU Updates for v3.7-rc1
-Message-ID: <20121010201131.091d5a1f@ado-amd-gentoo.moore.slainvet.net>
-In-Reply-To: <20121010133249.GC16151@8bytes.org>
-References: <20121005152312.GA4649@8bytes.org>
-	<20121009224532.1e515664@ado-amd-gentoo.moore.slainvet.net>
-	<20121010073022.GB16151@8bytes.org>
-	<20121010095823.140fdd98@ado-amd-gentoo.moore.slainvet.net>
-	<20121010133249.GC16151@8bytes.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755891Ab2JJTQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:16:59 -0400
+Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:50460 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753731Ab2JJTQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 15:16:58 -0400
+X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 15:16:58 EDT
+Date: Wed, 10 Oct 2012 21:04:37 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 5/6] ARM: ux500: Enable SDI4 port on the u9540 when
+ booting with Device Tree
+Message-ID: <20121010190437.GU12801@game.jcrosoft.org>
+References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+ <1349882335-6786-6-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349882335-6786-6-git-send-email-lee.jones@linaro.org>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 14362260686850468863
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrudelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012 15:32:49 +0200
-Joerg Roedel <joro@8bytes.org> wrote:
-
-> On Wed, Oct 10, 2012 at 09:58:23AM +0100, Andrew Oakley wrote:
-> > On Wed, 10 Oct 2012 09:30:22 +0200
-> > Joerg Roedel <joro@8bytes.org> wrote:
+On 16:18 Wed 10 Oct     , Lee Jones wrote:
+> Here we add the device node for the SDI4 (MMC) port to the u9540
+> Device Tree source file. This will allow successful probing of
+> the internal MMC storage device when booting with DT enabled.
 > 
-> > AMD-Vi:   DEV_SPECIAL(IOAPIC[2])		devid: 00:00.1
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/u9540.dts |   12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
 > 
-> Okay, got it. This is the problem. The device id seems to be wrong.
-> The BIOS should configure your IOAPIC as device id 00:14.0 and not
-> 00:00.1. The current checking code does not check for this particular
-> situation. But the attached diff should change that. Can you please
-> test it and reports if the machine boots for you? Interrupt remapping
-> will be disabled automatically, though.
+> diff --git a/arch/arm/boot/dts/u9540.dts b/arch/arm/boot/dts/u9540.dts
+> index 28efe20..2dade76 100644
+> --- a/arch/arm/boot/dts/u9540.dts
+> +++ b/arch/arm/boot/dts/u9540.dts
+> @@ -21,7 +21,6 @@
+>  	};
+>  
+>  	soc-u9500 {
+> -
+why?
+>  		uart@80120000 {
+>  			status = "okay";
+>  		};
+> @@ -33,5 +32,16 @@
+>  		uart@80007000 {
+>  			status = "okay";
+>  		};
+> +
+> +		// On-board eMMC
+no c++ comment
+> +		sdi4_per2@80114000 {
+> +			arm,primecell-periphid = <0x10480180>;
+> +		        max-frequency = <50000000>;
+> +			bus-width = <8>;
+> +			mmc-cap-mmc-highspeed;
+> +			vmmc-supply = <&ab8500_ldo_aux2_reg>;
+you need add the pinctrl here
 
-Yes, that detects the problem and disables the interrupt remapping (the
-kernel boots).
-
-If I modify the devid for the IOAPIC in init_iommu_from_acpi then it
-also seems to work.  I haven't managed to get vfio/qemu working yet but
-it seems to be unrelated ("Invalid ROM contents", same thing happens
-when I try to dump the rom with stable kernels).
-
-Thanks
-
--- 
-Andrew Oakley
+Best Regards,
+J.
