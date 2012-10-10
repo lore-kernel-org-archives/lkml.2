@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2JJRHg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:07:36 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:9065 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab2JJRHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:07:31 -0400
-Message-id: <5075AB4F.3030709@samsung.com>
-Date: Wed, 10 Oct 2012 19:07:27 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912
- Thunderbird/15.0.1
-MIME-version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        kernel-janitors@vger.kernel.org, Julia.Lawall@lip6.fr,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/14] drivers/media/v4l2-core/videobuf2-core.c: fix error
- return code
-References: <1346945041-26676-10-git-send-email-peter.senna@gmail.com>
- <20121006081742.48d5e5e8@infradead.org>
- <CA+MoWDp6nMccVQxm93ht-4vxYN4HTACW+H-Xa9onaykwQFwyWw@mail.gmail.com>
-In-reply-to: <CA+MoWDp6nMccVQxm93ht-4vxYN4HTACW+H-Xa9onaykwQFwyWw@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	id S1756625Ab2JJSAj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 14:00:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755697Ab2JJSAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 14:00:37 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <5075B2F4.60708@pengutronix.de>
+References: <5075B2F4.60708@pengutronix.de> <30687.1349789402@warthog.procyon.org.uk>
+From: David Howells <dhowells@redhat.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: dhowells@redhat.com, socketcan@hartkopp.net, linux-can@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [GIT PULL] Disintegrate UAPI for can
+Date: Wed, 10 Oct 2012 19:00:24 +0100
+Message-ID: <27643.1349892024@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Marc Kleine-Budde <mkl@pengutronix.de> wrote:
 
-On 10/10/2012 06:47 PM, Peter Senna Tschudin wrote:
->>> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
->>> index 4da3df6..f6bc240 100644
->>> --- a/drivers/media/v4l2-core/videobuf2-core.c
->>> +++ b/drivers/media/v4l2-core/videobuf2-core.c
->>> @@ -1876,8 +1876,10 @@ static int __vb2_init_fileio(struct vb2_queue *q, int read)
->>>        */
->>>       for (i = 0; i < q->num_buffers; i++) {
->>>               fileio->bufs[i].vaddr = vb2_plane_vaddr(q->bufs[i], 0);
->>> -             if (fileio->bufs[i].vaddr == NULL)
->>> +             if (fileio->bufs[i].vaddr == NULL) {
->>> +                     ret = -EFAULT;
->>>                       goto err_reqbufs;
->>> +             }
->>
->> Had you test this patch? I suspect it breaks the driver, as there are failures under
->> streaming handling that are acceptable, as it may indicate that userspace was not
->> able to handle all queued frames in time. On such cases, what the Kernel does is to
->> just discard the frame. Userspace is able to detect it, by looking inside the timestamp
->> added on each frame.
+> On 10/09/2012 03:30 PM, David Howells wrote:
+> > Can you merge the following branch into the can tree please.
+> > 
+> > This is to complete part of the Userspace API (UAPI) disintegration for which
+> > the preparatory patches were pulled recently.  After these patches, userspace
+> > headers will be segregated into:
+> > 
+> > 	include/uapi/linux/.../foo.h
+> > 
+> > for the userspace interface stuff, and:
+> > 
+> > 	include/linux/.../foo.h
+> > 
+> > for the strictly kernel internal stuff.
 > 
-> No, I have not tested it. This was the only place the function was
-> returning non negative value for error path, so looked as a bug to me.
-> May I add a comment about returning non-negative value is intended
-> there?
+> Nice work David. The upstream for can-next is David Miller's net-next
+> tree. He doesn't like if I pull unrelated stuff into my tree, so I'm
+> going to cherry pick your patch. This is not yet possible, as net-next
+> doesn't include the latest patches from the 3.7 merge window, so that
+> compilation breaks. After the merge window closes David Miller merges
+> back the latest changes to net-next. I'll postpone your patch until
+> then, this means the code will go into v3.8. I'm not familiar with the
+> UAPI conversion, should your patch go via linux-can and David's net into
+> v3.7?
 
-There are several drivers depending on core modules like videobuf2. By making
-random changes for something that _looks like_ a bug to you and not verifying
-it by testing with at least one driver you are potentially causing trouble to
-developers that are already busy fixing real bugs or working on new features.
+It's okay for the patch to go into 3.8 if that is easier for you.  As it's
+scripted, I can regenerate your branch after -rc1 if that helps too.
 
-I appreciate your help but I also don't want to see _any_ untested, not trivial
-patches for core modules like videobuf2 being applied.
-
---
-Thanks,
-Sylwester
-
+David
