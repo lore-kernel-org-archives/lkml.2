@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab2JJWyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41717 "EHLO
+	id S1757445Ab2JJWyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:12 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35222 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757583Ab2JJWyD (ORCPT
+	by vger.kernel.org with ESMTP id S1757566Ab2JJWx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:03 -0400
-X-Sasl-enc: h627KTho3tdWXRVE0fI1ZIjOZv/qxgQemb/k2ykd1J3X 1349909642
+	Wed, 10 Oct 2012 18:53:58 -0400
+X-Sasl-enc: XxLoUe6ipiKix2auy4OdyrWa2WlpKqPtILfQJdzqRhR0 1349909637
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Michal Schmidt <mschmidt@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 027/133] xfrm: Workaround incompatibility of ESN and async crypto
-Date: Thu, 11 Oct 2012 07:50:53 +0900
-Message-Id: <20121010224859.360130529@linuxfoundation.org>
+Subject: [ 025/133] bnx2x: fix rx checksum validation for IPv6
+Date: Thu, 11 Oct 2012 07:50:51 +0900
+Message-Id: <20121010224858.985674765@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,103 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Michal Schmidt <mschmidt@redhat.com>
 
-[ Upstream commit 3b59df46a449ec9975146d71318c4777ad086744 ]
+[ Upstream commit e488921f44765e8ab6c48ca35e3f6b78df9819df ]
 
-ESN for esp is defined in RFC 4303. This RFC assumes that the
-sequence number counters are always up to date. However,
-this is not true if an async crypto algorithm is employed.
+Commit d6cb3e41 "bnx2x: fix checksum validation" caused a performance
+regression for IPv6. Rx checksum offload does not work. IPv6 packets
+are passed to the stack with CHECKSUM_NONE.
 
-If the sequence number counters are not up to date on sequence
-number check, we may incorrectly update the upper 32 bit of
-the sequence number. This leads to a DOS.
+The hardware obviously cannot perform IP checksum validation for IPv6,
+because there is no checksum in the IPv6 header. This should not prevent
+us from setting CHECKSUM_UNNECESSARY.
 
-We workaround this by comparing the upper sequence number,
-(used for authentication) with the upper sequence number
-computed after the async processing. We drop the packet
-if these numbers are different.
+Tested on BCM57711.
 
-To do this, we introduce a recheck function that does this
-check in the ESN case.
-
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Eilon Greenstein <eilong@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/xfrm.h     |    3 +++
- net/xfrm/xfrm_input.c  |    2 +-
- net/xfrm/xfrm_replay.c |   15 +++++++++++++++
- 3 files changed, 19 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -269,6 +269,9 @@ struct xfrm_replay {
- 	int	(*check)(struct xfrm_state *x,
- 			 struct sk_buff *skb,
- 			 __be32 net_seq);
-+	int	(*recheck)(struct xfrm_state *x,
-+			   struct sk_buff *skb,
-+			   __be32 net_seq);
- 	void	(*notify)(struct xfrm_state *x, int event);
- 	int	(*overflow)(struct xfrm_state *x, struct sk_buff *skb);
- };
---- a/net/xfrm/xfrm_input.c
-+++ b/net/xfrm/xfrm_input.c
-@@ -212,7 +212,7 @@ resume:
- 		/* only the first xfrm gets the encap type */
- 		encap_type = 0;
- 
--		if (async && x->repl->check(x, skb, seq)) {
-+		if (async && x->repl->recheck(x, skb, seq)) {
- 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
- 			goto drop_unlock;
- 		}
---- a/net/xfrm/xfrm_replay.c
-+++ b/net/xfrm/xfrm_replay.c
-@@ -420,6 +420,18 @@ err:
- 	return -EINVAL;
- }
- 
-+static int xfrm_replay_recheck_esn(struct xfrm_state *x,
-+				   struct sk_buff *skb, __be32 net_seq)
-+{
-+	if (unlikely(XFRM_SKB_CB(skb)->seq.input.hi !=
-+		     htonl(xfrm_replay_seqhi(x, net_seq)))) {
-+			x->stats.replay_window++;
-+			return -EINVAL;
-+	}
-+
-+	return xfrm_replay_check_esn(x, skb, net_seq);
-+}
-+
- static void xfrm_replay_advance_esn(struct xfrm_state *x, __be32 net_seq)
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -620,14 +620,16 @@ static int bnx2x_alloc_rx_data(struct bn
+ static void bnx2x_csum_validate(struct sk_buff *skb, union eth_rx_cqe *cqe,
+ 				struct bnx2x_fastpath *fp)
  {
- 	unsigned int bitnr, nr, i;
-@@ -479,6 +491,7 @@ static void xfrm_replay_advance_esn(stru
- static struct xfrm_replay xfrm_replay_legacy = {
- 	.advance	= xfrm_replay_advance,
- 	.check		= xfrm_replay_check,
-+	.recheck	= xfrm_replay_check,
- 	.notify		= xfrm_replay_notify,
- 	.overflow	= xfrm_replay_overflow,
- };
-@@ -486,6 +499,7 @@ static struct xfrm_replay xfrm_replay_le
- static struct xfrm_replay xfrm_replay_bmp = {
- 	.advance	= xfrm_replay_advance_bmp,
- 	.check		= xfrm_replay_check_bmp,
-+	.recheck	= xfrm_replay_check_bmp,
- 	.notify		= xfrm_replay_notify_bmp,
- 	.overflow	= xfrm_replay_overflow_bmp,
- };
-@@ -493,6 +507,7 @@ static struct xfrm_replay xfrm_replay_bm
- static struct xfrm_replay xfrm_replay_esn = {
- 	.advance	= xfrm_replay_advance_esn,
- 	.check		= xfrm_replay_check_esn,
-+	.recheck	= xfrm_replay_recheck_esn,
- 	.notify		= xfrm_replay_notify_bmp,
- 	.overflow	= xfrm_replay_overflow_esn,
- };
+-	/* Do nothing if no IP/L4 csum validation was done */
+-
++	/* Do nothing if no L4 csum validation was done.
++	 * We do not check whether IP csum was validated. For IPv4 we assume
++	 * that if the card got as far as validating the L4 csum, it also
++	 * validated the IP csum. IPv6 has no IP csum.
++	 */
+ 	if (cqe->fast_path_cqe.status_flags &
+-	    (ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG |
+-	     ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG))
++	    ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG)
+ 		return;
+ 
+-	/* If both IP/L4 validation were done, check if an error was found. */
++	/* If L4 validation was done, check if an error was found. */
+ 
+ 	if (cqe->fast_path_cqe.type_error_flags &
+ 	    (ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG |
 
 
