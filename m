@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2JJNxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:53:37 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47567 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab2JJNxe (ORCPT
+	id S1756525Ab2JJNix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:38:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7493 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab2JJNin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:53:34 -0400
-Date: Wed, 10 Oct 2012 09:41:45 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86, mm: Don't clear page table if next range is ram
-Message-ID: <20121010134139.GA4005@phenom.dumpdata.com>
-References: <CAE9FiQV_xVsHN_+6ui_Vgnn6tk8UBOEKL+0XnoEN9VLw3gcOXA@mail.gmail.com>
- <1349509469-11475-1-git-send-email-yinghai@kernel.org>
- <1349509469-11475-3-git-send-email-yinghai@kernel.org>
- <20121009154611.GC7639@phenom.dumpdata.com>
- <CAE9FiQV2r6GsuxkceBrR7Tpv40SwQku0Z+ZtMBbNKZ9BJgvUXg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQV2r6GsuxkceBrR7Tpv40SwQku0Z+ZtMBbNKZ9BJgvUXg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Oct 2012 09:38:43 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QI34DmUYjSIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HZW87zcCyfsA:10 a=VwQbUJbxAAAA:8 a=bndTQQZpn-juXqhEl_8A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121010133842.940659869@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 10 Oct 2012 09:38:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 3/6] mm: page_alloc: Use local_lock_on() instead of plain spinlock
+References: <20121010133801.331863565@goodmis.org>
+Content-Disposition: inline; filename=0003-mm-page_alloc-Use-local_lock_on-instead-of-plain-spi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 06:00:12PM -0700, Yinghai Lu wrote:
-> On Tue, Oct 9, 2012 at 8:46 AM, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
-> >> +                         !e820_any_mapped(addr & PAGE_MASK, next, 0))
-> >
-> > What is the 0 parameter for?
-> 
-> any type
+From: Thomas Gleixner <tglx@linutronix.de>
 
-OK, which means that it either should have a #define for it, or at least
-a comment, like:
+The plain spinlock while sufficient does not update the local_lock
+internals. Use a proper local_lock function instead to ease debugging.
 
-0 /* any type */
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/locallock.h |   11 +++++++++++
+ mm/page_alloc.c           |    4 ++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-as this would make it clear at first glance what it is - without having
-to dive in e820_any_mapped function to determine that.
+diff --git a/include/linux/locallock.h b/include/linux/locallock.h
+index 0161fbb..f1804a3 100644
+--- a/include/linux/locallock.h
++++ b/include/linux/locallock.h
+@@ -137,6 +137,12 @@ static inline int __local_lock_irqsave(struct local_irq_lock *lv)
+ 		_flags = __get_cpu_var(lvar).flags;			\
+ 	} while (0)
+ 
++#define local_lock_irqsave_on(lvar, _flags, cpu)			\
++	do {								\
++		__local_lock_irqsave(&per_cpu(lvar, cpu));		\
++		_flags = per_cpu(lvar, cpu).flags;			\
++	} while (0)
++
+ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
+ 					    unsigned long flags)
+ {
+@@ -156,6 +162,11 @@ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
+ 			put_local_var(lvar);				\
+ 	} while (0)
+ 
++#define local_unlock_irqrestore_on(lvar, flags, cpu)			\
++	do {								\
++		__local_unlock_irqrestore(&per_cpu(lvar, cpu), flags);	\
++	} while (0)
++
+ #define local_spin_trylock_irq(lvar, lock)				\
+ 	({								\
+ 		int __locked;						\
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 47d939e..c645e07 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -227,9 +227,9 @@ static DEFINE_LOCAL_IRQ_LOCK(pa_lock);
+ 
+ #ifdef CONFIG_PREEMPT_RT_BASE
+ # define cpu_lock_irqsave(cpu, flags)		\
+-	spin_lock_irqsave(&per_cpu(pa_lock, cpu).lock, flags)
++	local_lock_irqsave_on(pa_lock, flags, cpu)
+ # define cpu_unlock_irqrestore(cpu, flags)		\
+-	spin_unlock_irqrestore(&per_cpu(pa_lock, cpu).lock, flags)
++	local_unlock_irqrestore_on(pa_lock, flags, cpu)
+ #else
+ # define cpu_lock_irqsave(cpu, flags)		local_irq_save(flags)
+ # define cpu_unlock_irqrestore(cpu, flags)	local_irq_restore(flags)
+-- 
+1.7.10.4
 
-> 
-> if type != 0, the will only check entries with same type.
-> 
-> int
-> e820_any_mapped(u64 start, u64 end, unsigned type)
-> {
->         int i;
-> 
->         for (i = 0; i < e820.nr_map; i++) {
->                 struct e820entry *ei = &e820.map[i];
-> 
->                 if (type && ei->type != type)
->                         continue;
->                 if (ei->addr >= end || ei->addr + ei->size <= start)
->                         continue;
->                 return 1;
->         }
->         return 0;
-> }
-> 
+
