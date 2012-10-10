@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab2JJQ3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab2JJQ3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:29:06 -0400
-Date: Wed, 10 Oct 2012 12:21:44 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
-Message-ID: <20121010152144.GA29776@amt.cnet>
-References: <50716EE0.6010504@linux.vnet.ibm.com>
- <50716FF7.1060704@linux.vnet.ibm.com>
+	id S932344Ab2JJO7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:59:49 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62895 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2JJO7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 10:59:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50716FF7.1060704@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121010134854.GC4005@phenom.dumpdata.com>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+	<1349827115-16600-5-git-send-email-yinghai@kernel.org>
+	<20121010134854.GC4005@phenom.dumpdata.com>
+Date: Wed, 10 Oct 2012 07:59:41 -0700
+X-Google-Sender-Auth: lsQ0Zm9l8Sfl4Tm4WKf2zD9dTWc
+Message-ID: <CAE9FiQWZqE0KWE4-y8c+Ybcy_d-bX4hw4iP-GvPW4rpzFUqu1g@mail.gmail.com>
+Subject: Re: [PATCH 4/7] x86, mm: only keep initial mapping for ram
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 08:05:11PM +0800, Xiao Guangrong wrote:
-> The only difference between FNAME(update_pte) and FNAME(pte_prefetch)
-> is that the former is allowed to prefetch gfn from dirty logged slot,
-> so introduce a common function to prefetch spte
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/paging_tmpl.h |   55 +++++++++++++++++++------------------------
->  1 files changed, 24 insertions(+), 31 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 36a80ed..f887e4c 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -305,31 +305,43 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
->  					addr, access);
->  }
-> 
-> -static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> -			      u64 *spte, const void *pte)
-> +static bool
-> +FNAME(prefetch_gpte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> +		     u64 *spte, pt_element_t gpte, bool no_dirty_log)
->  {
-> -	pt_element_t gpte;
->  	unsigned pte_access;
-> +	gfn_t gfn;
->  	pfn_t pfn;
-> 
-> -	gpte = *(const pt_element_t *)pte;
->  	if (prefetch_invalid_gpte(vcpu, sp, spte, gpte))
-> -		return;
-> +		return false;
-> 
->  	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
-> +
-> +	gfn = gpte_to_gfn(gpte);
->  	pte_access = sp->role.access & gpte_access(vcpu, gpte);
->  	protect_clean_gpte(&pte_access, gpte);
-> -	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
-> +	pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
-> +			no_dirty_log && (pte_access & ACC_WRITE_MASK));
+On Wed, Oct 10, 2012 at 6:48 AM, Konrad Rzeszutek Wilk
+<konrad@kernel.org> wrote:
+> On Tue, Oct 09, 2012 at 04:58:32PM -0700, Yinghai Lu wrote:
+>> 0 mean any e820 type will be kept, and only hole is removed.
+>>
+>> change to E820_RAM and E820_RESERVED_KERN only.
+>>
+>
+> This is good candidate for squashing in-to the previous patch, with
+> verbose explanation why you care only about those two types.
 
-Is this a bugfix?
+two patches should be more safe.
 
-
+new series will make sure only map RAM/RESEVED_KERN, so we should only
+keep initial page table with those types.
