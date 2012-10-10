@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab2JJRyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:54:10 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4751 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200Ab2JJRxk (ORCPT
+	id S1756374Ab2JJNgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:36:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8859 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab2JJNf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:53:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 10 Oct 2012 10:42:36 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <gregkh@linuxfoundation.org>,
-        <sameo@linux.intel.com>
-CC: <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 4/5] regmap: add API to get irq_domain from regmap irq
-Date: Wed, 10 Oct 2012 22:49:04 +0530
-Message-ID: <1349889545-21517-5-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
-References: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 10 Oct 2012 09:35:26 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=iyPaz_ANtx0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ICDzjrYLAOYA:10 a=VwQbUJbxAAAA:8 a=koDLa-P1KwdDXAu4Kc4A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121010133523.816809880@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 10 Oct 2012 09:34:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 6/8] sched: Better debug output for might sleep
+References: <20121010133406.053812290@goodmis.org>
+Content-Disposition: inline; filename=0006-sched-Better-debug-output-for-might-sleep.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add API regmap_irq_get_irq_domain() for getting the
-irq domain from regmap irq. The irq domain created on
-result of regmap_add_irq_chip() from driver.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-This API is useful in mfd driver when driver add mfd sub devices.
-The sub devices IRQs can be passed through IORESOURCE_IRQ and it
-need to be mapped properly  with device irq domain. The
-mfd_add_devices() creates mapping when adding sub devices and for
-this it is require to have irq domain.
+might sleep can tell us where interrupts have been disabled, but we
+have no idea what disabled preemption. Add some debug infrastructure.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-Changes from V1:
-- Add stubbing of new API.
-- Add empty line between paragraph.
+ include/linux/sched.h |    4 ++++
+ kernel/sched/core.c   |   23 +++++++++++++++++++++--
+ 2 files changed, 25 insertions(+), 2 deletions(-)
 
- drivers/base/regmap/regmap-irq.c |   16 ++++++++++++++++
- include/linux/regmap.h           |    8 ++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 5b6b1d8..70bce5f 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -458,3 +458,19 @@ int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq)
- 	return irq_create_mapping(data->domain, irq);
- }
- EXPORT_SYMBOL_GPL(regmap_irq_get_virq);
-+
-+/**
-+ * regmap_irq_get_irq_domain(): Return IRQ domain for of the interrupt added.
-+ *
-+ * Useful for drivers who locally create mapping from irq_domain which is
-+ * created on result of the call regmap_add_irq_chip().
-+ *
-+ * @data: regmap_irq controller to operate on.
-+ */
-+struct irq_domain *regmap_irq_get_irq_domain(struct regmap_irq_chip_data *data)
-+{
-+	if (data)
-+		return data->domain;
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(regmap_irq_get_irq_domain);
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index e3bcc3f..d3216a7 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -317,6 +317,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
- int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
- int regmap_irq_get_virq(struct regmap_irq_chip_data *data, int irq);
-+struct irq_domain *regmap_irq_get_irq_domain(struct regmap_irq_chip_data *data);
- 
- #else
- 
-@@ -433,6 +434,13 @@ static inline struct regmap *dev_get_regmap(struct device *dev,
- 	return NULL;
- }
- 
-+static inline struct irq_domain *regmap_irq_get_irq_domain(
-+			struct regmap_irq_chip_data *data)
-+{
-+	WARN_ONCE(1, "regmap API is disabled");
-+	return NULL;
-+}
-+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6f342d8..f291347 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1655,6 +1655,10 @@ struct task_struct {
+ 	int kmap_idx;
+ 	pte_t kmap_pte[KM_TYPE_NR];
  #endif
++
++#ifdef CONFIG_DEBUG_PREEMPT
++	unsigned long preempt_disable_ip;
++#endif
+ };
  
+ #ifdef CONFIG_PREEMPT_RT_FULL
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 66d4dea..263fd96 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3215,8 +3215,13 @@ void __kprobes add_preempt_count(int val)
+ 	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
+ 				PREEMPT_MASK - 10);
  #endif
+-	if (preempt_count() == val)
+-		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
++	if (preempt_count() == val) {
++		unsigned long ip = get_parent_ip(CALLER_ADDR1);
++#ifdef CONFIG_DEBUG_PREEMPT
++		current->preempt_disable_ip = ip;
++#endif
++		trace_preempt_off(CALLER_ADDR0, ip);
++	}
+ }
+ EXPORT_SYMBOL(add_preempt_count);
+ 
+@@ -3259,6 +3264,13 @@ static noinline void __schedule_bug(struct task_struct *prev)
+ 	print_modules();
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(prev);
++#ifdef DEBUG_PREEMPT
++	if (in_atomic_preempt_off()) {
++		pr_err("Preemption disabled at:");
++		print_ip_sym(current->preempt_disable_ip);
++		pr_cont("\n");
++	}
++#endif
+ 	dump_stack();
+ }
+ 
+@@ -7479,6 +7491,13 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ 	debug_show_held_locks(current);
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(current);
++#ifdef DEBUG_PREEMPT
++	if (!preempt_count_equals(preempt_offset)) {
++		pr_err("Preemption disabled at:");
++		print_ip_sym(current->preempt_disable_ip);
++		pr_cont("\n");
++	}
++#endif
+ 	dump_stack();
+ }
+ EXPORT_SYMBOL(__might_sleep);
 -- 
-1.7.1.1
+1.7.10.4
+
 
