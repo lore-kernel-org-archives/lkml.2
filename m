@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab2JKAT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:19:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35367 "EHLO
+	id S933079Ab2JKAUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:20:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43603 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932934Ab2JKAQo (ORCPT
+	by vger.kernel.org with ESMTP id S932989Ab2JKAQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:44 -0400
-X-Sasl-enc: hGcybqquSh8Vl9LOINiGC6EBHFckhB9U+/eQ/RP8yOUh 1349914603
+	Wed, 10 Oct 2012 20:16:35 -0400
+X-Sasl-enc: n9ANFM0e6JP6xfHmFMyHOkWp4NCKSzpC4PkJtJ45pds0 1349914593
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 125/133] mtd: nand: Use the mirror BBT descriptor when reading its version
-Date: Thu, 11 Oct 2012 07:52:31 +0900
-Message-Id: <20121010224917.044875260@linuxfoundation.org>
+Subject: [ 123/133] mtd: autcpu12-nvram: Fix compile breakage
+Date: Thu, 11 Oct 2012 07:52:29 +0900
+Message-Id: <20121010224916.686047112@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,36 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
+commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
 
-The code responsible for reading the version of the mirror bbt was
-incorrectly using the descriptor of the main bbt.
+Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
+no longer exist in the kernel so the driver is totally broken.
+Additionally, map_info name passed to simple_map_init is incorrect.
 
-Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
-version of the mirror bbt.
-
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nand_bbt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/mtd/nand/nand_bbt.c
-+++ b/drivers/mtd/nand/nand_bbt.c
-@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info
- 	/* Read the mirror version, if available */
- 	if (md && (md->options & NAND_BBT_VERSION)) {
- 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
--			      mtd->writesize, td);
-+			      mtd->writesize, md);
- 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
- 		pr_info("Bad block table at page %d, version 0x%02X\n",
- 			 md->pages[0], md->version[0]);
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
+@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
+ 
+ static int __init init_autcpu12_sram (void)
+ {
+-	int err, save0, save1;
++	map_word tmp, save0, save1;
++	int err;
+ 
+ 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
+ 	if (!autcpu12_sram_map.virt) {
+@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
+ 		err = -EIO;
+ 		goto out;
+ 	}
+-	simple_map_init(&autcpu_sram_map);
++	simple_map_init(&autcpu12_sram_map);
+ 
+ 	/*
+ 	 * Check for 32K/128K
+@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
+ 	 * Read	and check result on ofs 0x0
+ 	 * Restore contents
+ 	 */
+-	save0 = map_read32(&autcpu12_sram_map,0);
+-	save1 = map_read32(&autcpu12_sram_map,0x10000);
+-	map_write32(&autcpu12_sram_map,~save0,0x10000);
++	save0 = map_read(&autcpu12_sram_map, 0);
++	save1 = map_read(&autcpu12_sram_map, 0x10000);
++	tmp.x[0] = ~save0.x[0];
++	map_write(&autcpu12_sram_map, tmp, 0x10000);
+ 	/* if we find this pattern on 0x0, we have 32K size
+ 	 * restore contents and exit
+ 	 */
+-	if ( map_read32(&autcpu12_sram_map,0) != save0) {
+-		map_write32(&autcpu12_sram_map,save0,0x0);
++	tmp = map_read(&autcpu12_sram_map, 0);
++	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
++		map_write(&autcpu12_sram_map, save0, 0x0);
+ 		goto map;
+ 	}
+ 	/* We have a 128K found, restore 0x10000 and set size
+ 	 * to 128K
+ 	 */
+-	map_write32(&autcpu12_sram_map,save1,0x10000);
++	map_write(&autcpu12_sram_map, save1, 0x10000);
+ 	autcpu12_sram_map.size = SZ_128K;
+ 
+ map:
 
 
