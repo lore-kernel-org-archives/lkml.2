@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab2JJWys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:48 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41388 "EHLO
+	id S1757642Ab2JJWyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58691 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757696Ab2JJWyl (ORCPT
+	by vger.kernel.org with ESMTP id S1757463Ab2JJWyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:41 -0400
-X-Sasl-enc: jMf91+UxZEXFunqlIYnm+Cn7jt2fi1BaPKiGQHUteYUx 1349909680
+	Wed, 10 Oct 2012 18:54:50 -0400
+X-Sasl-enc: wtwu2/62iCoMNsnc+ZPVEM9mzMOc+DKPju3yEnrZeN+E 1349909689
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 041/133] sierra_net: Endianess bug fix.
-Date: Thu, 11 Oct 2012 07:51:07 +0900
-Message-Id: <20121010224901.881703840@linuxfoundation.org>
+Subject: [ 044/133] ipv6: release reference of ip6_null_entrys dst entry in __ip6_del_rt
+Date: Thu, 11 Oct 2012 07:51:10 +0900
+Message-Id: <20121010224902.428142391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,31 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-[ Upstream commit 2120c52da6fe741454a60644018ad2a6abd957ac ]
+[ Upstream commit 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b ]
 
-I discovered I couldn't get sierra_net to work on a powerpc.  Turns out
-the firmware attribute check assumes the system is little endian and
-hence fails because the attributes is a 16 bit value.
+as we hold dst_entry before we call __ip6_del_rt,
+so we should alse call dst_release not only return
+-ENOENT when the rt6_info is ip6_null_entry.
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+and we already hold the dst entry, so I think it's
+safe to call dst_release out of the write-read lock.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/sierra_net.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/route.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/net/usb/sierra_net.c
-+++ b/drivers/net/usb/sierra_net.c
-@@ -678,7 +678,7 @@ static int sierra_net_get_fw_attr(struct
- 		return -EIO;
- 	}
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1485,17 +1485,18 @@ static int __ip6_del_rt(struct rt6_info
+ 	struct fib6_table *table;
+ 	struct net *net = dev_net(rt->dst.dev);
  
--	*datap = *attrdata;
-+	*datap = le16_to_cpu(*attrdata);
+-	if (rt == net->ipv6.ip6_null_entry)
+-		return -ENOENT;
++	if (rt == net->ipv6.ip6_null_entry) {
++		err = -ENOENT;
++		goto out;
++	}
  
- 	kfree(attrdata);
- 	return result;
+ 	table = rt->rt6i_table;
+ 	write_lock_bh(&table->tb6_lock);
+-
+ 	err = fib6_del(rt, info);
+-	dst_release(&rt->dst);
+-
+ 	write_unlock_bh(&table->tb6_lock);
+ 
++out:
++	dst_release(&rt->dst);
+ 	return err;
+ }
+ 
 
 
