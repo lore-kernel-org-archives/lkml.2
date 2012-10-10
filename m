@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab2JJPOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:14:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49455 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab2JJPOi (ORCPT
+	id S1756901Ab2JJSKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 14:10:04 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:10964 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756686Ab2JJSKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:14:38 -0400
+	Wed, 10 Oct 2012 14:10:00 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJji0Kfg==
+X-RZG-CLASS-ID: mo00
+Date: Wed, 10 Oct 2012 20:09:56 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/3] xen/pv-on-hvm kexec: add quirk for Xen 3.4 and
+ shutdown watches.
+Message-ID: <20121010180956.GA2130@aepfle.de>
+References: <1349890849-17471-1-git-send-email-konrad.wilk@oracle.com>
+ <1349890849-17471-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
-References: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
-Date: Wed, 10 Oct 2012 23:14:36 +0800
-Message-ID: <CACVXFVMvq-OoLOowds-4-PGyrtmZW2oAQATiTonJs7LvWc1aCA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Expose firmware paths via procfs
-From: Ming Lei <ming.lei@canonical.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1349890849-17471-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 6:56 PM, Dimitris Papastamos
-<dp@opensource.wolfsonmicro.com> wrote:
-> Hi all, sorry missed the relevant CCs before.  This patch set
-> adds support for exposing the firmware paths via procfs.  I've added
-> an entry named /proc/fw_path which is a whitespace separated list
-> of firmware paths.
+On Wed, Oct 10, Konrad Rzeszutek Wilk wrote:
 
-Looks the paths are hard-coded in udev and mdev, which don't
-export these paths to users , so I am wondering if users are interested
-in the information.  But it is surely better to document the default
-search paths.
+> The commit 254d1a3f02ebc10ccc6e4903394d8d3f484f715e, titled
+> "xen/pv-on-hvm kexec: shutdown watches from old kernel" assumes that the
+> XenBus backend can deal with reading of values from:
+>  "control/platform-feature-xs_reset_watches":
+> 
+>     ... a patch for xenstored is required so that it
+>     accepts the XS_RESET_WATCHES request from a client (see changeset
+>     23839:42a45baf037d in xen-unstable.hg). Without the patch for xenstored
+>     the registration of watches will fail and some features of a PVonHVM
+>     guest are not available. The guest is still able to boot, but repeated
+>     kexec boots will fail."
+> 
+> Sadly this is not true when using a Xen 3.4 hypervisor and booting a PVHVM
+> guest. We end up hanging at:
 
-Do you have some good use case about retrieving the info
-at runtime?
+This is sad.
+So far I have not seen reports like that with a sles11sp1 or sles11sp2
+guest. Thats either because noone uses Xen 3.4+sles11 (or recent
+openSuSE) HVM guests, or because it happens to work with that
+combination.
 
->
-> Once I have some time I hope to also send out a patch that allows
-> the user to dynamically configure these paths.
+If the patch solves the issue:
 
-IMO, kernel parameter should be an appropriate way to configure
-the path, and the way of /proc or /sys may be a bit late.
+Acked-by: Olaf Hering <olaf@aepfle.de>
 
-
-Thanks,
---
-Ming Lei
+Olaf
