@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab2JJWx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:53:29 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55421 "EHLO
+	id S932316Ab2JJWxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:53:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59543 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757477Ab2JJWxW (ORCPT
+	by vger.kernel.org with ESMTP id S932204Ab2JJWxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:53:22 -0400
-X-Sasl-enc: RXJPzZ/4gOLxfsWK75H9potS7Y3jnHLYKeKKN6Ub0o/S 1349909601
+	Wed, 10 Oct 2012 18:53:31 -0400
+X-Sasl-enc: zgQxZC5wMe6SpCJUwvD1hgE7VMf+wPZjYInZf2brdQSW 1349909609
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 012/133] PCI: acpiphp: check whether _ADR evaluation succeeded
-Date: Thu, 11 Oct 2012 07:50:38 +0900
-Message-Id: <20121010224856.675586895@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 015/133] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+Date: Thu, 11 Oct 2012 07:50:41 +0900
+Message-Id: <20121010224857.206919840@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,55 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit dfb117b3e50c52c7b3416db4a4569224b8db80bb upstream.
+commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
 
-Check whether we evaluated _ADR successfully.  Previously we ignored
-failure, so we would have used garbage data from the stack as the device
-and function number.
+As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
+have kernel_restart() call disable_nonboot_cpus().  Doing so can help
+machines that require boot cpu be the last alive cpu during reboot to
+survive with kernel restart.
 
-We return AE_OK so that we ignore only this slot and continue looking
-for other slots.
+This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
+requires that the restart routine be run on the primary cpu rather than
+secondary ones.  Otherwise, the secondary core running the restart
+routine will fail to come to online after reboot.
 
-Found by Coverity (CID 113981).
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ kernel/sys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -132,6 +132,15 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
- 		return AE_OK;
- 
-+	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-+	if (ACPI_FAILURE(status)) {
-+		warn("can't evaluate _ADR (%#x)\n", status);
-+		return AE_OK;
-+	}
-+
-+	device = (adr >> 16) & 0xffff;
-+	function = adr & 0xffff;
-+
- 	pdev = pbus->self;
- 	if (pdev && pci_is_pcie(pdev)) {
- 		tmp = acpi_find_root_bridge_handle(pdev);
-@@ -144,10 +153,6 @@ register_slot(acpi_handle handle, u32 lv
- 		}
- 	}
- 
--	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
--	device = (adr >> 16) & 0xffff;
--	function = adr & 0xffff;
--
- 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
- 	if (!newfunc)
- 		return AE_NO_MEMORY;
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -368,6 +368,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
++	disable_nonboot_cpus();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
 
 
