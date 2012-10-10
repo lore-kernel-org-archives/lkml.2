@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2JJGnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 02:43:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56311 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2JJGm6 (ORCPT
+	id S1751446Ab2JJGqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 02:46:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59051 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab2JJGqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 02:42:58 -0400
+	Wed, 10 Oct 2012 02:46:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1349796183-30648-3-git-send-email-arnd@arndb.de>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de>
-	<1349796183-30648-3-git-send-email-arnd@arndb.de>
-Date: Wed, 10 Oct 2012 08:42:57 +0200
-Message-ID: <CACRpkdZ2h-V7c9EnQA6+m9sCaBD+tzU-sWrBLRtBTfgbeNWRXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/9] ARM: export set_irq_flags
+In-Reply-To: <CAPgLHd8F99f5LVS-wNekKA+a1369RfqCa-w_jHGV-_Wueg_cTQ@mail.gmail.com>
+References: <CAPgLHd8F99f5LVS-wNekKA+a1369RfqCa-w_jHGV-_Wueg_cTQ@mail.gmail.com>
+Date: Wed, 10 Oct 2012 08:46:33 +0200
+Message-ID: <CACRpkdY5F1zd0Qh1jvintMn6R35_ZAaTUkbRxaK5tnvy=_Q8ig@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: fix return value in bcm2835_pinctrl_probe()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: swarren@wwwdotorg.org, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        yongjun_wei@trendmicro.com.cn, linux-rpi-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 5:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+On Sun, Oct 7, 2012 at 4:01 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
 
-> The recently added Emma Mobile GPIO driver calls set_irq_flags
-> and irq_set_chip_and_handler for the interrupts it exports and
-> it can be built as a module, which currently fails with
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
-> ERROR: "set_irq_flags" [drivers/gpio/gpio-em.ko] undefined!
+> In case of error, the function pinctrl_register() returns
+> NULL not ERR_PTR(). The PTR_ERR() in the return value
+> should be replaced with error no.
 >
-> We either need to replace the call to set_irq_flags with something
-> else or export that function. This patch does the latter.
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Argh! And I cannot think of anything more elegant so
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Applied with Stephen's ACK.
 
-Yours,
+Thanks!
 Linus Walleij
