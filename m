@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab2JKA0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:26:11 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54188 "EHLO
+	id S933525Ab2JKA0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:26:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45606 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933470Ab2JKAZl (ORCPT
+	by vger.kernel.org with ESMTP id S933318Ab2JKAZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:25:41 -0400
-X-Sasl-enc: M2XCBkhnY69nEIoQzasVFf3c6O9F5J/uhnPZqKISOpiR 1349915140
+	Wed, 10 Oct 2012 20:25:53 -0400
+X-Sasl-enc: JMxa19r+U+BrGqkdMPR33LewPhuRnTw60GNyKpUVRTGu 1349915152
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 104/122] efi: Build EFI stub with EFI-appropriate options
-Date: Thu, 11 Oct 2012 07:54:30 +0900
-Message-Id: <20121010225356.756423506@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 107/122] sched: Fix load avg vs. cpu-hotplug
+Date: Thu, 11 Oct 2012 07:54:33 +0900
+Message-Id: <20121010225357.276051295@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,35 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 9dead5bbb825d7c25c0400e61de83075046322d0 upstream.
+commit 08bedae1d0acd8c9baf514fb69fa199d0c8345f6 upstream.
 
-We can't assume the presence of the red zone while we're still in a boot
-services environment, so we should build with -fno-red-zone to avoid
-problems. Change the size of wchar at the same time to make string handling
-simpler.
+Commit f319da0c68 ("sched: Fix load avg vs cpu-hotplug") was an
+incomplete fix:
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Acked-by: Josh Boyer <jwboyer@redhat.com>
+In particular, the problem is that at the point it calls
+calc_load_migrate() nr_running := 1 (the stopper thread), so move the
+call to CPU_DEAD where we're sure that nr_running := 0.
+
+Also note that we can call calc_load_migrate() without serialization, we
+know the state of rq is stable since its cpu is dead, and we modify the
+global state using appropriate atomic ops.
+
+Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1346882630.2600.59.camel@twins
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/Makefile |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -28,6 +28,9 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)
- 	$(obj)/string.o $(obj)/cmdline.o $(obj)/early_serial_console.o \
- 	$(obj)/piggy.o
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5604,7 +5604,9 @@ migration_call(struct notifier_block *nf
+ 		migrate_tasks(cpu);
+ 		BUG_ON(rq->nr_running != 1); /* the migration thread */
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
++		break;
  
-+$(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
-+$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
-+
- ifeq ($(CONFIG_EFI_STUB), y)
- 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
- endif
++	case CPU_DEAD:
+ 		calc_load_migrate(rq);
+ 		break;
+ #endif
 
 
