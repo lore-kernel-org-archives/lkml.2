@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab2JJD4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 23:56:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38851 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751689Ab2JJD4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 23:56:32 -0400
-Date: Wed, 10 Oct 2012 12:56:23 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Patch v2 2/7] Regulator: DA9055 Regulator driver
-Message-ID: <20121010035622.GH17288@opensource.wolfsonmicro.com>
-References: <C3AE124F08223B42BC95AEB82F0F6CED38A84E78@KCHJEXMB03.kpit.com>
- <1349780416.5244.39.camel@dhruva>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349780416.5244.39.camel@dhruva>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751253Ab2JJEGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 00:06:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752Ab2JJEGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 00:06:49 -0400
+Message-ID: <1349841989.2759.317.camel@ul30vt.home>
+Subject: Re: [PATCH v3 10/10] mm: kill vma flag VM_RESERVED and
+ mm->reserved_vm counter
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>
+Date: Tue, 09 Oct 2012 22:06:29 -0600
+In-Reply-To: <1349823616.2759.308.camel@ul30vt.home>
+References: <20120731103724.20515.60334.stgit@zurg>
+	 <20120731104239.20515.702.stgit@zurg>
+	 <1349776921.21172.4091.camel@edumazet-glaptop>
+	 <CA+55aFzCCSE3bnPL7pquYq9pW6YLs_2QZR7r9kZEgwxxc7rzYg@mail.gmail.com>
+	 <1349792507.2759.283.camel@ul30vt.home>
+	 <1349823616.2759.308.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 04:30:16PM +0530, Ashish Jangam wrote:
-> On Tue, 2012-10-09 at 15:37 +0530, Mark Brown wrote:
-> > On Mon, Oct 08, 2012 at 07:00:39PM +0530, Ashish Jangam wrote:
+On Tue, 2012-10-09 at 17:00 -0600, Alex Williamson wrote:
+> On Tue, 2012-10-09 at 08:21 -0600, Alex Williamson wrote:
+> > On Tue, 2012-10-09 at 21:12 +0900, Linus Torvalds wrote:
+> > > On Tue, Oct 9, 2012 at 7:02 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > >
+> > > > It seems drivers/vfio/pci/vfio_pci.c uses VM_RESERVED
+> > > 
+> > > Yeah, I just pushed out what I think is the right (trivial) fix.
+> > 
+> > Thank you, looks correct to me as well.
+> 
+> Well, that might still be correct, but it's actually b3b9c293 (mm, x86,
+> pat: rework linear pfn-mmap tracking) that breaks vfio.  As soon as I
+> add that commit our use of mmap'd device areas stops working, both
+> mapping them through the iommu and through kvm.  kvm hits the BUG_ON
+> from !kvm_is_mmio_pfn in virt/kvm/kvm_main.c:hva_to_pfn.  Thanks,
 
-> > > +		/* Set the GPIO I/P pin for controlling the regulator state. */
-> > > +		ret = devm_gpio_request_one(config->dev, gpio, GPIOF_DIR_IN,
-> > > +					    name);
-> > > +		if (ret < 0)
-> > > +			goto err;
+It looks like vfio was for some reason relying on the cow special case
+in remap_pfn_range() to set vma->vm_pgoff.  Since we're not doing a
+is_cow_mapping, vm_pgoff is no longer updated in that function after
+b3b9c293.  I'll add a vfio patch to fix this.  Thanks,
 
-> > We never actually appear to use this GPIO anywhere...  why are we
-> > requesting it?
+Alex
 
-> DA9055 regulator changes its state by detecting the rising/failing edge at
-> GPI DA9055. Therefore we just need to set the DA9055 GPIO direction to input.
-
-Right, so there's several problems here.  One is that this code is very
-obscure - you're really doing pinmux here rather than actually using it
-as a GPIO, a better comment would clarify this.  The other is that
-you're requiring a defined gpio_base in platform data, it would be
-better to allow this to be dynamically assigned as the driver can find
-it's own GPIOs easily enough.
-
-> >   Also, why is the ability to read the regulator state via
-> > a GPIO associated with controlling it via a GPIO, it's unusual for these
-> > things to be tied together.
-
-> There is no connection between state just to differentiate between two strings/labels.
-> If required I can change the string.
-
-It's nothing to do with the name, it's that it looks due to the above
-like the input GPIO is used by the CPU to read the state of the device.
