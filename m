@@ -1,123 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab2JJXab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:30:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53451 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431Ab2JJXa1 (ORCPT
+	id S1757482Ab2JJXgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:36:46 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:62371 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab2JJXgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:30:27 -0400
-Date: Wed, 10 Oct 2012 16:28:20 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: James Morris <james.l.morris@oracle.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] device_cgroup: RCU read-side protect task_devcgroup() usage
-Message-ID: <20121010232820.GG4628@swordfish.datadirect.datadirectnet.com>
+	Wed, 10 Oct 2012 19:36:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121010154637.5b201ed7.akpm@linux-foundation.org>
+References: <20121009225401.GA10219@www.outflux.net>
+	<20121010134646.4e9bba55.akpm@linux-foundation.org>
+	<CAGXu5jJCQ3RxoFJ5FrGo=FJLSApK2PKX0PAt=E8y=PECNn4XWg@mail.gmail.com>
+	<20121010154637.5b201ed7.akpm@linux-foundation.org>
+Date: Wed, 10 Oct 2012 16:36:44 -0700
+X-Google-Sender-Auth: AJjj7HVye7dMVftQdv1fXCBor3U
+Message-ID: <CAGXu5jJ_tQF9LUBgsAk+xdXTppGidakkd4gaDvGtSbpAeH21Dw@mail.gmail.com>
+Subject: Re: [PATCH v2] fix stack memory content leak via UNAME26
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        PaX Team <pageexec@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RCU read-side protect task_devcgroup() usage
+On Wed, Oct 10, 2012 at 3:46 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 10 Oct 2012 15:31:07 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> > This looks unecessarily complicated.  Is there a reason to be copying
+>> > all 65 bytes out to userspace?
+>> >
+>> > If not, then couldn't we just do
+>> >
+>> >         len = scnprintf(...);
+>> >         ret = copy_to_user(..., len + 1);
+>> >
+>> > ?
+>>
+>> As it is, nothing calls override_release with crazy "len" values, but,
+>> to make the code less fragile, there should be checking for
+>> sizeof(buf) vs len. In the patch I sent, bounding the sprintf was
+>> sizeof(buf), and the copy_to_user was bounded by effectively
+>> min(sizeof(buf), len). If you wanted to use scnprintf, you'd have to
+>> reorganize the checks and explicitly handle len == 0:
+>>
+>> if (!len)
+>>     return -EFAULT;
+>> if (sizeof(buf) < len)
+>>     len = sizeof(buf)
+>> len = scnprintf(buf, len, "2.6.%u%s", v, rest);
+>> ret = copy_to_user(release, buf, len + 1);
+>
+> It would be pretty absurd for someone to call override_release() with
+> len==0?  All callers use sizeof() on some pretty well-defined array.
+>
+> So I'd have thought that something like
+>
+> --- a/kernel/sys.c~a
+> +++ a/kernel/sys.c
+> @@ -1265,7 +1265,7 @@ DECLARE_RWSEM(uts_sem);
+>   * Work around broken programs that cannot handle "Linux 3.0".
+>   * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
+>   */
+> -static int override_release(char __user *release, int len)
+> +static int override_release(char __user *release, size_t len)
+>  {
+>         int ret = 0;
+>         char buf[65];
+> @@ -1274,6 +1274,7 @@ static int override_release(char __user
+>                 char *rest = UTS_RELEASE;
+>                 int ndots = 0;
+>                 unsigned v;
+> +               size_t copy;
+>
+>                 while (*rest) {
+>                         if (*rest == '.' && ++ndots >= 3)
+> @@ -1283,8 +1284,9 @@ static int override_release(char __user
+>                         rest++;
+>                 }
+>                 v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+> -               snprintf(buf, len, "2.6.%u%s", v, rest);
+> -               ret = copy_to_user(release, buf, len);
+> +               copy = scnprintf(buf, min(len, sizeof(buf)),
+> +                                 "2.6.%u%s", v, rest);
+> +               ret = copy_to_user(release, buf, copy + 1);
+>         }
+>         return ret;
+>  }
+>
+> would suffice?
+>
+> Not a big deal I guess, but copying out stuff beyond the NUL is a bit odd.
 
-Commit ad676077
- | Author: Aristeu Rozanski <aris@redhat.com>
- | Date:   Thu Oct 4 17:15:17 2012 -0700
- |   device_cgroup: convert device_cgroup internally to policy + exceptions
+Sure, that looks good to me.
 
-moved RCU read-side protection from devcgroup_inode_mknod(), which, however is required
-by task_devcgroup(). This patch move RCU read-side protection back to devcgroup_inode_mknod()
-and add RCU read-side protection to __devcgroup_inode_permission() function, introduced
-in commit ad676077.
+Thanks!
 
-[    0.946303] include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
-[    0.946511]
-[    0.946606] 2 locks held by kdevtmpfs/28:
-[    0.946684]  #0:  (sb_writers){.+.+.+}, at: [<ffffffff81144bcb>] mnt_want_write+0x24/0x4b
-[    0.947083]  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff81133d04>] kern_path_create+0x83/0x144
-[    0.947598]
-[    0.947787] Call Trace:
-[    0.947868]  [<ffffffff81089644>] lockdep_rcu_suspicious+0x109/0x112
-[    0.947958]  [<ffffffff81258fa0>] devcgroup_inode_mknod+0x9e/0xee
-[    0.948043]  [<ffffffff81132ee7>] vfs_mknod+0x8a/0xed
-[    0.948129]  [<ffffffff813b98af>] handle_create.isra.2+0x144/0x1b5
-[    0.948214]  [<ffffffff813b99bf>] ? devtmpfsd+0x9f/0x138
-[    0.948298]  [<ffffffff81295d5c>] ? do_raw_spin_lock+0x67/0xde
-[    0.948384]  [<ffffffff81295e92>] ? do_raw_spin_unlock+0x8f/0x98
-[    0.948469]  [<ffffffff813b9920>] ? handle_create.isra.2+0x1b5/0x1b5
-[    0.948554]  [<ffffffff813b9a04>] devtmpfsd+0xe4/0x138
-[    0.948638]  [<ffffffff813b9920>] ? handle_create.isra.2+0x1b5/0x1b5
-[    0.948724]  [<ffffffff810582b6>] kthread+0xd5/0xdd
-[    0.948814]  [<ffffffff814db664>] kernel_thread_helper+0x4/0x10
-[    0.948900]  [<ffffffff814d2973>] ? retint_restore_args+0x13/0x13
-[    0.948985]  [<ffffffff810581e1>] ? __init_kthread_worker+0x5a/0x5a
-[    0.949069]  [<ffffffff814db660>] ? gs_change+0x13/0x13
+-Kees
 
-
-devcgroup_inode_mknod() part submitted by Paul E. McKenney.
-
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- security/device_cgroup.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 44dfc41..043eb00 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -558,7 +558,8 @@ static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
- 
- int __devcgroup_inode_permission(struct inode *inode, int mask)
- {
--	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	struct dev_cgroup *dev_cgroup;
-+	int ret;
- 	short type, access = 0;
- 
- 	if (S_ISBLK(inode->i_mode))
-@@ -570,13 +571,20 @@ int __devcgroup_inode_permission(struct inode *inode, int mask)
- 	if (mask & MAY_READ)
- 		access |= ACC_READ;
- 
--	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-+	rcu_read_lock();
-+
-+	dev_cgroup = task_devcgroup(current);
-+	ret = __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
- 					    iminor(inode), access);
-+
-+	rcu_read_unlock();
-+	return ret;
- }
- 
- int devcgroup_inode_mknod(int mode, dev_t dev)
- {
--	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
-+	struct dev_cgroup *dev_cgroup;
-+	int ret;
- 	short type;
- 
- 	if (!S_ISBLK(mode) && !S_ISCHR(mode))
-@@ -587,7 +595,12 @@ int devcgroup_inode_mknod(int mode, dev_t dev)
- 	else
- 		type = DEV_CHAR;
- 
--	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-+	rcu_read_lock();
-+
-+	dev_cgroup = task_devcgroup(current);
-+	ret = __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
- 					    MINOR(dev), ACC_MKNOD);
- 
-+	rcu_read_unlock();
-+	return ret; 
- }
-
+-- 
+Kees Cook
+Chrome OS Security
