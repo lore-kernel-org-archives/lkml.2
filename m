@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab2JJKdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:33:13 -0400
-Received: from relay.parallels.com ([195.214.232.42]:36530 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab2JJKdJ convert rfc822-to-8bit (ORCPT
+	id S1755236Ab2JJKfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:35:48 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54009 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab2JJKfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:33:09 -0400
-Message-ID: <50754EBC.5020608@parallels.com>
-Date: Wed, 10 Oct 2012 14:32:28 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting
- local transports
-References: <20121008105437.18668.99905.stgit@localhost.localdomain> <20121009193506.GA19680@fieldses.org> <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com> <87txu3bdnj.fsf@xmission.com> <20121009223139.GA25826@fieldses.org> <87bogb1cvl.fsf@xmission.com> <20121010012336.GA2935@fieldses.org>
-In-Reply-To: <20121010012336.GA2935@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Oct 2012 06:35:46 -0400
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: pavel@ucw.cz
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Adil Mujeeb <mujeeb.adil@gmail.com>
+Subject: [PATCH] Staging: winbond: wbusb: Fixed coding style issue
+Date: Wed, 10 Oct 2012 16:05:29 +0530
+Message-Id: <1349865329-6500-1-git-send-email-mujeeb.adil@gmail.com>
+X-Mailer: git-send-email 1.7.6.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10.10.2012 05:23, J. Bruce Fields пишет:
-> On Tue, Oct 09, 2012 at 03:47:42PM -0700, Eric W. Biederman wrote:
->> "J. Bruce Fields" <bfields@fieldses.org> writes:
->>
->>> On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
->>>> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
->>>>
->>>>> On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
->>>>>> Cc'ing Eric since I seem to recall he suggested doing it this way?
->>>>
->>>> Yes.  On second look setting fs->root won't work. We need to change fs.
->>>> The problem is that by default all kernel threads share fs so changing
->>>> fs->root will have non-local consequences.
->>>
->>> Oh, huh.  And we can't "unshare" it somehow?
->>
->> I don't fully understand how nfs uses kernel threads and work queues.
->> My general understanding is work queues reuse their kernel threads
->> between different users.  So it is mostly a don't pollute your
->> environment thing.  If there was a dedicated kernel thread for each
->> environment this would be trivial.
->>
->> What I was suggesting here is changing task->fs instead of
->> task->fs.root.  That should just require task_lock().
->
-> Oh, OK, got it--if that works, great.
->
+Removed unnecessary printk and pr_debug tracing calls
 
-The main problem with swapping fs struct is actually the same as in root 
-swapping. I.e. routines for copy fs_struct are not exported.
-It could be done on place, but I don't think, that Al Viro would support such 
-implementation.
-Trond?
+Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
+---
+ linux-3.6-rc7/drivers/staging/winbond/wbusb.c |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
 
->>> Sorry, I don't know much about devtmpfs, are you suggesting it as a
->>> model?  What exactly should we look at?
->>
->> Roughly all I meant was that devtmpsfsd is a kernel thread that runs
->> with an unshared fs struct.  Although I admit devtmpfsd is for all
->> practical purposes a userspace daemon that just happens to run in kernel
->> space.
->
-> Thanks for the explanation.
->
-> --b.
->
-
-
+diff --git a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
+index 0ca857a..a0497ea 100644
+--- a/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
++++ b/linux-3.6-rc7/drivers/staging/winbond/wbusb.c
+@@ -79,18 +79,15 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
+ static void wbsoft_remove_interface(struct ieee80211_hw *dev,
+ 				    struct ieee80211_vif *vif)
+ {
+-	printk("wbsoft_remove interface called\n");
+ }
+ 
+ static void wbsoft_stop(struct ieee80211_hw *hw)
+ {
+-	printk(KERN_INFO "%s called\n", __func__);
+ }
+ 
+ static int wbsoft_get_stats(struct ieee80211_hw *hw,
+ 			    struct ieee80211_low_level_stats *stats)
+ {
+-	printk(KERN_INFO "%s called\n", __func__);
+ 	return 0;
+ }
+ 
+@@ -177,12 +174,9 @@ static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info
+ 	if (pHwData->SurpriseRemove)
+ 		return;
+ 
+-	printk("Going to channel: %d/%d\n", channel.band, channel.ChanNo);
+-
+ 	RFSynthesizer_SwitchingChannel(pHwData, channel); /* Switch channel */
+ 	pHwData->Channel = channel.ChanNo;
+ 	pHwData->band = channel.band;
+-	pr_debug("Set channel is %d, band =%d\n", pHwData->Channel, pHwData->band);
+ 	reg->M28_MacControl &= ~0xff;	/* Clean channel information field */
+ 	reg->M28_MacControl |= channel.ChanNo;
+ 	Wb35Reg_WriteWithCallbackValue(pHwData, 0x0828, reg->M28_MacControl,
+@@ -262,8 +256,6 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
+ 	struct wbsoft_priv *priv = dev->priv;
+ 	struct chan_info ch;
+ 
+-	printk("wbsoft_config called\n");
+-
+ 	/* Should use channel_num, or something, as that is already pre-translated */
+ 	ch.band = 1;
+ 	ch.ChanNo = 1;
+@@ -280,7 +272,6 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
+ 
+ static u64 wbsoft_get_tsf(struct ieee80211_hw *dev, struct ieee80211_vif *vif)
+ {
+-	printk("wbsoft_get_tsf called\n");
+ 	return 0;
+ }
+ 
+@@ -714,7 +705,6 @@ static int wb35_hw_init(struct ieee80211_hw *hw)
+ 	}
+ 
+ 	priv->sLocalPara.bAntennaNo = hal_get_antenna_number(pHwData);
+-	pr_debug("Driver init, antenna no = %d\n", priv->sLocalPara.bAntennaNo);
+ 	hal_get_hw_radio_off(pHwData);
+ 
+ 	/* Waiting for HAL setting OK */
+@@ -780,9 +770,6 @@ static int wb35_probe(struct usb_interface *intf,
+ 	interface = intf->cur_altsetting;
+ 	endpoint = &interface->endpoint[0].desc;
+ 
+-	if (endpoint[2].wMaxPacketSize == 512)
+-		printk("[w35und] Working on USB 2.0\n");
+-
+ 	err = wb35_hw_init(dev);
+ 	if (err)
+ 		goto error_free_hw;
+@@ -834,7 +821,6 @@ static void wb35_hw_halt(struct wbsoft_priv *adapter)
+ {
+ 	/* Turn off Rx and Tx hardware ability */
+ 	hal_stop(&adapter->sHwData);
+-	pr_debug("[w35und] Hal_stop O.K.\n");
+ 	/* Waiting Irp completed */
+ 	msleep(100);
+ 
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.7.3
+
