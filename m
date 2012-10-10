@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2JJN6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:58:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49434 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab2JJN6G (ORCPT
+	id S932375Ab2JJPQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:16:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39059 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab2JJPQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:58:06 -0400
-Date: Wed, 10 Oct 2012 15:58:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: Improve 64 bit __phys_addr call performance
-Message-ID: <20121010135801.GW16230@one.firstfloor.org>
-References: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com>
-User-Agent: Mutt/1.4.2.2i
+	Wed, 10 Oct 2012 11:16:37 -0400
+Message-ID: <50759152.9050407@wwwdotorg.org>
+Date: Wed, 10 Oct 2012 09:16:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: David Gibson <david@gibson.dropbear.id.au>
+CC: Warner Losh <imp@bsdimp.com>, Scott Wood <scottwood@freescale.com>,
+        Michal Marek <mmarek@suse.cz>, devicetree-discuss@lists.ozlabs.org,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: dtc: import latest upstream dtc
+References: <1349827466.26044.16@snotra> <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com> <20121010072401.GA28467@truffula.fritz.box>
+In-Reply-To: <20121010072401.GA28467@truffula.fritz.box>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The second change was to streamline the code by making use of the carry flag
-> on an add operation instead of performing a compare on a 64 bit value.  The
-> advantage to this is that it allows us to reduce the overall size of the call.
-> On my Xeon E5 system the entire __phys_addr inline call consumes 30 bytes and
-> 5 instructions.  I also applied similar logic to the debug version of the
-> function.  My testing shows that the debug version of the function with this
-> patch applied is slightly faster than the non-debug version without the patch.
+On 10/10/2012 01:24 AM, David Gibson wrote:
+> On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
+>>
+>> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+>>
+>>> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>>>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>>>>> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>>>>>>>
+>>>>>>> What more do you think needs discussion re: dtc+cpp?
+>>>>>>
+>>>>>> How not to abuse the ever-loving shit out of it? :-)
+>>>>>
+>>>>> Perhaps we can just handle this through the regular patch review
+>>>>> process; I think it may be difficult to define and agree upon exactly
+>>>>> what "abuse" means ahead of time, but it's probably going to be easy
+>>>>> enough to recognize it when one sees it?
+>>>> One of the ways it could get out of hand would be via "include
+>>>> dependency hell".  People will be tempted to reuse existing .h files
+>>>> containing pin definitions, which, if history is a guide, will end up
+>>>> depending on all sorts of other .h files.
+>>>> Another problem I often face with symbolic names is the difficulty of
+>>>> figuring out what the numerical values really are (for debugging),
+>>>> especially when .h files are in different subtrees from the files that
+>>>> use the definitions, and when they use multiple macro levels and fancy
+>>>> features like concatenation.  Sometimes I think it's clearer just to
+>>>> write the number and use a comment to say what it is.
+>>>
+>>> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+>>
+>> .h files include both structs and defines, which are fine for
+>> ordinary C code, but problematic in this context.
+> 
+> Right, cpp should be invoked with similar options to the way it's done
+> for asm files which have the same problem.  I'm not sure if the
+> current patch does so.
 
-Looks good. Thanks. 
-
-Probably should still split the callers though (or have a pa_symbol_fast
-that does not do the check)
-
--Andi
+That's probably a reasonable idea, although I imagined that people would
+actually split out the portions of any header file they wanted to use
+with dtc, so that any headers included by *.dts would only include
+#defines. Those headers could be used by both dtc and other .h files (or
+.c files).
