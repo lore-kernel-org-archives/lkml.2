@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab2JKAil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:38:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:49446 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933015Ab2JKAif (ORCPT
+	id S933225Ab2JKAjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:39:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45000 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932872Ab2JKAPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:38:35 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19Yk1oqPKNYByKnx9XXl0zqRwB3rmhP+3M2ztMj29
-	3aoj6Qa5o6SXQ/
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Damien Cassou <damien.cassou@lifl.fr>
-Subject: [PATCH] gbefb: fix compile error
-Date: Thu, 11 Oct 2012 00:38:52 +0000
-Message-Id: <1349915932-3598-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <505B9196.3040203@gmx.de>
-References: <505B9196.3040203@gmx.de>
-X-Y-GMX-Trusted: 0
+	Wed, 10 Oct 2012 20:15:10 -0400
+X-Sasl-enc: MysNA9M24TGRw2OY0eKxYL+oCbK6MSZ50gWqX9xQO7nm 1349914509
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 107/133] alpha: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:13 +0900
+Message-Id: <20121010224913.798777370@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
+References: <20121010224854.313159132@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch "drivers/video/gbefb.c: use devm_ functions" caused a
-compile error.
+3.5-stable review patch.  If anyone has any objections, please let me know.
 
-drivers/video/gbefb.c:1159:16: error: implicit declaration of function
-'devm_ioremap' [-Werror=implicit-function-declaration]
-drivers/video/gbefb.c:1179:3: error: implicit declaration of function
-'devm_ioremap_nocache' [-Werror=implicit-function-declaration]
+------------------
 
-Fix it by including linux/io.h which defines those functions.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Damien Cassou <damien.cassou@lifl.fr>
+commit 4c94cada48f7c660eca582be6032427a5e367117 upstream.
+
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
+
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
+
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in the Alpha's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Michael Cree <mcree@orcon.net.nz>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: alpha <linux-alpha@vger.kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/video/gbefb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/alpha/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/video/gbefb.c b/drivers/video/gbefb.c
-index 9b79d38..8dc1f7a 100644
---- a/drivers/video/gbefb.c
-+++ b/drivers/video/gbefb.c
-@@ -20,6 +20,7 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/module.h>
-+#include <linux/io.h>
+--- a/arch/alpha/kernel/process.c
++++ b/arch/alpha/kernel/process.c
+@@ -28,6 +28,7 @@
+ #include <linux/tty.h>
+ #include <linux/console.h>
+ #include <linux/slab.h>
++#include <linux/rcupdate.h>
  
- #ifdef CONFIG_X86
- #include <asm/mtrr.h>
-@@ -28,7 +29,6 @@
- #include <asm/addrspace.h>
- #endif
- #include <asm/byteorder.h>
--#include <asm/io.h>
- #include <asm/tlbflush.h>
+ #include <asm/reg.h>
+ #include <asm/uaccess.h>
+@@ -54,8 +55,10 @@ cpu_idle(void)
+ 		/* FIXME -- EV6 and LCA45 know how to power down
+ 		   the CPU.  */
  
- #include <video/gbe.h>
--- 
-1.7.10.4
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			cpu_relax();
++		rcu_idle_exit();
+ 		schedule();
+ 	}
+ }
+
 
