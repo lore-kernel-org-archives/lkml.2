@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2JKAMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:12:34 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52642 "EHLO
+	id S1757967Ab2JKAMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:12:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50684 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757469Ab2JKAMb (ORCPT
+	by vger.kernel.org with ESMTP id S1757924Ab2JKAMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:12:31 -0400
-X-Sasl-enc: rmjC+LbGR8amO1rMKA312jx5ODb0XD4DAQ0sjnF/w+d3 1349914349
+	Wed, 10 Oct 2012 20:12:36 -0400
+X-Sasl-enc: tvCW4nASWniwBpx7ThvdWscuN4txulo1Vg3DmW/7CAy4 1349914354
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 073/133] ext4: move_extent code cleanup
-Date: Thu, 11 Oct 2012 07:51:39 +0900
-Message-Id: <20121010224907.637579924@linuxfoundation.org>
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 066/133] SCSI: zfcp: only access zfcp_scsi_dev for valid scsi_device
+Date: Thu, 11 Oct 2012 07:51:32 +0900
+Message-Id: <20121010224906.398863376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,342 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 
-commit 03bd8b9b896c8e940f282f540e6b4de90d666b7c upstream.
+commit d436de8ce25f53a8a880a931886821f632247943 upstream.
 
-- Remove usless checks, because it is too late to check that inode != NULL
-  at the moment it was referenced several times.
-- Double lock routines looks very ugly and locking ordering relays on
-  order of i_ino, but other kernel code rely on order of pointers.
-  Let's make them simple and clean.
-- check that inodes belongs to the same SB as soon as possible.
+__scsi_remove_device (e.g. due to dev_loss_tmo) calls
+zfcp_scsi_slave_destroy which in turn sends a close LUN FSF request to
+the adapter. After 30 seconds without response,
+zfcp_erp_timeout_handler kicks the ERP thread failing the close LUN
+ERP action. zfcp_erp_wait in zfcp_erp_lun_shutdown_wait and thus
+zfcp_scsi_slave_destroy returns and then scsi_device is no longer
+valid. Sometime later the response to the close LUN FSF request may
+finally come in. However, commit
+b62a8d9b45b971a67a0f8413338c230e3117dff5
+"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit"
+introduced a number of attempts to unconditionally access struct
+zfcp_scsi_dev through struct scsi_device causing a use-after-free.
+This leads to an Oops due to kernel page fault in one of:
+zfcp_fsf_abort_fcp_command_handler, zfcp_fsf_open_lun_handler,
+zfcp_fsf_close_lun_handler, zfcp_fsf_req_trace,
+zfcp_fsf_fcp_handler_common.
+Move dereferencing of zfcp private data zfcp_scsi_dev allocated in
+scsi_device via scsi_transport_reserve_device after the check for
+potentially aborted FSF request and thus no longer valid scsi_device.
+Only then assign sdev_to_zfcp(sdev) to the local auto variable struct
+zfcp_scsi_dev *zfcp_sdev.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/move_extent.c |  167 ++++++++++++++------------------------------------
- 1 file changed, 47 insertions(+), 120 deletions(-)
+ drivers/s390/scsi/zfcp_fsf.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -141,55 +141,21 @@ mext_next_extent(struct inode *inode, st
- }
- 
- /**
-- * mext_check_null_inode - NULL check for two inodes
-- *
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-- */
--static int
--mext_check_null_inode(struct inode *inode1, struct inode *inode2,
--		      const char *function, unsigned int line)
--{
--	int ret = 0;
--
--	if (inode1 == NULL) {
--		__ext4_error(inode2->i_sb, function, line,
--			"Both inodes should not be NULL: "
--			"inode1 NULL inode2 %lu", inode2->i_ino);
--		ret = -EIO;
--	} else if (inode2 == NULL) {
--		__ext4_error(inode1->i_sb, function, line,
--			"Both inodes should not be NULL: "
--			"inode1 %lu inode2 NULL", inode1->i_ino);
--		ret = -EIO;
--	}
--	return ret;
--}
--
--/**
-  * double_down_write_data_sem - Acquire two inodes' write lock of i_data_sem
-  *
-- * @orig_inode:		original inode structure
-- * @donor_inode:	donor inode structure
-- * Acquire write lock of i_data_sem of the two inodes (orig and donor) by
-- * i_ino order.
-+ * Acquire write lock of i_data_sem of the two inodes
-  */
- static void
--double_down_write_data_sem(struct inode *orig_inode, struct inode *donor_inode)
-+double_down_write_data_sem(struct inode *first, struct inode *second)
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -801,12 +801,14 @@ out:
+ static void zfcp_fsf_abort_fcp_command_handler(struct zfcp_fsf_req *req)
  {
--	struct inode *first = orig_inode, *second = donor_inode;
-+	if (first < second) {
-+		down_write(&EXT4_I(first)->i_data_sem);
-+		down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
-+	} else {
-+		down_write(&EXT4_I(second)->i_data_sem);
-+		down_write_nested(&EXT4_I(first)->i_data_sem, SINGLE_DEPTH_NESTING);
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	union fsf_status_qual *fsq = &req->qtcb->header.fsf_status_qual;
  
--	/*
--	 * Use the inode number to provide the stable locking order instead
--	 * of its address, because the C language doesn't guarantee you can
--	 * compare pointers that don't come from the same array.
--	 */
--	if (donor_inode->i_ino < orig_inode->i_ino) {
--		first = donor_inode;
--		second = orig_inode;
- 	}
--
--	down_write(&EXT4_I(first)->i_data_sem);
--	down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
- }
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
+ 		return;
  
- /**
-@@ -969,14 +935,6 @@ mext_check_arguments(struct inode *orig_
- 		return -EINVAL;
- 	}
- 
--	/* Files should be in the same ext4 FS */
--	if (orig_inode->i_sb != donor_inode->i_sb) {
--		ext4_debug("ext4 move extent: The argument files "
--			"should be in same FS [ino:orig %lu, donor %lu]\n",
--			orig_inode->i_ino, donor_inode->i_ino);
--		return -EINVAL;
--	}
--
- 	/* Ext4 move extent supports only extent based file */
- 	if (!(ext4_test_inode_flag(orig_inode, EXT4_INODE_EXTENTS))) {
- 		ext4_debug("ext4 move extent: orig file is not extents "
-@@ -1072,35 +1030,19 @@ mext_check_arguments(struct inode *orig_
-  * @inode1:	the inode structure
-  * @inode2:	the inode structure
-  *
-- * Lock two inodes' i_mutex by i_ino order.
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-+ * Lock two inodes' i_mutex
-  */
--static int
-+static void
- mext_inode_double_lock(struct inode *inode1, struct inode *inode2)
- {
--	int ret = 0;
--
--	BUG_ON(inode1 == NULL && inode2 == NULL);
--
--	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
--	if (ret < 0)
--		goto out;
--
--	if (inode1 == inode2) {
--		mutex_lock(&inode1->i_mutex);
--		goto out;
--	}
--
--	if (inode1->i_ino < inode2->i_ino) {
-+	BUG_ON(inode1 == inode2);
-+	if (inode1 < inode2) {
- 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_PARENT);
- 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_CHILD);
- 	} else {
- 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_PARENT);
- 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_CHILD);
- 	}
--
--out:
--	return ret;
- }
- 
- /**
-@@ -1109,28 +1051,13 @@ out:
-  * @inode1:     the inode that is released first
-  * @inode2:     the inode that is released second
-  *
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-  */
- 
--static int
-+static void
- mext_inode_double_unlock(struct inode *inode1, struct inode *inode2)
- {
--	int ret = 0;
--
--	BUG_ON(inode1 == NULL && inode2 == NULL);
--
--	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
--	if (ret < 0)
--		goto out;
--
--	if (inode1)
--		mutex_unlock(&inode1->i_mutex);
--
--	if (inode2 && inode2 != inode1)
--		mutex_unlock(&inode2->i_mutex);
--
--out:
--	return ret;
-+	mutex_unlock(&inode1->i_mutex);
-+	mutex_unlock(&inode2->i_mutex);
- }
- 
- /**
-@@ -1187,16 +1114,23 @@ ext4_move_extents(struct file *o_filp, s
- 	ext4_lblk_t block_end, seq_start, add_blocks, file_end, seq_blocks = 0;
- 	ext4_lblk_t rest_blocks;
- 	pgoff_t orig_page_offset = 0, seq_end_page;
--	int ret1, ret2, depth, last_extent = 0;
-+	int ret, depth, last_extent = 0;
- 	int blocks_per_page = PAGE_CACHE_SIZE >> orig_inode->i_blkbits;
- 	int data_offset_in_page;
- 	int block_len_in_page;
- 	int uninit;
- 
--	/* orig and donor should be different file */
--	if (orig_inode->i_ino == donor_inode->i_ino) {
-+	if (orig_inode->i_sb != donor_inode->i_sb) {
-+		ext4_debug("ext4 move extent: The argument files "
-+			"should be in same FS [ino:orig %lu, donor %lu]\n",
-+			orig_inode->i_ino, donor_inode->i_ino);
-+		return -EINVAL;
-+	}
++	zfcp_sdev = sdev_to_zfcp(sdev);
 +
-+	/* orig and donor should be different inodes */
-+	if (orig_inode == donor_inode) {
- 		ext4_debug("ext4 move extent: The argument files should not "
--			"be same file [ino:orig %lu, donor %lu]\n",
-+			"be same inode [ino:orig %lu, donor %lu]\n",
- 			orig_inode->i_ino, donor_inode->i_ino);
- 		return -EINVAL;
- 	}
-@@ -1210,16 +1144,14 @@ ext4_move_extents(struct file *o_filp, s
- 	}
+ 	switch (req->qtcb->header.fsf_status) {
+ 	case FSF_PORT_HANDLE_NOT_VALID:
+ 		if (fsq->word[0] == fsq->word[1]) {
+@@ -1769,13 +1771,15 @@ static void zfcp_fsf_open_lun_handler(st
+ {
+ 	struct zfcp_adapter *adapter = req->adapter;
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct fsf_qtcb_header *header = &req->qtcb->header;
+ 	struct fsf_qtcb_bottom_support *bottom = &req->qtcb->bottom.support;
  
- 	/* Protect orig and donor inodes against a truncate */
--	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
--	if (ret1 < 0)
--		return ret1;
-+	mext_inode_double_lock(orig_inode, donor_inode);
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
+ 		return;
  
- 	/* Protect extent tree against block allocations via delalloc */
- 	double_down_write_data_sem(orig_inode, donor_inode);
- 	/* Check the filesystem environment whether move_extent can be done */
--	ret1 = mext_check_arguments(orig_inode, donor_inode, orig_start,
-+	ret = mext_check_arguments(orig_inode, donor_inode, orig_start,
- 				    donor_start, &len);
--	if (ret1)
-+	if (ret)
- 		goto out;
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	atomic_clear_mask(ZFCP_STATUS_COMMON_ACCESS_DENIED |
+ 			  ZFCP_STATUS_COMMON_ACCESS_BOXED |
+ 			  ZFCP_STATUS_LUN_SHARED |
+@@ -1886,11 +1890,13 @@ out:
+ static void zfcp_fsf_close_lun_handler(struct zfcp_fsf_req *req)
+ {
+ 	struct scsi_device *sdev = req->data;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
  
- 	file_end = (i_size_read(orig_inode) - 1) >> orig_inode->i_blkbits;
-@@ -1227,13 +1159,13 @@ ext4_move_extents(struct file *o_filp, s
- 	if (file_end < block_end)
- 		len -= block_end - file_end;
+ 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
+ 		return;
  
--	ret1 = get_ext_path(orig_inode, block_start, &orig_path);
--	if (ret1)
-+	ret = get_ext_path(orig_inode, block_start, &orig_path);
-+	if (ret)
- 		goto out;
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	switch (req->qtcb->header.fsf_status) {
+ 	case FSF_PORT_HANDLE_NOT_VALID:
+ 		zfcp_erp_adapter_reopen(zfcp_sdev->port->adapter, 0, "fscuh_1");
+@@ -1980,7 +1986,7 @@ static void zfcp_fsf_req_trace(struct zf
+ {
+ 	struct fsf_qual_latency_info *lat_in;
+ 	struct latency_cont *lat = NULL;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(scsi->device);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct zfcp_blk_drv_data blktrc;
+ 	int ticks = req->adapter->timer_ticks;
  
- 	/* Get path structure to check the hole */
--	ret1 = get_ext_path(orig_inode, block_start, &holecheck_path);
--	if (ret1)
-+	ret = get_ext_path(orig_inode, block_start, &holecheck_path);
-+	if (ret)
- 		goto out;
+@@ -1995,6 +2001,7 @@ static void zfcp_fsf_req_trace(struct zf
  
- 	depth = ext_depth(orig_inode);
-@@ -1252,13 +1184,13 @@ ext4_move_extents(struct file *o_filp, s
- 		last_extent = mext_next_extent(orig_inode,
- 					holecheck_path, &ext_cur);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			goto out;
- 		}
- 		last_extent = mext_next_extent(orig_inode, orig_path,
- 							&ext_dummy);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			goto out;
- 		}
- 		seq_start = le32_to_cpu(ext_cur->ee_block);
-@@ -1272,7 +1204,7 @@ ext4_move_extents(struct file *o_filp, s
- 	if (le32_to_cpu(ext_cur->ee_block) > block_end) {
- 		ext4_debug("ext4 move extent: The specified range of file "
- 							"may be the hole\n");
--		ret1 = -EINVAL;
-+		ret = -EINVAL;
- 		goto out;
- 	}
+ 	if (req->adapter->adapter_features & FSF_FEATURE_MEASUREMENT_DATA &&
+ 	    !(req->status & ZFCP_STATUS_FSFREQ_ERROR)) {
++		zfcp_sdev = sdev_to_zfcp(scsi->device);
+ 		blktrc.flags |= ZFCP_BLK_LAT_VALID;
+ 		blktrc.channel_lat = lat_in->channel_lat * ticks;
+ 		blktrc.fabric_lat = lat_in->fabric_lat * ticks;
+@@ -2032,12 +2039,14 @@ static void zfcp_fsf_fcp_handler_common(
+ {
+ 	struct scsi_cmnd *scmnd = req->data;
+ 	struct scsi_device *sdev = scmnd->device;
+-	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
++	struct zfcp_scsi_dev *zfcp_sdev;
+ 	struct fsf_qtcb_header *header = &req->qtcb->header;
  
-@@ -1292,7 +1224,7 @@ ext4_move_extents(struct file *o_filp, s
- 		last_extent = mext_next_extent(orig_inode, holecheck_path,
- 						&ext_cur);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			break;
- 		}
- 		add_blocks = ext4_ext_get_actual_len(ext_cur);
-@@ -1349,18 +1281,18 @@ ext4_move_extents(struct file *o_filp, s
- 						orig_page_offset,
- 						data_offset_in_page,
- 						block_len_in_page, uninit,
--						&ret1);
-+						&ret);
+ 	if (unlikely(req->status & ZFCP_STATUS_FSFREQ_ERROR))
+ 		return;
  
- 			/* Count how many blocks we have exchanged */
- 			*moved_len += block_len_in_page;
--			if (ret1 < 0)
-+			if (ret < 0)
- 				break;
- 			if (*moved_len > len) {
- 				EXT4_ERROR_INODE(orig_inode,
- 					"We replaced blocks too much! "
- 					"sum of replaced: %llu requested: %llu",
- 					*moved_len, len);
--				ret1 = -EIO;
-+				ret = -EIO;
- 				break;
- 			}
- 
-@@ -1374,22 +1306,22 @@ ext4_move_extents(struct file *o_filp, s
- 		}
- 
- 		double_down_write_data_sem(orig_inode, donor_inode);
--		if (ret1 < 0)
-+		if (ret < 0)
- 			break;
- 
- 		/* Decrease buffer counter */
- 		if (holecheck_path)
- 			ext4_ext_drop_refs(holecheck_path);
--		ret1 = get_ext_path(orig_inode, seq_start, &holecheck_path);
--		if (ret1)
-+		ret = get_ext_path(orig_inode, seq_start, &holecheck_path);
-+		if (ret)
- 			break;
- 		depth = holecheck_path->p_depth;
- 
- 		/* Decrease buffer counter */
- 		if (orig_path)
- 			ext4_ext_drop_refs(orig_path);
--		ret1 = get_ext_path(orig_inode, seq_start, &orig_path);
--		if (ret1)
-+		ret = get_ext_path(orig_inode, seq_start, &orig_path);
-+		if (ret)
- 			break;
- 
- 		ext_cur = holecheck_path[depth].p_ext;
-@@ -1412,12 +1344,7 @@ out:
- 		kfree(holecheck_path);
- 	}
- 	double_up_write_data_sem(orig_inode, donor_inode);
--	ret2 = mext_inode_double_unlock(orig_inode, donor_inode);
-+	mext_inode_double_unlock(orig_inode, donor_inode);
- 
--	if (ret1)
--		return ret1;
--	else if (ret2)
--		return ret2;
--
--	return 0;
-+	return ret;
- }
++	zfcp_sdev = sdev_to_zfcp(sdev);
++
+ 	switch (header->fsf_status) {
+ 	case FSF_HANDLE_MISMATCH:
+ 	case FSF_PORT_HANDLE_NOT_VALID:
 
 
