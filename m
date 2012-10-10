@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2JJRDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:03:21 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:46203 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615Ab2JJRDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:03:18 -0400
-Date: Wed, 10 Oct 2012 18:28:42 +0200
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, dave@jikos.cz, tytso@mit.edu, cmm@us.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
-Message-ID: <20121010162842.GZ4405@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
-	tytso@mit.edu, cmm@us.ibm.com,
-	Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
+	id S932381Ab2JJPPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:15:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49907 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab2JJPPV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:15:21 -0400
+Message-ID: <50759105.2000406@wwwdotorg.org>
+Date: Wed, 10 Oct 2012 09:15:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Scott Wood <scottwood@freescale.com>
+CC: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: dtc: import latest upstream dtc
+References: <1349827466.26044.16@snotra>
+In-Reply-To: <1349827466.26044.16@snotra>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/09/2012 06:04 PM, Scott Wood wrote:
+> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>> >>>
+>> >>> What more do you think needs discussion re: dtc+cpp?
+>> >>
+>> >> How not to abuse the ever-loving shit out of it? :-)
+>> >
+>> > Perhaps we can just handle this through the regular patch review
+>> > process; I think it may be difficult to define and agree upon exactly
+>> > what "abuse" means ahead of time, but it's probably going to be easy
+>> > enough to recognize it when one sees it?
+>>
+>>
+>> One of the ways it could get out of hand would be via "include
+>> dependency hell".  People will be tempted to reuse existing .h files
+>> containing pin definitions, which, if history is a guide, will end up
+>> depending on all sorts of other .h files.
+>>
+>> Another problem I often face with symbolic names is the difficulty of
+>> figuring out what the numerical values really are (for debugging),
+>> especially when .h files are in different subtrees from the files that
+>> use the definitions, and when they use multiple macro levels and fancy
+>> features like concatenation.  Sometimes I think it's clearer just to
+>> write the number and use a comment to say what it is.
+> 
+> Both comments apply just as well to ordinary C code, and I don't think
+> anyone would seriously suggest just using comments instead for C code.
+> 
+> Is there a way to ask CPP to evaluate a macro in the context of the
+> input file, rather than produce normal output?  If not, I guess you
+> could make a tool that creates a wrapper file that includes the main
+> file and then evaluates the symbol you want.
 
-On Wed, Oct 10, 2012 at 06:07:23PM +0800, zwu.kernel@gmail.com wrote:
-> --- a/fs/btrfs/ctree.h
-> +++ b/fs/btrfs/ctree.h
-> @@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
->  #define BTRFS_MOUNT_CHECK_INTEGRITY	(1 << 20)
->  #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
->  #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR	(1 << 22)
-> +#define BTRFS_MOUNT_HOT_TRACK		(1 << 23)
+I'm not sure what "evaluate a macro in the context of the input file"
+means. Macros are obviously already evaluated based on the current set
+of macros defined by the file that's been processed or those it
+included. Do you mean only allowing the use of macros in the current
+file and not included files? What exactly would the wrapper you
+mentioned do?
 
-Please don't forget to add new options to btrfs_show_options(),
-otherwise we can't tell what filesystems have hot tracking enabled.
-
-> --- a/fs/btrfs/super.c
-> +++ b/fs/btrfs/super.c
-> @@ -303,7 +304,7 @@ enum {
->  	Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
->  	Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
->  	Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
-> -	Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
-> +	Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
-
-Please add the new option to the end.
-
->  	Opt_check_integrity, Opt_check_integrity_including_extent_data,
->  	Opt_check_integrity_print_mask, Opt_fatal_errors,
->  	Opt_err,
-> @@ -342,6 +343,7 @@ static match_table_t tokens = {
->  	{Opt_no_space_cache, "nospace_cache"},
->  	{Opt_recovery, "recovery"},
->  	{Opt_skip_balance, "skip_balance"},
-> +	{Opt_hot_track, "hot_track"},
-
-(also this one)
-
->  	{Opt_check_integrity, "check_int"},
->  	{Opt_check_integrity_including_extent_data, "check_int_data"},
->  	{Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
-> @@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
->  		case Opt_skip_balance:
->  			btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
->  			break;
-> +		case Opt_hot_track:
-
-It's a common patter in the surrounding code that a message is printed
-when enabling options, but the vfs prints its own, so I'm not sure if
-it's needed here as well. Just thinking, leave it as it is now.
-
-> +			btrfs_set_opt(info->mount_opt, HOT_TRACK);
-> +			break;
->  #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
->  		case Opt_check_integrity_including_extent_data:
->  			printk(KERN_INFO "btrfs: enabling check integrity"
-
-david
