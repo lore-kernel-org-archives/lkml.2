@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab2JJE1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 00:27:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab2JJE1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 00:27:10 -0400
-Date: Wed, 10 Oct 2012 00:26:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: ODEBUG: free active (active state 0) object type: work_struct hint:
- flush_to_ldisc+0x0/0x1a0
-Message-ID: <20121010042656.GA32075@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+	id S1751734Ab2JJE1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 00:27:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58640 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab2JJE11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 00:27:27 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5074F7FB.9000601@jp.fujitsu.com>
+Date: Wed, 10 Oct 2012 13:22:19 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ddutile@redhat.com
+CC: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, vgoyal@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH v2 0/2] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <20121002074434.204.47750.sendpatchset@indoh> <506C3C4C.1060808@redhat.com> <5073E84A.8080301@jp.fujitsu.com> <50744B40.5030504@redhat.com>
+In-Reply-To: <50744B40.5030504@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this..
+(2012/10/10 1:05), Don Dutile wrote:
+> On 10/09/2012 05:03 AM, Takao Indoh wrote:
+>> (2012/10/03 22:23), Don Dutile wrote:
+>>> On 10/02/2012 03:49 AM, Takao Indoh wrote:
+>>>> These patches reset PCIe devices at boot time to address DMA problem on
+>>>> kdump with iommu. When "reset_devices" is specified, a hot reset is
+>>>> triggered on each PCIe root port and downstream port to reset its
+>>>> downstream endpoint.
+>>>>
+>>>> Background:
+>>>> A kdump problem about DMA has been discussed for a long time. That is,
+>>>> when a kernel is switched to the kdump kernel DMA derived from first
+>>>> kernel affects second kernel. Recently this problem surfaces when iommu
+>>>> is used for PCI passthrough on KVM guest. In the case of the machine I
+>>>> use, when intel_iommu=on is specified, DMAR error is detected in kdump
+>>>> kernel and PCI SERR is also detected. Finally kdump fails because some
+>>>> devices does not work correctly.
+>>>>
+>>>> The root cause is that ongoing DMA from first kernel causes DMAR fault
+>>>> because page table of DMAR is initialized while kdump kernel is booting
+>>>> up. Therefore to address this problem DMA needs to be stopped before
+>>>> DMAR is initialized at kdump kernel boot time. By these patches, PCIe
+>>>> devices are reset by hot reset and its DMA is stopped when reset_devices
+>>>> is specified. One problem of this solution is that the monitor blacks
+>>>> out when VGA controller is reset. So this patch does not reset the port
+>>>> whose child endpoint is VGA device.
+>>>>
+>>>> v2:
+>>>> Reset devices in setup_arch() because reset need to be done before
+>>>> interrupt remapping is initialized.
+>>>>
+>>>> v1:
+>>>> https://lkml.org/lkml/2012/8/3/160
+>>>>
+>>>> Thanks,
+>>>> Takao Indoh
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>
+>>>
+>>> Maybe you've tried the following, and I missed a thread on it,
+>>> but instead of a somewhat-large, reset hammer, did any one try
+>>> just reading all the endpoint-only device CMD register, flip the MasterEnable
+>>> bit off, and write it back? .... that would stop all DMA (should stop
+>>> all MSI writes as well since they are just another DMA), and then
+>>> restart the system?
+>>> May also have to do PCI INT Disable as well... and note, that's a PCI 2.3
+>>> optional feature.... so devices using INT signalling vs MSI
+>>> is just borked on IOMMU/intr-remapping systems... which I would expect
+>>> are few. Then again, if this is foolishly done, then reset legacy PCI
+>>> busses as the fallback.
+>>
+>> Just clearing bus master bit and INTx disable bit in setup_arch() did
+>> not solve this problem. I still got DMAR error on devices(for exmaple,
+>> igb and megaraid_sas).
+>>
+>> Clearing bus master in setup_arch() and resetting devices in fixup_final
+>> like v1 patch is better, DMAR error was not detected. But on certain
+>> machine kdump kernel hung up when resetting devices. It seems to be a
+>> problem specific to the platform.
+>>
+>> And, resetting devices in setup_arch() like v2 patch solves all problems
+>> I found so far.
+>>
+>> Thanks,
+>> Takao Indoh
+>>
+> this summary should be in the patch set, so others know/learn
+> what was attempted, what failed, and how you reached this working conclusion.
 
-WARNING: at lib/debugobjects.c:261 debug_print_object+0x8c/0xb0()
-ODEBUG: free active (active state 0) object type: work_struct hint: flush_to_ldisc+0x0/0x1a0
-Modules linked in: fuse ipt_ULOG nfnetlink tun binfmt_misc nfc caif_socket caif phonet can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 lockd sunrpc bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel usb_debug kvm crc32c_intel ghash_clmulni_intel microcode pcspkr i2c_i801 e1000e uinput i915 video i2c_algo_bit drm_kms_helper drm i2c_core
-Pid: 23707, comm: kworker/3:0 Not tainted 3.6.0+ #26
-Call Trace:
- [<ffffffff8107005f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff81070156>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff813728fc>] debug_print_object+0x8c/0xb0
- [<ffffffff8141c200>] ? tty_insert_flip_string_fixed_flag+0x100/0x100
- [<ffffffff81373699>] debug_check_no_obj_freed+0x119/0x210
- [<ffffffff814122c6>] ? free_tty_struct+0x46/0x50
- [<ffffffff811cd166>] kfree+0xe6/0x340
- [<ffffffff814122c6>] free_tty_struct+0x46/0x50
- [<ffffffff81412377>] release_one_tty+0xa7/0xc0
- [<ffffffff81094bc7>] process_one_work+0x207/0x770
- [<ffffffff81094b57>] ? process_one_work+0x197/0x770
- [<ffffffff814122d0>] ? free_tty_struct+0x50/0x50
- [<ffffffff8109550e>] worker_thread+0x15e/0x440
- [<ffffffff810953b0>] ? rescuer_thread+0x240/0x240
- [<ffffffff8109c25d>] kthread+0xed/0x100
- [<ffffffff816bdcd9>] ? sub_preempt_count+0x79/0xd0
- [<ffffffff816c34a4>] kernel_thread_helper+0x4/0x10
- [<ffffffff810aa29c>] ? finish_task_switch+0x7c/0x120
- [<ffffffff816b92bb>] ? _raw_spin_unlock_irq+0x4b/0x80
- [<ffffffff816b9d37>] ? retint_restore_args+0x13/0x13
- [<ffffffff8109c170>] ? kthread_create_on_node+0x160/0x160
- [<ffffffff816c34a0>] ? gs_change+0x13/0x13
----[ end trace fbabf37a8756c1c9 ]---
+Ok, I'll post new patch with this information.
+
+Thanks,
+Takao Indoh
 
