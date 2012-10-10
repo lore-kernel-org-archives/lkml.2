@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2JKAOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:14:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49008 "EHLO
+	id S932687Ab2JKAOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:14:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45075 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757956Ab2JKANz (ORCPT
+	by vger.kernel.org with ESMTP id S1758196Ab2JKAOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:55 -0400
-X-Sasl-enc: 95biG+3oxCgKcviozUkl0yu2nWgxgpEK9wjcrDIG2SuO 1349914434
+	Wed, 10 Oct 2012 20:14:05 -0400
+X-Sasl-enc: XCvc+GH51y7WPAWBeJLl3zLpFFiV1JNdLTx99w5lENb6 1349914444
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marko Friedemann <mfr@bmx-chemnitz.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 091/133] ALSA: USB: Support for (original) Xbox Communicator
-Date: Thu, 11 Oct 2012 07:51:57 +0900
-Message-Id: <20121010224910.876338547@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, lu hua <huax.lu@intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 093/133] drm: Destroy the planes prior to destroying the associated CRTC
+Date: Thu, 11 Oct 2012 07:51:59 +0900
+Message-Id: <20121010224911.235874613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,81 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marko Friedemann <mfr@bmx-chemnitz.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit c05fce586d4da2dfe0309bef3795a8586e967bc3 upstream.
+commit 3184009c36da413724f283e3c7ac9cc60c623bc4 upstream.
 
-Added support for Xbox Communicator to USB quirks.
+As during the plane cleanup, we wish to disable the hardware and
+so may modify state on the associated CRTC, that CRTC must continue to
+exist until we are finished.
 
-Signed-off-by: Marko Friedemann <mfr@bmx-chemnitz.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54101
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: lu hua <huax.lu@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |   53 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ drivers/gpu/drm/drm_crtc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -2781,6 +2781,59 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1034,15 +1034,15 @@ void drm_mode_config_cleanup(struct drm_
+ 		fb->funcs->destroy(fb);
  	}
- },
  
-+/* Microsoft XboxLive Headset/Xbox Communicator */
-+{
-+	USB_DEVICE(0x045e, 0x0283),
-+	.bInterfaceClass = USB_CLASS_PER_INTERFACE,
-+	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
-+		.vendor_name = "Microsoft",
-+		.product_name = "XboxLive Headset/Xbox Communicator",
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = &(const struct snd_usb_audio_quirk[]) {
-+			{
-+				/* playback */
-+				.ifnum = 0,
-+				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
-+				.data = &(const struct audioformat) {
-+					.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+					.channels = 1,
-+					.iface = 0,
-+					.altsetting = 0,
-+					.altset_idx = 0,
-+					.attributes = 0,
-+					.endpoint = 0x04,
-+					.ep_attr = 0x05,
-+					.rates = SNDRV_PCM_RATE_CONTINUOUS,
-+					.rate_min = 22050,
-+					.rate_max = 22050
-+				}
-+			},
-+			{
-+				/* capture */
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
-+				.data = &(const struct audioformat) {
-+					.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+					.channels = 1,
-+					.iface = 1,
-+					.altsetting = 0,
-+					.altset_idx = 0,
-+					.attributes = 0,
-+					.endpoint = 0x85,
-+					.ep_attr = 0x05,
-+					.rates = SNDRV_PCM_RATE_CONTINUOUS,
-+					.rate_min = 16000,
-+					.rate_max = 16000
-+				}
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
+-	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
+-		crtc->funcs->destroy(crtc);
+-	}
+-
+ 	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
+ 				 head) {
+ 		plane->funcs->destroy(plane);
+ 	}
+ 
++	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
++		crtc->funcs->destroy(crtc);
 +	}
-+},
 +
- {
- 	/*
- 	 * Some USB MIDI devices don't have an audio control interface,
+ 	idr_remove_all(&dev->mode_config.crtc_idr);
+ 	idr_destroy(&dev->mode_config.crtc_idr);
+ }
 
 
