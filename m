@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2JJJBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:01:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11420 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395Ab2JJJA6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:00:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,564,1344236400"; 
-   d="scan'208";a="202707097"
-Message-ID: <1349859638.10584.120.camel@smile>
-Subject: Re: [PATCH 2/4] dmaengine: dw_dmac: add module alias
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, balbi@ti.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Date: Wed, 10 Oct 2012 12:00:38 +0300
-In-Reply-To: <1349178121-9105-3-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1349178121-9105-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1752621Ab2JJJCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 05:02:40 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:54782 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395Ab2JJJCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 05:02:37 -0400
+Date: Wed, 10 Oct 2012 05:02:28 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jooyoung Hwang <jooyoung.hwang@samsung.com>
+Cc: "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
+        "'Marco Stornelli'" <marco.stornelli@gmail.com>,
+        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>,
+        "'Al Viro'" <viro@zeniv.linux.org.uk>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+Message-ID: <20121010090228.GD11481@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jooyoung Hwang <jooyoung.hwang@samsung.com>,
+	'Vyacheslav Dubeyko' <slava@dubeyko.com>,
+	'Marco Stornelli' <marco.stornelli@gmail.com>,
+	'Jaegeuk Kim' <jaegeuk.kim@gmail.com>,
+	'Al Viro' <viro@zeniv.linux.org.uk>, gregkh@linuxfoundation.org,
+	linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+	cm224.lee@samsung.com, linux-fsdevel@vger.kernel.org
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+ <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+ <1349553966.12699.132.camel@kjgkr>
+ <50712AAA.5030807@gmail.com>
+ <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+ <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+ <004101cda52e$72210e20$56632a60$%kim@samsung.com>
+ <55A93BD0-CBCB-4707-A970-EB823EC54B2D@dubeyko.com>
+ <006f01cda5ec$e63e9b60$b2bbd220$%kim@samsung.com>
+ <1349812406.18456.41.camel@adg-desktop-09.cs.wisc.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349812406.18456.41.camel@adg-desktop-09.cs.wisc.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-02 at 14:41 +0300, Andy Shevchenko wrote: 
-> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> 
-> It's good to have a quasistatic name for the platform driver.
-Please, do not push this one.
-It makes no sense now. Better we have it after a split.
+On Tue, Oct 09, 2012 at 02:53:26PM -0500, Jooyoung Hwang wrote:
 
-> 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/dma/dw_dmac.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index 0b88ced..bbb2a82 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -1712,6 +1712,7 @@ static struct platform_driver dw_driver = {
->  
->  module_platform_driver(dw_driver);
->  
-> +MODULE_ALIAS("platform:dw_dmac");
->  MODULE_LICENSE("GPL v2");
->  MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
->  MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+> I'd like you to refer to the following link as well which is about
+> mobile workload pattern.
+> http://www.cs.cmu.edu/~fuyaoz/courses/15712/report.pdf
+> It's reported that in Android there are frequent issues of fsync and
+> most of them are only for small size of data.
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+What bothers me is no one is asking the question, *why* is Android
+(and more specifically SQLite and the applications which call SQLite)
+using fsync's so often?  These aren't transaction processing systems,
+after all.  So there are two questions that are worth asking here.
+(a) Is SQLite being as flash-friendly as possible, and (b) do the
+applications really need as many transaction boundaries as they are
+requesting of SQLite.
+
+Yes, we can optimize the file system, but sometimes the best way to
+optimize a write is to not to do the write at all (if it is not
+required for the application's functionality, of course).  If the
+application is requesting 4 transaction boundaries where only one is
+required, we can try to make fsync's more efficient, yes --- but there
+is only so much that can be done at the fs layer.
+
+							- Ted
