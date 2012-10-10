@@ -1,89 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2JJC0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:26:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59380 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754233Ab2JJCZ6 (ORCPT
+	id S1756501Ab2JJC2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:28:05 -0400
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:34077
+	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233Ab2JJC2C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:25:58 -0400
-Message-ID: <1349835953.6336.25.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 068/108] HID: hidraw: add proper error handling to raw event
- reporting
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>
-Date: Wed, 10 Oct 2012 03:25:53 +0100
-In-Reply-To: <20121008193409.GC3004@herton-Z68MA-D2H-B3>
-References: <20121007225834.673681075@decadent.org.uk>
-	 <20121007225844.105600523@decadent.org.uk>
-	 <20121008193409.GC3004@herton-Z68MA-D2H-B3>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-gxeEzJg7DYZuDTCRz3Jq"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 9 Oct 2012 22:28:02 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -8
+X-BigFish: PS-8(zz98dI9371I542M1432Izz1202h1d1ah1d2ahzz8275bh8275dhz31h2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: RE: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+Thread-Topic: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+Thread-Index: AQHNpOUXgnwlsoeYd0afghaYt4KseJexY0uAgAACC0CAAFozAIAAE4mQ
+Date: Wed, 10 Oct 2012 02:26:46 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930A33D08@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+	<1349654386-18378-1-git-send-email-kys@microsoft.com>
+	<1349654386-18378-2-git-send-email-kys@microsoft.com>
+	<20121009124449.f54bf8cb.akpm@linux-foundation.org>
+	<426367E2313C2449837CD2DE46E7EAF930A33CC4@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121009181458.e59e7094.akpm@linux-foundation.org>
+In-Reply-To: <20121009181458.e59e7094.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT001.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454001)(377454001)(51704002)(13464001)(46102001)(50466001)(49866001)(306001)(1076001)(51856001)(3846001)(16696001)(876001)(4196001)(47736001)(4396001)(20776001)(5836001)(47976001)(48376001)(6806001)(2666001)(16616001)(5343655001)(74662001)(5343635001)(47446002)(50986001)(47776002)(74502001)(16676001)(42186003)(33656001)(31966008)(8716001)(44976002)(316001)(3746001)(3556001);DIR:OUT;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0630013541
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-gxeEzJg7DYZuDTCRz3Jq
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-10-08 at 16:34 -0300, Herton Ronaldo Krzesinski wrote:
-> On Sun, Oct 07, 2012 at 11:59:42PM +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Jiri Kosina <jkosina@suse.cz>
-> >=20
-> > commit b6787242f32700377d3da3b8d788ab3928bab849 upstream.
-> >=20
-> > If kmemdup() in hidraw_report_event() fails, we are not propagating
-> > this fact properly.
-> >=20
-> > Let hidraw_report_event() and hid_report_raw_event() return an error
-> > value to the caller.
->=20
-> This needs in addition a small fix on top, commit d6d7c87
-> ("HID: fix return value of hidraw_report_event() when !CONFIG_HIDRAW")
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Tuesday, October 09, 2012 9:15 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org
+> Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+> 
+> On Wed, 10 Oct 2012 00:09:12 +0000 KY Srinivasan <kys@microsoft.com> wrote:
+> 
+> > > > +		if (!pg) {
+> > > > +			*alloc_error = true;
+> > > > +			return i * alloc_unit;
+> > > > +		}
+> > > > +
+> > > > +		totalram_pages -= alloc_unit;
+> > >
+> > > Well, I'd consider totalram_pages to be an mm-private thing which drivers
+> > > shouldn't muck with.  Why is this done?
+> >
+> > By modifying the totalram_pages, the information presented in /proc/meminfo
+> > correctly reflects what is currently assigned to the guest (MemTotal).
+> 
+> eh?  /proc/meminfo:MemTotal tells you the total memory in the machine.
+> The only thing which should change it after boot is memory hotplug.
+> 
+> Modifying it in this manner puts the statistic into a state know as
+> "wrong".  And temporarily modifying it in this fashion will cause the
+> tremendous amount of initialisation code which relies upon
+> totalram_pages for sizing to also enter the "wrong" state.
+> 
+> Why on earth do balloon drivers do this?  If the amount of memory which
+> is consumed by balloons is interesting then it should be exported via a
+> standalone metric, not by mucking with totalram_pages.
 
-I've added that, thanks.
+I see your point. I will get rid of the code that manipulates the totalram_pages.
 
-Ben.
+Regards,
 
---=20
-Ben Hutchings
-Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
+K. Y
+ 
 
---=-gxeEzJg7DYZuDTCRz3Jq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUHTcsee/yOyVhhEJAQprLg/9HQ46/npG9rsRZRU7Ae8LNVlP6Wit1ZjJ
-2mFmW9SAeEYcBQG0i2r9vuPRvPd36gZAu5Y7VM97PKWDKxDmZvH08USLrqIFw7ZX
-F3BIRVh+vFDUZdmPUbWkInY5bQBhVOdMlXNiz0nNoRcaCBAowiXi6GlZF/xZAtwP
-rKvBmWRchIV1fEY6FBFgqBIwA2Ekqzg+VfISwgABEvMDLlVeAWOuzLvnWWHSz9cE
-QPzDFz9NsKY+ZgnC1iGevahen4s8fRw+2GuInUvo+Ump7XK6w2FtNuJuKoEdcrV5
-riX7nWvdGiUzsmOACkrpROriMif1Tbz8eFNaPm+z0+wxn28uC9CDAUgd04qlTn05
-0OEwPplRqiH76EUdGNPCUbze1hSsI4rhPkzciN+1g+SJf1CFHrcADPuWjq3e9MMW
-3JndEVh5I/2ucx+oq2vblAyBLvMzt9hCpv32cYtfy3vYU4Wwmldv01/jc7aeXRkk
-XUQEZLpLfRGbtNhzPeTd9uNcGj0/ENttGQwgetVAsyi+XsvhGn09QQkZ6iTw+wyr
-K+MHgYRF1z4xRyzkowssItAmTatVzfeagDeB040i0nrejvPXVCeZakkGzqUC2nQZ
-LFq/F0Pstm80vM8xEmb83DbdYlrkxrBs0+CZAw4M6yVfwMjOCCQTwqxwIMcZuq2e
-RW6EbjhiXWo=
-=V8Uv
------END PGP SIGNATURE-----
-
---=-gxeEzJg7DYZuDTCRz3Jq--
