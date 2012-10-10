@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab2JJXQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:16:09 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37150 "EHLO
+	id S932510Ab2JJXQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:16:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52639 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757887Ab2JJXBc (ORCPT
+	by vger.kernel.org with ESMTP id S1752935Ab2JJXB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:32 -0400
-X-Sasl-enc: lemwspLUCCpPRY1TurPRkTs7L0ljELtTUunPFB5/iRbJ 1349910091
+	Wed, 10 Oct 2012 19:01:29 -0400
+X-Sasl-enc: qBzB2Pu8EJvFzqZHgQZ7q5jP6CapwYEBoOAViOQFb3SH 1349910088
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 021/122] lguest: fix occasional crash in example launcher.
-Date: Thu, 11 Oct 2012 07:53:07 +0900
-Message-Id: <20121010225341.940527993@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 024/122] ixgbe: fix PTP ethtool timestamping function
+Date: Thu, 11 Oct 2012 07:53:10 +0900
+Message-Id: <20121010225342.479621641@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,29 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit ca16f580a5db7e60bfafe59a50bb133bd3347491 upstream.
+commit 1cc92eb871d6cbb1da038b4bcd89eec3c73b9781 upstream.
 
-We usually got away with ->next on the final entry being NULL, but it
-finally bit me.
+This patch fixes a development issue that occurred due to invalid modes reported
+in the ethtool get_ts_info function. The issue is resolved by removing
+unsupported modes from the Rx supported list.
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/lguest/lguest.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/tools/lguest/lguest.c
-+++ b/tools/lguest/lguest.c
-@@ -1299,6 +1299,7 @@ static struct device *new_device(const c
- 	dev->feature_len = 0;
- 	dev->num_vq = 0;
- 	dev->running = false;
-+	dev->next = NULL;
- 
- 	/*
- 	 * Append to device list.  Prepending to a single-linked list is
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+@@ -2690,10 +2690,7 @@ static int ixgbe_get_ts_info(struct net_
+ 			(1 << HWTSTAMP_FILTER_NONE) |
+ 			(1 << HWTSTAMP_FILTER_PTP_V1_L4_SYNC) |
+ 			(1 << HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ) |
+-			(1 << HWTSTAMP_FILTER_PTP_V2_SYNC) |
+-			(1 << HWTSTAMP_FILTER_PTP_V2_DELAY_REQ) |
+-			(1 << HWTSTAMP_FILTER_PTP_V2_EVENT) |
+-			(1 << HWTSTAMP_FILTER_SOME);
++			(1 << HWTSTAMP_FILTER_PTP_V2_EVENT);
+ 		break;
+ #endif /* CONFIG_IXGBE_PTP */
+ 	default:
 
 
