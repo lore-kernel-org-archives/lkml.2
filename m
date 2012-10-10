@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932883Ab2JKAPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40267 "EHLO
+	id S932896Ab2JKAPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:15:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46803 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932834Ab2JKAPG (ORCPT
+	by vger.kernel.org with ESMTP id S932750Ab2JKAPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:06 -0400
-X-Sasl-enc: pUfQtV08/w/+Ld3l9J9MGuuyduZdplnW84U1R4F4fyQw 1349914504
+	Wed, 10 Oct 2012 20:15:15 -0400
+X-Sasl-enc: 7avE97Nw8mI8zmLd1sZoDIVJeu/pttie52tQdFaNfuNa 1349914514
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 097/133] drm/i915: Flush the pending flips on the CRTC before modification
-Date: Thu, 11 Oct 2012 07:52:03 +0900
-Message-Id: <20121010224911.966967490@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Cris <linux-cris-kernel@axis.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 108/133] cris: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:14 +0900
+Message-Id: <20121010224913.971197304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,80 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 5bb61643f6a70d48de9cfe91ad0fee0d618b6816 upstream.
+commit c633f9e788928e91ad11f44df29b47bbbe9550b0 upstream.
 
-This was meant to be the purpose of the
-intel_crtc_wait_for_pending_flips() function which is called whilst
-preparing the CRTC for a modeset or before disabling. However, as Ville
-Syrjala pointed out, we set the pending flip notification on the old
-framebuffer that is no longer attached to the CRTC by the time we come
-to flush the pending operations. Instead, we can simply wait on the
-pending unpin work to be finished on this CRTC, knowning that the
-hardware has therefore finished modifying the registers, before proceeding
-with our direct access.
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-Fixes i-g-t/flip_test on non-pch platforms. pch platforms simply
-schedule the flip immediately when the pipe is disabled, leading
-to other funny issues.
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-[danvet: Added i-g-t note and cc: stable]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in the Cris's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Cris <linux-cris-kernel@axis.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ arch/cris/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -2641,13 +2641,34 @@ static void ironlake_fdi_disable(struct
- 	udelay(100);
- }
+--- a/arch/cris/kernel/process.c
++++ b/arch/cris/kernel/process.c
+@@ -25,6 +25,7 @@
+ #include <linux/elfcore.h>
+ #include <linux/mqueue.h>
+ #include <linux/reboot.h>
++#include <linux/rcupdate.h>
  
-+static bool intel_crtc_has_pending_flip(struct drm_crtc *crtc)
-+{
-+	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	unsigned long flags;
-+	bool pending;
-+
-+	if (atomic_read(&dev_priv->mm.wedged))
-+		return false;
-+
-+	spin_lock_irqsave(&dev->event_lock, flags);
-+	pending = to_intel_crtc(crtc)->unpin_work != NULL;
-+	spin_unlock_irqrestore(&dev->event_lock, flags);
-+
-+	return pending;
-+}
-+
- static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
+ //#define DEBUG
+ 
+@@ -74,6 +75,7 @@ void cpu_idle (void)
  {
- 	struct drm_device *dev = crtc->dev;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
- 
- 	if (crtc->fb == NULL)
- 		return;
- 
-+	wait_event(dev_priv->pending_flip_queue,
-+		   !intel_crtc_has_pending_flip(crtc));
-+
- 	mutex_lock(&dev->struct_mutex);
- 	intel_finish_fb(crtc->fb);
- 	mutex_unlock(&dev->struct_mutex);
-@@ -5916,9 +5937,8 @@ static void do_intel_finish_page_flip(st
- 
- 	atomic_clear_mask(1 << intel_crtc->plane,
- 			  &obj->pending_flip.counter);
--	if (atomic_read(&obj->pending_flip) == 0)
--		wake_up(&dev_priv->pending_flip_queue);
- 
-+	wake_up(&dev_priv->pending_flip_queue);
- 	schedule_work(&work->work);
- 
- 	trace_i915_flip_complete(intel_crtc->plane, work->pending_flip_obj);
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched()) {
+ 			void (*idle)(void);
+ 			/*
+@@ -86,6 +88,7 @@ void cpu_idle (void)
+ 				idle = default_idle;
+ 			idle();
+ 		}
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+ }
 
 
