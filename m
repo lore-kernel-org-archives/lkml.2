@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2JJXUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:20:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46595 "EHLO
+	id S932627Ab2JJXVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:21:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58531 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757806Ab2JJWyx (ORCPT
+	by vger.kernel.org with ESMTP id S1757566Ab2JJWyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:53 -0400
-X-Sasl-enc: OkAY9t0y8sDzFSZvHmayS8K0HnCjV57IAVjxJopHpoZP 1349909691
+	Wed, 10 Oct 2012 18:54:47 -0400
+X-Sasl-enc: 6LfU7xTXDUpr16fctu2tGupaCn2tgLfkpbv5RPRxmemJ 1349909686
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        =?UTF-8?q?Linus=20L=FCssing?= <linus.luessing@web.de>,
+        Sven Eckelmann <sven@narfation.org>,
+        Antonio Quartulli <ordex@autistici.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 045/133] ipv6: del unreachable route when an addr is deleted on lo
-Date: Thu, 11 Oct 2012 07:51:11 +0900
-Message-Id: <20121010224902.614678466@linuxfoundation.org>
+Subject: =?UTF-8?q?=5B=20043/133=5D=20batman-adv=3A=20make=20batadv=5Ftest=5Fbit=28=29=20return=200=20or=201=20only?=
+Date: Thu, 11 Oct 2012 07:51:09 +0900
+Message-Id: <20121010224902.248029092@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,49 +34,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Linus Lüssing <linus.luessing@web.de>
 
-[ Upstream commit 64c6d08e6490fb18cea09bb03686c149946bd818 ]
+[ Upstream commit dbd6b11e15a2f96030da17dbeda943a8a98ee990 ]
 
-When an address is added on loopback (ip -6 a a 2002::1/128 dev lo), two routes
-are added:
- - one in the local table:
-    local 2002::1 via :: dev lo  proto none  metric 0
- - one the in main table (for the prefix):
-    unreachable 2002::1 dev lo  proto kernel  metric 256  error -101
+On some architectures test_bit() can return other values than 0 or 1:
 
-When the address is deleted, the route inserted in the main table remains
-because we use rt6_lookup(), which returns NULL when dst->error is set, which
-is the case here! Thus, it is better to use ip6_route_lookup() to avoid this
-kind of filter.
+With a generic x86 OpenWrt image in a kvm setup (batadv_)test_bit()
+frequently returns -1 for me, leading to batadv_iv_ogm_update_seqnos()
+wrongly signaling a protected seqno window.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+This patch tries to fix this issue by making batadv_test_bit() return 0
+or 1 only.
+
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Acked-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/batman-adv/bitarray.h |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -793,10 +793,16 @@ static void ipv6_del_addr(struct inet6_i
- 		struct in6_addr prefix;
- 		struct rt6_info *rt;
- 		struct net *net = dev_net(ifp->idev->dev);
-+		struct flowi6 fl6 = {};
-+
- 		ipv6_addr_prefix(&prefix, &ifp->addr, ifp->prefix_len);
--		rt = rt6_lookup(net, &prefix, NULL, ifp->idev->dev->ifindex, 1);
-+		fl6.flowi6_oif = ifp->idev->dev->ifindex;
-+		fl6.daddr = prefix;
-+		rt = (struct rt6_info *)ip6_route_lookup(net, &fl6,
-+							 RT6_LOOKUP_F_IFACE);
+--- a/net/batman-adv/bitarray.h
++++ b/net/batman-adv/bitarray.h
+@@ -22,8 +22,9 @@
+ #ifndef _NET_BATMAN_ADV_BITARRAY_H_
+ #define _NET_BATMAN_ADV_BITARRAY_H_
  
--		if (rt && addrconf_is_prefix_route(rt)) {
-+		if (rt != net->ipv6.ip6_null_entry &&
-+		    addrconf_is_prefix_route(rt)) {
- 			if (onlink == 0) {
- 				ip6_del_rt(rt);
- 				rt = NULL;
+-/* returns true if the corresponding bit in the given seq_bits indicates true
+- * and curr_seqno is within range of last_seqno */
++/* Returns 1 if the corresponding bit in the given seq_bits indicates true
++ * and curr_seqno is within range of last_seqno. Otherwise returns 0.
++ */
+ static inline int bat_test_bit(const unsigned long *seq_bits,
+ 			       uint32_t last_seqno, uint32_t curr_seqno)
+ {
+@@ -33,7 +34,7 @@ static inline int bat_test_bit(const uns
+ 	if (diff < 0 || diff >= TQ_LOCAL_WINDOW_SIZE)
+ 		return 0;
+ 	else
+-		return  test_bit(diff, seq_bits);
++		return test_bit(diff, seq_bits) != 0;
+ }
+ 
+ /* turn corresponding bit on, so we can remember that we got the packet */
 
 
