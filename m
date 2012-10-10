@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259Ab2JKAYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:24:25 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:32790 "EHLO
+	id S933283Ab2JKAYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:24:38 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42642 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932917Ab2JKAYU (ORCPT
+	by vger.kernel.org with ESMTP id S933185Ab2JKAYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:24:20 -0400
-X-Sasl-enc: RJs6QB7kDA8w8PF7UcYTCyHm4sblKZGl83IjrBcoUEFV 1349915058
+	Wed, 10 Oct 2012 20:24:31 -0400
+X-Sasl-enc: XTjX+oU3e9yhkf3wMMd0voPqjLqd67QLK3tJ1yf7D91O 1349915070
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 085/122] drm/i915: call drm_handle_vblank before finish_page_flip
-Date: Thu, 11 Oct 2012 07:54:11 +0900
-Message-Id: <20121010225353.369675672@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 088/122] h8300: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:54:14 +0900
+Message-Id: <20121010225353.892165407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,72 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 74d44445afb9f50126eba052adeb89827cee88f3 upstream.
+commit b2fe1430d4115c74d007c825cb9dc3317f28bb16 upstream.
 
-... since finish_page_flip needs the vblank timestamp generated
-in drm_handle_vblank. Somehow all the gmch platforms get it right,
-but all the pch platform irq handlers get is wrong. Hooray for copy&
-pasting!
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-Currently this gets papered over by a gross hack in finish_page_flip.
-A second patch will remove that.
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-Note that without this, the new timestamp sanity checks in flip_test
-occasionally get tripped up, hence the cc: stable tag.
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
 
-Reviewed-by: mario.kleiner@tuebingen.mpg.de
-Tested-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Add this missing pair of calls in the h8300's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/h8300/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -680,12 +680,12 @@ static irqreturn_t ivybridge_irq_handler
- 			intel_opregion_gse_intr(dev);
+--- a/arch/h8300/kernel/process.c
++++ b/arch/h8300/kernel/process.c
+@@ -36,6 +36,7 @@
+ #include <linux/reboot.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
++#include <linux/rcupdate.h>
  
- 		for (i = 0; i < 3; i++) {
-+			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
-+				drm_handle_vblank(dev, i);
- 			if (de_iir & (DE_PLANEA_FLIP_DONE_IVB << (5 * i))) {
- 				intel_prepare_page_flip(dev, i);
- 				intel_finish_page_flip_plane(dev, i);
- 			}
--			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
--				drm_handle_vblank(dev, i);
- 		}
- 
- 		/* check event from PCH */
-@@ -767,6 +767,12 @@ static irqreturn_t ironlake_irq_handler(
- 	if (de_iir & DE_GSE)
- 		intel_opregion_gse_intr(dev);
- 
-+	if (de_iir & DE_PIPEA_VBLANK)
-+		drm_handle_vblank(dev, 0);
-+
-+	if (de_iir & DE_PIPEB_VBLANK)
-+		drm_handle_vblank(dev, 1);
-+
- 	if (de_iir & DE_PLANEA_FLIP_DONE) {
- 		intel_prepare_page_flip(dev, 0);
- 		intel_finish_page_flip_plane(dev, 0);
-@@ -777,12 +783,6 @@ static irqreturn_t ironlake_irq_handler(
- 		intel_finish_page_flip_plane(dev, 1);
+ #include <asm/uaccess.h>
+ #include <asm/traps.h>
+@@ -78,8 +79,10 @@ void (*idle)(void) = default_idle;
+ void cpu_idle(void)
+ {
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			idle();
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
  	}
- 
--	if (de_iir & DE_PIPEA_VBLANK)
--		drm_handle_vblank(dev, 0);
--
--	if (de_iir & DE_PIPEB_VBLANK)
--		drm_handle_vblank(dev, 1);
--
- 	/* check event from PCH */
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
+ }
 
 
