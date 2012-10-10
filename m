@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab2JJXOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:14:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52858 "EHLO
+	id S932601Ab2JJXOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:14:34 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52689 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757841Ab2JJXB5 (ORCPT
+	by vger.kernel.org with ESMTP id S1758054Ab2JJXBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:57 -0400
-X-Sasl-enc: E6Xybf9P69qIIVTsZfGk+EB1a7QyHRPQcc7MM4Kk3F9M 1349910116
+	Wed, 10 Oct 2012 19:01:54 -0400
+X-Sasl-enc: jwF6Y1vfmHs/l6nUzikM4yARvmevpnh8cF4ncLwy5g5A 1349910113
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gao feng <gaofeng@cn.fujitsu.com>,
+        Antonio Quartulli <ordex@autistici.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 034/122] ipv6: release reference of ip6_null_entrys dst entry in __ip6_del_rt
-Date: Thu, 11 Oct 2012 07:53:20 +0900
-Message-Id: <20121010225344.278862777@linuxfoundation.org>
+Subject: [ 033/122] 8021q: fix mac_len recomputation in vlan_untag()
+Date: Thu, 11 Oct 2012 07:53:19 +0900
+Message-Id: <20121010225344.098063405@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,49 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Antonio Quartulli <ordex@autistici.org>
 
-[ Upstream commit 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b ]
+[ Upstream commit 5316cf9a5197eb80b2800e1acadde287924ca975 ]
 
-as we hold dst_entry before we call __ip6_del_rt,
-so we should alse call dst_release not only return
--ENOENT when the rt6_info is ip6_null_entry.
+skb_reset_mac_len() relies on the value of the skb->network_header pointer,
+therefore we must wait for such pointer to be recalculated before computing
+the new mac_len value.
 
-and we already hold the dst entry, so I think it's
-safe to call dst_release out of the write-read lock.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/8021q/vlan_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1589,17 +1589,18 @@ static int __ip6_del_rt(struct rt6_info
- 	struct fib6_table *table;
- 	struct net *net = dev_net(rt->dst.dev);
- 
--	if (rt == net->ipv6.ip6_null_entry)
--		return -ENOENT;
-+	if (rt == net->ipv6.ip6_null_entry) {
-+		err = -ENOENT;
-+		goto out;
-+	}
- 
- 	table = rt->rt6i_table;
- 	write_lock_bh(&table->tb6_lock);
--
- 	err = fib6_del(rt, info);
--	dst_release(&rt->dst);
--
- 	write_unlock_bh(&table->tb6_lock);
- 
-+out:
-+	dst_release(&rt->dst);
- 	return err;
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -105,7 +105,6 @@ static struct sk_buff *vlan_reorder_head
+ 		return NULL;
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+-	skb_reset_mac_len(skb);
+ 	return skb;
  }
  
+@@ -139,6 +138,8 @@ struct sk_buff *vlan_untag(struct sk_buf
+ 
+ 	skb_reset_network_header(skb);
+ 	skb_reset_transport_header(skb);
++	skb_reset_mac_len(skb);
++
+ 	return skb;
+ 
+ err_free:
 
 
