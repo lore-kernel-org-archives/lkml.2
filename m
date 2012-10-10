@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab2JJUZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:25:10 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:48276 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757213Ab2JJUXq (ORCPT
+	id S1757228Ab2JJU0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:26:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:7045 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756582Ab2JJU0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:23:46 -0400
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [PATCH v3 6/6] watchdog: omap_wdt: eliminate goto
-Date: Wed, 10 Oct 2012 23:23:37 +0300
-Message-Id: <1349900617-7035-7-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1349900617-7035-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1349900617-7035-1-git-send-email-aaro.koskinen@iki.fi>
+	Wed, 10 Oct 2012 16:26:40 -0400
+Message-ID: <1349900796.2691.32.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [RFC] ip tunnel flag byte order issue
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: David Miller <davem@davemloft.net>,
+        Saurabh Mohan <saurabh.mohan@vyatta.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Wed, 10 Oct 2012 21:26:36 +0100
+In-Reply-To: <20121010120630.5e9f2c2c@nehalam.linuxnetplumber.net>
+References: <20121010120630.5e9f2c2c@nehalam.linuxnetplumber.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliminate a goto to simplify the code.
+On Wed, 2012-10-10 at 12:06 -0700, Stephen Hemminger wrote:
+> Sparse found a real problem with the ABI for tunnelling.
+> 
+> The SIT and VTI tunnel ioctl's both overload the i_flags field in the
+> ip_tunnel parameters structure. This field is defined as big endian
+> (be16) and the various GRE_XXX macros do the necessary byte swapping.
+> 
+> The problem is that both SIT and VTI are using an additional flag bit
+> that is defined in host byte order, and is then or'd in. It happens to
+> work because both possible locations hit holes in the current usage of
+> GRE.  For big endian cpu's it overlaps the GRE_VERSION which is always
+> zero, and for little endian it overlaps the GRE recursion field also
+> always zero.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/watchdog/omap_wdt.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+Why do these fields exist if they're always going to be 0?
 
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index af1e72e..bee43a9 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -267,8 +267,10 @@ static int __devinit omap_wdt_probe(struct platform_device *pdev)
- 	__omap_wdt_disable(wdev);
- 
- 	ret = watchdog_register_device(omap_wdt);
--	if (ret)
--		goto err_misc;
-+	if (ret) {
-+		pm_runtime_disable(wdev->dev);
-+		return ret;
-+	}
- 
- 	pr_info("OMAP Watchdog Timer Rev 0x%02x: initial timeout %d sec\n",
- 		__raw_readl(wdev->base + OMAP_WATCHDOG_REV) & 0xFF,
-@@ -277,11 +279,6 @@ static int __devinit omap_wdt_probe(struct platform_device *pdev)
- 	pm_runtime_put_sync(wdev->dev);
- 
- 	return 0;
--
--err_misc:
--	pm_runtime_disable(wdev->dev);
--
--	return ret;
- }
- 
- static void omap_wdt_shutdown(struct platform_device *pdev)
+> Having the field in different places on different CPU architectures
+> was a mistake. The problem is fixing it will break the ABI on one or
+> the other architecture.  I choose to break big endian since it the
+> minority.
+
+Or we can define the 'flag' to have both bits set (0x0101, with a
+__cpu_to_be16 to keep sparse happy) while accepting either set on input.
+
+> Also both VTI and SIT are overloading the same bit which is an
+> accident waiting to happen.  Since VTI is newer, I propose giving a
+> different bit to VTI.
+
+Indeed VTI is new in 3.6, so there is still a short window in which it's
+fairly safe to tweak its ABI.
+
+> The other alternative is keeping the same ABI, but putting a big note
+> as to why it works in spite of our stupidity.
+[...]
+
+Does it even matter that different tunnel types have different meanings
+for flags?
+
+Ben.
+
 -- 
-1.7.2.5
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
