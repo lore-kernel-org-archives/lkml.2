@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642Ab2JJWyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58691 "EHLO
+	id S1757838Ab2JJWy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35939 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757463Ab2JJWyu (ORCPT
+	by vger.kernel.org with ESMTP id S1757575Ab2JJWyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:50 -0400
-X-Sasl-enc: wtwu2/62iCoMNsnc+ZPVEM9mzMOc+DKPju3yEnrZeN+E 1349909689
+	Wed, 10 Oct 2012 18:54:55 -0400
+X-Sasl-enc: MFVRAL6aYWZPZzZ2Dj5juFeEsXK1D6SoXjUcogXjhoJm 1349909694
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gao feng <gaofeng@cn.fujitsu.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 044/133] ipv6: release reference of ip6_null_entrys dst entry in __ip6_del_rt
-Date: Thu, 11 Oct 2012 07:51:10 +0900
-Message-Id: <20121010224902.428142391@linuxfoundation.org>
+Subject: [ 046/133] ipv6: fix return value check in fib6_add()
+Date: Thu, 11 Oct 2012 07:51:12 +0900
+Message-Id: <20121010224902.795885503@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,49 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-[ Upstream commit 6825a26c2dc21eb4f8df9c06d3786ddec97cf53b ]
+[ Upstream commit f950c0ecc78f745e490d615280e031de4dbb1306 ]
 
-as we hold dst_entry before we call __ip6_del_rt,
-so we should alse call dst_release not only return
--ENOENT when the rt6_info is ip6_null_entry.
+In case of error, the function fib6_add_1() returns ERR_PTR()
+or NULL pointer. The ERR_PTR() case check is missing in fib6_add().
 
-and we already hold the dst entry, so I think it's
-safe to call dst_release out of the write-read lock.
+dpatch engine is used to generated this patch.
+(https://github.com/weiyj/dpatch)
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/ipv6/ip6_fib.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1485,17 +1485,18 @@ static int __ip6_del_rt(struct rt6_info
- 	struct fib6_table *table;
- 	struct net *net = dev_net(rt->dst.dev);
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -818,6 +818,10 @@ int fib6_add(struct fib6_node *root, str
+ 					offsetof(struct rt6_info, rt6i_src),
+ 					allow_create, replace_required);
  
--	if (rt == net->ipv6.ip6_null_entry)
--		return -ENOENT;
-+	if (rt == net->ipv6.ip6_null_entry) {
-+		err = -ENOENT;
-+		goto out;
-+	}
- 
- 	table = rt->rt6i_table;
- 	write_lock_bh(&table->tb6_lock);
--
- 	err = fib6_del(rt, info);
--	dst_release(&rt->dst);
--
- 	write_unlock_bh(&table->tb6_lock);
- 
-+out:
-+	dst_release(&rt->dst);
- 	return err;
- }
- 
++			if (IS_ERR(sn)) {
++				err = PTR_ERR(sn);
++				sn = NULL;
++			}
+ 			if (!sn) {
+ 				/* If it is failed, discard just allocated
+ 				   root, and then (in st_failure) stale node
 
 
