@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab2JJXDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:03:50 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57180 "EHLO
+	id S932755Ab2JJXFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:05:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49022 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932630Ab2JJXDj (ORCPT
+	by vger.kernel.org with ESMTP id S932620Ab2JJXDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:39 -0400
-X-Sasl-enc: 4Kaeonm9BqezxI49DQPylDikWjBHTvmNVEcKqduNdc22 1349910218
+	Wed, 10 Oct 2012 19:03:47 -0400
+X-Sasl-enc: rVoA5M31uid2YeqdA42mNJ7IkvWvjQ4bSCg95D0lbxsc 1349910226
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Kaechele <felix@fetzig.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 066/122] ALSA: hda - Add inverted internal mic quirk for Lenovo IdeaPad U310
-Date: Thu, 11 Oct 2012 07:53:52 +0900
-Message-Id: <20121010225350.026546685@linuxfoundation.org>
+        Wang Xingchao <xingchao.wang@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 074/122] ALSA: hda - Add another pci id for Haswell board
+Date: Thu, 11 Oct 2012 07:54:00 +0900
+Message-Id: <20121010225351.431154800@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,30 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Kaechele <felix@fetzig.org>
+From: Wang Xingchao <xingchao.wang@intel.com>
 
-commit e4db0952e542090c605fd41d31d761f1b4624f4a upstream.
+commit d279fae8a41690ec1b20c07be8c6f42f8af27a17 upstream.
 
-The Lenovo IdeaPad U310 has an internal mic where the right channel
-is phase inverted.
+A new PCI id 0x0d0c for Haswell HDA Controller.
 
-Signed-off-by: Felix Kaechele <felix@fetzig.org>
+[root@SKBM04SDP ~]# lspci |grep Audio
+00:03.0 Audio device: Intel Corporation Device 0d0c (rev 02)
+00:1b.0 Audio device: Intel Corporation Lynx Point HD Audio Controller
+
+Signed-off-by: Wang Xingchao <xingchao.wang@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_intel.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4462,6 +4462,7 @@ static const struct snd_pci_quirk cxt506
- 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
- 	{}
- };
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -3285,6 +3285,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	{ PCI_DEVICE(0x8086, 0x0c0c),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+ 	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
++	{ PCI_DEVICE(0x8086, 0x0d0c),
++	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
++	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
+ 	/* SCH */
+ 	{ PCI_DEVICE(0x8086, 0x811b),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
 
 
