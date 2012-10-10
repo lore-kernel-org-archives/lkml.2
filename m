@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab2JJWy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54011 "EHLO
+	id S932634Ab2JJXXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:23:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33962 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757625Ab2JJWyO (ORCPT
+	by vger.kernel.org with ESMTP id S1757674Ab2JJWyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:14 -0400
-X-Sasl-enc: 2VxA5DSXBSX2j9it9UjewxqstT31L7kaBBawV/LZBTJm 1349909653
+	Wed, 10 Oct 2012 18:54:25 -0400
+X-Sasl-enc: IPvYJiduBum/oredBc1+HUkHrv+WvW5FivfwXLxn72lE 1349909664
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
         Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 031/133] xfrm_user: fix info leak in copy_to_user_auth()
-Date: Thu, 11 Oct 2012 07:50:57 +0900
-Message-Id: <20121010224900.073068936@linuxfoundation.org>
+Subject: [ 035/133] xfrm_user: dont copy esn replay window twice for new states
+Date: Thu, 11 Oct 2012 07:51:01 +0900
+Message-Id: <20121010224900.811451947@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -32,33 +32,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 4c87308bdea31a7b4828a51f6156e6f721a1fcc9 ]
+[ Upstream commit e3ac104d41a97b42316915020ba228c505447d21 ]
 
-copy_to_user_auth() fails to initialize the remainder of alg_name and
-therefore discloses up to 54 bytes of heap memory via netlink to
-userland.
+The ESN replay window was already fully initialized in
+xfrm_alloc_replay_state_esn(). No need to copy it again.
 
-Use strncpy() instead of strcpy() to fill the trailing bytes of alg_name
-with null bytes.
-
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_user.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -742,7 +742,7 @@ static int copy_to_user_auth(struct xfrm
- 		return -EMSGSIZE;
+@@ -442,10 +442,11 @@ static void copy_from_user_state(struct
+  * somehow made shareable and move it to xfrm_state.c - JHS
+  *
+ */
+-static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs)
++static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs,
++				  int update_esn)
+ {
+ 	struct nlattr *rp = attrs[XFRMA_REPLAY_VAL];
+-	struct nlattr *re = attrs[XFRMA_REPLAY_ESN_VAL];
++	struct nlattr *re = update_esn ? attrs[XFRMA_REPLAY_ESN_VAL] : NULL;
+ 	struct nlattr *lt = attrs[XFRMA_LTIME_VAL];
+ 	struct nlattr *et = attrs[XFRMA_ETIMER_THRESH];
+ 	struct nlattr *rt = attrs[XFRMA_REPLAY_THRESH];
+@@ -555,7 +556,7 @@ static struct xfrm_state *xfrm_state_con
+ 		goto error;
  
- 	algo = nla_data(nla);
--	strcpy(algo->alg_name, auth->alg_name);
-+	strncpy(algo->alg_name, auth->alg_name, sizeof(algo->alg_name));
- 	memcpy(algo->alg_key, auth->alg_key, (auth->alg_key_len + 7) / 8);
- 	algo->alg_key_len = auth->alg_key_len;
+ 	/* override default values from above */
+-	xfrm_update_ae_params(x, attrs);
++	xfrm_update_ae_params(x, attrs, 0);
  
+ 	return x;
+ 
+@@ -1819,7 +1820,7 @@ static int xfrm_new_ae(struct sk_buff *s
+ 		goto out;
+ 
+ 	spin_lock_bh(&x->lock);
+-	xfrm_update_ae_params(x, attrs);
++	xfrm_update_ae_params(x, attrs, 1);
+ 	spin_unlock_bh(&x->lock);
+ 
+ 	c.event = nlh->nlmsg_type;
 
 
