@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab2JJRRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:17:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16828 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab2JJRR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:17:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,565,1344236400"; 
-   d="scan'208";a="232319195"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org, sqlite-users@sqlite.org,
-        linux-fsdevel@vger.kernel.org, drh@hwaci.com
-Subject: light weight write barriers
-In-Reply-To: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
-	(Richard Hipp's message of "Wed, 10 Oct 2012 08:47:02 -0400")
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Wed, 10 Oct 2012 10:17:23 -0700
-Message-ID: <m2fw5mtffg.fsf_-_@firstfloor.org>
+	id S1755586Ab2JJKNQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:13:16 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:52649 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab2JJKNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:13:12 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>, <e1000-devel@lists.sf.net>
+Cc: <support@Supermicro.com>, <ap@solarrain.com>
+References: <003901cda66b$836a5db0$8a3f1910$@lucidpixels.com>
+In-Reply-To: <003901cda66b$836a5db0$8a3f1910$@lucidpixels.com>
+Subject: RE: X9SCM-F/82574L/e1000e lag / high latency (e1000e/Intel bug)
+Date: Wed, 10 Oct 2012 06:13:09 -0400
+Message-ID: <001201cda6cf$d9de5480$8d9afd80$@lucidpixels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIdryc2JFTBlaO/4vE9Qu1npX97rpcSQSzg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Hipp writes:
->
-> We would really, really love to have some kind of write-barrier that is
-> lighter than fsync().  If there is some method other than fsync() for
-> forcing a write-barrier on Linux that we don't know about, please enlighten
-> us.
 
-Could you list the requirements of such a light weight barrier?
-i.e. what would it need to do minimally, what's different from
-fsync/fdatasync ?
 
--Andi
+-----Original Message-----
+From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
+Sent: Tuesday, October 09, 2012 6:15 PM
+To: linux-kernel@vger.kernel.org; e1000-devel@lists.sf.net
+Cc: support@Supermicro.com; ap@solarrain.com
+Subject: X9SCM-F/82574L/e1000e lag / high latency (e1000e/Intel bug)
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+If you have > 16GB do not upgrade to 2.0b, I am writing up a page on this
+and will post it shortly, the board will show 32GB with 2.0b but when it
+tries to address it, the machine reboots.  Stick with 2.0a for now, I will
+call Supermicro later, will post a page on all of these issues in a bit.
+
