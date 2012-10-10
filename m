@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab2JKAPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46275 "EHLO
+	id S932965Ab2JKAP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:15:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51388 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932938Ab2JKAPo (ORCPT
+	by vger.kernel.org with ESMTP id S932920Ab2JKAPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:44 -0400
-X-Sasl-enc: iPGZmECUqXB6IMIq4ftom02oJp+b9vbuLTrIhC2xx/ox 1349914543
+	Wed, 10 Oct 2012 20:15:48 -0400
+X-Sasl-enc: cs/8dEQz367UY62AvorLmUt3LmyiWcVJ/nQfq3BzgaAe 1349914547
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        m68k <linux-m68k@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 106/133] m68k: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:52:12 +0900
-Message-Id: <20121010224913.602822966@linuxfoundation.org>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 115/133] mempolicy: fix refcount leak in mpol_set_shared_policy()
+Date: Thu, 11 Oct 2012 07:52:21 +0900
+Message-Id: <20121010224915.226548076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,59 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 5b57ba37e82a15f345a6a2eb8c01a2b2d94c5eeb upstream.
+commit 63f74ca21f1fad36d075e063f06dcc6d39fe86b2 upstream.
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+When shared_policy_replace() fails to allocate new->policy is not freed
+correctly by mpol_set_shared_policy().  The problem is that shared
+mempolicy code directly call kmem_cache_free() in multiple places where
+it is easy to make a mistake.
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
+This patch creates an sp_free wrapper function and uses it. The bug was
+introduced pre-git age (IOW, before 2.6.12-rc2).
 
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
-
-Add this missing pair of calls in the m68k's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: m68k <linux-m68k@lists.linux-m68k.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+[mgorman@suse.de: Editted changelog]
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/kernel/process.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/mempolicy.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/arch/m68k/kernel/process.c
-+++ b/arch/m68k/kernel/process.c
-@@ -25,6 +25,7 @@
- #include <linux/reboot.h>
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
-+#include <linux/rcupdate.h>
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2151,12 +2151,17 @@ mpol_shared_policy_lookup(struct shared_
+ 	return pol;
+ }
  
- #include <asm/uaccess.h>
- #include <asm/traps.h>
-@@ -75,8 +76,10 @@ void cpu_idle(void)
++static void sp_free(struct sp_node *n)
++{
++	mpol_put(n->policy);
++	kmem_cache_free(sn_cache, n);
++}
++
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
  {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched())
- 			idle();
-+		rcu_idle_exit();
- 		schedule_preempt_disabled();
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
+ 	rb_erase(&n->nd, &sp->root);
+-	mpol_put(n->policy);
+-	kmem_cache_free(sn_cache, n);
++	sp_free(n);
+ }
+ 
+ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+@@ -2295,7 +2300,7 @@ int mpol_set_shared_policy(struct shared
  	}
+ 	err = shared_policy_replace(info, vma->vm_pgoff, vma->vm_pgoff+sz, new);
+ 	if (err && new)
+-		kmem_cache_free(sn_cache, new);
++		sp_free(new);
+ 	return err;
+ }
+ 
+@@ -2312,9 +2317,7 @@ void mpol_free_shared_policy(struct shar
+ 	while (next) {
+ 		n = rb_entry(next, struct sp_node, nd);
+ 		next = rb_next(&n->nd);
+-		rb_erase(&n->nd, &p->root);
+-		mpol_put(n->policy);
+-		kmem_cache_free(sn_cache, n);
++		sp_delete(p, n);
+ 	}
+ 	mutex_unlock(&p->mutex);
  }
 
 
