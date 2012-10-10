@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2JJXCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:02:35 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59225 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932517Ab2JJXC3 (ORCPT
+	id S932612Ab2JJXLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:11:49 -0400
+Received: from surya.ncl.res.in ([59.163.216.12]:49098 "EHLO surya.ncl.res.in"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932301Ab2JJXLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:02:29 -0400
-X-Sasl-enc: cLNPQftg3QXMwW7un/tzG5YkN9MESMj5z7k969xt/AzE 1349910146
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Brian C. Huffman" <bhuffman@graze.net>, VL <vl.homutov@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 045/122] PCI: Check P2P bridge for invalid secondary/subordinate range
-Date: Thu, 11 Oct 2012 07:53:31 +0900
-Message-Id: <20121010225346.246631511@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 19:11:43 -0400
+X-Greylist: delayed 23722 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 19:11:42 EDT
+From: "Shashi K. Shukla" <sk.shukla@ncl.res.in>
+Subject: IMPORTANT MESSAGE.
+Thread-Topic: IMPORTANT MESSAGE.
+Thread-Index: Ac2nBA8cxnIhLutpSZKkMeCF3yXMIg==
+Date: Wed, 10 Oct 2012 16:26:54 +0000
+Message-ID: <EA1C7A0F0376154198474EE83ABD676B0CB051C0@mailsrv01.ncl.res.in>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [115.241.73.46]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Yinghai Lu <yinghai@kernel.org>
-
-commit 1965f66e7db08d1ebccd24a59043eba826cc1ce8 upstream.
-
-For bridges with "secondary > subordinate", i.e., invalid bus number
-apertures, we don't enumerate anything behind the bridge unless the
-user specified "pci=assign-busses".
-
-This patch makes us automatically try to reassign the downstream bus
-numbers in this case (just for that bridge, not for all bridges as
-"pci=assign-busses" does).
-
-We don't discover all the devices on the Intel DP43BF motherboard
-without this change (or "pci=assign-busses") because its BIOS configures
-a bridge as:
-
-    pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
-
-[bhelgaas: changelog, change message to dev_info]
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18412
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=625754
-Reported-by: Brian C. Huffman <bhuffman@graze.net>
-Reported-by: VL <vl.homutov@gmail.com>
-Tested-by: VL <vl.homutov@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
----
- drivers/pci/probe.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -729,8 +729,10 @@ int __devinit pci_scan_bridge(struct pci
- 
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
--	    (primary != bus->number || secondary <= bus->number)) {
--		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
-+	    (primary != bus->number || secondary <= bus->number ||
-+	     secondary > subordinate)) {
-+		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
-+			 secondary, subordinate);
- 		broken = 1;
- 	}
- 
 
 
+
+Attention Email User:
+
+An Attempt has been made to login from a new computer. For the
+security of your account, we are poised to open a query and you
+will be having problems in sending and receiving mails Until You Re-Validate.
+
+Kindly verify your login details by responding to this email We are upgrading our Email
+system to enable us reduce the occurrence of Spam.
+
+Please Click the link Below or copy paste to your browser To Validate Your
+Mailbox.
+
+http://www.cclt.org/cclt/forms/use/filter/form1.html
+
+Do not ignore this message to avoid termination of your webmail account.
+
+Webmaster Customer Care.
+
+________________________________
+
+Disclaimer:
+
+This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
