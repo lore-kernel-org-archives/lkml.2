@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2JJQB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:01:57 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:27333 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab2JJQB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:01:56 -0400
-X-IronPort-AV: E=Sophos;i="4.80,565,1344211200"; 
-   d="scan'208";a="15080299"
-Date: Wed, 10 Oct 2012 17:01:26 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
-In-Reply-To: <1349880826.10070.41.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1210101655360.2689@kaball.uk.xensource.com>
-References: <1349796183-30648-1-git-send-email-arnd@arndb.de>  <1349796183-30648-6-git-send-email-arnd@arndb.de>  <alpine.DEB.2.02.1210091630170.29539@kaball.uk.xensource.com>  <201210091821.27818.arnd@arndb.de>  <1349855687.6952.75.camel@dagon.hellion.org.uk>
-  <alpine.DEB.2.02.1210101544500.2689@kaball.uk.xensource.com> <1349880826.10070.41.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1755997Ab2JJMyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:54:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754562Ab2JJMyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:54:02 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCHv4 0/8] perf, tool: Allow to use hw events in PMU syntax
+Date: Wed, 10 Oct 2012 14:53:10 +0200
+Message-Id: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Ian Campbell wrote:
-> On Wed, 2012-10-10 at 15:47 +0100, Stefano Stabellini wrote:
-> > On Wed, 10 Oct 2012, Ian Campbell wrote:
-> > > On Tue, 2012-10-09 at 19:21 +0100, Arnd Bergmann wrote:
-> > > > On Tuesday 09 October 2012, Stefano Stabellini wrote:
-> > > > > >  config XEN
-> > > > > >       bool "Xen guest support on ARM (EXPERIMENTAL)"
-> > > > > >       depends on EXPERIMENTAL && ARM && OF
-> > > > > > +     depends on !CPU_V6
-> > > > > >       help
-> > > > > >         Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
-> > > > > 
-> > > > > Considering that we rely on the virtualization extensions, this one can
-> > > > > be:
-> > > > > 
-> > > > >     depends on CPU_V7
-> > > > > 
-> > > > > The rest looks fine. I can submit a second patch to change !CPU_V6 into
-> > > > > CPU_V7 later, if you prefer.
-> > > > 
-> > > > CPU_V6 and CPU_V7 are not exclusive, I saw the problem when building a
-> > > > combined kernel for both V6 and V7. The code also needs to depend on ARMv7
-> > > > with virtualization extensions, but that is a different issue. We don't
-> > > > actually have a configuration symbol for that yet, as far as I can tell.
-> > > 
-> > > I don't think the guest kernels (including dom0) need the extensions to
-> > > run under Xen, they are only need by Xen itself. The guests should just
-> > > see a relatively normal v7 processor. 
-> > > 
-> > > Stefano, does that sound right?
-> > 
-> > Keep in mind that we are using HVC to issue hypercalls, and HVC has been
-> > introduced with the virtualization extensions, if I am not mistaken.
-> 
-> I think we can ignore that in this context since it is only used by bits
-> which are already virtualisation aware -- i.e. you wouldn't want to add
-> it to the Kconfig as a dependency for Xen.
+hi,
+here's the change to make following syntax available:
+  perf stat -e cpu/event=instructions/u ls
+  perf stat -e cpu/cycles/u ls
 
-Considering that ARM CPU_V* symbols are not mutually exclusive, if Linux
-had a CPU_V7_VIRTEXT symbol I don't see why we shouldn't add it to our
-list of dependencies. It is more accurate than CPU_V7 after all.
+this is identical to:
+  perf stat -e instructions:u ls
+  perf stat -e cycles:u ls
 
-But I don't think that it is necessary to introduce one now only for
-Xen, because like you said, we only need HVC and that is only used in
-virtualization aware code.
+v4 changes:
+  - kernel change is now structured differently allowing
+    to pick up cpu differences
+  - added support for intel/p6/amd PMUs - intel and amd tested,
+    did not get p6 server, but should be ok.. feel free to omit
+
+Attached patches:
+  1/8 perf x86: Making hardware events translations available in sysfs
+  2/8 perf x86: Filter out undefined events from sysfs events attribute
+  3/8 perf x86: Adding hardware events translations for intel cpus
+  4/8 perf x86: Adding hardware events translations for amd cpus
+  5/8 perf x86: Adding hardware events translations for p6 cpus
+  6/8 perf tools: Fix pmu object alias initialization
+  7/8 perf tools: Add support to specify hw event as pmu event term
+  8/8 perf test: Add automated tests for pmu sysfs translated events
+
+jirka
+
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       | 121 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h       |   2 ++
+ arch/x86/kernel/cpu/perf_event_amd.c   |   9 +++++++
+ arch/x86/kernel/cpu/perf_event_intel.c |   9 +++++++
+ arch/x86/kernel/cpu/perf_event_p6.c    |   2 ++
+ include/linux/perf_event.h             |   3 +++
+ tools/perf/util/parse-events-test.c    |  68 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c         |  18 ++++++++++++++
+ tools/perf/util/parse-events.h         |   2 ++
+ tools/perf/util/parse-events.y         |  18 ++++++++++++++
+ tools/perf/util/pmu.c                  |   7 +++---
+ 11 files changed, 256 insertions(+), 3 deletions(-)
