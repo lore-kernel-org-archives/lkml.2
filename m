@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2JJNix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:38:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7493 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab2JJNin (ORCPT
+	id S1756550Ab2JJN7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:59:18 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63279 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab2JJN7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:38:43 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QI34DmUYjSIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HZW87zcCyfsA:10 a=VwQbUJbxAAAA:8 a=bndTQQZpn-juXqhEl_8A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133842.940659869@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:38:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 3/6] mm: page_alloc: Use local_lock_on() instead of plain spinlock
-References: <20121010133801.331863565@goodmis.org>
-Content-Disposition: inline; filename=0003-mm-page_alloc-Use-local_lock_on-instead-of-plain-spi.patch
+	Wed, 10 Oct 2012 09:59:16 -0400
+Date: Wed, 10 Oct 2012 09:47:26 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v3 0/7] x86: Use BRK to pre mapping page table to make
+ xen happy
+Message-ID: <20121010134725.GB4005@phenom.dumpdata.com>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Tue, Oct 09, 2012 at 04:58:28PM -0700, Yinghai Lu wrote:
+> on top of tip/x86/mm2, but please zap last patch in that branch.
 
-The plain spinlock while sufficient does not update the local_lock
-internals. Use a proper local_lock function instead to ease debugging.
+So while I appreciate you actively looking at this and iteratively
+sending snapshots of the progress - I think it would be easier if
+you posted a patchset that has rework done completly per what
+Peter described.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/locallock.h |   11 +++++++++++
- mm/page_alloc.c           |    4 ++--
- 2 files changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/locallock.h b/include/linux/locallock.h
-index 0161fbb..f1804a3 100644
---- a/include/linux/locallock.h
-+++ b/include/linux/locallock.h
-@@ -137,6 +137,12 @@ static inline int __local_lock_irqsave(struct local_irq_lock *lv)
- 		_flags = __get_cpu_var(lvar).flags;			\
- 	} while (0)
- 
-+#define local_lock_irqsave_on(lvar, _flags, cpu)			\
-+	do {								\
-+		__local_lock_irqsave(&per_cpu(lvar, cpu));		\
-+		_flags = per_cpu(lvar, cpu).flags;			\
-+	} while (0)
-+
- static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
- 					    unsigned long flags)
- {
-@@ -156,6 +162,11 @@ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
- 			put_local_var(lvar);				\
- 	} while (0)
- 
-+#define local_unlock_irqrestore_on(lvar, flags, cpu)			\
-+	do {								\
-+		__local_unlock_irqrestore(&per_cpu(lvar, cpu), flags);	\
-+	} while (0)
-+
- #define local_spin_trylock_irq(lvar, lock)				\
- 	({								\
- 		int __locked;						\
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 47d939e..c645e07 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -227,9 +227,9 @@ static DEFINE_LOCAL_IRQ_LOCK(pa_lock);
- 
- #ifdef CONFIG_PREEMPT_RT_BASE
- # define cpu_lock_irqsave(cpu, flags)		\
--	spin_lock_irqsave(&per_cpu(pa_lock, cpu).lock, flags)
-+	local_lock_irqsave_on(pa_lock, flags, cpu)
- # define cpu_unlock_irqrestore(cpu, flags)		\
--	spin_unlock_irqrestore(&per_cpu(pa_lock, cpu).lock, flags)
-+	local_unlock_irqrestore_on(pa_lock, flags, cpu)
- #else
- # define cpu_lock_irqsave(cpu, flags)		local_irq_save(flags)
- # define cpu_unlock_irqrestore(cpu, flags)	local_irq_restore(flags)
--- 
-1.7.10.4
+That way folks who are reviewing will know when they can focus their
+time on reviewing the whole thing in one go instead of doing it
+step by step - as some of the patches still haven't addressed the
+review comments that were given the first time.
 
 
+> 1. use brk to mapping first PMD_SIZE range.
+> 2. top down to initialize page table range by range.
+> 3. get rid of calculate page table, and find_early_page_table.
+> 4. remove early_ioremap in page table accessing.
+> 
+> v2: changes, update xen interface about pagetable_reserve, so not
+>    use pgt_buf_* in xen code directly.
+> v3: use range top-down to initialize page table, so will not use
+>    calculating/find early table anymore.
+>    also reorder the patches sequence.
+> 
+> could be found at:
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+> 
+> later we could get rid of workaround about xen_mapping_pagetable_reserve, that
+> could kill another 50 lines codes. --- will do that later because x86/mm2 is
+> not updated to linus/master yet. If we do that now, will have merge conflicts.
+
+I am confused. Why do you need x86/mm2? If you do need it, you need to
+describe in this writeup why you depend on it, and what is there.
+
+You can't base it on linus's tree?
+
+> 
+> Thanks
+> 
+> Yinghai Lu
+> 
+> Yinghai Lu (7):
+>   x86, mm: align start address to correct big page size
+>   x86, mm: Use big page size for small memory range
+>   x86, mm: Don't clear page table if next range is ram
+>   x86, mm: only keep initial mapping for ram
+>   x86, mm: Break down init_all_memory_mapping
+>   x86, mm: setup page table from top-down
+>   x86, mm: Remove early_memremap workaround for page table accessing
+> 
+>  arch/x86/include/asm/page_types.h |    1 +
+>  arch/x86/include/asm/pgtable.h    |    1 +
+>  arch/x86/kernel/setup.c           |    3 +
+>  arch/x86/mm/init.c                |  251 ++++++++++++------------------------
+>  arch/x86/mm/init_32.c             |   18 +++-
+>  arch/x86/mm/init_64.c             |  100 ++++++---------
+>  6 files changed, 144 insertions(+), 230 deletions(-)
+> 
+> -- 
+> 1.7.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
