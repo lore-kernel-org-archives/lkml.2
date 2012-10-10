@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab2JJWyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53090 "EHLO
+	id S1757786Ab2JJWyp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47573 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757696Ab2JJWya (ORCPT
+	by vger.kernel.org with ESMTP id S1757728Ab2JJWyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:30 -0400
-X-Sasl-enc: Adln4PTYlJuTZy3TVPiRFm1rlTp+rPk6kNe8KW0lVvBW 1349909669
+	Wed, 10 Oct 2012 18:54:36 -0400
+X-Sasl-enc: 8EHWJB4zxQSCNmoHfr2D8PDEjV6E7gXda+dPwANuJnRi 1349909675
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Denys Fedoryschenko <denys@visp.net.lb>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/133] xfrm_user: fix info leak in copy_to_user_policy()
-Date: Thu, 11 Oct 2012 07:50:59 +0900
-Message-Id: <20121010224900.455901404@linuxfoundation.org>
+Subject: [ 039/133] net-sched: sch_cbq: avoid infinite loop
+Date: Thu, 11 Oct 2012 07:51:05 +0900
+Message-Id: <20121010224901.530933898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,32 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 7b789836f434c87168eab067cfbed1ec4783dffd ]
+[ Upstream commit bdfc87f7d1e253e0a61e2fc6a75ea9d76f7fc03a ]
 
-The memory reserved to dump the xfrm policy includes multiple padding
-bytes added by the compiler for alignment (padding bytes in struct
-xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
-memset(0) before filling the buffer to avoid the heap info leak.
+Its possible to setup a bad cbq configuration leading to
+an infinite loop in cbq_classify()
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+DEV_OUT=eth0
+ICMP="match ip protocol 1 0xff"
+U32="protocol ip u32"
+DST="match ip dst"
+tc qdisc add dev $DEV_OUT root handle 1: cbq avpkt 1000 \
+	bandwidth 100mbit
+tc class add dev $DEV_OUT parent 1: classid 1:1 cbq \
+	rate 512kbit allot 1500 prio 5 bounded isolated
+tc filter add dev $DEV_OUT parent 1: prio 3 $U32 \
+	$ICMP $DST 192.168.3.234 flowid 1:
+
+Reported-by: Denys Fedoryschenko <denys@visp.net.lb>
+Tested-by: Denys Fedoryschenko <denys@visp.net.lb>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sched/sch_cbq.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -1312,6 +1312,7 @@ static void copy_from_user_policy(struct
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -250,10 +250,11 @@ cbq_classify(struct sk_buff *skb, struct
+ 			else if ((cl = defmap[res.classid & TC_PRIO_MAX]) == NULL)
+ 				cl = defmap[TC_PRIO_BESTEFFORT];
  
- static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
- 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
- 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
+-			if (cl == NULL || cl->level >= head->level)
++			if (cl == NULL)
+ 				goto fallback;
+ 		}
+-
++		if (cl->level >= head->level)
++			goto fallback;
+ #ifdef CONFIG_NET_CLS_ACT
+ 		switch (result) {
+ 		case TC_ACT_QUEUED:
 
 
