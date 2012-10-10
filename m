@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab2JJLsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 07:48:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42927 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2JJLsM (ORCPT
+	id S932135Ab2JJKdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:33:23 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47048 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab2JJKdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 07:48:12 -0400
-Date: Wed, 10 Oct 2012 13:48:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.1-rt1
-In-Reply-To: <1349833878.24256.49.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1210101347410.2853@ionos>
-References: <alpine.LFD.2.02.1210091535140.10988@ionos>  <1349806792.24256.34.camel@gandalf.local.home>  <1349828517.24256.47.camel@gandalf.local.home> <1349833878.24256.49.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 10 Oct 2012 06:33:13 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20121010101747.GD3729@e103034-lin>
+References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
+	<1348252345-5642-7-git-send-email-morten.rasmussen@arm.com>
+	<CAKohponvN+-rBxeBW6L1UiwzuDLJ+zymzawyoT3PdxMB31vxRw@mail.gmail.com>
+	<20121010101747.GD3729@e103034-lin>
+Date: Wed, 10 Oct 2012 16:03:13 +0530
+Message-ID: <CAKohpok5ESED8E_e+Jeu1vi9x9bagaHxDSiLDqsoP-ZW1RTFAg@mail.gmail.com>
+Subject: Re: [RFC PATCH 06/10] ARM: sched: Use device-tree to provide
+ fast/slow CPU list for HMP
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Morten Rasmussen <Morten.Rasmussen@arm.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "linaro-sched-sig@lists.linaro.org" 
+	<linaro-sched-sig@lists.linaro.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Robin Randhawa <Robin.Randhawa@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Oct 2012, Steven Rostedt wrote:
+On 10 October 2012 15:47, Morten Rasmussen <Morten.Rasmussen@arm.com> wrote:
+> On Thu, Oct 04, 2012 at 07:49:32AM +0100, Viresh Kumar wrote:
 
-> On Tue, 2012-10-09 at 20:21 -0400, Steven Rostedt wrote:
-> 
-> > > 0007-stomp-machine-deal-clever-with-stopper-lock.patch
-> > 
-> > With this one, things have changed quite a bit. I'll take a deeper look
-> > at what you did and figure out how this applies to v3.0-rt.
-> 
-> It doesn't look like this patch is needed for v3.0-rt as the patch
-> addresses the new stop_machine_from_inactive_cpu() API used by the mtrr
-> code added by this commit:
-> 
-> commit 192d8857427dd23707d5f0b86ca990c3af6f2d74
-> Author: Suresh Siddha <suresh.b.siddha@intel.com>
-> Date:   Thu Jun 23 11:19:29 2011 -0700
-> 
->     x86, mtrr: use stop_machine APIs for doing MTRR rendezvous
-> 
-> 
-> This was added in 3.1 so the patch is still required for v3.2-rt.
+>> > This patch is reuse of a patch by Jon Medhurst <tixy@linaro.org> with a
+>> > few bits left out.
+>>
+>> Then probably he must be the author of this commit? Also a SOB is required
+>> from him here.
+>>
+>
+> I don't know what the correct procedure is for this sort of partial
+> patch reuse. Since I didn't know better, I adopted Tixy's own reference
+> style that he used in one of his patches which is an extension of a
+> previous patch by me. I will of course fix it to follow normal procedure
+> if there is one.
 
-Correct. 3.0 is not affected.
+AFAIK, if you have used only some part of the earlier patch, then you just
+need to add an SOB of original author.
+But if you have picked most of the stuff from original patch, which i feel is
+the case here, you must have original author in author & SOB + your SOB.
 
-	 tglx
+> It would be very easy to blame someone else here... :) I will fix it.
+
+:)
