@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab2JKAm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:42:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42669 "EHLO
+	id S1757621Ab2JKAns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:43:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41693 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758159Ab2JKANm (ORCPT
+	by vger.kernel.org with ESMTP id S1758138Ab2JKANZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:42 -0400
-X-Sasl-enc: jRMDfX/818M3AoGTSdu87+KqUqzj9+kqMZlVvB3vKWyq 1349914421
+	Wed, 10 Oct 2012 20:13:25 -0400
+X-Sasl-enc: HorpJp+NrI50zx0v/DlAze37Z7R5NMFeMt/v2EBP9KN3 1349914404
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 088/133] ALSA: hda/realtek - Fix detection of ALC271X codec
-Date: Thu, 11 Oct 2012 07:51:54 +0900
-Message-Id: <20121010224910.331814930@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [ 084/133] MIPS: ath79: use correct fractional dividers for {CPU,DDR}_PLL on AR934x
+Date: Thu, 11 Oct 2012 07:51:50 +0900
+Message-Id: <20121010224909.611488612@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,57 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 9f720bb9409ea5923361fbd3fdbc505ca36cf012 upstream.
+commit 65fc7f9957c52ad4fdf4ee5dfe3a75aa0a633d39 upstream.
 
-In commit af741c1 ("ALSA: hda/realtek - Call alc_auto_parse_customize_define()
-always after fixup"), alc_auto_parse_customize_define was moved after
-detection of ALC271X.
+The current dividers in the code are wrong and this
+leads to broken CPU frequency calculation on boards
+where the fractional part is used.
 
-The problem is that detection of ALC271X relies on spec->cdefine.platform_type,
-and it's set on alc_auto_parse_customize_define.
+For example, if the SoC is running from a 40MHz
+reference clock, refdiv=1, nint=14, outdiv=0 and
+nfrac=31 the real frequency is 579.375MHz but the
+current code calculates 569.687MHz instead.
 
-Move the alc_auto_parse_customize_define and its required fixup setup
-before the block doing the ALC271X and other codec setup.
+Because the system time is indirectly related to
+the CPU frequency the broken computation causes
+drift in the system time.
 
-BugLink: https://bugs.launchpad.net/bugs/1006690
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Reviewed-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The correct divider is 2^6 for the CPU PLL and 2^10
+for the DDR PLL. Use the correct values to fix the
+issue.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/4305/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/mips/ath79/clock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6145,6 +6145,12 @@ static int patch_alc269(struct hda_codec
+--- a/arch/mips/ath79/clock.c
++++ b/arch/mips/ath79/clock.c
+@@ -189,7 +189,7 @@ static void __init ar934x_clocks_init(vo
+ 	       AR934X_PLL_CPU_CONFIG_NFRAC_MASK;
  
- 	spec = codec->spec;
+ 	cpu_pll = nint * ath79_ref_clk.rate / ref_div;
+-	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 6));
++	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 6));
+ 	cpu_pll /= (1 << out_div);
  
-+	alc_pick_fixup(codec, alc269_fixup_models,
-+		       alc269_fixup_tbl, alc269_fixups);
-+	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
-+
-+	alc_auto_parse_customize_define(codec);
-+
- 	if (codec->vendor_id == 0x10ec0269) {
- 		spec->codec_variant = ALC269_TYPE_ALC269VA;
- 		switch (alc_get_coef0(codec) & 0x00f0) {
-@@ -6172,12 +6178,6 @@ static int patch_alc269(struct hda_codec
- 		alc269_fill_coef(codec);
- 	}
+ 	pll = ath79_pll_rr(AR934X_PLL_DDR_CONFIG_REG);
+@@ -203,7 +203,7 @@ static void __init ar934x_clocks_init(vo
+ 	       AR934X_PLL_DDR_CONFIG_NFRAC_MASK;
  
--	alc_pick_fixup(codec, alc269_fixup_models,
--		       alc269_fixup_tbl, alc269_fixups);
--	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
--
--	alc_auto_parse_customize_define(codec);
--
- 	/* automatic parse from the BIOS config */
- 	err = alc269_parse_auto_config(codec);
- 	if (err < 0)
+ 	ddr_pll = nint * ath79_ref_clk.rate / ref_div;
+-	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 10));
++	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 10));
+ 	ddr_pll /= (1 << out_div);
+ 
+ 	clk_ctrl = ath79_pll_rr(AR934X_PLL_CPU_DDR_CLK_CTRL_REG);
 
 
