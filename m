@@ -1,272 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2JJLyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 07:54:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab2JJLys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 07:54:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, egtvedt@samfundet.no, hskinnemoen@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] UAPI disintegration for MN10300, FRV and AVR32 arches
-Date: Wed, 10 Oct 2012 12:54:37 +0100
-Message-ID: <6025.1349870077@warthog.procyon.org.uk>
+	id S1755303Ab2JJKgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:36:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40488 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab2JJKgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:36:38 -0400
+Message-ID: <1349865374.6072.78.camel@shinybook.infradead.org>
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+From: David Woodhouse <dwmw2@infradead.org>
+To: =?UTF-8?Q?Luk=C3=A1=C5=A1?= Czerner <lczerner@redhat.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "'Namjae Jeon'" <linkinjeon@gmail.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
+        "'Marco Stornelli'" <marco.stornelli@gmail.com>,
+        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>,
+        "'Al Viro'" <viro@zeniv.linux.org.uk>, tytso@mit.edu,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
+Date: Wed, 10 Oct 2012 11:36:14 +0100
+In-Reply-To: <alpine.LFD.2.00.1210091020390.11244@dhcp-1-104.brq.redhat.com>
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+	 <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+	 <1349553966.12699.132.camel@kjgkr> <50712AAA.5030807@gmail.com>
+	 <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+	 <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+	 <004101cda52e$72210e20$56632a60$%kim@samsung.com>
+	 <CAKYAXd_Y0Y0kLyqEm1FVO5TpvrN-WwnF40H3hMe5B7_cTe0nMw@mail.gmail.com>
+	 <004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
+	 <alpine.LFD.2.00.1210091020390.11244@dhcp-1-104.brq.redhat.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-deyr0krLCxNe2yVia66k"
+X-Mailer: Evolution 3.6.0 (3.6.0-1.fc18) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Linus,
+--=-deyr0krLCxNe2yVia66k
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Could you pull this please?  It contains the UAPI disintegration for the
-MN10300 and FRV arches that I maintain and for the AVR32 arch the maintainers
-for which have asked me to handle it for them.
+On Tue, 2012-10-09 at 10:31 +0200, Luk=C3=A1=C5=A1 Czerner wrote:
+> I am sorry but this reply makes me smile. How can you design a fs
+> relying on time attack heuristics to figure out what the proper
+> layout should be ? Or even endorse such heuristics to be used in
+> mkfs ? What we should be focusing on is to push vendors to actually
+> give us such information so we can properly propagate that
+> throughout the kernel - that's something everyone will benefit from.
+> After that the optimization can be done in every file system.
+>=20
+> Promoting time attack heuristics instead of pushing vendors to tell
+> us how their hardware should be used is a journey to hell and we've
+> been talking about this for a looong time now. And I imagine that
+> you especially have quite some persuasion power.
 
-David
----
-The following changes since commit 42859eea96ba6beabfb0369a1eeffa3c7d2bd9cb:
+The whole thing is silly. What we actually want on an embedded system is
+to ditch the FTL altogether and have direct access to the NAND. Then we
+can *know* our file system is behaving optimally. And we don't need
+hacks like TRIM to try to make things a little less broken.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal (2012-10-10 12:02:25 +0900)
+--=20
+dwmw2
 
-are available in the git repository at:
+--=-deyr0krLCxNe2yVia66k
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDEwMTAzNjE0WjAjBgkqhkiG9w0BCQQx
+FgQUYYkWD/yueqf9U6S7qO0vIXHgIk4wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCLgkLRcpdrKLs14KQoR9dOBiAF
+ertZdkPGrNXNKVRbo3fiP7/bLFwNKkIeJp83uHonfvCCuE3mkHG+NJaeFfXjlDYQg1Q8+vYbX6jh
++5DGDJAC1LTuVvm0DzOuMFOGaUgVeplusInmiQUDjMleCT7rhWis6HE1rrxmUyTcZRMeZIN8WTFv
+aHLY9AFtb8JYdJjUNYaVNPwm501v73E4SnKInKv/NvSD6nkQJBTp9TRofsHIlxxzVeH8/bxhMA1G
+1H1+enqjswB4HFEkpIP3im5fNGcHJpayhEqWSVhk4BHo5paMmyBCZeaGQxqJela//KrZme/QPRkQ
+/hRUE5porpPOAAAAAAAA
 
 
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-misc-arches-20121010
+--=-deyr0krLCxNe2yVia66k--
 
-for you to fetch changes up to 7190632b78de594f3dabe174e9df373bfc790d89:
-
-  Merge branch 'disintegrate-avr32' into disintegrate-misc-arches (2012-10-10 12:34:45 +0100)
-
-----------------------------------------------------------------
-
-UAPI Disintegration 2012-10-10
-
-----------------------------------------------------------------
-David Howells (5):
-      UAPI: (Scripted) Disintegrate arch/avr32/include/asm
-      UAPI: (Scripted) Disintegrate arch/frv/include/asm
-      UAPI: (Scripted) Disintegrate arch/mn10300/include/asm
-      Merge branch 'disintegrate-frv' into disintegrate-misc-arches
-      Merge branch 'disintegrate-avr32' into disintegrate-misc-arches
-
- arch/avr32/include/asm/Kbuild                     |   3 -
- arch/avr32/include/asm/param.h                    |  18 +-
- arch/avr32/include/asm/ptrace.h                   | 115 +------
- arch/avr32/include/asm/setup.h                    |   5 +-
- arch/avr32/include/asm/signal.h                   | 121 +-------
- arch/avr32/include/asm/termios.h                  |  41 +--
- arch/avr32/include/asm/types.h                    |   6 +-
- arch/avr32/include/asm/unistd.h                   | 296 +-----------------
- arch/avr32/include/uapi/asm/Kbuild                |  32 ++
- arch/avr32/include/{ => uapi}/asm/auxvec.h        |   0
- arch/avr32/include/{ => uapi}/asm/bitsperlong.h   |   0
- arch/avr32/include/{ => uapi}/asm/byteorder.h     |   0
- arch/avr32/include/{ => uapi}/asm/cachectl.h      |   0
- arch/avr32/include/{ => uapi}/asm/errno.h         |   0
- arch/avr32/include/{ => uapi}/asm/fcntl.h         |   0
- arch/avr32/include/{ => uapi}/asm/ioctl.h         |   0
- arch/avr32/include/{ => uapi}/asm/ioctls.h        |   0
- arch/avr32/include/{ => uapi}/asm/ipcbuf.h        |   0
- arch/avr32/include/{ => uapi}/asm/kvm_para.h      |   0
- arch/avr32/include/{ => uapi}/asm/mman.h          |   0
- arch/avr32/include/{ => uapi}/asm/msgbuf.h        |   0
- arch/avr32/include/uapi/asm/param.h               |  18 ++
- arch/avr32/include/{ => uapi}/asm/poll.h          |   0
- arch/avr32/include/{ => uapi}/asm/posix_types.h   |   0
- arch/avr32/include/uapi/asm/ptrace.h              | 126 ++++++++
- arch/avr32/include/{ => uapi}/asm/resource.h      |   0
- arch/avr32/include/{ => uapi}/asm/sembuf.h        |   0
- arch/avr32/include/uapi/asm/setup.h               |  17 ++
- arch/avr32/include/{ => uapi}/asm/shmbuf.h        |   0
- arch/avr32/include/{ => uapi}/asm/sigcontext.h    |   0
- arch/avr32/include/{ => uapi}/asm/siginfo.h       |   0
- arch/avr32/include/uapi/asm/signal.h              | 128 ++++++++
- arch/avr32/include/{ => uapi}/asm/socket.h        |   0
- arch/avr32/include/{ => uapi}/asm/sockios.h       |   0
- arch/avr32/include/{ => uapi}/asm/stat.h          |   0
- arch/avr32/include/{ => uapi}/asm/statfs.h        |   0
- arch/avr32/include/{ => uapi}/asm/swab.h          |   0
- arch/avr32/include/{ => uapi}/asm/termbits.h      |   0
- arch/avr32/include/uapi/asm/termios.h             |  50 +++
- arch/avr32/include/uapi/asm/types.h               |   8 +
- arch/avr32/include/uapi/asm/unistd.h              | 305 +++++++++++++++++++
- arch/frv/include/asm/Kbuild                       |   3 -
- arch/frv/include/asm/ptrace.h                     |  51 +---
- arch/frv/include/asm/setup.h                      |   7 +-
- arch/frv/include/asm/signal.h                     |  33 +-
- arch/frv/include/asm/termios.h                    |  46 +--
- arch/frv/include/asm/types.h                      |   6 +-
- arch/frv/include/asm/unistd.h                     | 346 +--------------------
- arch/frv/include/uapi/asm/Kbuild                  |  32 ++
- arch/frv/include/{ => uapi}/asm/auxvec.h          |   0
- arch/frv/include/{ => uapi}/asm/bitsperlong.h     |   0
- arch/frv/include/{ => uapi}/asm/byteorder.h       |   0
- arch/frv/include/{ => uapi}/asm/errno.h           |   0
- arch/frv/include/{ => uapi}/asm/fcntl.h           |   0
- arch/frv/include/{ => uapi}/asm/ioctl.h           |   0
- arch/frv/include/{ => uapi}/asm/ioctls.h          |   0
- arch/frv/include/{ => uapi}/asm/ipcbuf.h          |   0
- arch/frv/include/{ => uapi}/asm/kvm_para.h        |   0
- arch/frv/include/{ => uapi}/asm/mman.h            |   0
- arch/frv/include/{ => uapi}/asm/msgbuf.h          |   0
- arch/frv/include/{ => uapi}/asm/param.h           |   0
- arch/frv/include/{ => uapi}/asm/poll.h            |   0
- arch/frv/include/{ => uapi}/asm/posix_types.h     |   0
- arch/frv/include/uapi/asm/ptrace.h                |  60 ++++
- arch/frv/include/{ => uapi}/asm/registers.h       |   0
- arch/frv/include/{ => uapi}/asm/resource.h        |   0
- arch/frv/include/{ => uapi}/asm/sembuf.h          |   0
- arch/frv/include/uapi/asm/setup.h                 |  18 ++
- arch/frv/include/{ => uapi}/asm/shmbuf.h          |   0
- arch/frv/include/{ => uapi}/asm/sigcontext.h      |   0
- arch/frv/include/{ => uapi}/asm/siginfo.h         |   0
- arch/frv/include/uapi/asm/signal.h                |  36 +++
- arch/frv/include/{ => uapi}/asm/socket.h          |   0
- arch/frv/include/{ => uapi}/asm/sockios.h         |   0
- arch/frv/include/{ => uapi}/asm/stat.h            |   0
- arch/frv/include/{ => uapi}/asm/statfs.h          |   0
- arch/frv/include/{ => uapi}/asm/swab.h            |   0
- arch/frv/include/{ => uapi}/asm/termbits.h        |   0
- arch/frv/include/uapi/asm/termios.h               |  46 +++
- arch/frv/include/uapi/asm/types.h                 |  11 +
- arch/frv/include/uapi/asm/unistd.h                | 348 +++++++++++++++++++++
- arch/mn10300/include/asm/Kbuild                   |   1 -
- arch/mn10300/include/asm/ptrace.h                 |  72 +----
- arch/mn10300/include/asm/setup.h                  |   4 +-
- arch/mn10300/include/asm/signal.h                 | 121 +-------
- arch/mn10300/include/asm/termios.h                |  81 +----
- arch/mn10300/include/asm/types.h                  |   5 +-
- arch/mn10300/include/asm/unistd.h                 | 342 +--------------------
- arch/mn10300/include/uapi/asm/Kbuild              |  31 ++
- arch/mn10300/include/{ => uapi}/asm/auxvec.h      |   0
- arch/mn10300/include/{ => uapi}/asm/bitsperlong.h |   0
- arch/mn10300/include/{ => uapi}/asm/byteorder.h   |   0
- arch/mn10300/include/{ => uapi}/asm/errno.h       |   0
- arch/mn10300/include/{ => uapi}/asm/fcntl.h       |   0
- arch/mn10300/include/{ => uapi}/asm/ioctl.h       |   0
- arch/mn10300/include/{ => uapi}/asm/ioctls.h      |   0
- arch/mn10300/include/{ => uapi}/asm/ipcbuf.h      |   0
- arch/mn10300/include/{ => uapi}/asm/kvm_para.h    |   0
- arch/mn10300/include/{ => uapi}/asm/mman.h        |   0
- arch/mn10300/include/{ => uapi}/asm/msgbuf.h      |   0
- arch/mn10300/include/{ => uapi}/asm/param.h       |   0
- arch/mn10300/include/{ => uapi}/asm/poll.h        |   0
- arch/mn10300/include/{ => uapi}/asm/posix_types.h |   0
- arch/mn10300/include/uapi/asm/ptrace.h            |  84 +++++
- arch/mn10300/include/{ => uapi}/asm/resource.h    |   0
- arch/mn10300/include/{ => uapi}/asm/sembuf.h      |   0
- arch/mn10300/include/{ => uapi}/asm/shmbuf.h      |   0
- arch/mn10300/include/{ => uapi}/asm/sigcontext.h  |   0
- arch/mn10300/include/{ => uapi}/asm/siginfo.h     |   0
- arch/mn10300/include/uapi/asm/signal.h            | 131 ++++++++
- arch/mn10300/include/{ => uapi}/asm/socket.h      |   0
- arch/mn10300/include/{ => uapi}/asm/sockios.h     |   0
- arch/mn10300/include/{ => uapi}/asm/stat.h        |   0
- arch/mn10300/include/{ => uapi}/asm/statfs.h      |   0
- arch/mn10300/include/{ => uapi}/asm/swab.h        |   0
- arch/mn10300/include/{ => uapi}/asm/termbits.h    |   0
- arch/mn10300/include/uapi/asm/termios.h           |  83 +++++
- arch/mn10300/include/uapi/asm/types.h             |  11 +
- arch/mn10300/include/uapi/asm/unistd.h            | 354 ++++++++++++++++++++++
- 119 files changed, 1950 insertions(+), 1702 deletions(-)
- rename arch/avr32/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/cachectl.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/errno.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/mman.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/msgbuf.h (100%)
- create mode 100644 arch/avr32/include/uapi/asm/param.h
- rename arch/avr32/include/{ => uapi}/asm/poll.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/avr32/include/uapi/asm/ptrace.h
- rename arch/avr32/include/{ => uapi}/asm/resource.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/avr32/include/uapi/asm/setup.h
- rename arch/avr32/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/avr32/include/uapi/asm/signal.h
- rename arch/avr32/include/{ => uapi}/asm/socket.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/stat.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/swab.h (100%)
- rename arch/avr32/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/avr32/include/uapi/asm/termios.h
- create mode 100644 arch/avr32/include/uapi/asm/types.h
- create mode 100644 arch/avr32/include/uapi/asm/unistd.h
- rename arch/frv/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/frv/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/frv/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/frv/include/{ => uapi}/asm/errno.h (100%)
- rename arch/frv/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/frv/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/frv/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/frv/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/frv/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/frv/include/{ => uapi}/asm/mman.h (100%)
- rename arch/frv/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/frv/include/{ => uapi}/asm/param.h (100%)
- rename arch/frv/include/{ => uapi}/asm/poll.h (100%)
- rename arch/frv/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/frv/include/uapi/asm/ptrace.h
- rename arch/frv/include/{ => uapi}/asm/registers.h (100%)
- rename arch/frv/include/{ => uapi}/asm/resource.h (100%)
- rename arch/frv/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/frv/include/uapi/asm/setup.h
- rename arch/frv/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/frv/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/frv/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/frv/include/uapi/asm/signal.h
- rename arch/frv/include/{ => uapi}/asm/socket.h (100%)
- rename arch/frv/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/frv/include/{ => uapi}/asm/stat.h (100%)
- rename arch/frv/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/frv/include/{ => uapi}/asm/swab.h (100%)
- rename arch/frv/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/frv/include/uapi/asm/termios.h
- create mode 100644 arch/frv/include/uapi/asm/types.h
- create mode 100644 arch/frv/include/uapi/asm/unistd.h
- rename arch/mn10300/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/errno.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/mman.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/param.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/poll.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/mn10300/include/uapi/asm/ptrace.h
- rename arch/mn10300/include/{ => uapi}/asm/resource.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/mn10300/include/uapi/asm/setup.h
- rename arch/mn10300/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/mn10300/include/uapi/asm/signal.h
- rename arch/mn10300/include/{ => uapi}/asm/socket.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/stat.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/swab.h (100%)
- rename arch/mn10300/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/mn10300/include/uapi/asm/termios.h
- create mode 100644 arch/mn10300/include/uapi/asm/types.h
- create mode 100644 arch/mn10300/include/uapi/asm/unistd.h
