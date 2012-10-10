@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab2JKATk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:19:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37553 "EHLO
+	id S933083Ab2JKAT7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:19:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35367 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933020Ab2JKAQy (ORCPT
+	by vger.kernel.org with ESMTP id S932934Ab2JKAQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:54 -0400
-X-Sasl-enc: rU+RY1DDqQrIXbHCx4Q/yCHfFFOKjKYXouBadVPxg8C1 1349914612
+	Wed, 10 Oct 2012 20:16:44 -0400
+X-Sasl-enc: hGcybqquSh8Vl9LOINiGC6EBHFckhB9U+/eQ/RP8yOUh 1349914603
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: =?UTF-8?q?=5B=20127/133=5D=20mtd=3A=20omap2=3A=20fix=20module=20loading?=
-Date: Thu, 11 Oct 2012 07:52:33 +0900
-Message-Id: <20121010224917.408517945@linuxfoundation.org>
+Subject: [ 125/133] mtd: nand: Use the mirror BBT descriptor when reading its version
+Date: Thu, 11 Oct 2012 07:52:31 +0900
+Message-Id: <20121010224917.044875260@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,43 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bießmann <andreas@biessmann.de>
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-commit 4d3d688da8e7016f15483e9319b41311e1db9515 upstream.
+commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
 
-Unloading the omap2 nand driver missed to release the memory region which will
-result in not being able to request it again if one want to load the driver
-later on.
+The code responsible for reading the version of the mirror bbt was
+incorrectly using the descriptor of the main bbt.
 
-This patch fixes following error when loading omap2 module after unloading:
----8<---
-~ $ rmmod omap2
-~ $ modprobe omap2
-[   37.420928] omap2-nand: probe of omap2-nand.0 failed with error -16
-~ $
---->8---
+Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
+version of the mirror bbt.
 
-This error was introduced in 67ce04bf2746f8a1f8c2a104b313d20c63f68378 which
-was the first commit of this driver.
-
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/omap2.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/nand/nand_bbt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -1382,6 +1382,7 @@ static int omap_nand_remove(struct platf
- 	/* Release NAND device, its internal structures and partitions */
- 	nand_release(&info->mtd);
- 	iounmap(info->nand.IO_ADDR_R);
-+	release_mem_region(info->phys_base, NAND_IO_SIZE);
- 	kfree(info);
- 	return 0;
- }
+--- a/drivers/mtd/nand/nand_bbt.c
++++ b/drivers/mtd/nand/nand_bbt.c
+@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info
+ 	/* Read the mirror version, if available */
+ 	if (md && (md->options & NAND_BBT_VERSION)) {
+ 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
+-			      mtd->writesize, td);
++			      mtd->writesize, md);
+ 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
+ 		pr_info("Bad block table at page %d, version 0x%02X\n",
+ 			 md->pages[0], md->version[0]);
 
 
