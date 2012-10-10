@@ -1,117 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab2JJDiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 23:38:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44613 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab2JJDiB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 23:38:01 -0400
-Date: Tue, 9 Oct 2012 20:37:59 -0700
-From: mark gross <markgross@thegnar.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Huang Ying <ying.huang@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Lan Tianyu <tianyu.lan@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Jean Pihet <j-pihet@ti.com>, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] PM / QoS: Prepare struct dev_pm_qos_request for more
- request types
-Message-ID: <20121010033759.GG21067@MGROSS-X220VM>
-Reply-To: markgross@thegnar.org
-References: <201209282351.10663.rjw@sisk.pl>
- <1413438.1MkXj8vjQK@vostro.rjw.lan>
- <1701634.Jkkbu1sQKe@vostro.rjw.lan>
+	id S932333Ab2JJDmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 23:42:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50147 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab2JJDmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 23:42:40 -0400
+X-IronPort-AV: E=Sophos;i="4.80,564,1344182400"; 
+   d="scan'208";a="5972830"
+Message-ID: <5074EFFD.4050906@cn.fujitsu.com>
+Date: Wed, 10 Oct 2012 11:48:13 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1701634.Jkkbu1sQKe@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        mingo@redhat.com, miaox@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-numa@vger.kernel.org
+Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
+References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com> <5074D824.6020204@cn.fujitsu.com>
+In-Reply-To: <5074D824.6020204@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/10 11:42:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/10 11:42:29,
+	Serialize complete at 2012/10/10 11:42:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 10:06:08AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+At 10/10/2012 10:06 AM, Wen Congyang Wrote:
+> At 10/10/2012 07:27 AM, David Rientjes Wrote:
+>> On Tue, 9 Oct 2012, Peter Zijlstra wrote:
+>>
+>>> Well the code they were patching is in the wakeup path. As I think Tang
+>>> said, we leave !runnable tasks on whatever cpu they ran on last, even if
+>>> that cpu is offlined, we try and fix up state when we get a wakeup.
+>>>
+>>> On wakeup, it tries to find a cpu to run on and will try a cpu of the
+>>> same node first.
+>>>
+>>> Now if that node's entirely gone away, it appears the cpu_to_node() map
+>>> will not return a valid node number.
+>>>
+>>> I think that's a change in behaviour, it didn't used to do that afaik.
+>>> Certainly this code hasn't change in a while.
+>>>
+>>
+>> If cpu_to_node() always returns a valid node id even if all cpus on the 
+>> node are offline, then the cpumask_of_node() implementation, which the 
+>> sched code is using, should either return an empty cpumask (if 
+>> node_to_cpumask_map[nid] isn't freed) or cpu_online_mask.  The change in 
+>> behavior here occurred because 
+>> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch in -mm doesn't 
+>> return a valid node id and forces it to return -1 so a kzalloc_node(..., 
+>> -1) fallsback to allocate anywhere.
+>>
+>> But if you only need cpu_to_node() when waking up to find a runnable cpu 
+>> for this NUMA information, then I think you can just change the 
+>> kzalloc_node() in alloc_{fair,rt}_sched_group() to do 
+>> kzalloc(..., cpu_online(cpu) ? cpu_to_node(cpu) : NUMA_NO_NODE).
+>>
+>>  [ The changelog here is confusing because it's fixing a problem in 
+>>    linux-next without saying so. ]
+>>
 > 
-> The subsequent patches will use struct dev_pm_qos_request for
-> representing both latency requests and flags requests.  To make that
-> easier, put the node member of struct dev_pm_qos_request (under the
-> name "pnode") into a union called "data" that will represent the
-> request's  value and list node depending on its type.
+> I don't agree with this way. Because it only fix the code which causes a
+> problem, and we can't say there is no any similar problem. So it is
+> why I clear the cpu-to-node mapping.
 > 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reviewed-by: Jean Pihet <j-pihet@ti.com>
-> ---
->  drivers/base/power/qos.c   |    6 +++---
->  drivers/base/power/sysfs.c |    2 +-
->  include/linux/pm_qos.h     |    4 +++-
->  3 files changed, 7 insertions(+), 5 deletions(-)
+> What about the following solution:
+> 1. clear the cpu-to-node mapping when the node is offlined
+
+There is no interface to online/offline a node. We online a node only
+when the cpu/memory is node, and offline it when all cpu/memory in
+this node is offlined(TODO).
+
+So we may need to map cpu-to-node when the cpu is onlined if clear
+it when the node is offlined. But we don't know the cpu's node.
+
+Thanks
+Wen Congyang
+
+> 2. tang's patch is still necessary because we leave !runnable tasks on
+>    whatever cpu they ran on last. If cpu's node is NUMA_NO_NODE, it means
+>    the entire node is offlined, and we must migrate the task to the other
+>    node.
 > 
-> Index: linux/include/linux/pm_qos.h
-> ===================================================================
-> --- linux.orig/include/linux/pm_qos.h
-> +++ linux/include/linux/pm_qos.h
-> @@ -39,7 +39,9 @@ struct pm_qos_flags_request {
->  };
->  
->  struct dev_pm_qos_request {
-> -	struct plist_node node;
-> +	union {
-> +		struct plist_node pnode;
-> +	} data;
->  	struct device *dev;
->  };
->  
-> Index: linux/drivers/base/power/sysfs.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/sysfs.c
-> +++ linux/drivers/base/power/sysfs.c
-> @@ -221,7 +221,7 @@ static DEVICE_ATTR(autosuspend_delay_ms,
->  static ssize_t pm_qos_latency_show(struct device *dev,
->  				   struct device_attribute *attr, char *buf)
->  {
-> -	return sprintf(buf, "%d\n", dev->power.pq_req->node.prio);
-> +	return sprintf(buf, "%d\n", dev->power.pq_req->data.pnode.prio);
->  }
->  
->  static ssize_t pm_qos_latency_store(struct device *dev,
-> Index: linux/drivers/base/power/qos.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/qos.c
-> +++ linux/drivers/base/power/qos.c
-> @@ -90,7 +90,7 @@ static int apply_constraint(struct dev_p
->  	int ret, curr_value;
->  
->  	ret = pm_qos_update_target(&req->dev->power.qos->latency,
-> -				   &req->node, action, value);
-> +				   &req->data.pnode, action, value);
->  
->  	if (ret) {
->  		/* Call the global callbacks if needed */
-> @@ -183,7 +183,7 @@ void dev_pm_qos_constraints_destroy(stru
->  
->  	c = &qos->latency;
->  	/* Flush the constraints list for the device */
-> -	plist_for_each_entry_safe(req, tmp, &c->list, node) {
-> +	plist_for_each_entry_safe(req, tmp, &c->list, data.pnode) {
->  		/*
->  		 * Update constraints list and call the notification
->  		 * callbacks if needed
-> @@ -293,7 +293,7 @@ int dev_pm_qos_update_request(struct dev
->  	mutex_lock(&dev_pm_qos_mtx);
->  
->  	if (req->dev->power.qos) {
-> -		if (new_value != req->node.prio)
-> +		if (new_value != req->data.pnode.prio)
->  			ret = apply_constraint(req, PM_QOS_UPDATE_REQ,
->  					       new_value);
->  	} else {
+> Thanks
+> Wen Congyang
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-numa" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-Reviewed-by: mark gross <markgross@thegnar.org>
 
