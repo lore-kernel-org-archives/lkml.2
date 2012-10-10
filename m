@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab2JJRTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:19:01 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49598 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab2JJRS7 (ORCPT
+	id S1754341Ab2JJQOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:14:14 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:18958 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751717Ab2JJQOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:18:59 -0400
-Message-ID: <5075ADF3.4040407@gmail.com>
-Date: Wed, 10 Oct 2012 12:18:43 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 10 Oct 2012 12:14:09 -0400
+Message-ID: <1349885644.6336.70.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "David S. Miller" <davem@davemloft.net>, John Linn <linnj@xilinx.com>
+Date: Wed, 10 Oct 2012 17:14:04 +0100
+In-Reply-To: <CAHTX3dJuHxAqZOkkSymPz5ots1Edq4ty3o1rGAuhnpWrUwtWZQ@mail.gmail.com>
+References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
+	 <1349374497-9540-11-git-send-email-monstr@monstr.eu>
+	 <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
+	 <506EA9C4.2000609@monstr.eu>
+	 <1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
+	 <5073E988.60701@monstr.eu>
+	 <1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
+	 <CAHTX3dJuHxAqZOkkSymPz5ots1Edq4ty3o1rGAuhnpWrUwtWZQ@mail.gmail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: David Gibson <david@gibson.dropbear.id.au>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>
-Subject: Re: dtc: import latest upstream dtc
-References: <1349827466.26044.16@snotra> <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com> <20121010072401.GA28467@truffula.fritz.box> <50759152.9050407@wwwdotorg.org> <5075954B.8030008@gmail.com> <5075A00B.2040509@wwwdotorg.org>
-In-Reply-To: <5075A00B.2040509@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 11:19 AM, Stephen Warren wrote:
-> On 10/10/2012 09:33 AM, Rob Herring wrote:
->> On 10/10/2012 10:16 AM, Stephen Warren wrote:
->>> On 10/10/2012 01:24 AM, David Gibson wrote:
->>>> On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
->>>>>
->>>>> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
->>>>>
->>>>>> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
->>>>>>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
->>>>>>>> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->>>>>>>>>>
->>>>>>>>>> What more do you think needs discussion re: dtc+cpp?
->>>>>>>>>
->>>>>>>>> How not to abuse the ever-loving shit out of it? :-)
->>>>>>>>
->>>>>>>> Perhaps we can just handle this through the regular patch review
->>>>>>>> process; I think it may be difficult to define and agree upon exactly
->>>>>>>> what "abuse" means ahead of time, but it's probably going to be easy
->>>>>>>> enough to recognize it when one sees it?
->>>>>>> One of the ways it could get out of hand would be via "include
->>>>>>> dependency hell".  People will be tempted to reuse existing .h files
->>>>>>> containing pin definitions, which, if history is a guide, will end up
->>>>>>> depending on all sorts of other .h files.
->>>>>>> Another problem I often face with symbolic names is the difficulty of
->>>>>>> figuring out what the numerical values really are (for debugging),
->>>>>>> especially when .h files are in different subtrees from the files that
->>>>>>> use the definitions, and when they use multiple macro levels and fancy
->>>>>>> features like concatenation.  Sometimes I think it's clearer just to
->>>>>>> write the number and use a comment to say what it is.
->>>>>>
->>>>>> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
->>>>>
->>>>> .h files include both structs and defines, which are fine for
->>>>> ordinary C code, but problematic in this context.
->>>>
->>>> Right, cpp should be invoked with similar options to the way it's done
->>>> for asm files which have the same problem.  I'm not sure if the
->>>> current patch does so.
->>>
->>> That's probably a reasonable idea, although I imagined that people would
->>> actually split out the portions of any header file they wanted to use
->>> with dtc, so that any headers included by *.dts would only include
->>> #defines. Those headers could be used by both dtc and other .h files (or
->>> .c files).
->>
->> Used by what other files? kernel files? We ultimately want to split out
->> dts files from the kernel, so whatever we add needs to be self
->> contained. I don't see this as a huge issue though because the whole
->> point of the DT data is to move that information out of the kernel. If
->> it is needed in both places, then something is wrong.
+On Wed, 2012-10-10 at 18:06 +0200, Michal Simek wrote:
+> 2012/10/9 Ben Hutchings <bhutchings@solarflare.com>:
+> > On Tue, 2012-10-09 at 11:08 +0200, Michal Simek wrote:
+> >> On 10/05/2012 03:51 PM, Ben Hutchings wrote:
+> >> > On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
+> >> >> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
+> >> >>> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
+> >> >>>> Just show current setting in bootlog.
+> >> >>> [...]
+> >> >>>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >> >>>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> >> >>>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
+> >> >>>>          /* Setup checksum offload, but default to off if not specified */
+> >> >>>>          lp->temac_features = 0;
+> >> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
+> >> >>>> +        dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
+> >> >>>>          if (p && be32_to_cpu(*p)) {
+> >> >>>>                  lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
+> >> >>>>                  /* Can checksum TCP/UDP over IPv4. */
+> >> >>>>                  ndev->features |= NETIF_F_IP_CSUM;
+> >> >>>>          }
+> >> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
+> >> >>>> +        dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
+> >> >>> [...]
+> >> >>>
+> >> >>> Is there any particular reason you think this needs to be logged by
+> >> >>> default, rather than letting users run ethtool -k?  I suggest using
+> >> >>> dev_dbg() instead.
+> >> >>
+> >> >> Ok. I have looked at it and there are missing some bits in ndev->features.
+> >> >>
+> >> >> Can you please check that my setting is correct?
+> >> >>
+> >> >> It is SG DMA ip/driver.
+> >> >> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
+> >> >
+> >> > NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
+> >> > through the frag_list pointer.
+> >>
+> >> The driver is able to handle skb fragments too. temac_start_xmit
+> >
+> > "git grep -w -E 'frag_list|skb_walk_frags|skb_to_sgvec' drivers/net/ethernet/xilinx"
+> > returns nothing in net-next.
 > 
-> One example is the IDs of the GPIOs, e.g.:
-> 
-> #define TEGRA_PIN_VI_GP6_PA0            _GPIO(0)
-> #define TEGRA_PIN_UART3_CTS_N_PA1       _GPIO(1)
-> #define TEGRA_PIN_DAP2_FS_PA2           _GPIO(2)
-> #define TEGRA_PIN_DAP2_SCLK_PA3         _GPIO(3)
-> 
-> Those defines are useful to both the .dts files (so named constants can
-> be used) and the pinctrl driver. By using the same header file, we
-> guarantee that the .dts files and pinctrl driver use the exact same
-> naming for the pins; the pin naming/numbering being defined by the DT
-> binding more than anything else.
+> What about this? Maybe it is different fragmentation.
+> drivers/net/ethernet/xilinx/ll_temac_main.c
+>  688         num_frag = skb_shinfo(skb)->nr_frags;
+>  689         frag = &skb_shinfo(skb)->frags[0];
+[...]
 
-If pinctrl needs to get a matching name, then it should get it from the
-dtb. We should not have 2 sources of data. That is just broken.
+Yes, the fact that you handle the frags array is indicated by feature
+flag NETIF_F_SG.
 
-> 
-> It'd be similarly useful to share GPIO or interrupt flag definitions,
-> etc. etc.
-> 
-> We could do something like we do for dtc today, where there's an
-> external repository for *.dts (and required *.h), yet those *.h are
-> duplicated into the kernel tree as needed by drivers.
+Ben.
 
-So as long as we only need to sync up about once a year that's fine
-because we have yet to prove that doing it frequently for dtc will be
-easy and painless.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-I'd like fewer things to copy around, not more. If you have some
-self-contained platform defines to copy, then it is your problem.
-
-Rob
