@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab2JJXBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:01:41 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57999 "EHLO
+	id S1758044Ab2JJXBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:50 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43927 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757164Ab2JJXBf (ORCPT
+	by vger.kernel.org with ESMTP id S1757947Ab2JJXBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:35 -0400
-X-Sasl-enc: VqrSoQfiT9vx+1neQp4GYbVxL+UVLGGegx7zYv5OviCg 1349910094
+	Wed, 10 Oct 2012 19:01:40 -0400
+X-Sasl-enc: 0wwLmrJufQjPQG63Xrg+sCGmbfyJT+g1J6H2EhG9UKbs 1349910099
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 026/122] rapidio/rionet: fix multicast packet transmit logic
-Date: Thu, 11 Oct 2012 07:53:12 +0900
-Message-Id: <20121010225342.845360773@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [ 028/122] workqueue: add missing smp_wmb() in process_one_work()
+Date: Thu, 11 Oct 2012 07:53:14 +0900
+Message-Id: <20121010225343.189831573@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -31,103 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 7c4a6106d6451fc03c491e61df37c044505d843a upstream.
+commit 959d1af8cffc8fd38ed53e8be1cf4ab8782f9c00 upstream.
 
-Fix multicast packet transmit logic to account for repetitive transmission
-of single skb:
-- correct check for available buffers (this bug may produce NULL pointer
-  crash dump in case of heavy traffic);
-- update skb user count (incorrect user counter causes a warning dump from
-  net_tx_action routine during multicast transfers in systems with three or
-  more rionet participants).
+WORK_STRUCT_PENDING is used to claim ownership of a work item and
+process_one_work() releases it before starting execution.  When
+someone else grabs PENDING, all pre-release updates to the work item
+should be visible and all updates made by the new owner should happen
+afterwards.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Grabbing PENDING uses test_and_set_bit() and thus has a full barrier;
+however, clearing doesn't have a matching wmb.  Given the preceding
+spin_unlock and use of clear_bit, I don't believe this can be a
+problem on an actual machine and there hasn't been any related report
+but it still is theretically possible for clear_pending to permeate
+upwards and happen before work->entry update.
+
+Add an explicit smp_wmb() before work_clear_pending().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/rionet.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ kernel/workqueue.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -79,6 +79,7 @@ static int rionet_capable = 1;
-  * on system trade-offs.
-  */
- static struct rio_dev **rionet_active;
-+static int nact;	/* total number of active rionet peers */
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2073,7 +2073,9 @@ __acquires(&gcwq->lock)
  
- #define is_rionet_capable(src_ops, dst_ops)			\
- 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
-@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_b
- 	struct ethhdr *eth = (struct ethhdr *)skb->data;
- 	u16 destid;
- 	unsigned long flags;
-+	int add_num = 1;
+ 	spin_unlock_irq(&gcwq->lock);
  
- 	local_irq_save(flags);
- 	if (!spin_trylock(&rnet->tx_lock)) {
-@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_b
- 		return NETDEV_TX_LOCKED;
- 	}
- 
--	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
-+	if (is_multicast_ether_addr(eth->h_dest))
-+		add_num = nact;
++	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
+ 	work_clear_pending(work);
 +
-+	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
- 		netif_stop_queue(ndev);
- 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
- 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
-@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_b
- 	}
- 
- 	if (is_multicast_ether_addr(eth->h_dest)) {
-+		int count = 0;
- 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
- 				i++)
--			if (rionet_active[i])
-+			if (rionet_active[i]) {
- 				rionet_queue_tx_msg(skb, ndev,
- 						    rionet_active[i]);
-+				if (count)
-+					atomic_inc(&skb->users);
-+				count++;
-+			}
- 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
- 		destid = RIONET_GET_DESTID(eth->h_dest);
- 		if (rionet_active[destid])
-@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct ri
- 	if (info == RIONET_DOORBELL_JOIN) {
- 		if (!rionet_active[sid]) {
- 			list_for_each_entry(peer, &rionet_peers, node) {
--				if (peer->rdev->destid == sid)
-+				if (peer->rdev->destid == sid) {
- 					rionet_active[sid] = peer->rdev;
-+					nact++;
-+				}
- 			}
- 			rio_mport_send_doorbell(mport, sid,
- 						RIONET_DOORBELL_JOIN);
- 		}
- 	} else if (info == RIONET_DOORBELL_LEAVE) {
- 		rionet_active[sid] = NULL;
-+		nact--;
- 	} else {
- 		if (netif_msg_intr(rnet))
- 			printk(KERN_WARNING "%s: unhandled doorbell\n",
-@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *
- 
- 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
- 		rionet_check = 1;
-+		nact = 0;
- 	}
- 
- 	/*
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+ 	trace_workqueue_execute_start(work);
 
 
