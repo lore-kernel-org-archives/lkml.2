@@ -1,174 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab2JJKI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:08:59 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42838 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259Ab2JJKIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:08:51 -0400
+	id S1755495Ab2JJKJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:09:22 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:57066 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755390Ab2JJKJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:09:13 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
         tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v3 06/13] vfs: add hooks to enable hot data tracking
-Date: Wed, 10 Oct 2012 18:07:28 +0800
-Message-Id: <1349863655-29320-7-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v3 10/13] vfs: register one memory shrinker
+Date: Wed, 10 Oct 2012 18:07:32 +0800
+Message-Id: <1349863655-29320-11-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
 References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101010-2876-0000-0000-000000E39AB2
+x-cbid: 12101010-5112-0000-0000-00000D488FC5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Miscellaneous features that implement hot data tracking
-and generally make the hot data functions a bit more friendly.
+  Register a shrinker to control the amount of
+memory that is used in tracking hot regions - if we are throwing
+inodes out of memory due to memory pressure, we most definitely are
+going to need to reduce the amount of memory the tracking code is
+using, even if it means losing useful information (i.e. the shrinker
+accelerates the aging process).
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/direct-io.c      |    8 ++++++++
- fs/hot_tracking.h   |    5 +++++
- mm/filemap.c        |    7 +++++++
- mm/page-writeback.c |   13 +++++++++++++
- mm/readahead.c      |    7 +++++++
- 5 files changed, 40 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |   59 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hot_tracking.h |    1 +
+ 2 files changed, 60 insertions(+), 0 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..8960024 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -37,6 +37,7 @@
- #include <linux/uio.h>
- #include <linux/atomic.h>
- #include <linux/prefetch.h>
-+#include "hot_tracking.h"
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index f333c47..fcde55e 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -742,6 +742,59 @@ static inline void hot_cache_exit(void)
+ 		kmem_cache_destroy(hot_inode_item_cachep);
+ }
  
++static int hot_track_comm_prune(struct hot_map_head *map_head,
++				bool type, unsigned long nr)
++{
++	struct list_head *pos, *next;
++	struct hot_comm_item *node;
++	int i;
++
++	for (i = 0; i < HEAT_MAP_SIZE; i++) {
++		list_for_each_safe(pos, next, &(map_head + i)->node_list) {
++			if (nr == 0)
++				break;
++			nr--;
++			node = list_entry(pos, struct hot_comm_item, n_list);
++			if (type) {
++				struct hot_inode_item *hot_inode =
++					container_of(node,
++					struct hot_inode_item, hot_inode);
++				hot_inode_item_put(hot_inode);
++			} else {
++				struct hot_range_item *hot_range =
++					container_of(node,
++					struct hot_range_item, hot_range);
++				hot_range_item_put(hot_range);
++			}
++		}
++
++		if (nr == 0)
++			break;
++	}
++
++	return nr;
++}
++
++/* The shrinker callback function */
++static int hot_track_prune(struct shrinker *shrink,
++			struct shrink_control *sc)
++{
++	struct hot_info *root =
++		container_of(shrink, struct hot_info, hot_shrink);
++	int ret;
++
++	if ((sc->gfp_mask & GFP_KERNEL) != GFP_KERNEL)
++		return (sc->nr_to_scan == 0) ? 0 : -1;
++
++	ret = hot_track_comm_prune(root->heat_range_map,
++				false, sc->nr_to_scan);
++	if (ret > 0)
++		ret = hot_track_comm_prune(root->heat_inode_map,
++					true, ret);
++
++	return ret;
++}
++
  /*
-  * How many user pages to map in one call to get_user_pages().  This determines
-@@ -1297,6 +1298,13 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	prefetch(bdev->bd_queue);
- 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
+  * Initialize the data structures for hot data tracking.
+  */
+@@ -774,6 +827,11 @@ void hot_track_init(struct super_block *sb)
+ 	if (err)
+ 		goto failed_wq;
  
-+	/* Hot data tracking */
-+	hot_update_freqs(global_hot_tracking_info,
-+			iocb->ki_filp->f_mapping->host,
-+			(u64)offset,
-+			(u64)iov_length(iov, nr_segs),
-+			rw & WRITE);
++	/* Register a shrinker callback */
++	root->hot_shrink.shrink = hot_track_prune;
++	root->hot_shrink.seeks = DEFAULT_SEEKS;
++	register_shrinker(&root->hot_shrink);
 +
- 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
- 				     nr_segs, get_block, end_io,
- 				     submit_io, flags);
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index 37f69ee..42e0273 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -16,6 +16,11 @@
- #include <linux/workqueue.h>
- #include <linux/hot_tracking.h>
+ 	printk(KERN_INFO "vfs: turning on hot data tracking\n");
  
-+/* Hot data tracking -- guard macros */
-+#define TRACK_THIS_INODE(inode) \
-+                ((inode->i_sb->hot_flags & MS_HOT_TRACKING) && \
-+                !(inode->i_flags & S_NOHOTDATATRACK))
-+
- /* values for hot_freq_data flags */
- #define FREQ_DATA_TYPE_INODE (1 << 0)
- #define FREQ_DATA_TYPE_RANGE (1 << 1)
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..6b63b77 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
- #include <linux/cleancache.h>
-+#include <linux/hot_tracking.h>
- #include "internal.h"
- 
- /*
-@@ -1224,6 +1225,12 @@ readpage:
- 		 * PG_error will be set again if readpage fails.
- 		 */
- 		ClearPageError(page);
-+
-+		/* Hot data tracking */
-+		hot_update_freqs(global_hot_tracking_info, inode,
-+				(u64)page->index << PAGE_CACHE_SHIFT,
-+				PAGE_CACHE_SIZE, 0);
-+
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 5ad5ce2..cf5a1c8 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -35,6 +35,7 @@
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
- #include <linux/timer.h>
-+#include <linux/hot_tracking.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -1895,13 +1896,25 @@ EXPORT_SYMBOL(generic_writepages);
- int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+ 	return;
+@@ -791,6 +849,7 @@ void hot_track_exit(struct super_block *sb)
  {
- 	int ret;
-+	pgoff_t start = 0;
-+	u64 count = 0;
+ 	struct hot_info *root = global_hot_tracking_info;
  
- 	if (wbc->nr_to_write <= 0)
- 		return 0;
-+
-+	start = mapping->writeback_index << PAGE_CACHE_SHIFT;
-+	count = (u64)wbc->nr_to_write;
-+
- 	if (mapping->a_ops->writepages)
- 		ret = mapping->a_ops->writepages(mapping, wbc);
- 	else
- 		ret = generic_writepages(mapping, wbc);
-+
-+	/* Hot data tracking */
-+	hot_update_freqs(global_hot_tracking_info,
-+			mapping->host, (u64)start,
-+			(count - (u64)wbc->nr_to_write) * PAGE_CACHE_SIZE, 1);
-+
- 	return ret;
- }
++	unregister_shrinker(&root->hot_shrink);
+ 	hot_wq_exit(root->update_wq);
+ 	hot_map_array_exit(root);
+ 	hot_inode_tree_exit(root);
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index b37e0f8..6f31090 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -86,6 +86,7 @@ struct hot_info {
+ 	struct hot_map_head heat_range_map[HEAT_MAP_SIZE];
  
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 7963f23..b62f1bb 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -19,6 +19,7 @@
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
- #include <linux/file.h>
-+#include <linux/hot_tracking.h>
+ 	struct workqueue_struct *update_wq;
++	struct shrinker hot_shrink;
+ };
  
- /*
-  * Initialise a struct file's readahead state.  Assumes that the caller has
-@@ -138,6 +139,12 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- out:
- 	blk_finish_plug(&plug);
- 
-+	/* Hot data tracking */
-+	hot_update_freqs(global_hot_tracking_info,
-+			mapping->host, (u64)(list_entry(pages->prev,\
-+				struct page, lru)->index) << PAGE_CACHE_SHIFT,
-+			(u64)nr_pages * PAGE_CACHE_SIZE, 0);
-+
- 	return ret;
- }
- 
+ extern struct hot_info *global_hot_tracking_info;
 -- 
 1.7.6.5
 
