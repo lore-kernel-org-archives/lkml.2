@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab2JJRtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:49:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24350 "EHLO mx1.redhat.com"
+	id S1756546Ab2JJNlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:41:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab2JJRtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:49:20 -0400
-Date: Wed, 10 Oct 2012 19:50:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>, Eric Dumazet <edumazet@google.com>
-Subject: Re: [PATCH V2] task_work: avoid unneeded cmpxchg() in
-	task_work_run()
-Message-ID: <20121010175032.GA22642@redhat.com>
-References: <50729A78.9090601@cn.fujitsu.com> <20121008123815.GA847@redhat.com> <1349780697.7880.14.camel@twins> <5075098E.9090808@cn.fujitsu.com>
+	id S1756321Ab2JJNlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 09:41:18 -0400
+Date: Wed, 10 Oct 2012 15:40:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHv4 0/8] perf, tool: Allow to use hw events in PMU syntax
+Message-ID: <20121010134020.GA14897@krava.brq.redhat.com>
+References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+ <CABPqkBQ8SS790ynd8tdjUk1fKwKN0UdqApJ_p4JvbgyyRU48Uw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5075098E.9090808@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CABPqkBQ8SS790ynd8tdjUk1fKwKN0UdqApJ_p4JvbgyyRU48Uw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10, Lai Jiangshan wrote:
->
-> --- a/kernel/task_work.c
-> +++ b/kernel/task_work.c
-> @@ -52,16 +52,7 @@ void task_work_run(void)
->  	struct callback_head *work, *head, *next;
->
->  	for (;;) {
-> -		/*
-> -		 * work->func() can do task_work_add(), do not set
-> -		 * work_exited unless the list is empty.
-> -		 */
-> -		do {
-> -			work = ACCESS_ONCE(task->task_works);
-> -			head = !work && (task->flags & PF_EXITING) ?
-> -				&work_exited : NULL;
-> -		} while (cmpxchg(&task->task_works, work, head) != work);
-> -
-> +		work = xchg(&task->task_works, NULL);
->  		if (!work)
->  			break;
->  		/*
-> @@ -90,3 +81,17 @@ void task_work_run(void)
->  		} while (work);
->  	}
->  }
-> +
-> +void exit_task_work(struct task_struct *task)
-> +{
-> +	for (;;) {
-> +		/*
-> +		 * work->func() can do task_work_add(), do not set
-> +		 * work_exited unless the list is empty.
-> +		 */
-> +		if (unlikely(task->task_works))
-> +			task_work_run();
-> +		if (cmpxchg(&task->task_works, NULL, &work_exited) == NULL)
-> +			break;
-> +	}
-> +}
+On Wed, Oct 10, 2012 at 03:34:53PM +0200, Stephane Eranian wrote:
+> On Wed, Oct 10, 2012 at 2:53 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > hi,
+> > here's the change to make following syntax available:
+> >   perf stat -e cpu/event=instructions/u ls
+> >   perf stat -e cpu/cycles/u ls
+> >
+> Unless, I am mistaken but I did not see in your patch where you adjust the list
+> of generic Hw events (and encodings) you expose via sysfs based on CPU model
+> number. Some generic HW PMU may not have actual physical mappings. Look
+> at IvyBridge, for instance.
 
-I agree, this looks fine.
+hm, path 2 remove any attribute that is not defined via x86_pmu.event_map,
+if that's what you mean..
 
-But if you add "unlikely" before task_work_run(), then probably
-it should do
-
-	while (cmpxchg(&task->task_works, NULL, work_exited))
-		task_work_run();
-
-? it looks more simple/clean.
-
-(OTOH I am not sure "unlikely" is true, note that exit_files() will
- offload ____fput() to task_work_run()).
-
-But you did not answer, and I am curious. What was your original
-motivation? Is xchg really faster than cmpxchg?
-
-Oleg.
-
+jirka
