@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab2JJXRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:17:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42643 "EHLO
+	id S1756770Ab2JJXBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39658 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932230Ab2JJXBH (ORCPT
+	by vger.kernel.org with ESMTP id S1757877Ab2JJXAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:07 -0400
-X-Sasl-enc: e0cLbEVahTzUrgI7H7vmnhiEVSf3IKAQvA+0inRWkijb 1349910066
+	Wed, 10 Oct 2012 19:00:54 -0400
+X-Sasl-enc: C+6N5eT1X8/o8FnwdZ2XQ/QMBUOipmwXx1zwl7xks0zb 1349910053
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: =?UTF-8?q?=5B=20012/122=5D=20media=3A=20gspca=5Fpac7302=3A=20add=20support=20for=20device=201ae7=3A2001=20Speedlink=20Snappy=20Microphone=20SL-6825-SBK?=
-Date: Thu, 11 Oct 2012 07:52:58 +0900
-Message-Id: <20121010225340.254830509@linuxfoundation.org>
+Subject: [ 011/122] media: rc: ite-cir: Initialise ite_dev::rdev earlier
+Date: Thu, 11 Oct 2012 07:52:57 +0900
+Message-Id: <20121010225340.024518847@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,28 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Schäfer <fschaefer.oss@googlemail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 97d2fbf501e3cf105ac957086c7e40e62e15cdf8 upstream.
+commit 4b961180ef275035b1538317ffd0e21e80e63e77 upstream.
 
-Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+ite_dev::rdev is currently initialised in ite_probe() after
+rc_register_device() returns.  If a newly registered device is opened
+quickly enough, we may enable interrupts and try to use ite_dev::rdev
+before it has been initialised.  Move it up to the earliest point we
+can, right after calling rc_allocate_device().
+
+Reported-and-tested-by: YunQiang Su <wzssyqa@gmail.com>
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/gspca/pac7302.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/rc/ite-cir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/video/gspca/pac7302.c
-+++ b/drivers/media/video/gspca/pac7302.c
-@@ -905,6 +905,7 @@ static const struct usb_device_id device
- 	{USB_DEVICE(0x093a, 0x262a)},
- 	{USB_DEVICE(0x093a, 0x262c)},
- 	{USB_DEVICE(0x145f, 0x013c)},
-+	{USB_DEVICE(0x1ae7, 0x2001)}, /* SpeedLink Snappy Mic SL-6825-SBK */
- 	{}
- };
- MODULE_DEVICE_TABLE(usb, device_table);
+--- a/drivers/media/rc/ite-cir.c
++++ b/drivers/media/rc/ite-cir.c
+@@ -1473,6 +1473,7 @@ static int ite_probe(struct pnp_dev *pde
+ 	rdev = rc_allocate_device();
+ 	if (!rdev)
+ 		goto failure;
++	itdev->rdev = rdev;
+ 
+ 	ret = -ENODEV;
+ 
+@@ -1604,7 +1605,6 @@ static int ite_probe(struct pnp_dev *pde
+ 	if (ret)
+ 		goto failure3;
+ 
+-	itdev->rdev = rdev;
+ 	ite_pr(KERN_NOTICE, "driver has been successfully loaded\n");
+ 
+ 	return 0;
 
 
