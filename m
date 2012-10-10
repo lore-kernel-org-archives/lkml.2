@@ -1,258 +1,593 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab2JJWuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:50:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58583 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757335Ab2JJWum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:50:42 -0400
-Date: Thu, 11 Oct 2012 09:50:44 +1100
-From: NeilBrown <neilb@suse.de>
-To: =?utf-8?Q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>
-Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Subject: Re: [PATCH 03/16] f2fs: add superblock and major in-memory
- structures
-Message-ID: <20121011095044.6c88e3d4@notabene.brown>
-In-Reply-To: <000a01cda2f0$a2375b40$e6a611c0$%kim@samsung.com>
-References: <000a01cda2f0$a2375b40$e6a611c0$%kim@samsung.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/adwKK_znefaVZjOzCqV5X_m"; protocol="application/pgp-signature"
+	id S1757428Ab2JJWww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:52:52 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56032 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757335Ab2JJWwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 18:52:46 -0400
+X-Sasl-enc: SUcaYhA09xq/wEF4goHfoIijebCX4J6Dg5x8Z6+Trge3 1349909565
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk
+Subject: =?UTF-8?q?=5B=20000/133=5D=203=2E5=2E7-stable=20review?=
+Date: Thu, 11 Oct 2012 07:50:26 +0900
+Message-Id: <20121010224854.313159132@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/adwKK_znefaVZjOzCqV5X_m
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+---------------------------------------
+Note:  This is the LAST 3.5.y kernel release.  After this one, 3.5.y is
+end-of-life, please move to 3.6.y at this point in time.
+---------------------------------------
 
-On Fri, 05 Oct 2012 20:57:46 +0900 =EA=B9=80=EC=9E=AC=EA=B7=B9 <jaegeuk.kim=
-@samsung.com> wrote:
+This is the start of the stable review cycle for the 3.5.7 release.
+There are 133 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
+
+Responses should be made by Fri Oct 12 22:48:09 UTC 2012.
+Anything received after that time might be too late.
+
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.5.7-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Frediano Ziglio <frediano.ziglio@citrix.com>
+    Convert properly UTF-8 to UTF-16
+
+Jeff Layton <jlayton@redhat.com>
+    cifs: reinstate the forcegid option
+
+Brian Norris <computersforpeace@gmail.com>
+    JFFS2: don't fail on bitflips in OOB
+
+Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+    JFFS2: fix unmount regression
+
+Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+    mmc: sh-mmcif: avoid oops on spurious interrupts
+
+Vaibhav Bedia <vaibhav.bedia@ti.com>
+    mmc: omap_hsmmc: Pass on the suspend failure to the PM core
+
+Andreas Bießmann <andreas@biessmann.de>
+    mtd: omap2: fix module loading
+
+Andreas Bießmann <andreas@biessmann.de>
+    mtd: omap2: fix omap_nand_remove segfault
+
+Shmulik Ladkani <shmulik.ladkani@gmail.com>
+    mtd: nand: Use the mirror BBT descriptor when reading its version
+
+Richard Genoud <richard.genoud@gmail.com>
+    mtd: nandsim: bugfix: fail if overridesize is too big
+
+Alexander Shiyan <shc_work@mail.ru>
+    mtd: autcpu12-nvram: Fix compile breakage
+
+Huang Shijie <shijie8@gmail.com>
+    mtd: mtdpart: break it as soon as we parse out the partitions
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert "drm/i915: correctly order the ring init sequence"
+
+Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+    CPU hotplug, cpusets, suspend: Don't modify cpusets during suspend/resume
+
+Seiji Aguchi <seiji.aguchi@hds.com>
+    efi: initialize efi.runtime_version to make query_variable_info/update_capsule workable
+
+Matthew Garrett <mjg@redhat.com>
+    efi: Build EFI stub with EFI-appropriate options
+
+Avi Kivity <avi@redhat.com>
+    Revert "KVM: VMX: Fix KVM_SET_SREGS with big real mode segments"
+
+Mel Gorman <mgorman@suse.de>
+    mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
+
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mempolicy: fix refcount leak in mpol_set_shared_policy()
+
+Mel Gorman <mgorman@suse.de>
+    mempolicy: fix a race in shared_policy_replace()
+
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+    mempolicy: remove mempolicy sharing
+
+KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+    revert "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages"
+
+Paul E. McKenney <paul.mckenney@linaro.org>
+    rcu: Fix day-one dyntick-idle stall-warning bug
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    score: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    m32r: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    cris: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    alpha: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    m68k: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    mn10300: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    frv: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    xtensa: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    parisc: Add missing RCU idle APIs on idle loop
+
+Frederic Weisbecker <fweisbec@gmail.com>
+    h8300: Add missing RCU idle APIs on idle loop
+
+Paul E. McKenney <paul.mckenney@linaro.org>
+    ia64: Add missing RCU idle APIs on idle loop
+
+Ben Widawsky <ben@bwidawsk.net>
+    drm/i915: Fix GT_MODE default value
+
+Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: call drm_handle_vblank before finish_page_flip
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Flush the pending flips on the CRTC before modification
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon: force MSIs on RS690 asics
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon: Add MSI quirk for gateway RS690
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon: only adjust default clocks on NI GPUs
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm: Destroy the planes prior to destroying the associated CRTC
+
+Ben Skeggs <bskeggs@redhat.com>
+    drm/nvc0/fence: restore pre-suspend fence buffer context on resume
+
+Marko Friedemann <mfr@bmx-chemnitz.de>
+    ALSA: USB: Support for (original) Xbox Communicator
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: usb - disable broken hw volume for Tenx TP6911
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - limit internal mic boost for Asus X202E
+
+Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+    ALSA: hda/realtek - Fix detection of ALC271X codec
+
+Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+    ALSA: aloop - add locking to timer access
+
+Felix Kaechele <felix@fetzig.org>
+    ALSA: hda - Add inverted internal mic quirk for Lenovo IdeaPad U310
+
+Eugeni Dodonov <eugeni.dodonov@intel.com>
+    drm/i915: prevent possible pin leak on error path
+
+Gabor Juhos <juhosg@openwrt.org>
+    MIPS: ath79: use correct fractional dividers for {CPU,DDR}_PLL on AR934x
+
+Andrea Arcangeli <aarcange@redhat.com>
+    mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
+
+Hugh Dickins <hughd@google.com>
+    mm: fix invalidate_complete_page2() lock ordering
+
+Michal Hocko <mhocko@suse.cz>
+    hugetlb: do not use vma_hugecache_offset() for vma_prio_tree_foreach
+
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+    kpageflags: fix wrong KPF_THP on non-huge compound pages
+
+Mark Brown <broonie@opensource.wolfsonmicro.com>
+    ASoC: wm9712: Fix name of Capture Switch
+
+Mark Brown <broonie@opensource.wolfsonmicro.com>
+    ASoC: wm_hubs: Ensure volume updates are handled during class W startup
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: ensure user supplied esn replay window is valid
+
+Jan Kara <jack@suse.cz>
+    ext4: fix fdatasync() for files with only i_size changes
+
+Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+    ext4: always set i_op in ext4_mknod()
+
+Dmitry Monakhov <dmonakhov@openvz.org>
+    ext4: online defrag is not supported for journaled files
+
+Dmitry Monakhov <dmonakhov@openvz.org>
+    ext4: move_extent code cleanup
+
+Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+    ext4: fix crash when accessing /proc/mounts concurrently
+
+Theodore Ts'o <tytso@mit.edu>
+    ext4: fix potential deadlock in ext4_nonda_switch()
+
+Yongqiang Yang <xiaoqiangnk@gmail.com>
+    ext4: avoid duplicate writes of the backup bg descriptor blocks
+
+Yongqiang Yang <xiaoqiangnk@gmail.com>
+    ext4: don't copy non-existent gdt blocks when resizing
+
+Yongqiang Yang <xiaoqiangnk@gmail.com>
+    ext4: ignore last group w/o enough space when resizing instead of BUG'ing
+
+Yinghai Lu <yinghai@kernel.org>
+    PCI: Check P2P bridge for invalid secondary/subordinate range
+
+Martin Peschke <mpeschke@linux.vnet.ibm.com>
+    SCSI: zfcp: only access zfcp_scsi_dev for valid scsi_device
+
+Steffen Maier <maier@linux.vnet.ibm.com>
+    SCSI: zfcp: restore refcount check on port_remove
+
+Julia Lawall <Julia.Lawall@lip6.fr>
+    SCSI: zfcp: remove invalid reference to list iterator variable
+
+Steffen Maier <maier@linux.vnet.ibm.com>
+    SCSI: zfcp: Do not wakeup while suspended
+
+Steffen Maier <maier@linux.vnet.ibm.com>
+    SCSI: zfcp: Bounds checking for deferred error trace
+
+Steffen Maier <maier@linux.vnet.ibm.com>
+    SCSI: zfcp: Make trace record tags unique
+
+Steffen Maier <maier@linux.vnet.ibm.com>
+    SCSI: zfcp: Adapt to new FC_PORTSPEED semantics
+
+Florian Zumbiehl <florz@florz.de>
+    drm/savage: re-add busmaster enable, regression fix
+
+Ed L. Cashin <ecashin@coraid.com>
+    aoe: assert AoE packets marked as requiring no checksum
+
+Ed L. Cashin <ecashin@coraid.com>
+    net: do not disable sg for packets requiring no checksum
+
+Alan Cox <alan@linux.intel.com>
+    netrom: copy_datagram_iovec can fail
+
+Eric Dumazet <edumazet@google.com>
+    l2tp: fix a typo in l2tp_eth_dev_recv()
+
+Eric Dumazet <edumazet@google.com>
+    ipv6: mip6: fix mip6_mh_filter()
+
+Eric Dumazet <edumazet@google.com>
+    ipv6: raw: fix icmpv6_filter()
+
+Eric Dumazet <edumazet@google.com>
+    ipv4: raw: fix icmp_filter()
+
+Eric Dumazet <edumazet@google.com>
+    net: guard tcp_set_keepalive() to tcp sockets
+
+Chema Gonzalez <chema@google.com>
+    net: small bug on rxhash calculation
+
+Xiaodong Xu <stid.smth@gmail.com>
+    pppoe: drop PPPOX_ZOMBIEs in pppoe_release
+
+Thomas Graf <tgraf@suug.ch>
+    sctp: Don't charge for data in sndbuf again when transmitting packet
+
+Michal Kubeček <mkubecek@suse.cz>
+    tcp: flush DMA queue before sk_wait_data if rcv_wnd is zero
+
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    ipv6: fix return value check in fib6_add()
+
+Nicolas Dichtel <nicolas.dichtel@6wind.com>
+    ipv6: del unreachable route when an addr is deleted on lo
+
+Gao feng <gaofeng@cn.fujitsu.com>
+    ipv6: release reference of ip6_null_entry's dst entry in __ip6_del_rt
+
+Linus Lüssing <linus.luessing@web.de>
+    batman-adv: make batadv_test_bit() return 0 or 1 only
+
+Antonio Quartulli <ordex@autistici.org>
+    8021q: fix mac_len recomputation in vlan_untag()
+
+Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+    sierra_net: Endianess bug fix.
+
+Paolo Valente <paolo.valente@unimore.it>
+    pkt_sched: fix virtual-start-time update in QFQ
+
+Eric Dumazet <edumazet@google.com>
+    net-sched: sch_cbq: avoid infinite loop
+
+Nikolay Aleksandrov <nikolay@redhat.com>
+    netxen: check for root bus in netxen_mask_aer_correctable
+
+Florian Fainelli <florian@openwrt.org>
+    ixp4xx_hss: fix build failure due to missing linux/module.h inclusion
+
+htbegin <hotforest@gmail.com>
+    net: ethernet: davinci_cpdma: decrease the desc count when cleaning up the remaining packets
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: don't copy esn replay window twice for new states
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: fix info leak in copy_to_user_tmpl()
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: fix info leak in copy_to_user_policy()
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: fix info leak in copy_to_user_state()
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: fix info leak in copy_to_user_auth()
+
+Li RongQing <roy.qing.li@gmail.com>
+    xfrm: fix a read lock imbalance in make_blackhole
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: return error pointer instead of NULL #2
+
+Mathias Krause <minipli@googlemail.com>
+    xfrm_user: return error pointer instead of NULL
+
+Steffen Klassert <steffen.klassert@secunet.com>
+    xfrm: Workaround incompatibility of ESN and async crypto
+
+Eric Dumazet <edumazet@google.com>
+    tcp: fix regression in urgent data handling
+
+Michal Schmidt <mschmidt@redhat.com>
+    bnx2x: fix rx checksum validation for IPv6
+
+Yuta Ando <yuta.and@gmail.com>
+    localmodconfig: Fix localyesconfig to set to 'y' not 'm'
+
+Eric Sandeen <sandeen@redhat.com>
+    jbd2: don't write superblock when if its empty
+
+Tejun Heo <tj@kernel.org>
+    workqueue: add missing smp_wmb() in process_one_work()
+
+Feng Hong <hongfeng@marvell.com>
+    PM / Sleep: use resume event when call dpm_resume_early
+
+Alexandre Bounine <alexandre.bounine@idt.com>
+    rapidio/rionet: fix multicast packet transmit logic
+
+Jacob Keller <jacob.e.keller@intel.com>
+    ixgbe: fix PTP ethtool timestamping function
+
+Gavin Shan <shangw@linux.vnet.ibm.com>
+    powerpc/eeh: Fix crash on converting OF node to edev
+
+Rusty Russell <rusty@rustcorp.com.au>
+    lguest: fix occasional crash in example launcher.
+
+Martin Michlmayr <tbm@cyrius.com>
+    drivers/scsi/atp870u.c: fix bad use of udelay
+
+Shawn Guo <shawn.guo@linaro.org>
+    kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+
+Davidlohr Bueso <dave@gnu.org>
+    lib/gcd.c: prevent possible div by 0
+
+Mark Brown <broonie@opensource.wolfsonmicro.com>
+    mfd: max8925: Move _IO resources out of ioport_ioresource
+
+Bjorn Helgaas <bhelgaas@google.com>
+    PCI: acpiphp: check whether _ADR evaluation succeeded
+
+Lin Ming <ming.m.lin@intel.com>
+    ACPI: run _OSC after ACPI_FULL_INITIALIZATION
+
+Frank Schäfer <fschaefer.oss@googlemail.com>
+    media: gspca_pac7302: add support for device 1ae7:2001 Speedlink Snappy Microphone SL-6825-SBK
+
+Ben Hutchings <ben@decadent.org.uk>
+    media: rc: ite-cir: Initialise ite_dev::rdev earlier
+
+Mauro Carvalho Chehab <mchehab@redhat.com>
+    em28xx: Make all em28xx extensions to be initialized asynchronously
+
+Wade Farnsworth <wade_farnsworth@mentor.com>
+    ARM: 7548/1: include linux/sched.h in syscall.h
+
+Alex Williamson <alex.williamson@redhat.com>
+    intel-iommu: Default to non-coherent for domains unattached to iommus
+
+Michael Wang <wangyun@linux.vnet.ibm.com>
+    slab: fix the DEADLOCK issue on l3 alien lock
+
+Jean Delvare <jdelvare@suse.de>
+    kbuild: Fix gcc -x syntax
+
+Sascha Hauer <s.hauer@pengutronix.de>
+    kbuild: make: fix if_changed when command contains backslashes
+
+Geert Uytterhoeven <geert@linux-m68k.org>
+    mn10300: only add -mmem-funcs to KBUILD_CFLAGS if gcc supports it
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert dyndbg: fix for SOH in logging messages
 
 
-> +static inline unsigned int curseg_segno(struct f2fs_sb_info *sbi,
-> +		int type)
-> +{
-> +	struct curseg_info *curseg =3D CURSEG_I(sbi, type);
-> +	unsigned int segno;
-> +	mutex_lock(&curseg->curseg_mutex);
-> +	segno =3D curseg->segno;
-> +	mutex_unlock(&curseg->curseg_mutex);
-> +	return segno;
-> +}
-> +
-> +static inline unsigned char curseg_alloc_type(struct f2fs_sb_info *sbi,
-> +		int type)
-> +{
-> +	struct curseg_info *curseg =3D CURSEG_I(sbi, type);
-> +	unsigned char a_type;
-> +	mutex_lock(&curseg->curseg_mutex);
-> +	a_type =3D curseg->alloc_type;
-> +	mutex_unlock(&curseg->curseg_mutex);
-> +	return a_type;
-> +}
-> +
-> +static inline unsigned short curseg_blkoff(struct f2fs_sb_info *sbi, int=
- type)
-> +{
-> +	struct curseg_info *curseg =3D CURSEG_I(sbi, type);
-> +	unsigned short blkoff;
-> +	mutex_lock(&curseg->curseg_mutex);
-> +	blkoff =3D curseg->next_blkoff;
-> +	mutex_unlock(&curseg->curseg_mutex);
-> +	return blkoff;
-> +}
+-------------
 
-Taking a mutex just to extract a small number from a structure is pointless.
-alloc_type, next_blkoff and segno are char, short, and int.  All of these c=
-an
-be read atomically, so a lock gains you nothing.
+Diffstat:
 
-In checkpoint.c we have
-	for (i =3D 0; i < 3; i++) {
-		ckpt->cur_node_segno[i] =3D
-			cpu_to_le32(curseg_segno(sbi, i + CURSEG_HOT_NODE));
-		ckpt->cur_node_blkoff[i] =3D
-			cpu_to_le16(curseg_blkoff(sbi, i + CURSEG_HOT_NODE));
-		nat_upd_blkoff[i] =3D NM_I(sbi)->nat_upd_blkoff[i];
-		ckpt->nat_upd_blkoff[i] =3D cpu_to_le16(nat_upd_blkoff[i]);
-		ckpt->alloc_type[i + CURSEG_HOT_NODE] =3D
-				curseg_alloc_type(sbi, i + CURSEG_HOT_NODE);
-	}
-
-which will take and drop that same lock 3 times in quick succession, and th=
-en
-do it again for 3 other locks (And there is another loop which does it for
-the other 3 cursegs).
-
-If you do need some locking here, I think you need to take the lock once per
-loop iteration so the 3 values are consistent, not once for each value.
-
-
-Regards,
-NeilBrown
-
-
-> +
-> +static inline void check_seg_range(struct f2fs_sb_info *sbi, unsigned in=
-t segno)
-> +{
-> +	unsigned int end_segno =3D SM_I(sbi)->segment_count - 1;
-> +	BUG_ON(segno > end_segno);
-> +}
-> +
-> +/*
-> + * This function is used for only debugging.
-> + * NOTE: In future, we have to remove this function.
-> + */
-> +static inline void verify_block_addr(struct f2fs_sb_info *sbi, block_t b=
-lk_addr)
-> +{
-> +	struct f2fs_sm_info *sm_info =3D SM_I(sbi);
-> +	block_t total_blks =3D sm_info->segment_count << sbi->log_blocks_per_se=
-g;
-> +	block_t start_addr =3D sm_info->seg0_blkaddr;
-> +	block_t end_addr =3D start_addr + total_blks - 1;
-> +	BUG_ON(blk_addr < start_addr);
-> +	BUG_ON(blk_addr > end_addr);
-> +}
-> +
-> +/**
-> + * Summary block is always treated as invalid block
-> + */
-> +static inline void check_block_count(struct f2fs_sb_info *sbi,
-> +		int segno, struct f2fs_sit_entry *raw_sit)
-> +{
-> +	struct f2fs_sm_info *sm_info =3D SM_I(sbi);
-> +	unsigned int end_segno =3D sm_info->segment_count - 1;
-> +	int valid_blocks =3D 0;
-> +	int i;
-> +
-> +	/* check segment usage */
-> +	BUG_ON(GET_SIT_VBLOCKS(raw_sit) > sbi->blocks_per_seg);
-> +
-> +	/* check boundary of a given segment number */
-> +	BUG_ON(segno > end_segno);
-> +
-> +	/* check bitmap with valid block count */
-> +	for (i =3D 0; i < sbi->blocks_per_seg; i++)
-> +		if (f2fs_test_bit(i, raw_sit->valid_map))
-> +			valid_blocks++;
-> +	BUG_ON(GET_SIT_VBLOCKS(raw_sit) !=3D valid_blocks);
-> +}
-> +
-> +static inline pgoff_t current_sit_addr(struct f2fs_sb_info *sbi,
-> +						unsigned int start)
-> +{
-> +	struct sit_info *sit_i =3D SIT_I(sbi);
-> +	unsigned int offset =3D SIT_BLOCK_OFFSET(sit_i, start);
-> +	block_t blk_addr =3D sit_i->sit_base_addr + offset;
-> +
-> +	check_seg_range(sbi, start);
-> +
-> +	/* calculate sit block address */
-> +	if (f2fs_test_bit(offset, sit_i->sit_bitmap))
-> +		blk_addr +=3D sit_i->sit_blocks;
-> +
-> +	return blk_addr;
-> +}
-> +
-> +static inline pgoff_t next_sit_addr(struct f2fs_sb_info *sbi,
-> +						pgoff_t block_addr)
-> +{
-> +	struct sit_info *sit_i =3D SIT_I(sbi);
-> +	block_addr -=3D sit_i->sit_base_addr;
-> +	if (block_addr < sit_i->sit_blocks)
-> +		block_addr +=3D sit_i->sit_blocks;
-> +	else
-> +		block_addr -=3D sit_i->sit_blocks;
-> +
-> +	return block_addr + sit_i->sit_base_addr;
-> +}
-> +
-> +static inline void set_to_next_sit(struct sit_info *sit_i, unsigned int =
-start)
-> +{
-> +	unsigned int block_off =3D SIT_BLOCK_OFFSET(sit_i, start);
-> +
-> +	if (f2fs_test_bit(block_off, sit_i->sit_bitmap))
-> +		f2fs_clear_bit(block_off, sit_i->sit_bitmap);
-> +	else
-> +		f2fs_set_bit(block_off, sit_i->sit_bitmap);
-> +}
-> +
-> +static inline uint64_t div64_64(uint64_t dividend, uint64_t divisor)
-> +{
-> +	uint32_t d =3D divisor;
-> +
-> +	if (divisor > 0xffffffffUll) {
-> +		unsigned int shift =3D fls(divisor >> 32);
-> +		d =3D divisor >> shift;
-> +		dividend >>=3D shift;
-> +	}
-> +
-> +	if (dividend >> 32)
-> +		do_div(dividend, d);
-> +	else
-> +		dividend =3D (uint32_t) dividend / d;
-> +
-> +	return dividend;
-> +}
-> +
-> +static inline unsigned long long get_mtime(struct f2fs_sb_info *sbi)
-> +{
-> +	struct sit_info *sit_i =3D SIT_I(sbi);
-> +	return sit_i->elapsed_time + CURRENT_TIME_SEC.tv_sec -
-> +						sit_i->mounted_time;
-> +}
-> +
-> +static inline void set_summary(struct f2fs_summary *sum, nid_t nid,
-> +			unsigned int ofs_in_node, unsigned char version)
-> +{
-> +	sum->nid =3D cpu_to_le32(nid);
-> +	sum->ofs_in_node =3D cpu_to_le16(ofs_in_node);
-> +	sum->version =3D version;
-> +}
-> +
-> +static inline block_t start_sum_block(struct f2fs_sb_info *sbi)
-> +{
-> +	return __start_cp_addr(sbi) +
-> +		le32_to_cpu(F2FS_CKPT(sbi)->cp_pack_start_sum);
-> +}
-> +
-> +static inline block_t sum_blk_addr(struct f2fs_sb_info *sbi, int base, i=
-nt type)
-> +{
-> +	return __start_cp_addr(sbi) +
-> +		le32_to_cpu(F2FS_CKPT(sbi)->cp_pack_total_block_count)
-> +				- (base + 1) + type;
-> +}
+ Makefile                                             |   4 +-
+ arch/alpha/kernel/process.c                          |   3 ++
+ arch/arm/include/asm/syscall.h                       |   1 +
+ arch/cris/kernel/process.c                           |   3 ++
+ arch/frv/kernel/process.c                            |   3 ++
+ arch/h8300/kernel/process.c                          |   3 ++
+ arch/ia64/kernel/process.c                           |   3 ++
+ arch/m32r/kernel/process.c                           |   3 ++
+ arch/m68k/kernel/process.c                           |   3 ++
+ arch/mips/Makefile                                   |   2 +-
+ arch/mips/ath79/clock.c                              |   4 +-
+ arch/mips/kernel/Makefile                            |   2 +-
+ arch/mn10300/Makefile                                |   2 +-
+ arch/mn10300/kernel/process.c                        |   3 ++
+ arch/parisc/kernel/process.c                         |   3 ++
+ arch/powerpc/include/asm/pci-bridge.h                |   8 ++++
+ arch/powerpc/platforms/pseries/eeh.c                 |   2 +-
+ arch/score/kernel/process.c                          |   4 +-
+ arch/x86/Makefile                                    |   2 +-
+ arch/x86/boot/compressed/Makefile                    |   3 ++
+ arch/x86/include/asm/pgtable.h                       |  11 +++--
+ arch/x86/kvm/vmx.c                                   |  70 ++++++------------------------
+ arch/x86/platform/efi/efi.c                          |   1 +
+ arch/xtensa/kernel/process.c                         |   3 ++
+ drivers/acpi/bus.c                                   |   8 +++-
+ drivers/base/core.c                                  |   4 +-
+ drivers/base/power/main.c                            |   2 +-
+ drivers/block/aoe/aoecmd.c                           |   1 +
+ drivers/gpu/drm/drm_crtc.c                           |   8 ++--
+ drivers/gpu/drm/i915/i915_irq.c                      |  16 +++----
+ drivers/gpu/drm/i915/i915_reg.h                      |   3 ++
+ drivers/gpu/drm/i915/intel_display.c                 |  26 +++++++++--
+ drivers/gpu/drm/i915/intel_pm.c                      |   5 +++
+ drivers/gpu/drm/i915/intel_ringbuffer.c              |   7 +--
+ drivers/gpu/drm/nouveau/nvc0_fence.c                 |  25 +++++++++++
+ drivers/gpu/drm/radeon/radeon_irq_kms.c              |  10 +++++
+ drivers/gpu/drm/radeon/radeon_pm.c                   |   8 +++-
+ drivers/gpu/drm/savage/savage_bci.c                  |   2 +
+ drivers/iommu/intel-iommu.c                          |   4 +-
+ drivers/media/rc/ite-cir.c                           |   2 +-
+ drivers/media/video/em28xx/em28xx-cards.c            |  22 +++++-----
+ drivers/media/video/gspca/pac7302.c                  |   1 +
+ drivers/mfd/max8925-core.c                           |  10 +++++
+ drivers/mmc/host/omap_hsmmc.c                        |   3 +-
+ drivers/mmc/host/sh_mmcif.c                          |   4 ++
+ drivers/mtd/maps/autcpu12-nvram.c                    |  19 ++++----
+ drivers/mtd/mtdpart.c                                |   5 ++-
+ drivers/mtd/nand/nand_bbt.c                          |   2 +-
+ drivers/mtd/nand/nandsim.c                           |   1 +
+ drivers/mtd/nand/omap2.c                             |   3 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c      |  12 +++---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c     |   5 +--
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |   4 ++
+ drivers/net/ethernet/ti/davinci_cpdma.c              |   1 +
+ drivers/net/ppp/pppoe.c                              |   2 +-
+ drivers/net/rionet.c                                 |  20 +++++++--
+ drivers/net/usb/sierra_net.c                         |   2 +-
+ drivers/net/wan/ixp4xx_hss.c                         |   1 +
+ drivers/pci/hotplug/acpiphp_glue.c                   |  13 ++++--
+ drivers/pci/probe.c                                  |   6 ++-
+ drivers/s390/scsi/zfcp_aux.c                         |   1 +
+ drivers/s390/scsi/zfcp_ccw.c                         |  73 ++++++++++++++++++++++++++-----
+ drivers/s390/scsi/zfcp_cfdc.c                        |   2 +-
+ drivers/s390/scsi/zfcp_dbf.c                         |  22 +++++++++-
+ drivers/s390/scsi/zfcp_dbf.h                         |   1 +
+ drivers/s390/scsi/zfcp_def.h                         |   2 +
+ drivers/s390/scsi/zfcp_ext.h                         |   2 +
+ drivers/s390/scsi/zfcp_fsf.c                         |  57 ++++++++++++++++++++----
+ drivers/s390/scsi/zfcp_qdio.c                        |  16 ++++---
+ drivers/s390/scsi/zfcp_sysfs.c                       |  18 +++++++-
+ drivers/s390/scsi/zfcp_unit.c                        |  36 +++++++++++-----
+ drivers/scsi/atp870u.c                               |  11 ++++-
+ fs/cifs/cifs_unicode.c                               |  22 ++++++++++
+ fs/cifs/connect.c                                    |   9 ++++
+ fs/ext4/inode.c                                      |  25 +++++++----
+ fs/ext4/move_extent.c                                | 174 +++++++++++++++++++++++---------------------------------------------------
+ fs/ext4/namei.c                                      |   2 -
+ fs/ext4/resize.c                                     |  26 ++++++++---
+ fs/ext4/super.c                                      |   2 +-
+ fs/fs-writeback.c                                    |   1 +
+ fs/jbd2/journal.c                                    |   5 +++
+ fs/jffs2/super.c                                     |   4 ++
+ fs/jffs2/wbuf.c                                      |   8 ++--
+ fs/proc/page.c                                       |   8 +++-
+ include/linux/mempolicy.h                            |   2 +-
+ include/linux/xfrm.h                                 |   2 +
+ include/net/xfrm.h                                   |   3 ++
+ kernel/cpuset.c                                      |   3 ++
+ kernel/rcutree.c                                     |   4 +-
+ kernel/sched/core.c                                  |  40 +++++++++++++++--
+ kernel/sys.c                                         |   1 +
+ kernel/workqueue.c                                   |   2 +
+ lib/gcd.c                                            |   3 ++
+ mm/hugetlb.c                                         |   3 +-
+ mm/mempolicy.c                                       | 137 +++++++++++++++++++++++++++++++++++++---------------------
+ mm/slab.c                                            |   6 +--
+ mm/truncate.c                                        |   3 +-
+ net/8021q/vlan_core.c                                |   3 +-
+ net/batman-adv/bitarray.h                            |   7 +--
+ net/core/dev.c                                       |  14 +++---
+ net/core/sock.c                                      |   3 +-
+ net/ipv4/raw.c                                       |  14 +++---
+ net/ipv4/tcp.c                                       |  10 ++++-
+ net/ipv4/tcp_input.c                                 |   5 +--
+ net/ipv6/addrconf.c                                  |  10 ++++-
+ net/ipv6/ip6_fib.c                                   |   4 ++
+ net/ipv6/mip6.c                                      |  20 +++++----
+ net/ipv6/raw.c                                       |  21 +++++----
+ net/ipv6/route.c                                     |  11 ++---
+ net/l2tp/l2tp_eth.c                                  |   2 +-
+ net/netrom/af_netrom.c                               |   7 ++-
+ net/sched/sch_cbq.c                                  |   5 ++-
+ net/sched/sch_qfq.c                                  |   5 ++-
+ net/sctp/output.c                                    |  21 ++++++++-
+ net/xfrm/xfrm_input.c                                |   2 +-
+ net/xfrm/xfrm_policy.c                               |   2 +-
+ net/xfrm/xfrm_replay.c                               |  15 +++++++
+ net/xfrm/xfrm_user.c                                 |  57 +++++++++++++++++-------
+ scripts/Kbuild.include                               |  14 +++---
+ scripts/gcc-version.sh                               |   6 +--
+ scripts/gcc-x86_32-has-stack-protector.sh            |   2 +-
+ scripts/gcc-x86_64-has-stack-protector.sh            |   2 +-
+ scripts/kconfig/check.sh                             |   2 +-
+ scripts/kconfig/lxdialog/check-lxdialog.sh           |   2 +-
+ scripts/kconfig/streamline_config.pl                 |   2 +
+ sound/drivers/aloop.c                                |   6 +++
+ sound/pci/hda/patch_conexant.c                       |   1 +
+ sound/pci/hda/patch_realtek.c                        |  12 +++---
+ sound/pci/hda/patch_via.c                            |  29 +++++++++++++
+ sound/soc/codecs/wm9712.c                            |   2 +-
+ sound/soc/codecs/wm_hubs.c                           |   5 +++
+ sound/usb/mixer.c                                    |   7 +++
+ sound/usb/quirks-table.h                             |  53 +++++++++++++++++++++++
+ tools/lguest/lguest.c                                |   1 +
+ tools/perf/Makefile                                  |   2 +-
+ tools/power/cpupower/Makefile                        |   2 +-
+ 136 files changed, 1052 insertions(+), 485 deletions(-)
 
 
---Sig_/adwKK_znefaVZjOzCqV5X_m
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUHX7xDnsnt1WYoG5AQL/Gg/6AvzfYfeRB4VONWQmEaC0g9XQGxJB1exf
-7HUuI8TdFc8mCf9De4Qm77fCJbNc/Q2JT9rev7oPRCopOu7C5hm/7HcOq9MA3SR6
-EWEfAsq1UugV9gpRJhe89NR3nZ2tpQ41FK27VCH8zNIlosZKlFz/k+koekcz/TYJ
-bqWRUbtaAInbjDu2I3OH66LbIFIVz6pMxp4xMRrHgdxI3ggnCNsamVaIe/SNJiT9
-NHRhxiUhNSLoQw5dk2wnsfnIhXvA0s3sNsPZ7SOd7Z18hTadM0UAO3zPaaOd9SE0
-fiYgwt3v8nWBlYW+JD0q3zXGHcW16zUKjQU9EfqoV3cOCVfA/ugm8YofxvF/UEYb
-B8u0q0R+oYigwPi3c0nAjlDuIWPUGoJt84pJy8XtO1kXtUPoKXvGr6yGISYp0eWY
-gZRGSz8JbjXEKT+Coqy+EAz7DttyVoZUuNOuLcmEKACP8jQhiyOHRkIXzc0srcu7
-4S5enAPP2yQKtVWUlPWLMmW1leazdwF9x9Bb4nyHuIqntdEZdH4yhOJ2BFSQ0VZi
-AMXysBpEixC3VO7np8h4EQ+xo9J0JtyoDWlDPR4p62NEpo9tT5wMQuFuw6axnX/K
-2SbBLRvfJDXZF8yhkGkj1oHCAp+sHuDS4zkHIh5Dxwj/Hqd1lHiLM0lzxaoncUZl
-6hE23/Sd1mo=
-=p8Y9
------END PGP SIGNATURE-----
-
---Sig_/adwKK_znefaVZjOzCqV5X_m--
