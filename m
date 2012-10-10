@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab2JJW72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:59:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41002 "EHLO
+	id S1757900Ab2JJWzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:55:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47880 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757863Ab2JJWz2 (ORCPT
+	by vger.kernel.org with ESMTP id S1757481Ab2JJWzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:28 -0400
-X-Sasl-enc: 3Tx9I78d/n/IashQoAn0fJ7QQoqnE0MAPoG3ngN2Tlwq 1349909727
+	Wed, 10 Oct 2012 18:55:15 -0400
+X-Sasl-enc: emjY0yufZxtQ7UAjv1rhsujd0vmRNQAShK6VYCsd2H8o 1349909714
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ed Cashin <ecashin@coraid.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 058/133] aoe: assert AoE packets marked as requiring no checksum
-Date: Thu, 11 Oct 2012 07:51:24 +0900
-Message-Id: <20121010224904.949594725@linuxfoundation.org>
+Subject: [ 053/133] ipv6: raw: fix icmpv6_filter()
+Date: Thu, 11 Oct 2012 07:51:19 +0900
+Message-Id: <20121010224904.057725542@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,31 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ed Cashin <ecashin@coraid.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 8babe8cc6570ed896b7b596337eb8fe730c3ff45 ]
+[ Upstream commit 1b05c4b50edbddbdde715c4a7350629819f6655e ]
 
-In order for the network layer to see that AoE requires
-no checksumming in a generic way, the packets must be
-marked as requiring no checksum, so we make this requirement
-explicit with the assertion.
+icmpv6_filter() should not modify its input, or else its caller
+would need to recompute ipv6_hdr() if skb->head is reallocated.
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Use skb_header_pointer() instead of pskb_may_pull() and
+change the prototype to make clear both sk and skb are const.
+
+Also, if icmpv6 header cannot be found, do not deliver the packet,
+as we do in IPv4.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/aoe/aoecmd.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/raw.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -35,6 +35,7 @@ new_skb(ulong len)
- 		skb_reset_mac_header(skb);
- 		skb_reset_network_header(skb);
- 		skb->protocol = __constant_htons(ETH_P_AOE);
-+		skb_checksum_none_assert(skb);
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -107,21 +107,20 @@ found:
+  *	0 - deliver
+  *	1 - block
+  */
+-static __inline__ int icmpv6_filter(struct sock *sk, struct sk_buff *skb)
++static int icmpv6_filter(const struct sock *sk, const struct sk_buff *skb)
+ {
+-	struct icmp6hdr *icmph;
+-	struct raw6_sock *rp = raw6_sk(sk);
++	struct icmp6hdr *_hdr;
++	const struct icmp6hdr *hdr;
+ 
+-	if (pskb_may_pull(skb, sizeof(struct icmp6hdr))) {
+-		__u32 *data = &rp->filter.data[0];
+-		int bit_nr;
++	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
++				 sizeof(_hdr), &_hdr);
++	if (hdr) {
++		const __u32 *data = &raw6_sk(sk)->filter.data[0];
++		unsigned int type = hdr->icmp6_type;
+ 
+-		icmph = (struct icmp6hdr *) skb->data;
+-		bit_nr = icmph->icmp6_type;
+-
+-		return (data[bit_nr >> 5] & (1 << (bit_nr & 31))) != 0;
++		return (data[type >> 5] & (1U << (type & 31))) != 0;
  	}
- 	return skb;
+-	return 0;
++	return 1;
  }
+ 
+ #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
 
 
