@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab2JJXOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:14:34 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52689 "EHLO
+	id S932542Ab2JJXPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:15:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33904 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758054Ab2JJXBy (ORCPT
+	by vger.kernel.org with ESMTP id S1757947Ab2JJXBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:54 -0400
-X-Sasl-enc: jwF6Y1vfmHs/l6nUzikM4yARvmevpnh8cF4ncLwy5g5A 1349910113
+	Wed, 10 Oct 2012 19:01:51 -0400
+X-Sasl-enc: aqeLbACbZx/xD8jFvB0waUPkn+rTEYoJsiUcLODrRVVj 1349910110
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Antonio Quartulli <ordex@autistici.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 033/122] 8021q: fix mac_len recomputation in vlan_untag()
-Date: Thu, 11 Oct 2012 07:53:19 +0900
-Message-Id: <20121010225344.098063405@linuxfoundation.org>
+        Chris Clayton <chris2553@googlemail.com>,
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 032/122] ipv4: add a fib_type to fib_info
+Date: Thu, 11 Oct 2012 07:53:18 +0900
+Message-Id: <20121010225343.914477354@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,39 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 5316cf9a5197eb80b2800e1acadde287924ca975 ]
+[ Upstream commit f4ef85bbda96324785097356336bc79cdd37db0a ]
 
-skb_reset_mac_len() relies on the value of the skb->network_header pointer,
-therefore we must wait for such pointer to be recalculated before computing
-the new mac_len value.
+commit d2d68ba9fe8 (ipv4: Cache input routes in fib_info nexthops.)
+introduced a regression for forwarding.
 
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+This was hard to reproduce but the symptom was that packets were
+delivered to local host instead of being forwarded.
+
+David suggested to add fib_type to fib_info so that we dont
+inadvertently share same fib_info for different purposes.
+
+With help from Julian Anastasov who provided very helpful
+hints, reproduced here :
+
+<quote>
+        Can it be a problem related to fib_info reuse
+from different routes. For example, when local IP address
+is created for subnet we have:
+
+broadcast 192.168.0.255 dev DEV  proto kernel  scope link  src
+192.168.0.1
+192.168.0.0/24 dev DEV  proto kernel  scope link  src 192.168.0.1
+local 192.168.0.1 dev DEV  proto kernel  scope host  src 192.168.0.1
+
+        The "dev DEV  proto kernel  scope link  src 192.168.0.1" is
+a reused fib_info structure where we put cached routes.
+The result can be same fib_info for 192.168.0.255 and
+192.168.0.0/24. RTN_BROADCAST is cached only for input
+routes. Incoming broadcast to 192.168.0.255 can be cached
+and can cause problems for traffic forwarded to 192.168.0.0/24.
+So, this patch should solve the problem because it
+separates the broadcast from unicast traffic.
+
+        And the ip_route_input_slow caching will work for
+local and broadcast input routes (above routes 1 and 3) just
+because they differ in scope and use different fib_info.
+
+</quote>
+
+Many thanks to Chris Clayton for his patience and help.
+
+Reported-by: Chris Clayton <chris2553@googlemail.com>
+Bisected-by: Chris Clayton <chris2553@googlemail.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Julian Anastasov <ja@ssi.bg>
+Tested-by: Chris Clayton <chris2553@googlemail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan_core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/net/ip_fib.h     |    1 +
+ net/ipv4/fib_semantics.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -105,7 +105,6 @@ static struct sk_buff *vlan_reorder_head
- 		return NULL;
- 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
- 	skb->mac_header += VLAN_HLEN;
--	skb_reset_mac_len(skb);
- 	return skb;
- }
+--- a/include/net/ip_fib.h
++++ b/include/net/ip_fib.h
+@@ -102,6 +102,7 @@ struct fib_info {
+ 	unsigned char		fib_dead;
+ 	unsigned char		fib_protocol;
+ 	unsigned char		fib_scope;
++	unsigned char		fib_type;
+ 	__be32			fib_prefsrc;
+ 	u32			fib_priority;
+ 	u32			*fib_metrics;
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -314,6 +314,7 @@ static struct fib_info *fib_find_info(co
+ 		    nfi->fib_scope == fi->fib_scope &&
+ 		    nfi->fib_prefsrc == fi->fib_prefsrc &&
+ 		    nfi->fib_priority == fi->fib_priority &&
++		    nfi->fib_type == fi->fib_type &&
+ 		    memcmp(nfi->fib_metrics, fi->fib_metrics,
+ 			   sizeof(u32) * RTAX_MAX) == 0 &&
+ 		    ((nfi->fib_flags ^ fi->fib_flags) & ~RTNH_F_DEAD) == 0 &&
+@@ -833,6 +834,7 @@ struct fib_info *fib_create_info(struct
+ 	fi->fib_flags = cfg->fc_flags;
+ 	fi->fib_priority = cfg->fc_priority;
+ 	fi->fib_prefsrc = cfg->fc_prefsrc;
++	fi->fib_type = cfg->fc_type;
  
-@@ -139,6 +138,8 @@ struct sk_buff *vlan_untag(struct sk_buf
- 
- 	skb_reset_network_header(skb);
- 	skb_reset_transport_header(skb);
-+	skb_reset_mac_len(skb);
-+
- 	return skb;
- 
- err_free:
+ 	fi->fib_nhs = nhs;
+ 	change_nexthops(fi) {
 
 
