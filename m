@@ -1,83 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2JJMzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:55:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755974Ab2JJMyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:54:11 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 5/8] perf x86: Adding hardware events translations for p6 cpus
-Date: Wed, 10 Oct 2012 14:53:15 +0200
-Message-Id: <1349873598-12583-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
-References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+	id S1755014Ab2JJMdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:33:37 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:42997 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750953Ab2JJMdf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:33:35 -0400
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: nsekhar@ti.com, gregkh@linuxfoundation.org
+Cc: Constantine Shulyupin <const@MakeLinux.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v6] Enable USB peripheral mode on dm365 EVM
+Date: Wed, 10 Oct 2012 14:33:32 +0200
+Message-Id: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.113.105 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for p6 processors to display 'events' sysfs
-directory (/sys/devices/cpu/events/) with hw event translations.
+From: Constantine Shulyupin <const@MakeLinux.com>
 
-  # ls  /sys/devices/cpu/events/
-  branch-instructions
-  branch-misses
-  bus-cycles
-  cache-misses
-  cache-references
-  cpu-cycles
-  instructions
-  ref-cycles
-  stalled-cycles-backend
-  stalled-cycles-frontend
+Sets USB PHY clock source to 24 MHz clock and call USB configuration from board initialization.
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
+Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
+
+References:
+
+Definition of USB_PHY_CTRL and PHYCLKFREQ:
+- http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
+
+Original patch by miguel.aguilar@ridgerun.com three years ago:
+- http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
+
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
 ---
- arch/x86/kernel/cpu/perf_event_p6.c | 2 ++
- include/linux/perf_event.h          | 1 +
- 2 files changed, 3 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index e4dd0f7..900b76b 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -134,6 +134,8 @@ static __initconst const struct x86_pmu p6_pmu = {
- 	.event_constraints	= p6_event_constraints,
+Note:
+
+Changelog
+
+Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
+accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
+- phy configuration moved to drivers/usb/musb/davinci.c
+- USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
+- Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
+
+Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
+- removed fix of dev_info in musb_init_controller
+
+Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
+- removed optional altering of pr_info
+
+Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
+- removed optional code and reordered
+- removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
+
+This patch is based on code from projects Arago, Angstom and RidgeRun.
+
+---
+ arch/arm/mach-davinci/board-dm365-evm.c |    2 ++
+ drivers/usb/musb/davinci.c              |    3 +++
+ drivers/usb/musb/davinci.h              |    1 +
+ 3 files changed, 6 insertions(+)
+
+diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+index 688a9c5..ba5ffc1 100644
+--- a/arch/arm/mach-davinci/board-dm365-evm.c
++++ b/arch/arm/mach-davinci/board-dm365-evm.c
+@@ -38,6 +38,7 @@
+ #include <mach/mmc.h>
+ #include <mach/nand.h>
+ #include <mach/keyscan.h>
++#include <mach/usb.h>
  
- 	.format_attrs		= intel_p6_formats_attr,
-+	.events_sysfs_show	= intel_event_sysfs_show,
+ #include <media/tvp514x.h>
+ 
+@@ -610,6 +611,7 @@ static __init void dm365_evm_init(void)
+ 
+ 	dm365_init_spi0(BIT(0), dm365_evm_spi_info,
+ 			ARRAY_SIZE(dm365_evm_spi_info));
++	davinci_setup_usb(1000, 8);
+ }
+ 
+ MACHINE_START(DAVINCI_DM365_EVM, "DaVinci DM365 EVM")
+diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+index 472c8b4..af09ebf 100644
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
+ 		__raw_writel(deepsleep, DM355_DEEPSLEEP);
+ 	}
+ 
++	if (machine_is_davinci_dm365_evm())
++		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
 +
- };
+ 	/* reset the controller */
+ 	musb_writel(tibase, DAVINCI_USB_CTRL_REG, 0x1);
  
- __init int p6_pmu_init(void)
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 827c374..6e48be0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1419,6 +1419,7 @@ _name##_show(struct device *dev,					\
- static struct device_attribute format_attr_##_name = __ATTR_RO(_name)
+diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
+index 371baa0..e737d97 100644
+--- a/drivers/usb/musb/davinci.h
++++ b/drivers/usb/musb/davinci.h
+@@ -16,6 +16,7 @@
  
- ssize_t x86_event_sysfs_show(char *page, u64 config, u64 event);
-+ssize_t intel_event_sysfs_show(char *page, u64 config);
- 
- #endif /* __KERNEL__ */
- #endif /* _LINUX_PERF_EVENT_H */
+ /* Integrated highspeed/otg PHY */
+ #define USBPHY_CTL_PADDR	0x01c40034
++#define USBPHY_CLKFREQ_24MHZ	BIT(13)
+ #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
+ #define USBPHY_PHYCLKGD		BIT(8)
+ #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
 -- 
-1.7.11.4
+1.7.9.5
 
