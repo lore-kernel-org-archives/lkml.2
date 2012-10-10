@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab2JJKCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:02:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:39746 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab2JJKCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:02:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Anthony Liguori <aliguori@us.ibm.com>, Adam Litke <agl@us.ibm.com>,
-        Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Avishay Traeger <AVISHAY@il.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: Proposal for virtio standardization.
-In-Reply-To: <20121009160201.5303a7ca@BR9GNB5Z>
-References: <87zk4c2tqq.fsf@rustcorp.com.au> <20121009160201.5303a7ca@BR9GNB5Z>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 10 Oct 2012 14:16:51 +1030
-Message-ID: <87r4p76las.fsf@rustcorp.com.au>
+	id S1754925Ab2JJLIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 07:08:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55680 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab2JJLID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 07:08:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [Xen-devel] [PATCH 5/9] ARM: Xen: fix initial build problems:
+Date: Wed, 10 Oct 2012 11:07:40 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de> <201210091819.34310.arnd@arndb.de> <1349862394.10070.23.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1349862394.10070.23.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210101107.40898.arnd@arndb.de>
+X-Provags-ID: V02:K0:aaiV5dVQme201i7ln3ZS3TKPHIZFk2TY4DQ7q5W6pMg
+ tex9gueECDJL0or+GmpLToK6q8vSlf46K9XWZ4GEhNegs1eXFB
+ offodrAEcv1iGNbLWChNzaCjtvls/pW3lfcCr8xwOzSiS4WE6g
+ XYahKidD6XQeKBDzRI/Qaq+9jeobKXNCpglcC8dVS5Zo78QMlN
+ MqK2ClDSmUdj8DV2ZJSVRaWmYKVQxuHWHyHoAhSV+09bf+unWZ
+ /TvMhLpVsKf1Yeu1m2CRpl1knooJdJwvJeo0j6alV1HT8TE+tb
+ 2e11Ap0QZ6v2/Dh4tCdPYGVG9BZV712Wd19b2jCkautIEbkKOl
+ nA2HhLb9fv+gnG01oDFk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cornelia Huck <cornelia.huck@de.ibm.com> writes:
-> On Thu, 27 Sep 2012 09:59:33 +0930
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
->> 3) Various clarifications, formalizations and cleanups to the spec text,
->>    and possibly elimination of old deprecated features.
->> 
->> 4) The only significant change to the spec is that we use PCI
->>    capabilities, so we can have infinite feature bits.
->>    (see
->> http://lists.linuxfoundation.org/pipermail/virtualization/2011-December/019198.html)
->
-> "Infinite" only applies to virtio-pci, no?
+On Wednesday 10 October 2012, Ian Campbell wrote:
+> > * implement your own cmpxchg wrapper that may be implemented using a spinlock
+> >   rather than cmpxchg if ARMv6 is enabled.
+> 
+> Even if ARMv6 is enabled the grant table code will never be running on
+> one so so it might be ok to just have our own wrapper which
+> unconditionally uses the v7 instruction? That might upset gas though.
 
-Yes, you already have "infinite" feature bits for ccw, as does every bus
-we did since PCI.
+Yes, that would be possible. You can tell gas to ignore the instruction
+set in this case. If you do this, you can implement the update functions
+more efficiently using direct ldrexh/strexh in assembler to avoid doing
+two nested loops. I assume that you don't need the v1 grant table
+code on ARM anyway, so the only code you need to look at is
 
-> Sounds like a good idea. I'll be happy to review the spec with an eye
-> to virtio-ccw.
+        while (!((flags = *pflags) & GTF_transfer_committed)) {
+                if (sync_cmpxchg(pflags, flags, 0) == flags)
+                        return 0;
+                cpu_relax();
+        }
 
-Thanks!
-Rusty.
+which should transform nicely into a few lines of inline assembly.
+
+	Arnd
