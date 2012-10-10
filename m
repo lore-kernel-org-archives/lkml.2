@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab2JKAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:13:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33361 "EHLO
+	id S932311Ab2JKAN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:13:29 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55516 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758035Ab2JKANT (ORCPT
+	by vger.kernel.org with ESMTP id S1758128Ab2JKANP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:19 -0400
-X-Sasl-enc: iWFBW0NjLicma8E0BOoLn/TBSMq3hIKjWJS61SsX9jSS 1349914398
+	Wed, 10 Oct 2012 20:13:15 -0400
+X-Sasl-enc: k+ySccUbKJXGZbq/LJdHpJ/4ZezPS8u6MkXuz2HDspHD 1349914394
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 083/133] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
-Date: Thu, 11 Oct 2012 07:51:49 +0900
-Message-Id: <20121010224909.425803407@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 074/133] ext4: online defrag is not supported for journaled files
+Date: Thu, 11 Oct 2012 07:51:40 +0900
+Message-Id: <20121010224907.801401591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,72 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
+commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
 
-In many places !pmd_present has been converted to pmd_none.  For pmds
-that's equivalent and pmd_none is quicker so using pmd_none is better.
+Proper block swap for inodes with full journaling enabled is
+truly non obvious task. In order to be on a safe side let's
+explicitly disable it for now.
 
-However (unless we delete pmd_present) we should provide an accurate
-pmd_present too.  This will avoid the risk of code thinking the pmd is non
-present because it's under __split_huge_page_map, see the pmd_mknotpresent
-there and the comment above it.
-
-If the page has been mprotected as PROT_NONE, it would also lead to a
-pmd_present false negative in the same way as the race with
-split_huge_page.
-
-Because the PSE bit stays on at all times (both during split_huge_page and
-when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
-but checking the PROTNONE bit too is still good to remember pmd_present
-must always keep PROT_NONE into account.
-
-This explains a not reproducible BUG_ON that was seldom reported on the
-lists.
-
-The same issue is in pmd_large, it would go wrong with both PROT_NONE and
-if it races with split_huge_page.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable.h |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/ext4/move_extent.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1142,7 +1142,12 @@ ext4_move_extents(struct file *o_filp, s
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+-
++	/* TODO: This is non obvious task to swap blocks for inodes with full
++	   jornaling enabled */
++	if (ext4_should_journal_data(orig_inode) ||
++	    ext4_should_journal_data(donor_inode)) {
++		return -EINVAL;
++	}
+ 	/* Protect orig and donor inodes against a truncate */
+ 	mext_inode_double_lock(orig_inode, donor_inode);
  
- static inline int pmd_large(pmd_t pte)
- {
--	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
--		(_PAGE_PSE | _PAGE_PRESENT);
-+	return pmd_flags(pte) & _PAGE_PSE;
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
- 
- static inline int pmd_present(pmd_t pmd)
- {
--	return pmd_flags(pmd) & _PAGE_PRESENT;
-+	/*
-+	 * Checking for _PAGE_PSE is needed too because
-+	 * split_huge_page will temporarily clear the present bit (but
-+	 * the _PAGE_PSE flag will remain set at all times while the
-+	 * _PAGE_PRESENT bit is clear).
-+	 */
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
- }
- 
- static inline int pmd_none(pmd_t pmd)
 
 
