@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab2JJUIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:08:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53328 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab2JJUIU (ORCPT
+	id S1756713Ab2JJUKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:10:11 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:53515 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752254Ab2JJUKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:08:20 -0400
-Date: Wed, 10 Oct 2012 16:08:16 -0400 (EDT)
-Message-Id: <20121010.160816.1174547411763490557.davem@davemloft.net>
-To: mkl@pengutronix.de
-Cc: dhowells@redhat.com, socketcan@hartkopp.net, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for can
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <5075D2AF.1010409@pengutronix.de>
-References: <30687.1349789402@warthog.procyon.org.uk>
-	<27643.1349892024@warthog.procyon.org.uk>
-	<5075D2AF.1010409@pengutronix.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 10 Oct 2012 16:10:08 -0400
+Message-ID: <5075D616.4080403@xenotime.net>
+Date: Wed, 10 Oct 2012 13:09:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH -next] drm: fix radeon printk format warnings
+References: <20121010160904.e73f247f4c7034876bf5af30@canb.auug.org.au>
+In-Reply-To: <20121010160904.e73f247f4c7034876bf5af30@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Date: Wed, 10 Oct 2012 21:55:27 +0200
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> On 10/10/2012 08:00 PM, David Howells wrote:
->> Marc Kleine-Budde <mkl@pengutronix.de> wrote:
->> 
->>> On 10/09/2012 03:30 PM, David Howells wrote:
->>>> Can you merge the following branch into the can tree please.
->>>>
->>>> This is to complete part of the Userspace API (UAPI) disintegration for which
->>>> the preparatory patches were pulled recently.  After these patches, userspace
->>>> headers will be segregated into:
->>>>
->>>> 	include/uapi/linux/.../foo.h
->>>>
->>>> for the userspace interface stuff, and:
->>>>
->>>> 	include/linux/.../foo.h
->>>>
->>>> for the strictly kernel internal stuff.
->>>
->>> Nice work David. The upstream for can-next is David Miller's net-next
->>> tree. He doesn't like if I pull unrelated stuff into my tree, so I'm
->>> going to cherry pick your patch. This is not yet possible, as net-next
->>> doesn't include the latest patches from the 3.7 merge window, so that
->>> compilation breaks. After the merge window closes David Miller merges
->>> back the latest changes to net-next. I'll postpone your patch until
->>> then, this means the code will go into v3.8. I'm not familiar with the
->>> UAPI conversion, should your patch go via linux-can and David's net into
->>> v3.7?
->> 
->> It's okay for the patch to go into 3.8 if that is easier for you.  As it's
->> scripted, I can regenerate your branch after -rc1 if that helps too.
-> 
-> I don't mind, as long as it compiles (using you tag), and it does, the
-> patch doesn't break anything. From the linux-can and David Miller's net
-> point of view, v3.7 is closed for new features just bug fixes are
-> allowed. But I'm open to make an exception, if UAPI hits mainline in
-> v3.7 on most subsystems. Hopefully David sees it the same way.
+Fix printk format warnings in gpu/drm/radeon/:
 
-We're putting the UAPI stuff in now, don't delay this please.
+drivers/gpu/drm/radeon/radeon_atpx_handler.c:151:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
+drivers/gpu/drm/radeon/radeon_acpi.c:204:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
+drivers/gpu/drm/radeon/radeon_acpi.c:488:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	David Airlie <airlied@linux.ie>
+Cc:	dri-devel@lists.freedesktop.org
+---
+ drivers/gpu/drm/radeon/radeon_acpi.c         |    4 ++--
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- linux-next-20121010.orig/drivers/gpu/drm/radeon/radeon_atpx_handler.c
++++ linux-next-20121010/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+@@ -148,7 +148,7 @@ static int radeon_atpx_verify_interface(
+ 
+ 	size = *(u16 *) info->buffer.pointer;
+ 	if (size < 8) {
+-		printk("ATPX buffer is too small: %lu\n", size);
++		printk("ATPX buffer is too small: %zu\n", size);
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+--- linux-next-20121010.orig/drivers/gpu/drm/radeon/radeon_acpi.c
++++ linux-next-20121010/drivers/gpu/drm/radeon/radeon_acpi.c
+@@ -201,7 +201,7 @@ static int radeon_atif_verify_interface(
+ 
+ 	size = *(u16 *) info->buffer.pointer;
+ 	if (size < 12) {
+-		DRM_INFO("ATIF buffer is too small: %lu\n", size);
++		DRM_INFO("ATIF buffer is too small: %zu\n", size);
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+@@ -485,7 +485,7 @@ static int radeon_atcs_verify_interface(
+ 
+ 	size = *(u16 *) info->buffer.pointer;
+ 	if (size < 8) {
+-		DRM_INFO("ATCS buffer is too small: %lu\n", size);
++		DRM_INFO("ATCS buffer is too small: %zu\n", size);
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
