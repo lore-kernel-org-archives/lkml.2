@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab2JJQKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:10:08 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:32362
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751960Ab2JJQKD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:10:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h944hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1155h)
-Date: Wed, 10 Oct 2012 11:09:53 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: dtc: import latest upstream dtc
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-References: <1349827466.26044.16@snotra> <50759105.2000406@wwwdotorg.org>
-In-Reply-To: <50759105.2000406@wwwdotorg.org> (from swarren@wwwdotorg.org on
-	Wed Oct 10 10:15:17 2012)
-X-Mailer: Balsa 2.4.11
-Message-ID: <1349885393.21493.2@snotra>
+	id S1756774Ab2JJOfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:35:16 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:34224 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932174Ab2JJOfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 10:35:13 -0400
+Date: Wed, 10 Oct 2012 10:35:01 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Mohammed, Afzal" <afzal@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
+Message-ID: <20121010143501.GC13724@beef>
+References: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
+ <20121010140027.GB13724@beef>
+ <79CD15C6BA57404B839C016229A409A83EB3B573@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EB3B573@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 10:15:17 AM, Stephen Warren wrote:
-> On 10/09/2012 06:04 PM, Scott Wood wrote:
-> > On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
-> >> On 10/9/2012 11:16 AM, Stephen Warren wrote:
-> >> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
-> >> >>>
-> >> >>> What more do you think needs discussion re: dtc+cpp?
-> >> >>
-> >> >> How not to abuse the ever-loving shit out of it? :-)
-> >> >
-> >> > Perhaps we can just handle this through the regular patch review
-> >> > process; I think it may be difficult to define and agree upon  
-> exactly
-> >> > what "abuse" means ahead of time, but it's probably going to be  
-> easy
-> >> > enough to recognize it when one sees it?
-> >>
-> >>
-> >> One of the ways it could get out of hand would be via "include
-> >> dependency hell".  People will be tempted to reuse existing .h  
-> files
-> >> containing pin definitions, which, if history is a guide, will end  
-> up
-> >> depending on all sorts of other .h files.
-> >>
-> >> Another problem I often face with symbolic names is the difficulty  
-> of
-> >> figuring out what the numerical values really are (for debugging),
-> >> especially when .h files are in different subtrees from the files  
-> that
-> >> use the definitions, and when they use multiple macro levels and  
-> fancy
-> >> features like concatenation.  Sometimes I think it's clearer just  
-> to
-> >> write the number and use a comment to say what it is.
-> >
-> > Both comments apply just as well to ordinary C code, and I don't  
-> think
-> > anyone would seriously suggest just using comments instead for C  
-> code.
-> >
-> > Is there a way to ask CPP to evaluate a macro in the context of the
-> > input file, rather than produce normal output?  If not, I guess you
-> > could make a tool that creates a wrapper file that includes the main
-> > file and then evaluates the symbol you want.
+On Wed, Oct 10, 2012 at 02:19:40PM +0000, Vaibhav Hiremath wrote:
+> On Wed, Oct 10, 2012 at 19:30:27, Porter, Matt wrote:
+> > On Tue, Oct 09, 2012 at 02:27:20PM +0530, Vaibhav Hiremath wrote:
+> > > With recent changes in omap gpmc driver code, in case of DT
+> > > boot mode, where bootloader does not configure gpmc cs space
+> > > will result into kernel BUG() inside gpmc_mem_init() function,
+> > > as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
+> > > gpmc_config7[0].baseaddress is set to '0' on reset.
+> > > 
+> > > This use-case is applicable for any board/EVM which doesn't have
+> > > any peripheral connected to gpmc cs0, for example BeagleXM and
+> > > BeagleBone, so DT boot mode fails.
+> > > 
+> > > This patch adds of_have_populated_dt() check before creating
+> > > device, so that for DT boot mode, gpmc probe will not be called
+> > > which is expected behavior, as gpmc is not supported yet from DT.
+> > > 
+> > > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> > > Cc: Afzal Mohammed <afzal@ti.com>
+> > > Cc: Tony Lindgren <tony@atomide.com>
+> > > Cc Paul Walmsley <paul@pwsan.com>
+> > > ---
+> > > This should go in for rc1, as this breaks AM33xx boot.
+> > 
+> > Fixes BeagleBone on mainline.
+> > 
+> > Tested-by: Matt Porter <mporter@ti.com>
+> > 
 > 
-> I'm not sure what "evaluate a macro in the context of the input file"
-> means. Macros are obviously already evaluated based on the current set
-> of macros defined by the file that's been processed or those it
-> included. Do you mean only allowing the use of macros in the current
-> file and not included files? What exactly would the wrapper you
-> mentioned do?
+> Thanks Matt and Afzal,
+> 
+> Tony can this be picked up for rc1?? I know you have already sent pull 
+> request for rc1, but by any chance you are planning to send another request?
 
-I just meant a way for a developer to quickly ask the preprocessor what  
-a particular macro expands to, rather than try to figure it out  
-manually.  I was not suggesting any change to normal operation.
+I also found a separate problem with the mcasp clock data that's needed
+for rc1. I just posted a patch for that as I need both this patch and the
+clock data fix to boot from current mainline.
 
--Scott
+-Matt
