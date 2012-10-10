@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab2JKAQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:16:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57567 "EHLO
+	id S933050Ab2JKAQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:16:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33880 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933021Ab2JKAQa (ORCPT
+	by vger.kernel.org with ESMTP id S932878Ab2JKAQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:30 -0400
-X-Sasl-enc: AljDYmC/lXPBHZ+HHO5HwfweLoW3TFM7qT+amzNfUKLe 1349914588
+	Wed, 10 Oct 2012 20:16:40 -0400
+X-Sasl-enc: g/7UuxDpd2h+rOG8l0m51AGAMfJVHQ0jf4pfZE0BkQcy 1349914598
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 114/133] mempolicy: fix a race in shared_policy_replace()
-Date: Thu, 11 Oct 2012 07:52:20 +0900
-Message-Id: <20121010224915.050017367@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 124/133] mtd: nandsim: bugfix: fail if overridesize is too big
+Date: Thu, 11 Oct 2012 07:52:30 +0900
+Message-Id: <20121010224916.861623127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,151 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit b22d127a39ddd10d93deee3d96e643657ad53a49 upstream.
+commit bb0a13a13411c4ce24c48c8ff3cdf7b48d237240 upstream.
 
-shared_policy_replace() use of sp_alloc() is unsafe.  1) sp_node cannot
-be dereferenced if sp->lock is not held and 2) another thread can modify
-sp_node between spin_unlock for allocating a new sp node and next
-spin_lock.  The bug was introduced before 2.6.12-rc2.
+If override size is too big, the module was actually loaded instead of
+failing, because retval was not set.
 
-Kosaki's original patch for this problem was to allocate an sp node and
-policy within shared_policy_replace and initialise it when the lock is
-reacquired.  I was not keen on this approach because it partially
-duplicates sp_alloc().  As the paths were sp->lock is taken are not that
-performance critical this patch converts sp->lock to sp->mutex so it can
-sleep when calling sp_alloc().
+This lead to memory corruption with the use of the freed structs nandsim
+and nand_chip.
 
-[kosaki.motohiro@jp.fujitsu.com: Original patch]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mempolicy.h |    2 +-
- mm/mempolicy.c            |   37 ++++++++++++++++---------------------
- 2 files changed, 17 insertions(+), 22 deletions(-)
+ drivers/mtd/nand/nandsim.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -188,7 +188,7 @@ struct sp_node {
- 
- struct shared_policy {
- 	struct rb_root root;
--	spinlock_t lock;
-+	struct mutex mutex;
- };
- 
- void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2077,7 +2077,7 @@ bool __mpol_equal(struct mempolicy *a, s
-  */
- 
- /* lookup first element intersecting start-end */
--/* Caller holds sp->lock */
-+/* Caller holds sp->mutex */
- static struct sp_node *
- sp_lookup(struct shared_policy *sp, unsigned long start, unsigned long end)
- {
-@@ -2141,13 +2141,13 @@ mpol_shared_policy_lookup(struct shared_
- 
- 	if (!sp->root.rb_node)
- 		return NULL;
--	spin_lock(&sp->lock);
-+	mutex_lock(&sp->mutex);
- 	sn = sp_lookup(sp, idx, idx+1);
- 	if (sn) {
- 		mpol_get(sn->policy);
- 		pol = sn->policy;
- 	}
--	spin_unlock(&sp->lock);
-+	mutex_unlock(&sp->mutex);
- 	return pol;
- }
- 
-@@ -2187,10 +2187,10 @@ static struct sp_node *sp_alloc(unsigned
- static int shared_policy_replace(struct shared_policy *sp, unsigned long start,
- 				 unsigned long end, struct sp_node *new)
- {
--	struct sp_node *n, *new2 = NULL;
-+	struct sp_node *n;
-+	int ret = 0;
- 
--restart:
--	spin_lock(&sp->lock);
-+	mutex_lock(&sp->mutex);
- 	n = sp_lookup(sp, start, end);
- 	/* Take care of old policies in the same range. */
- 	while (n && n->start < end) {
-@@ -2203,16 +2203,14 @@ restart:
- 		} else {
- 			/* Old policy spanning whole new range. */
- 			if (n->end > end) {
-+				struct sp_node *new2;
-+				new2 = sp_alloc(end, n->end, n->policy);
- 				if (!new2) {
--					spin_unlock(&sp->lock);
--					new2 = sp_alloc(end, n->end, n->policy);
--					if (!new2)
--						return -ENOMEM;
--					goto restart;
-+					ret = -ENOMEM;
-+					goto out;
- 				}
- 				n->end = start;
- 				sp_insert(sp, new2);
--				new2 = NULL;
- 				break;
- 			} else
- 				n->end = start;
-@@ -2223,12 +2221,9 @@ restart:
- 	}
- 	if (new)
- 		sp_insert(sp, new);
--	spin_unlock(&sp->lock);
--	if (new2) {
--		mpol_put(new2->policy);
--		kmem_cache_free(sn_cache, new2);
--	}
--	return 0;
-+out:
-+	mutex_unlock(&sp->mutex);
-+	return ret;
- }
- 
- /**
-@@ -2246,7 +2241,7 @@ void mpol_shared_policy_init(struct shar
- 	int ret;
- 
- 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
--	spin_lock_init(&sp->lock);
-+	mutex_init(&sp->mutex);
- 
- 	if (mpol) {
- 		struct vm_area_struct pvma;
-@@ -2312,7 +2307,7 @@ void mpol_free_shared_policy(struct shar
- 
- 	if (!p->root.rb_node)
- 		return;
--	spin_lock(&p->lock);
-+	mutex_lock(&p->mutex);
- 	next = rb_first(&p->root);
- 	while (next) {
- 		n = rb_entry(next, struct sp_node, nd);
-@@ -2321,7 +2316,7 @@ void mpol_free_shared_policy(struct shar
- 		mpol_put(n->policy);
- 		kmem_cache_free(sn_cache, n);
- 	}
--	spin_unlock(&p->lock);
-+	mutex_unlock(&p->mutex);
- }
- 
- /* assumes fs == KERNEL_DS */
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -2333,6 +2333,7 @@ static int __init ns_init_module(void)
+ 		uint64_t new_size = (uint64_t)nsmtd->erasesize << overridesize;
+ 		if (new_size >> overridesize != nsmtd->erasesize) {
+ 			NS_ERR("overridesize is too big\n");
++			retval = -EINVAL;
+ 			goto err_exit;
+ 		}
+ 		/* N.B. This relies on nand_scan not doing anything with the size before we change it */
 
 
