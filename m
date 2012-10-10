@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab2JJSFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 14:05:39 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59599 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab2JJSFh (ORCPT
+	id S932256Ab2JJOeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:34:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42826 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab2JJOeB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 14:05:37 -0400
-Subject: Re: [PATCH 0/2] PCI-Express Non-Transparent Bridge Support
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jon Mason <jon.mason@intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-In-Reply-To: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
-References: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Oct 2012 11:05:32 -0700
-Message-ID: <1349892332.3776.269.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Oct 2012 10:34:01 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+CC: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Thread-Topic: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Thread-Index: AQHNpvO8RH9wZ4vwgUO0GPwPepOn8peymeZw
+Date: Wed, 10 Oct 2012 14:33:54 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EB3B5BD@DBDE01.ent.ti.com>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1349879449-22657-1-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon & Co,
-
-On Tue, 2012-10-02 at 14:26 -0700, Jon Mason wrote:
-> I am submitting version 4 of the PCI-Express Non-Transparent Bridge
-> patches for inclusion in 3.7.  All outstanding issues from the RFC
-> process have been addressed.
+On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
+> 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
+> exposes a bug in the AM33XX clock data for mcasp. After moving to
+> clk_get() usage, the _init() of all registered hwmods fails on mcasp0
+> due to incorrect clock data causing clk_get() to fail. This causes all
+> successive hwmods to fail to _init() leaving them in a bad state.
 > 
-> version 1
-> http://thread.gmane.org/gmane.linux.kernel.pci/16443
-> 
-> Version 2 incorporates numerous clean-ups 
-> http://thread.gmane.org/gmane.linux.kernel.pci/16696
-> 
-> Version 3 incorporates changes to conform NTB and client devices to the
-> Linux device model (per Greg KH's request).
-> http://thread.gmane.org/gmane.linux.kernel.pci/17808
-> 
-> Version 4 removes the transport transmit tasklet (per Dave Miller's
-> request).
-> http://thread.gmane.org/gmane.linux.network/244491
+> This patch updates the mcasp clock entries so clk_get() will succeed.
+> It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
+> boot.
 > 
 
-I'm very happy with the current state of the new NTB subsystem code for
-an initial merge.
+Matt,
 
-As we are t-minus ~5 days until the v3.7 merge window closes, you'll
-want to (very soon) be sending a PULL request to Linus for drivers/ntb/
-with the appropriate Reviewed-By's + Acked-By's in place.
+I have already submitted patch for this and it is accepted and merged in 
+Tony's pull request.
 
---nab
+https://patchwork.kernel.org/patch/1499271/
 
 
+Thanks,
+Vaibhav
 
-
-
-
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  arch/arm/mach-omap2/clock33xx_data.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/clock33xx_data.c b/arch/arm/mach-omap2/clock33xx_data.c
+> index b87b88c..0a64139 100644
+> --- a/arch/arm/mach-omap2/clock33xx_data.c
+> +++ b/arch/arm/mach-omap2/clock33xx_data.c
+> @@ -1033,8 +1033,8 @@ static struct omap_clk am33xx_clks[] = {
+>  	CLK("481d0000.d_can",	NULL,		&dcan1_fck,	CK_AM33XX),
+>  	CLK(NULL,	"debugss_ick",		&debugss_ick,	CK_AM33XX),
+>  	CLK(NULL,	"pruss_ocp_gclk",	&pruss_ocp_gclk,	CK_AM33XX),
+> -	CLK("davinci-mcasp.0",  NULL,           &mcasp0_fck,    CK_AM33XX),
+> -	CLK("davinci-mcasp.1",  NULL,           &mcasp1_fck,    CK_AM33XX),
+> +	CLK(NULL,	"mcasp0_fck",		&mcasp0_fck,    CK_AM33XX),
+> +	CLK(NULL,	"mcasp1_fck",		&mcasp1_fck,    CK_AM33XX),
+>  	CLK("NULL",	"mmc2_fck",		&mmc2_fck,	CK_AM33XX),
+>  	CLK(NULL,	"mmu_fck",		&mmu_fck,	CK_AM33XX),
+>  	CLK(NULL,	"smartreflex0_fck",	&smartreflex0_fck,	CK_AM33XX),
+> -- 
+> 1.7.9.5
+> 
+> 
 
