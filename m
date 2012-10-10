@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab2JJOFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:05:36 -0400
-Received: from stringer.orebokech.com ([88.190.240.207]:45188 "EHLO
-	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab2JJOFd (ORCPT
+	id S1755767Ab2JJMiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:38:20 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:59850 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667Ab2JJMiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:05:33 -0400
-From: Romain Francoise <romain@orebokech.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org, hpa@zytor.com
-Subject: Re: Linux 2.6.32.60
-Organization: orebokech dot com
-References: <20121009094453.GA4289@1wt.eu>
-Date: Wed, 10 Oct 2012 16:05:32 +0200
-In-Reply-To: <20121009094453.GA4289@1wt.eu> (Willy Tarreau's message of "Tue,
-	9 Oct 2012 11:44:53 +0200")
-Message-ID: <87y5jeqv6b.fsf@silenus.orebokech.com>
+	Wed, 10 Oct 2012 08:38:18 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Maxime Coquelin <maxime.coquelin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/5] ARM: plat-nomadik: Introduce new DB8540 GPIO registers
+Date: Wed, 10 Oct 2012 14:37:59 +0200
+Message-ID: <1349872679-31174-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Willy,
+From: Maxime Coquelin <maxime.coquelin@stericsson.com>
 
-Willy Tarreau <w@1wt.eu> writes:
+DB8540's GPIO controller introduce level detection
+support for both interrupts and wakeups.
 
-> I've just released Linux 2.6.32.60.
+Signed-off-by: Maxime Coquelin <maxime.coquelin@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/plat-nomadik/include/plat/gpio-nomadik.h | 3 +++
+ 1 file changed, 3 insertions(+)
 
-> This release contains, among others, a number of fixes for random and NTP,
-> including for the NTP leap second bug. Users should upgrade.
-
-I'm somewhat surprised to see that it also includes a new feature, namely
-support for Intel's new RDRAND instruction to get random bits ("Bull
-Mountain"):
-
-67c1930 ("x86, random: Verify RDRAND functionality and allow it to be disabled")
-5e6321d ("x86, random: Architectural inlines to get random integers with RDRAND")
-
-This was apparently backported from 3.2 via Paul's 2.6.34 tree. Did you
-test this release on a CPU with RDRAND? The commits are small, but they
-don't really qualify as bugfix-only...
-
-In v3.0-stable the various changes to mix more randomness in the entropy
-pool were backported without this feature.
-
-Thanks,
--r
+diff --git a/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h b/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
+index c08a54d..cf81111 100644
+--- a/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
++++ b/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
+@@ -38,6 +38,9 @@
+ #define NMK_GPIO_RWIMSC	0x50
+ #define NMK_GPIO_FWIMSC	0x54
+ #define NMK_GPIO_WKS	0x58
++/* These appear in DB8540 and later ASICs */
++#define NMK_GPIO_EDGELEVEL 0x5C
++#define NMK_GPIO_LEVEL	0x60
+ 
+ /* Alternate functions: function C is set in hw by setting both A and B */
+ #define NMK_GPIO_ALT_GPIO	0
+-- 
+1.7.11.3
 
