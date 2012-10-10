@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2JJGyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 02:54:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60536 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab2JJGyi (ORCPT
+	id S1754227Ab2JJHE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 03:04:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52400 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab2JJHEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 02:54:38 -0400
+	Wed, 10 Oct 2012 03:04:52 -0400
+Message-ID: <50751E0F.3010906@gmail.com>
+Date: Wed, 10 Oct 2012 09:04:47 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <50698880.1090103@gmail.com>
-References: <1349076922-25874-1-git-send-email-linus.walleij@stericsson.com>
-	<50698880.1090103@gmail.com>
-Date: Wed, 10 Oct 2012 08:54:36 +0200
-Message-ID: <CACRpkdYpS5Q-t_627A3qxgh-0Y6YYj9Nzr7k3Eq-YaL4v3=GMQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v2] irqdomain: augment add_simple() to allocate descs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lee Jones <lee.jones@linaro.org>
+To: "Kumar, Anil" <anilkumar.v@ti.com>
+CC: "Porter, Matt" <mporter@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alsa Devel List <alsa-devel@alsa-project.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>
+Subject: Re: [PATCH 0/2] Convert davinci ASoC to genalloc SRAM
+References: <1349345745-10584-1-git-send-email-mporter@ti.com> <F3DBB1B3EF102E4994C89758CFCA32412852CA@DBDE01.ent.ti.com>
+In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412852CA@DBDE01.ent.ti.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 1, 2012 at 2:11 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On 10/01/2012 02:35 AM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
+On 10.10.2012 08:54, Kumar, Anil wrote:
+> On Thu, Oct 04, 2012 at 15:45:43, Porter, Matt wrote:
+>> This series converts davinci ASoC to use genalloc and enables
+>> that support on DA850. It applies on top of the uio_pruss/genalloc
+>> series [1] which allows DaVinci to provide a gen_pool via pdata
+>> for driver use.
 >>
->> Currently we rely on all IRQ chip instances to dynamically
->> allocate their IRQ descriptors unless they use the linear
->> IRQ domain. So for irqdomain_add_legacy() and
->> irqdomain_add_simple() the caller need to make sure that
->> descriptors are allocated.
+>> I've tested this on the AM180x EVM. Note that prior to this,
+>> the SRAM paths in the driver were completely unused. I've only
+>> enabled ping-pong buffering on the platform I can test as it's
+>> best to allow those with DM644x and similar platforms to set the
+>> playback/capture sram size to something that's known to work
+>> for them.
 >>
->> Let's slightly augment the yet unused irqdomain_add_simple()
->> to also allocate descriptors as a means to simplify usage
->> and avoid code duplication throughout the kernel.
->>
->> We warn if descriptors cannot be allocated, e.g. if a
->> platform has the bad habit of hogging descriptors at boot
->> time.
->>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Paul Mundt <lethal@linux-sh.org>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Looks good.
->
-> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+>> [1] http://www.spinics.net/lists/arm-kernel/msg198854.html
+> 
+> Tested on DA850 EVM after applying patches from [1] above.
+> Tested on Linux-torvalds 3.6-rc6 master branch.
+> Tested ASoC module (aplay & arecord for various frequencies)
+> 
+> Acked-by: Kumar, Anil <anilkumar.v@ti.com>
 
-So what do we do with this patch? Grant?
+As you're on it, could you also quickly merge this branch
 
-I think the change is good to get in ASAP and since I
-now have one patch in pinctrl depending on it I have
-tentatively applied it there.
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git
+topic/davinci
 
-Nobody sent any irqdomain fixes for this merge
-window, maybe this is the only relevant patch...
+And see if my recent patches for more McASP flexibility cause any
+trouble on your hardware?
 
-Yours,
-Linus Walleij
+
+Daniel
+
