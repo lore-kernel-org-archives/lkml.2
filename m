@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab2JJXTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:19:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33418 "EHLO
+	id S932476Ab2JJXUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:20:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35787 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757606Ab2JJWzG (ORCPT
+	by vger.kernel.org with ESMTP id S1757824Ab2JJWy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:06 -0400
-X-Sasl-enc: pSIhpwgsfxlfySymqzC2X5EOPVCfisYdqrr7OqG1UdS1 1349909705
+	Wed, 10 Oct 2012 18:54:58 -0400
+X-Sasl-enc: TOHlCsGp+D113DbP3DOEZfJqj/t8c9ea70wUfd0aTriv 1349909697
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Michal Kubecek <mkubecek@suse.cz>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 050/133] net: small bug on rxhash calculation
-Date: Thu, 11 Oct 2012 07:51:16 +0900
-Message-Id: <20121010224903.519214495@linuxfoundation.org>
+Subject: [ 047/133] tcp: flush DMA queue before sk_wait_data if rcv_wnd is zero
+Date: Thu, 11 Oct 2012 07:51:13 +0900
+Message-Id: <20121010224902.975394934@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,60 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Chema Gonzalez <chema@google.com>
+From: =?UTF-8?q?Michal=20Kube=C4=8Dek?= <mkubecek@suse.cz>
 
-[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
+[ Upstream commit 15c041759bfcd9ab0a4e43f1c16e2644977d0467 ]
 
-In the current rxhash calculation function, while the
-sorting of the ports/addrs is coherent (you get the
-same rxhash for packets sharing the same 4-tuple, in
-both directions), ports and addrs are sorted
-independently. This implies packets from a connection
-between the same addresses but crossed ports hash to
-the same rxhash.
+If recv() syscall is called for a TCP socket so that
+  - IOAT DMA is used
+  - MSG_WAITALL flag is used
+  - requested length is bigger than sk_rcvbuf
+  - enough data has already arrived to bring rcv_wnd to zero
+then when tcp_recvmsg() gets to calling sk_wait_data(), receive
+window can be still zero while sk_async_wait_queue exhausts
+enough space to keep it zero. As this queue isn't cleaned until
+the tcp_service_net_dma() call, sk_wait_data() cannot receive
+any data and blocks forever.
 
-For example, traffic between A=S:l and B=L:s is hashed
-(in both directions) from {L, S, {s, l}}. The same
-rxhash is obtained for packets between C=S:s and D=L:l.
+If zero receive window and non-empty sk_async_wait_queue is
+detected before calling sk_wait_data(), process the queue first.
 
-This patch ensures that you either swap both addrs and ports,
-or you swap none. Traffic between A and B, and traffic
-between C and D, get their rxhash from different sources
-({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
-
-The patch is co-written with Eric Dumazet <edumazet@google.com>
-
-Signed-off-by: Chema Gonzalez <chema@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/ipv4/tcp.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2615,15 +2615,16 @@ void __skb_get_rxhash(struct sk_buff *sk
- 	if (!skb_flow_dissect(skb, &keys))
- 		return;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1706,8 +1706,14 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 		}
  
--	if (keys.ports) {
--		if ((__force u16)keys.port16[1] < (__force u16)keys.port16[0])
--			swap(keys.port16[0], keys.port16[1]);
-+	if (keys.ports)
- 		skb->l4_rxhash = 1;
--	}
- 
- 	/* get a consistent hash (same value on both flow directions) */
--	if ((__force u32)keys.dst < (__force u32)keys.src)
-+	if (((__force u32)keys.dst < (__force u32)keys.src) ||
-+	    (((__force u32)keys.dst == (__force u32)keys.src) &&
-+	     ((__force u16)keys.port16[1] < (__force u16)keys.port16[0]))) {
- 		swap(keys.dst, keys.src);
-+		swap(keys.port16[0], keys.port16[1]);
-+	}
- 
- 	hash = jhash_3words((__force u32)keys.dst,
- 			    (__force u32)keys.src,
+ #ifdef CONFIG_NET_DMA
+-		if (tp->ucopy.dma_chan)
+-			dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++		if (tp->ucopy.dma_chan) {
++			if (tp->rcv_wnd == 0 &&
++			    !skb_queue_empty(&sk->sk_async_wait_queue)) {
++				tcp_service_net_dma(sk, true);
++				tcp_cleanup_rbuf(sk, copied);
++			} else
++				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++		}
+ #endif
+ 		if (copied >= target) {
+ 			/* Do not sleep, just process backlog. */
 
 
