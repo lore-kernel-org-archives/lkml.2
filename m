@@ -1,134 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab2JJPIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:08:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab2JJPIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:08:39 -0400
-Date: Wed, 10 Oct 2012 17:08:36 +0200
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.22.1
-Message-ID: <20121010150836.GA12577@x2.net.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2011-07-01)
+	id S1751984Ab2JJPoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:44:17 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51040 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab2JJPoQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:44:16 -0400
+From: Simon Klinkert <simon.klinkert@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Meaningless load?
+Date: Wed, 10 Oct 2012 17:44:11 +0200
+Message-Id: <98F2F644-D531-42FE-B080-9561142D71C8@gmail.com>
+Cc: mingo@redhat.com, peterz@infradead.org, Trond.Myklebust@netapp.com
+To: LKML <linux-kernel@vger.kernel.org>
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The util-linux release v2.22.1 is available at
+Hi folks,
 
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.22
+I have a linux machine (2.6.32-220.7.1.el6.x86_64) with 500 processes 'working' on one nfs4 mountpoint. As I can see with ps and top, only one process is in the 'R' state and really working. The other 499 processes are in the 'D' state and probably waiting for this one process.
 
-Feedback and bug reports, as always, are welcomed.
+But now let's take a look at top one more time:
 
-    Karel
+top - 14:33:57 up  4:27,  4 users,  load average: 501.16, 403.98, 205.52
+Tasks: 766 total,   1 running, 765 sleeping,   0 stopped,   0 zombie
+Cpu(s):  0.8%us,  2.1%sy,  0.0%ni, 94.9%id,  0.8%wa,  0.0%hi,  1.4%si,  0.0%st
+Mem:  32872392k total,   768488k used, 32103904k free,    30608k buffers
+Swap: 35094520k total,        0k used, 35094520k free,    97624k cached
 
+Wow, a load of 501.16 and the CPUs are up to 97% idle.
 
-util-linux 2.22.1 Release Notes
-===============================
+I'm just wondering if the 'load' is really meaningful in this scenario. The machine is the whole time fully responsive and looks fine to me but maybe I didn't understand correctly what the load should mean. Is there any sensible interpretation of the load?
 
-Changes since v2.22
--------------------
-
- For more details see ChangeLog files at:
- ftp://ftp.infradead.org/pub/util-linux/v2.22/
-
-
-blkid:
-   - document LIBBLKID_DEBUG users  [Davidlohr Bueso]
-build-sys:
-   - add --disable-wdctl  [Karel Zak]
-   - clean update-potfiles script  [Karel Zak]
-   - fix --localstatedir heuristics  [Karel Zak]
-   - install su.1 if building su  [Dave Reisner]
-   - remove --enable-gtk-doc from make check  [Karel Zak]
-   - simplify usrlib_execdir initialization  [Karel Zak]
-dmesg:
-   - fix console-level off-by-one  [Bjørn Mork]
-docs:
-   - AUTHORS, NEWS  UTF-8 fixes.  [Ville Skyttä]
-   - umount.8 syntax fix.  [Ville Skyttä]
-   - update AUTHORS file  [Karel Zak]
-eject:
-   - robust strings usage [coverity scan]  [Karel Zak]
-fdisk:
-   - add AArch64 support  [Marcin Juszkiewicz]
-hwclock:
-   - don't warp the systemtime if the RTC is in UTC  [Tom Gundersen]
-   - wait time in hwclock is not long enough for some ARM devices  [Karel Zak]
-ipcrm:
-   - avoid 'uninitialized' warning  [Bernhard Voelker]
-lib/pager:
-   - robust work with file descriptors [coverity scan]  [Karel Zak]
-lib/sysfs:
-   - fix sysfs_devname_to_devno for dm partitions  [Peter Rajnoha]
-   - more robust sysfs_opendir() [coverity scan]  [Karel Zak]
-libblkid:
-   - check fchmod() return value [coverity scan]  [Karel Zak]
-   - fix copyright noticed to be consistent (so all are LGPL)  [Karel Zak]
-   - improve DBG() macro  [Karel Zak]
-libmount:
-   - append loop option when automatically create loopdev  [Karel Zak]
-   - detach loopdev on umount if loop option in mtab  [Karel Zak]
-   - document LIBMOUNT_DEBUG users  [Davidlohr Bueso]
-   - don't remove user= when executed by root  [Karel Zak]
-   - don't setup new loopdev on remount with regular mtab  [Karel Zak]
-   - fix umount file.img  [Karel Zak]
-   - improve mnt_table_get_root_fs() docs  [Karel Zak]
-   - optimize mtab and utab parsing in umount  [Karel Zak]
-   - segfaults if neither /etc/filesystems nor/proc/filesystems exists  [Karel Zak]
-   - user-mounted loopback fs cannot be unmounted by user  [Karel Zak]
-login:
-   - reuse DEAD_PROCESS utmp entries  [Karel Zak]
-lsblk:
-   - fix processing of dm partition mappings  [Peter Rajnoha]
-   - fix reporting of 'part' type  [Peter Rajnoha]
-md5:
-   - fix strict aliasing warnings  [Mike Frysinger]
-mkswap:
-   - wipe old signature if there is no part table by default  [Milan Broz]
-mount:
-   - add verbose messages  [Karel Zak]
-   - fix a few typos  [Mike Frysinger]
-   - fix man pahe typo in quota mount option names  [Björn Jacke]
-namei:
-   - remove dead code [coverity scan]  [Karel Zak]
-po:
-   - add hr.po (from translationproject.org)  [Tomislav Krznar]
-   - merge changes  [Karel Zak]
-   - update vi.po (from translationproject.org)  [Trần Ngọc Quân]
-rtcwake:
-   - doesn't reset wakealarm  [Giacomo]
-setterm:
-   - make error message more informative  [Petr Uzel]
-sfdisk:
-   - Fix format specifiers for size_t  [Thierry Reding]
-   - fix aliasing warnings  [Mike Frysinger]
-su:
-   - don't modify PATH if -l not specified  [Karel Zak]
-switch_root:
-   - check open() return value [coverity scan]  [Karel Zak]
-tests:
-   - fix mount move test to work with shared mount  [Milan Broz]
-   - fix timezone for cramfs  [Milan Broz]
-   - ignore test if kernel doesn't support minix fs  [Milan Broz]
-   - remove libgcc from config test results  [Karel Zak]
-textual:
-   - typo fixes  [Gilles Espinasse]
-tunelp:
-   - add missing break [coverity scan]  [Karel Zak]
-wdctl:
-   - add fallbacks for old kernel headers  [Karel Zak]
-whereis:
-   - improve readability for analysers  [Karel Zak]
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Thanks,
+Simon
