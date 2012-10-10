@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751961Ab2JJEn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 00:43:57 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52069 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2JJEnx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 00:43:53 -0400
-Subject: Re: dtc: import latest upstream dtc
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Warner Losh <imp@bsdimp.com>
-In-Reply-To: <1349827466.26044.16@snotra>
-Date: Tue, 9 Oct 2012 22:43:50 -0600
-Cc: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
-        devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com>
-References: <1349827466.26044.16@snotra>
-To: Scott Wood <scottwood@freescale.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1752073Ab2JJEsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 00:48:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36336 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003Ab2JJEso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 00:48:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,563,1344236400"; 
+   d="scan'208";a="202636480"
+From: Jenny TC <jenny.tc@intel.com>
+To: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        linux-kernel@vger.kernel.org
+Cc: jenny.tc@intel.com
+Subject: [PATCH] extcon : register for cable interest by cable name
+Date: Wed, 10 Oct 2012 15:50:48 +0530
+Message-Id: <1349864448-21276-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are some scnearios where a driver/framework needs to register
+interest for a particular cable without specifying the extcon device
+name. One such scenario is charger notifications. The platform will
+have charger cabel which will be bound to any extcon device. It's
+not mandatory for the charger driver to know which extcon device
+it should use. This patch enables the support for registering
+interest for a cable just by cable name wihtout specifying the
+extcon device name
 
-On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+Signed-off-by: Jenny TC <jenny.tc@intel.com>
+---
+ drivers/extcon/extcon-class.c |   52 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/extcon.h        |    3 +++
+ 2 files changed, 55 insertions(+)
 
-> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
->> On 10/9/2012 11:16 AM, Stephen Warren wrote:
->> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->> >>>
->> >>> What more do you think needs discussion re: dtc+cpp?
->> >>
->> >> How not to abuse the ever-loving shit out of it? :-)
->> >
->> > Perhaps we can just handle this through the regular patch review
->> > process; I think it may be difficult to define and agree upon exactly
->> > what "abuse" means ahead of time, but it's probably going to be easy
->> > enough to recognize it when one sees it?
->> One of the ways it could get out of hand would be via "include
->> dependency hell".  People will be tempted to reuse existing .h files
->> containing pin definitions, which, if history is a guide, will end up
->> depending on all sorts of other .h files.
->> Another problem I often face with symbolic names is the difficulty of
->> figuring out what the numerical values really are (for debugging),
->> especially when .h files are in different subtrees from the files that
->> use the definitions, and when they use multiple macro levels and fancy
->> features like concatenation.  Sometimes I think it's clearer just to
->> write the number and use a comment to say what it is.
-> 
-> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 946a318..3d8e825 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -485,6 +485,58 @@ int extcon_register_interest(struct extcon_specific_cable_nb *obj,
+ }
+ 
+ /**
++ * extcon_register_interest_cable_byname() - Register a notifier for a state
++ *			change of a specific cable, on any extcon device
++ *			extcon device.
++ * @obj:	an empty extcon_specific_cable_nb object to be returned.
++ * @cable_name:		the target cable name.
++ * @nb:		the notifier block to get notified.
++ *
++ * Provide an empty extcon_specific_cable_nb.
++ * extcon_register_interest_cable_name() sets the struct for you.
++ *
++ * extcon_register_cable_interest is a helper function for those who want to get
++ * notification for a single specific cable's status change without knowing the
++ * extcon device name.
++ *
++ * Note : This will register the interest with the first extcon device which
++ * reports the status for the cable. If multiple extcon devices reports the
++ * same cable name, this API will register interest with the first extcon device
++ */
++
++struct extcon_dev *register_interest_cable_byname
++		(struct extcon_specific_cable_nb *extcon_dev,
++		const char *cable_name, struct notifier_block *nb)
++{
++	struct class_dev_iter iter;
++	struct device *dev;
++	struct extcon_dev *extd = NULL;
++
++	/* Identify the extcon device which supports the cable and register
++	* interest.
++	*/
++	if (extcon_class == NULL)
++		return NULL;
++	class_dev_iter_init(&iter, extcon_class, NULL, NULL);
++	while ((dev = class_dev_iter_next(&iter))) {
++		extd = (struct extcon_dev *)dev_get_drvdata(dev);
++		/* check for cable  support */
++		if (extcon_find_cable_index(extd, cable_name) < 0) {
++			extd = NULL;
++			continue;
++		}
++
++		if (extcon_register_interest(extcon_dev, extd->name,
++						cable_name, nb) < 0) {
++			extd = NULL;
++			continue;
++		}
++	}
++	class_dev_iter_exit(&iter);
++	return extd;
++}
++
++/**
+  * extcon_unregister_interest() - Unregister the notifier registered by
+  *				extcon_register_interest().
+  * @obj:	the extcon_specific_cable_nb object returned by
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index 7443a56..9be8286 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -222,6 +222,9 @@ extern int extcon_register_interest(struct extcon_specific_cable_nb *obj,
+ 				    const char *extcon_name,
+ 				    const char *cable_name,
+ 				    struct notifier_block *nb);
++extern struct extcon_dev *register_interest_cable_byname
++		(struct extcon_specific_cable_nb *extcon_dev,
++		const char *cable_name, struct notifier_block *nb);
+ extern int extcon_unregister_interest(struct extcon_specific_cable_nb *nb);
+ 
+ /*
+-- 
+1.7.9.5
 
-.h files include both structs and defines, which are fine for ordinary C code, but problematic in this context.
-
-> Is there a way to ask CPP to evaluate a macro in the context of the input file, rather than produce normal output?  If not, I guess you could make a tool that creates a wrapper file that includes the main file and then evaluates the symbol you want.
-
-Not in the standard CPP, but perhaps you could scan the .dts file for all the values you need, and have it output the right values to use.
-
-Warner
