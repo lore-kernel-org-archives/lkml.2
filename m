@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab2JJX0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:26:15 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33318 "EHLO
+	id S1757607Ab2JJX0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:26:38 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58789 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757536Ab2JJWxo (ORCPT
+	by vger.kernel.org with ESMTP id S932365Ab2JJWxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:53:44 -0400
-X-Sasl-enc: U+lwIC0zMkak1bb4IuT5tVJGJijdd17yrkXgPY9b4A6f 1349909623
+	Wed, 10 Oct 2012 18:53:39 -0400
+X-Sasl-enc: xveX1ZqjS3pI9pzEFJ+L0tfYODzBW1JdCdV8bHF7hzIS 1349909617
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 020/133] rapidio/rionet: fix multicast packet transmit logic
-Date: Thu, 11 Oct 2012 07:50:46 +0900
-Message-Id: <20121010224858.083259781@linuxfoundation.org>
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 017/133] lguest: fix occasional crash in example launcher.
+Date: Thu, 11 Oct 2012 07:50:43 +0900
+Message-Id: <20121010224857.559624025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,103 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 7c4a6106d6451fc03c491e61df37c044505d843a upstream.
+commit ca16f580a5db7e60bfafe59a50bb133bd3347491 upstream.
 
-Fix multicast packet transmit logic to account for repetitive transmission
-of single skb:
-- correct check for available buffers (this bug may produce NULL pointer
-  crash dump in case of heavy traffic);
-- update skb user count (incorrect user counter causes a warning dump from
-  net_tx_action routine during multicast transfers in systems with three or
-  more rionet participants).
+We usually got away with ->next on the final entry being NULL, but it
+finally bit me.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/rionet.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ tools/lguest/lguest.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -79,6 +79,7 @@ static int rionet_capable = 1;
-  * on system trade-offs.
-  */
- static struct rio_dev **rionet_active;
-+static int nact;	/* total number of active rionet peers */
- 
- #define is_rionet_capable(src_ops, dst_ops)			\
- 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
-@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_b
- 	struct ethhdr *eth = (struct ethhdr *)skb->data;
- 	u16 destid;
- 	unsigned long flags;
-+	int add_num = 1;
- 
- 	local_irq_save(flags);
- 	if (!spin_trylock(&rnet->tx_lock)) {
-@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_b
- 		return NETDEV_TX_LOCKED;
- 	}
- 
--	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
-+	if (is_multicast_ether_addr(eth->h_dest))
-+		add_num = nact;
-+
-+	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
- 		netif_stop_queue(ndev);
- 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
- 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
-@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_b
- 	}
- 
- 	if (is_multicast_ether_addr(eth->h_dest)) {
-+		int count = 0;
- 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
- 				i++)
--			if (rionet_active[i])
-+			if (rionet_active[i]) {
- 				rionet_queue_tx_msg(skb, ndev,
- 						    rionet_active[i]);
-+				if (count)
-+					atomic_inc(&skb->users);
-+				count++;
-+			}
- 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
- 		destid = RIONET_GET_DESTID(eth->h_dest);
- 		if (rionet_active[destid])
-@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct ri
- 	if (info == RIONET_DOORBELL_JOIN) {
- 		if (!rionet_active[sid]) {
- 			list_for_each_entry(peer, &rionet_peers, node) {
--				if (peer->rdev->destid == sid)
-+				if (peer->rdev->destid == sid) {
- 					rionet_active[sid] = peer->rdev;
-+					nact++;
-+				}
- 			}
- 			rio_mport_send_doorbell(mport, sid,
- 						RIONET_DOORBELL_JOIN);
- 		}
- 	} else if (info == RIONET_DOORBELL_LEAVE) {
- 		rionet_active[sid] = NULL;
-+		nact--;
- 	} else {
- 		if (netif_msg_intr(rnet))
- 			printk(KERN_WARNING "%s: unhandled doorbell\n",
-@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *
- 
- 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
- 		rionet_check = 1;
-+		nact = 0;
- 	}
+--- a/tools/lguest/lguest.c
++++ b/tools/lguest/lguest.c
+@@ -1299,6 +1299,7 @@ static struct device *new_device(const c
+ 	dev->feature_len = 0;
+ 	dev->num_vq = 0;
+ 	dev->running = false;
++	dev->next = NULL;
  
  	/*
+ 	 * Append to device list.  Prepending to a single-linked list is
 
 
