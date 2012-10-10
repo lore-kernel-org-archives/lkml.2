@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab2JKATQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:19:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49714 "EHLO
+	id S933072Ab2JKATk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:19:40 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37553 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933070Ab2JKARD (ORCPT
+	by vger.kernel.org with ESMTP id S933020Ab2JKAQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:17:03 -0400
-X-Sasl-enc: rf2c9EsbLoLDGTZZD8/N1ao9ZbqAMlZMiUntzGlwivQv 1349914621
+	Wed, 10 Oct 2012 20:16:54 -0400
+X-Sasl-enc: rU+RY1DDqQrIXbHCx4Q/yCHfFFOKjKYXouBadVPxg8C1 1349914612
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tetsuyuki Kobayashi <koba@kmckk.co.jp>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 129/133] mmc: sh-mmcif: avoid oops on spurious interrupts
-Date: Thu, 11 Oct 2012 07:52:35 +0900
-Message-Id: <20121010224917.775401502@linuxfoundation.org>
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: =?UTF-8?q?=5B=20127/133=5D=20mtd=3A=20omap2=3A=20fix=20module=20loading?=
+Date: Thu, 11 Oct 2012 07:52:33 +0900
+Message-Id: <20121010224917.408517945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,36 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Andreas Bießmann <andreas@biessmann.de>
 
-commit 8464dd52d3198dd05cafb005371d76e5339eb842 upstream.
+commit 4d3d688da8e7016f15483e9319b41311e1db9515 upstream.
 
-On some systems, e.g., kzm9g, MMCIF interfaces can produce spurious
-interrupts without any active request. To prevent the Oops, that results
-in such cases, don't dereference the mmc request pointer until we make
-sure, that we are indeed processing such a request.
+Unloading the omap2 nand driver missed to release the memory region which will
+result in not being able to request it again if one want to load the driver
+later on.
 
-Reported-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+This patch fixes following error when loading omap2 module after unloading:
+---8<---
+~ $ rmmod omap2
+~ $ modprobe omap2
+[   37.420928] omap2-nand: probe of omap2-nand.0 failed with error -16
+~ $
+--->8---
+
+This error was introduced in 67ce04bf2746f8a1f8c2a104b313d20c63f68378 which
+was the first commit of this driver.
+
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sh_mmcif.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mtd/nand/omap2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -1191,6 +1191,10 @@ static irqreturn_t sh_mmcif_intr(int irq
- 		host->sd_error = true;
- 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
- 	}
-+	if (host->state == STATE_IDLE) {
-+		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
-+		return IRQ_HANDLED;
-+	}
- 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE)) {
- 		if (!host->dma_active)
- 			return IRQ_WAKE_THREAD;
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1382,6 +1382,7 @@ static int omap_nand_remove(struct platf
+ 	/* Release NAND device, its internal structures and partitions */
+ 	nand_release(&info->mtd);
+ 	iounmap(info->nand.IO_ADDR_R);
++	release_mem_region(info->phys_base, NAND_IO_SIZE);
+ 	kfree(info);
+ 	return 0;
+ }
 
 
