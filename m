@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933056Ab2JKAUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:20:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36250 "EHLO
+	id S932973Ab2JKAV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:21:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38351 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932999Ab2JKAQY (ORCPT
+	by vger.kernel.org with ESMTP id S932949Ab2JKAPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:16:24 -0400
-X-Sasl-enc: cTQ7xj3SUTwmOaM4q1431JmdK3S9rK4H7uReEBXs9c1t 1349914582
+	Wed, 10 Oct 2012 20:15:53 -0400
+X-Sasl-enc: nC2mQtrmnvf8tdUu4QvX3Yeglxyg5MO/7nmNG1dgM+nn 1349914551
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Yang Guang <guang.a.yang@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 121/133] Revert "drm/i915: correctly order the ring init sequence"
-Date: Thu, 11 Oct 2012 07:52:27 +0900
-Message-Id: <20121010224916.321548770@linuxfoundation.org>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 116/133] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
+Date: Thu, 11 Oct 2012 07:52:22 +0900
+Message-Id: <20121010224915.405044316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -30,48 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Mel Gorman <mgorman@suse.de>
 
-This reverts 622ecb9ace2ec006b58f6779732961945ea303ca which is
-commit 0d8957c8a90bbb5d34fab9a304459448a5131e06 upstream.
+commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
 
-We may only start to set up the new register values after having
-confirmed that the ring is truely off. Otherwise the hw might lose the
-newly written register values. This is caught later on in the init
-sequence, when we check whether the register writes have stuck.
+Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
+related damage v3") introduced a potential memory corruption.
+shmem_alloc_page() uses a pseudo vma and it has one significant unique
+combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
 
-Reported-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Cc: Yang Guang <guang.a.yang@intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
+and mpol_cond_put() DOES decrease a policy ref when a policy has
+MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
+alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
+reference count and frees the policy prematurely.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ mm/mempolicy.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -280,6 +280,8 @@ static int init_ring_common(struct intel
- 	I915_WRITE_HEAD(ring, 0);
- 	ring->write_tail(ring, 0);
- 
-+	/* Initialize the ring. */
-+	I915_WRITE_START(ring, obj->gtt_offset);
- 	head = I915_READ_HEAD(ring) & HEAD_ADDR;
- 
- 	/* G45 ring initialization fails to reset head to zero */
-@@ -305,11 +307,6 @@ static int init_ring_common(struct intel
- 		}
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1552,8 +1552,18 @@ struct mempolicy *get_vma_policy(struct
+ 									addr);
+ 			if (vpol)
+ 				pol = vpol;
+-		} else if (vma->vm_policy)
++		} else if (vma->vm_policy) {
+ 			pol = vma->vm_policy;
++
++			/*
++			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
++			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
++			 * count on these policies which will be dropped by
++			 * mpol_cond_put() later
++			 */
++			if (mpol_needs_cond_ref(pol))
++				mpol_get(pol);
++		}
  	}
- 
--	/* Initialize the ring. This must happen _after_ we've cleared the ring
--	 * registers with the above sequence (the readback of the HEAD registers
--	 * also enforces ordering), otherwise the hw might lose the new ring
--	 * register values. */
--	I915_WRITE_START(ring, obj->gtt_offset);
- 	I915_WRITE_CTL(ring,
- 			((ring->size - PAGE_SIZE) & RING_NR_PAGES)
- 			| RING_VALID);
+ 	if (!pol)
+ 		pol = &default_policy;
 
 
