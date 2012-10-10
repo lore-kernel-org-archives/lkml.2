@@ -1,188 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab2JJKgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:36:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40488 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab2JJKgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:36:38 -0400
-Message-ID: <1349865374.6072.78.camel@shinybook.infradead.org>
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-From: David Woodhouse <dwmw2@infradead.org>
-To: =?UTF-8?Q?Luk=C3=A1=C5=A1?= Czerner <lczerner@redhat.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "'Namjae Jeon'" <linkinjeon@gmail.com>,
-        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
-        "'Marco Stornelli'" <marco.stornelli@gmail.com>,
-        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>,
-        "'Al Viro'" <viro@zeniv.linux.org.uk>, tytso@mit.edu,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com, linux-fsdevel@vger.kernel.org
-Date: Wed, 10 Oct 2012 11:36:14 +0100
-In-Reply-To: <alpine.LFD.2.00.1210091020390.11244@dhcp-1-104.brq.redhat.com>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-	 <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
-	 <1349553966.12699.132.camel@kjgkr> <50712AAA.5030807@gmail.com>
-	 <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
-	 <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
-	 <004101cda52e$72210e20$56632a60$%kim@samsung.com>
-	 <CAKYAXd_Y0Y0kLyqEm1FVO5TpvrN-WwnF40H3hMe5B7_cTe0nMw@mail.gmail.com>
-	 <004a01cda542$f398e2c0$dacaa840$%kim@samsung.com>
-	 <alpine.LFD.2.00.1210091020390.11244@dhcp-1-104.brq.redhat.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-deyr0krLCxNe2yVia66k"
-X-Mailer: Evolution 3.6.0 (3.6.0-1.fc18) 
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754788Ab2JJM31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:29:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35882 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753841Ab2JJM30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:29:26 -0400
+Date: Wed, 10 Oct 2012 13:29:21 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
+ ttwu_queue()
+Message-ID: <20121010122921.GX29125@suse.de>
+References: <20121002065143.GK29125@suse.de>
+ <1349164176.7086.43.camel@marge.simpson.net>
+ <20121002084501.GL29125@suse.de>
+ <1349170282.7086.56.camel@marge.simpson.net>
+ <20121002131421.GN29125@suse.de>
+ <1349247011.4465.24.camel@marge.simpson.net>
+ <1349251997.4465.42.camel@marge.simpson.net>
+ <1349271001.4465.66.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1349271001.4465.66.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 03, 2012 at 03:30:01PM +0200, Mike Galbraith wrote:
+> On Wed, 2012-10-03 at 10:13 +0200, Mike Galbraith wrote:
+> 
+> > Watching all cores instead. 
+> > 
+> > switch rate ~890KHz                            switch rate ~570KHz
+> > NO_TTWU_QUEUE nohz=off                         TTWU_QUEUE nohz=off
+> > 5.38%  [kernel]  [k] __schedule                4.81%  [kernel]   [k] _raw_spin_lock_irqsave
+> > 4.29%  [kernel]  [k] _raw_spin_lock_irqsave    3.36%  [kernel]   [k] __skb_recv_datagram
+> > 2.88%  [kernel]  [k] resched_task              2.71%  [kernel]   [k] copy_user_generic_string
+> > 2.60%  [kernel]  [k] copy_user_generic_string  2.67%  [kernel]   [k] reschedule_interrupt
+> > 2.38%  [kernel]  [k] __switch_to               2.62%  [kernel]   [k] sock_alloc_send_pskb
+> > 2.15%  [kernel]  [k] sock_alloc_send_pskb      2.52%  [kernel]   [k] __schedule
+> > 2.08%  [kernel]  [k] __skb_recv_datagram       2.31%  [kernel]   [k] try_to_wake_up
+> > 1.81%  [kernel]  [k] udp_sendmsg               2.14%  [kernel]   [k] system_call
+> > 1.76%  [kernel]  [k] system_call               1.98%  [kernel]   [k] udp_sendmsg
+> > 1.73%  [kernel]  [k] __udp4_lib_lookup         1.96%  [kernel]   [k] __udp4_lib_lookup
+> > 1.65%  [kernel]  [k] __slab_free.isra.42       1.78%  [kernel]   [k] sock_def_readable
+> > 1.62%  [kernel]  [k] try_to_wake_up            1.63%  [kernel]   [k] __slab_free.isra.42
+> > 1.43%  [kernel]  [k] update_rq_clock           1.60%  [kernel]   [k] __switch_to
+> > 1.43%  [kernel]  [k] sock_def_readable         1.52%  [kernel]   [k] dma_issue_pending_all
+> > 1.41%  [kernel]  [k] dma_issue_pending_all     1.48%  [kernel]   [k] __ip_append_data.isra.35
+> > 1.40%  [kernel]  [k] menu_select               1.44%  [kernel]   [k] _raw_spin_lock
+> > 1.36%  [kernel]  [k] finish_task_switch        1.38%  [kernel]   [k] _raw_spin_unlock_irqrestore
+> > 1.30%  [kernel]  [k] ksize                     1.33%  [kernel]   [k] __udp4_lib_rcv
+> > 
+> > Strange.
+> 
+> nohz=off, pipe-test with one half pinned to CPU0, the other to CPU1.
+> 
+> procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
+>  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> TTW_QUEUE
+>  1  0      0 3039488  50948 444720    0    0     0     0 539724 1013417  1 15 84  0  0
+>  1  0      0 3039488  50956 444720    0    0     0     1 540853 1015679  1 15 84  0  0
+>  1  0      0 3039364  50956 444720    0    0     0     0 541630 1017239  1 16 83  0  0
+>  2  0      0 3038992  50956 444720    0    0     0     0 335550 1096569  4 20 76  0  0
+> NO_TTWU_QUEUE
+>  1  0      0 3038992  50956 444720    0    0     0     0 33100 1318984  1 27 71  0  0
+>  1  0      0 3038868  50956 444720    0    0     0     0 33100 1319126  2 27 71  0  0
+>  1  0      0 3038868  50956 444720    0    0     0     0 33097 1317968  1 27 72  0  0
+>  2  0      0 3038868  50964 444720    0    0     0     1 33104 1318558  2 27 71  0  0
+> 
+> We can switch faster with NO_TTWU_QUEUE, so we switch more, and that
+> hurts netperf UDP_STREAM throughput.. somehow.  Fatter is better is not
+> the way context switch happy benchmarks usually work.
+> 
 
---=-deyr0krLCxNe2yVia66k
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Do we really switch more though?
 
-On Tue, 2012-10-09 at 10:31 +0200, Luk=C3=A1=C5=A1 Czerner wrote:
-> I am sorry but this reply makes me smile. How can you design a fs
-> relying on time attack heuristics to figure out what the proper
-> layout should be ? Or even endorse such heuristics to be used in
-> mkfs ? What we should be focusing on is to push vendors to actually
-> give us such information so we can properly propagate that
-> throughout the kernel - that's something everyone will benefit from.
-> After that the optimization can be done in every file system.
->=20
-> Promoting time attack heuristics instead of pushing vendors to tell
-> us how their hardware should be used is a journey to hell and we've
-> been talking about this for a looong time now. And I imagine that
-> you especially have quite some persuasion power.
+Look at the difference in interrupts vs context switch. IPIs are an interrupt
+so if TTWU_QUEUE wakes process B using an IPI, does that count as a context
+switch? It probably does not get accounted as a context switch even though
+it's functionally similar in this case but I'd like to hear confirmation
+of that.
 
-The whole thing is silly. What we actually want on an embedded system is
-to ditch the FTL altogether and have direct access to the NAND. Then we
-can *know* our file system is behaving optimally. And we don't need
-hacks like TRIM to try to make things a little less broken.
+If we did assume that these IPIs are effectively context switches then look
+at the TTWU_QUEUE figures. There are 530K interrupts versus 33K interrupts
+for NO_TTWU_QUEUE. If each one of those IPIs are effectively a context
+switch then the actual switch rates are 1.5M switches versus 1.3 switches
+and TTWU_QUEUE is actually switching faster.
 
---=20
-dwmw2
-
---=-deyr0krLCxNe2yVia66k
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDEwMTAzNjE0WjAjBgkqhkiG9w0BCQQx
-FgQUYYkWD/yueqf9U6S7qO0vIXHgIk4wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCLgkLRcpdrKLs14KQoR9dOBiAF
-ertZdkPGrNXNKVRbo3fiP7/bLFwNKkIeJp83uHonfvCCuE3mkHG+NJaeFfXjlDYQg1Q8+vYbX6jh
-+5DGDJAC1LTuVvm0DzOuMFOGaUgVeplusInmiQUDjMleCT7rhWis6HE1rrxmUyTcZRMeZIN8WTFv
-aHLY9AFtb8JYdJjUNYaVNPwm501v73E4SnKInKv/NvSD6nkQJBTp9TRofsHIlxxzVeH8/bxhMA1G
-1H1+enqjswB4HFEkpIP3im5fNGcHJpayhEqWSVhk4BHo5paMmyBCZeaGQxqJela//KrZme/QPRkQ
-/hRUE5porpPOAAAAAAAA
-
-
---=-deyr0krLCxNe2yVia66k--
-
+-- 
+Mel Gorman
+SUSE Labs
