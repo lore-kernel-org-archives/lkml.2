@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab2JKAmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:42:03 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36646 "EHLO
+	id S932814Ab2JKAmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:42:19 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39008 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758035Ab2JKAOB (ORCPT
+	by vger.kernel.org with ESMTP id S1758178Ab2JKANv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:14:01 -0400
-X-Sasl-enc: t0g+qhpcQfKyHv+kLCOb/6dTraQnfEQ2tKp9BAF3YwH+ 1349914440
+	Wed, 10 Oct 2012 20:13:51 -0400
+X-Sasl-enc: Hf05tYftOipNPUHyZOXSqfBsYEmg+AKibaT1jUGQPTXn 1349914429
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 092/133] drm/nvc0/fence: restore pre-suspend fence buffer context on resume
-Date: Thu, 11 Oct 2012 07:51:58 +0900
-Message-Id: <20121010224911.053489155@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 090/133] ALSA: usb - disable broken hw volume for Tenx TP6911
+Date: Thu, 11 Oct 2012 07:51:56 +0900
+Message-Id: <20121010224910.687572968@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,67 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit d6ba6d215a538a58f0f0026f0961b0b9125e8042 upstream.
+commit c10514394ef9e8de93a4ad8c8904d71dcd82c122 upstream.
 
-Fixes some unfortunate races on resume.  The G84 version of the code doesn't
-need this as "gpuobj"s are automagically suspended/resumed by the core code
-whereas pinned buffer objects are not.
+While going through Ubuntu bugs, I discovered this patch being
+posted and a confirmation that the patch works as expected.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Finding out how the hw volume really works would be preferrable
+to just disabling the broken one, but this would be better than
+nothing.
+
+Credit: sndfnsdfin (qawsnews)
+BugLink: https://bugs.launchpad.net/bugs/559939
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nvc0_fence.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ sound/usb/mixer.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nvc0_fence.c
-+++ b/drivers/gpu/drm/nouveau/nvc0_fence.c
-@@ -32,6 +32,7 @@
- struct nvc0_fence_priv {
- 	struct nouveau_fence_priv base;
- 	struct nouveau_bo *bo;
-+	u32 *suspend;
- };
- 
- struct nvc0_fence_chan {
-@@ -125,12 +126,36 @@ nvc0_fence_context_new(struct nouveau_ch
- static int
- nvc0_fence_fini(struct drm_device *dev, int engine, bool suspend)
- {
-+	struct nouveau_fifo_priv *pfifo = nv_engine(dev, NVOBJ_ENGINE_FIFO);
-+	struct nvc0_fence_priv *priv = nv_engine(dev, engine);
-+	int i;
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -1267,6 +1267,13 @@ static int parse_audio_feature_unit(stru
+ 		/* disable non-functional volume control */
+ 		master_bits &= ~UAC_CONTROL_BIT(UAC_FU_VOLUME);
+ 		break;
++	case USB_ID(0x1130, 0xf211):
++		snd_printk(KERN_INFO
++			   "usbmixer: volume control quirk for Tenx TP6911 Audio Headset\n");
++		/* disable non-functional volume control */
++		channels = 0;
++		break;
 +
-+	if (suspend) {
-+		priv->suspend = vmalloc(pfifo->channels * sizeof(u32));
-+		if (!priv->suspend)
-+			return -ENOMEM;
-+
-+		for (i = 0; i < pfifo->channels; i++)
-+			priv->suspend[i] = nouveau_bo_rd32(priv->bo, i);
-+	}
-+
- 	return 0;
- }
- 
- static int
- nvc0_fence_init(struct drm_device *dev, int engine)
- {
-+	struct nouveau_fifo_priv *pfifo = nv_engine(dev, NVOBJ_ENGINE_FIFO);
-+	struct nvc0_fence_priv *priv = nv_engine(dev, engine);
-+	int i;
-+
-+	if (priv->suspend) {
-+		for (i = 0; i < pfifo->channels; i++)
-+			nouveau_bo_wr32(priv->bo, i, priv->suspend[i]);
-+		vfree(priv->suspend);
-+		priv->suspend = NULL;
-+	}
-+
- 	return 0;
- }
- 
+ 	}
+ 	if (channels > 0)
+ 		first_ch_bits = snd_usb_combine_bytes(bmaControls + csize, csize);
 
 
