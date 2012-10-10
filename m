@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab2JKAPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47094 "EHLO
+	id S932953Ab2JKAPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:15:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46275 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932750Ab2JKAPi (ORCPT
+	by vger.kernel.org with ESMTP id S932938Ab2JKAPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:38 -0400
-X-Sasl-enc: Gx0w4PoV9g9jGV9oYFTGdpmGFQdqgPzJbDLKBjZCUHQb 1349914537
+	Wed, 10 Oct 2012 20:15:44 -0400
+X-Sasl-enc: iPGZmECUqXB6IMIq4ftom02oJp+b9vbuLTrIhC2xx/ox 1349914543
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 113/133] mempolicy: remove mempolicy sharing
-Date: Thu, 11 Oct 2012 07:52:19 +0900
-Message-Id: <20121010224914.866190245@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 106/133] m68k: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:12 +0900
+Message-Id: <20121010224913.602822966@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,187 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
+commit 5b57ba37e82a15f345a6a2eb8c01a2b2d94c5eeb upstream.
 
-Dave Jones' system call fuzz testing tool "trinity" triggered the
-following bug error with slab debugging enabled
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-    =============================================================================
-    BUG numa_policy (Not tainted): Poison overwritten
-    -----------------------------------------------------------------------------
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
-    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
-     __slab_alloc+0x3d3/0x445
-     kmem_cache_alloc+0x29d/0x2b0
-     mpol_new+0xa3/0x140
-     sys_mbind+0x142/0x620
-     system_call_fastpath+0x16/0x1b
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
 
-    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
-     __slab_free+0x2e/0x1de
-     kmem_cache_free+0x25a/0x260
-     __mpol_put+0x27/0x30
-     remove_vma+0x68/0x90
-     exit_mmap+0x118/0x140
-     mmput+0x73/0x110
-     exit_mm+0x108/0x130
-     do_exit+0x162/0xb90
-     do_group_exit+0x4f/0xc0
-     sys_exit_group+0x17/0x20
-     system_call_fastpath+0x16/0x1b
+Add this missing pair of calls in the m68k's idle loop.
 
-    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
-    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
-
-The problem is that the structure is being prematurely freed due to a
-reference count imbalance. In the following case mbind(addr, len) should
-replace the memory policies of both vma1 and vma2 and thus they will
-become to share the same mempolicy and the new mempolicy will have the
-MPOL_F_SHARED flag.
-
-  +-------------------+-------------------+
-  |     vma1          |     vma2(shmem)   |
-  +-------------------+-------------------+
-  |                                       |
- addr                                 addr+len
-
-alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
-maintaining the mempolicy reference count.  The current rule is that
-get_vma_policy() only increments refcount for shmem VMA and
-mpol_conf_put() only decrements refcount if the policy has
-MPOL_F_SHARED.
-
-In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
-The reference count will be decreased even though was not increased
-whenever alloc_page_vma() is called.  This has been broken since commit
-[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
-
-There is another serious bug with the sharing of memory policies.
-Currently, mempolicy rebind logic (it is called from cpuset rebinding)
-ignores a refcount of mempolicy and override it forcibly.  Thus, any
-mempolicy sharing may cause mempolicy corruption.  The bug was
-introduced by commit [68860ec1: cpusets: automatic numa mempolicy
-rebinding].
-
-Ideally, the shared policy handling would be rewritten to either
-properly handle COW of the policy structures or at least reference count
-MPOL_F_SHARED based exclusively on information within the policy.
-However, this patch takes the easier approach of disabling any policy
-sharing between VMAs.  Each new range allocated with sp_alloc will
-allocate a new policy, set the reference count to 1 and drop the
-reference count of the old policy.  This increases the memory footprint
-but is not expected to be a major problem as mbind() is unlikely to be
-used for fine-grained ranges.  It is also inefficient because it means
-we allocate a new policy even in cases where mbind_range() could use the
-new_policy passed to it.  However, it is more straight-forward and the
-change should be invisible to the user.
-
-[mgorman@suse.de: Edited changelog]
-Reported-by: Dave Jones <davej@redhat.com>,
-Cc: Christoph Lameter <cl@linux.com>,
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: m68k <linux-m68k@lists.linux-m68k.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 38 insertions(+), 14 deletions(-)
+ arch/m68k/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsign
- 	return first;
- }
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -25,6 +25,7 @@
+ #include <linux/reboot.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
++#include <linux/rcupdate.h>
  
--/* Apply policy to a single VMA */
--static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
-+/*
-+ * Apply policy to a single VMA
-+ * This must be called with the mmap_sem held for writing.
-+ */
-+static int vma_replace_policy(struct vm_area_struct *vma,
-+						struct mempolicy *pol)
+ #include <asm/uaccess.h>
+ #include <asm/traps.h>
+@@ -75,8 +76,10 @@ void cpu_idle(void)
  {
--	int err = 0;
--	struct mempolicy *old = vma->vm_policy;
-+	int err;
-+	struct mempolicy *old;
-+	struct mempolicy *new;
- 
- 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
- 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
- 		 vma->vm_ops, vma->vm_file,
- 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
- 
--	if (vma->vm_ops && vma->vm_ops->set_policy)
-+	new = mpol_dup(pol);
-+	if (IS_ERR(new))
-+		return PTR_ERR(new);
-+
-+	if (vma->vm_ops && vma->vm_ops->set_policy) {
- 		err = vma->vm_ops->set_policy(vma, new);
--	if (!err) {
--		mpol_get(new);
--		vma->vm_policy = new;
--		mpol_put(old);
-+		if (err)
-+			goto err_out;
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			idle();
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
  	}
-+
-+	old = vma->vm_policy;
-+	vma->vm_policy = new; /* protected by mmap_sem */
-+	mpol_put(old);
-+
-+	return 0;
-+ err_out:
-+	mpol_put(new);
- 	return err;
  }
- 
-@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
- 		}
--		err = policy_vma(vma, new_pol);
-+		err = vma_replace_policy(vma, new_pol);
- 		if (err)
- 			goto out;
- 	}
-@@ -2147,15 +2162,24 @@ static void sp_delete(struct shared_poli
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
- 				struct mempolicy *pol)
- {
--	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
-+	struct sp_node *n;
-+	struct mempolicy *newpol;
- 
-+	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
- 	if (!n)
- 		return NULL;
-+
-+	newpol = mpol_dup(pol);
-+	if (IS_ERR(newpol)) {
-+		kmem_cache_free(sn_cache, n);
-+		return NULL;
-+	}
-+	newpol->flags |= MPOL_F_SHARED;
-+
- 	n->start = start;
- 	n->end = end;
--	mpol_get(pol);
--	pol->flags |= MPOL_F_SHARED;	/* for unref */
--	n->policy = pol;
-+	n->policy = newpol;
-+
- 	return n;
- }
- 
 
 
