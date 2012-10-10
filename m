@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838Ab2JJWy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:59 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35939 "EHLO
+	id S1757880Ab2JJWzV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:55:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58128 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757575Ab2JJWyz (ORCPT
+	by vger.kernel.org with ESMTP id S1757869Ab2JJWzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:55 -0400
-X-Sasl-enc: MFVRAL6aYWZPZzZ2Dj5juFeEsXK1D6SoXjUcogXjhoJm 1349909694
+	Wed, 10 Oct 2012 18:55:12 -0400
+X-Sasl-enc: 81hHIjG4AaRagE2lW/HIowFh4DK1DRMP25yANFjVOM74 1349909711
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 046/133] ipv6: fix return value check in fib6_add()
-Date: Thu, 11 Oct 2012 07:51:12 +0900
-Message-Id: <20121010224902.795885503@linuxfoundation.org>
+Subject: [ 052/133] ipv4: raw: fix icmp_filter()
+Date: Thu, 11 Oct 2012 07:51:18 +0900
+Message-Id: <20121010224903.875294741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,35 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f950c0ecc78f745e490d615280e031de4dbb1306 ]
+[ Upstream commit ab43ed8b7490cb387782423ecf74aeee7237e591 ]
 
-In case of error, the function fib6_add_1() returns ERR_PTR()
-or NULL pointer. The ERR_PTR() case check is missing in fib6_add().
+icmp_filter() should not modify its input, or else its caller
+would need to recompute ip_hdr() if skb->head is reallocated.
 
-dpatch engine is used to generated this patch.
-(https://github.com/weiyj/dpatch)
+Use skb_header_pointer() instead of pskb_may_pull() and
+change the prototype to make clear both sk and skb are const.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_fib.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/raw.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -818,6 +818,10 @@ int fib6_add(struct fib6_node *root, str
- 					offsetof(struct rt6_info, rt6i_src),
- 					allow_create, replace_required);
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -131,18 +131,20 @@ found:
+  *	0 - deliver
+  *	1 - block
+  */
+-static __inline__ int icmp_filter(struct sock *sk, struct sk_buff *skb)
++static int icmp_filter(const struct sock *sk, const struct sk_buff *skb)
+ {
+-	int type;
++	struct icmphdr _hdr;
++	const struct icmphdr *hdr;
  
-+			if (IS_ERR(sn)) {
-+				err = PTR_ERR(sn);
-+				sn = NULL;
-+			}
- 			if (!sn) {
- 				/* If it is failed, discard just allocated
- 				   root, and then (in st_failure) stale node
+-	if (!pskb_may_pull(skb, sizeof(struct icmphdr)))
++	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
++				 sizeof(_hdr), &_hdr);
++	if (!hdr)
+ 		return 1;
+ 
+-	type = icmp_hdr(skb)->type;
+-	if (type < 32) {
++	if (hdr->type < 32) {
+ 		__u32 data = raw_sk(sk)->filter.data;
+ 
+-		return ((1 << type) & data) != 0;
++		return ((1U << hdr->type) & data) != 0;
+ 	}
+ 
+ 	/* Do not block unknown ICMP types */
 
 
