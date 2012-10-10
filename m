@@ -1,181 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab2JJTgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:36:42 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:47251 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab2JJTgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:36:41 -0400
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Reply-To: habanero@linux.vnet.ibm.com
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-In-Reply-To: <5075B63C.5030603@linux.vnet.ibm.com>
-References: <20120921120000.27611.71321.sendpatchset@codeblue>
-	 <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>
-	 <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>
-	 <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com>
-	 <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins>
-	 <506DA48C.8050200@redhat.com>  <20121009185108.GA2549@linux.vnet.ibm.com>
-	 <1349837987.5551.182.camel@oc6622382223.ibm.com>
-	 <5075B63C.5030603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Oct 2012 14:36:23 -0500
-Message-ID: <1349897783.22418.15.camel@oc2024037011.ibm.com>
+	id S1756269Ab2JJTis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:38:48 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60367 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753977Ab2JJTir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 15:38:47 -0400
+Message-ID: <1349897923.2035.31.camel@joe-AO722>
+Subject: [RFC net-next] treewide: s/ipv4_is_<foo>()/ipv4_addr_<foo>/
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Brian Haley <brian.haley@hp.com>
+Date: Wed, 10 Oct 2012 12:38:43 -0700
+In-Reply-To: <1349897005.2035.24.camel@joe-AO722>
+References: <1349894559.2035.12.camel@joe-AO722>
+	 <1349895710.21172.7235.camel@edumazet-glaptop>
+	 <1349897005.2035.24.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101019-5806-0000-0000-00001A830695
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 23:24 +0530, Raghavendra K T wrote:
-> On 10/10/2012 08:29 AM, Andrew Theurer wrote:
-> > On Wed, 2012-10-10 at 00:21 +0530, Raghavendra K T wrote:
-> >> * Avi Kivity <avi@redhat.com> [2012-10-04 17:00:28]:
-> >>
-> >>> On 10/04/2012 03:07 PM, Peter Zijlstra wrote:
-> >>>> On Thu, 2012-10-04 at 14:41 +0200, Avi Kivity wrote:
-> >>>>>
-> >>>>> Again the numbers are ridiculously high for arch_local_irq_restore.
-> >>>>> Maybe there's a bad perf/kvm interaction when we're injecting an
-> >>>>> interrupt, I can't believe we're spending 84% of the time running the
-> >>>>> popf instruction.
-> >>>>
-> >>>> Smells like a software fallback that doesn't do NMI, hrtimer based
-> >>>> sampling typically hits popf where we re-enable interrupts.
-> >>>
-> >>> Good nose, that's probably it.  Raghavendra, can you ensure that the PMU
-> >>> is properly exposed?  'dmesg' in the guest will tell.  If it isn't, -cpu
-> >>> host will expose it (and a good idea anyway to get best performance).
-> >>>
-> >>
-> >> Hi Avi, you are right. SandyBridge machine result was not proper.
-> >> I cleaned up the services, enabled PMU, re-ran all the test again.
-> >>
-> >> Here is the summary:
-> >> We do get good benefit by increasing ple window. Though we don't
-> >> see good benefit for kernbench and sysbench, for ebizzy, we get huge
-> >> improvement for 1x scenario. (almost 2/3rd of ple disabled case).
-> >>
-> >> Let me know if you think we can increase the default ple_window
-> >> itself to 16k.
-> >>
-> >> I am experimenting with V2 version of undercommit improvement(this) patch
-> >> series, But I think if you wish  to go for increase of
-> >> default ple_window, then we would have to measure the benefit of patches
-> >> when ple_window = 16k.
-> >>
-> >> I can respin the whole series including this default ple_window change.
-> >>
-> >> I also have the perf kvm top result for both ebizzy and kernbench.
-> >> I think they are in expected lines now.
-> >>
-> >> Improvements
-> >> ================
-> >>
-> >> 16 core PLE machine with 16 vcpu guest
-> >>
-> >> base = 3.6.0-rc5 + ple handler optimization patches
-> >> base_pleopt_16k = base + ple_window = 16k
-> >> base_pleopt_32k = base + ple_window = 32k
-> >> base_pleopt_nople = base + ple_gap = 0
-> >> kernbench, hackbench, sysbench (time in sec lower is better)
-> >> ebizzy (rec/sec higher is better)
-> >>
-> >> % improvements w.r.t base (ple_window = 4k)
-> >> ---------------+---------------+-----------------+-------------------+
-> >>                 |base_pleopt_16k| base_pleopt_32k | base_pleopt_nople |
-> >> ---------------+---------------+-----------------+-------------------+
-> >> kernbench_1x   |  0.42371      |  1.15164        |   0.09320         |
-> >> kernbench_2x   | -1.40981      | -17.48282       |  -570.77053       |
-> >> ---------------+---------------+-----------------+-------------------+
-> >> sysbench_1x    | -0.92367      | 0.24241         | -0.27027          |
-> >> sysbench_2x    | -2.22706      |-0.30896         | -1.27573          |
-> >> sysbench_3x    | -0.75509      | 0.09444         | -2.97756          |
-> >> ---------------+---------------+-----------------+-------------------+
-> >> ebizzy_1x      | 54.99976      | 67.29460        |  74.14076         |
-> >> ebizzy_2x      | -8.83386      |-27.38403        | -96.22066         |
-> >> ---------------+---------------+-----------------+-------------------+
-> >>
-> >> perf kvm top observation for kernbench and ebizzy (nople, 4k, 32k window)
-> >> ========================================================================
-> >
-> > Is the perf data for 1x overcommit?
-> 
-> Yes, 16vcpu guest on 16 core
-> 
-> >
-> >> pleopt   ple_gap=0
-> >> --------------------
-> >> ebizzy : 18131 records/s
-> >> 63.78%  [guest.kernel]  [g] _raw_spin_lock_irqsave
-> >>      5.65%  [guest.kernel]  [g] smp_call_function_many
-> >>      3.12%  [guest.kernel]  [g] clear_page
-> >>      3.02%  [guest.kernel]  [g] down_read_trylock
-> >>      1.85%  [guest.kernel]  [g] async_page_fault
-> >>      1.81%  [guest.kernel]  [g] up_read
-> >>      1.76%  [guest.kernel]  [g] native_apic_mem_write
-> >>      1.70%  [guest.kernel]  [g] find_vma
-> >
-> > Does 'perf kvm top' not give host samples at the same time?  Would be
-> > nice to see the host overhead as a function of varying ple window.  I
-> > would expect that to be the major difference between 4/16/32k window
-> > sizes.
-> 
-> No, I did something like this
-> perf kvm  --guestvmlinux ./vmlinux.guest top -g  -U -d 3. Yes that is a
-> good idea.
-> 
-> (I am getting some segfaults with perf top, I think it is already fixed
-> but yet to see the patch that fixes)
-> 
-> 
-> 
-> >
-> > A big concern I have (if this is 1x overcommit) for ebizzy is that it
-> > has just terrible scalability to begin with.  I do not think we should
-> > try to optimize such a bad workload.
-> >
-> 
-> I think my way of running dbench has some flaw, so I went to ebizzy.
-> Could you let me know how you generally run dbench?
+ipv4 and ipv6 use different styles for these tests.
 
-I mount a tmpfs and then specify that mount for dbench to run on.  This
-eliminates all IO.  I use a 300 second run time and number of threads is
-equal to number of vcpus.  All of the VMs of course need to have a
-synchronized start.
+ipv4_is_<foo>(__be32)
+ipv6_addr_<foo>(struct in6_addr *)
 
-I would also make sure you are using a recent kernel for dbench, where
-the dcache scalability is much improved.  Without any lock-holder
-preemption, the time in spin_lock should be very low:
+Perhaps it'd be good to convert the ipv4 tests to the ipv6 style.
 
-
->     21.54%      78016         dbench  [kernel.kallsyms]   [k] copy_user_generic_unrolled
->      3.51%      12723         dbench  libc-2.12.so        [.] __strchr_sse42
->      2.81%      10176         dbench  dbench              [.] child_run
->      2.54%       9203         dbench  [kernel.kallsyms]   [k] _raw_spin_lock
->      2.33%       8423         dbench  dbench              [.] next_token
->      2.02%       7335         dbench  [kernel.kallsyms]   [k] __d_lookup_rcu
->      1.89%       6850         dbench  libc-2.12.so        [.] __strstr_sse42
->      1.53%       5537         dbench  libc-2.12.so        [.] __memset_sse2
->      1.47%       5337         dbench  [kernel.kallsyms]   [k] link_path_walk
->      1.40%       5084         dbench  [kernel.kallsyms]   [k] kmem_cache_alloc
->      1.38%       5009         dbench  libc-2.12.so        [.] memmove
->      1.24%       4496         dbench  libc-2.12.so        [.] vfprintf
->      1.15%       4169         dbench  [kernel.kallsyms]   [k] __audit_syscall_exit
-
--Andrew
+There are ~100 instances of ipv4_is_<foo> tests treewide.
 
 
