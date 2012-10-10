@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab2JJWyD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:03 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60005 "EHLO
+	id S1757657Ab2JJWya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55892 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757548Ab2JJWxw (ORCPT
+	by vger.kernel.org with ESMTP id S1757418Ab2JJWyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:53:52 -0400
-X-Sasl-enc: CoAF1PYo0Ay3c+ECoW/ywUZ8HQCIMRZTPlre8rzbEH5m 1349909631
+	Wed, 10 Oct 2012 18:54:17 -0400
+X-Sasl-enc: flwZPxEU/QRO+5iolRiaJrhwKP+XBLlcty82X60Y5DSh 1349909656
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 019/133] ixgbe: fix PTP ethtool timestamping function
-Date: Thu, 11 Oct 2012 07:50:45 +0900
-Message-Id: <20121010224857.900240921@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 032/133] xfrm_user: fix info leak in copy_to_user_state()
+Date: Thu, 11 Oct 2012 07:50:58 +0900
+Message-Id: <20121010224900.255567160@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,36 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 1cc92eb871d6cbb1da038b4bcd89eec3c73b9781 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-This patch fixes a development issue that occurred due to invalid modes reported
-in the ethtool get_ts_info function. The issue is resolved by removing
-unsupported modes from the Rx supported list.
+[ Upstream commit f778a636713a435d3a922c60b1622a91136560c1 ]
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+The memory reserved to dump the xfrm state includes the padding bytes of
+struct xfrm_usersa_info added by the compiler for alignment (7 for
+amd64, 3 for i386). Add an explicit memset(0) before filling the buffer
+to avoid the info leak.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/xfrm/xfrm_user.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -2723,10 +2723,7 @@ static int ixgbe_get_ts_info(struct net_
- 			(1 << HWTSTAMP_FILTER_NONE) |
- 			(1 << HWTSTAMP_FILTER_PTP_V1_L4_SYNC) |
- 			(1 << HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ) |
--			(1 << HWTSTAMP_FILTER_PTP_V2_SYNC) |
--			(1 << HWTSTAMP_FILTER_PTP_V2_DELAY_REQ) |
--			(1 << HWTSTAMP_FILTER_PTP_V2_EVENT) |
--			(1 << HWTSTAMP_FILTER_SOME);
-+			(1 << HWTSTAMP_FILTER_PTP_V2_EVENT);
- 		break;
- #endif /* CONFIG_IXGBE_PTP */
- 	default:
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -689,6 +689,7 @@ out:
+ 
+ static void copy_to_user_state(struct xfrm_state *x, struct xfrm_usersa_info *p)
+ {
++	memset(p, 0, sizeof(*p));
+ 	memcpy(&p->id, &x->id, sizeof(p->id));
+ 	memcpy(&p->sel, &x->sel, sizeof(p->sel));
+ 	memcpy(&p->lft, &x->lft, sizeof(p->lft));
 
 
