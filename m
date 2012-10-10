@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab2JKAYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:24:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56066 "EHLO
+	id S933247Ab2JKAYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:24:18 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39935 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933222Ab2JKAYD (ORCPT
+	by vger.kernel.org with ESMTP id S933222Ab2JKAYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:24:03 -0400
-X-Sasl-enc: qi7lYIjAsDgMTNtcSBbBlPjRL2tnC0+N/LiMDu15pHgr 1349915042
+	Wed, 10 Oct 2012 20:24:11 -0400
+X-Sasl-enc: IFw5Amkp62OdWQDg9RUazHUCCAzTayDOxtb0DKfRIi+u 1349915049
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 081/122] drm/radeon: Add MSI quirk for gateway RS690
-Date: Thu, 11 Oct 2012 07:54:07 +0900
-Message-Id: <20121010225352.658006010@linuxfoundation.org>
+        Ratan Nalumasu <ratan@google.com>, Jiri Kosina <jkosina@suse.cz>,
+        Kees Cook <keescook@chromium.org>
+Subject: [ 083/122] HID: hidraw: dont deallocate memory when it is in use
+Date: Thu, 11 Oct 2012 07:54:09 +0900
+Message-Id: <20121010225353.016642857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,34 +28,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ratan Nalumasu <ratan@google.com>
 
-commit 3a6d59df80897cc87812b6826d70085905bed013 upstream.
+commit 4fe9f8e203fdad1524c04beb390f3c6099781ed9 upstream.
 
-Fixes another system on:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
+When a device is unplugged, wait for all processes that have opened the device
+to close before deallocating the device.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ratan Nalumasu <ratan@google.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/hid/hidraw.c |   69 +++++++++++++++++++--------------------------------
+ 1 file changed, 26 insertions(+), 43 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -204,6 +204,12 @@ static bool radeon_msi_ok(struct radeon_
- 	    (rdev->pdev->subsystem_device == 0x01fd))
- 		return true;
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -42,6 +42,7 @@ static struct cdev hidraw_cdev;
+ static struct class *hidraw_class;
+ static struct hidraw *hidraw_table[HIDRAW_MAX_DEVICES];
+ static DEFINE_MUTEX(minors_lock);
++static void drop_ref(struct hidraw *hid, int exists_bit);
  
-+	/* Gateway RS690 only seems to work with MSIs. */
-+	if ((rdev->pdev->device == 0x791f) &&
-+	    (rdev->pdev->subsystem_vendor == 0x107b) &&
-+	    (rdev->pdev->subsystem_device == 0x0185))
-+		return true;
+ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count, loff_t *ppos)
+ {
+@@ -113,7 +114,7 @@ static ssize_t hidraw_send_report(struct
+ 	__u8 *buf;
+ 	int ret = 0;
+ 
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+@@ -261,7 +262,7 @@ static int hidraw_open(struct inode *ino
+ 	}
+ 
+ 	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		err = -ENODEV;
+ 		goto out_unlock;
+ 	}
+@@ -298,36 +299,12 @@ out:
+ static int hidraw_release(struct inode * inode, struct file * file)
+ {
+ 	unsigned int minor = iminor(inode);
+-	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
+-	int ret;
+-	int i;
+-
+-	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
+-		ret = -ENODEV;
+-		goto unlock;
+-	}
+ 
++	drop_ref(hidraw_table[minor], 0);
+ 	list_del(&list->node);
+-	dev = hidraw_table[minor];
+-	if (!--dev->open) {
+-		if (list->hidraw->exist) {
+-			hid_hw_power(dev->hid, PM_HINT_NORMAL);
+-			hid_hw_close(dev->hid);
+-		} else {
+-			kfree(list->hidraw);
+-		}
+-	}
+-
+-	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
+-		kfree(list->buffer[i].value);
+ 	kfree(list);
+-	ret = 0;
+-unlock:
+-	mutex_unlock(&minors_lock);
+-
+-	return ret;
++	return 0;
+ }
+ 
+ static long hidraw_ioctl(struct file *file, unsigned int cmd,
+@@ -529,21 +506,7 @@ EXPORT_SYMBOL_GPL(hidraw_connect);
+ void hidraw_disconnect(struct hid_device *hid)
+ {
+ 	struct hidraw *hidraw = hid->hidraw;
+-
+-	mutex_lock(&minors_lock);
+-	hidraw->exist = 0;
+-
+-	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
+-
+-	hidraw_table[hidraw->minor] = NULL;
+-
+-	if (hidraw->open) {
+-		hid_hw_close(hid);
+-		wake_up_interruptible(&hidraw->wait);
+-	} else {
+-		kfree(hidraw);
+-	}
+-	mutex_unlock(&minors_lock);
++	drop_ref(hidraw, 1);
+ }
+ EXPORT_SYMBOL_GPL(hidraw_disconnect);
+ 
+@@ -585,3 +548,23 @@ void hidraw_exit(void)
+ 	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
+ 
+ }
 +
- 	/* RV515 seems to have MSI issues where it loses
- 	 * MSI rearms occasionally. This leads to lockups and freezes.
- 	 * disable it by default.
++static void drop_ref(struct hidraw *hidraw, int exists_bit)
++{
++	mutex_lock(&minors_lock);
++	if (exists_bit) {
++		hid_hw_close(hidraw->hid);
++		hidraw->exist = 0;
++		if (hidraw->open)
++			wake_up_interruptible(&hidraw->wait);
++	} else {
++		--hidraw->open;
++	}
++
++	if (!hidraw->open && !hidraw->exist) {
++		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
++		hidraw_table[hidraw->minor] = NULL;
++		kfree(hidraw);
++	}
++	mutex_unlock(&minors_lock);
++}
 
 
