@@ -1,438 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2JJMim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:38:42 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:49884 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755963Ab2JJMij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:38:39 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/5] pinctrl/nomadik: move the platform data header
-Date: Wed, 10 Oct 2012 14:38:26 +0200
-Message-ID: <1349872706-31281-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S932234Ab2JJOdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:33:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19858 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab2JJOdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 10:33:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,564,1344236400"; 
+   d="scan'208";a="202812341"
+Date: Wed, 10 Oct 2012 22:33:31 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-linus] memcg, kmem: fix build error when CONFIG_INET
+ is disabled
+Message-ID: <20121010143331.GA7880@localhost>
+References: <alpine.DEB.2.00.1210092325500.9528@chino.kir.corp.google.com>
+ <5075383A.1000001@parallels.com>
+ <20121010092700.GD23011@dhcp22.suse.cz>
+ <50753FFF.6060102@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50753FFF.6060102@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, Oct 10, 2012 at 01:29:35PM +0400, Glauber Costa wrote:
+> On 10/10/2012 01:27 PM, Michal Hocko wrote:
+> > On Wed 10-10-12 12:56:26, Glauber Costa wrote:
+> >> On 10/10/2012 10:32 AM, David Rientjes wrote:
+> >>> Commit e1aab161e013 ("socket: initial cgroup code.") causes a build error 
+> >>> when CONFIG_INET is disabled in Linus' tree:
+> >>>
+> >> unlikely that something that old would cause a build bug now, specially
+> >> that commit, that actually wraps things inside CONFIG_INET.
+> >>
+> >> More likely caused by the recently merged
+> >> "memcg-cleanup-kmem-tcp-ifdefs.patch" in -mm by mhocko (CC'd)
+> > 
+> > Strange it didn't trigger during my (and Fenguang) build testing.
+> 
+> Fengguang mentioned to me while testing my kmemcg tree that were a build
+> error occurring in the base tree, IOW, yours.
 
-This moves the platform data header for the Nomadik pin controller
-to <linux/platform_data/pinctrl-nomadik.h>.
+Yes, and the errors were sent to/cc Michal and kernel-janitors@vger.kernel.org
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-nomadik/board-nhk8815.c             |   2 +-
- arch/arm/mach-nomadik/cpu-8815.c                  |   2 +-
- arch/arm/mach-nomadik/i2c-8815nhk.c               |   2 +-
- arch/arm/mach-ux500/board-mop500-audio.c          |   2 +-
- arch/arm/mach-ux500/board-mop500-pins.c           |   2 +-
- arch/arm/mach-ux500/board-mop500.c                |   2 +-
- arch/arm/mach-ux500/cpu-db8500.c                  |   4 +-
- arch/arm/mach-ux500/devices-common.c              |   3 +-
- arch/arm/plat-nomadik/include/plat/gpio-nomadik.h | 108 ----------------------
- drivers/pinctrl/pinctrl-nomadik.c                 |   2 +-
- drivers/pinctrl/pinctrl-nomadik.h                 |   2 +-
- include/linux/platform_data/pinctrl-nomadik.h     | 108 ++++++++++++++++++++++
- 12 files changed, 119 insertions(+), 120 deletions(-)
- delete mode 100644 arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
- create mode 100644 include/linux/platform_data/pinctrl-nomadik.h
+> Fengguang, was that this error? Why hasn't it showed up before in the
+> test system?
 
-diff --git a/arch/arm/mach-nomadik/board-nhk8815.c b/arch/arm/mach-nomadik/board-nhk8815.c
-index bfa1eab..3a41ad0 100644
---- a/arch/arm/mach-nomadik/board-nhk8815.c
-+++ b/arch/arm/mach-nomadik/board-nhk8815.c
-@@ -24,6 +24,7 @@
- #include <linux/i2c.h>
- #include <linux/io.h>
- #include <linux/pinctrl/machine.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- #include <asm/hardware/vic.h>
- #include <asm/sizes.h>
- #include <asm/mach-types.h>
-@@ -32,7 +33,6 @@
- #include <asm/mach/flash.h>
- #include <asm/mach/time.h>
- 
--#include <plat/gpio-nomadik.h>
- #include <plat/mtu.h>
- #include <plat/pincfg.h>
- 
-diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
-index b617eae..1273931 100644
---- a/arch/arm/mach-nomadik/cpu-8815.c
-+++ b/arch/arm/mach-nomadik/cpu-8815.c
-@@ -26,8 +26,8 @@
- #include <linux/irq.h>
- #include <linux/dma-mapping.h>
- #include <linux/platform_data/clk-nomadik.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
--#include <plat/gpio-nomadik.h>
- #include <mach/hardware.h>
- #include <mach/irqs.h>
- #include <asm/mach/map.h>
-diff --git a/arch/arm/mach-nomadik/i2c-8815nhk.c b/arch/arm/mach-nomadik/i2c-8815nhk.c
-index 6d14454..f81496f 100644
---- a/arch/arm/mach-nomadik/i2c-8815nhk.c
-+++ b/arch/arm/mach-nomadik/i2c-8815nhk.c
-@@ -4,7 +4,7 @@
- #include <linux/i2c-algo-bit.h>
- #include <linux/i2c-gpio.h>
- #include <linux/platform_device.h>
--#include <plat/gpio-nomadik.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- #include <plat/pincfg.h>
- 
- /*
-diff --git a/arch/arm/mach-ux500/board-mop500-audio.c b/arch/arm/mach-ux500/board-mop500-audio.c
-index 070629a..ea828cc 100644
---- a/arch/arm/mach-ux500/board-mop500-audio.c
-+++ b/arch/arm/mach-ux500/board-mop500-audio.c
-@@ -7,8 +7,8 @@
- #include <linux/platform_device.h>
- #include <linux/init.h>
- #include <linux/gpio.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
--#include <plat/gpio-nomadik.h>
- #include <plat/pincfg.h>
- #include <plat/ste_dma40.h>
- 
-diff --git a/arch/arm/mach-ux500/board-mop500-pins.c b/arch/arm/mach-ux500/board-mop500-pins.c
-index a267c6d..05f2bb5 100644
---- a/arch/arm/mach-ux500/board-mop500-pins.c
-+++ b/arch/arm/mach-ux500/board-mop500-pins.c
-@@ -9,10 +9,10 @@
- #include <linux/bug.h>
- #include <linux/string.h>
- #include <linux/pinctrl/machine.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- #include <asm/mach-types.h>
- #include <plat/pincfg.h>
--#include <plat/gpio-nomadik.h>
- 
- #include <mach/hardware.h>
- 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 416d436..0a3dd60 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -37,13 +37,13 @@
- #include <linux/of_platform.h>
- #include <linux/leds.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
- 
- #include <plat/ste_dma40.h>
--#include <plat/gpio-nomadik.h>
- 
- #include <mach/hardware.h>
- #include <mach/setup.h>
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index bcdfe6b..87a8f9f 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -17,14 +17,14 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/mfd/abx500/ab8500.h>
-+#include <linux/platform_data/usb-musb-ux500.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- #include <asm/pmu.h>
- #include <asm/mach/map.h>
--#include <plat/gpio-nomadik.h>
- #include <mach/hardware.h>
- #include <mach/setup.h>
- #include <mach/devices.h>
--#include <linux/platform_data/usb-musb-ux500.h>
- #include <mach/db8500-regs.h>
- 
- #include "devices-db8500.h"
-diff --git a/arch/arm/mach-ux500/devices-common.c b/arch/arm/mach-ux500/devices-common.c
-index dfdd4a5..692a77a 100644
---- a/arch/arm/mach-ux500/devices-common.c
-+++ b/arch/arm/mach-ux500/devices-common.c
-@@ -11,8 +11,7 @@
- #include <linux/irq.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
--
--#include <plat/gpio-nomadik.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- #include <mach/hardware.h>
- 
-diff --git a/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h b/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
-deleted file mode 100644
-index a749994..0000000
---- a/arch/arm/plat-nomadik/include/plat/gpio-nomadik.h
-+++ /dev/null
-@@ -1,108 +0,0 @@
--/*
-- * Structures and registers for GPIO access in the Nomadik SoC
-- *
-- * Copyright (C) 2008 STMicroelectronics
-- *     Author: Prafulla WADASKAR <prafulla.wadaskar@st.com>
-- * Copyright (C) 2009 Alessandro Rubini <rubini@unipv.it>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __PLAT_NOMADIK_GPIO
--#define __PLAT_NOMADIK_GPIO
--
--/*
-- * "nmk_gpio" and "NMK_GPIO" stand for "Nomadik GPIO", leaving
-- * the "gpio" namespace for generic and cross-machine functions
-- */
--
--#define GPIO_BLOCK_SHIFT 5
--#define NMK_GPIO_PER_CHIP (1 << GPIO_BLOCK_SHIFT)
--
--/* Register in the logic block */
--#define NMK_GPIO_DAT	0x00
--#define NMK_GPIO_DATS	0x04
--#define NMK_GPIO_DATC	0x08
--#define NMK_GPIO_PDIS	0x0c
--#define NMK_GPIO_DIR	0x10
--#define NMK_GPIO_DIRS	0x14
--#define NMK_GPIO_DIRC	0x18
--#define NMK_GPIO_SLPC	0x1c
--#define NMK_GPIO_AFSLA	0x20
--#define NMK_GPIO_AFSLB	0x24
--#define NMK_GPIO_LOWEMI	0x28
--
--#define NMK_GPIO_RIMSC	0x40
--#define NMK_GPIO_FIMSC	0x44
--#define NMK_GPIO_IS	0x48
--#define NMK_GPIO_IC	0x4c
--#define NMK_GPIO_RWIMSC	0x50
--#define NMK_GPIO_FWIMSC	0x54
--#define NMK_GPIO_WKS	0x58
--/* These appear in DB8540 and later ASICs */
--#define NMK_GPIO_EDGELEVEL 0x5C
--#define NMK_GPIO_LEVEL	0x60
--
--/* Alternate functions: function C is set in hw by setting both A and B */
--#define NMK_GPIO_ALT_GPIO	0
--#define NMK_GPIO_ALT_A	1
--#define NMK_GPIO_ALT_B	2
--#define NMK_GPIO_ALT_C	(NMK_GPIO_ALT_A | NMK_GPIO_ALT_B)
--
--#define NMK_GPIO_ALT_CX_SHIFT 2
--#define NMK_GPIO_ALT_C1	((1<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
--#define NMK_GPIO_ALT_C2	((2<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
--#define NMK_GPIO_ALT_C3	((3<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
--#define NMK_GPIO_ALT_C4	((4<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
--
--/* Pull up/down values */
--enum nmk_gpio_pull {
--	NMK_GPIO_PULL_NONE,
--	NMK_GPIO_PULL_UP,
--	NMK_GPIO_PULL_DOWN,
--};
--
--/* Sleep mode */
--enum nmk_gpio_slpm {
--	NMK_GPIO_SLPM_INPUT,
--	NMK_GPIO_SLPM_WAKEUP_ENABLE = NMK_GPIO_SLPM_INPUT,
--	NMK_GPIO_SLPM_NOCHANGE,
--	NMK_GPIO_SLPM_WAKEUP_DISABLE = NMK_GPIO_SLPM_NOCHANGE,
--};
--
--extern int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode);
--extern int nmk_gpio_set_pull(int gpio, enum nmk_gpio_pull pull);
--#ifdef CONFIG_PINCTRL_NOMADIK
--extern int nmk_gpio_set_mode(int gpio, int gpio_mode);
--#else
--static inline int nmk_gpio_set_mode(int gpio, int gpio_mode)
--{
--	return -ENODEV;
--}
--#endif
--extern int nmk_gpio_get_mode(int gpio);
--
--extern void nmk_gpio_wakeups_suspend(void);
--extern void nmk_gpio_wakeups_resume(void);
--
--extern void nmk_gpio_clocks_enable(void);
--extern void nmk_gpio_clocks_disable(void);
--
--extern void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up);
--
--/*
-- * Platform data to register a block: only the initial gpio/irq number.
-- */
--struct nmk_gpio_platform_data {
--	char *name;
--	int first_gpio;
--	int first_irq;
--	int num_gpio;
--	u32 (*get_secondary_status)(unsigned int bank);
--	void (*set_ioforce)(bool enable);
--	bool supports_sleepmode;
--};
--
--#endif /* __PLAT_NOMADIK_GPIO */
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index e4d3778..63cdfc1 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -31,11 +31,11 @@
- /* Since we request GPIOs from ourself */
- #include <linux/pinctrl/consumer.h>
- #include <linux/mfd/dbx500-prcmu.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- #include <asm/mach/irq.h>
- 
- #include <plat/pincfg.h>
--#include <plat/gpio-nomadik.h>
- 
- #include "pinctrl-nomadik.h"
- 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.h b/drivers/pinctrl/pinctrl-nomadik.h
-index eef316e..bcd4191 100644
---- a/drivers/pinctrl/pinctrl-nomadik.h
-+++ b/drivers/pinctrl/pinctrl-nomadik.h
-@@ -1,7 +1,7 @@
- #ifndef PINCTRL_PINCTRL_NOMADIK_H
- #define PINCTRL_PINCTRL_NOMADIK_H
- 
--#include <plat/gpio-nomadik.h>
-+#include <linux/platform_data/pinctrl-nomadik.h>
- 
- /* Package definitions */
- #define PINCTRL_NMK_STN8815	0
-diff --git a/include/linux/platform_data/pinctrl-nomadik.h b/include/linux/platform_data/pinctrl-nomadik.h
-new file mode 100644
-index 0000000..a749994
---- /dev/null
-+++ b/include/linux/platform_data/pinctrl-nomadik.h
-@@ -0,0 +1,108 @@
-+/*
-+ * Structures and registers for GPIO access in the Nomadik SoC
-+ *
-+ * Copyright (C) 2008 STMicroelectronics
-+ *     Author: Prafulla WADASKAR <prafulla.wadaskar@st.com>
-+ * Copyright (C) 2009 Alessandro Rubini <rubini@unipv.it>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __PLAT_NOMADIK_GPIO
-+#define __PLAT_NOMADIK_GPIO
-+
-+/*
-+ * "nmk_gpio" and "NMK_GPIO" stand for "Nomadik GPIO", leaving
-+ * the "gpio" namespace for generic and cross-machine functions
-+ */
-+
-+#define GPIO_BLOCK_SHIFT 5
-+#define NMK_GPIO_PER_CHIP (1 << GPIO_BLOCK_SHIFT)
-+
-+/* Register in the logic block */
-+#define NMK_GPIO_DAT	0x00
-+#define NMK_GPIO_DATS	0x04
-+#define NMK_GPIO_DATC	0x08
-+#define NMK_GPIO_PDIS	0x0c
-+#define NMK_GPIO_DIR	0x10
-+#define NMK_GPIO_DIRS	0x14
-+#define NMK_GPIO_DIRC	0x18
-+#define NMK_GPIO_SLPC	0x1c
-+#define NMK_GPIO_AFSLA	0x20
-+#define NMK_GPIO_AFSLB	0x24
-+#define NMK_GPIO_LOWEMI	0x28
-+
-+#define NMK_GPIO_RIMSC	0x40
-+#define NMK_GPIO_FIMSC	0x44
-+#define NMK_GPIO_IS	0x48
-+#define NMK_GPIO_IC	0x4c
-+#define NMK_GPIO_RWIMSC	0x50
-+#define NMK_GPIO_FWIMSC	0x54
-+#define NMK_GPIO_WKS	0x58
-+/* These appear in DB8540 and later ASICs */
-+#define NMK_GPIO_EDGELEVEL 0x5C
-+#define NMK_GPIO_LEVEL	0x60
-+
-+/* Alternate functions: function C is set in hw by setting both A and B */
-+#define NMK_GPIO_ALT_GPIO	0
-+#define NMK_GPIO_ALT_A	1
-+#define NMK_GPIO_ALT_B	2
-+#define NMK_GPIO_ALT_C	(NMK_GPIO_ALT_A | NMK_GPIO_ALT_B)
-+
-+#define NMK_GPIO_ALT_CX_SHIFT 2
-+#define NMK_GPIO_ALT_C1	((1<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
-+#define NMK_GPIO_ALT_C2	((2<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
-+#define NMK_GPIO_ALT_C3	((3<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
-+#define NMK_GPIO_ALT_C4	((4<<NMK_GPIO_ALT_CX_SHIFT) | NMK_GPIO_ALT_C)
-+
-+/* Pull up/down values */
-+enum nmk_gpio_pull {
-+	NMK_GPIO_PULL_NONE,
-+	NMK_GPIO_PULL_UP,
-+	NMK_GPIO_PULL_DOWN,
-+};
-+
-+/* Sleep mode */
-+enum nmk_gpio_slpm {
-+	NMK_GPIO_SLPM_INPUT,
-+	NMK_GPIO_SLPM_WAKEUP_ENABLE = NMK_GPIO_SLPM_INPUT,
-+	NMK_GPIO_SLPM_NOCHANGE,
-+	NMK_GPIO_SLPM_WAKEUP_DISABLE = NMK_GPIO_SLPM_NOCHANGE,
-+};
-+
-+extern int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode);
-+extern int nmk_gpio_set_pull(int gpio, enum nmk_gpio_pull pull);
-+#ifdef CONFIG_PINCTRL_NOMADIK
-+extern int nmk_gpio_set_mode(int gpio, int gpio_mode);
-+#else
-+static inline int nmk_gpio_set_mode(int gpio, int gpio_mode)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+extern int nmk_gpio_get_mode(int gpio);
-+
-+extern void nmk_gpio_wakeups_suspend(void);
-+extern void nmk_gpio_wakeups_resume(void);
-+
-+extern void nmk_gpio_clocks_enable(void);
-+extern void nmk_gpio_clocks_disable(void);
-+
-+extern void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up);
-+
-+/*
-+ * Platform data to register a block: only the initial gpio/irq number.
-+ */
-+struct nmk_gpio_platform_data {
-+	char *name;
-+	int first_gpio;
-+	int first_irq;
-+	int num_gpio;
-+	u32 (*get_secondary_status)(unsigned int bank);
-+	void (*set_ioforce)(bool enable);
-+	bool supports_sleepmode;
-+};
-+
-+#endif /* __PLAT_NOMADIK_GPIO */
--- 
-1.7.11.3
+I do find this error in the build error log:
 
+        (.text+0x867f): undefined reference to `sock_update_memcg'
+        2012-09-24 04:54:53 snb next:akpm:69921c3 x86_64-randconfig-s005 0a7f618
+
+Unfortunately it was not reported because the build system could
+miss/ignore build bugs due to various reasons/imperfections. It has
+since then undergo lots of enhancements and as a result, the daily
+reported errors have more than doubled. :-)
+
+Thanks,
+Fengguang
