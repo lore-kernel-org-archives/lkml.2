@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab2JJVuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:50:37 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:41837 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab2JJVuc (ORCPT
+	id S1756696Ab2JJV4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:56:07 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36657 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755199Ab2JJV4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:50:32 -0400
-Message-ID: <1349905825.5993.2.camel@lorien2>
-Subject: Re: [PATCH v4] dma-debug: New interfaces to debug dma mapping errors
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, stern@rowland.harvard.edu,
-        joerg.roedel@amd.com, bhelgaas@google.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
-Date: Wed, 10 Oct 2012 15:50:25 -0600
-In-Reply-To: <20121009140215.5c0a65c9.akpm@linux-foundation.org>
-References: <1347843171.4370.13.camel@lorien2>
-	 <1348621517.3091.6.camel@lorien2> <1349276159.3192.4.camel@lorien2>
-	 <1349400193.2547.29.camel@lorien2>
-	 <20121005155108.d8d88fd2.akpm@linux-foundation.org>
-	 <1349716040.2674.19.camel@lorien2>
-	 <20121009140215.5c0a65c9.akpm@linux-foundation.org>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 10 Oct 2012 17:56:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArErAK3tdVB5LIL3/2dsb2JhbABEhSm0JoRjAgJ7gQmCIAEBBTocIxAIAxIGLhQlAw0UE4gDuBoUizM7gSiEPQOVa5AxgwE
+Date: Thu, 11 Oct 2012 08:56:00 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
+ s390
+Message-ID: <20121010215600.GX23644@dastard>
+References: <1349108796-32161-1-git-send-email-jack@suse.cz>
+ <alpine.LSU.2.00.1210082029190.2237@eggly.anvils>
+ <20121009162107.GE15790@quack.suse.cz>
+ <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 14:02 -0700, Andrew Morton wrote:
-> On Mon, 08 Oct 2012 11:07:20 -0600
-> Shuah Khan <shuah.khan@hp.com> wrote:
-> 
+On Tue, Oct 09, 2012 at 07:19:09PM -0700, Hugh Dickins wrote:
+> On Tue, 9 Oct 2012, Jan Kara wrote:
+> > On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
+> > > On Mon, 1 Oct 2012, Jan Kara wrote:
 > > > 
-> > > Still seems overly complicated to me, but whatev.
+> > > > On s390 any write to a page (even from kernel itself) sets architecture
+> > > > specific page dirty bit. Thus when a page is written to via standard write, HW
+> > > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
+> > > > finds the dirty bit and calls set_page_dirty().
+> > > > 
+> > > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
+> > > > filesystems. The bug we observed in practice is that buffers from the page get
+> > > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
+> > > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
+> > > > from xfs_count_page_state().
 > > > 
-> > > I think the way to handle this is pretty simple: set a flag in the dma
-> > > entry when someone runs dma_mapping_error() and, if that flag wasn't
-> > > set at unmap time, emit a loud warning.
-> > > 
-> > > From my reading of the code, this patch indeed does that, along with a
-> > > bunch of other (unnecessary?) stuff.  But boy, the changelog conceals
-> > > this information well!
-> > 
-> > Are you referring to the system wide error counters when you say
-> > unnecessary stuff. The reason I added those was to catch errors when
-> > drivers don't do unmap. Several drivers fail to do unmap. Checking flag
-> > from unmap debug interfaces, doesn't cover these cases. However, I think
-> > the value of system wide counters is limited in the sense that they
-> > don't really identify the driver that needs fixing. In that sense it can
-> > be deemed unnecessary. I dropped them in v5 patch, which I am sending
-> > out.
+> > > What changed recently?  Was XFS hardly used on s390 until now?
+> >   The problem was originally hit on SLE11-SP2 which is 3.0 based after
+> > migration of our s390 build machines from SLE11-SP1 (2.6.32 based). I think
+> > XFS just started to be more peevish about what pages it gets between these
+> > two releases ;) (e.g. ext3 or ext4 just says "oh, well" and fixes things
+> > up).
 > 
-> hm.  Could we keep a counter of the number of map/unmap calls within
-> the dma object and then emit a warning if that is non-zero at teardown
-> time?  That should identify the offending driver.
-> 
+> Right, in 2.6.32 xfs_vm_writepage() had a !page_has_buffers(page) case,
+> whereas by 3.0 that had become ASSERT(page_has_buffers(page)), with the
+> ASSERT usually compiled out, stumbling later in page_buffers() as you say.
 
-Thanks. That would work. Will take a look and see what it takes to
-implement.
+What that says is that no-one is running xfstests-based QA on s390
+with CONFIG_XFS_DEBUG enabled, otherwise this would have been found.
+I've never tested XFS on s390 before, and I doubt any of the
+upstream developers have, either, because not many peopl ehave s390
+machines in their basement. So this is probably just an oversight
+in the distro QA environment more than anything....
 
--- Shuah
+Cheers,
 
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
