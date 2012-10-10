@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab2JJXBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:01:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57165 "EHLO
+	id S1758024Ab2JJXBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57999 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757164Ab2JJXB1 (ORCPT
+	by vger.kernel.org with ESMTP id S1757164Ab2JJXBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:01:27 -0400
-X-Sasl-enc: zD1Bj1R1r6Sxavj3YomfsHCn5sr7TqeI1dJmR5cVzE4I 1349910086
+	Wed, 10 Oct 2012 19:01:35 -0400
+X-Sasl-enc: VqrSoQfiT9vx+1neQp4GYbVxL+UVLGGegx7zYv5OviCg 1349910094
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 023/122] powerpc/eeh: Fix crash on converting OF node to edev
-Date: Thu, 11 Oct 2012 07:53:09 +0900
-Message-Id: <20121010225342.296820227@linuxfoundation.org>
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 026/122] rapidio/rionet: fix multicast packet transmit logic
+Date: Thu, 11 Oct 2012 07:53:12 +0900
+Message-Id: <20121010225342.845360773@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,93 +31,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit 1e38b7140185e384da216aff66a711df09b5afc9 upstream.
+commit 7c4a6106d6451fc03c491e61df37c044505d843a upstream.
 
-The kernel crash was reported by Alexy. He was testing some feature
-with private kernel, in which Alexy added some code in pci_pm_reset()
-to read the CSR after writting it. The bug could be reproduced on
-Fiber Channel card (Fibre Channel: Emulex Corporation Saturn-X:
-LightPulse Fibre Channel Host Adapter (rev 03)) by the following
-commands.
+Fix multicast packet transmit logic to account for repetitive transmission
+of single skb:
+- correct check for available buffers (this bug may produce NULL pointer
+  crash dump in case of heavy traffic);
+- update skb user count (incorrect user counter causes a warning dump from
+  net_tx_action routine during multicast transfers in systems with three or
+  more rionet participants).
 
-	# echo 1 > /sys/devices/pci0004:01/0004:01:00.0/reset
-	# rmmod lpfc
-	# modprobe lpfc
-
-The history behind the test case is that those additional config
-space reading operations in pci_pm_reset() would cause EEH error,
-but we didn't detect EEH error until "modprobe lpfc". For the case,
-all the PCI devices on PCI bus (0004:01) were removed and added after
-PE reset. Then the EEH devices would be figured out again based on
-the OF nodes. Unfortunately, there were some child OF nodes under
-PCI device (0004:01:00.0), but they didn't have attached PCI_DN since
-they're invisible from PCI domain. However, we were still trying to
-convert OF node to EEH device without checking on the attached PCI_DN.
-Eventually, it caused the kernel crash as follows:
-
-Unable to handle kernel paging request for data at address 0x00000030
-Faulting instruction address: 0xc00000000004d888
-cpu 0x0: Vector: 300 (Data Access) at [c000000fc797b950]
-    pc: c00000000004d888: .eeh_add_device_tree_early+0x78/0x140
-    lr: c00000000004d880: .eeh_add_device_tree_early+0x70/0x140
-    sp: c000000fc797bbd0
-   msr: 8000000000009032
-   dar: 30
- dsisr: 40000000
-  current = 0xc000000fc78d9f70
-  paca    = 0xc00000000edb0000   softe: 0        irq_happened: 0x00
-    pid   = 2951, comm = eehd
-enter ? for help
-[c000000fc797bc50] c00000000004d848 .eeh_add_device_tree_early+0x38/0x140
-[c000000fc797bcd0] c00000000004d848 .eeh_add_device_tree_early+0x38/0x140
-[c000000fc797bd50] c000000000051b54 .pcibios_add_pci_devices+0x34/0x190
-[c000000fc797bde0] c00000000004fb10 .eeh_reset_device+0x100/0x160
-[c000000fc797be70] c0000000000502dc .eeh_handle_event+0x19c/0x300
-[c000000fc797bf00] c000000000050570 .eeh_event_handler+0x130/0x1a0
-[c000000fc797bf90] c000000000020138 .kernel_thread+0x54/0x70
-
-The patch changes of_node_to_eeh_dev() and just returns NULL if the
-passed OF node doesn't have attached PCI_DN.
-
-Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/pci-bridge.h |    8 ++++++++
- arch/powerpc/platforms/pseries/eeh.c  |    2 +-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/rionet.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/pci-bridge.h
-+++ b/arch/powerpc/include/asm/pci-bridge.h
-@@ -182,6 +182,14 @@ static inline int pci_device_from_OF_nod
- #if defined(CONFIG_EEH)
- static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
- {
-+	/*
-+	 * For those OF nodes whose parent isn't PCI bridge, they
-+	 * don't have PCI_DN actually. So we have to skip them for
-+	 * any EEH operations.
-+	 */
-+	if (!dn || !PCI_DN(dn))
-+		return NULL;
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -79,6 +79,7 @@ static int rionet_capable = 1;
+  * on system trade-offs.
+  */
+ static struct rio_dev **rionet_active;
++static int nact;	/* total number of active rionet peers */
+ 
+ #define is_rionet_capable(src_ops, dst_ops)			\
+ 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
+@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_b
+ 	struct ethhdr *eth = (struct ethhdr *)skb->data;
+ 	u16 destid;
+ 	unsigned long flags;
++	int add_num = 1;
+ 
+ 	local_irq_save(flags);
+ 	if (!spin_trylock(&rnet->tx_lock)) {
+@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_b
+ 		return NETDEV_TX_LOCKED;
+ 	}
+ 
+-	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
++	if (is_multicast_ether_addr(eth->h_dest))
++		add_num = nact;
 +
- 	return PCI_DN(dn)->edev;
- }
- #endif
---- a/arch/powerpc/platforms/pseries/eeh.c
-+++ b/arch/powerpc/platforms/pseries/eeh.c
-@@ -1029,7 +1029,7 @@ static void eeh_add_device_early(struct
- {
- 	struct pci_controller *phb;
++	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
+ 		netif_stop_queue(ndev);
+ 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
+ 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
+@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_b
+ 	}
  
--	if (!dn || !of_node_to_eeh_dev(dn))
-+	if (!of_node_to_eeh_dev(dn))
- 		return;
- 	phb = of_node_to_eeh_dev(dn)->phb;
+ 	if (is_multicast_ether_addr(eth->h_dest)) {
++		int count = 0;
+ 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
+ 				i++)
+-			if (rionet_active[i])
++			if (rionet_active[i]) {
+ 				rionet_queue_tx_msg(skb, ndev,
+ 						    rionet_active[i]);
++				if (count)
++					atomic_inc(&skb->users);
++				count++;
++			}
+ 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
+ 		destid = RIONET_GET_DESTID(eth->h_dest);
+ 		if (rionet_active[destid])
+@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct ri
+ 	if (info == RIONET_DOORBELL_JOIN) {
+ 		if (!rionet_active[sid]) {
+ 			list_for_each_entry(peer, &rionet_peers, node) {
+-				if (peer->rdev->destid == sid)
++				if (peer->rdev->destid == sid) {
+ 					rionet_active[sid] = peer->rdev;
++					nact++;
++				}
+ 			}
+ 			rio_mport_send_doorbell(mport, sid,
+ 						RIONET_DOORBELL_JOIN);
+ 		}
+ 	} else if (info == RIONET_DOORBELL_LEAVE) {
+ 		rionet_active[sid] = NULL;
++		nact--;
+ 	} else {
+ 		if (netif_msg_intr(rnet))
+ 			printk(KERN_WARNING "%s: unhandled doorbell\n",
+@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *
  
+ 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
+ 		rionet_check = 1;
++		nact = 0;
+ 	}
+ 
+ 	/*
 
 
