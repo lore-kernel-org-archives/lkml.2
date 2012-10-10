@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab2JJXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:22:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44475 "EHLO
+	id S932684Ab2JJXWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:22:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57786 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757714Ab2JJWyd (ORCPT
+	by vger.kernel.org with ESMTP id S1757397Ab2JJWy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:33 -0400
-X-Sasl-enc: Zq80vZ5pXWz+EXSClRcjrr4UjJ/vxisJlYMW/V3Q/tSJ 1349909672
+	Wed, 10 Oct 2012 18:54:28 -0400
+X-Sasl-enc: B0zQVUq2YEJnaJn7Ni4Wy1e1gY4R/AhRImv6qTgjspBw 1349909667
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 038/133] netxen: check for root bus in netxen_mask_aer_correctable
-Date: Thu, 11 Oct 2012 07:51:04 +0900
-Message-Id: <20121010224901.346548639@linuxfoundation.org>
+        Tao Hou <hotforest@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 036/133] net: ethernet: davinci_cpdma: decrease the desc count when cleaning up the remaining packets
+Date: Thu, 11 Oct 2012 07:51:02 +0900
+Message-Id: <20121010224900.982508600@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,34 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: htbegin <hotforest@gmail.com>
 
-[ Upstream commit e4d1aa40e363ed3e0486aeeeb0d173f7f822737e ]
+[ Upstream commit ffb5ba90017505a19e238e986e6d33f09e4df765 ]
 
-Add a check if pdev->bus->self == NULL (root bus). When attaching
-a netxen NIC to a VM it can be on the root bus and the guest would
-crash in netxen_mask_aer_correctable() because of a NULL pointer
-dereference if CONFIG_PCIEAER is present.
+chan->count is used by rx channel. If the desc count is not updated by
+the clean up loop in cpdma_chan_stop, the value written to the rxfree
+register in cpdma_chan_start will be incorrect.
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Tao Hou <hotforest@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/ethernet/ti/davinci_cpdma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -1378,6 +1378,10 @@ static void netxen_mask_aer_correctable(
- 	struct pci_dev *root = pdev->bus->self;
- 	u32 aer_pos;
+--- a/drivers/net/ethernet/ti/davinci_cpdma.c
++++ b/drivers/net/ethernet/ti/davinci_cpdma.c
+@@ -862,6 +862,7 @@ int cpdma_chan_stop(struct cpdma_chan *c
  
-+	/* root bus? */
-+	if (!root)
-+		return;
-+
- 	if (adapter->ahw.board_type != NETXEN_BRDTYPE_P3_4_GB_MM &&
- 		adapter->ahw.board_type != NETXEN_BRDTYPE_P3_10G_TP)
- 		return;
+ 		next_dma = desc_read(desc, hw_next);
+ 		chan->head = desc_from_phys(pool, next_dma);
++		chan->count--;
+ 		chan->stats.teardown_dequeue++;
+ 
+ 		/* issue callback without locks held */
 
 
