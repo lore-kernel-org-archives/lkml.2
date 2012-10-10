@@ -1,128 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2JJMVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:21:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54102 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab2JJMVG (ORCPT
+	id S1755369Ab2JJK7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:59:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33697 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751550Ab2JJK65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:21:06 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hdpi.c
-Date: Wed, 10 Oct 2012 21:20:59 +0900
-Message-Id: <1349871659-4511-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Oct 2012 06:58:57 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/2] firmware: Convert firmware path setup from an array to a list
+Date: Wed, 10 Oct 2012 11:56:24 +0100
+Message-Id: <1349866585-24883-2-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.12.2
+In-Reply-To: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
+References: <1349866585-24883-1-git-send-email-dp@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+In preparation to support dynamic listing/updating of firmware
+paths via procfs, this patch converts the firmware path configuration
+from an array to a list.
 
-and added pr_fmt.
-
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/staging/comedi/drivers/gsc_hpdi.c |   31 +++++++++++++++--------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/base/firmware_class.c | 72 ++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 64 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
-index abff660..30a27fd 100644
---- a/drivers/staging/comedi/drivers/gsc_hpdi.c
-+++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
-@@ -45,6 +45,8 @@ support could be added to this driver.
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8154145..2153eab 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -36,13 +36,13 @@ MODULE_AUTHOR("Manuel Estrada Sainz");
+ MODULE_DESCRIPTION("Multi purpose firmware loading support");
+ MODULE_LICENSE("GPL");
  
- */
+-static const char *fw_path[] = {
+-	"/lib/firmware/updates/" UTS_RELEASE,
+-	"/lib/firmware/updates",
+-	"/lib/firmware/" UTS_RELEASE,
+-	"/lib/firmware"
++struct fw_path_rec {
++	const char *name;
++	struct list_head list;
+ };
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++static LIST_HEAD(fw_path_list);
 +
- #include <linux/interrupt.h>
- #include "../comedidev.h"
- #include <linux/delay.h>
-@@ -107,8 +109,7 @@ enum hpdi_registers {
- int command_channel_valid(unsigned int channel)
+ /* Don't inline this: 'struct kstat' is biggish */
+ static noinline long fw_file_size(struct file *file)
  {
- 	if (channel == 0 || channel > 6) {
--		printk(KERN_WARNING
--		       "gsc_hpdi: bug! invalid cable command channel\n");
-+		pr_warn("bug! invalid cable command channel\n");
- 		return 0;
- 	}
- 	return 1;
-@@ -553,7 +554,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int i;
- 	int retval;
+@@ -78,13 +78,14 @@ static bool fw_read_file_contents(struct file *file, struct firmware *fw)
  
--	printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
-+	dev_warn(dev->class_dev, "gsc_hpdi\n");
+ static bool fw_get_filesystem_firmware(struct firmware *fw, const char *name)
+ {
+-	int i;
+ 	bool success = false;
+ 	char *path = __getname();
++	struct fw_path_rec *fwp;
  
- 	if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
- 		return -ENOMEM;
-@@ -582,17 +583,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		} while (pcidev != NULL);
- 	}
- 	if (dev->board_ptr == NULL) {
--		printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
-+		dev_warn(dev->class_dev, "no hpdi card found\n");
- 		return -EIO;
- 	}
+-	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
++	list_for_each_entry(fwp, &fw_path_list, list) {
+ 		struct file *file;
+-		snprintf(path, PATH_MAX, "%s/%s", fw_path[i], name);
++		snprintf(path, PATH_MAX, "%s/%s", fwp->name,
++			 name);
  
--	printk(KERN_WARNING
--	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_warn(dev->class_dev,
-+		 "found %s on bus %i, slot %i\n", board(dev)->name,
-+		 pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 		file = filp_open(path, O_RDONLY, 0);
+ 		if (IS_ERR(file))
+@@ -1385,6 +1386,50 @@ static int fw_cache_piggyback_on_request(const char *name)
+ }
+ #endif
  
- 	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
--		printk(KERN_WARNING
--		       " failed enable PCI device and request regions\n");
-+		dev_warn(dev->class_dev,
-+			 " failed enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	pci_set_master(pcidev);
-@@ -613,7 +614,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    ioremap(priv(dev)->hpdi_phys_iobase,
- 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
- 	if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
--		printk(KERN_WARNING " failed to remap io memory\n");
-+		dev_warn(dev->class_dev, "failed to remap io memory\n");
- 		return -ENOMEM;
- 	}
++static void fw_free_path_list(void)
++{
++	struct fw_path_rec *fwp;
++
++	while (!list_empty(&fw_path_list)) {
++		fwp = list_first_entry(&fw_path_list,
++				       struct fw_path_rec,
++				       list);
++		kfree(fwp->name);
++		list_del(&fwp->list);
++		kfree(fwp);
++	}
++}
++
++static int fw_populate_path_list(void)
++{
++	int i;
++	struct fw_path_rec *fwp;
++	static const char *fw_path[] = {
++		"/lib/firmware/updates/" UTS_RELEASE,
++		"/lib/firmware/updates",
++		"/lib/firmware/" UTS_RELEASE,
++		"/lib/firmware"
++	};
++
++	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
++		fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
++		if (!fwp)
++			goto err_fwp_alloc;
++		fwp->name = kstrdup(fw_path[i], GFP_KERNEL);
++		if (!fwp->name)
++			goto err_fwp_name_alloc;
++		list_add_tail(&fwp->list, &fw_path_list);
++	}
++
++	return 0;
++
++err_fwp_name_alloc:
++	kfree(fwp);
++err_fwp_alloc:
++	fw_free_path_list();
++	return -ENOMEM;
++}
++
+ static void __init fw_cache_init(void)
+ {
+ 	spin_lock_init(&fw_cache.lock);
+@@ -1409,7 +1454,17 @@ static void __init fw_cache_init(void)
  
-@@ -625,13 +626,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  get irq */
- 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
- 			dev->driver->driver_name, dev)) {
--		printk(KERN_WARNING
--		       " unable to allocate irq %u\n", pcidev->irq);
-+		dev_warn(dev->class_dev,
-+			 "unable to allocate irq %u\n", pcidev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = pcidev->irq;
+ static int __init firmware_class_init(void)
+ {
++	int ret;
++
+ 	fw_cache_init();
++
++	ret = fw_populate_path_list();
++	if (ret < 0) {
++		pr_err("%s: Failed to populate firmware path list: %d\n",
++		       __func__, ret);
++		return ret;
++	}
++
+ 	return class_register(&firmware_class);
+ }
  
--	printk(KERN_WARNING " irq %u\n", dev->irq);
-+	dev_warn(dev->class_dev, "irq %u\n", dev->irq);
- 
- 	/*  allocate pci dma buffers */
- 	for (i = 0; i < NUM_DMA_BUFFERS; i++) {
-@@ -649,8 +650,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 						   &priv(dev)->
- 						   dma_desc_phys_addr);
- 	if (priv(dev)->dma_desc_phys_addr & 0xf) {
--		printk(KERN_WARNING
--		       " dma descriptors not quad-word aligned (bug)\n");
-+		dev_warn(dev->class_dev,
-+			 "dma descriptors not quad-word aligned (bug)\n");
- 		return -EIO;
- 	}
+@@ -1419,6 +1474,7 @@ static void __exit firmware_class_exit(void)
+ 	unregister_syscore_ops(&fw_syscore_ops);
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
+ #endif
++	fw_free_path_list();
+ 	class_unregister(&firmware_class);
+ }
  
 -- 
-1.7.9.5
+1.7.12.2
 
