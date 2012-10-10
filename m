@@ -1,179 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab2JJQuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:50:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34378 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755467Ab2JJQuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:50:09 -0400
-Date: Wed, 10 Oct 2012 09:50:04 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 07/10] input: Enable STMPE keypad driver for Device Tree
-Message-ID: <20121010165004.GE19335@core.coreip.homeip.net>
-References: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
- <1349451107-8009-8-git-send-email-lee.jones@linaro.org>
+	id S1755909Ab2JJQzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:55:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42927 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054Ab2JJQzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 12:55:23 -0400
+Date: Wed, 10 Oct 2012 10:22:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Robin Dong <robin.k.dong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH V3] block/throttle: Add IO throttled information in
+ blkio.throttle
+Message-ID: <20121010142218.GE16136@redhat.com>
+References: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349451107-8009-8-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-On Fri, Oct 05, 2012 at 04:31:43PM +0100, Lee Jones wrote:
-> This patch allows the STMPE driver to be successfully probed and
-> initialised when Device Tree support is enabled. Besides the usual
-> platform data changes, we also separate the process of filling in
-> the 'in use' pin bitmap, as we have to extract the information from
-> Device Tree in the DT boot case.
-
-
-This generally looks OK although I wonder if we could not unify DT and
-non-DT case by doing:
-
-	for (row = 0; row < STMPE_KEYPAD_MAX_ROWS; row++) {
-		if (col = 0; col < STMPE_KEYPAD_MAX_COLS; col++) {
-			int code = MATRIX_SCAN_CODE(row, col,
-						STMPE_KEYPAD_ROW_SHIFT);
-			if (keypad->keymap[code] != KEY_RESERVED) {
-				keypad->rows |= 1 << row;
-				keypad->cols |= 1 << col;
-			}
-		}
-	}
-
-BTW, am I supposed to merge it or ack it?
-
-Thanks!
-
+On Tue, Oct 09, 2012 at 02:53:45PM +0800, Robin Dong wrote:
+> From: Robin Dong <sanbai@taobao.com>
 > 
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: linux-input@vger.kernel.org
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Currently, if the IO is throttled by io-throttle, the SA has no idea of
+> the situation and can't report it to the real application user about
+> that he/she has to do something. So this patch adds a new interface
+> named blkio.throttle.io_queued which indicates how many IOs are
+> currently throttled.
+> 
+> The nr_queued[] of struct throtl_grp is of type "unsigned int" and updates
+> to it are atomic both at 32bit and 64bit platforms, so we could just
+> read tg->nr_queued only under blkcg->lock.
+> 
+> Changelog from v2:
+> 	Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> Signed-off-by: Robin Dong <sanbai@taobao.com>
 > ---
->  drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
->  drivers/mfd/stmpe.c                   |    1 +
->  2 files changed, 59 insertions(+), 9 deletions(-)
+>  block/blk-throttle.c |   40 ++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 40 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
-> index 470a877..c722d23 100644
-> --- a/drivers/input/keyboard/stmpe-keypad.c
-> +++ b/drivers/input/keyboard/stmpe-keypad.c
-> @@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
->  			      (plat->debounce_ms << 1));
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index a9664fa..e410448 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -953,6 +953,32 @@ static u64 tg_prfill_cpu_rwstat(struct seq_file *sf,
+>  	return __blkg_prfill_rwstat(sf, pd, &rwstat);
 >  }
 >  
-> +static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
-> +				struct stmpe_keypad *keypad,
-> +				struct stmpe_keypad_platform_data *plat)
+> +static u64 tg_prfill_io_queued(struct seq_file *sf,
+> +				struct blkg_policy_data *pd, int off)
 > +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	unsigned int proplen;
-> +	const __be32 *prop;
+> +	static const char *rwstr[] = {
+> +		[READ]	= "Read",
+> +		[WRITE]	= "Write",
+> +	};
+> +	struct throtl_grp *tg = pd_to_tg(pd);
+> +	const char *dname = NULL;
+> +	unsigned int v;
 > +	int i;
 > +
-> +	if (np) {
-> +		prop = of_get_property(np, "linux,keymap", &proplen);
-> +		if (!prop) {
-> +			dev_err(&pdev->dev,
-> +				"linux,keymap property not defined\n");
-> +			return -EINVAL;
-> +		}
+> +	if (pd->blkg->q->backing_dev_info.dev)
+> +		dname = dev_name(pd->blkg->q->backing_dev_info.dev);
 > +
-> +		for (i = 0; i < proplen / sizeof(u32); i++) {
-> +			unsigned int key = be32_to_cpup(prop + i);
+> +	if (!dname)
+> +		return 0;
 > +
-> +			keypad->cols |= 1 << KEY_COL(key);
-> +			keypad->rows |= 1 << KEY_ROW(key);
-> +		}
-> +	} else {
-> +		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
-> +			unsigned int key = plat->keymap_data->keymap[i];
-> +
-> +			keypad->cols |= 1 << KEY_COL(key);
-> +			keypad->rows |= 1 << KEY_ROW(key);
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void __devinit stmpe_keypad_of_probe(struct device_node *np,
-> +				struct stmpe_keypad_platform_data *plat)
-> +{
-> +	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
-> +	of_property_read_u32(np, "stericsson,scan-count", &plat->scan_count);
-> +
-> +	if (of_get_property(np, "stericsson,no-autorepeat", NULL))
-> +		plat->no_autorepeat = true;
-> +}
-> +
->  static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
->  {
->  	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
->  	struct stmpe_keypad_platform_data *plat;
-> +	struct device_node *np = pdev->dev.of_node;
->  	struct stmpe_keypad *keypad;
->  	struct input_dev *input;
->  	int ret;
->  	int irq;
-> -	int i;
->  
->  	plat = stmpe->pdata->keypad;
-> -	if (!plat)
-> -		return -ENODEV;
-> +	if (!plat) {
-> +		if (np) {
-> +			plat = devm_kzalloc(&pdev->dev,
-> +					sizeof(*plat), GFP_KERNEL);
-> +			if (!plat)
-> +				return -ENOMEM;
-> +
-> +			stmpe_keypad_of_probe(np, plat);
-> +		} else
-> +			return -ENODEV;
-> +	}
->  
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0)
-> @@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
->  	if (!plat->no_autorepeat)
->  		__set_bit(EV_REP, input->evbit);
->  
-> -	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
-> -		unsigned int key = plat->keymap_data->keymap[i];
-> -
-> -		keypad->cols |= 1 << KEY_COL(key);
-> -		keypad->rows |= 1 << KEY_ROW(key);
-> -	}
-> +	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
->  
->  	keypad->stmpe = stmpe;
->  	keypad->plat = plat;
-> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> index ba157d4..b03cc64 100644
-> --- a/drivers/mfd/stmpe.c
-> +++ b/drivers/mfd/stmpe.c
-> @@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
->  
->  static struct mfd_cell stmpe_keypad_cell = {
->  	.name		= "stmpe-keypad",
-> +	.of_compatible  = "st,stmpe-keypad",
->  	.resources	= stmpe_keypad_resources,
->  	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
->  };
-> -- 
-> 1.7.9.5
-> 
+> +	for (i = 0; i <= WRITE; i++)
+> +		seq_printf(sf, "%s %s %u\n", dname, rwstr[i], tg->nr_queued[i]);
 
--- 
-Dmitry
+You are printing only READ/WRITE stats and not the SYNC/ASYNC stats. This
+is not inline with rest of the stats like throttle.io_serviced and
+throttle.io_service_bytes.
+
+I guess it is better to maintain rwstat for io_queued and display it
+according to io_serviced.
+
+Thanks
+Vivek
