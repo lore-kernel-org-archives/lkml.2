@@ -1,188 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2JJJLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:11:24 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:45431 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab2JJJLS (ORCPT
+	id S1753129Ab2JJJMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 05:12:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51787 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab2JJJMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:11:18 -0400
-Date: Wed, 10 Oct 2012 11:10:56 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [GIT PULL] s390 patches for the 3.7 merge window #2
-Message-ID: <20121010111056.173fca51@mschwide>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101009-4966-0000-0000-000003B9A179
+	Wed, 10 Oct 2012 05:12:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121010074923.GA11894@kroah.com>
+References: <1349553393-902065-1-git-send-email-avagin@openvz.org>
+	<20121009114821.dc4c2aff.akpm@linux-foundation.org>
+	<20121009190300.GB22108@kroah.com>
+	<20121009120831.8a6d81d8.akpm@linux-foundation.org>
+	<20121010074923.GA11894@kroah.com>
+Date: Wed, 10 Oct 2012 17:12:21 +0800
+Message-ID: <CAJn8CcGF90a-fHfQmA8UoY-RxvTqs2F_iVZVernEk6TGmdMuGQ@mail.gmail.com>
+Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns (v3)
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Oct 10, 2012 at 3:49 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Oct 09, 2012 at 12:08:31PM -0700, Andrew Morton wrote:
+>> On Tue, 9 Oct 2012 12:03:00 -0700
+>> Greg KH <greg@kroah.com> wrote:
+>>
+>> > On Tue, Oct 09, 2012 at 11:48:21AM -0700, Andrew Morton wrote:
+>> > > On Sat,  6 Oct 2012 23:56:33 +0400
+>> > > Andrew Vagin <avagin@openvz.org> wrote:
+>> > >
+>> > > > Here is a stack trace of recursion:
+>> > > > free_pid_ns(parent)
+>> > > >   put_pid_ns(parent)
+>> > > >     kref_put(&ns->kref, free_pid_ns);
+>> > > >       free_pid_ns
+>> > > >
+>> > > > This patch turns recursion into loops.
+>> > > >
+>> > > > pidns can be nested many times, so in case of recursion
+>> > > > a simple user space program can provoke a kernel panic
+>> > > > due to exceed of a kernel stack.
+>> > >
+>> > > So we should backport this into earlier kernels.
+>> > >
+>> > > > --- a/include/linux/kref.h
+>> > > > +++ b/include/linux/kref.h
+>> > > > @@ -95,6 +95,18 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+>> > > >         return kref_sub(kref, 1, release);
+>> > > >  }
+>> > > >
+>> > > > +/**
+>> > > > + * kref_put - decrement refcount for object.
+>> > > > + * @kref: object.
+>> > > > + *
+>> > > > + * Decrement the refcount.
+>> > > > + * Return 1 if refcount is zero.
+>> > > > + */
+>> > > > +static inline int __kref_put(struct kref *kref)
+>> > > > +{
+>> > > > +       return atomic_dec_and_test(&kref->refcount);
+>> > > > +}
+>> > >
+>> > > Greg might be interested in this.
+>> > >
+>> > > It's a pretty specialised thing and perhaps it needs some stern words
+>> > > in the description explaining when and why it should and shouldn't be
+>> > > used.
+>> > >
+>> > > I wonder if people might (ab)use this to avoid the "doesn't
+>> > > have a release function" warning.
+>> >
+>> > Yes they would, please don't do this at all.
+>> >
+>> > In fact, why is it needed?  It doesn't solve anything (if it does,
+>> > something in the way the kref is being used is wrong.)
+>> >
+>>
+>> It's right there in the changelog.  The patch fixes deep
+>> kref_put->release->kref_put recursion by turning the operation for
+>> pidns into a loop.
+>
+> But why would a kref release function ever decrement the same kref
+> again causing a loop in the first place?
+>
 
-please pull from the 'for-linus' branch of
+This should be kref_put ns->parent recursionly,  put_pid_ns(ns) ->
+free_pid_ns(ns) -> put_pid_ns(ns->parent)->.......
+If users create many nested namespaces, the recursion put_pid_ns()
+will exausted the kernel stack.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-to receive the following updates:
-The big thing in this pull request is the UAPI patch from David,
-and worth mentioning is the page table dumper. The rest are small
-improvements and bug fixes.
+> That's what I was referring to.  This strongly sounds like a problem in
+> how the kref is being used, not in the kref code itself.
+>
+> Is a kref even the correct thing here?
 
-David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/s390/include/asm
+Can we fix this by this way? free_pid_ns just release ns itself, we check
+the return value of kref_put, if kref_put returns 1, means ns->kref is removed,
+then we kref_put(ns->parent).
 
-Heiko Carstens (10):
-      s390/facilities: cleanup PFMF and HPAGE machine facility detection
-      s390/mm: use pfmf instruction to initialize storage keys
-      s390/mm: fix pmd_huge() usage for kernel mapping
-      s390/mm,pageattr: add more page table walk sanity checks
-      s390/mm,pageattr: remove superfluous EXPORT_SYMBOLs
-      s390/mm: add page table dumper
-      s390/mm: fix mapping of read-only kernel text section
-      s390/mm: let kernel text section always begin at 1MB
-      s390/vmalloc: have separate modules area
-      s390/mm,vmem: fix vmem_add_mem()/vmem_remove_range()
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 00474b0..2168535 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -53,8 +53,14 @@ extern int reboot_pid_ns(struct pid_namespace
+*pid_ns, int cmd);
 
-Martin Schwidefsky (2):
-      s390: add support to start the kernel in 64 bit mode.
-      s390/entry: fix svc number for TIF_SYSCALL system call restart
+ static inline void put_pid_ns(struct pid_namespace *ns)
+ {
+-	if (ns != &init_pid_ns)
+-		kref_put(&ns->kref, free_pid_ns);
++	int ret;
++      struct pid_namespace *parent
++
++	while (ns != &init_pid_ns) {
++              parent = ns->parent;
++		ret = kref_put(&ns->kref, free_pid_ns);
++		if (!ret)
++			break;
++		else ns = parent;
++	}
+ }
 
-Sebastian Ott (3):
-      s390/dcssblk: cleanup device attribute usage
-      s390/chsc: make headers usable
-      s390/css_chars: remove superfluous ifdef
+ #else /* !CONFIG_PID_NS */
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index 478bad2..85ca23a 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -135,15 +135,11 @@ struct pid_namespace *copy_pid_ns(unsigned long
+flags, struct pid_namespace *old
 
-Wei Yongjun (1):
-      s390/zcrypt: remove duplicated include from zcrypt_pcixcc.c
+ void free_pid_ns(struct kref *kref)
+ {
+-	struct pid_namespace *ns, *parent;
++	struct pid_namespace *ns;
 
- arch/s390/Kconfig.debug                        |   12 +
- arch/s390/include/asm/Kbuild                   |   14 -
- arch/s390/include/asm/chpid.h                  |   19 +-
- arch/s390/include/asm/cmb.h                    |   51 +--
- arch/s390/include/asm/css_chars.h              |    3 -
- arch/s390/include/asm/debug.h                  |   28 +-
- arch/s390/include/asm/kvm_para.h               |   14 +-
- arch/s390/include/asm/mman.h                   |    6 +-
- arch/s390/include/asm/page.h                   |   14 +-
- arch/s390/include/asm/pgtable.h                |   30 +-
- arch/s390/include/asm/ptrace.h                 |  462 +----------------------
- arch/s390/include/asm/schid.h                  |   15 +-
- arch/s390/include/asm/setup.h                  |   21 +-
- arch/s390/include/asm/signal.h                 |  128 +------
- arch/s390/include/asm/termios.h                |   42 +--
- arch/s390/include/asm/types.h                  |   15 +-
- arch/s390/include/asm/unistd.h                 |  367 +-----------------
- arch/s390/include/uapi/asm/Kbuild              |   45 +++
- arch/s390/include/{ => uapi}/asm/auxvec.h      |    0
- arch/s390/include/{ => uapi}/asm/bitsperlong.h |    0
- arch/s390/include/{ => uapi}/asm/byteorder.h   |    0
- arch/s390/include/uapi/asm/chpid.h             |   22 ++
- arch/s390/include/{ => uapi}/asm/chsc.h        |   10 +-
- arch/s390/include/uapi/asm/cmb.h               |   53 +++
- arch/s390/include/{ => uapi}/asm/dasd.h        |    0
- arch/s390/include/uapi/asm/debug.h             |   34 ++
- arch/s390/include/{ => uapi}/asm/errno.h       |    0
- arch/s390/include/{ => uapi}/asm/fcntl.h       |    0
- arch/s390/include/{ => uapi}/asm/ioctl.h       |    0
- arch/s390/include/{ => uapi}/asm/ioctls.h      |    0
- arch/s390/include/{ => uapi}/asm/ipcbuf.h      |    0
- arch/s390/include/{ => uapi}/asm/kvm.h         |    0
- arch/s390/include/{ => uapi}/asm/kvm_virtio.h  |    0
- arch/s390/include/uapi/asm/mman.h              |    6 +
- arch/s390/include/{ => uapi}/asm/monwriter.h   |    0
- arch/s390/include/{ => uapi}/asm/msgbuf.h      |    0
- arch/s390/include/{ => uapi}/asm/param.h       |    0
- arch/s390/include/{ => uapi}/asm/poll.h        |    0
- arch/s390/include/{ => uapi}/asm/posix_types.h |    0
- arch/s390/include/uapi/asm/ptrace.h            |  472 ++++++++++++++++++++++++
- arch/s390/include/{ => uapi}/asm/qeth.h        |    0
- arch/s390/include/{ => uapi}/asm/resource.h    |    0
- arch/s390/include/uapi/asm/schid.h             |   16 +
- arch/s390/include/{ => uapi}/asm/sembuf.h      |    0
- arch/s390/include/uapi/asm/setup.h             |   13 +
- arch/s390/include/{ => uapi}/asm/shmbuf.h      |    0
- arch/s390/include/{ => uapi}/asm/sigcontext.h  |    0
- arch/s390/include/{ => uapi}/asm/siginfo.h     |    0
- arch/s390/include/uapi/asm/signal.h            |  135 +++++++
- arch/s390/include/{ => uapi}/asm/socket.h      |    0
- arch/s390/include/{ => uapi}/asm/sockios.h     |    0
- arch/s390/include/{ => uapi}/asm/stat.h        |    0
- arch/s390/include/{ => uapi}/asm/statfs.h      |    0
- arch/s390/include/{ => uapi}/asm/swab.h        |    0
- arch/s390/include/{ => uapi}/asm/tape390.h     |    0
- arch/s390/include/{ => uapi}/asm/termbits.h    |    0
- arch/s390/include/uapi/asm/termios.h           |   49 +++
- arch/s390/include/uapi/asm/types.h             |   22 ++
- arch/s390/include/{ => uapi}/asm/ucontext.h    |    0
- arch/s390/include/uapi/asm/unistd.h            |  374 +++++++++++++++++++
- arch/s390/include/{ => uapi}/asm/vtoc.h        |    0
- arch/s390/include/{ => uapi}/asm/zcrypt.h      |    0
- arch/s390/kernel/early.c                       |   17 +-
- arch/s390/kernel/entry64.S                     |    2 +-
- arch/s390/kernel/head.S                        |  101 +++--
- arch/s390/kernel/head31.S                      |    3 -
- arch/s390/kernel/head64.S                      |    3 -
- arch/s390/kernel/module.c                      |   11 +
- arch/s390/kernel/setup.c                       |   51 ++-
- arch/s390/mm/Makefile                          |    1 +
- arch/s390/mm/dump_pagetables.c                 |  226 ++++++++++++
- arch/s390/mm/pageattr.c                        |   40 +-
- arch/s390/mm/vmem.c                            |   45 ++-
- drivers/s390/block/dcssblk.c                   |   52 ++-
- drivers/s390/crypto/zcrypt_pcixcc.c            |    1 -
- 75 files changed, 1755 insertions(+), 1290 deletions(-)
- rename arch/s390/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/s390/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/s390/include/{ => uapi}/asm/byteorder.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/chpid.h
- rename arch/s390/include/{ => uapi}/asm/chsc.h (92%)
- create mode 100644 arch/s390/include/uapi/asm/cmb.h
- rename arch/s390/include/{ => uapi}/asm/dasd.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/debug.h
- rename arch/s390/include/{ => uapi}/asm/errno.h (100%)
- rename arch/s390/include/{ => uapi}/asm/fcntl.h (100%)
- rename arch/s390/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/s390/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/s390/include/{ => uapi}/asm/ipcbuf.h (100%)
- rename arch/s390/include/{ => uapi}/asm/kvm.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/kvm_para.h
- rename arch/s390/include/{ => uapi}/asm/kvm_virtio.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/mman.h
- rename arch/s390/include/{ => uapi}/asm/monwriter.h (100%)
- rename arch/s390/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/s390/include/{ => uapi}/asm/param.h (100%)
- rename arch/s390/include/{ => uapi}/asm/poll.h (100%)
- rename arch/s390/include/{ => uapi}/asm/posix_types.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/ptrace.h
- rename arch/s390/include/{ => uapi}/asm/qeth.h (100%)
- rename arch/s390/include/{ => uapi}/asm/resource.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/schid.h
- rename arch/s390/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/setup.h
- rename arch/s390/include/{ => uapi}/asm/shmbuf.h (100%)
- rename arch/s390/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/s390/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/signal.h
- rename arch/s390/include/{ => uapi}/asm/socket.h (100%)
- rename arch/s390/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/s390/include/{ => uapi}/asm/stat.h (100%)
- rename arch/s390/include/{ => uapi}/asm/statfs.h (100%)
- rename arch/s390/include/{ => uapi}/asm/swab.h (100%)
- rename arch/s390/include/{ => uapi}/asm/tape390.h (100%)
- rename arch/s390/include/{ => uapi}/asm/termbits.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/termios.h
- create mode 100644 arch/s390/include/uapi/asm/types.h
- rename arch/s390/include/{ => uapi}/asm/ucontext.h (100%)
- create mode 100644 arch/s390/include/uapi/asm/unistd.h
- rename arch/s390/include/{ => uapi}/asm/vtoc.h (100%)
- rename arch/s390/include/{ => uapi}/asm/zcrypt.h (100%)
- create mode 100644 arch/s390/mm/dump_pagetables.c
+ 	ns = container_of(kref, struct pid_namespace, kref);
 
+-	parent = ns->parent;
+ 	destroy_pid_namespace(ns);
+-
+-	if (parent != NULL)
+-		put_pid_ns(parent);
+ }
+ EXPORT_SYMBOL_GPL(free_pid_ns);
+
+
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
