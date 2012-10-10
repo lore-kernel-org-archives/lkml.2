@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab2JJMO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 08:14:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49862 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab2JJMO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 08:14:27 -0400
-Date: Wed, 10 Oct 2012 05:14:02 -0700
-From: tip-bot for Michal Hocko <mhocko@suse.cz>
-Message-ID: <tip-7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        schwidefsky@de.ibm.com, srivatsa.bhat@linux.vnet.ibm.com,
-        tglx@linutronix.de, mhocko@suse.cz
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        schwidefsky@de.ibm.com, tglx@linutronix.de,
-        srivatsa.bhat@linux.vnet.ibm.com, mhocko@suse.cz
-In-Reply-To: <20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com>
-References: <20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] nohz: Fix idle ticks in cpu summary line of /
- proc/stat
-Git-Commit-ID: 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 10 Oct 2012 05:14:08 -0700 (PDT)
+	id S1756090Ab2JJMyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 08:54:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754562Ab2JJMyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 08:54:17 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 6/8] perf tools: Fix pmu object alias initialization
+Date: Wed, 10 Oct 2012 14:53:16 +0200
+Message-Id: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
+References: <1349873598-12583-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f
-Gitweb:     http://git.kernel.org/tip/7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f
-Author:     Michal Hocko <mhocko@suse.cz>
-AuthorDate: Wed, 10 Oct 2012 11:51:09 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 10 Oct 2012 14:05:21 +0200
+The pmu_lookup should return pmus that do not expose the 'events'
+group attribute in sysfs. Also it should fail when any other error
+during 'events' lookup is hit (pmu_aliases fails).
 
-nohz: Fix idle ticks in cpu summary line of /proc/stat
-
-Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
-conditional" introduced a bug in regard to cpu hotplug. The effect is
-that the number of idle ticks in the cpu summary line in /proc/stat is
-still counting ticks for offline cpus.
-
-Reproduction is easy, just start a workload that keeps all cpus busy,
-switch off one or more cpus and then watch the idle field in top.
-On a dual-core with one cpu 100% busy and one offline cpu you will get
-something like this:
-
-%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
-%0.0 st
-
-The problem is that an offline cpu still has ts->idle_active == 1.
-To fix this we should make sure that the cpu is online when calling
-get_cpu_idle_time_us and get_cpu_iowait_time_us.
-
-[Srivatsa: Rebased to current mainline]
-
-Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com
-Cc: deepthi@linux.vnet.ibm.com
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
 ---
- fs/proc/stat.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+ tools/perf/util/pmu.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 64c3b31..e296572 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int cpu)
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8a2229d..18e8480 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -164,7 +164,7 @@ static int pmu_aliases(char *name, struct list_head *head)
+ 		 "%s/bus/event_source/devices/%s/events", sysfs, name);
  
- static u64 get_idle_time(int cpu)
- {
--	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
-+	u64 idle, idle_time = -1ULL;
+ 	if (stat(path, &st) < 0)
+-		return -1;
++		return 0;	 /* no error if 'events' does not exist */
+ 
+ 	if (pmu_aliases_parse(path, head))
+ 		return -1;
+@@ -296,6 +296,9 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 	if (pmu_format(name, &format))
+ 		return NULL;
+ 
++	if (pmu_aliases(name, &aliases))
++		return NULL;
 +
-+	if (cpu_online(cpu))
-+		idle_time = get_cpu_idle_time_us(cpu, NULL);
+ 	if (pmu_type(name, &type))
+ 		return NULL;
  
- 	if (idle_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.idle */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
- 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
- 	else
- 		idle = usecs_to_cputime64(idle_time);
-@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
+@@ -305,8 +308,6 @@ static struct perf_pmu *pmu_lookup(char *name)
  
- static u64 get_iowait_time(int cpu)
- {
--	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-+	u64 iowait, iowait_time = -1ULL;
-+
-+	if (cpu_online(cpu))
-+		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 	pmu->cpus = pmu_cpumask(name);
  
- 	if (iowait_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.iowait */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
- 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
- 	else
- 		iowait = usecs_to_cputime64(iowait_time);
+-	pmu_aliases(name, &aliases);
+-
+ 	INIT_LIST_HEAD(&pmu->format);
+ 	INIT_LIST_HEAD(&pmu->aliases);
+ 	list_splice(&format, &pmu->format);
+-- 
+1.7.11.4
+
