@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab2JJW7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:59:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52270 "EHLO
+	id S1757917Ab2JJXAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:00:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48613 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757887Ab2JJWzX (ORCPT
+	by vger.kernel.org with ESMTP id S1757418Ab2JJWzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:23 -0400
-X-Sasl-enc: i/Sg11cf88avaXRmMmtNlphKjm2kZjFLgJ3m/sDlBNt6 1349909722
+	Wed, 10 Oct 2012 18:55:17 -0400
+X-Sasl-enc: MqC0TN0iOczJkvWn6TtwI4AXoCDwtGc2ZkF1eHjAb5dB 1349909716
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 056/133] netrom: copy_datagram_iovec can fail
-Date: Thu, 11 Oct 2012 07:51:22 +0900
-Message-Id: <20121010224904.589734509@linuxfoundation.org>
+Subject: [ 054/133] ipv6: mip6: fix mip6_mh_filter()
+Date: Thu, 11 Oct 2012 07:51:20 +0900
+Message-Id: <20121010224904.230320778@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -29,34 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alan Cox <alan@linux.intel.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 6cf5c951175abcec4da470c50565cc0afe6cd11d ]
+[ Upstream commit 96af69ea2a83d292238bdba20e4508ee967cf8cb ]
 
-Check for an error from this and if so bail properly.
+mip6_mh_filter() should not modify its input, or else its caller
+would need to recompute ipv6_hdr() if skb->head is reallocated.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Use skb_header_pointer() instead of pskb_may_pull()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/netrom/af_netrom.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ net/ipv6/mip6.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/net/netrom/af_netrom.c
-+++ b/net/netrom/af_netrom.c
-@@ -1169,7 +1169,12 @@ static int nr_recvmsg(struct kiocb *iocb
- 		msg->msg_flags |= MSG_TRUNC;
+--- a/net/ipv6/mip6.c
++++ b/net/ipv6/mip6.c
+@@ -86,28 +86,30 @@ static int mip6_mh_len(int type)
+ 
+ static int mip6_mh_filter(struct sock *sk, struct sk_buff *skb)
+ {
+-	struct ip6_mh *mh;
++	struct ip6_mh _hdr;
++	const struct ip6_mh *mh;
+ 
+-	if (!pskb_may_pull(skb, (skb_transport_offset(skb)) + 8) ||
+-	    !pskb_may_pull(skb, (skb_transport_offset(skb) +
+-				 ((skb_transport_header(skb)[1] + 1) << 3))))
++	mh = skb_header_pointer(skb, skb_transport_offset(skb),
++				sizeof(_hdr), &_hdr);
++	if (!mh)
+ 		return -1;
+ 
+-	mh = (struct ip6_mh *)skb_transport_header(skb);
++	if (((mh->ip6mh_hdrlen + 1) << 3) > skb->len)
++		return -1;
+ 
+ 	if (mh->ip6mh_hdrlen < mip6_mh_len(mh->ip6mh_type)) {
+ 		LIMIT_NETDEBUG(KERN_DEBUG "mip6: MH message too short: %d vs >=%d\n",
+ 			       mh->ip6mh_hdrlen, mip6_mh_len(mh->ip6mh_type));
+-		mip6_param_prob(skb, 0, ((&mh->ip6mh_hdrlen) -
+-					 skb_network_header(skb)));
++		mip6_param_prob(skb, 0, offsetof(struct ip6_mh, ip6mh_hdrlen) +
++				skb_network_header_len(skb));
+ 		return -1;
  	}
  
--	skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
-+	er = skb_copy_datagram_iovec(skb, 0, msg->msg_iov, copied);
-+	if (er < 0) {
-+		skb_free_datagram(sk, skb);
-+		release_sock(sk);
-+		return er;
-+	}
+ 	if (mh->ip6mh_proto != IPPROTO_NONE) {
+ 		LIMIT_NETDEBUG(KERN_DEBUG "mip6: MH invalid payload proto = %d\n",
+ 			       mh->ip6mh_proto);
+-		mip6_param_prob(skb, 0, ((&mh->ip6mh_proto) -
+-					 skb_network_header(skb)));
++		mip6_param_prob(skb, 0, offsetof(struct ip6_mh, ip6mh_proto) +
++				skb_network_header_len(skb));
+ 		return -1;
+ 	}
  
- 	if (sax != NULL) {
- 		sax->sax25_family = AF_NETROM;
 
 
