@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab2JJXAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:00:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56135 "EHLO
+	id S932425Ab2JJXBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:01:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59338 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756850Ab2JJXAq (ORCPT
+	by vger.kernel.org with ESMTP id S1757933Ab2JJXBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:00:46 -0400
-X-Sasl-enc: PU67byoCi5b3yNmIdNbsL7gzwLkn5pzB7fv2Ar9oA/LC 1349910045
+	Wed, 10 Oct 2012 19:01:03 -0400
+X-Sasl-enc: DwmxdsrtEexH8vcGngPEEROIT4dnCM/xyZR55+60DtMg 1349910061
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Donald Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 008/122] intel-iommu: Default to non-coherent for domains unattached to iommus
-Date: Thu, 11 Oct 2012 07:52:54 +0900
-Message-Id: <20121010225339.492182548@linuxfoundation.org>
+        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 014/122] ACPI: run _OSC after ACPI_FULL_INITIALIZATION
+Date: Thu, 11 Oct 2012 07:53:00 +0900
+Message-Id: <20121010225340.674517285@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,52 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-commit 2e12bc29fc5a12242d68e11875db3dd58efad9ff upstream.
+commit fc54ab72959edbf229b65ac74b2f122d799ca002 upstream.
 
-domain_update_iommu_coherency() currently defaults to setting domains
-as coherent when the domain is not attached to any iommus.  This
-allows for a window in domain_context_mapping_one() where such a
-domain can update context entries non-coherently, and only after
-update the domain capability to clear iommu_coherency.
+The _OSC method may exist in module level code,
+so it must be called after ACPI_FULL_INITIALIZATION
 
-This can be seen using KVM device assignment on VT-d systems that
-do not support coherency in the ecap register.  When a device is
-added to a guest, a domain is created (iommu_coherency = 0), the
-device is attached, and ranges are mapped.  If we then hot unplug
-the device, the coherency is updated and set to the default (1)
-since no iommus are attached to the domain.  A subsequent attach
-of a device makes use of the same dmar domain (now marked coherent)
-updates context entries with coherency enabled, and only disables
-coherency as the last step in the process.
+On some new platforms with Zero-Power-Optical-Disk-Drive (ZPODD)
+support, this fix is necessary to save power.
 
-To fix this, switch domain_update_iommu_coherency() to use the
-safer, non-coherent default for domains not attached to iommus.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Tested-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/acpi/bus.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -589,7 +589,9 @@ static void domain_update_iommu_coherenc
- {
- 	int i;
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -994,8 +994,6 @@ static int __init acpi_bus_init(void)
+ 	status = acpi_ec_ecdt_probe();
+ 	/* Ignore result. Not having an ECDT is not fatal. */
  
--	domain->iommu_coherency = 1;
-+	i = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
+-	acpi_bus_osc_support();
+-
+ 	status = acpi_initialize_objects(ACPI_FULL_INITIALIZATION);
+ 	if (ACPI_FAILURE(status)) {
+ 		printk(KERN_ERR PREFIX "Unable to initialize ACPI objects\n");
+@@ -1003,6 +1001,12 @@ static int __init acpi_bus_init(void)
+ 	}
+ 
+ 	/*
++	 * _OSC method may exist in module level code,
++	 * so it must be run after ACPI_FULL_INITIALIZATION
++	 */
++	acpi_bus_osc_support();
 +
-+	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
- 
- 	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_coherent(g_iommus[i]->ecap)) {
++	/*
+ 	 * _PDC control method may load dynamic SSDT tables,
+ 	 * and we need to install the table handler before that.
+ 	 */
 
 
