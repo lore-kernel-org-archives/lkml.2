@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab2JKAXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:23:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43821 "EHLO
+	id S933195Ab2JKAXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:23:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40463 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933084Ab2JKAXj (ORCPT
+	by vger.kernel.org with ESMTP id S933020Ab2JKAXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:23:39 -0400
-X-Sasl-enc: OXaBWOX9SSDr1oP6qMUeMNVER2V4afN7ZFXPfEE665oA 1349915017
+	Wed, 10 Oct 2012 20:23:49 -0400
+X-Sasl-enc: FHX842tqhyKLWxUEd9uAEU20h7pdJ05XrHdBVyYrwB/+ 1349915028
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Bernhard Walle <bernhard@bwalle.de>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 004/122] kbuild: Fix gcc -x syntax
-Date: Thu, 11 Oct 2012 07:52:50 +0900
-Message-Id: <20121010225338.776083264@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [ 006/122] slab: fix the DEADLOCK issue on l3 alien lock
+Date: Thu, 11 Oct 2012 07:52:52 +0900
+Message-Id: <20121010225339.141864097@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,205 +30,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-commit b1e0d8b70fa31821ebca3965f2ef8619d7c5e316 upstream.
+commit 947ca1856a7e60aa6d20536785e6a42dff25aa6e upstream.
 
-The correct syntax for gcc -x is "gcc -x assembler", not
-"gcc -xassembler". Even though the latter happens to work, the former
-is what is documented in the manual page and thus what gcc wrappers
-such as icecream do expect.
+DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
+the process of this fake report is:
 
-This isn't a cosmetic change. The missing space prevents icecream from
-recognizing compilation tasks it can't handle, leading to silent kernel
-miscompilations.
+	   kmem_cache_free()	//free obj in cachep
+	-> cache_free_alien()	//acquire cachep's l3 alien lock
+	-> __drain_alien_cache()
+	-> free_block()
+	-> slab_destroy()
+	-> kmem_cache_free()	//free slab in cachep->slabp_cache
+	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
 
-Besides me, credits go to Michael Matz and Dirk Mueller for
-investigating the miscompilation issue and tracking it down to this
-incorrect -x parameter syntax.
+Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+fake report generated.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Bernhard Walle <bernhard@bwalle.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+This should not happen since we already have init_lock_keys() which will
+reassign the lock class for both l3 list and l3 alien.
+
+However, init_lock_keys() was invoked at a wrong position which is before we
+invoke enable_cpucache() on each cache.
+
+Since until set slab_state to be FULL, we won't invoke enable_cpucache()
+on caches to build their l3 alien while creating them, so although we invoked
+init_lock_keys(), the l3 alien lock class won't change since we don't have
+them until invoked enable_cpucache() later.
+
+This patch will invoke init_lock_keys() after we done enable_cpucache()
+instead of before to avoid the fake DEADLOCK report.
+
+Michael traced the problem back to a commit in release 3.0.0:
+
+commit 30765b92ada267c5395fc788623cb15233276f5c
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Thu Jul 28 23:22:56 2011 +0200
+
+    slab, lockdep: Annotate the locks before using them
+
+    Fernando found we hit the regular OFF_SLAB 'recursion' before we
+    annotate the locks, cure this.
+
+    The relevant portion of the stack-trace:
+
+    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
+    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
+    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
+    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
+    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
+    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
+    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
+    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
+    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
+    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
+
+    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+    Acked-by: Pekka Enberg <penberg@kernel.org>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+The commit moved init_lock_keys() before we build up the alien, so we
+failed to reclass it.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/Makefile                         |    2 +-
- arch/mips/kernel/Makefile                  |    2 +-
- arch/x86/Makefile                          |    2 +-
- scripts/Kbuild.include                     |   12 ++++++------
- scripts/gcc-version.sh                     |    6 +++---
- scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
- scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
- scripts/kconfig/check.sh                   |    2 +-
- scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
- tools/perf/Makefile                        |    2 +-
- tools/power/cpupower/Makefile              |    2 +-
- 11 files changed, 18 insertions(+), 18 deletions(-)
+ mm/slab.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/mips/Makefile
-+++ b/arch/mips/Makefile
-@@ -225,7 +225,7 @@ KBUILD_CPPFLAGS += -DDATAOFFSET=$(if $(d
- LDFLAGS			+= -m $(ld-emul)
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1781,9 +1781,6 @@ void __init kmem_cache_init_late(void)
  
- ifdef CONFIG_MIPS
--CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
-+CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
- 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
- 	sed -e "s/^\#define /-D'/" -e "s/ /'='/" -e "s/$$/'/")
- ifdef CONFIG_64BIT
---- a/arch/mips/kernel/Makefile
-+++ b/arch/mips/kernel/Makefile
-@@ -104,7 +104,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
+ 	slab_state = UP;
  
- obj-$(CONFIG_OF)		+= prom.o
+-	/* Annotate slab for lockdep -- annotate the malloc caches */
+-	init_lock_keys();
+-
+ 	/* 6) resize the head arrays to their final sizes */
+ 	mutex_lock(&slab_mutex);
+ 	list_for_each_entry(cachep, &slab_caches, list)
+@@ -1791,6 +1788,9 @@ void __init kmem_cache_init_late(void)
+ 			BUG();
+ 	mutex_unlock(&slab_mutex);
  
--CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
-+CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
++	/* Annotate slab for lockdep -- annotate the malloc caches */
++	init_lock_keys();
++
+ 	/* Done! */
+ 	slab_state = FULL;
  
- obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
- 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -92,7 +92,7 @@ endif
- ifdef CONFIG_X86_X32
- 	x32_ld_ok := $(call try-run,\
- 			/bin/echo -e '1: .quad 1b' | \
--			$(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" - && \
-+			$(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" - && \
- 			$(OBJCOPY) -O elf32-x86-64 "$$TMP" "$$TMPO" && \
- 			$(LD) -m elf32_x86_64 "$$TMPO" -o "$$TMP",y,n)
-         ifeq ($(x32_ld_ok),y)
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -98,24 +98,24 @@ try-run = $(shell set -e;		\
- # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
- 
- as-option = $(call try-run,\
--	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
- 
- # as-instr
- # Usage: cflags-y += $(call as-instr,instr,option1,option2)
- 
- as-instr = $(call try-run,\
--	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-+	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
- 
- # cc-option
- # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
- 
- cc-option = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # cc-option-yn
- # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
- cc-option-yn = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
- 
- # cc-option-align
- # Prefix align with either -falign or -malign
-@@ -125,7 +125,7 @@ cc-option-align = $(subst -functions=0,,
- # cc-disable-warning
- # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
- cc-disable-warning = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
- 
- # cc-version
- # Usage gcc-ver := $(call cc-version)
-@@ -143,7 +143,7 @@ cc-ifversion = $(shell [ $(call cc-versi
- # cc-ldoption
- # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
- cc-ldoption = $(call try-run,\
--	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # ld-option
- # Usage: LDFLAGS += $(call ld-option, -X)
---- a/scripts/gcc-version.sh
-+++ b/scripts/gcc-version.sh
-@@ -22,10 +22,10 @@ if [ ${#compiler} -eq 0 ]; then
- 	exit 1
- fi
- 
--MAJOR=$(echo __GNUC__ | $compiler -E -xc - | tail -n 1)
--MINOR=$(echo __GNUC_MINOR__ | $compiler -E -xc - | tail -n 1)
-+MAJOR=$(echo __GNUC__ | $compiler -E -x c - | tail -n 1)
-+MINOR=$(echo __GNUC_MINOR__ | $compiler -E -x c - | tail -n 1)
- if [ "x$with_patchlevel" != "x" ] ; then
--	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -xc - | tail -n 1)
-+	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -x c - | tail -n 1)
- 	printf "%02d%02d%02d\\n" $MAJOR $MINOR $PATCHLEVEL
- else
- 	printf "%02d%02d\\n" $MAJOR $MINOR
---- a/scripts/gcc-x86_32-has-stack-protector.sh
-+++ b/scripts/gcc-x86_32-has-stack-protector.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- 
--echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
-+echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
- if [ "$?" -eq "0" ] ; then
- 	echo y
- else
---- a/scripts/gcc-x86_64-has-stack-protector.sh
-+++ b/scripts/gcc-x86_64-has-stack-protector.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- 
--echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
-+echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
- if [ "$?" -eq "0" ] ; then
- 	echo y
- else
---- a/scripts/kconfig/check.sh
-+++ b/scripts/kconfig/check.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- # Needed for systems without gettext
--$* -xc -o /dev/null - > /dev/null 2>&1 << EOF
-+$* -x c -o /dev/null - > /dev/null 2>&1 << EOF
- #include <libintl.h>
- int main()
- {
---- a/scripts/kconfig/lxdialog/check-lxdialog.sh
-+++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
-@@ -38,7 +38,7 @@ trap "rm -f $tmp" 0 1 2 3 15
- 
- # Check if we can link to ncurses
- check() {
--        $cc -xc - -o $tmp 2>/dev/null <<'EOF'
-+        $cc -x c - -o $tmp 2>/dev/null <<'EOF'
- #include CURSES_LOC
- main() {}
- EOF
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -62,7 +62,7 @@ ifeq ($(ARCH),x86_64)
- 	ARCH := x86
- 	IS_X86_64 := 0
- 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
--		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
-+		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
- 	endif
- 	ifeq (${IS_X86_64}, 1)
- 		RAW_ARCH := x86_64
---- a/tools/power/cpupower/Makefile
-+++ b/tools/power/cpupower/Makefile
-@@ -111,7 +111,7 @@ GMO_FILES = ${shell for HLANG in ${LANGU
- export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
- 
- # check if compiler option is supported
--cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
-+cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -x c /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
- 
- # use '-Os' optimization if available, else use -O2
- OPTIMIZATION := $(call cc-supports,-Os,-O2)
 
 
