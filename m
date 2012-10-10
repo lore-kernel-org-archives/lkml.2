@@ -1,148 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab2JJP7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:59:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab2JJP7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:59:33 -0400
-Date: Wed, 10 Oct 2012 11:59:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
-Message-ID: <20121010155929.GA18733@redhat.com>
-References: <50750367.2070508@ce.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50750367.2070508@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756133Ab2JJNCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 09:02:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:51826 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755907Ab2JJNCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 09:02:04 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+9xfsKZrC92QLTR66IlrEXhIs/4D5jt9stPP8ufq
+	bmDR6jwiYY041i
+Message-ID: <1349874121.6992.80.camel@marge.simpson.net>
+Subject: Re: Netperf UDP_STREAM regression due to not sending IPIs in
+ ttwu_queue()
+From: Mike Galbraith <efault@gmx.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 10 Oct 2012 15:02:01 +0200
+In-Reply-To: <20121010122921.GX29125@suse.de>
+References: <20121002065143.GK29125@suse.de>
+	 <1349164176.7086.43.camel@marge.simpson.net>
+	 <20121002084501.GL29125@suse.de>
+	 <1349170282.7086.56.camel@marge.simpson.net>
+	 <20121002131421.GN29125@suse.de>
+	 <1349247011.4465.24.camel@marge.simpson.net>
+	 <1349251997.4465.42.camel@marge.simpson.net>
+	 <1349271001.4465.66.camel@marge.simpson.net>
+	 <20121010122921.GX29125@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 02:11:03PM +0900, Jun'ichi Nomura wrote:
-> I got system stall after the following warning with 3.6:
+On Wed, 2012-10-10 at 13:29 +0100, Mel Gorman wrote: 
+> On Wed, Oct 03, 2012 at 03:30:01PM +0200, Mike Galbraith wrote:
+
+> > nohz=off, pipe-test with one half pinned to CPU0, the other to CPU1.
+> > 
+> > procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
+> >  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+> > TTW_QUEUE
+> >  1  0      0 3039488  50948 444720    0    0     0     0 539724 1013417  1 15 84  0  0
+> >  1  0      0 3039488  50956 444720    0    0     0     1 540853 1015679  1 15 84  0  0
+> >  1  0      0 3039364  50956 444720    0    0     0     0 541630 1017239  1 16 83  0  0
+> >  2  0      0 3038992  50956 444720    0    0     0     0 335550 1096569  4 20 76  0  0
+> > NO_TTWU_QUEUE
+> >  1  0      0 3038992  50956 444720    0    0     0     0 33100 1318984  1 27 71  0  0
+> >  1  0      0 3038868  50956 444720    0    0     0     0 33100 1319126  2 27 71  0  0
+> >  1  0      0 3038868  50956 444720    0    0     0     0 33097 1317968  1 27 72  0  0
+> >  2  0      0 3038868  50964 444720    0    0     0     1 33104 1318558  2 27 71  0  0
+> > 
+> > We can switch faster with NO_TTWU_QUEUE, so we switch more, and that
+> > hurts netperf UDP_STREAM throughput.. somehow.  Fatter is better is not
+> > the way context switch happy benchmarks usually work.
+> > 
 > 
-> > WARNING: at /work/build/linux/block/blk-cgroup.h:250 blk_put_rl+0x4d/0x95()
-> > Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf ipt_REJEC
-> > T nf_conntrack_ipv4 nf_defrag_ipv4
-> > Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
-> > Call Trace:
-> >  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
-> >  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
-> >  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
-> >  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
-> >  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
-> >  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
-> >  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
-> >  [<ffffffff811d7728>] blk_end_request+0x10/0x12
-> >  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
-> >  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
-> >  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
-> >  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
-> >  [<ffffffff810915d5>] ? generic_smp_call_function_single_interrupt+0x9f/0xd7
-> >  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
-> >  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
-> >  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
-> >  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
-> >  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
-> >  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
-> >  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
-> >  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
-> >  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
-> >  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
-> >  [<ffffffff81017811>] cpu_idle+0xbb/0x114
-> >  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
-> >  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
-> >  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
-> >  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
-> >  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
-> >  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
-> 
-> blk_put_rl() does this:
->          if (rl->blkg && rl->blkg->blkcg != &blkcg_root)
->                  blkg_put(rl->blkg);
-> but if rl is q->root_rl, rl->blkg might be a bogus pointer
-> because blkcg_deactivate_policy() does not clear q->root_rl.blkg
-> after blkg_destroy_all().
-> 
-> Attached patch works for me.
+> Do we really switch more though?
 
-I think patch looks reasonable to me. Just that some more description
-would be nice. In fact, I will prefer some code comments too as I
-had to scratch my head for a while to figure out how did we reach here.
+Yup, pipe-test measures the full round trip, and agrees with vmstat.
+netperf TCP_RR agrees, tbench agrees... this STREAM thingy is the only
+high frequency switcher I've seen go all weird like this.
 
-So looks like we deactivated cfq policy (most likely changed IO
-scheduler). That will destroy all the block groups (disconnect blkg
-from list and drop policy reference on group). If there are any pending
-IOs, then group will not be destroyed till IO is completed. (Because
-of cfqq reference on blkg and because of request list reference on
-blkg).
+(hm, wonder how fast box can blast IPIs.. 1MHz?)
 
-Now, all request list take a refenrece on associated blkg except
-q->root_rl. This means when last IO finished, it must have dropped
-the reference on cfqq which will drop reference on associated cfqg/blkg
-and immediately root blkg will be destroyed. And now we will call
-blk_put_rl() and that will try to access root_rl>blkg which has
-been just freed as last IO completed.
+-Mike
 
-So problem here is that we don't take request list reference on
-root blkg and that creates all these corner cases.
-
-So clearing q->root_blkg and q->root_rl.blkg during policy activation
-makes sense. That means that from queue and request list point of view
-root blkg is gone and you can't get to it. (It might still be around for
-some more time due to pending IOs though).
-
-Some minor comments below.
-
-> 
-> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index f3b44a6..5015764 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -285,6 +285,9 @@ static void blkg_destroy_all(struct request_queue *q)
->  		blkg_destroy(blkg);
->  		spin_unlock(&blkcg->lock);
->  	}
-> +
-> +	q->root_blkg = NULL;
-> +	q->root_rl.blkg = NULL;
-
-I think some of the above description about we not taking root_rl
-reference on root group can go here so that next time I don't have
-to scratch my head for a long time.
-
->  }
->  
->  static void blkg_rcu_free(struct rcu_head *rcu_head)
-> @@ -333,7 +336,7 @@ struct request_list *__blk_queue_next_rl(struct request_list *rl,
->  
->  	/* walk to the next list_head, skip root blkcg */
->  	ent = ent->next;
-> -	if (ent == &q->root_blkg->q_node)
-> +	if (q->root_blkg && ent == &q->root_blkg->q_node)
-
-Can we fix it little differently. Little earlier in the code, we check for
-if q->blkg_list is empty, then all the groups are gone, and there are
-no more request lists hence and return NULL.
-
-Current code:
-        if (rl == &q->root_rl) {
-                ent = &q->blkg_list;
-
-Modified code:
-        if (rl == &q->root_rl) {
-                ent = &q->blkg_list;
-		/* There are no more block groups, hence no request lists */
-		if (list_empty(ent))
-			return NULL;
-	}
-
-Thanks
-Vivek
