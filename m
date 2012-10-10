@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2JJBvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 21:51:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6303 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab2JJBvU (ORCPT
+	id S1757371Ab2JJBwv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 21:52:51 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33589 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757350Ab2JJBws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 21:51:20 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=QyXUC8HyAAAA:8 a=_AK6OjIAExR561qcSJwA:9 a=PUjeQqilurYA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1349833878.24256.49.camel@gandalf.local.home>
-Subject: Re: [ANNOUNCE] 3.6.1-rt1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Tue, 09 Oct 2012 21:51:18 -0400
-In-Reply-To: <1349828517.24256.47.camel@gandalf.local.home>
-References: <alpine.LFD.2.02.1210091535140.10988@ionos>
-	 <1349806792.24256.34.camel@gandalf.local.home>
-	 <1349828517.24256.47.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Tue, 9 Oct 2012 21:52:48 -0400
+Message-ID: <1349833967.5068.1.camel@anime-power2>
+Subject: Re: ASpeed Technologies KMS VGA Driver error in log
+From: thekingmen <thekingmen@gmail.com>
+To: David Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 09 Oct 2012 21:52:47 -0400
+In-Reply-To: <1971642771.16545834.1346619658976.JavaMail.root@redhat.com>
+References: <1971642771.16545834.1346619658976.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 20:21 -0400, Steven Rostedt wrote:
-
-> > 0007-stomp-machine-deal-clever-with-stopper-lock.patch
+> ----- Original Message -----
+> > From: "Keven" <thekingmen@gmail.com>
+> > To: linux-kernel@vger.kernel.org, airlied@redhat.com
+> > Sent: Monday, 3 September, 2012 12:26:05 AM
+> > Subject: ASpeed Technologies KMS VGA Driver error in log
+> > 
+> > 1. ASpeed Technologies KMS VGA Driver error in log
+> > 2. Hi, I have an error message in my kernel log and I don't know if
+> > this
+> > need to be taken care of or this is a normal behaviour.
+> > 
+> > The component is [PATCH] drm: Initial KMS driver for AST (ASpeed
+> > Technologies) 2000 series
+> > This article is related to the new compoent.
+> > http://lists.freedesktop.org/archives/dri-devel/2012-April/021578.html
+> > 
+> > The code file should be
+> > Linux/drivers/gpu/drm/ast/ast_mode.c
+> > 
+> > The error I have is
+> > [    7.518793] [drm:ast_cursor_init] *ERROR* pinned cursor cache at 0
+> > 
 > 
-> With this one, things have changed quite a bit. I'll take a deeper look
-> at what you did and figure out how this applies to v3.0-rt.
+> Oh thanks for pointing this out, its just left over debug, I'll send a patch
+> to remove it.
+> 
+> Dave.
 
-It doesn't look like this patch is needed for v3.0-rt as the patch
-addresses the new stop_machine_from_inactive_cpu() API used by the mtrr
-code added by this commit:
-
-commit 192d8857427dd23707d5f0b86ca990c3af6f2d74
-Author: Suresh Siddha <suresh.b.siddha@intel.com>
-Date:   Thu Jun 23 11:19:29 2011 -0700
-
-    x86, mtrr: use stop_machine APIs for doing MTRR rendezvous
-
-
-This was added in 3.1 so the patch is still required for v3.2-rt.
-
--- Steve
-
+Hello, 
+I see no changes in the current kernel tree. Maybe you forgot about
+it ? 
 
