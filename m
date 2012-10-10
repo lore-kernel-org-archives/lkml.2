@@ -1,31 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab2JJS7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 14:59:34 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:46201 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421Ab2JJS7d (ORCPT
+	id S932342Ab2JJTB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:01:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62518 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757028Ab2JJTBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 14:59:33 -0400
-Message-ID: <5075C592.1070406@hp.com>
-Date: Wed, 10 Oct 2012 14:59:30 -0400
-From: Brian Haley <brian.haley@hp.com>
-Organization: HP Cloud Services
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+	Wed, 10 Oct 2012 15:01:55 -0400
 Subject: Re: [PATCH net-next?] pktgen: Use simpler test for non-zero ipv6
  address
-References: <1349894559.2035.12.camel@joe-AO722>
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
 In-Reply-To: <1349894559.2035.12.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <1349894559.2035.12.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Oct 2012 21:01:50 +0200
+Message-ID: <1349895710.21172.7235.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 02:42 PM, Joe Perches wrote:
+On Wed, 2012-10-10 at 11:42 -0700, Joe Perches wrote:
+> Reduces object size and should be slightly faster.
+> 
+> allyesconfig:
+> 
+> $ size net/core/pktgen.o*
+>    text	   data	    bss	    dec	    hex	filename
+>   52251	   4293	  11824	  68368	  10b10	net/core/pktgen.o.new
+>   52310	   4293	  11848	  68451	  10b63	net/core/pktgen.o.old
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
 > Found by looking for if (foo) ; tests with a perl regex
 > 
 > Yes Eric, it could be 2 compares instead of 4 on 64-bit
@@ -56,8 +66,14 @@ On 10/10/2012 02:42 PM, Joe Perches wrote:
 > +		    pkt_dev->min_in6_daddr.s6_addr32[2] |
 > +		    pkt_dev->min_in6_daddr.s6_addr32[3]) {
 >  			int i;
+>  
+>  			/* Only random destinations yet */
+> 
 
-Why not just use ipv6_addr_any() ?  It has an HAS_EFFICIENT_UNALIGNED_ACCESS
-check too.
 
--Brian
+
+What about ipv6_addr_any() ?
+
+anyway net-next is not opened yet
+
+
