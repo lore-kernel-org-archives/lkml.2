@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab2JJBkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 21:40:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35554 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238Ab2JJBkD convert rfc822-to-8bit (ORCPT
+	id S1757353Ab2JJBlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 21:41:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57561 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab2JJBlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 21:40:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,562,1344236400"; 
-   d="scan'208";a="203682142"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: "Brown, Len" <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "Tang, Feng" <feng.tang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: RE: [PATCH v5 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Thread-Topic: [PATCH v5 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Thread-Index: AQHNpccPIkmRrmh9DEqFt+BQNxKiaJewrgcAgAEWBLA=
-Date: Wed, 10 Oct 2012 01:40:00 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88B9C9E2@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1347453194.git.zetalog@gmail.com>
- <6a6a79654294bf4a3a9df1cf81880a44aeea4b44.1349749925.git.lv.zheng@intel.com>
- <20121009170220.GE25276@phenom.dumpdata.com>
-In-Reply-To: <20121009170220.GE25276@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Oct 2012 21:41:49 -0400
 MIME-Version: 1.0
+In-Reply-To: <1349813638-4617-8-git-send-email-arnd@arndb.de>
+References: <1349813638-4617-1-git-send-email-arnd@arndb.de> <1349813638-4617-8-git-send-email-arnd@arndb.de>
+From: Wan ZongShun <mcuos.com@gmail.com>
+Date: Wed, 10 Oct 2012 09:41:27 +0800
+Message-ID: <CAKT61h_4UqKN-cSPFL=P5W9pFzu219hTiMY9LQr_WtvbVCGMAg@mail.gmail.com>
+Subject: Re: [PATCH v2 7/8] video: mark nuc900fb_map_video_memory as __devinit
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +int __init acpi_early_console_keep(struct acpi_debug_port *info)
-> 
-> Why not make it 'bool' like the other (acpi_early_console_enabled)?
+2012/10/10 Arnd Bergmann <arnd@arndb.de>:
+> nuc900fb_map_video_memory is called by an devinit function
+> that may be called at run-time, but the function itself is
+> marked __init and will be discarded after boot.
+>
+> To avoid calling into a function that may have been overwritten,
+> mark nuc900fb_map_video_memory itself as __devinit.
+>
+> Without this patch, building nuc950_defconfig results in:
+>
+> WARNING: drivers/video/built-in.o(.devinit.text+0x26c): Section mismatch in reference from the function nuc900fb_probe() to the function .init.text:nuc900fb_map_video_memory()
+> The function __devinit nuc900fb_probe() references
+> a function __init nuc900fb_map_video_memory().
+> If nuc900fb_map_video_memory is only used by nuc900fb_probe then
+> annotate nuc900fb_map_video_memory with a matching annotation.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Wan ZongShun <mcuos.com@gmail.com>
+> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> Cc: linux-fbdev@vger.kernel.org
 
-NAK.
-"keep" is "int" in "setup_early_printk".
+Thanks for your patch.
+Acked-by: Wan ZongShun <mcuos.com@gmail.com>
 
-Best regards/Lv Zheng
+> ---
+>  drivers/video/nuc900fb.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/video/nuc900fb.c b/drivers/video/nuc900fb.c
+> index e10f551..b31b12b 100644
+> --- a/drivers/video/nuc900fb.c
+> +++ b/drivers/video/nuc900fb.c
+> @@ -387,7 +387,7 @@ static int nuc900fb_init_registers(struct fb_info *info)
+>   *    The buffer should be a non-cached, non-buffered, memory region
+>   *    to allow palette and pixel writes without flushing the cache.
+>   */
+> -static int __init nuc900fb_map_video_memory(struct fb_info *info)
+> +static int __devinit nuc900fb_map_video_memory(struct fb_info *info)
+>  {
+>         struct nuc900fb_info *fbi = info->par;
+>         dma_addr_t map_dma;
+> --
+> 1.7.10
+>
+
+
+
+-- 
+Wan ZongShun.
+www.mcuos.com
