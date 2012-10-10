@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab2JJXC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:02:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40562 "EHLO
+	id S932705Ab2JJXKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:10:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51849 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932534Ab2JJXCo (ORCPT
+	by vger.kernel.org with ESMTP id S932583Ab2JJXCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:02:44 -0400
-X-Sasl-enc: 73wbbymIGXfHIG5lb9Wpq+J7nJGz7GxLMH4tKZZLBx6q 1349910163
+	Wed, 10 Oct 2012 19:02:55 -0400
+X-Sasl-enc: cnoFiR9sVkR5Cy9GRe9Ji1OKagQfRlML/LJGshWbitxQ 1349910174
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 051/122] ext4: move_extent code cleanup
-Date: Thu, 11 Oct 2012 07:53:37 +0900
-Message-Id: <20121010225347.293889764@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [ 055/122] ext4: fix mtime update in nodelalloc mode
+Date: Thu, 11 Oct 2012 07:53:41 +0900
+Message-Id: <20121010225347.995548089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -27,342 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 03bd8b9b896c8e940f282f540e6b4de90d666b7c upstream.
+commit 041bbb6d369811e948ae01f3d00414264076be35 upstream.
 
-- Remove usless checks, because it is too late to check that inode != NULL
-  at the moment it was referenced several times.
-- Double lock routines looks very ugly and locking ordering relays on
-  order of i_ino, but other kernel code rely on order of pointers.
-  Let's make them simple and clean.
-- check that inodes belongs to the same SB as soon as possible.
+Commits 5e8830dc85d0 and 41c4d25f78c0 introduced a regression into
+v3.6-rc1 for ext4 in nodealloc mode, such that mtime updates would not
+take place for files modified via mmap if the page was already in the
+page cache.  This would also affect ext3 file systems mounted using
+the ext4 file system driver.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+The problem was that ext4_page_mkwrite() had a shortcut which would
+avoid calling __block_page_mkwrite() under some circumstances, and the
+above two commit transferred the responsibility of calling
+file_update_time() to __block_page_mkwrite --- which woudln't get
+called in some circumstances.
+
+Since __block_page_mkwrite() only has three callers,
+block_page_mkwrite(), ext4_page_mkwrite, and nilfs_page_mkwrite(), the
+best way to solve this is to move the responsibility for calling
+file_update_time() to its caller.
+
+This problem was found via xfstests #215 with a file system mounted
+with -o nodelalloc.
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/move_extent.c |  167 ++++++++++++++------------------------------------
- 1 file changed, 47 insertions(+), 120 deletions(-)
+ fs/buffer.c      |   13 +++++++------
+ fs/ext4/inode.c  |    1 +
+ fs/nilfs2/file.c |    1 +
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -141,55 +141,21 @@ mext_next_extent(struct inode *inode, st
- }
- 
- /**
-- * mext_check_null_inode - NULL check for two inodes
-- *
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-- */
--static int
--mext_check_null_inode(struct inode *inode1, struct inode *inode2,
--		      const char *function, unsigned int line)
--{
--	int ret = 0;
--
--	if (inode1 == NULL) {
--		__ext4_error(inode2->i_sb, function, line,
--			"Both inodes should not be NULL: "
--			"inode1 NULL inode2 %lu", inode2->i_ino);
--		ret = -EIO;
--	} else if (inode2 == NULL) {
--		__ext4_error(inode1->i_sb, function, line,
--			"Both inodes should not be NULL: "
--			"inode1 %lu inode2 NULL", inode1->i_ino);
--		ret = -EIO;
--	}
--	return ret;
--}
--
--/**
-  * double_down_write_data_sem - Acquire two inodes' write lock of i_data_sem
-  *
-- * @orig_inode:		original inode structure
-- * @donor_inode:	donor inode structure
-- * Acquire write lock of i_data_sem of the two inodes (orig and donor) by
-- * i_ino order.
-+ * Acquire write lock of i_data_sem of the two inodes
-  */
- static void
--double_down_write_data_sem(struct inode *orig_inode, struct inode *donor_inode)
-+double_down_write_data_sem(struct inode *first, struct inode *second)
- {
--	struct inode *first = orig_inode, *second = donor_inode;
-+	if (first < second) {
-+		down_write(&EXT4_I(first)->i_data_sem);
-+		down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
-+	} else {
-+		down_write(&EXT4_I(second)->i_data_sem);
-+		down_write_nested(&EXT4_I(first)->i_data_sem, SINGLE_DEPTH_NESTING);
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2312,12 +2312,6 @@ int __block_page_mkwrite(struct vm_area_
+ 	loff_t size;
+ 	int ret;
  
 -	/*
--	 * Use the inode number to provide the stable locking order instead
--	 * of its address, because the C language doesn't guarantee you can
--	 * compare pointers that don't come from the same array.
+-	 * Update file times before taking page lock. We may end up failing the
+-	 * fault so this update may be superfluous but who really cares...
 -	 */
--	if (donor_inode->i_ino < orig_inode->i_ino) {
--		first = donor_inode;
--		second = orig_inode;
- 	}
+-	file_update_time(vma->vm_file);
 -
--	down_write(&EXT4_I(first)->i_data_sem);
--	down_write_nested(&EXT4_I(second)->i_data_sem, SINGLE_DEPTH_NESTING);
- }
+ 	lock_page(page);
+ 	size = i_size_read(inode);
+ 	if ((page->mapping != inode->i_mapping) ||
+@@ -2355,6 +2349,13 @@ int block_page_mkwrite(struct vm_area_st
+ 	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
  
- /**
-@@ -969,14 +935,6 @@ mext_check_arguments(struct inode *orig_
- 		return -EINVAL;
- 	}
- 
--	/* Files should be in the same ext4 FS */
--	if (orig_inode->i_sb != donor_inode->i_sb) {
--		ext4_debug("ext4 move extent: The argument files "
--			"should be in same FS [ino:orig %lu, donor %lu]\n",
--			orig_inode->i_ino, donor_inode->i_ino);
--		return -EINVAL;
--	}
--
- 	/* Ext4 move extent supports only extent based file */
- 	if (!(ext4_test_inode_flag(orig_inode, EXT4_INODE_EXTENTS))) {
- 		ext4_debug("ext4 move extent: orig file is not extents "
-@@ -1072,35 +1030,19 @@ mext_check_arguments(struct inode *orig_
-  * @inode1:	the inode structure
-  * @inode2:	the inode structure
-  *
-- * Lock two inodes' i_mutex by i_ino order.
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-+ * Lock two inodes' i_mutex
-  */
--static int
-+static void
- mext_inode_double_lock(struct inode *inode1, struct inode *inode2)
- {
--	int ret = 0;
--
--	BUG_ON(inode1 == NULL && inode2 == NULL);
--
--	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
--	if (ret < 0)
--		goto out;
--
--	if (inode1 == inode2) {
--		mutex_lock(&inode1->i_mutex);
--		goto out;
--	}
--
--	if (inode1->i_ino < inode2->i_ino) {
-+	BUG_ON(inode1 == inode2);
-+	if (inode1 < inode2) {
- 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_PARENT);
- 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_CHILD);
- 	} else {
- 		mutex_lock_nested(&inode2->i_mutex, I_MUTEX_PARENT);
- 		mutex_lock_nested(&inode1->i_mutex, I_MUTEX_CHILD);
- 	}
--
--out:
--	return ret;
- }
- 
- /**
-@@ -1109,28 +1051,13 @@ out:
-  * @inode1:     the inode that is released first
-  * @inode2:     the inode that is released second
-  *
-- * If inode1 or inode2 is NULL, return -EIO. Otherwise, return 0.
-  */
- 
--static int
-+static void
- mext_inode_double_unlock(struct inode *inode1, struct inode *inode2)
- {
--	int ret = 0;
--
--	BUG_ON(inode1 == NULL && inode2 == NULL);
--
--	ret = mext_check_null_inode(inode1, inode2, __func__, __LINE__);
--	if (ret < 0)
--		goto out;
--
--	if (inode1)
--		mutex_unlock(&inode1->i_mutex);
--
--	if (inode2 && inode2 != inode1)
--		mutex_unlock(&inode2->i_mutex);
--
--out:
--	return ret;
-+	mutex_unlock(&inode1->i_mutex);
-+	mutex_unlock(&inode2->i_mutex);
- }
- 
- /**
-@@ -1187,16 +1114,23 @@ ext4_move_extents(struct file *o_filp, s
- 	ext4_lblk_t block_end, seq_start, add_blocks, file_end, seq_blocks = 0;
- 	ext4_lblk_t rest_blocks;
- 	pgoff_t orig_page_offset = 0, seq_end_page;
--	int ret1, ret2, depth, last_extent = 0;
-+	int ret, depth, last_extent = 0;
- 	int blocks_per_page = PAGE_CACHE_SIZE >> orig_inode->i_blkbits;
- 	int data_offset_in_page;
- 	int block_len_in_page;
- 	int uninit;
- 
--	/* orig and donor should be different file */
--	if (orig_inode->i_ino == donor_inode->i_ino) {
-+	if (orig_inode->i_sb != donor_inode->i_sb) {
-+		ext4_debug("ext4 move extent: The argument files "
-+			"should be in same FS [ino:orig %lu, donor %lu]\n",
-+			orig_inode->i_ino, donor_inode->i_ino);
-+		return -EINVAL;
-+	}
+ 	sb_start_pagefault(sb);
 +
-+	/* orig and donor should be different inodes */
-+	if (orig_inode == donor_inode) {
- 		ext4_debug("ext4 move extent: The argument files should not "
--			"be same file [ino:orig %lu, donor %lu]\n",
-+			"be same inode [ino:orig %lu, donor %lu]\n",
- 			orig_inode->i_ino, donor_inode->i_ino);
- 		return -EINVAL;
- 	}
-@@ -1210,16 +1144,14 @@ ext4_move_extents(struct file *o_filp, s
- 	}
++	/*
++	 * Update file times before taking page lock. We may end up failing the
++	 * fault so this update may be superfluous but who really cares...
++	 */
++	file_update_time(vma->vm_file);
++
+ 	ret = __block_page_mkwrite(vma, vmf, get_block);
+ 	sb_end_pagefault(sb);
+ 	return block_page_mkwrite_return(ret);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4787,6 +4787,7 @@ int ext4_page_mkwrite(struct vm_area_str
+ 	int retries = 0;
  
- 	/* Protect orig and donor inodes against a truncate */
--	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
--	if (ret1 < 0)
--		return ret1;
-+	mext_inode_double_lock(orig_inode, donor_inode);
- 
- 	/* Protect extent tree against block allocations via delalloc */
- 	double_down_write_data_sem(orig_inode, donor_inode);
- 	/* Check the filesystem environment whether move_extent can be done */
--	ret1 = mext_check_arguments(orig_inode, donor_inode, orig_start,
-+	ret = mext_check_arguments(orig_inode, donor_inode, orig_start,
- 				    donor_start, &len);
--	if (ret1)
-+	if (ret)
+ 	sb_start_pagefault(inode->i_sb);
++	file_update_time(vma->vm_file);
+ 	/* Delalloc case is easy... */
+ 	if (test_opt(inode->i_sb, DELALLOC) &&
+ 	    !ext4_should_journal_data(inode) &&
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -116,6 +116,7 @@ static int nilfs_page_mkwrite(struct vm_
+ 	if (unlikely(ret))
  		goto out;
  
- 	file_end = (i_size_read(orig_inode) - 1) >> orig_inode->i_blkbits;
-@@ -1227,13 +1159,13 @@ ext4_move_extents(struct file *o_filp, s
- 	if (file_end < block_end)
- 		len -= block_end - file_end;
- 
--	ret1 = get_ext_path(orig_inode, block_start, &orig_path);
--	if (ret1)
-+	ret = get_ext_path(orig_inode, block_start, &orig_path);
-+	if (ret)
- 		goto out;
- 
- 	/* Get path structure to check the hole */
--	ret1 = get_ext_path(orig_inode, block_start, &holecheck_path);
--	if (ret1)
-+	ret = get_ext_path(orig_inode, block_start, &holecheck_path);
-+	if (ret)
- 		goto out;
- 
- 	depth = ext_depth(orig_inode);
-@@ -1252,13 +1184,13 @@ ext4_move_extents(struct file *o_filp, s
- 		last_extent = mext_next_extent(orig_inode,
- 					holecheck_path, &ext_cur);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			goto out;
- 		}
- 		last_extent = mext_next_extent(orig_inode, orig_path,
- 							&ext_dummy);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			goto out;
- 		}
- 		seq_start = le32_to_cpu(ext_cur->ee_block);
-@@ -1272,7 +1204,7 @@ ext4_move_extents(struct file *o_filp, s
- 	if (le32_to_cpu(ext_cur->ee_block) > block_end) {
- 		ext4_debug("ext4 move extent: The specified range of file "
- 							"may be the hole\n");
--		ret1 = -EINVAL;
-+		ret = -EINVAL;
- 		goto out;
- 	}
- 
-@@ -1292,7 +1224,7 @@ ext4_move_extents(struct file *o_filp, s
- 		last_extent = mext_next_extent(orig_inode, holecheck_path,
- 						&ext_cur);
- 		if (last_extent < 0) {
--			ret1 = last_extent;
-+			ret = last_extent;
- 			break;
- 		}
- 		add_blocks = ext4_ext_get_actual_len(ext_cur);
-@@ -1349,18 +1281,18 @@ ext4_move_extents(struct file *o_filp, s
- 						orig_page_offset,
- 						data_offset_in_page,
- 						block_len_in_page, uninit,
--						&ret1);
-+						&ret);
- 
- 			/* Count how many blocks we have exchanged */
- 			*moved_len += block_len_in_page;
--			if (ret1 < 0)
-+			if (ret < 0)
- 				break;
- 			if (*moved_len > len) {
- 				EXT4_ERROR_INODE(orig_inode,
- 					"We replaced blocks too much! "
- 					"sum of replaced: %llu requested: %llu",
- 					*moved_len, len);
--				ret1 = -EIO;
-+				ret = -EIO;
- 				break;
- 			}
- 
-@@ -1374,22 +1306,22 @@ ext4_move_extents(struct file *o_filp, s
- 		}
- 
- 		double_down_write_data_sem(orig_inode, donor_inode);
--		if (ret1 < 0)
-+		if (ret < 0)
- 			break;
- 
- 		/* Decrease buffer counter */
- 		if (holecheck_path)
- 			ext4_ext_drop_refs(holecheck_path);
--		ret1 = get_ext_path(orig_inode, seq_start, &holecheck_path);
--		if (ret1)
-+		ret = get_ext_path(orig_inode, seq_start, &holecheck_path);
-+		if (ret)
- 			break;
- 		depth = holecheck_path->p_depth;
- 
- 		/* Decrease buffer counter */
- 		if (orig_path)
- 			ext4_ext_drop_refs(orig_path);
--		ret1 = get_ext_path(orig_inode, seq_start, &orig_path);
--		if (ret1)
-+		ret = get_ext_path(orig_inode, seq_start, &orig_path);
-+		if (ret)
- 			break;
- 
- 		ext_cur = holecheck_path[depth].p_ext;
-@@ -1412,12 +1344,7 @@ out:
- 		kfree(holecheck_path);
- 	}
- 	double_up_write_data_sem(orig_inode, donor_inode);
--	ret2 = mext_inode_double_unlock(orig_inode, donor_inode);
-+	mext_inode_double_unlock(orig_inode, donor_inode);
- 
--	if (ret1)
--		return ret1;
--	else if (ret2)
--		return ret2;
--
--	return 0;
-+	return ret;
- }
++	file_update_time(vma->vm_file);
+ 	ret = __block_page_mkwrite(vma, vmf, nilfs_get_block);
+ 	if (ret) {
+ 		nilfs_transaction_abort(inode->i_sb);
 
 
