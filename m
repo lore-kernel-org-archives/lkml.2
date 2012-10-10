@@ -1,151 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab2JJNiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 09:38:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19152 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756287Ab2JJNio (ORCPT
+	id S1755585Ab2JJQjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:39:17 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59673 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662Ab2JJQjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 09:38:44 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=YhW3d-U8H6kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=oHo0cinKwKoA:10 a=VwQbUJbxAAAA:8 a=00CX1lbMB8ObnoKVni4A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121010133843.078036683@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 10 Oct 2012 09:38:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 4/6] rt: rwsem/rwlock: lockdep annotations
-References: <20121010133801.331863565@goodmis.org>
-Content-Disposition: inline; filename=0004-rt-rwsem-rwlock-lockdep-annotations.patch
+	Wed, 10 Oct 2012 12:39:14 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: mcgrof@qca.qualcomm.com
+Cc: jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
+        senthilb@qca.qualcomm.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH V3] ath/ath9k/ar9003_eeprom.c: Remove semicolon after if
+Date: Wed, 10 Oct 2012 18:38:17 +0200
+Message-Id: <1349887097-24980-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
+References: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+This patch remove a semicolon after if(...) that is preventing the
+error check to work correctly. Removing this semicolon will change the
+code behavior, but this is intended.
 
-rwlocks and rwsems on RT do not allow multiple readers. Annotate the
-lockdep acquire functions accordingly.
+The semantic patch that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+// <smpl>
+@r1@
+position p;
+@@
+if (...);@p
+
+@script:python@
+p0 << r1.p;
+@@
+// Emacs org-mode output
+cocci.print_main("", p0)
+cocci.print_secs("", p0)
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 ---
- kernel/rt.c |   46 +++++++++++++++++++++++++---------------------
- 1 file changed, 25 insertions(+), 21 deletions(-)
+NOTE: This patch changes the semantics.
 
-diff --git a/kernel/rt.c b/kernel/rt.c
-index 092d6b3..aa10504 100644
---- a/kernel/rt.c
-+++ b/kernel/rt.c
-@@ -216,15 +216,17 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
- 	 * write locked.
- 	 */
- 	migrate_disable();
--	if (rt_mutex_owner(lock) != current)
-+	if (rt_mutex_owner(lock) != current) {
- 		ret = rt_mutex_trylock(lock);
--	else if (!rwlock->read_depth)
-+		if (ret)
-+			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
-+	} else if (!rwlock->read_depth) {
- 		ret = 0;
-+	}
- 
--	if (ret) {
-+	if (ret)
- 		rwlock->read_depth++;
--		rwlock_acquire_read(&rwlock->dep_map, 0, 1, _RET_IP_);
--	} else
-+	else
- 		migrate_enable();
- 
- 	return ret;
-@@ -242,13 +244,13 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
- {
- 	struct rt_mutex *lock = &rwlock->lock;
- 
--	rwlock_acquire_read(&rwlock->dep_map, 0, 0, _RET_IP_);
--
- 	/*
- 	 * recursive read locks succeed when current owns the lock
- 	 */
--	if (rt_mutex_owner(lock) != current)
-+	if (rt_mutex_owner(lock) != current) {
-+		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
- 		__rt_spin_lock(lock);
-+	}
- 	rwlock->read_depth++;
- }
- 
-@@ -264,11 +266,11 @@ EXPORT_SYMBOL(rt_write_unlock);
- 
- void __lockfunc rt_read_unlock(rwlock_t *rwlock)
- {
--	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
--
- 	/* Release the lock only when read_depth is down to 0 */
--	if (--rwlock->read_depth == 0)
-+	if (--rwlock->read_depth == 0) {
-+		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
- 		__rt_spin_unlock(&rwlock->lock);
-+	}
- }
- EXPORT_SYMBOL(rt_read_unlock);
- 
-@@ -315,9 +317,10 @@ EXPORT_SYMBOL(rt_up_write);
- 
- void  rt_up_read(struct rw_semaphore *rwsem)
- {
--	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
--	if (--rwsem->read_depth == 0)
-+	if (--rwsem->read_depth == 0) {
-+		rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
- 		rt_mutex_unlock(&rwsem->lock);
-+	}
- }
- EXPORT_SYMBOL(rt_up_read);
- 
-@@ -366,15 +369,16 @@ int  rt_down_read_trylock(struct rw_semaphore *rwsem)
- 	 * but not when read_depth == 0 which means that the rwsem is
- 	 * write locked.
- 	 */
--	if (rt_mutex_owner(lock) != current)
-+	if (rt_mutex_owner(lock) != current) {
- 		ret = rt_mutex_trylock(&rwsem->lock);
--	else if (!rwsem->read_depth)
-+		if (ret)
-+			rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
-+	} else if (!rwsem->read_depth) {
- 		ret = 0;
-+	}
- 
--	if (ret) {
-+	if (ret)
- 		rwsem->read_depth++;
--		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
--	}
- 	return ret;
- }
- EXPORT_SYMBOL(rt_down_read_trylock);
-@@ -383,10 +387,10 @@ static void __rt_down_read(struct rw_semaphore *rwsem, int subclass)
- {
- 	struct rt_mutex *lock = &rwsem->lock;
- 
--	rwsem_acquire_read(&rwsem->dep_map, subclass, 0, _RET_IP_);
--
--	if (rt_mutex_owner(lock) != current)
-+	if (rt_mutex_owner(lock) != current) {
-+		rwsem_acquire(&rwsem->dep_map, subclass, 0, _RET_IP_);
- 		rt_mutex_lock(&rwsem->lock);
-+	}
- 	rwsem->read_depth++;
- }
- 
+Changes from V1:
+Commit message
+Added a note about semantics change
+
+Changes from V2:
+Commit message
+
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+index 5bbe505..189aeb2 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -2989,7 +2989,7 @@ static u32 ath9k_hw_ar9300_get_eeprom(struct ath_hw *ah,
+ 	case EEP_PAPRD:
+ 		if (AR_SREV_9462(ah))
+ 			return false;
+-		if (!ah->config.enable_paprd);
++		if (!ah->config.enable_paprd)
+ 			return false;
+ 		return !!(pBase->featureEnable & BIT(5));
+ 	case EEP_CHAIN_MASK_REDUCE:
 -- 
-1.7.10.4
-
+1.7.11.4
 
