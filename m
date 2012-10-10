@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab2JJJD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 05:03:56 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55665 "EHLO mx2.parallels.com"
+	id S1752960Ab2JJJEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 05:04:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14421 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395Ab2JJJDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 05:03:52 -0400
-Message-ID: <507539EB.90006@parallels.com>
-Date: Wed, 10 Oct 2012 13:03:39 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, <devel@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 08/14] res_counter: return amount of charges after
- res_counter_uncharge
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-9-git-send-email-glommer@parallels.com> <20121009150845.GC7655@dhcp22.suse.cz> <50743F71.7090409@parallels.com> <20121009153506.GD7655@dhcp22.suse.cz>
-In-Reply-To: <20121009153506.GD7655@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752410Ab2JJJEJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 05:04:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,564,1344236400"; 
+   d="scan'208";a="224934257"
+Message-ID: <1349859841.10584.122.camel@smile>
+Subject: Re: [PATCH 1/4] dmaengine: dw_dmac: use helper macro
+ module_platform_driver()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, balbi@ti.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Date: Wed, 10 Oct 2012 12:04:01 +0300
+In-Reply-To: <1349178121-9105-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1349178121-9105-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 07:35 PM, Michal Hocko wrote:
-> On Tue 09-10-12 19:14:57, Glauber Costa wrote:
->> On 10/09/2012 07:08 PM, Michal Hocko wrote:
->>> As I have already mentioned in my previous feedback this is cetainly not
->>> atomic as you the lock protects only one group in the hierarchy. How is
->>> the return value from this function supposed to be used?
->>
->> So, I tried to make that clearer in the updated changelog.
->>
->> Only the value of the base memcg (the one passed to the function) is
->> returned, and it is atomic, in the sense that it has the same semantics
->> as the atomic variables: If 2 threads uncharge 4k each from a 8 k
->> counter, a subsequent read can return 0 for both. The return value here
->> will guarantee that only one sees the drop to 0.
->>
->> This is used in the patch "kmem_accounting lifecycle management" to be
->> sure that only one process will call mem_cgroup_put() in the memcg
->> structure.
+On Tue, 2012-10-02 at 14:41 +0300, Andy Shevchenko wrote: 
+> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 > 
-> Yes, you are using res_counter_uncharge and its semantic makes sense.
-> I was refering to res_counter_uncharge_until (you removed that context
-> from my reply) because that one can race resulting that nobody sees 0
-> even though that parents get down to 0 as a result:
-> 	 A
-> 	 |
-> 	 B
-> 	/ \
->       C(x)  D(y)
+> Since v3.2 we have nice macro to define the platform driver's init and exit
+> calls. This patch simplifies the dw_dmac driver by using that macro.
+
+Actually we can't do this. It will break initialization of some other
+drivers.
+
+
 > 
-> D and C uncharge everything.
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/dma/dw_dmac.c |   13 ++-----------
+>  1 file changed, 2 insertions(+), 11 deletions(-)
 > 
-> CPU0				CPU1
-> ret += uncharge(D) [0]		ret += uncharge(C) [0]
-> ret += uncharge(B) [x-from C]
-> 				ret += uncharge(B) [0]
-> 				ret += uncharge(A) [y-from D]
-> ret += uncharge(A) [0]
-> 
-> ret == x			ret == y
-> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index c4b0eb3..0b88ced 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1700,6 +1700,7 @@ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
+>  #endif
+>  
+>  static struct platform_driver dw_driver = {
+> +	.probe		= dw_probe,
+>  	.remove		= __devexit_p(dw_remove),
+>  	.shutdown	= dw_shutdown,
+>  	.driver = {
+> @@ -1709,17 +1710,7 @@ static struct platform_driver dw_driver = {
+>  	},
+>  };
+>  
+> -static int __init dw_init(void)
+> -{
+> -	return platform_driver_probe(&dw_driver, dw_probe);
+> -}
+> -subsys_initcall(dw_init);
+> -
+> -static void __exit dw_exit(void)
+> -{
+> -	platform_driver_unregister(&dw_driver);
+> -}
+> -module_exit(dw_exit);
+> +module_platform_driver(dw_driver);
+>  
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_DESCRIPTION("Synopsys DesignWare DMA Controller driver");
 
-Sorry Michal, I didn't realize you were talking about
-res_counter_uncharge_until.
-
-I don't really need res_counter_uncharge_until to return anything, so I
-can just remove that if you prefer, keeping just the main
-res_counter_uncharge.
-
-However, I still can't make sense of your concern.
-
-The return value will return the value of the counter passed as a
-parameter to the function:
-
-                r = res_counter_uncharge_locked(c, val);
-                if (c == counter)
-                        ret = r;
-
-
-So when you call res_counter_uncharge_until(D, whatever, x), you will
-see zero here as a result, and when you call
-res_counter_uncharge_until(D, whatever, y) you will see 0 here as well.
-
-A doesn't get involved with that.
-
-
-
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
