@@ -1,149 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab2JJOS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:18:28 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33059 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab2JJOS0 (ORCPT
+	id S932366Ab2JJQTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:19:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41929 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab2JJQT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:18:26 -0400
-Date: Wed, 10 Oct 2012 10:06:36 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Brown, Len" <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "Tang, Feng" <feng.tang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH v5 1/2] ACPI: Add early console framework for DBGP/DBG2.
-Message-ID: <20121010140635.GE4005@phenom.dumpdata.com>
-References: <cover.1347453194.git.zetalog@gmail.com>
- <6a6a79654294bf4a3a9df1cf81880a44aeea4b44.1349749925.git.lv.zheng@intel.com>
- <20121009170220.GE25276@phenom.dumpdata.com>
- <1AE640813FDE7649BE1B193DEA596E88B9C9BE@SHSMSX101.ccr.corp.intel.com>
+	Wed, 10 Oct 2012 12:19:27 -0400
+Message-ID: <5075A00B.2040509@wwwdotorg.org>
+Date: Wed, 10 Oct 2012 10:19:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88B9C9BE@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: David Gibson <david@gibson.dropbear.id.au>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Scott Wood <scottwood@freescale.com>
+Subject: Re: dtc: import latest upstream dtc
+References: <1349827466.26044.16@snotra> <ADE80D65-5170-4A8E-8D90-29161F8DB3BB@bsdimp.com> <20121010072401.GA28467@truffula.fritz.box> <50759152.9050407@wwwdotorg.org> <5075954B.8030008@gmail.com>
+In-Reply-To: <5075954B.8030008@gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 01:31:54AM +0000, Zheng, Lv wrote:
-> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > > Reviewed-by: Len Brown <len.brown@intel.com>
-> > > Reviewed-by: Rui Zhang <rui.zhang@intel.com>
-> > > Reviewed-by: Ying Huang <ying.huang@intel.com>
-> > > Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-> > Please don't include that unless I (or other folks looking at your code) say
-> > explicitly 'Acked' or 'Reviewed-by'
+On 10/10/2012 09:33 AM, Rob Herring wrote:
+> On 10/10/2012 10:16 AM, Stephen Warren wrote:
+>> On 10/10/2012 01:24 AM, David Gibson wrote:
+>>> On Tue, Oct 09, 2012 at 10:43:50PM -0600, Warner Losh wrote:
+>>>>
+>>>> On Oct 9, 2012, at 6:04 PM, Scott Wood wrote:
+>>>>
+>>>>> On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
+>>>>>> On 10/9/2012 11:16 AM, Stephen Warren wrote:
+>>>>>>> On 10/01/2012 12:39 PM, Jon Loeliger wrote:
+>>>>>>>>>
+>>>>>>>>> What more do you think needs discussion re: dtc+cpp?
+>>>>>>>>
+>>>>>>>> How not to abuse the ever-loving shit out of it? :-)
+>>>>>>>
+>>>>>>> Perhaps we can just handle this through the regular patch review
+>>>>>>> process; I think it may be difficult to define and agree upon exactly
+>>>>>>> what "abuse" means ahead of time, but it's probably going to be easy
+>>>>>>> enough to recognize it when one sees it?
+>>>>>> One of the ways it could get out of hand would be via "include
+>>>>>> dependency hell".  People will be tempted to reuse existing .h files
+>>>>>> containing pin definitions, which, if history is a guide, will end up
+>>>>>> depending on all sorts of other .h files.
+>>>>>> Another problem I often face with symbolic names is the difficulty of
+>>>>>> figuring out what the numerical values really are (for debugging),
+>>>>>> especially when .h files are in different subtrees from the files that
+>>>>>> use the definitions, and when they use multiple macro levels and fancy
+>>>>>> features like concatenation.  Sometimes I think it's clearer just to
+>>>>>> write the number and use a comment to say what it is.
+>>>>>
+>>>>> Both comments apply just as well to ordinary C code, and I don't think anyone would seriously suggest just using comments instead for C code.
+>>>>
+>>>> .h files include both structs and defines, which are fine for
+>>>> ordinary C code, but problematic in this context.
+>>>
+>>> Right, cpp should be invoked with similar options to the way it's done
+>>> for asm files which have the same problem.  I'm not sure if the
+>>> current patch does so.
+>>
+>> That's probably a reasonable idea, although I imagined that people would
+>> actually split out the portions of any header file they wanted to use
+>> with dtc, so that any headers included by *.dts would only include
+>> #defines. Those headers could be used by both dtc and other .h files (or
+>> .c files).
 > 
-> ACK.
-> I'll remove these names and resend.  Thanks.
-> 
-> > > +#define DEBUG
-> > That should not be the default case.
-> 
-> RFC.
+> Used by what other files? kernel files? We ultimately want to split out
+> dts files from the kernel, so whatever we add needs to be self
+> contained. I don't see this as a huge issue though because the whole
+> point of the DT data is to move that information out of the kernel. If
+> it is needed in both places, then something is wrong.
 
-The title of the patch does not have RFC anymore.. Please put it back
-then.
+One example is the IDs of the GPIOs, e.g.:
 
-> If we do not add ignore_loglevel to the command line, the acpi earlycon will be mute just as what you want.
-> Do you really want this to be:
-> #undef DEBUG
-> If we do this, all pr_debug invocations in this file will be empty in compilation stage and are there any other means for us to view the output of ACPI earlycon without recompiling?
+#define TEGRA_PIN_VI_GP6_PA0            _GPIO(0)
+#define TEGRA_PIN_UART3_CTS_N_PA1       _GPIO(1)
+#define TEGRA_PIN_DAP2_FS_PA2           _GPIO(2)
+#define TEGRA_PIN_DAP2_SCLK_PA3         _GPIO(3)
 
-Correct. By the time you remove the 'RFC' part this should be the
-default.
-> 
-> > > +DECLARE_BITMAP(acpi_early_flags, MAX_ACPI_DBG_PORTS);
-> > static?
-> 
-> ACK.
-> I'll do the modification.
-> 
-> > > +int acpi_early_enabled;
-> > __read_mostly and you could also make it a bool.
-> 
-> NAK.
-> I think this variable will be read only once and written up to 16 times so __read_mostly is not required.
-> I'll check and add __init and __initdata for this patch.
-> 
-> > > +	set_bit(port, acpi_early_flags);
-> > > +	if (keep)
-> > > +		set_bit(port+MAX_ACPI_DBG_PORTS, acpi_early_flags);
-> > Huh? The bitmap is up to MAX_ACPI_DB_PORTS, but here you offset it past
-> > that? Why?
-> 
-> ACK.
-> It's my mistake.  The size of the bitmap should be "MAX_ACPI_DBG_PORTS<<1 or MAX_ACPI_DBG_PORTS*2".
-> The reason is:
-> I think MAX_ACPI_DBG_PORTS=4 is enough in this case.
-> Since the systems running Linux are 32/64 bit architectures, using 2 bitmaps will be waste.
-> As the systems are at least 32 bit, the MAX_ACPI_DB_PORTS is defined as 16 to make full use of the bitmap.
+Those defines are useful to both the .dts files (so named constants can
+be used) and the pinctrl driver. By using the same header file, we
+guarantee that the .dts files and pinctrl driver use the exact same
+naming for the pins; the pin naming/numbering being defined by the DT
+binding more than anything else.
 
-> 
-> > > +	if (!acpi_early_console_enabled(info->port_index))
-> > > +		return 0;
-> > Not -ENODEV?
-> 
-> NAK.
-> This is to support "MULTIPLE DBG2 debug ports".
-> 
-> ** MULTIPLE DBGP table versions and MULTIPLE DBG2 debug ports support **
-> The whole patch takes ENODEV as the semantics of "table not exist or table version not supported" in PROBE/START stage so that we can obtain the ability of probing Microsoft's future tables in the order from DBGn, ..., DBG2, DBGP.
-> We should not return here as users may pass the following command line:
-> earlyprintk=acpi2,keep
-> to let the first 2 debug ports mute, but take the 3rd as a Linux earlycon.
+It'd be similarly useful to share GPIO or interrupt flag definitions,
+etc. etc.
 
-OK? How will this function get called three times then? I thought it
-would just get called once?
-
-> 
-> > > +	while (((unsigned long)entry) + sizeof(struct acpi_dbg2_device) <
-> > > +	       tbl_end) {
-> > Just make it one line. Ignore the 80 characters limit here.
-> 
-> ACK.
-> I'll try to implement this within 80 characters.
-
-Well, you don't have to - not for this.
-> 
-> > > +		if (!max_entries || count++ < max_entries) {
-> > How about you just make this 'count'
-> > > +			pr_debug("early: DBG2 PROBE - console %d(%04x:%04x).\n",
-> > > +				 count-1,
-> > > +				 entry->port_type, entry->port_subtype);
-> > > +			devinfo.port_index = (u8)count-1;
-> > Then you don't this 'count -1'
-> > and then do
-> > 		count++ here?
-> 
-> ACK.
-> It's my mistake, the previous version uses port_index=1 as the first debug port, but this version takes 0 as the first port.
-> 
-> > > +			acpi_early_console_start(&devinfo);
-> > no check of the return value to see whether you should return immediately?
-> 
-> NAK.
-> See " MULTIPLE DBGP tables and MULTIPLE DBG2 debug ports support" above.
-> 
-> > > +	acpi_early_console_start(&devinfo);
-> > how about 'return acpi_early_console_start(..)'
-> 
-> NAK.
-> See " MULTIPLE DBGP tables and MULTIPLE DBG2 debug ports support" above.
-> 
-> > > +	if (acpi_table_parse(ACPI_SIG_DBG2, acpi_parse_dbg2) != 0)
-> > > +		acpi_table_parse(ACPI_SIG_DBGP, acpi_parse_dbgp);
-> 
-> RFC.
-> This is to support "MULTIPLE DBGP table versions".
-> 
-> 
+We could do something like we do for dtc today, where there's an
+external repository for *.dts (and required *.h), yet those *.h are
+duplicated into the kernel tree as needed by drivers.
