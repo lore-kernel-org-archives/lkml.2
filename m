@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab2JJRHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:07:54 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34549 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab2JJRHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:07:46 -0400
+	id S1753701Ab2JJPyH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:54:07 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:44780 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2JJPyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:54:04 -0400
+Date: Wed, 10 Oct 2012 17:53:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 3/3] Convert mce_disabled
+Message-ID: <20121010155348.GE25878@aftab.osrc.amd.com>
+References: <1349878801-15956-1-git-send-email-bp@amd64.org>
+ <1349878801-15956-4-git-send-email-bp@amd64.org>
+ <3908561D78D1C84285E8C5FCA982C28F19D49FC7@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1210101733220.2689@kaball.uk.xensource.com>
-References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
-	<1349827115-16600-7-git-send-email-yinghai@kernel.org>
-	<alpine.DEB.2.02.1210101733220.2689@kaball.uk.xensource.com>
-Date: Wed, 10 Oct 2012 10:07:44 -0700
-X-Google-Sender-Auth: _GRnsRWRj7CXHaE7VVoY2lPrbbA
-Message-ID: <CAE9FiQVuU=KfMM0Q16Lddz8ZL_wzg5PLkWWK=6navQdC_j0KbA@mail.gmail.com>
-Subject: Re: [PATCH 6/7] x86, mm: setup page table from top-down
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D49FC7@ORSMSX108.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 9:38 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
->> -     if (pfn >= pgt_buf_top)
->> -             panic("alloc_low_page: ran out of memory");
->> +     if ((pgt_buf_end + 1) >= pgt_buf_top) {
->> +             unsigned long ret;
->> +             if (min_pfn_mapped >= max_pfn_mapped)
->> +                     panic("alloc_low_page: ran out of memory");
->> +             ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
->> +                                     max_pfn_mapped << PAGE_SHIFT,
->> +                                     PAGE_SIZE, PAGE_SIZE);
->> +             if (!ret)
->> +                     panic("alloc_low_page: can not alloc memory");
->> +             memblock_reserve(ret, PAGE_SIZE);
->> +             pfn = ret >> PAGE_SHIFT;
->
-> This cannot be right: you are allocating another page to be used as
-> pagetable page, outside the range pgt_buf_start-pgt_buf_top.
->
-> When that page is going to be hooked into the live pagetable, the kernel
-> is going to panic on Xen because the page wasn't marked RO.
->
-> If you want to do that you need to tell the Xen subsystem of the new
-> page. pagetable_reserve is not the right call, we need a new one (see
-> past emails).
+On Wed, Oct 10, 2012 at 03:46:39PM +0000, Luck, Tony wrote:
+> struct mca_config {
+> -	u64 dont_log_ce	: 1,
+> -#define MCA_CFG_DONT_LOG_CE	0
+> -	    __resv1	: 63;
+> +	u64	dont_log_ce	: 1,
+> +#define MCA_CFG_DONT_LOG_CE	  0
+> +		mca_disabled	: 1,
+> +#define MCA_CFG_MCA_DISABLED	  1
+> +	    __resv1	: 62;
+>  };
+> 
+> If we do head in this direction - I don't think it is useful to change just one bit
+> on each commit. We should batch in larger groups.
 
-ok, will change that interface and call in from alloc_low_page.
+Sure, this is just sanity-checking-the-approach patchset, trying to make
+the intent as understandable as possible. The real thing should do a
+couple of conversions in one patch, of course.
 
-how about the pages from BRK, do we need to call xen hooks to mark it as RO?
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
