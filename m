@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab2JJFUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:20:15 -0400
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:44872 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2JJFUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:20:09 -0400
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 01:20:09 EDT
-Message-ID: <50750367.2070508@ce.jp.nec.com>
-Date: Wed, 10 Oct 2012 14:11:03 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1752843Ab2JJFet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:34:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28430 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740Ab2JJFer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 01:34:47 -0400
+X-IronPort-AV: E=Sophos;i="4.80,564,1344182400"; 
+   d="scan'208";a="5973647"
+Message-ID: <5075098E.9090808@cn.fujitsu.com>
+Date: Wed, 10 Oct 2012 13:37:18 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: vgoyal@redhat.com
-Subject: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        Eric Dumazet <edumazet@google.com>
+Subject: [PATCH V2] task_work: avoid unneeded cmpxchg() in task_work_run()
+References: <50729A78.9090601@cn.fujitsu.com>	 <20121008123815.GA847@redhat.com> <1349780697.7880.14.camel@twins>
+In-Reply-To: <1349780697.7880.14.camel@twins>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/10 13:34:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/10 13:34:36,
+	Serialize complete at 2012/10/10 13:34:36
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got system stall after the following warning with 3.6:
+On 10/09/2012 07:04 PM, Peter Zijlstra wrote:
+> On Mon, 2012-10-08 at 14:38 +0200, Oleg Nesterov wrote:
+>> But the code looks more complex, and the only advantage is that
+>> non-exiting task does xchg() instead of cmpxchg(). Not sure this
+>> worth the trouble, in this case task_work_run() will likey run
+>> the callbacks (the caller checks ->task_works != NULL), I do not
+>> think this can add any noticeable speedup. 
+> 
+> Yeah, I agree, the patch doesn't seem worth the trouble. It makes tricky
+> code unreadable at best.
+> 
 
-> WARNING: at /work/build/linux/block/blk-cgroup.h:250 blk_put_rl+0x4d/0x95()
-> Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf ipt_REJEC
-> T nf_conntrack_ipv4 nf_defrag_ipv4
-> Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
-> Call Trace:
->  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
->  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
->  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
->  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
->  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
->  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
->  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
->  [<ffffffff811d7728>] blk_end_request+0x10/0x12
->  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
->  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
->  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
->  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
->  [<ffffffff810915d5>] ? generic_smp_call_function_single_interrupt+0x9f/0xd7
->  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
->  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
->  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
->  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
->  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
->  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
->  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
->  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
->  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
->  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
->  [<ffffffff81017811>] cpu_idle+0xbb/0x114
->  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
->  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
->  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
->  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
->  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
->  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
+To gain better readability, we need to move work_exited things out
+from task_work_run() too.
 
-blk_put_rl() does this:
-         if (rl->blkg && rl->blkg->blkcg != &blkcg_root)
-                 blkg_put(rl->blkg);
-but if rl is q->root_rl, rl->blkg might be a bogus pointer
-because blkcg_deactivate_policy() does not clear q->root_rl.blkg
-after blkg_destroy_all().
+Thanks,
+Lai
 
-Attached patch works for me.
+Subject: task_work: avoid unneeded cmpxchg() in task_work_run()
 
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+We only require cmpxchg()&retry when task is exiting.
+xchg() is enough in other cases like original code in ac3d0da8.
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f3b44a6..5015764 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -285,6 +285,9 @@ static void blkg_destroy_all(struct request_queue *q)
- 		blkg_destroy(blkg);
- 		spin_unlock(&blkcg->lock);
+So we use xchg() for task_work_run() and move the logic
+of exit_task_work() out from task_work_run().
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+
+diff --git a/include/linux/task_work.h b/include/linux/task_work.h
+index ca5a1cf..1e686a5 100644
+--- a/include/linux/task_work.h
++++ b/include/linux/task_work.h
+@@ -15,10 +15,6 @@ init_task_work(struct callback_head *twork, task_work_func_t func)
+ int task_work_add(struct task_struct *task, struct callback_head *twork, bool);
+ struct callback_head *task_work_cancel(struct task_struct *, task_work_func_t);
+ void task_work_run(void);
+-
+-static inline void exit_task_work(struct task_struct *task)
+-{
+-	task_work_run();
+-}
++void exit_task_work(struct task_struct *task);
+ 
+ #endif	/* _LINUX_TASK_WORK_H */
+diff --git a/kernel/task_work.c b/kernel/task_work.c
+index 65bd3c9..87ef3b7 100644
+--- a/kernel/task_work.c
++++ b/kernel/task_work.c
+@@ -52,16 +52,7 @@ void task_work_run(void)
+ 	struct callback_head *work, *head, *next;
+ 
+ 	for (;;) {
+-		/*
+-		 * work->func() can do task_work_add(), do not set
+-		 * work_exited unless the list is empty.
+-		 */
+-		do {
+-			work = ACCESS_ONCE(task->task_works);
+-			head = !work && (task->flags & PF_EXITING) ?
+-				&work_exited : NULL;
+-		} while (cmpxchg(&task->task_works, work, head) != work);
+-
++		work = xchg(&task->task_works, NULL);
+ 		if (!work)
+ 			break;
+ 		/*
+@@ -90,3 +81,17 @@ void task_work_run(void)
+ 		} while (work);
  	}
-+
-+	q->root_blkg = NULL;
-+	q->root_rl.blkg = NULL;
  }
- 
- static void blkg_rcu_free(struct rcu_head *rcu_head)
-@@ -333,7 +336,7 @@ struct request_list *__blk_queue_next_rl(struct request_list *rl,
- 
- 	/* walk to the next list_head, skip root blkcg */
- 	ent = ent->next;
--	if (ent == &q->root_blkg->q_node)
-+	if (q->root_blkg && ent == &q->root_blkg->q_node)
- 		ent = ent->next;
- 	if (ent == &q->blkg_list)
- 		return NULL;
++
++void exit_task_work(struct task_struct *task)
++{
++	for (;;) {
++		/*
++		 * work->func() can do task_work_add(), do not set
++		 * work_exited unless the list is empty.
++		 */
++		if (unlikely(task->task_works))
++			task_work_run();
++		if (cmpxchg(&task->task_works, NULL, &work_exited) == NULL)
++			break;
++	}
++}
