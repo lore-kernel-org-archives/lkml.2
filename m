@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab2JJXLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:11:49 -0400
-Received: from surya.ncl.res.in ([59.163.216.12]:49098 "EHLO surya.ncl.res.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932301Ab2JJXLn convert rfc822-to-8bit (ORCPT
+	id S932587Ab2JJXMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:12:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46535 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932522Ab2JJXCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:11:43 -0400
-X-Greylist: delayed 23722 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Oct 2012 19:11:42 EDT
-From: "Shashi K. Shukla" <sk.shukla@ncl.res.in>
-Subject: IMPORTANT MESSAGE.
-Thread-Topic: IMPORTANT MESSAGE.
-Thread-Index: Ac2nBA8cxnIhLutpSZKkMeCF3yXMIg==
-Date: Wed, 10 Oct 2012 16:26:54 +0000
-Message-ID: <EA1C7A0F0376154198474EE83ABD676B0CB051C0@mailsrv01.ncl.res.in>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [115.241.73.46]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 10 Oct 2012 19:02:33 -0400
+X-Sasl-enc: zD3hOam4NuQBXdZjnKGdWlqCeheAN/9FZQ5sJJIlhPAh 1349910152
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 047/122] ext4: dont copy non-existent gdt blocks when resizing
+Date: Thu, 11 Oct 2012 07:53:33 +0900
+Message-Id: <20121010225346.595311917@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
+References: <20121010225337.989799482@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.6-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+
+commit 6df935ad2fced9033ab52078825fcaf6365f34b7 upstream.
+
+The resize code was copying blocks at the beginning of each block
+group in order to copy the superblock and block group descriptor table
+(gdt) blocks.  This was, unfortunately, being done even for block
+groups that did not have super blocks or gdt blocks.  This is a
+complete waste of perfectly good I/O bandwidth, to skip writing those
+blocks for sparse bg's.
+
+Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/resize.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -456,6 +456,9 @@ static int setup_new_flex_group_blocks(s
+ 		gdblocks = ext4_bg_num_gdb(sb, group);
+ 		start = ext4_group_first_block_no(sb, group);
+ 
++		if (!ext4_bg_has_super(sb, group))
++			goto handle_itb;
++
+ 		/* Copy all of the GDT blocks into the backup in this group */
+ 		for (j = 0, block = start + 1; j < gdblocks; j++, block++) {
+ 			struct buffer_head *gdb;
+@@ -498,6 +501,7 @@ static int setup_new_flex_group_blocks(s
+ 				goto out;
+ 		}
+ 
++handle_itb:
+ 		/* Initialize group tables of the grop @group */
+ 		if (!(bg_flags[i] & EXT4_BG_INODE_ZEROED))
+ 			goto handle_bb;
 
 
-
-Attention Email User:
-
-An Attempt has been made to login from a new computer. For the
-security of your account, we are poised to open a query and you
-will be having problems in sending and receiving mails Until You Re-Validate.
-
-Kindly verify your login details by responding to this email We are upgrading our Email
-system to enable us reduce the occurrence of Spam.
-
-Please Click the link Below or copy paste to your browser To Validate Your
-Mailbox.
-
-http://www.cclt.org/cclt/forms/use/filter/form1.html
-
-Do not ignore this message to avoid termination of your webmail account.
-
-Webmaster Customer Care.
-
-________________________________
-
-Disclaimer:
-
-This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
