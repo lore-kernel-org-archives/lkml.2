@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab2JKANq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:13:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34954 "EHLO
+	id S1758189Ab2JKANx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:13:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43518 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932305Ab2JKANh (ORCPT
+	by vger.kernel.org with ESMTP id S1758172Ab2JKANr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:37 -0400
-X-Sasl-enc: CT+rIRf45j3YfzPSdbpDZikvxHwPT4Ri3/IYFNlx3mZK 1349914416
+	Wed, 10 Oct 2012 20:13:47 -0400
+X-Sasl-enc: ISVhWJ7IeM0l8WPvEmWenOEdOTlUmIfKFF5yCzDY1wTx 1349914425
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 087/133] ALSA: aloop - add locking to timer access
-Date: Thu, 11 Oct 2012 07:51:53 +0900
-Message-Id: <20121010224910.159167923@linuxfoundation.org>
+        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 082/133] mm: fix invalidate_complete_page2() lock ordering
+Date: Thu, 11 Oct 2012 07:51:48 +0900
+Message-Id: <20121010224909.231773540@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,69 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
+commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
 
-When the loopback timer handler is running, calling del_timer() (for STOP
-trigger) will not wait for the handler to complete before deactivating the
-timer. The timer gets rescheduled in the handler as usual. Then a subsequent
-START trigger will try to start the timer using add_timer() with a timer pending
-leading to a kernel panic.
+In fuzzing with trinity, lockdep protested "possible irq lock inversion
+dependency detected" when isolate_lru_page() reenabled interrupts while
+still holding the supposedly irq-safe tree_lock:
 
-Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
-this.
+invalidate_inode_pages2
+  invalidate_complete_page2
+    spin_lock_irq(&mapping->tree_lock)
+    clear_page_mlock
+      isolate_lru_page
+        spin_unlock_irq(&zone->lru_lock)
 
-Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+isolate_lru_page() is correct to enable interrupts unconditionally:
+invalidate_complete_page2() is incorrect to call clear_page_mlock() while
+holding tree_lock, which is supposed to nest inside lru_lock.
+
+Both truncate_complete_page() and invalidate_complete_page() call
+clear_page_mlock() before taking tree_lock to remove page from radix_tree.
+ I guess invalidate_complete_page2() preferred to test PageDirty (again)
+under tree_lock before committing to the munlock; but since the page has
+already been unmapped, its state is already somewhat inconsistent, and no
+worse if clear_page_mlock() moved up.
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ying Han <yinghan@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/drivers/aloop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/truncate.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -120,6 +120,7 @@ struct loopback_pcm {
- 	unsigned int last_drift;
- 	unsigned long last_jiffies;
- 	struct timer_list timer;
-+	spinlock_t timer_lock;
- };
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -394,11 +394,12 @@ invalidate_complete_page2(struct address
+ 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
+ 		return 0;
  
- static struct platform_device *devices[SNDRV_CARDS];
-@@ -170,6 +171,7 @@ static void loopback_timer_start(struct
- 	unsigned long tick;
- 	unsigned int rate_shift = get_rate_shift(dpcm);
++	clear_page_mlock(page);
++
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (PageDirty(page))
+ 		goto failed;
  
-+	spin_lock(&dpcm->timer_lock);
- 	if (rate_shift != dpcm->pcm_rate_shift) {
- 		dpcm->pcm_rate_shift = rate_shift;
- 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
-@@ -182,12 +184,15 @@ static void loopback_timer_start(struct
- 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
- 	dpcm->timer.expires = jiffies + tick;
- 	add_timer(&dpcm->timer);
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
- {
-+	spin_lock(&dpcm->timer_lock);
- 	del_timer(&dpcm->timer);
- 	dpcm->timer.expires = 0;
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
-@@ -667,6 +672,7 @@ static int loopback_open(struct snd_pcm_
- 	dpcm->substream = substream;
- 	setup_timer(&dpcm->timer, loopback_timer_function,
- 		    (unsigned long)dpcm);
-+	spin_lock_init(&dpcm->timer_lock);
- 
- 	cable = loopback->cables[substream->number][dev];
- 	if (!cable) {
+-	clear_page_mlock(page);
+ 	BUG_ON(page_has_private(page));
+ 	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
 
 
