@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab2JKAgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:36:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38447 "EHLO
+	id S933203Ab2JKAg5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:36:57 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44297 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933118Ab2JKAXP (ORCPT
+	by vger.kernel.org with ESMTP id S932887Ab2JKAXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:23:15 -0400
-X-Sasl-enc: vS839qZ2g7bG+egrwwsQ7z7QPdxlYCh8hTCp/tQM7HGk 1349914994
+	Wed, 10 Oct 2012 20:23:06 -0400
+X-Sasl-enc: 2XkOnVZo/+TAjBOmrPuCH0TiJgUoca4qTmqKFTz/kfQo 1349914985
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gregory Lee Bartholomew <gregory.lee.bartholomew@gmail.com>,
-        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 121/122] cifs: reinstate the forcegid option
-Date: Thu, 11 Oct 2012 07:54:47 +0900
-Message-Id: <20121010225359.738905775@linuxfoundation.org>
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 119/122] JFFS2: fix unmount regression
+Date: Thu, 11 Oct 2012 07:54:45 +0900
+Message-Id: <20121010225359.380201682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,54 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 72bd481f860f0125c810bb43d878ce5f9c060c58 upstream.
+commit a445f784ae5558a3da680aa6b39ed53c95a551c1 upstream.
 
-Apparently this was lost when we converted to the standard option
-parser in 8830d7e07a5e38bc47650a7554b7c1cfd49902bf
+This patch fixes regression introduced by
+"8bdc81c jffs2: get rid of jffs2_sync_super". We submit a delayed work in order
+to make sure the write-buffer is synchronized at some point. But we do not
+flush it when we unmount, which causes an oops when we unmount the file-system
+and then the delayed work is executed.
 
-Reported-by: Gregory Lee Bartholomew <gregory.lee.bartholomew@gmail.com>
-Cc: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This patch fixes the issue by adding a "cancel_delayed_work_sync()" infocation
+in the '->sync_fs()' handler. This will make sure the delayed work is canceled
+on sync, unmount and re-mount. And because VFS always callse 'sync_fs()' before
+unmounting or remounting, this fixes the issue.
+
+Reported-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/jffs2/super.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -67,6 +67,7 @@ enum {
- 	/* Mount options that take no arguments */
- 	Opt_user_xattr, Opt_nouser_xattr,
- 	Opt_forceuid, Opt_noforceuid,
-+	Opt_forcegid, Opt_noforcegid,
- 	Opt_noblocksend, Opt_noautotune,
- 	Opt_hard, Opt_soft, Opt_perm, Opt_noperm,
- 	Opt_mapchars, Opt_nomapchars, Opt_sfu,
-@@ -118,6 +119,8 @@ static const match_table_t cifs_mount_op
- 	{ Opt_nouser_xattr, "nouser_xattr" },
- 	{ Opt_forceuid, "forceuid" },
- 	{ Opt_noforceuid, "noforceuid" },
-+	{ Opt_forcegid, "forcegid" },
-+	{ Opt_noforcegid, "noforcegid" },
- 	{ Opt_noblocksend, "noblocksend" },
- 	{ Opt_noautotune, "noautotune" },
- 	{ Opt_hard, "hard" },
-@@ -1190,6 +1193,12 @@ cifs_parse_mount_options(const char *mou
- 		case Opt_noforceuid:
- 			override_uid = 0;
- 			break;
-+		case Opt_forcegid:
-+			override_gid = 1;
-+			break;
-+		case Opt_noforcegid:
-+			override_gid = 0;
-+			break;
- 		case Opt_noblocksend:
- 			vol->noblocksnd = 1;
- 			break;
+--- a/fs/jffs2/super.c
++++ b/fs/jffs2/super.c
+@@ -100,6 +100,10 @@ static int jffs2_sync_fs(struct super_bl
+ {
+ 	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
+ 
++#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
++	cancel_delayed_work_sync(&c->wbuf_dwork);
++#endif
++
+ 	mutex_lock(&c->alloc_sem);
+ 	jffs2_flush_wbuf_pad(c);
+ 	mutex_unlock(&c->alloc_sem);
 
 
