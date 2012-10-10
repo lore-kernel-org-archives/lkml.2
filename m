@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2JJXIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:08:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33965 "EHLO
+	id S932665Ab2JJXI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:08:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43108 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932616Ab2JJXDR (ORCPT
+	by vger.kernel.org with ESMTP id S932606Ab2JJXDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:17 -0400
-X-Sasl-enc: FWLgquWDS+P5w7jDILVeP9NVX1uOZOMiBGC3kbbwJX+7 1349910196
+	Wed, 10 Oct 2012 19:03:14 -0400
+X-Sasl-enc: PR3JDGjtNUWu1F2To7Bwc7qsKA5NY6ZWTgJ2kDkrZIvL 1349910193
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [ 063/122] MIPS: ath79: use correct fractional dividers for {CPU,DDR}_PLL on AR934x
-Date: Thu, 11 Oct 2012 07:53:49 +0900
-Message-Id: <20121010225349.499192961@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 057/122] ASoC: wm5110: Adding missing volume update bits
+Date: Thu, 11 Oct 2012 07:53:43 +0900
+Message-Id: <20121010225348.342934193@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,56 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 65fc7f9957c52ad4fdf4ee5dfe3a75aa0a633d39 upstream.
+commit ae60503741991a36ed6b2a8f53b249b2a72af52b upstream.
 
-The current dividers in the code are wrong and this
-leads to broken CPU frequency calculation on boards
-where the fractional part is used.
+The volume update bits were being set on all but one input and one output.
 
-For example, if the SoC is running from a 40MHz
-reference clock, refdiv=1, nint=14, outdiv=0 and
-nfrac=31 the real frequency is 579.375MHz but the
-current code calculates 569.687MHz instead.
-
-Because the system time is indirectly related to
-the CPU frequency the broken computation causes
-drift in the system time.
-
-The correct divider is 2^6 for the CPU PLL and 2^10
-for the DDR PLL. Use the correct values to fix the
-issue.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/4305/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/ath79/clock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm5110.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/mips/ath79/clock.c
-+++ b/arch/mips/ath79/clock.c
-@@ -189,7 +189,7 @@ static void __init ar934x_clocks_init(vo
- 	       AR934X_PLL_CPU_CONFIG_NFRAC_MASK;
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -869,6 +869,8 @@ static unsigned int wm5110_digital_vu[]
+ 	ARIZONA_ADC_DIGITAL_VOLUME_2R,
+ 	ARIZONA_ADC_DIGITAL_VOLUME_3L,
+ 	ARIZONA_ADC_DIGITAL_VOLUME_3R,
++	ARIZONA_ADC_DIGITAL_VOLUME_4L,
++	ARIZONA_ADC_DIGITAL_VOLUME_4R,
  
- 	cpu_pll = nint * ath79_ref_clk.rate / ref_div;
--	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 6));
-+	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 6));
- 	cpu_pll /= (1 << out_div);
+ 	ARIZONA_DAC_DIGITAL_VOLUME_1L,
+ 	ARIZONA_DAC_DIGITAL_VOLUME_1R,
+@@ -880,6 +882,8 @@ static unsigned int wm5110_digital_vu[]
+ 	ARIZONA_DAC_DIGITAL_VOLUME_4R,
+ 	ARIZONA_DAC_DIGITAL_VOLUME_5L,
+ 	ARIZONA_DAC_DIGITAL_VOLUME_5R,
++	ARIZONA_DAC_DIGITAL_VOLUME_6L,
++	ARIZONA_DAC_DIGITAL_VOLUME_6R,
+ };
  
- 	pll = ath79_pll_rr(AR934X_PLL_DDR_CONFIG_REG);
-@@ -203,7 +203,7 @@ static void __init ar934x_clocks_init(vo
- 	       AR934X_PLL_DDR_CONFIG_NFRAC_MASK;
- 
- 	ddr_pll = nint * ath79_ref_clk.rate / ref_div;
--	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 10));
-+	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 10));
- 	ddr_pll /= (1 << out_div);
- 
- 	clk_ctrl = ath79_pll_rr(AR934X_PLL_CPU_DDR_CLK_CTRL_REG);
+ static struct snd_soc_codec_driver soc_codec_dev_wm5110 = {
 
 
