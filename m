@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2JJW5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:57:09 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:32825 "EHLO
+	id S1758018Ab2JJW5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:57:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59400 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757544Ab2JJW4B (ORCPT
+	by vger.kernel.org with ESMTP id S1757809Ab2JJW4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:56:01 -0400
-X-Sasl-enc: 7lsUP6xU4wbc8BgdFXYtnupGOCBWu+kVgTLqf9Z1OdT6 1349909760
+	Wed, 10 Oct 2012 18:56:04 -0400
+X-Sasl-enc: DUgUrqEdODu9IoA1MU//lnJ9ZVEcMLON55oUxPx6Gwhq 1349909763
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 070/133] ext4: avoid duplicate writes of the backup bg descriptor blocks
-Date: Thu, 11 Oct 2012 07:51:36 +0900
-Message-Id: <20121010224907.097554641@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 071/133] ext4: fix potential deadlock in ext4_nonda_switch()
+Date: Thu, 11 Oct 2012 07:51:37 +0900
+Message-Id: <20121010224907.270961530@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,43 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 2ebd1704ded88a8ae29b5f3998b13959c715c4be upstream.
+commit 00d4e7362ed01987183e9528295de3213031309c upstream.
 
-The resize code was needlessly writing the backup block group
-descriptor blocks multiple times (once per block group) during an
-online resize.
+In ext4_nonda_switch(), if the file system is getting full we used to
+call writeback_inodes_sb_if_idle().  The problem is that we can be
+holding i_mutex already, and this causes a potential deadlock when
+writeback_inodes_sb_if_idle() when it tries to take s_umount.  (See
+lockdep output below).
 
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+As it turns out we don't need need to hold s_umount; the fact that we
+are in the middle of the write(2) system call will keep the superblock
+pinned.  Unfortunately writeback_inodes_sb() checks to make sure
+s_umount is taken, and the VFS uses a different mechanism for making
+sure the file system doesn't get unmounted out from under us.  The
+simplest way of dealing with this is to just simply grab s_umount
+using a trylock, and skip kicking the writeback flusher thread in the
+very unlikely case that we can't take a read lock on s_umount without
+blocking.
+
+Also, we now check the cirteria for kicking the writeback thread
+before we decide to whether to fall back to non-delayed writeback, so
+if there are any outstanding delayed allocation writes, we try to get
+them resolved as soon as possible.
+
+   [ INFO: possible circular locking dependency detected ]
+   3.6.0-rc1-00042-gce894ca #367 Not tainted
+   -------------------------------------------------------
+   dd/8298 is trying to acquire lock:
+    (&type->s_umount_key#18){++++..}, at: [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
+
+   but task is already holding lock:
+    (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
+
+   which lock already depends on the new lock.
+
+   2 locks held by dd/8298:
+    #0:  (sb_writers#2){.+.+.+}, at: [<c01ddcc5>] generic_file_aio_write+0x56/0xd3
+    #1:  (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
+
+   stack backtrace:
+   Pid: 8298, comm: dd Not tainted 3.6.0-rc1-00042-gce894ca #367
+   Call Trace:
+    [<c015b79c>] ? console_unlock+0x345/0x372
+    [<c06d62a1>] print_circular_bug+0x190/0x19d
+    [<c019906c>] __lock_acquire+0x86d/0xb6c
+    [<c01999db>] ? mark_held_locks+0x5c/0x7b
+    [<c0199724>] lock_acquire+0x66/0xb9
+    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
+    [<c06db935>] down_read+0x28/0x58
+    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
+    [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
+    [<c026f3b2>] ext4_nonda_switch+0xe1/0xf4
+    [<c0271ece>] ext4_da_write_begin+0x27/0x193
+    [<c01dcdb0>] generic_file_buffered_write+0xc8/0x1bb
+    [<c01ddc47>] __generic_file_aio_write+0x1dd/0x205
+    [<c01ddce7>] generic_file_aio_write+0x78/0xd3
+    [<c026d336>] ext4_file_write+0x480/0x4a6
+    [<c0198c1d>] ? __lock_acquire+0x41e/0xb6c
+    [<c0180944>] ? sched_clock_cpu+0x11a/0x13e
+    [<c01967e9>] ? trace_hardirqs_off+0xb/0xd
+    [<c018099f>] ? local_clock+0x37/0x4e
+    [<c0209f2c>] do_sync_write+0x67/0x9d
+    [<c0209ec5>] ? wait_on_retry_sync_kiocb+0x44/0x44
+    [<c020a7b9>] vfs_write+0x7b/0xe6
+    [<c020a9a6>] sys_write+0x3b/0x64
+    [<c06dd4bd>] syscall_call+0x7/0xb
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/ext4/inode.c   |   17 ++++++++++-------
+ fs/fs-writeback.c |    1 +
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1358,13 +1358,15 @@ exit_journal:
- 		err = err2;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2453,6 +2453,16 @@ static int ext4_nonda_switch(struct supe
+ 	free_blocks  = EXT4_C2B(sbi,
+ 		percpu_counter_read_positive(&sbi->s_freeclusters_counter));
+ 	dirty_blocks = percpu_counter_read_positive(&sbi->s_dirtyclusters_counter);
++	/*
++	 * Start pushing delalloc when 1/2 of free blocks are dirty.
++	 */
++	if (dirty_blocks && (free_blocks < 2 * dirty_blocks) &&
++	    !writeback_in_progress(sb->s_bdi) &&
++	    down_read_trylock(&sb->s_umount)) {
++		writeback_inodes_sb(sb, WB_REASON_FS_FREE_SPACE);
++		up_read(&sb->s_umount);
++	}
++
+ 	if (2 * free_blocks < 3 * dirty_blocks ||
+ 		free_blocks < (dirty_blocks + EXT4_FREECLUSTERS_WATERMARK)) {
+ 		/*
+@@ -2461,13 +2471,6 @@ static int ext4_nonda_switch(struct supe
+ 		 */
+ 		return 1;
+ 	}
+-	/*
+-	 * Even if we don't switch but are nearing capacity,
+-	 * start pushing delalloc when 1/2 of free blocks are dirty.
+-	 */
+-	if (free_blocks < 2 * dirty_blocks)
+-		writeback_inodes_sb_if_idle(sb, WB_REASON_FS_FREE_SPACE);
+-
+ 	return 0;
+ }
  
- 	if (!err) {
--		int i;
-+		int gdb_num = group / EXT4_DESC_PER_BLOCK(sb);
-+		int gdb_num_end = ((group + flex_gd->count - 1) /
-+				   EXT4_DESC_PER_BLOCK(sb));
-+
- 		update_backups(sb, sbi->s_sbh->b_blocknr, (char *)es,
- 			       sizeof(struct ext4_super_block));
--		for (i = 0; i < flex_gd->count; i++, group++) {
-+		for (; gdb_num <= gdb_num_end; gdb_num++) {
- 			struct buffer_head *gdb_bh;
--			int gdb_num;
--			gdb_num = group / EXT4_BLOCKS_PER_GROUP(sb);
-+
- 			gdb_bh = sbi->s_group_desc[gdb_num];
- 			update_backups(sb, gdb_bh->b_blocknr, gdb_bh->b_data,
- 				       gdb_bh->b_size);
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -68,6 +68,7 @@ int writeback_in_progress(struct backing
+ {
+ 	return test_bit(BDI_writeback_running, &bdi->state);
+ }
++EXPORT_SYMBOL(writeback_in_progress);
+ 
+ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+ {
 
 
