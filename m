@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157Ab2JKANm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:13:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54819 "EHLO
+	id S1757825Ab2JKAm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:42:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42669 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932319Ab2JKANd (ORCPT
+	by vger.kernel.org with ESMTP id S1758159Ab2JKANm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:33 -0400
-X-Sasl-enc: E+eWZTydwYHGufdCVSqeSZ672GUcxyahUgd+wJfsTBU0 1349914412
+	Wed, 10 Oct 2012 20:13:42 -0400
+X-Sasl-enc: jRMDfX/818M3AoGTSdu87+KqUqzj9+kqMZlVvB3vKWyq 1349914421
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Kaechele <felix@fetzig.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 086/133] ALSA: hda - Add inverted internal mic quirk for Lenovo IdeaPad U310
-Date: Thu, 11 Oct 2012 07:51:52 +0900
-Message-Id: <20121010224909.981249113@linuxfoundation.org>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 088/133] ALSA: hda/realtek - Fix detection of ALC271X codec
+Date: Thu, 11 Oct 2012 07:51:54 +0900
+Message-Id: <20121010224910.331814930@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -27,30 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Kaechele <felix@fetzig.org>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit e4db0952e542090c605fd41d31d761f1b4624f4a upstream.
+commit 9f720bb9409ea5923361fbd3fdbc505ca36cf012 upstream.
 
-The Lenovo IdeaPad U310 has an internal mic where the right channel
-is phase inverted.
+In commit af741c1 ("ALSA: hda/realtek - Call alc_auto_parse_customize_define()
+always after fixup"), alc_auto_parse_customize_define was moved after
+detection of ALC271X.
 
-Signed-off-by: Felix Kaechele <felix@fetzig.org>
+The problem is that detection of ALC271X relies on spec->cdefine.platform_type,
+and it's set on alc_auto_parse_customize_define.
+
+Move the alc_auto_parse_customize_define and its required fixup setup
+before the block doing the ALC271X and other codec setup.
+
+BugLink: https://bugs.launchpad.net/bugs/1006690
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Reviewed-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4467,6 +4467,7 @@ static const struct snd_pci_quirk cxt506
- 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
- 	{}
- };
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6145,6 +6145,12 @@ static int patch_alc269(struct hda_codec
+ 
+ 	spec = codec->spec;
+ 
++	alc_pick_fixup(codec, alc269_fixup_models,
++		       alc269_fixup_tbl, alc269_fixups);
++	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
++
++	alc_auto_parse_customize_define(codec);
++
+ 	if (codec->vendor_id == 0x10ec0269) {
+ 		spec->codec_variant = ALC269_TYPE_ALC269VA;
+ 		switch (alc_get_coef0(codec) & 0x00f0) {
+@@ -6172,12 +6178,6 @@ static int patch_alc269(struct hda_codec
+ 		alc269_fill_coef(codec);
+ 	}
+ 
+-	alc_pick_fixup(codec, alc269_fixup_models,
+-		       alc269_fixup_tbl, alc269_fixups);
+-	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
+-
+-	alc_auto_parse_customize_define(codec);
+-
+ 	/* automatic parse from the BIOS config */
+ 	err = alc269_parse_auto_config(codec);
+ 	if (err < 0)
 
 
