@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2JKAV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:21:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38351 "EHLO
+	id S932977Ab2JKAVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:21:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43699 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932949Ab2JKAPx (ORCPT
+	by vger.kernel.org with ESMTP id S932916Ab2JKAPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:53 -0400
-X-Sasl-enc: nC2mQtrmnvf8tdUu4QvX3Yeglxyg5MO/7nmNG1dgM+nn 1349914551
+	Wed, 10 Oct 2012 20:15:33 -0400
+X-Sasl-enc: dRQZCdxMFG9KUiltXPrQcjTE+PUhff4ghMnpCeEq4Zsk 1349914532
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Josh Boyer <jwboyer@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 116/133] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
-Date: Thu, 11 Oct 2012 07:52:22 +0900
-Message-Id: <20121010224915.405044316@linuxfoundation.org>
+Subject: [ 112/133] revert "mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy linkages"
+Date: Thu, 11 Oct 2012 07:52:18 +0900
+Message-Id: <20121010224914.680370000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,54 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 
-commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
+commit 8d34694c1abf29df1f3c7317936b7e3e2e308d9b upstream.
 
-Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
-related damage v3") introduced a potential memory corruption.
-shmem_alloc_page() uses a pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
+Commit 05f144a0d5c2 ("mm: mempolicy: Let vma_merge and vma_split handle
+vma->vm_policy linkages") removed vma->vm_policy updates code but it is
+the purpose of mbind_range().  Now, mbind_range() is virtually a no-op
+and while it does not allow memory corruption it is not the right fix.
+This patch is a revert.
 
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has
-MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
-alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
-reference count and frees the policy prematurely.
-
+[mgorman@suse.de: Edited changelog]
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Christoph Lameter <cl@linux.com>
 Cc: Josh Boyer <jwboyer@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ mm/mempolicy.c |   41 ++++++++++++++++++++++++-----------------
+ 1 file changed, 24 insertions(+), 17 deletions(-)
 
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -1552,8 +1552,18 @@ struct mempolicy *get_vma_policy(struct
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
+@@ -607,6 +607,27 @@ check_range(struct mm_struct *mm, unsign
+ 	return first;
+ }
+ 
++/* Apply policy to a single VMA */
++static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
++{
++	int err = 0;
++	struct mempolicy *old = vma->vm_policy;
 +
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
-+		}
++	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
++		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
++		 vma->vm_ops, vma->vm_file,
++		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
++
++	if (vma->vm_ops && vma->vm_ops->set_policy)
++		err = vma->vm_ops->set_policy(vma, new);
++	if (!err) {
++		mpol_get(new);
++		vma->vm_policy = new;
++		mpol_put(old);
++	}
++	return err;
++}
++
+ /* Step 2: apply policy to a range and do splits. */
+ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		       unsigned long end, struct mempolicy *new_pol)
+@@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct
+ 			if (err)
+ 				goto out;
+ 		}
+-
+-		/*
+-		 * Apply policy to a single VMA. The reference counting of
+-		 * policy for vma_policy linkages has already been handled by
+-		 * vma_merge and split_vma as necessary. If this is a shared
+-		 * policy then ->set_policy will increment the reference count
+-		 * for an sp node.
+-		 */
+-		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+-			vma->vm_start, vma->vm_end, vma->vm_pgoff,
+-			vma->vm_ops, vma->vm_file,
+-			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+-		if (vma->vm_ops && vma->vm_ops->set_policy) {
+-			err = vma->vm_ops->set_policy(vma, new_pol);
+-			if (err)
+-				goto out;
+-		}
++		err = policy_vma(vma, new_pol);
++		if (err)
++			goto out;
  	}
- 	if (!pol)
- 		pol = &default_policy;
+ 
+  out:
 
 
