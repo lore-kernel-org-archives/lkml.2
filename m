@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2JJE6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 00:58:20 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5746 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2JJE6Q (ORCPT
+	id S1752639Ab2JJFEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 01:04:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:45972 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab2JJFEF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 00:58:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 09 Oct 2012 21:55:58 -0700
-Message-ID: <50750051.10701@nvidia.com>
-Date: Wed, 10 Oct 2012 10:27:53 +0530
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	Wed, 10 Oct 2012 01:04:05 -0400
+Message-ID: <507501AD.7030202@parallels.com>
+Date: Wed, 10 Oct 2012 09:03:41 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@deeprootsystems.com>
-CC: "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] rtc: kconfig: fix RTC_INTF defaults connected to RTC_CLASS
-References: <1349827784-8646-1-git-send-email-khilman@deeprootsystems.com>
-In-Reply-To: <1349827784-8646-1-git-send-email-khilman@deeprootsystems.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting
+ local transports
+References: <20121008105437.18668.99905.stgit@localhost.localdomain> <20121009193506.GA19680@fieldses.org> <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com> <87txu3bdnj.fsf@xmission.com> <20121009223139.GA25826@fieldses.org> <87bogb1cvl.fsf@xmission.com>
+In-Reply-To: <87bogb1cvl.fsf@xmission.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 October 2012 05:39 AM, Kevin Hilman wrote:
-> From: Kevin Hilman <khilman@ti.com>
+10.10.2012 02:47, Eric W. Biederman пишет:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
 >
-> commit 6b8029fab64164b5895d58d23229b75c82e3a6fc (rtc: kconfig: remove
-> unnecessary dependencies) removed various 'depends on RTC_CLASS'
-> dependencies but also removed a few 'default RTC_CLASS' statements,
-> which actually changed default behavior.
+>> On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
+>>> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
+>>>
+>>>> On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
+>>>>> Cc'ing Eric since I seem to recall he suggested doing it this way?
+>>> Yes.  On second look setting fs->root won't work. We need to change fs.
+>>> The problem is that by default all kernel threads share fs so changing
+>>> fs->root will have non-local consequences.
+>> Oh, huh.  And we can't "unshare" it somehow?
+> I don't fully understand how nfs uses kernel threads and work queues.
+> My general understanding is work queues reuse their kernel threads
+> between different users.  So it is mostly a don't pollute your
+> environment thing.  If there was a dedicated kernel thread for each
+> environment this would be trivial.
+
+One kernel thread per environment is exactly what we are trying to avoid 
+if possible.
+And the reason why we don't want to do this is that it's really looks 
+like overkill.
+
+> What I was suggesting here is changing task->fs instead of
+> task->fs.root.  That should just require task_lock().
 >
-> This resulted in the various RTC interfaces (sysfs, proc, dev) all
-> being disabled by default, even when RTC_CLASS is enabled:
+>> Or, previously you suggested:
+>>
+>> 	- introduce sockaddr_fd that can be applied to AF_UNIX sockets,
+>> 	  and teach unix_bind and unix_connect how to deal with a second
+>> 	  type of sockaddr, AT_FD:
+>> 	  struct sockaddr_fd { short fd_family; short pad; int fd; }
+>>
+>> 	- introduce sockaddr_unix_at that takes a directory file
+>> 	  descriptor as well as a unix path, and teach unix_bind and
+>> 	  unix_connect to deal with a second sockaddr type, AF_UNIX_AT:
+>> 	  struct sockaddr_unix_at { short family; short pad; int dfd; char path[102]; }
+>>
+>> Any other options?
+> I am still half hoping we don't have to change the userspace API/ABI.
+> There is sanity checking on that path that no one seems interested in to
+> solve this problem.
 >
->     # CONFIG_RTC_INTF_SYSFS is not set
->     # CONFIG_RTC_INTF_PROC is not set
->     # CONFIG_RTC_INTF_DEV is not set
+> This is a weird issue as we are dealing with both the vfs and the
+> networking stack.  Fundamentally we need to change task->fs.root or
+> we need to capitialize on the openat functionality in the kernel, so
+> that we don't create mountains of special cases to support this.
 >
-> which is different from previous behavior (all of these where enabled.)
+> I think swapping task->fs instead of task->fs.root is effecitely the
+> same complexity.
+
+Thanks for the idea. And for mentioning, that kernel threads shares fs 
+struct. I missed it.
+
 >
-> To fix, add back the 'default RTC_CLASS' statments to each of the
-> RTC_INTF_* options.
-Thanks for fixing this.
->   config RTC_INTF_DEV
->   	boolean "/dev/rtcN (character devices)"
-> +	default RTC_CLASS
->   	help
->   	  Say yes here if you want to use your RTCs using the /dev
->   	  interfaces, which "udev" sets up as /dev/rtc0 through
-Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+>>> I very much believe we want if at all possible to perform a local
+>>> modification.
+>>>
+>>> Changing fs isn't all that different from what devtmpfs is doing.
+>> Sorry, I don't know much about devtmpfs, are you suggesting it as a
+>> model?  What exactly should we look at?
+> Roughly all I meant was that devtmpsfsd is a kernel thread that runs
+> with an unshared fs struct.  Although I admit devtmpfsd is for all
+> practical purposes a userspace daemon that just happens to run in kernel
+> space.
+>
+> Eric
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
