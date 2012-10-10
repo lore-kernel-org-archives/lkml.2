@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab2JJPic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:38:32 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:44992 "EHLO twin.jikos.cz"
+	id S1756793Ab2JJOUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:20:20 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:44183 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab2JJPia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:38:30 -0400
-Date: Wed, 10 Oct 2012 17:34:50 +0200
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, dave@jikos.cz, tytso@mit.edu, cmm@us.ibm.com,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 02/13] vfs: introduce private radix tree structures
-Message-ID: <20121010153450.GY4405@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
-	tytso@mit.edu, cmm@us.ibm.com,
-	Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-3-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-3-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+	id S1756664Ab2JJOUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 10:20:16 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [RFC PATCH 0/3] mca_config stuff
+Date: Wed, 10 Oct 2012 16:19:58 +0200
+Message-Id: <1349878801-15956-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:24PM +0800, zwu.kernel@gmail.com wrote:
-> +void hot_track_init(struct super_block *sb)
-> +{
-...
-> +}
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-> +void hot_track_exit(struct super_block *sb)
-> +{
-> +	hot_cache_exit();
-> +}
+Right,
 
-Needs to be exported if btrfs is built as a module, otherwise does not
-link
+so I did give that a try and it turned out to be a bit more involved
+than I thought. Basically, I'm relying on the assumption that if I use a
+u64 bitfield and pass a pointer to it, accessing it through that pointer
+as a u64 value works. Actually, I have the u64 bitfield as the first
+member of a struct and if I cast a pointer to that struct to u64 *, I'm
+expecting to have the 64 bits of the same bitfield.
 
-  LDS     arch/x86/boot/compressed/vmlinux.lds
-  AS      arch/x86/boot/compressed/head_64.o
-  CC      arch/x86/boot/compressed/misc.o
-  CC      arch/x86/boot/compressed/string.o
-  CC      arch/x86/boot/compressed/cmdline.o
-  CC      arch/x86/boot/compressed/early_serial_console.o
-  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
-ERROR: "hot_track_init" [fs/btrfs/btrfs.ko] undefined!
-ERROR: "hot_track_exit" [fs/btrfs/btrfs.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
-make: *** Waiting for unfinished jobs....
+Therefore, I can toggle the bits in the mce code with mca_cfg.<bitname>.
+When defining accessing them through the device attributes in sysfs, I
+use a new macro DEVICE_BIT_ATTR which gets the corresponding bit number
+of that same bit in the bitfield. This gives only one function which
+operates on a bitfield instead of a single function per bit in the
+bitfield.
 
+For example,
 
-david
+mca_cfg {
+	u64 dont_log_ce : 1,
+
+is the first bit in the bitfield and I also have a MCA_CFG_DONT_LOG_CE
+define which is 0, i.e. the first bit, which I use to toggle the
+corresponding bit in the u64 in device_{show,store}_bit.
+
+So I converted mce_dont_log_ce and mce_disabled (renaming it into the
+more correct mca_disabled) and it seems to work.
+
+The asm looks sane too. One other advantage is that it makes the code
+much more cleaner and compact by collecting all those bool config values
+in a single struct, which was my original incentive to do that.
+
+So please take a look and let me know whether this is sane, especially
+the above assumption that I can access a u64 bitfield through a u64 *
+and the bits are where they're expected to be. gcc seems to do that...
+and I don't see anything in the C99 standard that would object to it but
+I could be overlooking something.
+
+Thanks.
+
+Borislav Petkov (3):
+  Add DEVICE_BIT_ATTR
+  Change mce_dont_log_ce
+  Convert mce_disabled
+
+ arch/x86/include/asm/mce.h       |  9 ++++++++-
+ arch/x86/kernel/cpu/mcheck/mce.c | 21 ++++++++++-----------
+ arch/x86/lguest/boot.c           |  2 +-
+ drivers/base/core.c              | 36 ++++++++++++++++++++++++++++++++++++
+ include/linux/device.h           |  9 +++++++++
+ 5 files changed, 64 insertions(+), 13 deletions(-)
+
+-- 
+1.8.0.rc0.18.gf84667d
+
