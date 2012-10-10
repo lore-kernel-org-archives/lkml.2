@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab2JJXHp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:07:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43664 "EHLO
+	id S932570Ab2JJXIF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:08:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33965 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932623Ab2JJXDU (ORCPT
+	by vger.kernel.org with ESMTP id S932616Ab2JJXDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 19:03:20 -0400
-X-Sasl-enc: mbs9av5WDzNHClFy6JBjTjbLx7OOujhBzqr2G+o/lzit 1349910199
+	Wed, 10 Oct 2012 19:03:17 -0400
+X-Sasl-enc: FWLgquWDS+P5w7jDILVeP9NVX1uOZOMiBGC3kbbwJX+7 1349910196
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: [ 064/122] drm/i915: prevent possible pin leak on error path
-Date: Thu, 11 Oct 2012 07:53:50 +0900
-Message-Id: <20121010225349.685938759@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [ 063/122] MIPS: ath79: use correct fractional dividers for {CPU,DDR}_PLL on AR934x
+Date: Thu, 11 Oct 2012 07:53:49 +0900
+Message-Id: <20121010225349.499192961@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -30,35 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit ab3951eb74e7c33a2f5b7b64d72e82f1eea61571 upstream.
+commit 65fc7f9957c52ad4fdf4ee5dfe3a75aa0a633d39 upstream.
 
-We should not hit this under any sane conditions, but still, this does not
-looks right.
+The current dividers in the code are wrong and this
+leads to broken CPU frequency calculation on boards
+where the fractional part is used.
 
-Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wlison <chris@chris-wilson.co.uk>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+For example, if the SoC is running from a 40MHz
+reference clock, refdiv=1, nint=14, outdiv=0 and
+nfrac=31 the real frequency is 579.375MHz but the
+current code calculates 569.687MHz instead.
+
+Because the system time is indirectly related to
+the CPU frequency the broken computation causes
+drift in the system time.
+
+The correct divider is 2^6 for the CPU PLL and 2^10
+for the DDR PLL. Use the correct values to fix the
+issue.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/4305/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/ath79/clock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6394,7 +6394,7 @@ static int intel_gen7_queue_flip(struct
- 	default:
- 		WARN_ONCE(1, "unknown plane in flip command\n");
- 		ret = -ENODEV;
--		goto err;
-+		goto err_unpin;
- 	}
+--- a/arch/mips/ath79/clock.c
++++ b/arch/mips/ath79/clock.c
+@@ -189,7 +189,7 @@ static void __init ar934x_clocks_init(vo
+ 	       AR934X_PLL_CPU_CONFIG_NFRAC_MASK;
  
- 	ret = intel_ring_begin(ring, 4);
+ 	cpu_pll = nint * ath79_ref_clk.rate / ref_div;
+-	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 6));
++	cpu_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 6));
+ 	cpu_pll /= (1 << out_div);
+ 
+ 	pll = ath79_pll_rr(AR934X_PLL_DDR_CONFIG_REG);
+@@ -203,7 +203,7 @@ static void __init ar934x_clocks_init(vo
+ 	       AR934X_PLL_DDR_CONFIG_NFRAC_MASK;
+ 
+ 	ddr_pll = nint * ath79_ref_clk.rate / ref_div;
+-	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (2 << 10));
++	ddr_pll += frac * ath79_ref_clk.rate / (ref_div * (1 << 10));
+ 	ddr_pll /= (1 << out_div);
+ 
+ 	clk_ctrl = ath79_pll_rr(AR934X_PLL_CPU_DDR_CLK_CTRL_REG);
 
 
