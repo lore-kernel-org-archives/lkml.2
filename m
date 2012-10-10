@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2JJWyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:54:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35222 "EHLO
+	id S932701Ab2JJXYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 19:24:30 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35353 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757566Ab2JJWx6 (ORCPT
+	by vger.kernel.org with ESMTP id S1757610Ab2JJWyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:53:58 -0400
-X-Sasl-enc: XxLoUe6ipiKix2auy4OdyrWa2WlpKqPtILfQJdzqRhR0 1349909637
+	Wed, 10 Oct 2012 18:54:11 -0400
+X-Sasl-enc: fegBwNrm9MsTPB3VgIkI0pXj2RoEz05/7iZfgHH0WLBz 1349909650
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
+        Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 025/133] bnx2x: fix rx checksum validation for IPv6
-Date: Thu, 11 Oct 2012 07:50:51 +0900
-Message-Id: <20121010224858.985674765@linuxfoundation.org>
+Subject: [ 030/133] xfrm: fix a read lock imbalance in make_blackhole
+Date: Thu, 11 Oct 2012 07:50:56 +0900
+Message-Id: <20121010224859.898209604@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -31,52 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit e488921f44765e8ab6c48ca35e3f6b78df9819df ]
+[ Upstream commit 433a19548061bb5457b6ab77ed7ea58ca6e43ddb ]
 
-Commit d6cb3e41 "bnx2x: fix checksum validation" caused a performance
-regression for IPv6. Rx checksum offload does not work. IPv6 packets
-are passed to the stack with CHECKSUM_NONE.
+if xfrm_policy_get_afinfo returns 0, it has already released the read
+lock, xfrm_policy_put_afinfo should not be called again.
 
-The hardware obviously cannot perform IP checksum validation for IPv6,
-because there is no checksum in the IPv6 header. This should not prevent
-us from setting CHECKSUM_UNNECESSARY.
-
-Tested on BCM57711.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ net/xfrm/xfrm_policy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -620,14 +620,16 @@ static int bnx2x_alloc_rx_data(struct bn
- static void bnx2x_csum_validate(struct sk_buff *skb, union eth_rx_cqe *cqe,
- 				struct bnx2x_fastpath *fp)
- {
--	/* Do nothing if no IP/L4 csum validation was done */
--
-+	/* Do nothing if no L4 csum validation was done.
-+	 * We do not check whether IP csum was validated. For IPv4 we assume
-+	 * that if the card got as far as validating the L4 csum, it also
-+	 * validated the IP csum. IPv6 has no IP csum.
-+	 */
- 	if (cqe->fast_path_cqe.status_flags &
--	    (ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG |
--	     ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG))
-+	    ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG)
- 		return;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1763,7 +1763,7 @@ static struct dst_entry *make_blackhole(
  
--	/* If both IP/L4 validation were done, check if an error was found. */
-+	/* If L4 validation was done, check if an error was found. */
- 
- 	if (cqe->fast_path_cqe.type_error_flags &
- 	    (ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG |
+ 	if (!afinfo) {
+ 		dst_release(dst_orig);
+-		ret = ERR_PTR(-EINVAL);
++		return ERR_PTR(-EINVAL);
+ 	} else {
+ 		ret = afinfo->blackhole_route(net, dst_orig);
+ 	}
 
 
