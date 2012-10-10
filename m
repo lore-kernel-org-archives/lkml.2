@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2JJQOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:14:14 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:18958 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751717Ab2JJQOJ (ORCPT
+	id S1754474Ab2JJPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:36:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49173 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535Ab2JJPgY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:14:09 -0400
-Message-ID: <1349885644.6336.70.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 11/11] net: xilinx: Show csum in bootlog
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Michal Simek <monstr@monstr.eu>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "David S. Miller" <davem@davemloft.net>, John Linn <linnj@xilinx.com>
-Date: Wed, 10 Oct 2012 17:14:04 +0100
-In-Reply-To: <CAHTX3dJuHxAqZOkkSymPz5ots1Edq4ty3o1rGAuhnpWrUwtWZQ@mail.gmail.com>
-References: <1349374497-9540-1-git-send-email-monstr@monstr.eu>
-	 <1349374497-9540-11-git-send-email-monstr@monstr.eu>
-	 <1349378144.2817.23.camel@bwh-desktop.uk.solarflarecom.com>
-	 <506EA9C4.2000609@monstr.eu>
-	 <1349445062.16173.48.camel@deadeye.wl.decadent.org.uk>
-	 <5073E988.60701@monstr.eu>
-	 <1349801800.2800.21.camel@bwh-desktop.uk.solarflarecom.com>
-	 <CAHTX3dJuHxAqZOkkSymPz5ots1Edq4ty3o1rGAuhnpWrUwtWZQ@mail.gmail.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 10 Oct 2012 11:36:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,564,1344236400"; 
+   d="scan'208";a="232269210"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        "jejb@parisc-linux.org" <jejb@parisc-linux.org>,
+        "deller@gmx.de" <deller@gmx.de>
+Subject: RE: [RFC PATCH 0/3] mca_config stuff
+Thread-Topic: [RFC PATCH 0/3] mca_config stuff
+Thread-Index: AQHNpvJwHUn4TnoGxUWuM+cQn5+C9Jeypubw
+Date: Wed, 10 Oct 2012 15:35:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D49FA8@ORSMSX108.amr.corp.intel.com>
+References: <1349878801-15956-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1349878801-15956-1-git-send-email-bp@amd64.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 18:06 +0200, Michal Simek wrote:
-> 2012/10/9 Ben Hutchings <bhutchings@solarflare.com>:
-> > On Tue, 2012-10-09 at 11:08 +0200, Michal Simek wrote:
-> >> On 10/05/2012 03:51 PM, Ben Hutchings wrote:
-> >> > On Fri, 2012-10-05 at 11:35 +0200, Michal Simek wrote:
-> >> >> On 10/04/2012 09:15 PM, Ben Hutchings wrote:
-> >> >>> On Thu, 2012-10-04 at 20:14 +0200, Michal Simek wrote:
-> >> >>>> Just show current setting in bootlog.
-> >> >>> [...]
-> >> >>>> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-> >> >>>> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> >> >>>> @@ -1052,12 +1052,14 @@ static int __devinit temac_of_probe(struct platform_device *op)
-> >> >>>>          /* Setup checksum offload, but default to off if not specified */
-> >> >>>>          lp->temac_features = 0;
-> >> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,txcsum", NULL);
-> >> >>>> +        dev_info(&op->dev, "TX_CSUM %d\n", be32_to_cpup(p));
-> >> >>>>          if (p && be32_to_cpu(*p)) {
-> >> >>>>                  lp->temac_features |= TEMAC_FEATURE_TX_CSUM;
-> >> >>>>                  /* Can checksum TCP/UDP over IPv4. */
-> >> >>>>                  ndev->features |= NETIF_F_IP_CSUM;
-> >> >>>>          }
-> >> >>>>          p = (__be32 *)of_get_property(op->dev.of_node, "xlnx,rxcsum", NULL);
-> >> >>>> +        dev_info(&op->dev, "RX_CSUM %d\n", be32_to_cpup(p));
-> >> >>> [...]
-> >> >>>
-> >> >>> Is there any particular reason you think this needs to be logged by
-> >> >>> default, rather than letting users run ethtool -k?  I suggest using
-> >> >>> dev_dbg() instead.
-> >> >>
-> >> >> Ok. I have looked at it and there are missing some bits in ndev->features.
-> >> >>
-> >> >> Can you please check that my setting is correct?
-> >> >>
-> >> >> It is SG DMA ip/driver.
-> >> >> ndev->features = NETIF_F_FRAGLIST | NETIF_F_SG
-> >> >
-> >> > NETIF_F_SG only; NETIF_F_FRAGLIST means you can handle skbs chained
-> >> > through the frag_list pointer.
-> >>
-> >> The driver is able to handle skb fragments too. temac_start_xmit
-> >
-> > "git grep -w -E 'frag_list|skb_walk_frags|skb_to_sgvec' drivers/net/ethernet/xilinx"
-> > returns nothing in net-next.
-> 
-> What about this? Maybe it is different fragmentation.
-> drivers/net/ethernet/xilinx/ll_temac_main.c
->  688         num_frag = skb_shinfo(skb)->nr_frags;
->  689         frag = &skb_shinfo(skb)->frags[0];
-[...]
+> Therefore, I can toggle the bits in the mce code with mca_cfg.<bitname>.
+> When defining accessing them through the device attributes in sysfs, I
+> use a new macro DEVICE_BIT_ATTR which gets the corresponding bit number
+> of that same bit in the bitfield. This gives only one function which
+> operates on a bitfield instead of a single function per bit in the
+> bitfield.
 
-Yes, the fact that you handle the frags array is indicated by feature
-flag NETIF_F_SG.
+Is this true across all architectures? I know that pa-risc instructions
+that operate on bitfields use "0" to operate on the high order bit
+rather than the low order one. I don't recall whether this spills over
+into the compiler. If it did, then you'd have to have different #defines
+for the bit numbers[1].  For this specific use case it wouldn't matter because
+you are just using it in x86 code. But device_store_bit() and device_show_bit()
+are in generic code - so they must be able to work across all architectures.
 
-Ben.
+-Tony
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+[1] Or fix the store/show bit functions to transform the bit numbers from
+"little-bitian" to "big-bitian" on architectures that count the other way.
