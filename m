@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab2JJCZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Oct 2012 22:25:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63710 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab2JJCZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Oct 2012 22:25:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,563,1344236400"; 
-   d="scan'208";a="203693465"
-Date: Tue, 9 Oct 2012 19:25:23 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v3
-Message-ID: <20121010022523.GE2095@tassilo.jf.intel.com>
-References: <1349303063-12766-1-git-send-email-andi@firstfloor.org>
- <1349303063-12766-2-git-send-email-andi@firstfloor.org>
- <20121009151907.3f61ebca.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009151907.3f61ebca.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756439Ab2JJC0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Oct 2012 22:26:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59380 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754233Ab2JJCZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Oct 2012 22:25:58 -0400
+Message-ID: <1349835953.6336.25.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 068/108] HID: hidraw: add proper error handling to raw event
+ reporting
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>
+Date: Wed, 10 Oct 2012 03:25:53 +0100
+In-Reply-To: <20121008193409.GC3004@herton-Z68MA-D2H-B3>
+References: <20121007225834.673681075@decadent.org.uk>
+	 <20121007225844.105600523@decadent.org.uk>
+	 <20121008193409.GC3004@herton-Z68MA-D2H-B3>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-gxeEzJg7DYZuDTCRz3Jq"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Thanks for the review.
+--=-gxeEzJg7DYZuDTCRz3Jq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > I also exported the new flags to the user headers
-> > (they were previously under __KERNEL__). Right now only symbols
-> > for x86 and some other architecture for 1GB and 2MB are defined.
-> > The interface should already work for all other architectures
-> > though.
-> 
-> So some manpages need updating.  I'm not sure which - mmap(2) surely,
-> but which for the IPC change?
+On Mon, 2012-10-08 at 16:34 -0300, Herton Ronaldo Krzesinski wrote:
+> On Sun, Oct 07, 2012 at 11:59:42PM +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: Jiri Kosina <jkosina@suse.cz>
+> >=20
+> > commit b6787242f32700377d3da3b8d788ab3928bab849 upstream.
+> >=20
+> > If kmemdup() in hidraw_report_event() fails, we are not propagating
+> > this fact properly.
+> >=20
+> > Let hidraw_report_event() and hid_report_raw_event() return an error
+> > value to the caller.
+>=20
+> This needs in addition a small fix on top, commit d6d7c87
+> ("HID: fix return value of hidraw_report_event() when !CONFIG_HIDRAW")
 
-mmap and shmget. Was already planned.
+I've added that, thanks.
 
-> 
-> > v2: Port to new tree. Fix unmount.
-> > v3: Ported to latest tree.
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  arch/x86/include/asm/mman.h |    3 ++
-> >  fs/hugetlbfs/inode.c        |   63 ++++++++++++++++++++++++++++++++++---------
-> >  include/asm-generic/mman.h  |   13 +++++++++
-> >  include/linux/hugetlb.h     |   12 +++++++-
-> >  include/linux/shm.h         |   19 +++++++++++++
-> >  ipc/shm.c                   |    3 +-
-> >  mm/mmap.c                   |    5 ++-
-> 
-> Alas, include/asm-generic/mman.h doesn't exist now.
-> 
-> Does this change touch all the hugetlb-capable architectures?
+Ben.
 
-Right now only symbols
-for x86 and some other architecture for 1GB and 2MB are defined.
-The interface should already work for all other architectures
-though.
+--=20
+Ben Hutchings
+Who are all these weirdos? - David Bowie, about L-Space IRC channel #afp
 
-So they can add new symbols for their page sizes at their leisure.
+--=-gxeEzJg7DYZuDTCRz3Jq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-> >  	return capable(CAP_IPC_LOCK) || in_group_p(shm_group);
-> >  }
-> >  
-> > +static int get_hstate_idx(int page_size_log)
-> 
-> nitlet: "page_size_order" would be more kernely.  Or just "page_order".
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-It's not really an order, just the index.  I think I would prefer the current name,
-order would be misleading.
+iQIVAwUAUHTcsee/yOyVhhEJAQprLg/9HQ46/npG9rsRZRU7Ae8LNVlP6Wit1ZjJ
+2mFmW9SAeEYcBQG0i2r9vuPRvPd36gZAu5Y7VM97PKWDKxDmZvH08USLrqIFw7ZX
+F3BIRVh+vFDUZdmPUbWkInY5bQBhVOdMlXNiz0nNoRcaCBAowiXi6GlZF/xZAtwP
+rKvBmWRchIV1fEY6FBFgqBIwA2Ekqzg+VfISwgABEvMDLlVeAWOuzLvnWWHSz9cE
+QPzDFz9NsKY+ZgnC1iGevahen4s8fRw+2GuInUvo+Ump7XK6w2FtNuJuKoEdcrV5
+riX7nWvdGiUzsmOACkrpROriMif1Tbz8eFNaPm+z0+wxn28uC9CDAUgd04qlTn05
+0OEwPplRqiH76EUdGNPCUbze1hSsI4rhPkzciN+1g+SJf1CFHrcADPuWjq3e9MMW
+3JndEVh5I/2ucx+oq2vblAyBLvMzt9hCpv32cYtfy3vYU4Wwmldv01/jc7aeXRkk
+XUQEZLpLfRGbtNhzPeTd9uNcGj0/ENttGQwgetVAsyi+XsvhGn09QQkZ6iTw+wyr
+K+MHgYRF1z4xRyzkowssItAmTatVzfeagDeB040i0nrejvPXVCeZakkGzqUC2nQZ
+LFq/F0Pstm80vM8xEmb83DbdYlrkxrBs0+CZAw4M6yVfwMjOCCQTwqxwIMcZuq2e
+RW6EbjhiXWo=
+=V8Uv
+-----END PGP SIGNATURE-----
 
-For x86 it's only 0 and 1
-
-> > +		if (IS_ERR(hugetlbfs_vfsmount[i])) {
-> > +				pr_err(
-> > +			"hugetlb: Cannot mount internal hugetlbfs for page size %uK",
-> > +			       ps_kb);
-> > +			error = PTR_ERR(hugetlbfs_vfsmount[i]);
-> > +		}
-> > +		i++;
-> > +	}
-> > +	/* Non default hstates are optional */
-> > +	if (hugetlbfs_vfsmount[default_hstate_idx])
-> > +		return 0;
-> 
-> hm, so if I'm understanding this, the patch mounts hugetlbfs N times,
-> once for each page size.  And presumably the shm code somehow selects
-> one of these mounts, based on incoming flags.  And presumably if those
-> flags are all-zero, the behaviour is unaltered.
-
-Yes.
-
-> 
-> Please update the changelog to describe all this - the overview of how
-> the patch actually operates.
-
-Ok.
-
-> 
-> Also, all this affects the /proc/mounts contents, yes?  Let's changelog
-> that very-slightly-non-back-compatible user-visible change as well.
-
-AFAIK not. The internal mounts are not visible. At least my laptop
-doesn't show them.
-
-> There's some overhead to doing all those additional mounts.  Can we
-> quantify it?
-
-On x86 it's one more mount (1GB). AFAIK it's just the sb structure, there's
-nothing else preallocated. Maybe a couple hundred bytes per page size.
-
-The number of huge page sizes is normally small, I don't think any architecture
-has a large number.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+--=-gxeEzJg7DYZuDTCRz3Jq--
