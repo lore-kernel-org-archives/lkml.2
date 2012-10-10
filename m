@@ -1,281 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2JJKLw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 06:11:52 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:34485 "EHLO e3.ny.us.ibm.com"
+	id S1754954Ab2JJKIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 06:08:22 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58136 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755265Ab2JJKIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 06:08:52 -0400
+	id S1753957Ab2JJKIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 06:08:20 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
         tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v3 04/13] vfs: add function for collecting raw access info
-Date: Wed, 10 Oct 2012 18:07:26 +0800
-Message-Id: <1349863655-29320-5-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
+Date: Wed, 10 Oct 2012 18:07:23 +0800
+Message-Id: <1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
 References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-x-cbid: 12101010-8974-0000-0000-00000F4E4071
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00181223; UDB=6.00041045; UTC=2012-10-10
- 10:08:49
+x-cbid: 12101010-5930-0000-0000-00000CEFBE86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Add some utils helpers to update access frequencies
-for one file or its range.
+Introduce one new mount option '-o hot_track',
+and add its parsing support.
+  Its usage looks like:
+   mount -o hot_track
+   mount -o nouser,hot_track
+   mount -o nouser,hot_track,loop
+   mount -o hot_track,nouser
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c            |  190 ++++++++++++++++++++++++++++++++++++++++++
- fs/hot_tracking.h            |   12 +++
- include/linux/hot_tracking.h |    4 +
- 3 files changed, 206 insertions(+), 0 deletions(-)
+ fs/btrfs/ctree.h |    1 +
+ fs/btrfs/super.c |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 5fd993e..86c87c7 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -174,6 +174,196 @@ static void hot_inode_tree_exit(struct hot_info *root)
- 	}
- }
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 9821b67..094bec6 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
+ #define BTRFS_MOUNT_CHECK_INTEGRITY	(1 << 20)
+ #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
+ #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR	(1 << 22)
++#define BTRFS_MOUNT_HOT_TRACK		(1 << 23)
  
-+struct hot_inode_item
-+*hot_inode_item_find(struct hot_info *root, u64 ino)
-+{
-+	struct hot_inode_item *he;
-+	int ret;
-+
-+again:
-+	spin_lock(&root->lock);
-+	he = radix_tree_lookup(&root->hot_inode_tree, ino);
-+	if (he) {
-+		kref_get(&he->hot_inode.refs);
-+		spin_unlock(&root->lock);
-+		return he;
-+	}
-+	spin_unlock(&root->lock);
-+
-+	he = kmem_cache_zalloc(hot_inode_item_cachep,
-+				GFP_KERNEL | GFP_NOFS);
-+	if (!he)
-+		return ERR_PTR(-ENOMEM);
-+
-+	hot_inode_item_init(he, ino, &root->hot_inode_tree);
-+
-+	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-+	if (ret) {
-+		kmem_cache_free(hot_inode_item_cachep, he);
-+		return ERR_PTR(ret);
-+	}
-+
-+	spin_lock(&root->lock);
-+	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
-+	if (ret == -EEXIST) {
-+		kmem_cache_free(hot_inode_item_cachep, he);
-+		spin_unlock(&root->lock);
-+		radix_tree_preload_end();
-+		goto again;
-+	}
-+	spin_unlock(&root->lock);
-+	radix_tree_preload_end();
-+
-+	kref_get(&he->hot_inode.refs);
-+	return he;
-+}
-+
-+static struct hot_range_item
-+*hot_range_item_find(struct hot_inode_item *he,
-+			u32 start)
-+{
-+	struct hot_range_item *hr;
-+	int ret;
-+
-+again:
-+	spin_lock(&he->lock);
-+	hr = radix_tree_lookup(&he->hot_range_tree, start);
-+	if (hr) {
-+		kref_get(&hr->hot_range.refs);
-+		spin_unlock(&he->lock);
-+		return hr;
-+	}
-+	spin_unlock(&he->lock);
-+
-+	hr = kmem_cache_zalloc(hot_range_item_cachep,
-+				GFP_KERNEL | GFP_NOFS);
-+	if (!hr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	hot_range_item_init(hr, start, he);
-+
-+	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-+	if (ret) {
-+		kmem_cache_free(hot_range_item_cachep, hr);
-+		return ERR_PTR(ret);
-+	}
-+
-+	spin_lock(&he->lock);
-+	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
-+	if (ret == -EEXIST) {
-+		kmem_cache_free(hot_range_item_cachep, hr);
-+		spin_unlock(&he->lock);
-+		radix_tree_preload_end();
-+		goto again;
-+	}
-+	spin_unlock(&he->lock);
-+	radix_tree_preload_end();
-+
-+	kref_get(&hr->hot_range.refs);
-+	return hr;
-+}
-+
-+/*
-+ * This function does the actual work of updating the frequency numbers,
-+ * whatever they turn out to be. FREQ_POWER determines how many atime
-+ * deltas we keep track of (as a power of 2). So, setting it to anything above
-+ * 16ish is probably overkill. Also, the higher the power, the more bits get
-+ * right shifted out of the timestamp, reducing precision, so take note of that
-+ * as well.
-+ *
-+ * The caller should have already locked freq_data's parent's spinlock.
-+ *
-+ * FREQ_POWER, defined immediately below, determines how heavily to weight
-+ * the current frequency numbers against the newest access. For example, a value
-+ * of 4 means that the new access information will be weighted 1/16th (ie 2^-4)
-+ * as heavily as the existing frequency info. In essence, this is a kludged-
-+ * together version of a weighted average, since we can't afford to keep all of
-+ * the information that it would take to get a _real_ weighted average.
-+ */
-+static u64 hot_average_update(struct timespec old_atime,
-+		struct timespec cur_time, u64 old_avg)
-+{
-+	struct timespec delta_ts;
-+	u64 new_avg;
-+	u64 new_delta;
-+
-+	delta_ts = timespec_sub(cur_time, old_atime);
-+	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
-+
-+	new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
-+	new_avg = new_avg >> FREQ_POWER;
-+
-+	return new_avg;
-+}
-+
-+static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
-+{
-+	struct timespec cur_time = current_kernel_time();
-+
-+	if (write) {
-+		freq_data->nr_writes += 1;
-+		freq_data->avg_delta_writes = hot_average_update(
-+				freq_data->last_write_time,
-+				cur_time,
-+				freq_data->avg_delta_writes);
-+		freq_data->last_write_time = cur_time;
-+	} else {
-+		freq_data->nr_reads += 1;
-+		freq_data->avg_delta_reads = hot_average_update(
-+				freq_data->last_read_time,
-+				cur_time,
-+				freq_data->avg_delta_reads);
-+		freq_data->last_read_time = cur_time;
-+	}
-+}
-+
-+/*
-+ * Main function to update access frequency from read/writepage(s) hooks
-+ */
-+inline void hot_update_freqs(struct hot_info *root,
-+			struct inode *inode, u64 start,
-+			u64 len, int rw)
-+{
-+	struct hot_inode_item *he;
-+	struct hot_range_item *hr;
-+	u32 cur, end;
-+
-+	if (!TRACK_THIS_INODE(inode) || (len == 0))
-+		return;
-+
-+	he = hot_inode_item_find(root, inode->i_ino);
-+	if (IS_ERR(he)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	spin_lock(&he->hot_inode.lock);
-+	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
-+	spin_unlock(&he->hot_inode.lock);
-+
-+	/*
-+	 * Align ranges on RANGE_SIZE boundary
-+	 * to prevent proliferation of range structs
-+	 */
-+	end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
-+	for (cur = (start >> RANGE_BITS); cur < end; cur++) {
-+		hr = hot_range_item_find(he, cur);
-+		if (IS_ERR(hr)) {
-+			WARN_ON(1);
-+			hot_inode_item_put(he);
-+			return;
-+		}
-+
-+		spin_lock(&hr->hot_range.lock);
-+		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
-+		spin_unlock(&hr->hot_range.lock);
-+
-+		hot_range_item_put(hr);
-+	}
-+
-+	hot_inode_item_put(he);
-+}
-+
- /*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index 4e8aa77..37f69ee 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -19,6 +19,18 @@
- /* values for hot_freq_data flags */
- #define FREQ_DATA_TYPE_INODE (1 << 0)
- #define FREQ_DATA_TYPE_RANGE (1 << 1)
-+/* size of sub-file ranges */
-+#define RANGE_BITS 20
-+#define RANGE_SIZE (1 << RANGE_BITS)
-+
-+#define FREQ_POWER 4
-+
-+struct hot_inode_item
-+*hot_inode_item_find(struct hot_info *root, u64 ino);
-+void hot_inode_item_put(struct hot_inode_item *he);
-+inline void hot_update_freqs(struct hot_info *root,
-+                        struct inode *inode, u64 start,
-+                        u64 len, int rw);
- 
- void hot_track_init(struct super_block *sb);
- void hot_track_exit(struct super_block *sb);
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 13aa54b..1e0aed5 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -75,4 +75,8 @@ extern struct hot_info *global_hot_tracking_info;
- extern void hot_track_init(struct super_block *sb);
- extern void hot_track_exit(struct super_block *sb);
- 
-+extern inline void hot_update_freqs(struct hot_info *root,
-+                        struct inode *inode, u64 start,
-+                        u64 len, int rw);
-+
- #endif  /* _LINUX_HOTTRACK_H */
+ #define btrfs_clear_opt(o, opt)		((o) &= ~BTRFS_MOUNT_##opt)
+ #define btrfs_set_opt(o, opt)		((o) |= BTRFS_MOUNT_##opt)
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 83d6f9f..00be9e3 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -41,6 +41,7 @@
+ #include <linux/slab.h>
+ #include <linux/cleancache.h>
+ #include <linux/ratelimit.h>
++#include <linux/hot_tracking.h>
+ #include "compat.h"
+ #include "delayed-inode.h"
+ #include "ctree.h"
+@@ -303,7 +304,7 @@ enum {
+ 	Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
+ 	Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
+ 	Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+-	Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
++	Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
+ 	Opt_check_integrity, Opt_check_integrity_including_extent_data,
+ 	Opt_check_integrity_print_mask, Opt_fatal_errors,
+ 	Opt_err,
+@@ -342,6 +343,7 @@ static match_table_t tokens = {
+ 	{Opt_no_space_cache, "nospace_cache"},
+ 	{Opt_recovery, "recovery"},
+ 	{Opt_skip_balance, "skip_balance"},
++	{Opt_hot_track, "hot_track"},
+ 	{Opt_check_integrity, "check_int"},
+ 	{Opt_check_integrity_including_extent_data, "check_int_data"},
+ 	{Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
+@@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+ 		case Opt_skip_balance:
+ 			btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
+ 			break;
++		case Opt_hot_track:
++			btrfs_set_opt(info->mount_opt, HOT_TRACK);
++			break;
+ #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+ 		case Opt_check_integrity_including_extent_data:
+ 			printk(KERN_INFO "btrfs: enabling check integrity"
 -- 
 1.7.6.5
 
