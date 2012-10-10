@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2JKAPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:15:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50749 "EHLO
+	id S932945Ab2JKAjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:39:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38160 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932775Ab2JKAPC (ORCPT
+	by vger.kernel.org with ESMTP id S932842Ab2JKAO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:02 -0400
-X-Sasl-enc: 8xaEhK3wwYxODYpxV7Z8bZOqAn8mEJG5vgrj+U9cmSwG 1349914500
+	Wed, 10 Oct 2012 20:14:57 -0400
+X-Sasl-enc: cXckJuennp5yC6WzUbqTQeK1OtJR9LEBdI16qsSryv3Z 1349914496
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
         Josh Triplett <josh@joshtriplett.org>
-Subject: [ 105/133] mn10300: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:52:11 +0900
-Message-Id: <20121010224913.416799691@linuxfoundation.org>
+Subject: [ 104/133] frv: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 07:52:10 +0900
+Message-Id: <20121010224913.224522139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -33,7 +32,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 5b0753a90b7a98bc613c3767e9263a1a76d4f900 upstream.
+commit 41d8fe5bb3cf91ce2716ac8f43e4b40d802a99c8 upstream.
 
 In the old times, the whole idle task was considered
 as an RCU quiescent state. But as RCU became more and
@@ -50,42 +49,39 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the mn10300's idle loop.
+Add this missing pair of calls in the Frv's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Acked-by: David Howells <dhowells@redhat.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mn10300/kernel/process.c |    3 +++
+ arch/frv/kernel/process.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/arch/mn10300/kernel/process.c
-+++ b/arch/mn10300/kernel/process.c
+--- a/arch/frv/kernel/process.c
++++ b/arch/frv/kernel/process.c
 @@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
+ #include <linux/reboot.h>
+ #include <linux/interrupt.h>
+ #include <linux/pagemap.h>
 +#include <linux/rcupdate.h>
+ 
+ #include <asm/asm-offsets.h>
  #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- #include <asm/io.h>
-@@ -107,6 +108,7 @@ void cpu_idle(void)
+@@ -69,12 +70,14 @@ void cpu_idle(void)
  {
  	/* endless idle loop with no priority at all */
- 	for (;;) {
+ 	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched()) {
- 			void (*idle)(void);
+ 			check_pgt_cache();
  
-@@ -121,6 +123,7 @@ void cpu_idle(void)
- 			}
- 			idle();
+ 			if (!frv_dma_inprogress && idle)
+ 				idle();
  		}
 +		rcu_idle_exit();
  
