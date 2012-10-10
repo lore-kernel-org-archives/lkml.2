@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab2JJQbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:31:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22697 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab2JJQbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:31:52 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        srinivas.kandagatla@st.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] of/mdio: fix build errors when CONFIG_OF isn't set
-Date: Wed, 10 Oct 2012 12:31:23 -0400
-Message-Id: <1349886683-26351-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.7.12
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1755932Ab2JJQxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 12:53:40 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:46086 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753421Ab2JJQxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 12:53:39 -0400
+Date: Wed, 10 Oct 2012 18:53:18 +0200
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, dave@jikos.cz, tytso@mit.edu, cmm@us.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 12/13] vfs: add debugfs support
+Message-ID: <20121010165318.GA4405@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+	tytso@mit.edu, cmm@us.ibm.com,
+	Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+ <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f9dc9ac5 ("of/mdio: Add dummy functions in of_mdio.h.") has added
-empty stubs into of_mdio.h which were not static, this causes build errors
-when these symbols were defined across several objects.
+On Wed, Oct 10, 2012 at 06:07:34PM +0800, zwu.kernel@gmail.com wrote:
+> +static int hot_debugfs_log_init(struct debugfs_vol_data *data)
+> +{
+> +	int err = 0;
+> +	struct lstring *debugfs_log = data->debugfs_log;
+> +
+> +	spin_lock(&data->log_lock);
+> +	debugfs_log->str = vmalloc(INIT_LOG_ALLOC_SIZE);
 
-Fix it by marking those stubs as 'static inline'.
+vmalloc __might_sleep(), do the allocation outside of the lock and assign
+the value inside. Also, you may use vzalloc and drop the following memset.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/of_mdio.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+dmesg:
 
-diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-index 6ef49b8..7f17b9c 100644
---- a/include/linux/of_mdio.h
-+++ b/include/linux/of_mdio.h
-@@ -26,17 +26,17 @@ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
- 
- #else /* CONFIG_OF */
--int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
-+static inline int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
- {
- 	return -ENOSYS;
- }
- 
--struct phy_device *of_phy_find_device(struct device_node *phy_np)
-+static inline struct phy_device *of_phy_find_device(struct device_node *phy_np)
- {
- 	return NULL;
- }
- 
--struct phy_device *of_phy_connect(struct net_device *dev,
-+static inline struct phy_device *of_phy_connect(struct net_device *dev,
- 					 struct device_node *phy_np,
- 					 void (*hndlr)(struct net_device *),
- 					 u32 flags, phy_interface_t iface)
-@@ -44,14 +44,14 @@ struct phy_device *of_phy_connect(struct net_device *dev,
- 	return NULL;
- }
- 
--struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
-+static inline struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
- 					 void (*hndlr)(struct net_device *),
- 					 phy_interface_t iface)
- {
- 	return NULL;
- }
- 
--struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
-+static inline struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
- {
- 	return NULL;
- }
--- 
-1.7.12
+vfs: turning on hot data tracking
+BUG: sleeping function called from invalid context at mm/slab.c:3220
+in_atomic(): 1, irqs_disabled(): 0, pid: 3103, name: mc
+1 lock held by mc/3103:
+ #0:  (&(&inode_data->log_lock)->rlock){+.+.+.}, at: [<ffffffff8118c656>] __hot_debugfs_comm_read+0x216/0x280
+Pid: 3103, comm: mc Tainted: G        W    3.6.0hottrack-default+ #208
+Call Trace:
+ [<ffffffff8108068c>] __might_sleep+0xfc/0x130
+ [<ffffffff8114f7c1>] kmem_cache_alloc_trace+0xe1/0x270
+ [<ffffffff81142005>] __get_vm_area_node+0x95/0x1a0
+ [<ffffffff8108630f>] ? local_clock+0x6f/0x80
+ [<ffffffff8118c660>] ? __hot_debugfs_comm_read+0x220/0x280
+ [<ffffffff8114283d>] __vmalloc_node_range+0x6d/0x200
+ [<ffffffff8118c660>] ? __hot_debugfs_comm_read+0x220/0x280
+ [<ffffffff8118b810>] ? hot_debugfs_log+0xe0/0xe0
+ [<ffffffff81142a05>] __vmalloc_node+0x35/0x40
+ [<ffffffff8118c660>] ? __hot_debugfs_comm_read+0x220/0x280
+ [<ffffffff81142bcc>] vmalloc+0x2c/0x30
+ [<ffffffff8118c660>] __hot_debugfs_comm_read+0x220/0x280
+ [<ffffffff8191fd58>] ? __do_page_fault+0x238/0x590
+ [<ffffffff810ab825>] ? trace_hardirqs_on_caller+0x155/0x1d0
+ [<ffffffff8138d01e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8118c6d5>] __hot_debugfs_inode_read+0x15/0x20
+ [<ffffffff8115a19b>] vfs_read+0xcb/0x190
+ [<ffffffff8115a2c2>] sys_read+0x62/0xb0
+ [<ffffffff8138d01e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81924979>] system_call_fastpath+0x16/0x1b
 
+> +	if (debugfs_log->str) {
+> +		memset(debugfs_log->str, 0, INIT_LOG_ALLOC_SIZE);
+> +		data->log_alloc_size = INIT_LOG_ALLOC_SIZE;
+> +	} else {
+> +		err = -ENOMEM;
+> +	}
+> +	spin_unlock(&data->log_lock);
+> +
+> +	return err;
+> +}
+
+I'm now playing with it, and haven't gone through the code yet,
+david
