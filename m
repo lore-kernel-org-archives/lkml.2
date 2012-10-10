@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933608Ab2JKAd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:33:57 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57359 "EHLO
+	id S933632Ab2JKAeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:34:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35386 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933250Ab2JKAYX (ORCPT
+	by vger.kernel.org with ESMTP id S933227Ab2JKAYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:24:23 -0400
-X-Sasl-enc: LlN1Ff7JR4rxik5xRTkrUimXxEI+7LnDNzcX2SuYQ+TR 1349915062
+	Wed, 10 Oct 2012 20:24:07 -0400
+X-Sasl-enc: iclYLeHwHByBJduqmJw/hx3KQUhlNQrAPqrSKbRgWFnN 1349915046
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 086/122] drm/i915: Fix GT_MODE default value
-Date: Thu, 11 Oct 2012 07:54:12 +0900
-Message-Id: <20121010225353.540291250@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 082/122] drm/radeon: force MSIs on RS690 asics
+Date: Thu, 11 Oct 2012 07:54:08 +0900
+Message-Id: <20121010225352.845571419@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -29,51 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f8f2ac9a76b0f80a6763ca316116a7bab8486997 upstream.
+commit fb6ca6d154cdcd53e7f27f8dbba513830372699b upstream.
 
-I can't even find how I figured this might be needed anymore. But sure
-enough, the value I'm reading back on platforms doesn't match what the
-docs recommends.
+There are so many quirks, lets just try and force
+this for all RS690s.  See:
+https://bugs.freedesktop.org/show_bug.cgi?id=37679
 
-It seemed to fix Chris' GT1 in limited testing as well.
-
-Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h |    3 +++
- drivers/gpu/drm/i915/intel_pm.c |    5 +++++
- 2 files changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -519,6 +519,9 @@
- # define VS_TIMER_DISPATCH				(1 << 6)
- # define MI_FLUSH_ENABLE				(1 << 12)
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -210,6 +210,10 @@ static bool radeon_msi_ok(struct radeon_
+ 	    (rdev->pdev->subsystem_device == 0x0185))
+ 		return true;
  
-+#define GEN6_GT_MODE	0x20d0
-+#define   GEN6_GT_MODE_HI	(1 << 9)
++	/* try and enable MSIs by default on all RS690s */
++	if (rdev->family == CHIP_RS690)
++		return true;
 +
- #define GFX_MODE	0x02520
- #define GFX_MODE_GEN7	0x0229c
- #define RING_MODE_GEN7(ring)	((ring)->mmio_base+0x29c)
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3387,6 +3387,11 @@ static void gen6_init_clock_gating(struc
- 			   DISPPLANE_TRICKLE_FEED_DISABLE);
- 		intel_flush_display_plane(dev_priv, pipe);
- 	}
-+
-+	/* The default value should be 0x200 according to docs, but the two
-+	 * platforms I checked have a 0 for this. (Maybe BIOS overrides?) */
-+	I915_WRITE(GEN6_GT_MODE, _MASKED_BIT_DISABLE(0xffff));
-+	I915_WRITE(GEN6_GT_MODE, _MASKED_BIT_ENABLE(GEN6_GT_MODE_HI));
- }
- 
- static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
+ 	/* RV515 seems to have MSI issues where it loses
+ 	 * MSI rearms occasionally. This leads to lockups and freezes.
+ 	 * disable it by default.
 
 
