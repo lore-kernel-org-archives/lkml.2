@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab2JJWzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 18:55:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34661 "EHLO
+	id S1757650Ab2JJWzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:55:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46047 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757901Ab2JJWzZ (ORCPT
+	by vger.kernel.org with ESMTP id S1757928Ab2JJWzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:55:25 -0400
-X-Sasl-enc: 8aXF768ACP++xLmuOWTGRuj5vqlCNzg998PcXCbdpkra 1349909724
+	Wed, 10 Oct 2012 18:55:36 -0400
+X-Sasl-enc: uRtL+TsvBQGH1cQ0SXnHfT542bq2/eMlfTN4ia0D+xEU 1349909735
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xiaodong Xu <stid.smth@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 049/133] pppoe: drop PPPOX_ZOMBIEs in pppoe_release
-Date: Thu, 11 Oct 2012 07:51:15 +0900
-Message-Id: <20121010224903.351262356@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 061/133] SCSI: zfcp: Make trace record tags unique
+Date: Thu, 11 Oct 2012 07:51:27 +0900
+Message-Id: <20121010224905.496873165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -28,34 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-From: Xiaodong Xu <stid.smth@gmail.com>
+commit 0100998dbfe6dfcd90a6e912ca7ed6f255d48f25 upstream.
 
-[ Upstream commit 2b018d57ff18e5405823e5cb59651a5b4d946d7b ]
+Duplicate fssrh_2 from a54ca0f62f953898b05549391ac2a8a4dad6482b
+"[SCSI] zfcp: Redesign of the debug tracing for HBA records."
+complicates distinction of generic status read response from
+local link up.
+Duplicate fsscth1 from 2c55b750a884b86dea8b4cc5f15e1484cc47a25c
+"[SCSI] zfcp: Redesign of the debug tracing for SAN records."
+complicates distinction of good common transport response from
+invalid port handle.
 
-When PPPOE is running over a virtual ethernet interface (e.g., a
-bonding interface) and the user tries to delete the interface in case
-the PPPOE state is ZOMBIE, the kernel will loop forever while
-unregistering net_device for the reference count is not decreased to
-zero which should have been done with dev_put().
-
-Signed-off-by: Xiaodong Xu <stid.smth@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ppp/pppoe.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ppp/pppoe.c
-+++ b/drivers/net/ppp/pppoe.c
-@@ -570,7 +570,7 @@ static int pppoe_release(struct socket *
- 
- 	po = pppox_sk(sk);
- 
--	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND)) {
-+	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND | PPPOX_ZOMBIE)) {
- 		dev_put(po->pppoe_dev);
- 		po->pppoe_dev = NULL;
+---
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -219,7 +219,7 @@ static void zfcp_fsf_status_read_handler
+ 		return;
  	}
+ 
+-	zfcp_dbf_hba_fsf_uss("fssrh_2", req);
++	zfcp_dbf_hba_fsf_uss("fssrh_4", req);
+ 
+ 	switch (sr_buf->status_type) {
+ 	case FSF_STATUS_READ_PORT_CLOSED:
+@@ -915,7 +915,7 @@ static void zfcp_fsf_send_ct_handler(str
+ 
+ 	switch (header->fsf_status) {
+         case FSF_GOOD:
+-		zfcp_dbf_san_res("fsscth1", req);
++		zfcp_dbf_san_res("fsscth2", req);
+ 		ct->status = 0;
+ 		break;
+         case FSF_SERVICE_CLASS_NOT_SUPPORTED:
 
 
