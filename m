@@ -1,262 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2JJOeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:34:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55194 "EHLO comal.ext.ti.com"
+	id S1753763Ab2JJP7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:59:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932220Ab2JJOeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:34:19 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-keystone@list.ti.com - Linux developers for Keystone family of
-	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>
-Subject: RE: [PATCH 01/13] calk: davinci - add Main PLL clock driver
-Thread-Topic: [PATCH 01/13] calk: davinci - add Main PLL clock driver
-Thread-Index: AQHNpt8fAktBDroxJUOBgoUpd1+pDpeymEkA
-Date: Wed, 10 Oct 2012 14:34:06 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7041FB712@DFLE12.ent.ti.com>
-References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com>
- <1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
- <507563C3.2000305@ti.com>
-In-Reply-To: <507563C3.2000305@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="utf-8"
+	id S1752059Ab2JJP7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 11:59:33 -0400
+Date: Wed, 10 Oct 2012 11:59:29 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
+Message-ID: <20121010155929.GA18733@redhat.com>
+References: <50750367.2070508@ce.jp.nec.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50750367.2070508@ce.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9AIUeT8002687
 
->> -----Original Message-----
->> From: Nori, Sekhar
->> Sent: Wednesday, October 10, 2012 8:02 AM
->> To: Karicheri, Muralidharan
->> Cc: mturquette@linaro.org; arnd@arndb.de; akpm@linux-foundation.org;
->> shawn.guo@linaro.org; rob.herring@calxeda.com; linus.walleij@linaro.org;
->> viresh.linux@gmail.com; linux-kernel@vger.kernel.org; Hilman, Kevin;
->> linux@arm.linux.org.uk; davinci-linux-open-source@linux.davincidsp.com; linux-arm-
->> kernel@lists.infradead.org; linux-keystone@list.ti.com - Linux developers for Keystone
->> family of devices (May contain non-TIers); linux-c6x-dev@linux-c6x.org; Chemparathy,
->> Cyril
->> Subject: Re: [PATCH 01/13] clk: davinci - add Main PLL clock driver
->> 
->> Hi Murali,
->> 
->> On 9/26/2012 11:37 PM, Murali Karicheri wrote:
->> > This is the driver for the main PLL clock hardware found on DM SoCs.
->> > This driver borrowed code from arch/arm/mach-davinci/clock.c and
->> > implemented the driver as per common clock provider API. The main PLL
->> > hardware typically has a multiplier, a pre-divider and a post-divider.
->> > Some of the SoCs has the divider fixed meaning they can not be
->> > configured through a register. HAS_PREDIV and HAS_POSTDIV flags are
->> > used to tell the driver if a hardware has these dividers present or not.
->> > Driver is configured through the structure clk_davinci_pll_data that
->> > has the platform data for the driver.
->> >
->> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> 
->> Are you using git-format-patch to generate the patches? It should have added a diffstat
->> here by default which is very useful in quickly understanding what the patch is touching.
->> >
->> > diff --git a/drivers/clk/davinci/clk-davinci-pll.c
->> > b/drivers/clk/davinci/clk-davinci-pll.c
->> > new file mode 100644
->> > index 0000000..13e1690
->> > --- /dev/null
->> > +++ b/drivers/clk/davinci/clk-davinci-pll.c
->> > @@ -0,0 +1,128 @@
->> > +/*
->> > + * PLL clk driver DaVinci devices
->> > + *
->> > + * Copyright (C) 2006-2012 Texas Instruments.
->> > + * Copyright (C) 2008-2009 Deep Root Systems, LLC
->> > + *
->> > + * This program is free software; you can redistribute it and/or
->> > +modify
->> > + * it under the terms of the GNU General Public License as published
->> > +by
->> > + * the Free Software Foundation; either version 2 of the License, or
->> > + * (at your option) any later version.
->> > + * TODO - Add set_parent_rate()
->> > + */
->> > +#include <linux/clk.h>
->> > +#include <linux/clk-provider.h>
->> > +#include <linux/delay.h>
->> > +#include <linux/err.h>
->> > +#include <linux/io.h>
->> > +#include <linux/slab.h>
->> > +#include <linux/platform_data/clk-davinci-pll.h>
->> 
->> It will be nice to keep these sorted in alphabetical order. You got it almost right, except
->> the last one. Keeping it sorted keeps out duplicates.
->> 
->> > +
->> > +#include <mach/cputype.h>
->> 
->> Hmm, why is this needed? mach/ includes in driver files make it tough to use this on
->> other architectures/machines. You have plan to use this on driver on keystone and c6x as
->> well, right? It will also break multi-platform ARM build.
->> 
->> > +
->> > +#define PLLM		0x110
->> > +#define PLLM_PLLM_MASK  0xff
->> > +#define PREDIV          0x114
->> > +#define POSTDIV         0x128
->> > +#define PLLDIV_EN       BIT(15)
->> 
->> Can you use tabs for indentation?
->> 
->> > +
->> > +/**
->> > + * struct clk_davinci_pll - DaVinci Main pll clock
->> 
->> no capitalization on 'M' needed, I think.
->> 
->> > + * @hw: clk_hw for the pll
->> > + * @pll_data: PLL driver specific data  */ struct clk_davinci_pll {
->> > +	struct clk_hw hw;
->> > +	struct clk_davinci_pll_data *pll_data; };
->> > +
->> > +#define to_clk_pll(_hw) container_of(_hw, struct clk_davinci_pll, hw)
->> > +
->> > +static unsigned long clk_pllclk_recalc(struct clk_hw *hw,
->> > +					unsigned long parent_rate)
->> > +{
->> > +	struct clk_davinci_pll *pll = to_clk_pll(hw);
->> > +	struct clk_davinci_pll_data *pll_data = pll->pll_data;
->> > +	u32 mult = 1, prediv = 1, postdiv = 1;
->> 
->> No need to initialize mult here since you are doing it right away below.
->> 
->> > +	unsigned long rate = parent_rate;
->> > +
->> > +	/* If there is a device specific recalc defined invoke it. Otherwise
->> > +	 * fallback to default one
->> > +	 */
->> 
->> This is not following the multi-line comment style defined in Documentation/CodingStyle.
->> 
->> > +	mult = __raw_readl(pll_data->pllm);
->> 
->> Do not use __raw_ variants since they are not safe on ARMv7. Use readl/writel instead.
->> 
->> > +	if (pll_data->pllm_multiplier)
->> > +		mult =  pll_data->pllm_multiplier *
->> > +				(mult & pll_data->pllm_mask);
->> > +	else
->> > +		mult = (mult & pll_data->pllm_mask) + 1;
->> > +
->> > +	if (pll_data->flags & CLK_DAVINCI_PLL_HAS_PREDIV) {
->> > +		/* pre-divider is fixed, take prediv value from pll_data  */
->> > +		if (pll_data->fixed_prediv)
->> > +			prediv = pll_data->fixed_prediv;
->> 
->> Since else is multi-line, if needs braces as well.
->> 
->> > +		else {
->> > +			prediv = __raw_readl(pll_data->prediv);
->> > +			if (prediv & PLLDIV_EN)
->> > +				prediv = (prediv & pll_data->prediv_mask) + 1;
->> > +			else
->> > +				prediv = 1;
->> > +		}
->> > +	}
->> > +
->> > +	if (pll_data->flags & CLK_DAVINCI_PLL_HAS_POSTDIV) {
->> > +		postdiv = __raw_readl(pll_data->postdiv);
->> > +		if (postdiv & PLLDIV_EN)
->> > +			postdiv = (postdiv & pll_data->postdiv_mask) + 1;
->> > +		else
->> > +			postdiv = 1;
->> > +	}
->> > +
->> > +	rate /= prediv;
->> > +	rate *= mult;
->> > +	rate /= postdiv;
->> > +
->> > +	pr_debug("PLL%d: input = %lu MHz [ ",
->> > +		 pll_data->num, parent_rate / 1000000);
->> > +	if (prediv > 1)
->> > +		pr_debug("/ %d ", prediv);
->> > +	if (mult > 1)
->> > +		pr_debug("* %d ", mult);
->> > +	if (postdiv > 1)
->> > +		pr_debug("/ %d ", postdiv);
->> > +	pr_debug("] --> %lu MHz output.\n", rate / 1000000);
->> > +	return rate;
->> 
->> Have a blank like before the return, its easier to read that way.
->> 
->> > +}
->> > +
->> > +static const struct clk_ops clk_pll_ops = {
->> > +	.recalc_rate = clk_pllclk_recalc,
->> > +};
->> > +
->> > +struct clk *clk_register_davinci_pll(struct device *dev, const char *name,
->> > +			const char *parent_name,
->> > +			struct clk_davinci_pll_data *pll_data) {
->> > +	struct clk_init_data init;
->> > +	struct clk_davinci_pll *pll;
->> > +	struct clk *clk;
->> > +
->> > +	if (!pll_data)
->> > +		return ERR_PTR(-ENODEV);
->> > +
->> > +	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
->> > +	if (!pll)
->> > +		return ERR_PTR(-ENOMEM);
->> > +	init.name = name;
->> > +	init.ops = &clk_pll_ops;
->> > +	init.flags = pll_data->flags;
->> > +	init.parent_names = (parent_name ? &parent_name : NULL);
->> > +	init.num_parents = (parent_name ? 1 : 0);
->> > +
->> > +	pll->pll_data	= pll_data;
->> > +	pll->hw.init = &init;
->> > +
->> > +	clk = clk_register(NULL, &pll->hw);
->> > +	if (IS_ERR(clk))
->> > +		kfree(pll);
->> > +
->> > +	return clk;
->> > +}
->> 
->> I guess there is an an "unregister" required as well which will free the pll memory
->> allocated above and unregister the clock? Not sure if you would ever unregister a PLL,
->> but providing this will probably help symmetry.
-Sekhar,
+On Wed, Oct 10, 2012 at 02:11:03PM +0900, Jun'ichi Nomura wrote:
+> I got system stall after the following warning with 3.6:
+> 
+> > WARNING: at /work/build/linux/block/blk-cgroup.h:250 blk_put_rl+0x4d/0x95()
+> > Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf ipt_REJEC
+> > T nf_conntrack_ipv4 nf_defrag_ipv4
+> > Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
+> > Call Trace:
+> >  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
+> >  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
+> >  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
+> >  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
+> >  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
+> >  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
+> >  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
+> >  [<ffffffff811d7728>] blk_end_request+0x10/0x12
+> >  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
+> >  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
+> >  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
+> >  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
+> >  [<ffffffff810915d5>] ? generic_smp_call_function_single_interrupt+0x9f/0xd7
+> >  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
+> >  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
+> >  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
+> >  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
+> >  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
+> >  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
+> >  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
+> >  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
+> >  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
+> >  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
+> >  [<ffffffff81017811>] cpu_idle+0xbb/0x114
+> >  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
+> >  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
+> >  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
+> >  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
+> >  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
+> >  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
+> 
+> blk_put_rl() does this:
+>          if (rl->blkg && rl->blkg->blkcg != &blkcg_root)
+>                  blkg_put(rl->blkg);
+> but if rl is q->root_rl, rl->blkg might be a bogus pointer
+> because blkcg_deactivate_policy() does not clear q->root_rl.blkg
+> after blkg_destroy_all().
+> 
+> Attached patch works for me.
 
-clk_unregister() itself is a null statement in clk.c. Besides none of the clk drivers presently have implemented the unregister(). So I believe this is unnecessary. 
->> 
->> Thanks,
->> Sekhar
+I think patch looks reasonable to me. Just that some more description
+would be nice. In fact, I will prefer some code comments too as I
+had to scratch my head for a while to figure out how did we reach here.
 
-All of your other comments will be addressed in v3 patch.
+So looks like we deactivated cfq policy (most likely changed IO
+scheduler). That will destroy all the block groups (disconnect blkg
+from list and drop policy reference on group). If there are any pending
+IOs, then group will not be destroyed till IO is completed. (Because
+of cfqq reference on blkg and because of request list reference on
+blkg).
 
-BTW, please review the v2 patch for the rest of the series. For the one you have already reviewed, it should be fine.
+Now, all request list take a refenrece on associated blkg except
+q->root_rl. This means when last IO finished, it must have dropped
+the reference on cfqq which will drop reference on associated cfqg/blkg
+and immediately root blkg will be destroyed. And now we will call
+blk_put_rl() and that will try to access root_rl>blkg which has
+been just freed as last IO completed.
 
-Murali
+So problem here is that we don't take request list reference on
+root blkg and that creates all these corner cases.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+So clearing q->root_blkg and q->root_rl.blkg during policy activation
+makes sense. That means that from queue and request list point of view
+root blkg is gone and you can't get to it. (It might still be around for
+some more time due to pending IOs though).
+
+Some minor comments below.
+
+> 
+> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index f3b44a6..5015764 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -285,6 +285,9 @@ static void blkg_destroy_all(struct request_queue *q)
+>  		blkg_destroy(blkg);
+>  		spin_unlock(&blkcg->lock);
+>  	}
+> +
+> +	q->root_blkg = NULL;
+> +	q->root_rl.blkg = NULL;
+
+I think some of the above description about we not taking root_rl
+reference on root group can go here so that next time I don't have
+to scratch my head for a long time.
+
+>  }
+>  
+>  static void blkg_rcu_free(struct rcu_head *rcu_head)
+> @@ -333,7 +336,7 @@ struct request_list *__blk_queue_next_rl(struct request_list *rl,
+>  
+>  	/* walk to the next list_head, skip root blkcg */
+>  	ent = ent->next;
+> -	if (ent == &q->root_blkg->q_node)
+> +	if (q->root_blkg && ent == &q->root_blkg->q_node)
+
+Can we fix it little differently. Little earlier in the code, we check for
+if q->blkg_list is empty, then all the groups are gone, and there are
+no more request lists hence and return NULL.
+
+Current code:
+        if (rl == &q->root_rl) {
+                ent = &q->blkg_list;
+
+Modified code:
+        if (rl == &q->root_rl) {
+                ent = &q->blkg_list;
+		/* There are no more block groups, hence no request lists */
+		if (list_empty(ent))
+			return NULL;
+	}
+
+Thanks
+Vivek
