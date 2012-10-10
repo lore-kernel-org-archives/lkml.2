@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab2JJPUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 11:20:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54790 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331Ab2JJPTR (ORCPT
+	id S1756891Ab2JJSFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 14:05:39 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59599 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916Ab2JJSFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 11:19:17 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/6] ARM: ux500: Add support for ST-Ericsson's u9540 SoC
-Date: Wed, 10 Oct 2012 16:18:52 +0100
-Message-Id: <1349882335-6786-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+	Wed, 10 Oct 2012 14:05:37 -0400
+Subject: Re: [PATCH 0/2] PCI-Express Non-Transparent Bridge Support
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+In-Reply-To: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
+References: <1349213177-9985-1-git-send-email-jon.mason@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Oct 2012 11:05:32 -0700
+Message-ID: <1349892332.3776.269.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First level board support for the u9540.
+Hi Jon & Co,
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/cpu-db8500.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+On Tue, 2012-10-02 at 14:26 -0700, Jon Mason wrote:
+> I am submitting version 4 of the PCI-Express Non-Transparent Bridge
+> patches for inclusion in 3.7.  All outstanding issues from the RFC
+> process have been addressed.
+> 
+> version 1
+> http://thread.gmane.org/gmane.linux.kernel.pci/16443
+> 
+> Version 2 incorporates numerous clean-ups 
+> http://thread.gmane.org/gmane.linux.kernel.pci/16696
+> 
+> Version 3 incorporates changes to conform NTB and client devices to the
+> Linux device model (per Greg KH's request).
+> http://thread.gmane.org/gmane.linux.kernel.pci/17808
+> 
+> Version 4 removes the transport transmit tasklet (per Dave Miller's
+> request).
+> http://thread.gmane.org/gmane.linux.network/244491
+> 
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 3d8e321..6b7f970 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -17,6 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/mfd/abx500/ab8500.h>
-+#include <linux/mfd/dbx500-prcmu.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/regulator/machine.h>
-@@ -319,6 +320,8 @@ static void __init u8500_init_machine(void)
- 		snowball_pinmaps_init();
- 	else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
- 		hrefv60_pinmaps_init();
-+	else if (of_machine_is_compatible("st-ericsson,u9540")) {}
-+		/* TODO: Add u9540 pinmaps. */
- 
- 	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
- 	parent = u8500_of_init_devices();
-@@ -331,6 +334,7 @@ static const char * u8500_dt_board_compat[] = {
- 	"calaosystems,snowball-a9500",
- 	"st-ericsson,hrefv60+",
- 	"st-ericsson,mop500",
-+	"st-ericsson,u9540",
- 	NULL,
- };
- 
-@@ -345,4 +349,14 @@ DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
- 	.dt_compat      = u8500_dt_board_compat,
- MACHINE_END
- 
-+DT_MACHINE_START(U9540_DT, "ST-Ericsson 9540 platform (Device Tree Support)")
-+	.map_io		= u8500_map_io,
-+	.init_irq	= ux500_init_irq,
-+	.timer		= &ux500_timer,
-+	.handle_irq	= gic_handle_irq,
-+	.init_machine	= u8500_init_machine,
-+	.init_late	= NULL,
-+	.dt_compat      = u8500_dt_board_compat,
-+MACHINE_END
-+
- #endif
--- 
-1.7.9.5
+I'm very happy with the current state of the new NTB subsystem code for
+an initial merge.
+
+As we are t-minus ~5 days until the v3.7 merge window closes, you'll
+want to (very soon) be sending a PULL request to Linus for drivers/ntb/
+with the appropriate Reviewed-By's + Acked-By's in place.
+
+--nab
+
+
+
+
+
+
 
