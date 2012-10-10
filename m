@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2JJF6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 01:58:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56400 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2JJF6U (ORCPT
+	id S1753138Ab2JJGOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 02:14:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50646 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752386Ab2JJGOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 01:58:20 -0400
-Message-ID: <50750E6E.20200@pengutronix.de>
-Date: Wed, 10 Oct 2012 07:58:06 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Wed, 10 Oct 2012 02:14:16 -0400
+X-Sasl-enc: G/p1oOU3jTexaBFA1dBfVW6AlfcfhGoNDMH6qdlMzbQE 1349849655
+Date: Wed, 10 Oct 2012 09:47:50 +0900
+From: Greg KH <greg@kroah.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Stable <stable@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/5] Memory policy corruption fixes -stable
+Message-ID: <20121010004750.GA22823@kroah.com>
+References: <1349801921-16598-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: David Howells <dhowells@redhat.com>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for can
-References: <30687.1349789402@warthog.procyon.org.uk> <50746516.6040100@hartkopp.net>
-In-Reply-To: <50746516.6040100@hartkopp.net>
-X-Enigmail-Version: 1.4.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig42D49F06C4076982D0DD09E7"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349801921-16598-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig42D49F06C4076982D0DD09E7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 09, 2012 at 05:58:36PM +0100, Mel Gorman wrote:
+> This is a backport of the series "Memory policy corruption fixes V2". This
+> should apply to 3.6-stable, 3.5-stable, 3.4-stable and 3.0-stable without
+> any difficulty.  It will not apply cleanly to 3.2 but just drop the "revert"
+> patch and the rest of the series should apply.
+> 
+> I tested 3.6-stable and 3.0-stable with just the revert and trinity breaks
+> as expected for the mempolicy tests. Applying the full series in both case
+> allowed trinity to complete successfully. Andi Kleen reported previously
+> that the series fixed a database performance regression[1].
+> 
+> [1] https://lkml.org/lkml/2012/8/22/585
+> 
+>  include/linux/mempolicy.h |    2 +-
+>  mm/mempolicy.c            |  137 +++++++++++++++++++++++++++++----------------
+>  2 files changed, 89 insertions(+), 50 deletions(-)
 
-On 10/09/2012 07:55 PM, Oliver Hartkopp wrote:
-> Hello Marc,
->=20
-> can you please pull these changes, so that they can go via the CAN tree=
- to Dave?
+Looks good, thanks, now all queued up.
 
-Sure, will do, when I have a proper internet connection again. This will
-be this evening. :)
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig42D49F06C4076982D0DD09E7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iEYEARECAAYFAlB1DnMACgkQjTAFq1RaXHO/vQCfW+QbVFArYndZ3lGH4vkecC+R
-vX0An0TfPKqfuXwNnXsOAHkJzflSj+um
-=5nJi
------END PGP SIGNATURE-----
-
---------------enig42D49F06C4076982D0DD09E7--
+greg k-h
