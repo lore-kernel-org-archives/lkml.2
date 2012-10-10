@@ -1,76 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab2JJLXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 07:23:19 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64739 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2JJLXS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 07:23:18 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <linux-kernel@vger.kernel.org>, <e1000-devel@lists.sf.net>
-Cc: <support@Supermicro.com>, <ap@solarrain.com>
-References: <003901cda66b$836a5db0$8a3f1910$@lucidpixels.com> <001201cda6cf$d9de5480$8d9afd80$@lucidpixels.com>
-In-Reply-To: <001201cda6cf$d9de5480$8d9afd80$@lucidpixels.com>
-Subject: RE: X9SCM-F/82574L/e1000e lag / high latency (e1000e/Intel bug)
-Date: Wed, 10 Oct 2012 07:23:16 -0400
-Message-ID: <001f01cda6d9$a505d7b0$ef118710$@lucidpixels.com>
+	id S1754053Ab2JJLZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 07:25:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60987 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab2JJLZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 07:25:51 -0400
+Date: Wed, 10 Oct 2012 13:25:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 08/14] res_counter: return amount of charges after
+ res_counter_uncharge
+Message-ID: <20121010112549.GF23011@dhcp22.suse.cz>
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
+ <1349690780-15988-9-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIdryc2JFTBlaO/4vE9Qu1npX97rgLBELm6lvxL17A=
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349690780-15988-9-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 08-10-12 14:06:14, Glauber Costa wrote:
+> It is useful to know how many charges are still left after a call to
+> res_counter_uncharge. While it is possible to issue a res_counter_read
+> after uncharge, this can be racy.
+> 
+> If we need, for instance, to take some action when the counters drop
+> down to 0, only one of the callers should see it. This is the same
+> semantics as the atomic variables in the kernel.
+> 
+> Since the current return value is void, we don't need to worry about
+> anything breaking due to this change: nobody relied on that, and only
+> users appearing from now on will be checking this value.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
------Original Message-----
-From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
-Sent: Tuesday, October 09, 2012 6:15 PM
-To: linux-kernel@vger.kernel.org; e1000-devel@lists.sf.net
-Cc: support@Supermicro.com; ap@solarrain.com
-Subject: X9SCM-F/82574L/e1000e lag / high latency (e1000e/Intel bug)
+> ---
+>  Documentation/cgroups/resource_counter.txt |  7 ++++---
+>  include/linux/res_counter.h                | 12 +++++++-----
+>  kernel/res_counter.c                       | 20 +++++++++++++-------
+>  3 files changed, 24 insertions(+), 15 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+> index 0c4a344..c4d99ed 100644
+> --- a/Documentation/cgroups/resource_counter.txt
+> +++ b/Documentation/cgroups/resource_counter.txt
+> @@ -83,16 +83,17 @@ to work with it.
+>  	res_counter->lock internally (it must be called with res_counter->lock
+>  	held). The force parameter indicates whether we can bypass the limit.
+>  
+> - e. void res_counter_uncharge[_locked]
+> + e. u64 res_counter_uncharge[_locked]
+>  			(struct res_counter *rc, unsigned long val)
+>  
+>  	When a resource is released (freed) it should be de-accounted
+>  	from the resource counter it was accounted to.  This is called
+> -	"uncharging".
+> +	"uncharging". The return value of this function indicate the amount
+> +	of charges still present in the counter.
+>  
+>  	The _locked routines imply that the res_counter->lock is taken.
+>  
+> - f. void res_counter_uncharge_until
+> + f. u64 res_counter_uncharge_until
+>  		(struct res_counter *rc, struct res_counter *top,
+>  		 unsinged long val)
+>  
+> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> index 7d7fbe2..4b173b6 100644
+> --- a/include/linux/res_counter.h
+> +++ b/include/linux/res_counter.h
+> @@ -130,14 +130,16 @@ int res_counter_charge_nofail(struct res_counter *counter,
+>   *
+>   * these calls check for usage underflow and show a warning on the console
+>   * _locked call expects the counter->lock to be taken
+> + *
+> + * returns the total charges still present in @counter.
+>   */
+>  
+> -void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+> -void res_counter_uncharge(struct res_counter *counter, unsigned long val);
+> +u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+> +u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
+>  
+> -void res_counter_uncharge_until(struct res_counter *counter,
+> -				struct res_counter *top,
+> -				unsigned long val);
+> +u64 res_counter_uncharge_until(struct res_counter *counter,
+> +			       struct res_counter *top,
+> +			       unsigned long val);
+>  /**
+>   * res_counter_margin - calculate chargeable space of a counter
+>   * @cnt: the counter
+> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> index ad581aa..7b3d6dc 100644
+> --- a/kernel/res_counter.c
+> +++ b/kernel/res_counter.c
+> @@ -86,33 +86,39 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
+>  	return __res_counter_charge(counter, val, limit_fail_at, true);
+>  }
+>  
+> -void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+> +u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+>  {
+>  	if (WARN_ON(counter->usage < val))
+>  		val = counter->usage;
+>  
+>  	counter->usage -= val;
+> +	return counter->usage;
+>  }
+>  
+> -void res_counter_uncharge_until(struct res_counter *counter,
+> -				struct res_counter *top,
+> -				unsigned long val)
+> +u64 res_counter_uncharge_until(struct res_counter *counter,
+> +			       struct res_counter *top,
+> +			       unsigned long val)
+>  {
+>  	unsigned long flags;
+>  	struct res_counter *c;
+> +	u64 ret = 0;
+>  
+>  	local_irq_save(flags);
+>  	for (c = counter; c != top; c = c->parent) {
+> +		u64 r;
+>  		spin_lock(&c->lock);
+> -		res_counter_uncharge_locked(c, val);
+> +		r = res_counter_uncharge_locked(c, val);
+> +		if (c == counter)
+> +			ret = r;
+>  		spin_unlock(&c->lock);
+>  	}
+>  	local_irq_restore(flags);
+> +	return ret;
+>  }
+>  
+> -void res_counter_uncharge(struct res_counter *counter, unsigned long val)
+> +u64 res_counter_uncharge(struct res_counter *counter, unsigned long val)
+>  {
+> -	res_counter_uncharge_until(counter, NULL, val);
+> +	return res_counter_uncharge_until(counter, NULL, val);
+>  }
+>  
+>  static inline unsigned long long *
+> -- 
+> 1.7.11.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-If you have > 16GB do not upgrade to 2.0b, I am writing up a page on this
-and will post it shortly, the board will show 32GB with 2.0b but when it
-tries to address it, the machine reboots.  Stick with 2.0a for now, I will
-call Supermicro later, will post a page on all of these issues in a bit.
-
---
-
-As promised:
-https://sites.google.com/a/lucidpixels.com/web/blog/supermicrox9scm-fissues
-
-Summary:
-
-1. the board does not always address 32GB of ram if you are using an Ivy
-Bridge chip on this motherboard
-2. e1000e network problems
-    a) During heavy network I/O (file copy) on eth0 the network latency
-jumps to 300-1000ms+ every 4-5 seconds (it does not do this on a separate
-card)
-    b) During heavy network I/O (file copy) of over 600GB of files, the
-kernel disabled the network IRQ on eth0 and took the server offline from a
-network perspective (it has not done this on a separate card..yet)
-3. Problems with PCI-e cards
-    summary: Don't expect to use all four PCI-e slots if they use a lot of
-power
-4. clock drift issues:
-  summary: expect some strangeness if you use gpsd/a gps to help sync your
-time, due to what SM noted below
-    http://lists.ntp.org/pipermail/pool/2012-July/006019.html
-
-here is a picture of memtest86 showing "Unexpected Interrupt - Halting" when
-2.0b BIOS is used with 32gb of ram:
-http://home.comcast.net/~jpiszcz/20121010/x9scm-web-small.jpg
-
-here is the issue with memtest86 (crashes/reboots host when you have 2.0b +
-32gb of ram):
-https://www.youtube.com/watch?feature=player_embedded&v=M2TWO5kFm9U
-
-Justin.
-
+-- 
+Michal Hocko
+SUSE Labs
