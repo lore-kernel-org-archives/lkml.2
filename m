@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab2JJRwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 13:52:44 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:16905 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab2JJRwm (ORCPT
+	id S1755059Ab2JJRkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:40:35 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57160 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab2JJRkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 13:52:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/3] xen/bootup: allow {read|write}_cr8 pvops call.
-Date: Wed, 10 Oct 2012 13:40:48 -0400
-Message-Id: <1349890849-17471-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1349890849-17471-1-git-send-email-konrad.wilk@oracle.com>
-References: <1349890849-17471-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 10 Oct 2012 13:40:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+MoWDp8Y0tJoBbz0nxH3Y7J0ur3TJm-dO9OM5BZVBKcbS9TpA@mail.gmail.com>
+References: <CA+MoWDp=_F9opJbVkv9sDsmoykm7MTUZwRVumKCB0ZqDwD6NoQ@mail.gmail.com>
+	<20121004.142335.1467206545795435493.davem@davemloft.net>
+	<CA+MoWDqBF5bdQYBaUmpB99Q=YcHYcUxi8Ffo3x4s0B+pmomb+Q@mail.gmail.com>
+	<20121004.145419.1859367129463136197.davem@davemloft.net>
+	<1349395795.2008.26.camel@joe-AO722>
+	<alpine.DEB.2.02.1210050712590.1958@localhost6.localdomain6>
+	<1349422595.2008.55.camel@joe-AO722>
+	<alpine.DEB.2.02.1210051003120.1958@localhost6.localdomain6>
+	<CA+MoWDp8Y0tJoBbz0nxH3Y7J0ur3TJm-dO9OM5BZVBKcbS9TpA@mail.gmail.com>
+Date: Wed, 10 Oct 2012 14:40:30 -0300
+Message-ID: <CALF0-+V-SeaaSn++um-JcQx4vV4Bsd4D1c3mki1yNS8kvSGm7w@mail.gmail.com>
+Subject: Re: [PATCH 19/20] drivers/net/ethernet/marvell/skge.c: fix error
+ return code
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, Joe Perches <joe@perches.com>,
+        David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        mlindner@marvell.com, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We actually do not do anything about it. Just return a default
-value of zero and if the kernel tries to write anything but 0
-we BUG_ON.
+Hi Peter,
 
-This fixes the case when an user tries to suspend the machine
-and it blows up in save_processor_state b/c 'read_cr8' is set
-to NULL and we get:
+On Wed, Oct 10, 2012 at 2:08 PM, Peter Senna Tschudin
+<peter.senna@gmail.com> wrote:
+> Stephen and David,
+>
+> I've sent V2 of the patches and they were all accepted. Thank you.
+>
+> I've made a template for the commit message, and then copy and paste
+> function names from the code. Something like:
+>
+> -- // --
+> The function sky2_probe() return 0 for success and negative value
+> for most of its internal tests failures. There are two exceptions
+> that are error cases going to err_out*:. For this two cases, the
+> function abort its success execution path, but returns non negative
+> value, making it dificult for a caller function to notice the error.
+>
+> This patch fixes the error cases that do not return negative values.
+>
+> This was found by Coccinelle, but the code change was made by hand.
+> This patch is not robot generated.
+> ...
+> --//--
+>
+> How useful it was to have the function names when you were analyzing
+> the patches? It took me a lot of time to modify the template by copy
+> and paste, check if it is correct, then commit. I have some other
+> similar patches to submit and I wonder if having the function names in
+> the commit message helped you.
+>
 
-kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
-invalid opcode: 0000 [#1] SMP
-Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
-RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
+Having real function names in your commit message won't make it more useful.
+IMHO, the problem is you're still using a template commit message,
+which produces
+a robot-like commit message.
 
-.. snip..
-Call Trace:
- [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
- [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
- [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
+Developers don't like that, we prefer to see a text written by some
+guy explaining
+why is this patch needed, and what it's fixing/improving from an
+overall point of view.
+This is not easy and takes much training.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+I believe patches should help maintainers, not only add work them,
+so it's important to double-triple-check the patch and
+double-triple-check the commit message.
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 1fbe75a..e1e4636 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -984,7 +984,16 @@ static void xen_write_cr4(unsigned long cr4)
- 
- 	native_write_cr4(cr4);
- }
--
-+#ifdef CONFIG_X86_64
-+static inline unsigned long xen_read_cr8(void)
-+{
-+	return 0;
-+}
-+static inline void xen_write_cr8(unsigned long val)
-+{
-+	BUG_ON(val);
-+}
-+#endif
- static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- {
- 	int ret;
-@@ -1153,6 +1162,11 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
- 	.read_cr4_safe = native_read_cr4_safe,
- 	.write_cr4 = xen_write_cr4,
- 
-+#ifdef CONFIG_X86_64
-+	.read_cr8 = xen_read_cr8,
-+	.write_cr8 = xen_write_cr8,
-+#endif
-+
- 	.wbinvd = native_wbinvd,
- 
- 	.read_msr = native_read_msr_safe,
--- 
-1.7.7.6
+I know this is tedious and it'll slow you a bit. But it's a good
+thing: it means you are working :-)
 
+Also, in this particular case, where the coccinelle does not fix
+something obvious,
+then I'd say you should be *extra* careful.
+
+Hope this helps.
+
+    Ezequiel
