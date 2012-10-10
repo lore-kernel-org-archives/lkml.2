@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab2JJU5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 16:57:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63305 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2JJU5O (ORCPT
+	id S1754156Ab2JJU7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 16:59:52 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:42987 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2JJU7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 16:57:14 -0400
-Date: Wed, 10 Oct 2012 13:57:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
+	Wed, 10 Oct 2012 16:59:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        mingo@redhat.com, miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <20121010133709.7eaefcdb.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1210101351050.31237@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
- <1349860216.7880.105.camel@twins> <alpine.DEB.2.00.1210101324000.28583@chino.kir.corp.google.com> <20121010133709.7eaefcdb.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        Greg KH <greg@kroah.com>
+References: <20121010204256.GD29501@moon>
+	<20121010135408.515c2e21.akpm@linux-foundation.org>
+Date: Wed, 10 Oct 2012 13:59:43 -0700
+In-Reply-To: <20121010135408.515c2e21.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Wed, 10 Oct 2012 13:54:08 -0700")
+Message-ID: <87vceiqc00.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+HSXwb5yy+8i4MiBIwHWg9e8UJf6Hj1lA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: openvz.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] pidns: remove recursion from free_pid_ns() v5
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Andrew Morton wrote:
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-> > > So for now, let me NACK that patch. You cannot go change stuff like
-> > > that.
-> > > 
-> > 
-> > Agreed, that makes the nack-count up to 2 now.  Andrew, please remove 
-> > cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch
-> > cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch
-> > from -mm.
-> 
-> Nope.  It fixes a BUG() and so I'll be keeping it around until I see a
-> better fix.  It's one of the ways in which I prevent things from falling
-> through cracks.
-> 
+> On Thu, 11 Oct 2012 00:42:56 +0400
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>
+>> The free_pid_ns function done in recursion fashion:
+>> 
+>> free_pid_ns(parent)
+>>   put_pid_ns(parent)
+>>     kref_put(&ns->kref, free_pid_ns);
+>>       free_pid_ns
+>> 
+>> thus if there was a huge nesting of namespaces the userspace
+>> may trigger avalanche calling of free_pid_ns leading to
+>> kernel stack exhausting and a panic eventually.
+>> 
+>> This patch turns the recursion into iterative loop.
+>> 
+>> v5 (from oleg@):
+>>  - Drop @ret variable
+>>  - Make put_pid_ns non-inline since it grows in size,
+>>    in turn make free_pid_ns static
+>
+> OK, let's try that.  I'll sit on this until -rc2 to give it a bit of
+> time to cook.
+>
+> A -stable backport might be needed.  What capabilities does userspace
+> need to be able to trigger the kernel stack overflow?
 
-It fixes a BUG() that only affects users who are doing node hot-remove, 
-which is still radically under development, and nobody cares about except 
-those on the cc list, but it also introduces the NULL pointer dereference 
-that is attempting to be addressed in this patch.  The "fix" that causes 
-this NULL pointer is clearly not the direction we want to go, I think we 
-have agreement at node hot-remove to iterate all possible cpus are map all 
-offline cpus with cpu_to_node(cpu) == node to NUMA_NO_NODE instead in the 
-generic hotplug code.
+CAP_SYS_ADMIN is required to create a new pid namespace today.
 
-Regardless, this shouldn't be touching the acpi code which
-cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch and 
-cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch do since 
-it makes the behavior inconsistent across interfaces and architectures.
+With a little luck the user namespace bits that allow unprivelged
+creation of pid namespaces will be ready for 3.8.
+
+Eric
+
