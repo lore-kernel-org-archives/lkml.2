@@ -1,116 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab2JJT1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 15:27:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40159 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab2JJT13 (ORCPT
+	id S1755773Ab2JJT2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 15:28:14 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34648 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab2JJT2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 15:27:29 -0400
-Message-ID: <5075CC15.3040809@mvista.com>
-Date: Wed, 10 Oct 2012 21:27:17 +0200
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121005 Thunderbird/16.0
-MIME-Version: 1.0
-To: Constantine Shulyupin <const@MakeLinux.com>
-CC: nsekhar@ti.com, gregkh@linuxfoundation.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6] Enable USB peripheral mode on dm365 EVM
-References: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
-In-Reply-To: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 10 Oct 2012 15:28:12 -0400
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+In-Reply-To: <5075B3B6.3070802@linux.vnet.ibm.com>
+References: <20120921120000.27611.71321.sendpatchset@codeblue>
+	 <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com>
+	 <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com>
+	 <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com>
+	 <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins>
+	 <506DA48C.8050200@redhat.com>  <20121009185108.GA2549@linux.vnet.ibm.com>
+	 <1349879095.5551.266.camel@oc6622382223.ibm.com>
+	 <5075B3B6.3070802@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Oct 2012 14:27:50 -0500
+Message-ID: <1349897270.22418.7.camel@oc2024037011.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101019-7606-0000-0000-000004626D03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2012-10-10 at 23:13 +0530, Raghavendra K T wrote:
+> On 10/10/2012 07:54 PM, Andrew Theurer wrote:
+> > I ran 'perf sched map' on the dbench workload for medium and large VMs,
+> > and I thought I would share some of the results.  I think it helps to
+> > visualize what's going on regarding the yielding.
+> >
+> > These files are png bitmaps, generated from processing output from 'perf
+> > sched map' (and perf data generated from 'perf sched record').  The Y
+> > axis is the host cpus, each row being 10 pixels high.  For these tests,
+> > there are 80 host cpus, so the total height is 800 pixels.  The X axis
+> > is time (in microseconds), with each pixel representing 1 microsecond.
+> > Each bitmap plots 30,000 microseconds.  The bitmaps are quite wide
+> > obviously, and zooming in/out while viewing is recommended.
+> >
+> > Each row (each host cpu) is assigned a color based on what thread is
+> > running.  vCPUs of the same VM are assigned a common color (like red,
+> > blue, magenta, etc), and each vCPU has a unique brightness for that
+> > color.  There are a maximum of 12 assignable colors, so in any VMs >12
+> > revert to vCPU color of gray. I would use more colors, but it becomes
+> > harder to distinguish one color from another.  The white color
+> > represents missing data from perf, and black color represents any thread
+> > which is not a vCPU.
+> >
+> > For the following tests, VMs were pinned to host NUMA nodes and to
+> > specific cpus to help with consistency and operate within the
+> > constraints of the last test (gang scheduler).
+> >
+> > Here is a good example of PLE.  These are 10-way VMs, 16 of them (as
+> > described above only 12 of the VMs have a color, rest are gray).
+> >
+> > https://docs.google.com/open?id=0B6tfUNlZ-14wdmFqUmE5QjJHMFU
+> 
+> This looks very nice to visualize what is happening. Beginning of the 
+> graph looks little messy but later it is clear.
+> 
+> >
+> > If you zoom out and look at the whole bitmap, you may notice the 4ms
+> > intervals of the scheduler.  They are pretty well aligned across all
+> > cpus.  Normally, for cpu bound workloads, we would expect to see each
+> > thread to run for 4 ms, then something else getting to run, and so on.
+> > That is mostly true in this test.  We have 2x over-commit and we
+> > generally see the switching of threads at 4ms.  One thing to note is
+> > that not all vCPU threads for the same VM run at exactly the same time,
+> > and that is expected and the whole reason for lock-holder preemption.
+> > Now, if you zoom in on the bitmap, you should notice within the 4ms
+> > intervals there is some task switching going on.  This is most likely
+> > because of the yield_to initiated by the PLE handler.  In this case
+> > there is not that much yielding to do.   It's quite clean, and the
+> > performance is quite good.
+> >
+> > Below is an example of PLE, but this time with 20-way VMs, 8 of them.
+> > CPU over-commit is still 2x.
+> >
+> > https://docs.google.com/open?id=0B6tfUNlZ-14wdmFqUmE5QjJHMFU
+> 
+> I think this link still 10x16. Could you paste the link again?
 
-On 10-10-2012 14:33, Constantine Shulyupin wrote:
+Oops
+https://docs.google.com/open?id=0B6tfUNlZ-14wSGtYYzZtRTcyVjQ
 
-> From: Constantine Shulyupin <const@MakeLinux.com>
->
-> Sets USB PHY clock source to 24 MHz clock and call USB configuration from board initialization.
->
-> Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
->
-> References:
->
-> Definition of USB_PHY_CTRL and PHYCLKFREQ:
-> - http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
->
-> Original patch by miguel.aguilar@ridgerun.com three years ago:
-> - http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
->
-> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
-> ---
->
-> Note:
->
-> Changelog
->
-> Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
-> accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
-> - phy configuration moved to drivers/usb/musb/davinci.c
-> - USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
-> - Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
->
-> Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
-> - removed fix of dev_info in musb_init_controller
->
-> Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
-> - removed optional altering of pr_info
->
-> Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
-> - removed optional code and reordered
-> - removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
->
-> This patch is based on code from projects Arago, Angstom and RidgeRun.
->
-> ---
->   arch/arm/mach-davinci/board-dm365-evm.c |    2 ++
->   drivers/usb/musb/davinci.c              |    3 +++
->   drivers/usb/musb/davinci.h              |    1 +
->   3 files changed, 6 insertions(+)
->
-> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-> index 688a9c5..ba5ffc1 100644
-> --- a/arch/arm/mach-davinci/board-dm365-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
-> @@ -38,6 +38,7 @@
->   #include <mach/mmc.h>
->   #include <mach/nand.h>
->   #include <mach/keyscan.h>
-> +#include <mach/usb.h>
->   
->   #include <media/tvp514x.h>
->   
-> @@ -610,6 +611,7 @@ static __init void dm365_evm_init(void)
->   
->   	dm365_init_spi0(BIT(0), dm365_evm_spi_info,
->   			ARRAY_SIZE(dm365_evm_spi_info));
-> +	davinci_setup_usb(1000, 8);
->   }
->   
->   MACHINE_START(DAVINCI_DM365_EVM, "DaVinci DM365 EVM")
+> 
+> >
+> > This one looks quite different.  In short, it's a mess.  The switching
+> > between tasks can be lower than 10 microseconds.  It basically never
+> > recovers.  There is constant yielding all the time.
+> >
+> > Below is again 8 x 20-way VMs, but this time I tried out Nikunj's gang
+> > scheduling patches.  While I am not recommending gang scheduling, I
+> > think it's a good data point.  The performance is 3.88x the PLE result.
+> >
+> > https://docs.google.com/open?id=0B6tfUNlZ-14wWXdscWcwNTVEY3M
+> >
+> > Note that the task switching intervals of 4ms are quite obvious again,
+> > and this time all vCPUs from same VM run at the same time.  It
+> > represents the best possible outcome.
+> >
+> >
+> > Anyway, I thought the bitmaps might help better visualize what's going
+> > on.
+> >
+> > -Andrew
+> >
+> >
+> >
+> >
+> 
 
-     You need to split the patch at this point. Above part should be 
-applied to the DaVinci tree, below part to the MUSB tree.
-
-> diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-> index 472c8b4..af09ebf 100644
-> --- a/drivers/usb/musb/davinci.c
-> +++ b/drivers/usb/musb/davinci.c
-> @@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
->   		__raw_writel(deepsleep, DM355_DEEPSLEEP);
->   	}
->   
-> +	if (machine_is_davinci_dm365_evm())
-> +		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
-
-     I'd put that to the board file instead, like in board-da830-evm.c....
-
-WBR, Sergei
 
