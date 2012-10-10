@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab2JJV4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 17:56:07 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36657 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755199Ab2JJV4E (ORCPT
+	id S1756974Ab2JJV4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 17:56:53 -0400
+Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:25481 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591Ab2JJV4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 17:56:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArErAK3tdVB5LIL3/2dsb2JhbABEhSm0JoRjAgJ7gQmCIAEBBTocIxAIAxIGLhQlAw0UE4gDuBoUizM7gSiEPQOVa5AxgwE
-Date: Thu, 11 Oct 2012 08:56:00 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jan Kara <jack@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
- s390
-Message-ID: <20121010215600.GX23644@dastard>
-References: <1349108796-32161-1-git-send-email-jack@suse.cz>
- <alpine.LSU.2.00.1210082029190.2237@eggly.anvils>
- <20121009162107.GE15790@quack.suse.cz>
- <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
+	Wed, 10 Oct 2012 17:56:50 -0400
+Message-ID: <5075F029.90807@laposte.net>
+Date: Thu, 11 Oct 2012 00:01:13 +0200
+From: Yann Cantin <yann.cantin@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120826 Thunderbird/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ebeam PATCH v2 1/2] hid: Blacklist eBeam devices
+References: <1349529287-23193-1-git-send-email-yann.cantin@laposte.net> <1349529287-23193-2-git-send-email-yann.cantin@laposte.net> <20121010163747.GD19335@core.coreip.homeip.net>
+In-Reply-To: <20121010163747.GD19335@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 07:19:09PM -0700, Hugh Dickins wrote:
-> On Tue, 9 Oct 2012, Jan Kara wrote:
-> > On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
-> > > On Mon, 1 Oct 2012, Jan Kara wrote:
-> > > 
-> > > > On s390 any write to a page (even from kernel itself) sets architecture
-> > > > specific page dirty bit. Thus when a page is written to via standard write, HW
-> > > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
-> > > > finds the dirty bit and calls set_page_dirty().
-> > > > 
-> > > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
-> > > > filesystems. The bug we observed in practice is that buffers from the page get
-> > > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
-> > > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
-> > > > from xfs_count_page_state().
-> > > 
-> > > What changed recently?  Was XFS hardly used on s390 until now?
-> >   The problem was originally hit on SLE11-SP2 which is 3.0 based after
-> > migration of our s390 build machines from SLE11-SP1 (2.6.32 based). I think
-> > XFS just started to be more peevish about what pages it gets between these
-> > two releases ;) (e.g. ext3 or ext4 just says "oh, well" and fixes things
-> > up).
-> 
-> Right, in 2.6.32 xfs_vm_writepage() had a !page_has_buffers(page) case,
-> whereas by 3.0 that had become ASSERT(page_has_buffers(page)), with the
-> ASSERT usually compiled out, stumbling later in page_buffers() as you say.
+Hi,
 
-What that says is that no-one is running xfstests-based QA on s390
-with CONFIG_XFS_DEBUG enabled, otherwise this would have been found.
-I've never tested XFS on s390 before, and I doubt any of the
-upstream developers have, either, because not many peopl ehave s390
-machines in their basement. So this is probably just an oversight
-in the distro QA environment more than anything....
+Le 10/10/2012 18:37, Dmitry Torokhov a écrit :
+> Is the device usable at all with generic HID driver? If it isn't then
+> maybe we should blacklist it unconditionally?
 
-Cheers,
+Without the libusb based proprietary stack, the device is unusable under linux.
 
-Dave.
+If i correctly understand, libusb need a driver to be present in the first place,
+(even a useless generic-usb) to be able to grab the device. If we unconditionally
+blacklist the device and the ebeam driver isn't loaded (not compiled for example), no way
+for libusb (and the stack) to handle the device.
+
+As stated before, i'm not comfortable with the risk of breaking other hypothetical support,
+even proprietary.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Yann Cantin
+A4FEB47F
+--
