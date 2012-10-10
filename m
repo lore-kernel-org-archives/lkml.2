@@ -1,49 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab2JJSWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 14:22:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49141 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756867Ab2JJSWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 14:22:09 -0400
-Message-ID: <1349893320.2035.4.camel@joe-AO722>
-Subject: Re: [PATCH V3] ath/ath9k/ar9003_eeprom.c: Remove semicolon after if
-From: Joe Perches <joe@perches.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: mcgrof@qca.qualcomm.com, jouni@qca.qualcomm.com, vthiagar@qca.qualcomm.com,
-        senthilb@qca.qualcomm.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Date: Wed, 10 Oct 2012 11:22:00 -0700
-In-Reply-To: <1349887097-24980-1-git-send-email-peter.senna@gmail.com>
-References: <1349038599-22026-1-git-send-email-peter.senna@gmail.com>
-	 <1349887097-24980-1-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754413Ab2JJRik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:38:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56058 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab2JJRii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 13:38:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1210101821540.2689@kaball.uk.xensource.com>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+	<1349827115-16600-7-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210101733220.2689@kaball.uk.xensource.com>
+	<CAE9FiQVuU=KfMM0Q16Lddz8ZL_wzg5PLkWWK=6navQdC_j0KbA@mail.gmail.com>
+	<alpine.DEB.2.02.1210101821540.2689@kaball.uk.xensource.com>
+Date: Wed, 10 Oct 2012 10:38:36 -0700
+X-Google-Sender-Auth: djJ0_d3zVTGwFNl3zZp8NQoackE
+Message-ID: <CAE9FiQVSMP2TpTPxEB62T-uELY-W67m6LX-qTJ7yYSEE-cOZbA@mail.gmail.com>
+Subject: Re: [PATCH 6/7] x86, mm: setup page table from top-down
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=000e0cd1e0cea7dd6004cbb7ec84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 18:38 +0200, Peter Senna Tschudin wrote:
-> This patch remove a semicolon after if(...) that is preventing the
-> error check to work correctly. Removing this semicolon will change the
-> code behavior, but this is intended.
-> 
-> The semantic patch that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r1@
-> position p;
-> @@
-> if (...);@p
+--000e0cd1e0cea7dd6004cbb7ec84
+Content-Type: text/plain; charset=ISO-8859-1
 
-this semantic patch would be a lot less tedious to
-inspect the results if it excluded else after the
-semicolon.
+On Wed, Oct 10, 2012 at 10:26 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> On Wed, 10 Oct 2012, Yinghai Lu wrote:
+>
+> It doesn't matter whether they come from BRK or other memory: Xen
+> assumes that all the pagetable pages come from
+> pgt_buf_start-pgt_buf_top, so if you are going to use another range you
+> need to tell Xen about it.
+>
+> Alternatively, you can follow Peter's suggestion and replace the current
+> hooks with a new one with a more precise and well defined semantic.
+> Something along the lines of "this pagetable page is about to be hooked
+> into the live pagetable". Xen would use the hook to mark it RO.
 
-I've used perl for more or less the same output.
+attached patch on top of this patch will fix the problem?
 
+--000e0cd1e0cea7dd6004cbb7ec84
+Content-Type: application/octet-stream; name="fix_xen.patch"
+Content-Disposition: attachment; filename="fix_xen.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h84q24o60
+
+LS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS94ODZfaW5pdC5oIHwgICAgMiArLQogYXJjaC94ODYv
+a2VybmVsL3g4Nl9pbml0LmMgICAgICB8ICAgIDMgKystCiBhcmNoL3g4Ni9tbS9pbml0XzMyLmMg
+ICAgICAgICAgIHwgICAgMSArCiBhcmNoL3g4Ni9tbS9pbml0XzY0LmMgICAgICAgICAgIHwgICAg
+MSArCiBhcmNoL3g4Ni94ZW4vbW11LmMgICAgICAgICAgICAgIHwgICAxNSArKystLS0tLS0tLS0t
+LS0KIDUgZmlsZXMgY2hhbmdlZCwgOCBpbnNlcnRpb25zKCspLCAxNCBkZWxldGlvbnMoLSkKCklu
+ZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20veDg2X2luaXQuaAo9PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9pbmNsdWRlL2FzbS94ODZfaW5pdC5oCisrKyBs
+aW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20veDg2X2luaXQuaApAQCAtNzYsNyArNzYsNyBA
+QCBzdHJ1Y3QgeDg2X2luaXRfb2VtIHsKICAqIGluaXRfbWVtb3J5X21hcHBpbmcgYW5kIHRoZSBj
+b21taXQgdGhhdCBhZGRlZCBpdC4KICAqLwogc3RydWN0IHg4Nl9pbml0X21hcHBpbmcgewotCXZv
+aWQgKCpwYWdldGFibGVfcmVzZXJ2ZSkodTY0IHN0YXJ0LCB1NjQgZW5kKTsKKwl2b2lkICgqbWFy
+a19wYWdlX3JvKSh1NjQgYWRkcik7CiB9OwogCiAvKioKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4
+Ni9rZXJuZWwveDg2X2luaXQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
+Ni9rZXJuZWwveDg2X2luaXQuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC94ODZfaW5p
+dC5jCkBAIC0yOCw2ICsyOCw3IEBAIHZvaWQgX19jcHVpbml0IHg4Nl9pbml0X25vb3Aodm9pZCkg
+eyB9CiB2b2lkIF9faW5pdCB4ODZfaW5pdF91aW50X25vb3AodW5zaWduZWQgaW50IHVudXNlZCkg
+eyB9CiBpbnQgX19pbml0IGlvbW11X2luaXRfbm9vcCh2b2lkKSB7IHJldHVybiAwOyB9CiB2b2lk
+IGlvbW11X3NodXRkb3duX25vb3Aodm9pZCkgeyB9CitzdGF0aWMgdm9pZCBtYXJrX3BhZ2Vfcm9f
+bm9vcCh1NjQgYWRkcikgeyB9CiAKIC8qCiAgKiBUaGUgcGxhdGZvcm0gc2V0dXAgZnVuY3Rpb25z
+IGFyZSBwcmVzZXQgd2l0aCB0aGUgZGVmYXVsdCBmdW5jdGlvbnMKQEAgLTYzLDcgKzY0LDcgQEAg
+c3RydWN0IHg4Nl9pbml0X29wcyB4ODZfaW5pdCBfX2luaXRkYXRhCiAJfSwKIAogCS5tYXBwaW5n
+ID0gewotCQkucGFnZXRhYmxlX3Jlc2VydmUJCT0gbmF0aXZlX3BhZ2V0YWJsZV9yZXNlcnZlLAor
+CQkubWFya19wYWdlX3JvCQkJPSBtYXJrX3BhZ2Vfcm9fbm9vcDsKIAl9LAogCiAJLnBhZ2luZyA9
+IHsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni94ZW4vbW11LmMKPT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGlu
+dXgtMi42Lm9yaWcvYXJjaC94ODYveGVuL21tdS5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYveGVu
+L21tdS5jCkBAIC0xMTc3LDE4ICsxMTc3LDkgQEAgc3RhdGljIHZvaWQgeGVuX2V4aXRfbW1hcChz
+dHJ1Y3QgbW1fc3RydQogCiBzdGF0aWMgdm9pZCB4ZW5fcG9zdF9hbGxvY2F0b3JfaW5pdCh2b2lk
+KTsKIAotc3RhdGljIF9faW5pdCB2b2lkIHhlbl9tYXBwaW5nX3BhZ2V0YWJsZV9yZXNlcnZlKHU2
+NCBzdGFydCwgdTY0IGVuZCkKK3N0YXRpYyBfX2luaXQgdm9pZCB4ZW5fbWFwcGluZ19tYXJrX3Bh
+Z2Vfcm8odTY0IGFkZHIpCiB7Ci0JLyogcmVzZXJ2ZSB0aGUgcmFuZ2UgdXNlZCAqLwotCW5hdGl2
+ZV9wYWdldGFibGVfcmVzZXJ2ZShzdGFydCwgZW5kKTsKLQotCS8qIHNldCBhcyBSVyB0aGUgcmVz
+dCAqLwotCXByaW50ayhLRVJOX0RFQlVHICJ4ZW46IHNldHRpbmcgUlcgdGhlIHJhbmdlICVsbHgg
+LSAlbGx4XG4iLCBlbmQsCi0JCQlQRk5fUEhZUyhwZ3RfYnVmX3RvcCkpOwotCXdoaWxlIChlbmQg
+PCBQRk5fUEhZUyhwZ3RfYnVmX3RvcCkpIHsKLQkJbWFrZV9sb3dtZW1fcGFnZV9yZWFkd3JpdGUo
+X192YShlbmQpKTsKLQkJZW5kICs9IFBBR0VfU0laRTsKLQl9CisJbWFrZV9sb3dtZW1fcGFnZV9y
+ZWFkb25seShfX3ZhKGFkZHIpKTsKIH0KIAogI2lmZGVmIENPTkZJR19YODZfNjQKQEAgLTIxNzcs
+NyArMjE2OCw3IEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcHZfbW11X29wcyB4ZW5fbW11X28KIAog
+dm9pZCBfX2luaXQgeGVuX2luaXRfbW11X29wcyh2b2lkKQogewotCXg4Nl9pbml0Lm1hcHBpbmcu
+cGFnZXRhYmxlX3Jlc2VydmUgPSB4ZW5fbWFwcGluZ19wYWdldGFibGVfcmVzZXJ2ZTsKKwl4ODZf
+aW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyA9IHhlbl9tYXBwaW5nX21hcmtfcGFnZV9ybzsKIAl4
+ODZfaW5pdC5wYWdpbmcucGFnZXRhYmxlX2luaXQgPSB4ZW5fcGFnZXRhYmxlX2luaXQ7CiAJcHZf
+bW11X29wcyA9IHhlbl9tbXVfb3BzOwogCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5p
+dF8zMi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L21tL2luaXRfMzIu
+YworKysgbGludXgtMi42L2FyY2gveDg2L21tL2luaXRfMzIuYwpAQCAtNzgsNiArNzgsNyBAQCBz
+dGF0aWMgX19pbml0IHZvaWQgKmFsbG9jX2xvd19wYWdlKHZvaWQpCiAJfSBlbHNlCiAJCXBmbiA9
+IHBndF9idWZfZW5kKys7CiAKKwl4ODZfaW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyhwZm4gPDwg
+UEFHRV9TSElGVCk7CiAJYWRyID0gX192YShwZm4gKiBQQUdFX1NJWkUpOwogCWNsZWFyX3BhZ2Uo
+YWRyKTsKIAlyZXR1cm4gYWRyOwpJbmRleDogbGludXgtMi42L2FyY2gveDg2L21tL2luaXRfNjQu
+Ywo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKKysr
+IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0XzY0LmMKQEAgLTM0MCw2ICszNDAsNyBAQCBzdGF0
+aWMgX19yZWYgdm9pZCAqYWxsb2NfbG93X3BhZ2UodW5zaWduCiAJfSBlbHNlCiAJCXBmbiA9IHBn
+dF9idWZfZW5kKys7CiAKKwl4ODZfaW5pdC5tYXBwaW5nLm1hcmtfcGFnZV9ybyhwZm4gPDwgUEFH
+RV9TSElGVCk7CiAJYWRyID0gZWFybHlfbWVtcmVtYXAocGZuICogUEFHRV9TSVpFLCBQQUdFX1NJ
+WkUpOwogCWNsZWFyX3BhZ2UoYWRyKTsKIAkqcGh5cyAgPSBwZm4gKiBQQUdFX1NJWkU7Cg==
+--000e0cd1e0cea7dd6004cbb7ec84--
