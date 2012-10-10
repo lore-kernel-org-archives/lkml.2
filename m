@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab2JJOT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 10:19:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59820 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab2JJOTz convert rfc822-to-8bit (ORCPT
+	id S932327Ab2JJO7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 10:59:37 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:35195 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab2JJO7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 10:19:55 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Porter, Matt" <mporter@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Mohammed, Afzal" <afzal@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
-Thread-Topic: [PATCH] ARM: OMAP2+: gpmc: Fix kernel BUG for DT boot mode
-Thread-Index: AQHNpfwrt48rLkiYfEq6qd93BBndrJeyNweAgABhQtA=
-Date: Wed, 10 Oct 2012 14:19:40 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EB3B573@DBDE01.ent.ti.com>
-References: <1349773040-8204-1-git-send-email-hvaibhav@ti.com>
- <20121010140027.GB13724@beef>
-In-Reply-To: <20121010140027.GB13724@beef>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 10 Oct 2012 10:59:33 -0400
+Message-ID: <1349881167.2702.18.camel@lorien2>
+Subject: Re: [PATCH v5] dma-debug: New interfaces to debug dma mapping errors
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, stern@rowland.harvard.edu,
+        joerg.roedel@amd.com, bhelgaas@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        devel@linuxdriverproject.org, x86@kernel.org, shuahkhan@gmail.com
+Date: Wed, 10 Oct 2012 08:59:27 -0600
+In-Reply-To: <20121009140605.68b4e6c5.akpm@linux-foundation.org>
+References: <1349716086.2674.20.camel@lorien2>
+	 <20121009140605.68b4e6c5.akpm@linux-foundation.org>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 19:30:27, Porter, Matt wrote:
-> On Tue, Oct 09, 2012 at 02:27:20PM +0530, Vaibhav Hiremath wrote:
-> > With recent changes in omap gpmc driver code, in case of DT
-> > boot mode, where bootloader does not configure gpmc cs space
-> > will result into kernel BUG() inside gpmc_mem_init() function,
-> > as gpmc cs0 gpmc_config7[0].csvalid bit is set to '1' and
-> > gpmc_config7[0].baseaddress is set to '0' on reset.
+On Tue, 2012-10-09 at 14:06 -0700, Andrew Morton wrote:
+> On Mon, 08 Oct 2012 11:08:06 -0600
+> Shuah Khan <shuah.khan@hp.com> wrote:
+> 
+> > Add dma-debug interface debug_dma_mapping_error() to debug drivers that fail
+> > to check dma mapping errors on addresses returned by dma_map_single() and
+> > dma_map_page() interfaces. This interface clears a flag set by
+> > debug_dma_map_page() to indicate that dma_mapping_error() has been called by
+> > the driver. When driver does unmap, debug_dma_unmap() checks the flag and if
+> > this flag is still set, prints warning message that includes call trace that
+> > leads up to the unmap. This interface can be called from dma_mapping_error()
+> > routines to enable dma mapping error check debugging.
 > > 
-> > This use-case is applicable for any board/EVM which doesn't have
-> > any peripheral connected to gpmc cs0, for example BeagleXM and
-> > BeagleBone, so DT boot mode fails.
+> > Tested: Intel iommu and swiotlb (iommu=soft) on x86-64 with
+> >         CONFIG_DMA_API_DEBUG enabled and disabled.
 > > 
-> > This patch adds of_have_populated_dt() check before creating
-> > device, so that for DT boot mode, gpmc probe will not be called
-> > which is expected behavior, as gpmc is not supported yet from DT.
-> > 
-> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Cc: Afzal Mohammed <afzal@ti.com>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc Paul Walmsley <paul@pwsan.com>
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 > > ---
-> > This should go in for rc1, as this breaks AM33xx boot.
+> >  Documentation/DMA-API.txt          |   12 ++++++
+> >  arch/x86/include/asm/dma-mapping.h |    1 +
+> >  include/linux/dma-debug.h          |    7 ++++
+> >  lib/dma-debug.c                    |   71 ++++++++++++++++++++++++++++++++++--
 > 
-> Fixes BeagleBone on mainline.
+> Third time lucky ... we still haven't fixed Documentation/DMA-API-HOWTO.txt!
 > 
-> Tested-by: Matt Porter <mporter@ti.com>
-> 
+> Please, go through it and update it to show people how to correctly use
+> these APIs.
 
-Thanks Matt and Afzal,
+Yes. Still on my list. I am working on the documentation changes. I am
+planning to add usage examples that include calls to dma_mapping_error()
+after dma_map_[page/single] calls and programming mistakes to watch out
+for such as missing unmaps from  error legs etc.
 
-Tony can this be picked up for rc1?? I know you have already sent pull 
-request for rc1, but by any chance you are planning to send another request?
+-- Shuah
 
-Thanks,
-Vaibhav
-> -Matt
-> 
 
