@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab2JJXXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 19:23:32 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33962 "EHLO
+	id S1757661Ab2JJWyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 18:54:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42534 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757674Ab2JJWyZ (ORCPT
+	by vger.kernel.org with ESMTP id S1757532Ab2JJWyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 18:54:25 -0400
-X-Sasl-enc: IPvYJiduBum/oredBc1+HUkHrv+WvW5FivfwXLxn72lE 1349909664
+	Wed, 10 Oct 2012 18:54:08 -0400
+X-Sasl-enc: k2gZlwZeci0kONUqKP7Beph7tH7T5xlYNAmfyNEJ+CWg 1349909647
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
         Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 035/133] xfrm_user: dont copy esn replay window twice for new states
-Date: Thu, 11 Oct 2012 07:51:01 +0900
-Message-Id: <20121010224900.811451947@linuxfoundation.org>
+Subject: [ 029/133] xfrm_user: return error pointer instead of NULL #2
+Date: Thu, 11 Oct 2012 07:50:55 +0900
+Message-Id: <20121010224859.720215180@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
 References: <20121010224854.313159132@linuxfoundation.org>
@@ -32,53 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit e3ac104d41a97b42316915020ba228c505447d21 ]
+[ Upstream commit c25463722509fef0ed630b271576a8c9a70236f3 ]
 
-The ESN replay window was already fully initialized in
-xfrm_alloc_replay_state_esn(). No need to copy it again.
+When dump_one_policy() returns an error, e.g. because of a too small
+buffer to dump the whole xfrm policy, xfrm_policy_netlink() returns
+NULL instead of an error pointer. But its caller expects an error
+pointer and therefore continues to operate on a NULL skbuff.
 
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/xfrm/xfrm_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -442,10 +442,11 @@ static void copy_from_user_state(struct
-  * somehow made shareable and move it to xfrm_state.c - JHS
-  *
- */
--static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs)
-+static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs,
-+				  int update_esn)
+@@ -1543,6 +1543,7 @@ static struct sk_buff *xfrm_policy_netli
  {
- 	struct nlattr *rp = attrs[XFRMA_REPLAY_VAL];
--	struct nlattr *re = attrs[XFRMA_REPLAY_ESN_VAL];
-+	struct nlattr *re = update_esn ? attrs[XFRMA_REPLAY_ESN_VAL] : NULL;
- 	struct nlattr *lt = attrs[XFRMA_LTIME_VAL];
- 	struct nlattr *et = attrs[XFRMA_ETIMER_THRESH];
- 	struct nlattr *rt = attrs[XFRMA_REPLAY_THRESH];
-@@ -555,7 +556,7 @@ static struct xfrm_state *xfrm_state_con
- 		goto error;
+ 	struct xfrm_dump_info info;
+ 	struct sk_buff *skb;
++	int err;
  
- 	/* override default values from above */
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 0);
+ 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
+ 	if (!skb)
+@@ -1553,9 +1554,10 @@ static struct sk_buff *xfrm_policy_netli
+ 	info.nlmsg_seq = seq;
+ 	info.nlmsg_flags = 0;
  
- 	return x;
+-	if (dump_one_policy(xp, dir, 0, &info) < 0) {
++	err = dump_one_policy(xp, dir, 0, &info);
++	if (err) {
+ 		kfree_skb(skb);
+-		return NULL;
++		return ERR_PTR(err);
+ 	}
  
-@@ -1819,7 +1820,7 @@ static int xfrm_new_ae(struct sk_buff *s
- 		goto out;
- 
- 	spin_lock_bh(&x->lock);
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 1);
- 	spin_unlock_bh(&x->lock);
- 
- 	c.event = nlh->nlmsg_type;
+ 	return skb;
 
 
