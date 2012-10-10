@@ -1,80 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2JJQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:37:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58696 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776Ab2JJQh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:37:57 -0400
-Date: Wed, 10 Oct 2012 09:37:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Yann Cantin <yann.cantin@laposte.net>, Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [ebeam PATCH v2 1/2] hid: Blacklist eBeam devices
-Message-ID: <20121010163747.GD19335@core.coreip.homeip.net>
-References: <1349529287-23193-1-git-send-email-yann.cantin@laposte.net>
- <1349529287-23193-2-git-send-email-yann.cantin@laposte.net>
+	id S932174Ab2JJRH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 13:07:27 -0400
+Received: from mga14.intel.com ([143.182.124.37]:7643 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755709Ab2JJRHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 13:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,565,1344236400"; 
+   d="scan'208";a="202879240"
+Date: Wed, 10 Oct 2012 10:06:32 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Jakub Kicinski <kubakici@wp.pl>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: Re: [1/2] PCI-Express Non-Transparent Bridge Support
+Message-ID: <20121010170631.GE22838@jonmason-lab>
+References: <1349213177-9985-2-git-send-email-jon.mason@intel.com>
+ <20121007141344.6624e873@wp.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1349529287-23193-2-git-send-email-yann.cantin@laposte.net>
+In-Reply-To: <20121007141344.6624e873@wp.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri,
-
-Are you OK with this change?
-
-Yann,
-
-Is the device usable at all with generic HID driver? If it isn't then
-maybe we should blacklist it unconditionally?
-
-Thanks.
-
-On Sat, Oct 06, 2012 at 03:14:46PM +0200, Yann Cantin wrote:
+On Sun, Oct 07, 2012 at 02:13:44PM +0200, Jakub Kicinski wrote:
+> Hi,
 > 
-> Signed-off-by: Yann Cantin <yann.cantin@laposte.net>
-> ---
->  drivers/hid/hid-core.c |    3 +++
->  drivers/hid/hid-ids.h  |    3 +++
->  2 files changed, 6 insertions(+)
+> it's good to see some NTB code getting into mainline! I have a few comments
+> though.
 > 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index bd3971b..59ffaa2 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1937,6 +1937,9 @@ static const struct hid_device_id hid_ignore_list[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_DELORME, USB_DEVICE_ID_DELORME_EM_LT20) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x0004) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_DREAM_CHEEKY, 0x000a) },
-> +#if defined(CONFIG_INPUT_EBEAM_USB)
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_EFI, USB_DEVICE_ID_EFI_EBEAM) },
-> +#endif
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ESSENTIAL_REALITY, USB_DEVICE_ID_ESSENTIAL_REALITY_P5) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC5UH) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ETT, USB_DEVICE_ID_TC4UM) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 269b509..df826b8 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -274,6 +274,9 @@
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72D0      0x72d0
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72C4      0x72c4
->  
-> +#define USB_VENDOR_ID_EFI		0x2650
-> +#define USB_DEVICE_ID_EFI_EBEAM		0x1311
-> +
->  #define USB_VENDOR_ID_ELECOM		0x056e
->  #define USB_DEVICE_ID_ELECOM_BM084	0x0061
->  
-> -- 
-> 1.7.10
+> On Tue, 02 Oct 2012 21:26:16 -0000, Jon Mason <jon.mason@intel.com>
+> wrote:
 > 
+> [...]
+> >+/**
+> >+ * ntb_write_local_spad() - write to the secondary scratchpad register
+> >+ * @ndev: pointer to ntb_device instance
+> >+ * @idx: index to the scratchpad register, 0 based
+> >+ * @val: the data value to put into the register
+> >+ *
+> >+ * This function allows writing of a 32bit value to the indexed scratchpad
+> >+ * register. The register resides on the secondary (external) side.
+> >+ *
+> >+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
+> >+ */
+> [...]
+> >+/**
+> >+ * ntb_write_remote_spad() - write to the secondary scratchpad register
+> >+ * @ndev: pointer to ntb_device instance
+> >+ * @idx: index to the scratchpad register, 0 based
+> >+ * @val: the data value to put into the register
+> >+ *
+> >+ * This function allows writing of a 32bit value to the indexed scratchpad
+> >+ * register. The register resides on the secondary (external) side.
+> >+ *
+> >+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
+> >+ */
+> 
+> Those comments look suspiciously similar. I think one of the functions
+> does write to primary scratchpad?
 
--- 
-Dmitry
+Yes, the comments can be improved.
+
+> 
+> [...]
+> >+/**
+> >+ * ntb_read_local_spad() - read from the primary scratchpad register
+> >+ * @ndev: pointer to ntb_device instance
+> >+ * @idx: index to scratchpad register, 0 based
+> >+ * @val: pointer to 32bit integer for storing the register value
+> >+ *
+> >+ * This function allows reading of the 32bit scratchpad register on
+> >+ * the primary (internal) side.
+> >+ *
+> >+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
+> >+ */
+> [...]
+> >+/**
+> >+ * ntb_read_remote_spad() - read from the primary scratchpad register
+> >+ * @ndev: pointer to ntb_device instance
+> >+ * @idx: index to scratchpad register, 0 based
+> >+ * @val: pointer to 32bit integer for storing the register value
+> >+ *
+> >+ * This function allows reading of the 32bit scratchpad register on
+> >+ * the primary (internal) side.
+> >+ *
+> >+ * RETURNS: An appropriate -ERRNO error value on error, or zero for success.
+> >+ */
+> 
+> Same here.
+> 
+> [...]
+> >+static int ntb_setup_msix(struct ntb_device *ndev)
+> >+{
+> >+	struct pci_dev *pdev = ndev->pdev;
+> >+	struct msix_entry *msix;
+> >+	int msix_entries;
+> >+	int rc, i, pos;
+> >+	u16 val;
+> >+
+> >+	pos = pci_find_capability(pdev, PCI_CAP_ID_MSIX);
+> >+	if (!pos) {
+> >+		rc = -EIO;
+> >+		goto err;
+> >+	}
+> >+
+> >+	rc = pci_read_config_word(pdev, pos + PCI_MSIX_FLAGS, &val);
+> >+	if (rc)
+> >+		goto err;
+> >+
+> >+	msix_entries = msix_table_size(val);
+> >+	if (msix_entries > ndev->limits.msix_cnt) {
+> >+		rc = -EINVAL;
+> >+		goto err;
+> >+	}
+> >+
+> >+	ndev->msix_entries = kmalloc(sizeof(struct msix_entry) * msix_entries,
+> >+				     GFP_KERNEL);
+> >+	if (!ndev->msix_entries) {
+> >+		rc = -ENOMEM;
+> >+		goto err;
+> >+	}
+> >+
+> >+	for (i = 0; i < msix_entries; i++)
+> >+		ndev->msix_entries[i].entry = i;
+> >+
+> >+	rc = pci_enable_msix(pdev, ndev->msix_entries, msix_entries);
+> >+	if (rc < 0)
+> >+		goto err1;
+> >+	if (rc > 0) {
+> 
+> rc > 0 doesn't mean that vectors were allocated. Have a look at the
+> example in Documentation/PCI/MSI-HOWTO.txt.
+
+Thank you, I will correct this.
+
+> 
+> >+		/* On SNB, the link interrupt is always tied to 4th vector.  If
+> >+		 * we can't get all 4, then we can't use MSI-X.
+> >+		 */
+> >+		if (ndev->hw_type != BWD_HW) {
+> >+			rc = -EIO;
+> >+			goto err1;
+> >+		}
+> 
+> This looks fragile, what if msix_table_size(val) was < 4? 
+
+If there are not at least 4 vectors, then we shouldn't use MSI-X.
+
+> 
+> >+
+> >+		dev_warn(&pdev->dev,
+> >+			 "Only %d MSI-X vectors.  Limiting the number of queues to that number.\n",
+> >+			 rc);
+> >+		msix_entries = rc;
+> >+	}
+> >+
+> >+	for (i = 0; i < msix_entries; i++) {
+> >+		msix = &ndev->msix_entries[i];
+> >+		WARN_ON(!msix->vector);
+> >+
+> >+		/* Use the last MSI-X vector for Link status */
+> >+		if (ndev->hw_type == BWD_HW) {
+> >+			rc = request_irq(msix->vector, bwd_callback_msix_irq, 0,
+> >+					 "ntb-callback-msix", &ndev->db_cb[i]);
+> >+			if (rc)
+> >+				goto err2;
+> >+		} else {
+> >+			if (i == msix_entries - 1) {
+> >+				rc = request_irq(msix->vector,
+> >+						 xeon_event_msix_irq, 0,
+> >+						 "ntb-event-msix", ndev);
+> >+				if (rc)
+> >+					goto err2;
+> >+			} else {
+> >+				rc = request_irq(msix->vector,
+> >+						 xeon_callback_msix_irq, 0,
+> >+						 "ntb-callback-msix",
+> >+						 &ndev->db_cb[i]);
+> >+				if (rc)
+> >+					goto err2;
+> >+			}
+> >+		}
+> >+	}
+> >+
+> >+	ndev->num_msix = msix_entries;
+> >+	if (ndev->hw_type == BWD_HW)
+> >+		ndev->max_cbs = msix_entries;
+> >+	else
+> >+		ndev->max_cbs = msix_entries - 1;
+> >+
+> >+	return 0;
+> >+
+> >+err2:
+> >+	while (--i >= 0) {
+> >+		msix = &ndev->msix_entries[i];
+> >+		if (ndev->hw_type != BWD_HW && i == ndev->num_msix - 1)
+> >+			free_irq(msix->vector, ndev);
+> >+		else
+> >+			free_irq(msix->vector, &ndev->db_cb[i]);
+> >+	}
+> >+	pci_disable_msix(pdev);
+> >+err1:
+> >+	kfree(ndev->msix_entries);
+> >+	dev_err(&pdev->dev, "Error allocating MSI-X interrupt\n");
+> >+err:
+> >+	ndev->num_msix = 0;
+> >+	return rc;
+> >+}
+> 
+> Thanks for your work,
+
+Thanks for the review.
+
+> 
+>   -- Kuba
