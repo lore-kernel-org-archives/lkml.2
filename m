@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247Ab2JKAYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:24:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39935 "EHLO
+	id S933259Ab2JKAYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:24:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:32790 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933222Ab2JKAYL (ORCPT
+	by vger.kernel.org with ESMTP id S932917Ab2JKAYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:24:11 -0400
-X-Sasl-enc: IFw5Amkp62OdWQDg9RUazHUCCAzTayDOxtb0DKfRIi+u 1349915049
+	Wed, 10 Oct 2012 20:24:20 -0400
+X-Sasl-enc: RJs6QB7kDA8w8PF7UcYTCyHm4sblKZGl83IjrBcoUEFV 1349915058
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ratan Nalumasu <ratan@google.com>, Jiri Kosina <jkosina@suse.cz>,
-        Kees Cook <keescook@chromium.org>
-Subject: [ 083/122] HID: hidraw: dont deallocate memory when it is in use
-Date: Thu, 11 Oct 2012 07:54:09 +0900
-Message-Id: <20121010225353.016642857@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 085/122] drm/i915: call drm_handle_vblank before finish_page_flip
+Date: Thu, 11 Oct 2012 07:54:11 +0900
+Message-Id: <20121010225353.369675672@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
 References: <20121010225337.989799482@linuxfoundation.org>
@@ -28,135 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ratan Nalumasu <ratan@google.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 4fe9f8e203fdad1524c04beb390f3c6099781ed9 upstream.
+commit 74d44445afb9f50126eba052adeb89827cee88f3 upstream.
 
-When a device is unplugged, wait for all processes that have opened the device
-to close before deallocating the device.
+... since finish_page_flip needs the vblank timestamp generated
+in drm_handle_vblank. Somehow all the gmch platforms get it right,
+but all the pch platform irq handlers get is wrong. Hooray for copy&
+pasting!
 
-Signed-off-by: Ratan Nalumasu <ratan@google.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Kees Cook <keescook@chromium.org>
+Currently this gets papered over by a gross hack in finish_page_flip.
+A second patch will remove that.
+
+Note that without this, the new timestamp sanity checks in flip_test
+occasionally get tripped up, hence the cc: stable tag.
+
+Reviewed-by: mario.kleiner@tuebingen.mpg.de
+Tested-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hidraw.c |   69 +++++++++++++++++++--------------------------------
- 1 file changed, 26 insertions(+), 43 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -42,6 +42,7 @@ static struct cdev hidraw_cdev;
- static struct class *hidraw_class;
- static struct hidraw *hidraw_table[HIDRAW_MAX_DEVICES];
- static DEFINE_MUTEX(minors_lock);
-+static void drop_ref(struct hidraw *hid, int exists_bit);
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -680,12 +680,12 @@ static irqreturn_t ivybridge_irq_handler
+ 			intel_opregion_gse_intr(dev);
  
- static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count, loff_t *ppos)
- {
-@@ -113,7 +114,7 @@ static ssize_t hidraw_send_report(struct
- 	__u8 *buf;
- 	int ret = 0;
+ 		for (i = 0; i < 3; i++) {
++			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
++				drm_handle_vblank(dev, i);
+ 			if (de_iir & (DE_PLANEA_FLIP_DONE_IVB << (5 * i))) {
+ 				intel_prepare_page_flip(dev, i);
+ 				intel_finish_page_flip_plane(dev, i);
+ 			}
+-			if (de_iir & (DE_PIPEA_VBLANK_IVB << (5 * i)))
+-				drm_handle_vblank(dev, i);
+ 		}
  
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		ret = -ENODEV;
- 		goto out;
- 	}
-@@ -261,7 +262,7 @@ static int hidraw_open(struct inode *ino
- 	}
+ 		/* check event from PCH */
+@@ -767,6 +767,12 @@ static irqreturn_t ironlake_irq_handler(
+ 	if (de_iir & DE_GSE)
+ 		intel_opregion_gse_intr(dev);
  
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		err = -ENODEV;
- 		goto out_unlock;
- 	}
-@@ -298,36 +299,12 @@ out:
- static int hidraw_release(struct inode * inode, struct file * file)
- {
- 	unsigned int minor = iminor(inode);
--	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
--	int ret;
--	int i;
--
--	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
--		ret = -ENODEV;
--		goto unlock;
--	}
- 
-+	drop_ref(hidraw_table[minor], 0);
- 	list_del(&list->node);
--	dev = hidraw_table[minor];
--	if (!--dev->open) {
--		if (list->hidraw->exist) {
--			hid_hw_power(dev->hid, PM_HINT_NORMAL);
--			hid_hw_close(dev->hid);
--		} else {
--			kfree(list->hidraw);
--		}
--	}
--
--	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
--		kfree(list->buffer[i].value);
- 	kfree(list);
--	ret = 0;
--unlock:
--	mutex_unlock(&minors_lock);
--
--	return ret;
-+	return 0;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
-@@ -529,21 +506,7 @@ EXPORT_SYMBOL_GPL(hidraw_connect);
- void hidraw_disconnect(struct hid_device *hid)
- {
- 	struct hidraw *hidraw = hid->hidraw;
--
--	mutex_lock(&minors_lock);
--	hidraw->exist = 0;
--
--	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
--
--	hidraw_table[hidraw->minor] = NULL;
--
--	if (hidraw->open) {
--		hid_hw_close(hid);
--		wake_up_interruptible(&hidraw->wait);
--	} else {
--		kfree(hidraw);
--	}
--	mutex_unlock(&minors_lock);
-+	drop_ref(hidraw, 1);
- }
- EXPORT_SYMBOL_GPL(hidraw_disconnect);
- 
-@@ -585,3 +548,23 @@ void hidraw_exit(void)
- 	unregister_chrdev_region(dev_id, HIDRAW_MAX_DEVICES);
- 
- }
++	if (de_iir & DE_PIPEA_VBLANK)
++		drm_handle_vblank(dev, 0);
 +
-+static void drop_ref(struct hidraw *hidraw, int exists_bit)
-+{
-+	mutex_lock(&minors_lock);
-+	if (exists_bit) {
-+		hid_hw_close(hidraw->hid);
-+		hidraw->exist = 0;
-+		if (hidraw->open)
-+			wake_up_interruptible(&hidraw->wait);
-+	} else {
-+		--hidraw->open;
-+	}
++	if (de_iir & DE_PIPEB_VBLANK)
++		drm_handle_vblank(dev, 1);
 +
-+	if (!hidraw->open && !hidraw->exist) {
-+		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
-+		hidraw_table[hidraw->minor] = NULL;
-+		kfree(hidraw);
-+	}
-+	mutex_unlock(&minors_lock);
-+}
+ 	if (de_iir & DE_PLANEA_FLIP_DONE) {
+ 		intel_prepare_page_flip(dev, 0);
+ 		intel_finish_page_flip_plane(dev, 0);
+@@ -777,12 +783,6 @@ static irqreturn_t ironlake_irq_handler(
+ 		intel_finish_page_flip_plane(dev, 1);
+ 	}
+ 
+-	if (de_iir & DE_PIPEA_VBLANK)
+-		drm_handle_vblank(dev, 0);
+-
+-	if (de_iir & DE_PIPEB_VBLANK)
+-		drm_handle_vblank(dev, 1);
+-
+ 	/* check event from PCH */
+ 	if (de_iir & DE_PCH_EVENT) {
+ 		if (pch_iir & hotplug_mask)
 
 
