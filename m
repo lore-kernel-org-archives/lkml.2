@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab2JJQWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 12:22:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46762 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab2JJQWF (ORCPT
+	id S932430Ab2JJPTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 11:19:25 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38349 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab2JJPTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 12:22:05 -0400
-Message-ID: <5075A0AA.2000605@wwwdotorg.org>
-Date: Wed, 10 Oct 2012 10:22:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Mitch Bradley <wmb@firmworks.com>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: dtc: import latest upstream dtc
-References: <1349827466.26044.16@snotra> <50759105.2000406@wwwdotorg.org> <1349885393.21493.2@snotra>
-In-Reply-To: <1349885393.21493.2@snotra>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Oct 2012 11:19:19 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 4/6] ARM: ux500: Add UART support to the u9540 Device Tree
+Date: Wed, 10 Oct 2012 16:18:53 +0100
+Message-Id: <1349882335-6786-5-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 10:09 AM, Scott Wood wrote:
-> On 10/10/2012 10:15:17 AM, Stephen Warren wrote:
->> On 10/09/2012 06:04 PM, Scott Wood wrote:
->> > On 10/09/2012 06:20:53 PM, Mitch Bradley wrote:
->> >> On 10/9/2012 11:16 AM, Stephen Warren wrote:
->> >> > On 10/01/2012 12:39 PM, Jon Loeliger wrote:
->> >> >>>
->> >> >>> What more do you think needs discussion re: dtc+cpp?
->> >> >>
->> >> >> How not to abuse the ever-loving shit out of it? :-)
->> >> >
->> >> > Perhaps we can just handle this through the regular patch review
->> >> > process; I think it may be difficult to define and agree upon
->> exactly
->> >> > what "abuse" means ahead of time, but it's probably going to be easy
->> >> > enough to recognize it when one sees it?
->> >>
->> >>
->> >> One of the ways it could get out of hand would be via "include
->> >> dependency hell".  People will be tempted to reuse existing .h files
->> >> containing pin definitions, which, if history is a guide, will end up
->> >> depending on all sorts of other .h files.
->> >>
->> >> Another problem I often face with symbolic names is the difficulty of
->> >> figuring out what the numerical values really are (for debugging),
->> >> especially when .h files are in different subtrees from the files that
->> >> use the definitions, and when they use multiple macro levels and fancy
->> >> features like concatenation.  Sometimes I think it's clearer just to
->> >> write the number and use a comment to say what it is.
->> >
->> > Both comments apply just as well to ordinary C code, and I don't think
->> > anyone would seriously suggest just using comments instead for C code.
->> >
->> > Is there a way to ask CPP to evaluate a macro in the context of the
->> > input file, rather than produce normal output?  If not, I guess you
->> > could make a tool that creates a wrapper file that includes the main
->> > file and then evaluates the symbol you want.
->>
->> I'm not sure what "evaluate a macro in the context of the input file"
->> means. Macros are obviously already evaluated based on the current set
->> of macros defined by the file that's been processed or those it
->> included. Do you mean only allowing the use of macros in the current
->> file and not included files? What exactly would the wrapper you
->> mentioned do?
-> 
-> I just meant a way for a developer to quickly ask the preprocessor what
-> a particular macro expands to, rather than try to figure it out
-> manually.  I was not suggesting any change to normal operation.
+Add the 3 UART nodes required to enable serial ports on the u9540.
 
-Oh right. Well, the patch I proposed to the kernel was basically:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/u9540.dts |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-%.dtb: %.dtsp
-    cpp -E $< | dtc -o $@ -
+diff --git a/arch/arm/boot/dts/u9540.dts b/arch/arm/boot/dts/u9540.dts
+index 0a66f34..28efe20 100644
+--- a/arch/arm/boot/dts/u9540.dts
++++ b/arch/arm/boot/dts/u9540.dts
+@@ -21,6 +21,17 @@
+ 	};
+ 
+ 	soc-u9500 {
+-	};
+ 
++		uart@80120000 {
++			status = "okay";
++		};
++
++		uart@80121000 {
++			status = "okay";
++		};
++
++		uart@80007000 {
++			status = "okay";
++		};
++	};
+ };
+-- 
+1.7.9.5
 
-A developer could run the same cpp -E command to find that out, or that
-build rule could instead save the intermediate result rather than just
-piping it, so you could just go read the file.
