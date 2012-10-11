@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2JKGoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 02:44:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49846 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2JKGn7 (ORCPT
+	id S1754217Ab2JKGow (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 02:44:52 -0400
+Received: from b.relay.invitel.net ([62.77.203.4]:35757 "EHLO
+	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607Ab2JKGou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 02:43:59 -0400
-From: Bryan Venteicher <bryan.venteicher@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Cong Meng <mc@linux.vnet.ibm.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Bryan Venteicher <bryanv@daemoninthecloset.org>
-Subject: [PATCH] [SCSI] virtio-scsi: Add real 2-clause BSD license to header
-Date: Thu, 11 Oct 2012 01:41:31 -0500
-Message-Id: <1349937691-60084-1-git-send-email-bryanv@daemoninthecloset.org>
-X-Mailer: git-send-email 1.7.11.4
+	Thu, 11 Oct 2012 02:44:50 -0400
+X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Oct 2012 02:44:50 EDT
+Date: Thu, 11 Oct 2012 08:35:47 +0200
+From: Heiko Schocher <hs@denx.de>
+Subject: Re: RE: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
+In-reply-to: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: Constantine Shulyupin <const@MakeLinux.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Wolfgang Denk <wd@denx.de>
+Reply-to: hs@denx.de
+Message-id: <507668C3.6080908@denx.de>
+Organization: DENX Software Engineering
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+References: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421
+ Thunderbird/12.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is analogous to commit a1b383870a made by Rusty Russell to all
-the VirtIO headers at the time. This eases the use of the header as
-is by other OSes.
+Hello Manjunathappa
 
-Signed-off-by: Bryan Venteicher <bryanv@daemoninthecloset.org>
----
- include/linux/virtio_scsi.h | 28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+On 11.10.2012 07:42, Manjunathappa, Prakash wrote:
+> Hi,
+> On Mon, Oct 08, 2012 at 18:47:07, Constantine Shulyupin wrote:
+>> From: Constantine Shulyupin<const@MakeLinux.com>
+>>
+>> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly
+>> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST
+>> and set MUSB_OTG configuration by default
+>> because this configuration options are removed from Kconfig.
+>>
+>> Signed-off-by: Constantine Shulyupin<const@MakeLinux.com>
+>>
+>> ---
+>>   arch/arm/mach-davinci/usb.c |    6 ------
+>>   1 file changed, 6 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+>> index f77b953..34509ff 100644
+>> --- a/arch/arm/mach-davinci/usb.c
+>> +++ b/arch/arm/mach-davinci/usb.c
+>> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
+>>   };
+>>
+>>   static struct musb_hdrc_platform_data usb_data = {
+>> -#if defined(CONFIG_USB_MUSB_OTG)
+>>   	/* OTG requires a Mini-AB connector */
+>>   	.mode           = MUSB_OTG,
+>> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
+>> -	.mode           = MUSB_PERIPHERAL,
+>> -#elif defined(CONFIG_USB_MUSB_HOST)
+>> -	.mode           = MUSB_HOST,
+>> -#endif
+>>   	.clock		= "usb",
+>>   	.config		=&musb_config,
+>>   };
+>
+> Tested it on DM6446-EVM for host mode with MSC thumb drive and gadget
+> mode with g-ether. It works.
+>
+> Acked-by: Manjunathappa, Prakash<prakash.pm@ti.com>
 
-diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-index dc8d305..a91fb52 100644
---- a/include/linux/virtio_scsi.h
-+++ b/include/linux/virtio_scsi.h
-@@ -1,7 +1,31 @@
-+/*
-+ * This header is BSD licensed so anyone can use the definitions to implement
-+ * compatible drivers/servers.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ * 1. Redistributions of source code must retain the above copyright
-+ *    notice, this list of conditions and the following disclaimer.
-+ * 2. Redistributions in binary form must reproduce the above copyright
-+ *    notice, this list of conditions and the following disclaimer in the
-+ *    documentation and/or other materials provided with the distribution.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-+ * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
-+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-+ * SUCH DAMAGE.
-+ */
-+
- #ifndef _LINUX_VIRTIO_SCSI_H
- #define _LINUX_VIRTIO_SCSI_H
--/* This header is BSD licensed so anyone can use the definitions to implement
-- * compatible drivers/servers. */
- 
- #define VIRTIO_SCSI_CDB_SIZE   32
- #define VIRTIO_SCSI_SENSE_SIZE 96
+I sent a similiar patch here:
+
+http://comments.gmane.org/gmane.linux.usb.general/54512
+
+If the issues, mentioned from Sergei for my patch, nullified I add my:
+
+Acked-by: Heiko Schocher <hs@denx.de>
+
+for this patch.
+
+bye,
+Heiko
 -- 
-1.7.11.4
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
