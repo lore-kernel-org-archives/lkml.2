@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab2JKBOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:14:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50446 "EHLO
+	id S933707Ab2JKBOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:14:49 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52984 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932423Ab2JKBO1 (ORCPT
+	by vger.kernel.org with ESMTP id S933642Ab2JKBOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:27 -0400
-X-Sasl-enc: 3yJk0emvHf/hSvaEW4RJ61NiisSLrJur+SFoQd4oja7W 1349918065
+	Wed, 10 Oct 2012 21:14:41 -0400
+X-Sasl-enc: R2uiH6I3vraXmNw3LZ4zrv1gIzc8f7Nb/wD4LTRLB50Q 1349918080
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
+        Huang Shijie <shijie8@gmail.com>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 109/120] mtd: autcpu12-nvram: Fix compile breakage
-Date: Thu, 11 Oct 2012 10:01:01 +0900
-Message-Id: <20121011005847.329832883@linuxfoundation.org>
+Subject: [ 108/120] mtd: mtdpart: break it as soon as we parse out the partitions
+Date: Thu, 11 Oct 2012 10:01:00 +0900
+Message-Id: <20121011005847.121935390@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,73 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Huang Shijie <shijie8@gmail.com>
 
-commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
+commit c51803ddba10d80d9f246066802c6e359cf1d44c upstream.
 
-Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
-no longer exist in the kernel so the driver is totally broken.
-Additionally, map_info name passed to simple_map_init is incorrect.
+We may cause a memory leak when the @types has more then one parser.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Take the `default_mtd_part_types` for example. The default_mtd_part_types has
+two parsers now: `cmdlinepart` and `ofpart`.
+
+Assume the following case:
+The kernel command line sets the partitions like:
+	#gpmi-nand:20m(boot),20m(kernel),1g(rootfs),-(user)
+But the devicetree file(such as arch/arm/boot/dts/imx28-evk.dts) also sets
+the same partitions as the kernel command line does.
+
+In the current code, the partitions parsed out by the `ofpart` will
+overwrite the @pparts which has already set by the `cmdlinepart` parser,
+and the the partitions parsed out by the `cmdlinepart` is missed.
+A memory leak occurs.
+
+So we should break the code as soon as we parse out the partitions,
+In actually, this patch makes a priority order between the parsers.
+If one parser has already parsed out the partitions successfully,
+it's no need to use another parser anymore.
+
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/mtd/mtdpart.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/maps/autcpu12-nvram.c
-+++ b/drivers/mtd/maps/autcpu12-nvram.c
-@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
- 
- static int __init init_autcpu12_sram (void)
- {
--	int err, save0, save1;
-+	map_word tmp, save0, save1;
-+	int err;
- 
- 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
- 	if (!autcpu12_sram_map.virt) {
-@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
- 		err = -EIO;
- 		goto out;
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -709,6 +709,8 @@ static const char *default_mtd_part_type
+  * partition parsers, specified in @types. However, if @types is %NULL, then
+  * the default list of parsers is used. The default list contains only the
+  * "cmdlinepart" and "ofpart" parsers ATM.
++ * Note: If there are more then one parser in @types, the kernel only takes the
++ * partitions parsed out by the first parser.
+  *
+  * This function may return:
+  * o a negative error code in case of failure
+@@ -733,11 +735,12 @@ int parse_mtd_partitions(struct mtd_info
+ 		if (!parser)
+ 			continue;
+ 		ret = (*parser->parse_fn)(master, pparts, data);
++		put_partition_parser(parser);
+ 		if (ret > 0) {
+ 			printk(KERN_NOTICE "%d %s partitions found on MTD device %s\n",
+ 			       ret, parser->name, master->name);
++			break;
+ 		}
+-		put_partition_parser(parser);
  	}
--	simple_map_init(&autcpu_sram_map);
-+	simple_map_init(&autcpu12_sram_map);
- 
- 	/*
- 	 * Check for 32K/128K
-@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
- 	 * Read	and check result on ofs 0x0
- 	 * Restore contents
- 	 */
--	save0 = map_read32(&autcpu12_sram_map,0);
--	save1 = map_read32(&autcpu12_sram_map,0x10000);
--	map_write32(&autcpu12_sram_map,~save0,0x10000);
-+	save0 = map_read(&autcpu12_sram_map, 0);
-+	save1 = map_read(&autcpu12_sram_map, 0x10000);
-+	tmp.x[0] = ~save0.x[0];
-+	map_write(&autcpu12_sram_map, tmp, 0x10000);
- 	/* if we find this pattern on 0x0, we have 32K size
- 	 * restore contents and exit
- 	 */
--	if ( map_read32(&autcpu12_sram_map,0) != save0) {
--		map_write32(&autcpu12_sram_map,save0,0x0);
-+	tmp = map_read(&autcpu12_sram_map, 0);
-+	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
-+		map_write(&autcpu12_sram_map, save0, 0x0);
- 		goto map;
- 	}
- 	/* We have a 128K found, restore 0x10000 and set size
- 	 * to 128K
- 	 */
--	map_write32(&autcpu12_sram_map,save1,0x10000);
-+	map_write(&autcpu12_sram_map, save1, 0x10000);
- 	autcpu12_sram_map.size = SZ_128K;
- 
- map:
+ 	return ret;
+ }
 
 
