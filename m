@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab2JKC0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:26:20 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45929 "EHLO
+	id S934228Ab2JKC01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:26:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54027 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933397Ab2JKCMq (ORCPT
+	by vger.kernel.org with ESMTP id S933397Ab2JKC0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:46 -0400
-X-Sasl-enc: 0imZhhBJHB3bBzZqkuTfgHD32QKZ/BmZdVPrvqQUmpxI 1349921565
+	Wed, 10 Oct 2012 22:26:21 -0400
+X-Sasl-enc: xgyTP/GoB81T5EET/jUFEPMPUIbYHUKWPTHpb/NXf8G8 1349922380
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/84] net: small bug on rxhash calculation
-Date: Thu, 11 Oct 2012 11:03:15 +0900
-Message-Id: <20121011015422.685723751@linuxfoundation.org>
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: =?UTF-8?q?=5B=2084/84=5D=20mtd=3A=20omap2=3A=20fix=20module=20loading?=
+Date: Thu, 11 Oct 2012 11:04:08 +0900
+Message-Id: <20121011015432.198516875@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,62 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Andreas Bießmann <andreas@biessmann.de>
 
-From: Chema Gonzalez <chema@google.com>
+commit 4d3d688da8e7016f15483e9319b41311e1db9515 upstream.
 
-[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
+Unloading the omap2 nand driver missed to release the memory region which will
+result in not being able to request it again if one want to load the driver
+later on.
 
-In the current rxhash calculation function, while the
-sorting of the ports/addrs is coherent (you get the
-same rxhash for packets sharing the same 4-tuple, in
-both directions), ports and addrs are sorted
-independently. This implies packets from a connection
-between the same addresses but crossed ports hash to
-the same rxhash.
+This patch fixes following error when loading omap2 module after unloading:
+---8<---
+~ $ rmmod omap2
+~ $ modprobe omap2
+[   37.420928] omap2-nand: probe of omap2-nand.0 failed with error -16
+~ $
+--->8---
 
-For example, traffic between A=S:l and B=L:s is hashed
-(in both directions) from {L, S, {s, l}}. The same
-rxhash is obtained for packets between C=S:s and D=L:l.
+This error was introduced in 67ce04bf2746f8a1f8c2a104b313d20c63f68378 which
+was the first commit of this driver.
 
-This patch ensures that you either swap both addrs and ports,
-or you swap none. Traffic between A and B, and traffic
-between C and D, get their rxhash from different sources
-({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
-
-The patch is co-written with Eric Dumazet <edumazet@google.com>
-
-Signed-off-by: Chema Gonzalez <chema@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2559,16 +2559,17 @@ __u32 __skb_get_rxhash(struct sk_buff *s
- 	poff = proto_ports_offset(ip_proto);
- 	if (poff >= 0) {
- 		nhoff += ihl * 4 + poff;
--		if (pskb_may_pull(skb, nhoff + 4)) {
-+		if (pskb_may_pull(skb, nhoff + 4))
- 			ports.v32 = * (__force u32 *) (skb->data + nhoff);
--			if (ports.v16[1] < ports.v16[0])
--				swap(ports.v16[0], ports.v16[1]);
--		}
- 	}
- 
- 	/* get a consistent hash (same value on both flow directions) */
--	if (addr2 < addr1)
-+	if (addr2 < addr1 ||
-+	    (addr2 == addr1 &&
-+	     ports.v16[1] < ports.v16[0])) {
- 		swap(addr1, addr2);
-+		swap(ports.v16[0], ports.v16[1]);
-+	}
- 
- 	hash = jhash_3words(addr1, addr2, ports.v32, hashrnd);
- 	if (!hash)
+---
+ drivers/mtd/nand/omap2.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1139,6 +1139,7 @@ static int omap_nand_remove(struct platf
+ 	/* Release NAND device, its internal structures and partitions */
+ 	nand_release(&info->mtd);
+ 	iounmap(info->nand.IO_ADDR_R);
++	release_mem_region(info->phys_base, NAND_IO_SIZE);
+ 	kfree(info);
+ 	return 0;
+ }
 
 
