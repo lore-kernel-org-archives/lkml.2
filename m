@@ -1,350 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab2JKOfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:35:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60166 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992Ab2JKOfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:35:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,572,1344236400"; 
-   d="scan'208";a="203282580"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next V2] mei: use mei_io_cb_ warppers also for control flows
-Date: Thu, 11 Oct 2012 16:35:08 +0200
-Message-Id: <1349966108-2429-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S932508Ab2JKOfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:35:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48248 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab2JKOfa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:35:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121010162842.GZ4405@twin.jikos.cz>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
+	<20121010162842.GZ4405@twin.jikos.cz>
+Date: Thu, 11 Oct 2012 22:35:28 +0800
+Message-ID: <CAEH94LgJDhB+-mjhBScQnQybqYWE1rJ6ViuqeWNisLjC=8yMkA@mail.gmail.com>
+Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move the mei_io_cb_ wrappers to to iorw.c for global use
-and use them also for handling control flows
+On Thu, Oct 11, 2012 at 12:28 AM, David Sterba <dave@jikos.cz> wrote:
+> Hi,
+>
+> On Wed, Oct 10, 2012 at 06:07:23PM +0800, zwu.kernel@gmail.com wrote:
+>> --- a/fs/btrfs/ctree.h
+>> +++ b/fs/btrfs/ctree.h
+>> @@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY  (1 << 20)
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
+>>  #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR     (1 << 22)
+>> +#define BTRFS_MOUNT_HOT_TRACK                (1 << 23)
+>
+> Please don't forget to add new options to btrfs_show_options(),
+> otherwise we can't tell what filesystems have hot tracking enabled.
+>
+>> --- a/fs/btrfs/super.c
+>> +++ b/fs/btrfs/super.c
+>> @@ -303,7 +304,7 @@ enum {
+>>       Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
+>>       Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
+>>       Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+>> -     Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
+>> +     Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
+>
+> Please add the new option to the end.
+To be honest, it can't be added to the end, if you check Opt_err's
+pattern value, you will find it is NULL, it will cause match_one()
+return 1. So if we add Opt_hot_track to the end of this array, it will
+be covered by match_token(), so i prefer to add it to
+Opt_fatal_errors. Do you think of it?
+>
+>>       Opt_check_integrity, Opt_check_integrity_including_extent_data,
+>>       Opt_check_integrity_print_mask, Opt_fatal_errors,
+>>       Opt_err,
+>> @@ -342,6 +343,7 @@ static match_table_t tokens = {
+>>       {Opt_no_space_cache, "nospace_cache"},
+>>       {Opt_recovery, "recovery"},
+>>       {Opt_skip_balance, "skip_balance"},
+>> +     {Opt_hot_track, "hot_track"},
+>
+> (also this one)
+>
+>>       {Opt_check_integrity, "check_int"},
+>>       {Opt_check_integrity_including_extent_data, "check_int_data"},
+>>       {Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
+>> @@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+>>               case Opt_skip_balance:
+>>                       btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
+>>                       break;
+>> +             case Opt_hot_track:
+>
+> It's a common patter in the surrounding code that a message is printed
+> when enabling options, but the vfs prints its own, so I'm not sure if
+> it's needed here as well. Just thinking, leave it as it is now.
+>
+>> +                     btrfs_set_opt(info->mount_opt, HOT_TRACK);
+>> +                     break;
+>>  #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+>>               case Opt_check_integrity_including_extent_data:
+>>                       printk(KERN_INFO "btrfs: enabling check integrity"
+>
+> david
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2: warning fix: remove unused variable in mei_io_cb_init
 
- drivers/misc/mei/init.c    |    4 +-
- drivers/misc/mei/iorw.c    |  117 +++++++++++++++++++++++++++++++++-----------
- drivers/misc/mei/main.c    |   78 -----------------------------
- drivers/misc/mei/mei_dev.h |    4 ++
- 4 files changed, 94 insertions(+), 109 deletions(-)
 
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 2dcdedf..e1205b3 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -668,12 +668,10 @@ int mei_disconnect_host_client(struct mei_device *dev, struct mei_cl *cl)
- 	if (cl->state != MEI_FILE_DISCONNECTING)
- 		return 0;
- 
--	cb = kzalloc(sizeof(struct mei_cl_cb), GFP_KERNEL);
-+	cb = mei_io_cb_init(cl, NULL);
- 	if (!cb)
- 		return -ENOMEM;
- 
--	mei_io_list_init(cb);
--	cb->file_private = cl;
- 	cb->major_file_operations = MEI_CLOSE;
- 	if (dev->mei_host_buffer_is_empty) {
- 		dev->mei_host_buffer_is_empty = false;
-diff --git a/drivers/misc/mei/iorw.c b/drivers/misc/mei/iorw.c
-index 2891bc4..541c157 100644
---- a/drivers/misc/mei/iorw.c
-+++ b/drivers/misc/mei/iorw.c
-@@ -52,6 +52,80 @@ void mei_io_cb_free(struct mei_cl_cb *cb)
- 	kfree(cb->response_buffer.data);
- 	kfree(cb);
- }
-+/**
-+ * mei_io_cb_init - allocate and initialize io callback
-+ *
-+ * @cl - mei client
-+ * @file: pointer to file structure
-+ *
-+ * returns mei_cl_cb pointer or NULL;
-+ */
-+struct mei_cl_cb *mei_io_cb_init(struct mei_cl *cl, struct file *fp)
-+{
-+	struct mei_cl_cb *cb;
-+
-+	cb = kzalloc(sizeof(struct mei_cl_cb), GFP_KERNEL);
-+	if (!cb)
-+		return NULL;
-+
-+	mei_io_list_init(cb);
-+
-+	cb->file_object = fp;
-+	cb->file_private = cl;
-+	cb->buf_idx = 0;
-+	return cb;
-+}
-+
-+
-+/**
-+ * mei_io_cb_alloc_req_buf - allocate request buffer
-+ *
-+ * @cb -  io callback structure
-+ * @size: size of the buffer
-+ *
-+ * returns 0 on success
-+ *         -EINVAL if cb is NULL
-+ *         -ENOMEM if allocation failed
-+ */
-+int mei_io_cb_alloc_req_buf(struct mei_cl_cb *cb, size_t length)
-+{
-+	if (!cb)
-+		return -EINVAL;
-+
-+	if (length == 0)
-+		return 0;
-+
-+	cb->request_buffer.data = kmalloc(length, GFP_KERNEL);
-+	if (!cb->request_buffer.data)
-+		return -ENOMEM;
-+	cb->request_buffer.size = length;
-+	return 0;
-+}
-+/**
-+ * mei_io_cb_alloc_req_buf - allocate respose buffer
-+ *
-+ * @cb -  io callback structure
-+ * @size: size of the buffer
-+ *
-+ * returns 0 on success
-+ *         -EINVAL if cb is NULL
-+ *         -ENOMEM if allocation failed
-+ */
-+int mei_io_cb_alloc_resp_buf(struct mei_cl_cb *cb, size_t length)
-+{
-+	if (!cb)
-+		return -EINVAL;
-+
-+	if (length == 0)
-+		return 0;
-+
-+	cb->response_buffer.data = kmalloc(length, GFP_KERNEL);
-+	if (!cb->response_buffer.data)
-+		return -ENOMEM;
-+	cb->response_buffer.size = length;
-+	return 0;
-+}
-+
- 
- /**
-  * mei_me_cl_by_id return index to me_clients for client_id
-@@ -112,14 +186,12 @@ int mei_ioctl_connect_client(struct file *file,
- 
- 	dev_dbg(&dev->pdev->dev, "mei_ioctl_connect_client() Entry\n");
- 
--
- 	/* buffered ioctl cb */
--	cb = kzalloc(sizeof(struct mei_cl_cb), GFP_KERNEL);
-+	cb = mei_io_cb_init(cl, file);
- 	if (!cb) {
- 		rets = -ENOMEM;
- 		goto end;
- 	}
--	mei_io_list_init(cb);
- 
- 	cb->major_file_operations = MEI_IOCTL;
- 
-@@ -207,14 +279,12 @@ int mei_ioctl_connect_client(struct file *file,
- 		} else {
- 			dev_dbg(&dev->pdev->dev, "Sending connect message - succeeded\n");
- 			cl->timer_count = MEI_CONNECT_TIMEOUT;
--			cb->file_private = cl;
- 			list_add_tail(&cb->list, &dev->ctrl_rd_list.list);
- 		}
- 
- 
- 	} else {
- 		dev_dbg(&dev->pdev->dev, "Queuing the connect request due to device busy\n");
--		cb->file_private = cl;
- 		dev_dbg(&dev->pdev->dev, "add connect cb to control write list.\n");
- 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
- 	}
-@@ -407,7 +477,7 @@ out:
- int mei_start_read(struct mei_device *dev, struct mei_cl *cl)
- {
- 	struct mei_cl_cb *cb;
--	int rets = 0;
-+	int rets;
- 	int i;
- 
- 	if (cl->state != MEI_FILE_CONNECTED)
-@@ -416,49 +486,40 @@ int mei_start_read(struct mei_device *dev, struct mei_cl *cl)
- 	if (dev->dev_state != MEI_DEV_ENABLED)
- 		return -ENODEV;
- 
--	dev_dbg(&dev->pdev->dev, "check if read is pending.\n");
- 	if (cl->read_pending || cl->read_cb) {
- 		dev_dbg(&dev->pdev->dev, "read is pending.\n");
- 		return -EBUSY;
- 	}
-+	i = mei_me_cl_by_id(dev, cl->me_client_id);
-+	if (i < 0) {
-+		dev_err(&dev->pdev->dev, "no such me client %d\n",
-+			cl->me_client_id);
-+		return  -ENODEV;
-+	}
- 
--	cb = kzalloc(sizeof(struct mei_cl_cb), GFP_KERNEL);
-+	cb = mei_io_cb_init(cl, NULL);
- 	if (!cb)
- 		return -ENOMEM;
- 
--	dev_dbg(&dev->pdev->dev, "allocation call back successful. host client = %d, ME client = %d\n",
--		cl->host_client_id, cl->me_client_id);
--	i = mei_me_cl_by_id(dev, cl->me_client_id);
--	if (i < 0) {
--		rets = -ENODEV;
--		goto unlock;
--	}
-+	rets = mei_io_cb_alloc_resp_buf(cb,
-+			dev->me_clients[i].props.max_msg_length);
-+	if (rets)
-+		goto err;
- 
--	cb->response_buffer.size = dev->me_clients[i].props.max_msg_length;
--	cb->response_buffer.data =
--			kmalloc(cb->response_buffer.size, GFP_KERNEL);
--	if (!cb->response_buffer.data) {
--		rets = -ENOMEM;
--		goto unlock;
--	}
--	dev_dbg(&dev->pdev->dev, "allocation call back data success.\n");
- 	cb->major_file_operations = MEI_READ;
--	/* make sure buffer index is zero before we start */
--	cb->buf_idx = 0;
--	cb->file_private = (void *) cl;
- 	cl->read_cb = cb;
- 	if (dev->mei_host_buffer_is_empty) {
- 		dev->mei_host_buffer_is_empty = false;
- 		if (mei_send_flow_control(dev, cl)) {
- 			rets = -ENODEV;
--			goto unlock;
-+			goto err;
- 		}
- 		list_add_tail(&cb->list, &dev->read_list.list);
- 	} else {
- 		list_add_tail(&cb->list, &dev->ctrl_wr_list.list);
- 	}
- 	return rets;
--unlock:
-+err:
- 	mei_io_cb_free(cb);
- 	return rets;
- }
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 518e07e..ed4943f 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -513,84 +513,6 @@ out:
- 	mutex_unlock(&dev->device_lock);
- 	return rets;
- }
--
--/**
-- * mei_io_cb_init - allocate and initialize io callback
-- *
-- * @cl - mei client
-- * @file: pointer to file structure
-- *
-- * returns mei_cl_cb pointer or NULL;
-- */
--static struct mei_cl_cb *mei_io_cb_init(struct mei_cl *cl, struct file *fp)
--{
--	struct mei_cl_cb *cb;
--	struct mei_device *dev;
--
--	dev = cl->dev;
--
--	cb = kzalloc(sizeof(struct mei_cl_cb), GFP_KERNEL);
--	if (!cb)
--		return NULL;
--
--	mei_io_list_init(cb);
--
--	cb->file_object = fp;
--	cb->file_private = cl;
--	cb->buf_idx = 0;
--	return cb;
--}
--
--
--/**
-- * mei_io_cb_alloc_req_buf - allocate request buffer
-- *
-- * @cb -  io callback structure
-- * @size: size of the buffer
-- *
-- * returns 0 on success
-- *         -EINVAL if cb is NULL
-- *         -ENOMEM if allocation failed
-- */
--static int mei_io_cb_alloc_req_buf(struct mei_cl_cb *cb, size_t length)
--{
--	if (!cb)
--		return -EINVAL;
--
--	if (length == 0)
--		return 0;
--
--	cb->request_buffer.data = kmalloc(length, GFP_KERNEL);
--	if (!cb->request_buffer.data)
--		return -ENOMEM;
--	cb->request_buffer.size = length;
--	return 0;
--}
--/**
-- * mei_io_cb_alloc_req_buf - allocate respose buffer
-- *
-- * @cb -  io callback structure
-- * @size: size of the buffer
-- *
-- * returns 0 on success
-- *         -EINVAL if cb is NULL
-- *         -ENOMEM if allocation failed
-- */
--static int mei_io_cb_alloc_resp_buf(struct mei_cl_cb *cb, size_t length)
--{
--	if (!cb)
--		return -EINVAL;
--
--	if (length == 0)
--		return 0;
--
--	cb->response_buffer.data = kmalloc(length, GFP_KERNEL);
--	if (!cb->response_buffer.data)
--		return -ENOMEM;
--	cb->response_buffer.size = length;
--	return 0;
--}
--
- /**
-  * mei_write - the write function.
-  *
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 4545a9e..6adcb3f 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -293,7 +293,11 @@ int mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
- /*
-  * MEI IO Functions
-  */
-+struct mei_cl_cb *mei_io_cb_init(struct mei_cl *cl, struct file *fp);
- void mei_io_cb_free(struct mei_cl_cb *priv_cb);
-+int mei_io_cb_alloc_req_buf(struct mei_cl_cb *cb, size_t length);
-+int mei_io_cb_alloc_resp_buf(struct mei_cl_cb *cb, size_t length);
-+
- 
- /**
-  * mei_io_list_init - Sets up a queue list.
 -- 
-1.7.4.4
+Regards,
 
+Zhi Yong Wu
