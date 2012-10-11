@@ -1,117 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab2JKSzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 14:55:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756148Ab2JKSzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 14:55:42 -0400
-Date: Thu, 11 Oct 2012 14:55:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
-Message-ID: <20121011185536.GE28268@redhat.com>
-References: <50750367.2070508@ce.jp.nec.com>
- <20121010155929.GA18733@redhat.com>
- <50762182.5090806@ce.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50762182.5090806@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759224Ab2JKTDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 15:03:52 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:42988 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759185Ab2JKTDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 15:03:50 -0400
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [RFC PATCH v2 00/16] DMA Engine support for AM33xx
+Date: Thu, 11 Oct 2012 15:04:25 -0400
+Message-Id: <1349982281-10785-1-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 10:31:46AM +0900, Jun'ichi Nomura wrote:
+Changes since v1:
+	- Rebased on top of mainline from 12250d8
+	- Dropped the feature removal schedule patch
+	- Implemented dma_request_slave_channel_compat() and
+	  converted the mmc and spi drivers to use it
+	- Dropped unneeded #address-cells and #size-cells from
+	  EDMA DT support
+	- Moved private EDMA header to linux/platform_data/ and
+	  removed some unneeded definitions
+	- Fixed parsing of optional properties
 
-[..]
-> Below is the updated version of the patch.
-> 
-> ======================================================================
-> blk_put_rl() does not call blkg_put() for q->root_rl because we
-> don't take request list reference on q->root_blkg.
-> However, if root_blkg is once attached then detached (freed),
-> blk_put_rl() is confused by the bogus pointer in q->root_blkg.
-> 
-> For example, with !CONFIG_BLK_DEV_THROTTLING && CONFIG_CFQ_GROUP_IOSCHED,
-> switching IO scheduler from cfq to deadline will cause system stall
-> after the following warning with 3.6:
-> 
-> > WARNING: at /work/build/linux/block/blk-cgroup.h:250 blk_put_rl+0x4d/0x95()
-> > Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-> > Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
-> > Call Trace:
-> >  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
-> >  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
-> >  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
-> >  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
-> >  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
-> >  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
-> >  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
-> >  [<ffffffff811d7728>] blk_end_request+0x10/0x12
-> >  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
-> >  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
-> >  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
-> >  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
-> >  [<ffffffff810915d5>] ? generic_smp_call_function_single_interrupt+0x9f/0xd7
-> >  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
-> >  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
-> >  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
-> >  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
-> >  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
-> >  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
-> >  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
-> >  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
-> >  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
-> >  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
-> >  [<ffffffff81017811>] cpu_idle+0xbb/0x114
-> >  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
-> >  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
-> >  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
-> >  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
-> >  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
-> >  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
-> 
-> This patch clears q->root_blkg and q->root_rl.blkg when root blkg
-> is destroyed.
-> __blk_queue_next_rl(), which uses q->root_blkg without check,
-> is changed to exit early when all blkg's are destroyed.
-> 
+TODO:
+	- Add AM33xx crossbar support to the private EDMA API
+	  (any EDMA events on the crossbar are not supported)
+	- Add dmaengine support for per-channel caps so the
+	  hack to set the maximum segments can be replaced with
+	  a query to the dmaengine driver
 
-Thanks. This patch looks good to me.
+This series adds DMA Engine support for AM33xx, which uses
+an EDMA DMAC. The EDMA DMAC has been previously supported by only
+a private API implementation (much like the situation with OMAP
+DMA) found on the DaVinci family of SoCs.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+The series applies on top of mainline from
+12250d843e8489ee00b5b7726da855e51694e792 and the following patches:
 
-Vivek
+	- Vaibhav's patch to fix AM33xx boot on mainline
+	  https://patchwork.kernel.org/patch/1569231/
+	- dmaengine DT support from Vinod's dmaengine_dt branch in
+	  git://git.infradead.org/users/vkoul/slave-dma.git since
+	  027478851791df751176398be02a3b1c5f6aa824
 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index f3b44a6..a31e678 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -285,6 +285,13 @@ static void blkg_destroy_all(struct request_queue *q)
->  		blkg_destroy(blkg);
->  		spin_unlock(&blkcg->lock);
->  	}
-> +
-> +	/*
-> +	 * root blkg is destroyed.  Just clear the pointer since
-> +	 * root_rl does not take reference on root blkg.
-> +	 */
-> +	q->root_blkg = NULL;
-> +	q->root_rl.blkg = NULL;
->  }
->  
->  static void blkg_rcu_free(struct rcu_head *rcu_head)
-> @@ -326,6 +333,9 @@ struct request_list *__blk_queue_next_rl(struct request_list *rl,
->  	 */
->  	if (rl == &q->root_rl) {
->  		ent = &q->blkg_list;
-> +		/* There are no more block groups, hence no request lists */
-> +		if (list_empty(ent))
-> +			return NULL;
->  	} else {
->  		blkg = container_of(rl, struct blkcg_gq, rl);
->  		ent = &blkg->q_node;
+The approach taken is similar to how OMAP DMA is being converted to
+DMA Engine support. With the functional EDMA private API already
+existing in mach-davinci/dma.c, we first move that to an ARM common
+area so it can be shared. Adding DT and runtime PM support to the
+private EDMA API implementation allows it to run on AM33xx. AM33xx
+*only* boots using DT so we leverage Jon's generic DT DMA helpers to
+register EDMA DMAC with the of_dma framework and then add support
+for calling the dma_request_slave_channel() API to both the mmc
+and spi drivers.
+
+What works? Well, with this series we now have MMC and SPI support
+on AM33xx. The only caveat for MMC is that the mmc3 controller has
+its events on the crossbar and is not usable yet.
+
+This is tested on BeagleBone with a SPI framebuffer driver and SD
+card. It is regression tested on AM180x-EVM (which also makes use
+of the EDMA dmaengine driver and the EDMA private API) using SD,
+SPI flash, and the onboard audio supported by the ASoC Davinci
+driver.
+
+After this series, the plan is to convert the last in-tree user
+of the private EDMA API (davinci-pcm/mcasp) and then eliminate
+the private EDMA API by folding its functionality into
+drivers/dma/edma.c.
+
+Matt Porter (16):
+  dmaengine: edma: fix slave config dependency on direction
+  ARM: davinci: move private EDMA API to arm/common
+  ARM: edma: remove unused transfer controller handlers
+  ARM: edma: add DT and runtime PM support for AM335x
+  dmaengine: edma: enable build for AM33XX
+  dmaengine: edma: Add TI EDMA device tree binding
+  ARM: dts: add AM33XX EDMA support
+  ARM: omap: add hsmmc am33xx specific init
+  dmaengine: add dma_request_slave_channel_compat()
+  mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
+  mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+  mmc: omap_hsmmc: add generic DMA request support to the DT binding
+  ARM: dts: add AM33XX MMC support
+  spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+  spi: omap2-mcspi: add generic DMA request support to the DT binding
+  ARM: dts: add AM33XX SPI support
+
+ Documentation/devicetree/bindings/dma/ti-edma.txt  |   49 +
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +-
+ Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/am335x-bone.dts                  |   23 +
+ arch/arm/boot/dts/am33xx.dtsi                      |  100 ++
+ arch/arm/common/Kconfig                            |    3 +
+ arch/arm/common/Makefile                           |    1 +
+ arch/arm/common/edma.c                             | 1781 ++++++++++++++++++++
+ arch/arm/mach-davinci/Makefile                     |    2 +-
+ arch/arm/mach-davinci/board-da830-evm.c            |    4 +-
+ arch/arm/mach-davinci/board-da850-evm.c            |    8 +-
+ arch/arm/mach-davinci/board-dm646x-evm.c           |    4 +-
+ arch/arm/mach-davinci/board-omapl138-hawk.c        |    8 +-
+ arch/arm/mach-davinci/board-tnetv107x-evm.c        |    2 +-
+ arch/arm/mach-davinci/davinci.h                    |    2 +-
+ arch/arm/mach-davinci/devices-da8xx.c              |    8 +-
+ arch/arm/mach-davinci/devices-tnetv107x.c          |    6 +-
+ arch/arm/mach-davinci/devices.c                    |    7 +-
+ arch/arm/mach-davinci/dm355.c                      |    6 +-
+ arch/arm/mach-davinci/dm365.c                      |    6 +-
+ arch/arm/mach-davinci/dm644x.c                     |    6 +-
+ arch/arm/mach-davinci/dm646x.c                     |    6 +-
+ arch/arm/mach-davinci/dma.c                        | 1588 -----------------
+ arch/arm/mach-davinci/include/mach/da8xx.h         |    2 +-
+ arch/arm/mach-davinci/include/mach/edma.h          |  267 ---
+ arch/arm/mach-omap2/hsmmc.c                        |    7 +-
+ arch/arm/plat-omap/Kconfig                         |    1 +
+ drivers/dma/Kconfig                                |    2 +-
+ drivers/dma/edma.c                                 |   57 +-
+ drivers/mmc/host/davinci_mmc.c                     |    1 +
+ drivers/mmc/host/omap_hsmmc.c                      |   20 +-
+ drivers/spi/spi-omap2-mcspi.c                      |   65 +-
+ include/linux/dmaengine.h                          |   10 +
+ include/linux/mfd/davinci_voicecodec.h             |    3 +-
+ include/linux/platform_data/edma.h                 |  198 +++
+ include/linux/platform_data/spi-davinci.h          |    2 +-
+ sound/soc/davinci/davinci-evm.c                    |    1 +
+ sound/soc/davinci/davinci-pcm.c                    |    1 +
+ sound/soc/davinci/davinci-pcm.h                    |    2 +-
+ sound/soc/davinci/davinci-sffsdr.c                 |    6 +-
+ 41 files changed, 2361 insertions(+), 1957 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+ create mode 100644 arch/arm/common/edma.c
+ delete mode 100644 arch/arm/mach-davinci/dma.c
+ delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+ create mode 100644 include/linux/platform_data/edma.h
+
+-- 
+1.7.9.5
+
