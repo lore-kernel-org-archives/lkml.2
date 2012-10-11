@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab2JKCOE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:14:04 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47808 "EHLO
+	id S933977Ab2JKCON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:14:13 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48973 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933786Ab2JKCN6 (ORCPT
+	by vger.kernel.org with ESMTP id S933404Ab2JKCOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:13:58 -0400
-X-Sasl-enc: wuuVd/tKu9ymUGPE0X00U3gAlkVGe7q7I1ppl62BkAW8 1349921636
+	Wed, 10 Oct 2012 22:14:06 -0400
+X-Sasl-enc: NvPeg5h+Zbi/y6TGwdOZ6WBXOqGpJh0wV7YBGVS2GaRZ 1349921645
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Brian C. Huffman" <bhuffman@graze.net>, VL <vl.homutov@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 46/84] PCI: Check P2P bridge for invalid secondary/subordinate range
-Date: Thu, 11 Oct 2012 11:03:30 +0900
-Message-Id: <20121011015425.328212185@linuxfoundation.org>
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 48/84] ext4: always set i_op in ext4_mknod()
+Date: Thu, 11 Oct 2012 11:03:32 +0900
+Message-Id: <20121011015425.692349554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -28,51 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit 1965f66e7db08d1ebccd24a59043eba826cc1ce8 upstream.
+commit 6a08f447facb4f9e29fcc30fb68060bb5a0d21c2 upstream.
 
-For bridges with "secondary > subordinate", i.e., invalid bus number
-apertures, we don't enumerate anything behind the bridge unless the
-user specified "pci=assign-busses".
+ext4_special_inode_operations have their own ifdef CONFIG_EXT4_FS_XATTR
+to mask those methods. And ext4_iget also always sets it, so there is
+an inconsistency.
 
-This patch makes us automatically try to reassign the downstream bus
-numbers in this case (just for that bridge, not for all bridges as
-"pci=assign-busses" does).
-
-We don't discover all the devices on the Intel DP43BF motherboard
-without this change (or "pci=assign-busses") because its BIOS configures
-a bridge as:
-
-    pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
-
-[bhelgaas: changelog, change message to dev_info]
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18412
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=625754
-Reported-by: Brian C. Huffman <bhuffman@graze.net>
-Reported-by: VL <vl.homutov@gmail.com>
-Tested-by: VL <vl.homutov@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ext4/namei.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -664,8 +664,10 @@ int __devinit pci_scan_bridge(struct pci
- 
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
--	    (primary != bus->number || secondary <= bus->number)) {
--		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
-+	    (primary != bus->number || secondary <= bus->number ||
-+	     secondary > subordinate)) {
-+		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
-+			 secondary, subordinate);
- 		broken = 1;
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1799,9 +1799,7 @@ retry:
+ 	err = PTR_ERR(inode);
+ 	if (!IS_ERR(inode)) {
+ 		init_special_inode(inode, inode->i_mode, rdev);
+-#ifdef CONFIG_EXT4_FS_XATTR
+ 		inode->i_op = &ext4_special_inode_operations;
+-#endif
+ 		err = ext4_add_nondir(handle, dentry, inode);
  	}
- 
+ 	ext4_journal_stop(handle);
 
 
