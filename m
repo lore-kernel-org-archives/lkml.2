@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437Ab2JKCbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:31:12 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44009 "EHLO
+	id S933507Ab2JKCbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:31:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43569 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933019Ab2JKCL4 (ORCPT
+	by vger.kernel.org with ESMTP id S932094Ab2JKCLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:11:56 -0400
-X-Sasl-enc: I/Ec1ko706U1IWy+X1ocs84p0As6Qv7cniUGGVDTi4uD 1349921515
+	Wed, 10 Oct 2012 22:11:47 -0400
+X-Sasl-enc: 9IB4alrGvdd/sk8Dx8aIzczjStu8/Md608ybxRZlvWYC 1349921506
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [ 09/84] workqueue: add missing smp_wmb() in process_one_work()
-Date: Thu, 11 Oct 2012 11:02:53 +0900
-Message-Id: <20121011015418.736767695@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 07/84] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+Date: Thu, 11 Oct 2012 11:02:51 +0900
+Message-Id: <20121011015418.364808562@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -27,44 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 959d1af8cffc8fd38ed53e8be1cf4ab8782f9c00 upstream.
+commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
 
-WORK_STRUCT_PENDING is used to claim ownership of a work item and
-process_one_work() releases it before starting execution.  When
-someone else grabs PENDING, all pre-release updates to the work item
-should be visible and all updates made by the new owner should happen
-afterwards.
+As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
+have kernel_restart() call disable_nonboot_cpus().  Doing so can help
+machines that require boot cpu be the last alive cpu during reboot to
+survive with kernel restart.
 
-Grabbing PENDING uses test_and_set_bit() and thus has a full barrier;
-however, clearing doesn't have a matching wmb.  Given the preceding
-spin_unlock and use of clear_bit, I don't believe this can be a
-problem on an actual machine and there hasn't been any related report
-but it still is theretically possible for clear_pending to permeate
-upwards and happen before work->entry update.
+This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
+requires that the restart routine be run on the primary cpu rather than
+secondary ones.  Otherwise, the secondary core running the restart
+routine will fail to come to online after reboot.
 
-Add an explicit smp_wmb() before work_clear_pending().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1868,7 +1868,9 @@ __acquires(&gcwq->lock)
- 
- 	spin_unlock_irq(&gcwq->lock);
- 
-+	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
- 	work_clear_pending(work);
-+
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -334,6 +334,7 @@ void kernel_restart_prepare(char *cmd)
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
++	disable_nonboot_cpus();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
 
 
