@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab2JKBDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:03:44 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49308 "EHLO
+	id S1758219Ab2JKBD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:03:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59072 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758086Ab2JKBDj (ORCPT
+	by vger.kernel.org with ESMTP id S1758184Ab2JKBDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:03:39 -0400
-X-Sasl-enc: qPdlf95UAtt9g1DJlFOg9yIl5LZOLaf7AZ1qkEljYyg3 1349917417
+	Wed, 10 Oct 2012 21:03:43 -0400
+X-Sasl-enc: 1SQW98jGPtBLkyNdcmNNj1WEJHZUqeeWc13360UnzYOh 1349917422
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Donald Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 005/120] intel-iommu: Default to non-coherent for domains unattached to iommus
-Date: Thu, 11 Oct 2012 09:59:17 +0900
-Message-Id: <20121011005826.327862190@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 006/120] media: rc: ite-cir: Initialise ite_dev::rdev earlier
+Date: Thu, 11 Oct 2012 09:59:18 +0900
+Message-Id: <20121011005826.516815785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,52 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 2e12bc29fc5a12242d68e11875db3dd58efad9ff upstream.
+commit 4b961180ef275035b1538317ffd0e21e80e63e77 upstream.
 
-domain_update_iommu_coherency() currently defaults to setting domains
-as coherent when the domain is not attached to any iommus.  This
-allows for a window in domain_context_mapping_one() where such a
-domain can update context entries non-coherently, and only after
-update the domain capability to clear iommu_coherency.
+ite_dev::rdev is currently initialised in ite_probe() after
+rc_register_device() returns.  If a newly registered device is opened
+quickly enough, we may enable interrupts and try to use ite_dev::rdev
+before it has been initialised.  Move it up to the earliest point we
+can, right after calling rc_allocate_device().
 
-This can be seen using KVM device assignment on VT-d systems that
-do not support coherency in the ecap register.  When a device is
-added to a guest, a domain is created (iommu_coherency = 0), the
-device is attached, and ranges are mapped.  If we then hot unplug
-the device, the coherency is updated and set to the default (1)
-since no iommus are attached to the domain.  A subsequent attach
-of a device makes use of the same dmar domain (now marked coherent)
-updates context entries with coherency enabled, and only disables
-coherency as the last step in the process.
+Reported-and-tested-by: YunQiang Su <wzssyqa@gmail.com>
 
-To fix this, switch domain_update_iommu_coherency() to use the
-safer, non-coherent default for domains not attached to iommus.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/rc/ite-cir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -588,7 +588,9 @@ static void domain_update_iommu_coherenc
- {
- 	int i;
+--- a/drivers/media/rc/ite-cir.c
++++ b/drivers/media/rc/ite-cir.c
+@@ -1473,6 +1473,7 @@ static int ite_probe(struct pnp_dev *pde
+ 	rdev = rc_allocate_device();
+ 	if (!rdev)
+ 		goto failure;
++	itdev->rdev = rdev;
  
--	domain->iommu_coherency = 1;
-+	i = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
-+
-+	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
+ 	ret = -ENODEV;
  
- 	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_coherent(g_iommus[i]->ecap)) {
+@@ -1604,7 +1605,6 @@ static int ite_probe(struct pnp_dev *pde
+ 	if (ret)
+ 		goto failure;
+ 
+-	itdev->rdev = rdev;
+ 	ite_pr(KERN_NOTICE, "driver has been successfully loaded\n");
+ 
+ 	return 0;
 
 
