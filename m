@@ -1,48 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab2JKNjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:39:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57554 "EHLO mx2.suse.de"
+	id S1757373Ab2JKNjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:39:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38100 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab2JKNjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:39:02 -0400
-Date: Thu, 11 Oct 2012 15:38:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 04/14] kmem accounting basic infrastructure
-Message-ID: <20121011133855.GG29295@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-5-git-send-email-glommer@parallels.com>
- <20121011101119.GB29295@dhcp22.suse.cz>
+	id S1753218Ab2JKNja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:39:30 -0400
+From: Nishanth Menon <nm@ti.com>
+To: <linux-pm@vger.kernel.org>
+CC: Nishanth Menon <nm@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kevin Hilman <khilman@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] PM / devfreq: kernel-doc typo corrections
+Date: Thu, 11 Oct 2012 08:39:15 -0500
+Message-ID: <1349962755-19598-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121011101119.GB29295@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-10-12 12:11:19, Michal Hocko wrote:
-> On Mon 08-10-12 14:06:10, Glauber Costa wrote:
+Parameter documentation needs a ':' for scripts/kernel-doc
+to parse properly.
 
-> > +	cgroup_lock();
-> > +	mutex_lock(&set_limit_mutex);
-> > +	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
-> 
-> Just a nit but wouldn't memcg_kmem_is_accounted(memcg) be better than
-> directly checking kmem_accounted?
+Minor fixes for ones warned by:
+./scripts/kernel-doc -text drivers/devfreq/devfreq.c>/dev/null
 
-OK, I see that jump lable patch changes this and we set activated inside
-the conditional so kmem_accounted check catches both flags. That could
-be changed to memcg_kmem_is_activated in that patch but what ever.
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/devfreq/devfreq.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index 70c31d4..e4d48d2 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -123,9 +123,9 @@ int update_devfreq(struct devfreq *devfreq)
+ /**
+  * devfreq_notifier_call() - Notify that the device frequency requirements
+  *			   has been changed out of devfreq framework.
+- * @nb		the notifier_block (supposed to be devfreq->nb)
+- * @type	not used
+- * @devp	not used
++ * @nb:		the notifier_block (supposed to be devfreq->nb)
++ * @type:	not used
++ * @devp:	not used
+  *
+  * Called by a notifier that uses devfreq->nb.
+  */
+@@ -431,7 +431,7 @@ err_out:
+ 
+ /**
+  * devfreq_remove_device() - Remove devfreq feature from a device.
+- * @devfreq	the devfreq instance to be removed
++ * @devfreq:	the devfreq instance to be removed
+  */
+ int devfreq_remove_device(struct devfreq *devfreq)
+ {
+@@ -641,9 +641,9 @@ module_exit(devfreq_exit);
+ /**
+  * devfreq_recommended_opp() - Helper function to get proper OPP for the
+  *			     freq value given to target callback.
+- * @dev		The devfreq user device. (parent of devfreq)
+- * @freq	The frequency given to target function
+- * @flags	Flags handed from devfreq framework.
++ * @dev:	The devfreq user device. (parent of devfreq)
++ * @freq:	The frequency given to target function
++ * @flags:	Flags handed from devfreq framework.
+  *
+  */
+ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+@@ -674,8 +674,8 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+  * devfreq_register_opp_notifier() - Helper function to get devfreq notified
+  *				   for any changes in the OPP availability
+  *				   changes
+- * @dev		The devfreq user device. (parent of devfreq)
+- * @devfreq	The devfreq object.
++ * @dev:	The devfreq user device. (parent of devfreq)
++ * @devfreq:	The devfreq object.
+  */
+ int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
+ {
+@@ -690,8 +690,8 @@ int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
+  * devfreq_unregister_opp_notifier() - Helper function to stop getting devfreq
+  *				     notified for any changes in the OPP
+  *				     availability changes anymore.
+- * @dev		The devfreq user device. (parent of devfreq)
+- * @devfreq	The devfreq object.
++ * @dev:	The devfreq user device. (parent of devfreq)
++ * @devfreq:	The devfreq object.
+  *
+  * At exit() callback of devfreq_dev_profile, this must be included if
+  * devfreq_recommended_opp is used.
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
