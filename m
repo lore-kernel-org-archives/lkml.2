@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab2JKCMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:12:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36262 "EHLO
+	id S933275Ab2JKCMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:12:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39627 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932948Ab2JKCMB (ORCPT
+	by vger.kernel.org with ESMTP id S933216Ab2JKCMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:01 -0400
-X-Sasl-enc: umEK9srGuq8pCQk9MUOWaFDatEw9eJnsuo7W+Te5qTJ3 1349921519
+	Wed, 10 Oct 2012 22:12:10 -0400
+X-Sasl-enc: p7KV4JA1YlvAaV36DhF9vvbfY91Fn9pH7C94yckx3AVD 1349921528
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/84] xfrm: Workaround incompatibility of ESN and async crypto
-Date: Thu, 11 Oct 2012 11:02:54 +0900
-Message-Id: <20121011015418.911649944@linuxfoundation.org>
+        Sascha Hauer <s.hauer@pengutronix.de>, Jan Luebbe <jlu@pengutronix.de>,
+        Sam Ravnborg <sam@ravnborg.org>, Bernhard Walle <bernhard@bwalle.de>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 02/84] kbuild: make: fix if_changed when command contains backslashes
+Date: Thu, 11 Oct 2012 11:02:46 +0900
+Message-Id: <20121011015417.483204962@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,104 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+commit c353acba28fb3fa1fd05fd6b85a9fc7938330f9c upstream.
 
-[ Upstream commit 3b59df46a449ec9975146d71318c4777ad086744 ]
+The call if_changed mechanism does not work when the command contains
+backslashes.  This basically is an issue with lzo and bzip2 compressed
+kernels.  The compressed binaries do not contain the uncompressed image
+size, so these use size_append to append the size.  This results in
+backslashes in the executed command.  With this if_changed always
+detects a change in the command and rebuilds the compressed image even
+if nothing has changed.
 
-ESN for esp is defined in RFC 4303. This RFC assumes that the
-sequence number counters are always up to date. However,
-this is not true if an async crypto algorithm is employed.
+Fix this by escaping backslashes in make-cmd
 
-If the sequence number counters are not up to date on sequence
-number check, we may incorrectly update the upper 32 bit of
-the sequence number. This leads to a DOS.
-
-We workaround this by comparing the upper sequence number,
-(used for authentication) with the upper sequence number
-computed after the async processing. We drop the packet
-if these numbers are different.
-
-To do this, we introduce a recheck function that does this
-check in the ESN case.
-
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Bernhard Walle <bernhard@bwalle.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/xfrm.h     |    3 +++
- net/xfrm/xfrm_input.c  |    2 +-
- net/xfrm/xfrm_replay.c |   15 +++++++++++++++
- 3 files changed, 19 insertions(+), 1 deletion(-)
 
---- a/include/net/xfrm.h
-+++ b/include/net/xfrm.h
-@@ -269,6 +269,9 @@ struct xfrm_replay {
- 	int	(*check)(struct xfrm_state *x,
- 			 struct sk_buff *skb,
- 			 __be32 net_seq);
-+	int	(*recheck)(struct xfrm_state *x,
-+			   struct sk_buff *skb,
-+			   __be32 net_seq);
- 	void	(*notify)(struct xfrm_state *x, int event);
- 	int	(*overflow)(struct xfrm_state *x, struct sk_buff *skb);
- };
---- a/net/xfrm/xfrm_input.c
-+++ b/net/xfrm/xfrm_input.c
-@@ -212,7 +212,7 @@ resume:
- 		/* only the first xfrm gets the encap type */
- 		encap_type = 0;
+---
+ scripts/Kbuild.include |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -205,7 +205,7 @@ endif
+ # >$< substitution to preserve $ when reloading .cmd file
+ # note: when using inline perl scripts [perl -e '...$$t=1;...']
+ # in $(cmd_xxx) double $$ your perl vars
+-make-cmd = $(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1)))))
++make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
  
--		if (async && x->repl->check(x, skb, seq)) {
-+		if (async && x->repl->recheck(x, skb, seq)) {
- 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
- 			goto drop_unlock;
- 		}
---- a/net/xfrm/xfrm_replay.c
-+++ b/net/xfrm/xfrm_replay.c
-@@ -437,6 +437,18 @@ err:
- 	return -EINVAL;
- }
- 
-+static int xfrm_replay_recheck_esn(struct xfrm_state *x,
-+				   struct sk_buff *skb, __be32 net_seq)
-+{
-+	if (unlikely(XFRM_SKB_CB(skb)->seq.input.hi !=
-+		     htonl(xfrm_replay_seqhi(x, net_seq)))) {
-+			x->stats.replay_window++;
-+			return -EINVAL;
-+	}
-+
-+	return xfrm_replay_check_esn(x, skb, net_seq);
-+}
-+
- static void xfrm_replay_advance_esn(struct xfrm_state *x, __be32 net_seq)
- {
- 	unsigned int bitnr, nr, i;
-@@ -508,6 +520,7 @@ static void xfrm_replay_advance_esn(stru
- static struct xfrm_replay xfrm_replay_legacy = {
- 	.advance	= xfrm_replay_advance,
- 	.check		= xfrm_replay_check,
-+	.recheck	= xfrm_replay_check,
- 	.notify		= xfrm_replay_notify,
- 	.overflow	= xfrm_replay_overflow,
- };
-@@ -515,6 +528,7 @@ static struct xfrm_replay xfrm_replay_le
- static struct xfrm_replay xfrm_replay_bmp = {
- 	.advance	= xfrm_replay_advance_bmp,
- 	.check		= xfrm_replay_check_bmp,
-+	.recheck	= xfrm_replay_check_bmp,
- 	.notify		= xfrm_replay_notify_bmp,
- 	.overflow	= xfrm_replay_overflow_bmp,
- };
-@@ -522,6 +536,7 @@ static struct xfrm_replay xfrm_replay_bm
- static struct xfrm_replay xfrm_replay_esn = {
- 	.advance	= xfrm_replay_advance_esn,
- 	.check		= xfrm_replay_check_esn,
-+	.recheck	= xfrm_replay_recheck_esn,
- 	.notify		= xfrm_replay_notify_bmp,
- 	.overflow	= xfrm_replay_overflow_esn,
- };
+ # Find any prerequisites that is newer than target or that does not exist.
+ # PHONY targets skipped in both cases.
 
 
