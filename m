@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab2JKBMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:12:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48486 "EHLO
+	id S932912Ab2JKBMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:12:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34731 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932125Ab2JKBMe (ORCPT
+	by vger.kernel.org with ESMTP id S932865Ab2JKBMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:12:34 -0400
-X-Sasl-enc: clGhsxrxliJ6czukjmJr2oxJ+j5YQ5o91zIiyEpoOk7f 1349917953
+	Wed, 10 Oct 2012 21:12:39 -0400
+X-Sasl-enc: 0xQmos5tvraVPcS/jmjNg9fy6OhQcmBFCOdvtvQgsy4M 1349917957
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 080/120] ALSA: usb - disable broken hw volume for Tenx TP6911
-Date: Thu, 11 Oct 2012 10:00:32 +0900
-Message-Id: <20121011005841.147223867@linuxfoundation.org>
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 086/120] ia64: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 10:00:38 +0900
+Message-Id: <20121011005842.444629092@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,42 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-commit c10514394ef9e8de93a4ad8c8904d71dcd82c122 upstream.
+commit 93482f4ef1093f5961a63359a34612183d6beea0 upstream.
 
-While going through Ubuntu bugs, I discovered this patch being
-posted and a confirmation that the patch works as expected.
+Traditionally, the entire idle task served as an RCU quiescent state.
+But when RCU read side critical sections started appearing within the
+idle loop, this traditional strategy became untenable.  The fix was to
+create new RCU APIs named rcu_idle_enter() and rcu_idle_exit(), which
+must be called by each architecture's idle loop so that RCU can tell
+when it is safe to ignore a given idle CPU.
 
-Finding out how the hw volume really works would be preferrable
-to just disabling the broken one, but this would be better than
-nothing.
+Unfortunately, this fix was never applied to ia64, a shortcoming remedied
+by this commit.
 
-Credit: sndfnsdfin (qawsnews)
-BugLink: https://bugs.launchpad.net/bugs/559939
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested by: Tony Luck <tony.luck@intel.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/ia64/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1247,6 +1247,13 @@ static int parse_audio_feature_unit(stru
- 		/* disable non-functional volume control */
- 		master_bits &= ~UAC_CONTROL_BIT(UAC_FU_VOLUME);
- 		break;
-+	case USB_ID(0x1130, 0xf211):
-+		snd_printk(KERN_INFO
-+			   "usbmixer: volume control quirk for Tenx TP6911 Audio Headset\n");
-+		/* disable non-functional volume control */
-+		channels = 0;
-+		break;
-+
- 	}
- 	if (channels > 0)
- 		first_ch_bits = snd_usb_combine_bytes(bmaControls + csize, csize);
+--- a/arch/ia64/kernel/process.c
++++ b/arch/ia64/kernel/process.c
+@@ -29,6 +29,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/utsname.h>
+ #include <linux/tracehook.h>
++#include <linux/rcupdate.h>
+ 
+ #include <asm/cpu.h>
+ #include <asm/delay.h>
+@@ -301,6 +302,7 @@ cpu_idle (void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		if (can_do_pal_halt) {
+ 			current_thread_info()->status &= ~TS_POLLING;
+ 			/*
+@@ -331,6 +333,7 @@ cpu_idle (void)
+ 			normal_xtp();
+ #endif
+ 		}
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 		check_pgt_cache();
+ 		if (cpu_is_offline(cpu))
 
 
