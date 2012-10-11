@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab2JKAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:39:09 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45000 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932872Ab2JKAPK (ORCPT
+	id S933145Ab2JKAj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:39:29 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43811 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932872Ab2JKAjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:15:10 -0400
-X-Sasl-enc: MysNA9M24TGRw2OY0eKxYL+oCbK6MSZ50gWqX9xQO7nm 1349914509
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 107/133] alpha: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 07:52:13 +0900
-Message-Id: <20121010224913.798777370@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
-References: <20121010224854.313159132@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 20:39:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121010164426.761987e0.akpm@linux-foundation.org>
+References: <20121009225401.GA10219@www.outflux.net>
+	<20121010134646.4e9bba55.akpm@linux-foundation.org>
+	<CAGXu5jJCQ3RxoFJ5FrGo=FJLSApK2PKX0PAt=E8y=PECNn4XWg@mail.gmail.com>
+	<20121010154637.5b201ed7.akpm@linux-foundation.org>
+	<CAGXu5jJ_tQF9LUBgsAk+xdXTppGidakkd4gaDvGtSbpAeH21Dw@mail.gmail.com>
+	<20121010164426.761987e0.akpm@linux-foundation.org>
+Date: Wed, 10 Oct 2012 17:39:23 -0700
+X-Google-Sender-Auth: XaqbSrTJOC9SDxloFUiL0yzrovs
+Message-ID: <CAGXu5jJFN3CRVH6=39PVKw4QJXaGt7NRu-UO7u5xCKv+nxi6+w@mail.gmail.com>
+Subject: Re: [PATCH v2] fix stack memory content leak via UNAME26
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        PaX Team <pageexec@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 10, 2012 at 4:44 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 10 Oct 2012 16:36:44 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> > would suffice?
+>> >
+>> > Not a big deal I guess, but copying out stuff beyond the NUL is a bit odd.
+>>
+>> Sure, that looks good to me.
+>
+> I think I'll stick with your tested patch for now.  Could you please
+> add "clean that up" to your todo list?
 
-------------------
+Sure. I've sent a v3 now. It still needed to handle the (theoretical)
+len == 0 case, though.
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+-Kees
 
-commit 4c94cada48f7c660eca582be6032427a5e367117 upstream.
-
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
-
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
-
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
-
-Add this missing pair of calls in the Alpha's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Michael Cree <mcree@orcon.net.nz>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: alpha <linux-alpha@vger.kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/alpha/kernel/process.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
- #include <linux/slab.h>
-+#include <linux/rcupdate.h>
- 
- #include <asm/reg.h>
- #include <asm/uaccess.h>
-@@ -54,8 +55,10 @@ cpu_idle(void)
- 		/* FIXME -- EV6 and LCA45 know how to power down
- 		   the CPU.  */
- 
-+		rcu_idle_enter();
- 		while (!need_resched())
- 			cpu_relax();
-+		rcu_idle_exit();
- 		schedule();
- 	}
- }
-
-
+-- 
+Kees Cook
+Chrome OS Security
