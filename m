@@ -1,90 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964835Ab2JKCOt (ORCPT <rfc822;w@1wt.eu>);
+	id S964849Ab2JKCOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:14:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24713 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964831Ab2JKCOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Oct 2012 22:14:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49552 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934198Ab2JKCOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:14:43 -0400
-X-Sasl-enc: QmGIPwPFu/WTPYR0X0Xh+JvP+3O7zttkKBolMxTEQqJ4 1349921682
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 40/84] tg3: Fix TSO CAP for 5704 devs w / ASF enabled
-Date: Thu, 11 Oct 2012 11:03:24 +0900
-Message-Id: <20121011015424.276412012@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
-References: <20121011015417.017144658@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
+   d="scan'208";a="225376017"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        linux-kernel@vger.kernel.org, tboot-devel@lists.sourceforge.net,
+        Qiaowei Ren <qiaowei.ren@intel.com>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
+Subject: [PATCH v2] x86: add a new SMP bring up way for tboot case
+Date: Thu, 11 Oct 2012 18:11:07 +0800
+Message-Id: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+tboot provides a better AP wakeup mechanism based on cpu MWAIT feature for
+OS/VMM. With this mechanism, system will boot faster and will NOT require
+VT to be enabled. But it requires that OS/VMM must have support it, otherwise
+system can never boot up.
 
-------------------
+Once this mechanism is enabled, tboot will put APs waiting in MWAIT loops
+before launching kernel. kernel can check the new flag field in v6 tboot
+shared page for the hint. If the bit TB_FLAG_AP_WAKE_SUPPORT in flag field
+is set, kernel BSP has to write the monitored memory (tboot->ap_wake_trigger)
+to bring APs out of MWAIT loops. The sipi vector should be written in
+tboot->ap_wake_addr before waking up APs.
 
-
-From: Matt Carlson <mcarlson@broadcom.com>
-
-[ Upstream commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db ]
-
-On the earliest TSO capable devices, TSO was accomplished through
-firmware.  The TSO cannot coexist with ASF management firmware though.
-The tg3 driver determines whether or not ASF is enabled by calling
-tg3_get_eeprom_hw_cfg(), which checks a particular bit of NIC memory.
-Commit dabc5c670d3f86d15ee4f42ab38ec5bd2682487d, entitled "tg3: Move
-TSO_CAPABLE assignment", accidentally moved the code that determines
-TSO capabilities earlier than the call to tg3_get_eeprom_hw_cfg().  As a
-consequence, the driver was attempting to determine TSO capabilities
-before it had all the data it needed to make the decision.
-
-This patch fixes the problem by revisiting and reevaluating the decision
-after tg3_get_eeprom_hw_cfg() is called.
-
-Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
+Signed-off-by: Gang Wei <gang.wei@intel.com>
 ---
- drivers/net/tg3.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/kernel/smpboot.c |   21 +++++++++++----------
+ arch/x86/kernel/tboot.c   |   17 +++++++++++++++++
+ include/linux/tboot.h     |   17 +++++++++++++++++
+ 3 files changed, 45 insertions(+), 10 deletions(-)
 
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -13647,9 +13647,13 @@ static int __devinit tg3_get_invariants(
- 	if (tg3_flag(tp, HW_TSO_1) ||
- 	    tg3_flag(tp, HW_TSO_2) ||
- 	    tg3_flag(tp, HW_TSO_3) ||
--	    (tp->fw_needed && !tg3_flag(tp, ENABLE_ASF)))
-+	    tp->fw_needed) {
-+		/* For firmware TSO, assume ASF is disabled.
-+		 * We'll disable TSO later if we discover ASF
-+		 * is enabled in tg3_get_eeprom_hw_cfg().
-+		 */
- 		tg3_flag_set(tp, TSO_CAPABLE);
--	else {
-+	} else {
- 		tg3_flag_clear(tp, TSO_CAPABLE);
- 		tg3_flag_clear(tp, TSO_BUG);
- 		tp->fw_needed = NULL;
-@@ -13887,6 +13891,12 @@ static int __devinit tg3_get_invariants(
- 	 */
- 	tg3_get_eeprom_hw_cfg(tp);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..884c3e7 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -662,8 +662,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	/* start_ip had better be page-aligned! */
+ 	unsigned long start_ip = real_mode_header->trampoline_start;
  
-+	if (tp->fw_needed && tg3_flag(tp, ENABLE_ASF)) {
-+		tg3_flag_clear(tp, TSO_CAPABLE);
-+		tg3_flag_clear(tp, TSO_BUG);
-+		tp->fw_needed = NULL;
+-	unsigned long boot_error = 0;
+-	int timeout;
++	int timeout, boot_error = 0;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -710,14 +709,16 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		}
+ 	}
+ 
+-	/*
+-	 * Kick the secondary CPU. Use the method in the APIC driver
+-	 * if it's defined - or use an INIT boot APIC message otherwise:
+-	 */
+-	if (apic->wakeup_secondary_cpu)
+-		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+-	else
+-		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
++	if (!tboot_wake_up(apicid, start_ip)) {
++		/*
++		 * Kick the secondary CPU. Use the method in the APIC driver
++		 * if it's defined - or use an INIT boot APIC message otherwise:
++		 */
++		if (apic->wakeup_secondary_cpu)
++			boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
++		else
++			boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
 +	}
+ 
+ 	if (!boot_error) {
+ 		/*
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index f84fe00..e5e50b8 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -101,6 +101,8 @@ void __init tboot_probe(void)
+ 	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
+ 	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
+ 	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
++	if (tboot->version >= 6)
++		pr_info("flags: 0x%08x\n", tboot->flags);
+ }
+ 
+ static pgd_t *tboot_pg_dir;
+@@ -453,3 +455,18 @@ int tboot_force_iommu(void)
+ 
+ 	return 1;
+ }
 +
- 	if (tg3_flag(tp, ENABLE_APE)) {
- 		/* Allow reads and writes to the
- 		 * APE register and memory space.
-
++int tboot_wake_up(int apicid, unsigned long sipi_vec)
++{
++	if (!tboot_enabled())
++		return 0;
++
++	if ((tboot->version < 6) ||
++	    !(tboot->flags & TB_FLAG_AP_WAKE_SUPPORT))
++		return 0;
++
++	tboot->ap_wake_addr = sipi_vec;
++	tboot->ap_wake_trigger = apicid;
++
++	return 1;
++}
+diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+index c75128b..d65f7e9 100644
+--- a/include/linux/tboot.h
++++ b/include/linux/tboot.h
+@@ -124,8 +124,23 @@ struct tboot {
+ 
+ 	/* number of processors in wait-for-SIPI */
+ 	u32 num_in_wfs;
++
++	/*
++	 * version 6+ fields:
++	 */
++
++	u32 flags;
++
++	/* phys addr of kernel/VMM SIPI vector */
++	u64 ap_wake_addr;
++
++	/* kernel/VMM writes APIC ID to wake AP */
++	u32 ap_wake_trigger;
+ } __packed;
+ 
++/* kernel/VMM use INIT-SIPI-SIPI if clear, ap_wake_* if set */
++#define TB_FLAG_AP_WAKE_SUPPORT 0X00000001
++
+ /*
+  * UUID for tboot data struct to facilitate matching
+  * defined as {663C8DFF-E8B3-4b82-AABF-19EA4D057A08} by tboot, which is
+@@ -146,6 +161,7 @@ extern void tboot_shutdown(u32 shutdown_type);
+ extern struct acpi_table_header *tboot_get_dmar_table(
+ 				      struct acpi_table_header *dmar_tbl);
+ extern int tboot_force_iommu(void);
++extern int tboot_wake_up(int apicid, unsigned long sipi_vec);
+ 
+ #else
+ 
+@@ -156,6 +172,7 @@ extern int tboot_force_iommu(void);
+ 					do { } while (0)
+ #define tboot_get_dmar_table(dmar_tbl)	(dmar_tbl)
+ #define tboot_force_iommu()		0
++#define tboot_wake_up(apicid, sipi_vec) 0
+ 
+ #endif /* !CONFIG_INTEL_TXT */
+ 
+-- 
+1.7.9.5
 
