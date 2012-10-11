@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab2JKBUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:20:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35334 "EHLO
+	id S933947Ab2JKBeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:34:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34219 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933939Ab2JKBTu (ORCPT
+	by vger.kernel.org with ESMTP id S933919Ab2JKBTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:19:50 -0400
-X-Sasl-enc: 3hWinL6LeMfKihO2C2/iG0yNtYs6DBJXRSsB2g2mGo+S 1349918388
+	Wed, 10 Oct 2012 21:19:41 -0400
+X-Sasl-enc: 3GkhtVtoC6Y9ge9dE+SzWsPBYcc6/Kwp6gz3+siJtXUt 1349918380
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Denys Fedoryschenko <denys@visp.net.lb>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 038/120] sierra_net: Endianess bug fix.
-Date: Thu, 11 Oct 2012 09:59:50 +0900
-Message-Id: <20121011005832.517402807@linuxfoundation.org>
+Subject: [ 036/120] net-sched: sch_cbq: avoid infinite loop
+Date: Thu, 11 Oct 2012 09:59:48 +0900
+Message-Id: <20121011005832.152586451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,31 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2120c52da6fe741454a60644018ad2a6abd957ac ]
+[ Upstream commit bdfc87f7d1e253e0a61e2fc6a75ea9d76f7fc03a ]
 
-I discovered I couldn't get sierra_net to work on a powerpc.  Turns out
-the firmware attribute check assumes the system is little endian and
-hence fails because the attributes is a 16 bit value.
+Its possible to setup a bad cbq configuration leading to
+an infinite loop in cbq_classify()
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+DEV_OUT=eth0
+ICMP="match ip protocol 1 0xff"
+U32="protocol ip u32"
+DST="match ip dst"
+tc qdisc add dev $DEV_OUT root handle 1: cbq avpkt 1000 \
+	bandwidth 100mbit
+tc class add dev $DEV_OUT parent 1: classid 1:1 cbq \
+	rate 512kbit allot 1500 prio 5 bounded isolated
+tc filter add dev $DEV_OUT parent 1: prio 3 $U32 \
+	$ICMP $DST 192.168.3.234 flowid 1:
+
+Reported-by: Denys Fedoryschenko <denys@visp.net.lb>
+Tested-by: Denys Fedoryschenko <denys@visp.net.lb>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/sierra_net.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sched/sch_cbq.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/sierra_net.c
-+++ b/drivers/net/usb/sierra_net.c
-@@ -678,7 +678,7 @@ static int sierra_net_get_fw_attr(struct
- 		return -EIO;
- 	}
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -250,10 +250,11 @@ cbq_classify(struct sk_buff *skb, struct
+ 			else if ((cl = defmap[res.classid & TC_PRIO_MAX]) == NULL)
+ 				cl = defmap[TC_PRIO_BESTEFFORT];
  
--	*datap = *attrdata;
-+	*datap = le16_to_cpu(*attrdata);
- 
- 	kfree(attrdata);
- 	return result;
+-			if (cl == NULL || cl->level >= head->level)
++			if (cl == NULL)
+ 				goto fallback;
+ 		}
+-
++		if (cl->level >= head->level)
++			goto fallback;
+ #ifdef CONFIG_NET_CLS_ACT
+ 		switch (result) {
+ 		case TC_ACT_QUEUED:
 
 
