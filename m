@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933846Ab2JKCNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:13:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54619 "EHLO
+	id S933878Ab2JKCNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:13:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33055 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933067Ab2JKCNc (ORCPT
+	by vger.kernel.org with ESMTP id S933786Ab2JKCNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:13:32 -0400
-X-Sasl-enc: gDIDvjWDWVw0PtYbj/+aK4mOtQFrAO4GZerjocW1WxPV 1349921610
+	Wed, 10 Oct 2012 22:13:37 -0400
+X-Sasl-enc: xSSwUQkOf9R7DZo2tN2IHO0e8qpboQwqwa8Ev/OyUrsp 1349921616
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denys Fedoryschenko <denys@visp.net.lb>,
-        Eric Dumazet <edumazet@google.com>,
+        Paolo Valente <paolo.valente@unimore.it>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/84] net-sched: sch_cbq: avoid infinite loop
-Date: Thu, 11 Oct 2012 11:03:07 +0900
-Message-Id: <20121011015421.238061503@linuxfoundation.org>
+Subject: [ 24/84] pkt_sched: fix virtual-start-time update in QFQ
+Date: Thu, 11 Oct 2012 11:03:08 +0900
+Message-Id: <20121011015421.429811441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -30,48 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Paolo Valente <paolo.valente@unimore.it>
 
-[ Upstream commit bdfc87f7d1e253e0a61e2fc6a75ea9d76f7fc03a ]
+[ Upstream commit 71261956973ba9e0637848a5adb4a5819b4bae83 ]
 
-Its possible to setup a bad cbq configuration leading to
-an infinite loop in cbq_classify()
+If the old timestamps of a class, say cl, are stale when the class
+becomes active, then QFQ may assign to cl a much higher start time
+than the maximum value allowed. This may happen when QFQ assigns to
+the start time of cl the finish time of a group whose classes are
+characterized by a higher value of the ratio
+max_class_pkt/weight_of_the_class with respect to that of
+cl. Inserting a class with a too high start time into the bucket list
+corrupts the data structure and may eventually lead to crashes.
+This patch limits the maximum start time assigned to a class.
 
-DEV_OUT=eth0
-ICMP="match ip protocol 1 0xff"
-U32="protocol ip u32"
-DST="match ip dst"
-tc qdisc add dev $DEV_OUT root handle 1: cbq avpkt 1000 \
-	bandwidth 100mbit
-tc class add dev $DEV_OUT parent 1: classid 1:1 cbq \
-	rate 512kbit allot 1500 prio 5 bounded isolated
-tc filter add dev $DEV_OUT parent 1: prio 3 $U32 \
-	$ICMP $DST 192.168.3.234 flowid 1:
-
-Reported-by: Denys Fedoryschenko <denys@visp.net.lb>
-Tested-by: Denys Fedoryschenko <denys@visp.net.lb>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_cbq.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/sched/sch_qfq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/sched/sch_cbq.c
-+++ b/net/sched/sch_cbq.c
-@@ -250,10 +250,11 @@ cbq_classify(struct sk_buff *skb, struct
- 			else if ((cl = defmap[res.classid & TC_PRIO_MAX]) == NULL)
- 				cl = defmap[TC_PRIO_BESTEFFORT];
- 
--			if (cl == NULL || cl->level >= head->level)
-+			if (cl == NULL)
- 				goto fallback;
+--- a/net/sched/sch_qfq.c
++++ b/net/sched/sch_qfq.c
+@@ -829,7 +829,10 @@ static void qfq_update_start(struct qfq_
+ 		if (mask) {
+ 			struct qfq_group *next = qfq_ffs(q, mask);
+ 			if (qfq_gt(roundedF, next->F)) {
+-				cl->S = next->F;
++				if (qfq_gt(limit, next->F))
++					cl->S = next->F;
++				else /* preserve timestamp correctness */
++					cl->S = limit;
+ 				return;
+ 			}
  		}
--
-+		if (cl->level >= head->level)
-+			goto fallback;
- #ifdef CONFIG_NET_CLS_ACT
- 		switch (result) {
- 		case TC_ACT_QUEUED:
 
 
