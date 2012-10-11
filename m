@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab2JKCLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:11:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42420 "EHLO
+	id S1758206Ab2JKCLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:11:39 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55545 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756772Ab2JKCLh (ORCPT
+	by vger.kernel.org with ESMTP id S1758085Ab2JKCLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:11:37 -0400
-X-Sasl-enc: PveeU4wT4I6l84jcRAVTWrUnwrWr//7tDpDYu7O9HrMM 1349921496
+	Wed, 10 Oct 2012 22:11:33 -0400
+X-Sasl-enc: TR8qvB6ms1ljSlCbYSChOSdy+DNU0J8OvaCPXt89+vKa 1349921491
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 05/84] PCI: acpiphp: check whether _ADR evaluation succeeded
-Date: Thu, 11 Oct 2012 11:02:49 +0900
-Message-Id: <20121011015418.024280609@linuxfoundation.org>
+        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [ 04/84] ACPI: run _OSC after ACPI_FULL_INITIALIZATION
+Date: Thu, 11 Oct 2012 11:02:48 +0900
+Message-Id: <20121011015417.842895584@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -28,43 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Lin Ming <ming.m.lin@intel.com>
 
-commit dfb117b3e50c52c7b3416db4a4569224b8db80bb upstream.
+commit fc54ab72959edbf229b65ac74b2f122d799ca002 upstream.
 
-Check whether we evaluated _ADR successfully.  Previously we ignored
-failure, so we would have used garbage data from the stack as the device
-and function number.
+The _OSC method may exist in module level code,
+so it must be called after ACPI_FULL_INITIALIZATION
 
-We return AE_OK so that we ignore only this slot and continue looking
-for other slots.
+On some new platforms with Zero-Power-Optical-Disk-Drive (ZPODD)
+support, this fix is necessary to save power.
 
-Found by Coverity (CID 113981).
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-[bwh: Backported to 2.6.32/3.0: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Tested-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/acpiphp_glue.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/acpi/bus.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -131,7 +131,12 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
- 		return AE_OK;
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -944,8 +944,6 @@ static int __init acpi_bus_init(void)
+ 	status = acpi_ec_ecdt_probe();
+ 	/* Ignore result. Not having an ECDT is not fatal. */
  
--	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-+	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-+	if (ACPI_FAILURE(status)) {
-+		warn("can't evaluate _ADR (%#x)\n", status);
-+		return AE_OK;
-+	}
+-	acpi_bus_osc_support();
+-
+ 	status = acpi_initialize_objects(ACPI_FULL_INITIALIZATION);
+ 	if (ACPI_FAILURE(status)) {
+ 		printk(KERN_ERR PREFIX "Unable to initialize ACPI objects\n");
+@@ -953,6 +951,12 @@ static int __init acpi_bus_init(void)
+ 	}
+ 
+ 	/*
++	 * _OSC method may exist in module level code,
++	 * so it must be run after ACPI_FULL_INITIALIZATION
++	 */
++	acpi_bus_osc_support();
 +
- 	device = (adr >> 16) & 0xffff;
- 	function = adr & 0xffff;
- 
++	/*
+ 	 * _PDC control method may load dynamic SSDT tables,
+ 	 * and we need to install the table handler before that.
+ 	 */
 
 
