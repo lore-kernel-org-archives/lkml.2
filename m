@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964865Ab2JKCPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:15:02 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43319 "EHLO
+	id S964879Ab2JKCPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:15:11 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57413 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964831Ab2JKCO4 (ORCPT
+	by vger.kernel.org with ESMTP id S933881Ab2JKCPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:14:56 -0400
-X-Sasl-enc: IOiWAyBndFdBeyeLhBdXCqoQoTR9EJK8+Y14ylKer5Zm 1349921695
+	Wed, 10 Oct 2012 22:15:04 -0400
+X-Sasl-enc: twa2ZlIBxMLaBIjiqRiaf9JZos8zyl1B5mhFCnahKFap 1349921703
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/84] ipv4: raw: fix icmp_filter()
-Date: Thu, 11 Oct 2012 11:03:17 +0900
-Message-Id: <20121011015423.040075667@linuxfoundation.org>
+Subject: [ 61/84] r8169: dont enable rx when shutdown.
+Date: Thu, 11 Oct 2012 11:03:45 +0900
+Message-Id: <20121011015428.063278670@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -28,52 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Hayes Wang <hayeswang@realtek.com>
 
-From: Eric Dumazet <edumazet@google.com>
+commit aaa89c08d9ffa3739c93d65d98b73ec2aa2e93a5 upstream.
 
-[ Upstream commit ab43ed8b7490cb387782423ecf74aeee7237e591 ]
+Only 8111b needs to enable rx when shutdowning with WoL.
 
-icmp_filter() should not modify its input, or else its caller
-would need to recompute ip_hdr() if skb->head is reallocated.
-
-Use skb_header_pointer() instead of pskb_may_pull() and
-change the prototype to make clear both sk and skb are const.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/raw.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/r8169.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -130,18 +130,20 @@ found:
-  *	0 - deliver
-  *	1 - block
-  */
--static __inline__ int icmp_filter(struct sock *sk, struct sk_buff *skb)
-+static int icmp_filter(const struct sock *sk, const struct sk_buff *skb)
- {
--	int type;
-+	struct icmphdr _hdr;
-+	const struct icmphdr *hdr;
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -5391,8 +5391,11 @@ static void rtl_shutdown(struct pci_dev
+ 	spin_unlock_irq(&tp->lock);
  
--	if (!pskb_may_pull(skb, sizeof(struct icmphdr)))
-+	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
-+				 sizeof(_hdr), &_hdr);
-+	if (!hdr)
- 		return 1;
+ 	if (system_state == SYSTEM_POWER_OFF) {
+-		/* WoL fails with some 8168 when the receiver is disabled. */
+-		if (tp->features & RTL_FEATURE_WOL) {
++		/* WoL fails with 8168b when the receiver is disabled. */
++		if ((tp->mac_version == RTL_GIGA_MAC_VER_11 ||
++		     tp->mac_version == RTL_GIGA_MAC_VER_12 ||
++		     tp->mac_version == RTL_GIGA_MAC_VER_17) &&
++		    (tp->features & RTL_FEATURE_WOL)) {
+ 			pci_clear_master(pdev);
  
--	type = icmp_hdr(skb)->type;
--	if (type < 32) {
-+	if (hdr->type < 32) {
- 		__u32 data = raw_sk(sk)->filter.data;
- 
--		return ((1 << type) & data) != 0;
-+		return ((1U << hdr->type) & data) != 0;
- 	}
- 
- 	/* Do not block unknown ICMP types */
+ 			RTL_W8(ChipCmd, CmdRxEnb);
 
 
