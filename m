@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767Ab2JKBPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:15:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43246 "EHLO
+	id S933771Ab2JKBPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:15:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49922 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933635Ab2JKBPY (ORCPT
+	by vger.kernel.org with ESMTP id S933752Ab2JKBPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:15:24 -0400
-X-Sasl-enc: 51HM5wjhVkueDDAT04u8AM7rMMt53YCeWzJj+q1bzRSg 1349918123
+	Wed, 10 Oct 2012 21:15:20 -0400
+X-Sasl-enc: SyZlE/bwzUqvU0AIznayD6T2KL35fPOcx3lXTW4s1IMi 1349918118
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gregory Lee Bartholomew <gregory.lee.bartholomew@gmail.com>,
-        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 117/120] cifs: reinstate the forcegid option
-Date: Thu, 11 Oct 2012 10:01:09 +0900
-Message-Id: <20121011005849.085890087@linuxfoundation.org>
+        Mike Galbraith <mgalbraith@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 120/120] sched: Fix migration thread runtime bogosity
+Date: Thu, 11 Oct 2012 10:01:12 +0900
+Message-Id: <20121011005849.725606407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,54 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Mike Galbraith <mgalbraith@suse.de>
 
-commit 72bd481f860f0125c810bb43d878ce5f9c060c58 upstream.
+commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
 
-Apparently this was lost when we converted to the standard option
-parser in 8830d7e07a5e38bc47650a7554b7c1cfd49902bf
+Make stop scheduler class do the same accounting as other classes,
 
-Reported-by: Gregory Lee Bartholomew <gregory.lee.bartholomew@gmail.com>
-Cc: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Migration threads can be caught in the act while doing exec balancing,
+leading to the below due to use of unmaintained ->se.exec_start.  The
+load that triggered this particular instance was an apparently out of
+control heavily threaded application that does system monitoring in
+what equated to an exec bomb, with one of the VERY frequently migrated
+tasks being ps.
+
+%CPU   PID USER     CMD
+99.3    45 root     [migration/10]
+97.7    53 root     [migration/12]
+97.0    57 root     [migration/13]
+90.1    49 root     [migration/11]
+89.6    65 root     [migration/15]
+88.7    17 root     [migration/3]
+80.4    37 root     [migration/8]
+78.1    41 root     [migration/9]
+44.2    13 root     [migration/2]
+
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -70,6 +70,7 @@ enum {
- 	/* Mount options that take no arguments */
- 	Opt_user_xattr, Opt_nouser_xattr,
- 	Opt_forceuid, Opt_noforceuid,
-+	Opt_forcegid, Opt_noforcegid,
- 	Opt_noblocksend, Opt_noautotune,
- 	Opt_hard, Opt_soft, Opt_perm, Opt_noperm,
- 	Opt_mapchars, Opt_nomapchars, Opt_sfu,
-@@ -121,6 +122,8 @@ static const match_table_t cifs_mount_op
- 	{ Opt_nouser_xattr, "nouser_xattr" },
- 	{ Opt_forceuid, "forceuid" },
- 	{ Opt_noforceuid, "noforceuid" },
-+	{ Opt_forcegid, "forcegid" },
-+	{ Opt_noforcegid, "noforcegid" },
- 	{ Opt_noblocksend, "noblocksend" },
- 	{ Opt_noautotune, "noautotune" },
- 	{ Opt_hard, "hard" },
-@@ -1287,6 +1290,12 @@ cifs_parse_mount_options(const char *mou
- 		case Opt_noforceuid:
- 			override_uid = 0;
- 			break;
-+		case Opt_forcegid:
-+			override_gid = 1;
-+			break;
-+		case Opt_noforcegid:
-+			override_gid = 0;
-+			break;
- 		case Opt_noblocksend:
- 			vol->noblocksnd = 1;
- 			break;
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -27,8 +27,10 @@ static struct task_struct *pick_next_tas
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+ 
+ 	return NULL;
+ }
+@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *r
+ 
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq
+ 
+ static void set_curr_task_stop(struct rq *rq)
+ {
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
+ 
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
 
 
