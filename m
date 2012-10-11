@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315Ab2JKUoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:44:14 -0400
-Received: from smtp08.smtpout.orange.fr ([80.12.242.130]:50873 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab2JKUoM (ORCPT
+	id S1759321Ab2JKUpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:45:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49826 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab2JKUpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:44:12 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: Documentation of kconfig language differs from implementation regarding existence of symbols
-Date: Thu, 11 Oct 2012 22:44:07 +0200
-User-Agent: KMail/1.13.5 (Linux/3.6.1-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Michal Marek <mmarek@suse.cz>, Martin Walch <walch.martin@gmx.de>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaud Lacombe <lacombar@gmail.com>
-References: <1940598.VZE8PFWQyj@tacticalops> <50772BB8.6080404@suse.cz>
-In-Reply-To: <50772BB8.6080404@suse.cz>
+	Thu, 11 Oct 2012 16:45:02 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: <linux-pm@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / OPP: Export symbols for module usage.
+Organization: Deep Root Systems, LLC
+References: <1349962774-19636-1-git-send-email-nm@ti.com>
+Date: Thu, 11 Oct 2012 13:45:05 -0700
+In-Reply-To: <1349962774-19636-1-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Thu, 11 Oct 2012 08:39:34 -0500")
+Message-ID: <87k3uwagby.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210112244.07609.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal, Martin, All,
+Nishanth Menon <nm@ti.com> writes:
 
-On Thursday 11 October 2012 22:27:36 Michal Marek wrote:
-> Dne 10.10.2012 02:17, Martin Walch napsal(a):
-> > The file linux/Documentation/kbuild/kconfig-language.txt says:
-> > 
-> >> The following two methods produce the same kconfig symbol
-> >> dependencies but differ greatly in kconfig symbol existence
-> >> (production) in the generated config file.
-> >> 
-> >> case 1:
-> >> 
-> >> config FOO tristate "about foo" depends on BAR
-> >> 
-> >> vs. case 2:
-> >> 
-> >> if BAR config FOO tristate "about foo" endif
-> >> 
-> >> In case 1, the symbol FOO will always exist in the config file
-> >> (given no other dependencies).  In case 2, the symbol FOO will
-> >> only exist in the config file if BAR is enabled.
-> > 
-> > However, I can not reproduce this. The attached file contains both
-> > cases. When running make menuconfig, setting BAR0 and BAR1 both to
-> > n, and saving the configuration, there is neither FOO0 nor FOO1 in
-> > the resulting configuration file.
-> 
-> Indeed, that paragraph seems wrong. I think we should revert commit
-> 64b81ed. Randy, Arnaud?
+> From: Liam Girdwood <lrg@ti.com>
+>
+> Export the OPP functions for use by driver modules.
+>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+>
+> [nm@ti.com: expansion of functions exported]
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Liam Girdwood <lrg@ti.com>
 
-I just tested with Martin's example, and:
-  - indeed, both symbols appear as "is not set",
-  - that paragraph was already wrong for Kconfig at #64b81ed.
-
-Before we trim that paragraph away, what's the purpose of the expected
-difference in behavior for the two constructs?
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Acked-by: Kevin Hilman <khilman@ti.com>
