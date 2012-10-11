@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab2JKPQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:16:00 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38867 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2JKPP7 (ORCPT
+	id S932876Ab2JKPSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:18:06 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62694 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab2JKPSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:15:59 -0400
-Date: Thu, 11 Oct 2012 16:15:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] pinctrl/nomadik: always use the simple irqdomain
-Message-ID: <20121011151553.GC15428@gmail.com>
-References: <1349966197-18777-1-git-send-email-linus.walleij@stericsson.com>
+	Thu, 11 Oct 2012 11:18:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1349966197-18777-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CAF6AEGsd7AyBzJhAt-HTZ+NHajOEUnfpaz2u-KmBS1JWs2yHtA@mail.gmail.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A177306@SHSMSX101.ccr.corp.intel.com>
+	<20120905132724.GC5357@phenom.ffwll.local>
+	<2047810.N82l1KJrzR@avalon>
+	<CAF6AEGsd7AyBzJhAt-HTZ+NHajOEUnfpaz2u-KmBS1JWs2yHtA@mail.gmail.com>
+Date: Thu, 11 Oct 2012 17:18:00 +0200
+X-Google-Sender-Auth: GIWys_9E05gHnudsf5VzArhy-Fw
+Message-ID: <CAKMK7uFMAx=+ziO5bS6cr+f1x2b5GHCOFsFFTkPJOXOZsF+USw@mail.gmail.com>
+Subject: Re: [Patch 0/1]drm_irq: Introducing the irq_thread support
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Shi, Yang A" <yang.a.shi@intel.com>,
+        "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "alexander.deucher@amd.com" <alexander.deucher@amd.com>,
+        "airlied@redhat.com" <airlied@redhat.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Since the simple irqdomain will fall back to a linear domain
-> if the first_irq provided is <= 0, just use this, just make
-> sure the first_irq is negative in the device tree case.
-> 
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/pinctrl/pinctrl-nomadik.c | 13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-> index 992982c..a4a4247 100644
-> --- a/drivers/pinctrl/pinctrl-nomadik.c
-> +++ b/drivers/pinctrl/pinctrl-nomadik.c
-> @@ -1277,6 +1277,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
->  	struct clk *clk;
->  	int secondary_irq;
->  	void __iomem *base;
-> +	int irq_start = -1;
->  	int irq;
->  	int ret;
->  
-> @@ -1380,19 +1381,11 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
->  
->  	platform_set_drvdata(dev, nmk_chip);
->  
-> -	if (np) {
-> -		/* The DT case will just grab a set of IRQ numbers */
-> -		nmk_chip->domain = irq_domain_add_linear(np, NMK_GPIO_PER_CHIP,
-> -				&nmk_gpio_irq_simple_ops, nmk_chip);
-> -	} else {
-> -		/* Non-DT legacy mode, use hardwired IRQ numbers */
-> -		int irq_start;
-> -
-> +	if (!np)
->  		irq_start = NOMADIK_GPIO_TO_IRQ(pdata->first_gpio);
-> -		nmk_chip->domain = irq_domain_add_simple(NULL,
-> +	nmk_chip->domain = irq_domain_add_simple(NULL,
->  				NMK_GPIO_PER_CHIP, irq_start,
->  				&nmk_gpio_irq_simple_ops, nmk_chip);
-> -	}
->  	if (!nmk_chip->domain) {
->  		dev_err(&dev->dev, "failed to create irqdomain\n");
->  		ret = -ENOSYS;
+On Thu, Oct 11, 2012 at 3:19 PM, Rob Clark <robdclark@gmail.com> wrote:
+>> Should the documenation be updated to mark those functions as deprecated for
+>> new drivers and explain how to handle IRQ (un)registration manually ?
 
-Looks good:
+They're not deprecated, since for most drivers they're good enough.
+Maybe just make it clear that they're optional (and whoever's the
+first might need to do some refactoring to make things simpler for
+fancy irq handling).
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> It might be nice to provide the driver an option to give it's own
+> install/uninstall irq fxn ptrs.. this way we can keep
+> drm_irq_install/uninstall().  In particular, the uninstall fxn still
+> does some useful cleanup like wake up anyone waiting for vblank events
+> which would still be needed by drivers registering irq in their own
+> special way.  And the irq pre/post-install stuff is still a bit nice
+> to keep.
 
+If a driver needs its own irq setup/teardown magic, I'd prefer if we
+simply extract the useful parts of the common code into a little
+helper that drivers can call, and don't add new&fancy callbacks and
+interface. At least not without really good reasons.
+
+/me has seen enough midlayer awesomeness in drm land already
+
+Cheers, Daniel
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
